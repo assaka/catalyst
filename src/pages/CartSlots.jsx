@@ -153,20 +153,20 @@ export default function CartSlots({
     return defaultValue;
   };
   
-  // Helper to render custom HTML content
-  const renderCustomHtml = (key, defaultContent) => {
-    const htmlContent = getCustomText(key, '', true);
-    
-    if (htmlContent && htmlContent.includes('<')) {
-      // Has HTML content, render it
-      console.log(`Rendering HTML for ${key}:`, htmlContent);
-      // Ensure we preserve inline styles
-      return <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+  // Get custom Tailwind classes for an element
+  const getCustomClasses = (key, defaultClasses = '') => {
+    if (layoutConfig?.elementClasses?.[key]) {
+      return layoutConfig.elementClasses[key];
     }
+    return defaultClasses;
+  };
+  
+  // Helper to render text with custom classes
+  const renderCustomText = (key, defaultContent, defaultClasses = '') => {
+    const text = getCustomText(key, defaultContent);
+    const classes = getCustomClasses(key, defaultClasses);
     
-    // Fallback to plain text or default
-    const plainText = getCustomText(key, defaultContent);
-    return <>{plainText}</>;
+    return <span className={classes}>{text}</span>;
   };
 
   // Loading state matching Cart.jsx
@@ -371,9 +371,9 @@ export default function CartSlots({
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-        <div className="text-3xl font-bold text-gray-900 mb-8">
-          {renderCustomHtml('header.title', 'My Cart')}
-        </div>
+        <h1 className="mb-8">
+          {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
+        </h1>
         <CmsBlockRenderer position="cart_above_items" />
         
         {cartItems.length === 0 ? (

@@ -136,7 +136,190 @@ const MICRO_SLOT_TEMPLATES = {
   'orderSummary.checkoutButton': `<Button size="lg" className="w-full">Proceed to Checkout</Button>`
 };
 
-// Rich Text Editor component
+// Tailwind Style Editor component
+function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
+  const [tempText, setTempText] = useState(text);
+  const [tempClass, setTempClass] = useState(className);
+  
+  // Preset color options
+  const textColors = [
+    { label: 'Black', value: 'text-black' },
+    { label: 'Gray', value: 'text-gray-600' },
+    { label: 'Red', value: 'text-red-600' },
+    { label: 'Blue', value: 'text-blue-600' },
+    { label: 'Green', value: 'text-green-600' },
+    { label: 'Yellow', value: 'text-yellow-600' },
+    { label: 'Purple', value: 'text-purple-600' },
+  ];
+  
+  const bgColors = [
+    { label: 'None', value: '' },
+    { label: 'Gray', value: 'bg-gray-100' },
+    { label: 'Red', value: 'bg-red-100' },
+    { label: 'Blue', value: 'bg-blue-100' },
+    { label: 'Green', value: 'bg-green-100' },
+    { label: 'Yellow', value: 'bg-yellow-100' },
+    { label: 'Purple', value: 'bg-purple-100' },
+  ];
+  
+  const fontSizes = [
+    { label: 'XS', value: 'text-xs' },
+    { label: 'SM', value: 'text-sm' },
+    { label: 'Base', value: 'text-base' },
+    { label: 'LG', value: 'text-lg' },
+    { label: 'XL', value: 'text-xl' },
+    { label: '2XL', value: 'text-2xl' },
+    { label: '3XL', value: 'text-3xl' },
+    { label: '4XL', value: 'text-4xl' },
+  ];
+  
+  const fontWeights = [
+    { label: 'Normal', value: 'font-normal' },
+    { label: 'Medium', value: 'font-medium' },
+    { label: 'Semibold', value: 'font-semibold' },
+    { label: 'Bold', value: 'font-bold' },
+  ];
+  
+  const handleClassToggle = (newClass, category) => {
+    // Remove other classes from the same category
+    let classes = tempClass.split(' ').filter(c => c);
+    
+    if (category === 'text-color') {
+      classes = classes.filter(c => !c.startsWith('text-'));
+    } else if (category === 'bg-color') {
+      classes = classes.filter(c => !c.startsWith('bg-'));
+    } else if (category === 'font-size') {
+      classes = classes.filter(c => !['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl'].includes(c));
+    } else if (category === 'font-weight') {
+      classes = classes.filter(c => !c.startsWith('font-'));
+    }
+    
+    if (newClass) {
+      classes.push(newClass);
+    }
+    
+    setTempClass(classes.join(' '));
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+        <h3 className="text-lg font-semibold mb-4">Edit Text & Style</h3>
+        
+        {/* Text Input */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Text Content</label>
+          <input
+            type="text"
+            value={tempText}
+            onChange={(e) => setTempText(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        
+        {/* Style Options */}
+        <div className="space-y-4">
+          {/* Text Color */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Text Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {textColors.map(color => (
+                <button
+                  key={color.value}
+                  onClick={() => handleClassToggle(color.value, 'text-color')}
+                  className={`px-3 py-1 rounded border ${tempClass.includes(color.value) ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                  <span className={color.value}>{color.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Background Color */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Background Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {bgColors.map(color => (
+                <button
+                  key={color.value || 'none'}
+                  onClick={() => handleClassToggle(color.value, 'bg-color')}
+                  className={`px-3 py-1 rounded border ${color.value} ${tempClass.includes(color.value) || (!color.value && !bgColors.slice(1).some(c => tempClass.includes(c.value))) ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                  {color.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Font Size */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Font Size</label>
+            <div className="flex gap-2 flex-wrap">
+              {fontSizes.map(size => (
+                <button
+                  key={size.value}
+                  onClick={() => handleClassToggle(size.value, 'font-size')}
+                  className={`px-3 py-1 rounded border ${tempClass.includes(size.value) ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                  <span className={size.value}>{size.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Font Weight */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Font Weight</label>
+            <div className="flex gap-2 flex-wrap">
+              {fontWeights.map(weight => (
+                <button
+                  key={weight.value}
+                  onClick={() => handleClassToggle(weight.value, 'font-weight')}
+                  className={`px-3 py-1 rounded border ${tempClass.includes(weight.value) ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                  <span className={weight.value}>{weight.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Preview */}
+        <div className="mt-4 p-4 border rounded">
+          <p className="text-sm text-gray-500 mb-1">Preview:</p>
+          <div className={tempClass}>{tempText}</div>
+        </div>
+        
+        {/* Custom Classes Input */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium mb-1">Custom Tailwind Classes</label>
+          <input
+            type="text"
+            value={tempClass}
+            onChange={(e) => setTempClass(e.target.value)}
+            className="w-full p-2 border rounded font-mono text-sm"
+            placeholder="e.g., text-2xl font-bold text-blue-600"
+          />
+        </div>
+        
+        {/* Buttons */}
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={() => {
+            onChange(tempText, tempClass);
+            onClose();
+          }}>
+            Apply
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Rich Text Editor component (keeping for compatibility)
 function RichTextEditor({ content, onSave, onCancel }) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
@@ -422,7 +605,38 @@ function RichTextEditor({ content, onSave, onCancel }) {
   );
 }
 
-// Inline editable text component
+// Simplified Inline Edit with Tailwind styles
+function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange }) {
+  const [showEditor, setShowEditor] = useState(false);
+  
+  return (
+    <>
+      <div 
+        onClick={() => setShowEditor(true)}
+        className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded ${className}`}
+        title="Click to edit text and style"
+      >
+        {text || <span className="text-gray-400">Click to edit...</span>}
+      </div>
+      
+      {showEditor && (
+        <TailwindStyleEditor
+          text={text}
+          className={className}
+          onChange={(newText, newClass) => {
+            onChange(newText);
+            if (onClassChange) {
+              onClassChange(slotId, newClass);
+            }
+          }}
+          onClose={() => setShowEditor(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// Inline editable text component (keeping for backward compatibility)
 function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false, richText = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
@@ -861,6 +1075,14 @@ export default function CartSlotsEditorWithMicroSlots({
     'header.title': 'My Cart',
   });
   
+  // State for Tailwind classes for each element
+  const [elementClasses, setElementClasses] = useState({
+    'header.title': 'text-3xl font-bold text-gray-900',
+    'emptyCart.title': 'text-xl font-semibold',
+    'emptyCart.text': 'text-gray-600',
+    'emptyCart.button': '',
+  });
+  
   // State for component sizes
   const [componentSizes, setComponentSizes] = useState({
     'emptyCart.icon': 64, // pixels
@@ -914,6 +1136,7 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.microSlotOrders) setMicroSlotOrders(config.microSlotOrders);
           if (config.microSlotSpans) setMicroSlotSpans(config.microSlotSpans);
           if (config.textContent) setTextContent(prev => ({ ...prev, ...config.textContent }));
+          if (config.elementClasses) setElementClasses(prev => ({ ...prev, ...config.elementClasses }));
           if (config.componentSizes) setComponentSizes(prev => ({ ...prev, ...config.componentSizes }));
           if (config.componentCode) setComponentCode(prev => ({ ...prev, ...config.componentCode }));
         }
@@ -939,6 +1162,7 @@ export default function CartSlotsEditorWithMicroSlots({
             if (dbConfig.microSlotOrders) setMicroSlotOrders(dbConfig.microSlotOrders);
             if (dbConfig.microSlotSpans) setMicroSlotSpans(dbConfig.microSlotSpans);
             if (dbConfig.textContent) setTextContent(prev => ({ ...prev, ...dbConfig.textContent }));
+            if (dbConfig.elementClasses) setElementClasses(prev => ({ ...prev, ...dbConfig.elementClasses }));
             if (dbConfig.componentSizes) setComponentSizes(prev => ({ ...prev, ...dbConfig.componentSizes }));
             if (dbConfig.componentCode) setComponentCode(prev => ({ ...prev, ...dbConfig.componentCode }));
             
@@ -1013,6 +1237,14 @@ export default function CartSlotsEditorWithMicroSlots({
     setTextContent(prev => ({
       ...prev,
       [slotId]: newText
+    }));
+  }, []);
+  
+  // Handle class change for elements
+  const handleClassChange = useCallback((slotId, newClass) => {
+    setElementClasses(prev => ({
+      ...prev,
+      [slotId]: newClass
     }));
   }, []);
   
@@ -1370,6 +1602,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     microSlotOrders,
                     microSlotSpans,
                     textContent,
+                    elementClasses,
                     componentSizes,
                     componentCode,
                     timestamp: new Date().toISOString()
