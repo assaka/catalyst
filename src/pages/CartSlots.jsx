@@ -372,7 +372,8 @@ export default function CartSlots({
     return typeof value === "number" ? value : parseFloat(value) || 0;
   }
   function formatDisplayPrice(value, currencySymbol, store, taxes, selectedCountry) {
-    return `${currencySymbol}${value.toFixed(2)}`;
+    const numValue = typeof value === "number" ? value : parseFloat(value) || 0;
+    return `${currencySymbol}${numValue.toFixed(2)}`;
   }
   function getStoreBaseUrl(store) {
     return store?.baseUrl || "/";
