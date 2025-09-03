@@ -452,8 +452,16 @@ class ApiClient {
   }
 
   // HTTP methods
-  async get(endpoint, customHeaders = {}) {
-    return this.request('GET', endpoint, null, customHeaders);
+  async get(endpoint, options = {}) {
+    // Handle both old format (headers as second param) and new format (options object)
+    if (options.params) {
+      // Build query string from params
+      const queryString = new URLSearchParams(options.params).toString();
+      const endpointWithQuery = queryString ? `${endpoint}?${queryString}` : endpoint;
+      return this.request('GET', endpointWithQuery, null, options.headers || {});
+    }
+    // Backwards compatibility: treat second param as headers if not an options object
+    return this.request('GET', endpoint, null, options);
   }
 
   async post(endpoint, data, customHeaders = {}) {
