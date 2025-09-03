@@ -1566,16 +1566,31 @@ export default ${componentName};`;
                       
                       // Save to database via API
                       try {
+                        // Get user data with store information
+                        const userData = localStorage.getItem('store_owner_user_data');
+                        const user = userData ? JSON.parse(userData) : null;
+                        const storeId = user?.active_store_id || user?.stores?.[0]?.id;
+                        
+                        if (!storeId) {
+                          console.error('No store ID found for saving configuration');
+                          return;
+                        }
+                        
                         const slotConfig = {
                           page_name: 'Cart',
                           slot_type: 'cart_layout',
                           configuration: config,
-                          is_active: true
+                          is_active: true,
+                          store_id: storeId
                         };
                         
                         // Check if configuration exists
                         const existing = await apiClient.get('slot-configurations', {
-                          params: { page_name: 'Cart', slot_type: 'cart_layout' }
+                          params: { 
+                            page_name: 'Cart', 
+                            slot_type: 'cart_layout',
+                            store_id: storeId
+                          }
                         });
                         
                         if (existing?.data?.length > 0) {

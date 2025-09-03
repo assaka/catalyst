@@ -112,8 +112,8 @@ export default function Cart() {
             if (!store?.id) return;
             
             try {
-                // Load from slot_configurations table
-                const response = await fetch(`/api/slot-configurations?store_id=${store.id}&page_name=Cart&slot_type=cart_layout&is_active=true`);
+                // Load from slot_configurations table (public endpoint for storefront)
+                const response = await fetch(`/api/public/slot-configurations?store_id=${store.id}&page_name=Cart&slot_type=cart_layout`);
                 
                 if (response.ok) {
                     const data = await response.json();

@@ -3,7 +3,44 @@ const router = express.Router();
 const { SlotConfiguration } = require('../models');
 const { authenticate } = require('../middleware/auth');
 
-// Get slot configurations
+// Public endpoint to get active slot configurations for storefront
+router.get('/api/public/slot-configurations', async (req, res) => {
+  try {
+    const { store_id, page_name, slot_type } = req.query;
+    
+    if (!store_id) {
+      return res.status(400).json({ success: false, error: 'store_id is required' });
+    }
+    
+    const where = {
+      store_id,
+      is_active: true
+    };
+    
+    const configurations = await SlotConfiguration.findAll({
+      where,
+      order: [['updated_at', 'DESC']]
+    });
+    
+    // Filter by page_name and slot_type if provided (stored in configuration JSON)
+    let filtered = configurations;
+    if (page_name || slot_type) {
+      filtered = configurations.filter(config => {
+        const conf = config.configuration || {};
+        if (page_name && conf.page_name !== page_name) return false;
+        if (slot_type && conf.slot_type !== slot_type) return false;
+        return true;
+      });
+    }
+    
+    res.json({ success: true, data: filtered });
+  } catch (error) {
+    console.error('Error fetching public slot configurations:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get slot configurations (authenticated)
 router.get('/api/slot-configurations', authenticate, async (req, res) => {
   try {
     const { store_id, page_name, slot_type, is_active } = req.query;
