@@ -1399,7 +1399,7 @@ export default ${componentName};`;
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <FileCode className="w-6 h-6" />
-            {pageName} Page Editor
+            {pageName === 'Cart' ? 'Cart' : pageName} Page Editor
           </h1>
           <p className="text-sm text-gray-600">
             {mode === 'layout' && 'Drag slots to position them. Hover to see controls. Click settings to edit properties.'}
@@ -1496,12 +1496,6 @@ export default ${componentName};`;
           /* LAYOUT MODE: Visual Slot Editor with Draggable Positions */
           <div className="h-full p-4">
             <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Layout className="w-5 h-5" />
-                  Slot Layout Editor
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-0 h-full overflow-auto">
                 {pageName === 'Cart' ? (
                   <CartSlotsEditor 
@@ -1522,12 +1516,6 @@ export default ${componentName};`;
           /* PREVIEW MODE: Interactive Full Page Preview */
           <div className="h-full p-4">
             <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
-                  Interactive Preview
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-0 h-full">
                 <div className="h-full overflow-auto bg-white">
                   {pageName === 'Cart' ? (
@@ -1543,12 +1531,6 @@ export default ${componentName};`;
           /* CODE MODE: Direct File Editing */
           <div className="h-full p-4">
             <Card className="h-full">
-              <CardHeader className="py-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Code className="w-4 h-4" />
-                  {slotsFilePath}
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-0 h-full">
                 <CodeEditor
                   value={slotsFileCode}
