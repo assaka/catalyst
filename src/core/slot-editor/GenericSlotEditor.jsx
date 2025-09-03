@@ -1540,7 +1540,21 @@ export default ${componentName};`;
               <CardContent className="p-0 h-full overflow-auto">
                 {pageName === 'Cart' ? (
                   <CartSlotsEditor 
-                    data={{}}
+                    data={{
+                      store: {},
+                      cartItems: [],
+                      appliedCoupon: null,
+                      couponCode: '',
+                      subtotal: 0,
+                      discount: 0,
+                      tax: 0,
+                      total: 0,
+                      currencySymbol: '$',
+                      settings: {},
+                      flashMessage: null,
+                      loading: false,
+                      storeLoading: false,
+                    }}
                     onSave={async (config) => {
                       console.log('Saving Cart layout configuration:', config);
                       

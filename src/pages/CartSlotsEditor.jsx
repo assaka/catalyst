@@ -786,8 +786,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     className="text-gray-400" 
                     style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
                   />
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-xs text-gray-500">Size:</span>
+                  <div className="flex items-center gap-2 mt-2 bg-white p-2 rounded shadow-sm border">
+                    <span className="text-xs text-gray-500">Icon Size:</span>
                     <Slider
                       value={[iconSize]}
                       onValueChange={([value]) => handleSizeChange(slotId, value)}
@@ -812,12 +812,15 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <InlineEdit
-                  value={textContent[slotId]}
-                  onChange={(newText) => handleTextChange(slotId, newText)}
-                  className="text-xl font-semibold block"
-                  tag="h2"
-                />
+                <div className="relative">
+                  <InlineEdit
+                    value={textContent[slotId]}
+                    onChange={(newText) => handleTextChange(slotId, newText)}
+                    className="text-xl font-semibold block border-b-2 border-dashed border-gray-300 pb-1"
+                    tag="h2"
+                  />
+                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit title</span>
+                </div>
               </MicroSlot>
             );
           }
@@ -831,13 +834,16 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <InlineEdit
-                  value={textContent[slotId]}
-                  onChange={(newText) => handleTextChange(slotId, newText)}
-                  className="text-gray-600 block"
-                  tag="div"
-                  richText
-                />
+                <div className="relative">
+                  <InlineEdit
+                    value={textContent[slotId]}
+                    onChange={(newText) => handleTextChange(slotId, newText)}
+                    className="text-gray-600 block border-2 border-dashed border-gray-300 p-2 rounded"
+                    tag="div"
+                    richText
+                  />
+                  <span className="absolute -top-2 left-2 text-xs bg-white px-1 text-blue-600">Click to edit with rich text</span>
+                </div>
               </MicroSlot>
             );
           }
@@ -867,10 +873,10 @@ export default function CartSlotsEditorWithMicroSlots({
                       tag="span"
                     />
                   </Button>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-xs text-gray-500">Size:</span>
+                  <div className="flex items-center gap-2 mt-2 bg-white p-2 rounded shadow-sm border">
+                    <span className="text-xs text-gray-500">Button Size:</span>
                     <Select value={buttonSize} onValueChange={(value) => handleSizeChange(slotId, value)}>
-                      <SelectTrigger className="h-6 w-20 text-xs">
+                      <SelectTrigger className="h-7 w-24 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
