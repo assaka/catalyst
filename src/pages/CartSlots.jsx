@@ -203,7 +203,7 @@ export default function CartSlots() {
                       content={content[id]}
                       onChange={(val) => updateContent(id, val)}
                       isEditing={editing === id}
-                      onCancelEdit={cancelEdit}
+                      onCancel={cancelEdit}
                   />
                 </SortableItem>
             );
