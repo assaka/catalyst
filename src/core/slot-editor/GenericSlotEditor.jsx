@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import CartSlots from '@/pages/CartSlots';
 import { 
   Code, 
   Eye, 
@@ -1519,7 +1520,11 @@ export default ${componentName};`;
               </CardHeader>
               <CardContent className="p-0 h-full">
                 <div className="h-full overflow-auto bg-white">
-                  <LayoutPreview isDraggable={false} showSettings={false} />
+                  {pageName === 'Cart' ? (
+                    <CartSlots />
+                  ) : (
+                    <LayoutPreview isDraggable={false} showSettings={false} />
+                  )}
                 </div>
               </CardContent>
             </Card>
