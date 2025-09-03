@@ -462,19 +462,24 @@ export const CART_LAYOUT_PRESETS = {
 // =============================================================================
 
 const CartSlotted = (props) => {
-  const currentLayout = CART_LAYOUT_PRESETS.default; // Change to 'compact' or 'checkout-first'
-  
+  const currentLayout = CART_LAYOUT_PRESETS.default;
+
+  // Make slotOrder stateful so it can be updated when reordered via drag-and-drop
+  const [slotOrder, setSlotOrder] = useState(currentLayout.slotOrder);
+
   return (
-    <SlotWrapper
-      slotDefinitions={CART_SLOT_DEFINITIONS}
-      slotOrder={currentLayout.slotOrder}
-      layoutConfig={{
-        sidebarOrder: currentLayout.sidebarOrder,
-        itemLayout: currentLayout.itemLayout
-      }}
-      data={props.data || {}}
-      {...props}
-    />
+      <SlotWrapper
+          slotDefinitions={CART_SLOT_DEFINITIONS}
+          slotOrder={slotOrder}
+          onMoveSlot={setSlotOrder}
+          enableDnD={true}
+          layoutConfig={{
+            sidebarOrder: currentLayout.sidebarOrder,
+            itemLayout: currentLayout.itemLayout
+          }}
+          data={props.data || {}}
+          {...props}
+      />
   );
 };
 
