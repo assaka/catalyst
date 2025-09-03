@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ShoppingCart, Minus, Plus, Trash2, Tag } from "lucide-react";
 
 // --- Slot Components ---
 
@@ -317,33 +318,33 @@ const SLOT_COMPONENTS = {
 };
 
 export default function CartSlots({
-                                    data,
+                                    data = {},
                                     initialSlotOrder = DEFAULT_SLOTS,
                                     onSlotOrderChange,
                                   }) {
   const {
-    store,
-    cartItems,
-    appliedCoupon,
-    couponCode,
-    subtotal,
-    discount,
-    tax,
-    total,
-    currencySymbol,
-    settings,
-    flashMessage,
-    selectedCountry,
-    calculateItemTotal,
-    safeToFixed,
-    updateQuantity,
-    removeItem,
-    handleCheckout,
-    handleApplyCoupon,
-    handleRemoveCoupon,
-    handleCouponKeyPress,
-    setCouponCode,
-    setFlashMessage,
+    store = {},
+    cartItems = [],
+    appliedCoupon = null,
+    couponCode = '',
+    subtotal = 0,
+    discount = 0,
+    tax = 0,
+    total = 0,
+    currencySymbol = '$',
+    settings = {},
+    flashMessage = null,
+    selectedCountry = '',
+    calculateItemTotal = () => 0,
+    safeToFixed = (val) => (val || 0).toFixed(2),
+    updateQuantity = () => {},
+    removeItem = () => {},
+    handleCheckout = () => {},
+    handleApplyCoupon = () => {},
+    handleRemoveCoupon = () => {},
+    handleCouponKeyPress = () => {},
+    setCouponCode = () => {},
+    setFlashMessage = () => {},
   } = data;
 
   const [slotOrder, setSlotOrder] = useState(initialSlotOrder);
