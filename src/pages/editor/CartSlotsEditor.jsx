@@ -1689,9 +1689,15 @@ export default function CartSlotsEditorWithMicroSlots({
             Object.entries(config.customSlots).forEach(([slotId, slot]) => {
               if (slot.type === 'text') {
                 // Always sync custom slot content with textContent
-                // Use saved textContent if available, otherwise use slot.content
                 const savedContent = config.textContent?.[slotId];
+                
+                // Always ensure textContent has the value
                 if (savedContent !== undefined) {
+                  // Use saved content
+                  setTextContent(prev => ({
+                    ...prev,
+                    [slotId]: savedContent
+                  }));
                   // Update the custom slot with the saved content
                   setCustomSlots(prev => ({
                     ...prev,
@@ -1701,10 +1707,18 @@ export default function CartSlotsEditorWithMicroSlots({
                     }
                   }));
                 } else {
-                  // If no saved content, ensure textContent has the slot's default
+                  // Use slot's default content
                   setTextContent(prev => ({
                     ...prev,
-                    [slotId]: slot.content
+                    [slotId]: slot.content || 'Custom text content'
+                  }));
+                  // Keep custom slot content in sync
+                  setCustomSlots(prev => ({
+                    ...prev,
+                    [slotId]: {
+                      ...prev[slotId],
+                      content: slot.content || 'Custom text content'
+                    }
                   }));
                 }
               } else if (slot.type === 'html' || slot.type === 'javascript') {
@@ -1817,9 +1831,15 @@ export default function CartSlotsEditorWithMicroSlots({
               Object.entries(dbConfig.customSlots).forEach(([slotId, slot]) => {
                 if (slot.type === 'text') {
                   // Always sync custom slot content with textContent
-                  // Use saved textContent if available, otherwise use slot.content
                   const savedContent = dbConfig.textContent?.[slotId];
+                  
+                  // Always ensure textContent has the value
                   if (savedContent !== undefined) {
+                    // Use saved content
+                    setTextContent(prev => ({
+                      ...prev,
+                      [slotId]: savedContent
+                    }));
                     // Update the custom slot with the saved content
                     setCustomSlots(prev => ({
                       ...prev,
@@ -1829,10 +1849,18 @@ export default function CartSlotsEditorWithMicroSlots({
                       }
                     }));
                   } else {
-                    // If no saved content, ensure textContent has the slot's default
+                    // Use slot's default content
                     setTextContent(prev => ({
                       ...prev,
-                      [slotId]: slot.content
+                      [slotId]: slot.content || 'Custom text content'
+                    }));
+                    // Keep custom slot content in sync
+                    setCustomSlots(prev => ({
+                      ...prev,
+                      [slotId]: {
+                        ...prev[slotId],
+                        content: slot.content || 'Custom text content'
+                      }
                     }));
                   }
                 } else if (slot.type === 'html' || slot.type === 'javascript') {
@@ -2374,7 +2402,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <div className="flex justify-center items-center text-center">
                     <SimpleInlineEdit
-                      text={textContent[slotId] || customSlot.content}
+                      text={textContent[slotId] !== undefined ? textContent[slotId] : customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
                       onChange={(newText) => {
                         handleTextChange(slotId, newText);
