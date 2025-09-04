@@ -811,7 +811,7 @@ export default ExampleComponent;`;
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className={`flex-1 min-h-0 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
         <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
           {/* AI Context Window - First Column - Hidden in fullscreen */}
           {!isFullscreen && (
