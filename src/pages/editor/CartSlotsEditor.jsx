@@ -2438,19 +2438,18 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                       className={isResizingButton === slotId ? 'ring-2 ring-blue-500' : ''}
                     >
-                      <InlineEdit
-                        value={textContent[slotId]}
-                        onChange={(newText) => handleTextChange(slotId, newText)}
-                        className="text-white"
-                        tag="span"
-                      />
+                      {textContent[slotId] && textContent[slotId].includes('<') ? (
+                        <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
+                      ) : (
+                        <span>{textContent[slotId] || 'Continue Shopping'}</span>
+                      )}
                     </Button>
                     {/* Button resize handle - bottom-right corner */}
                     <div
-                      className={`absolute -bottom-2 -right-2 w-6 h-6 bg-blue-500 rounded-sm cursor-nwse-resize z-20 transition-opacity flex items-center justify-center ${
-                        isResizingButton === slotId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      className={`absolute -bottom-2 -right-2 w-6 h-6 bg-blue-500 rounded-sm cursor-nwse-resize z-50 transition-opacity flex items-center justify-center hover:bg-blue-600 ${
+                        isResizingButton === slotId ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
                       }`}
-                      title="Drag to resize button"
+                      title="Drag to resize button (sm, default, lg)"
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();

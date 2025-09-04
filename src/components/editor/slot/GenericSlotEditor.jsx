@@ -1459,8 +1459,8 @@ export default ${componentName};`;
               {pageName === 'Cart' ? 'Cart' : pageName} Page Editor
             </h1>
             <p className="text-sm text-gray-600">
-              {mode === 'layout' && 'Drag slots to position them. Hover to see controls. Click settings to edit properties.'}
-              {mode === 'preview' && 'Interact with your cart page components. Buttons, forms, and inputs are fully functional.'}
+              {mode === 'layout' && 'Drag or hover to see controls and edit properties.'}
+              {mode === 'preview' && 'Interact with your cart page components.'}
               {mode === 'code' && 'Edit slot definitions and layout configuration directly'}
             </p>
           </div>

@@ -321,7 +321,11 @@ export default function CartSlots({
                           window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
                         }}
                       >
-                        {layoutConfig?.textContent?.['emptyCart.button'] || 'Continue Shopping'}
+                        {layoutConfig?.textContent?.['emptyCart.button'] && layoutConfig.textContent['emptyCart.button'].includes('<') ? (
+                          <span dangerouslySetInnerHTML={{ __html: layoutConfig.textContent['emptyCart.button'] }} />
+                        ) : (
+                          layoutConfig?.textContent?.['emptyCart.button'] || 'Continue Shopping'
+                        )}
                       </Button>
                     </div>
                   );
