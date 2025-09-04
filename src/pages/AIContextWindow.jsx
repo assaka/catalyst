@@ -878,44 +878,6 @@ export default ExampleComponent;`;
                     </div>
                   </div>
 
-                  {/* Header */}
-                  <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {selectedFile.name}
-                      </span>
-                      {modifiedFiles.includes(selectedFile.path) && (
-                        <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      {/* Fullscreen Toggle Button */}
-                      <button
-                        onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                      >
-                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                      </button>
-                      
-                      {/* Download Button - Only show in Preview mode */}
-                      {previewMode === 'live' && (
-                        <button
-                          onClick={handleDownload}
-                          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                          title="Download current file"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    
-                    {isFileLoading && (
-                      <span className="text-xs text-gray-500">Loading...</span>
-                    )}
-                  </div>
-
                   {/* Single Content Area - Tab-based Content */}
                   <div className="flex-1 overflow-hidden">
                     {previewMode === 'code' ? (
@@ -1154,35 +1116,6 @@ export default ExampleComponent;`;
                           </button>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Header */}
-                    <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {selectedFile.name}
-                        </span>
-                        {modifiedFiles.includes(selectedFile.path) && (
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        {/* Download Button - Only show in Preview mode */}
-                        {previewMode === 'live' && (
-                          <button
-                            onClick={handleDownload}
-                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                            title="Download current file"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                      
-                      {isFileLoading && (
-                        <span className="text-xs text-gray-500">Loading...</span>
-                      )}
                     </div>
 
                     {/* Single Content Area - Tab-based Content */}
