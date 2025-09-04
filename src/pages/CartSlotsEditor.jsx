@@ -2173,22 +2173,6 @@ export default function CartSlotsEditorWithMicroSlots({
                   </span>
                 )}
               </div>
-              
-              <div className="flex items-center gap-3">
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    if (confirm('This will reset the layout to default settings. Are you sure?')) {
-                      localStorage.removeItem('cart_slots_layout_config');
-                      window.location.reload();
-                    }
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reset Layout
-                </Button>
-              </div>
             </div>
           </div>
         </div>
