@@ -92,21 +92,20 @@ export default function CartSlots({
   const [sectionOrder, setSectionOrder] = useState(() => {
     if (layoutConfig?.majorSlots) {
       console.log('Using saved majorSlots configuration:', layoutConfig.majorSlots);
-      // Map the editor slot names to the actual component names used in this file
-      const slotMapping = {
-        'header': 'header',
-        'cartItems': 'cartItems',
-        'coupon': 'sidebar', // Coupon and orderSummary are in sidebar
-        'orderSummary': 'sidebar',
-        'recommendedProducts': 'recommendedProducts'
-      };
+      // For empty cart editor, we only have header and emptyCart slots
+      // Map them to the actual rendering sections
+      const slots = [];
       
-      // Filter and map to valid slots, ensuring sidebar is included if coupon or orderSummary are present
-      const mappedSlots = layoutConfig.majorSlots.map(slot => slotMapping[slot] || slot);
-      const uniqueSlots = [...new Set(mappedSlots)]; // Remove duplicates
+      layoutConfig.majorSlots.forEach(slot => {
+        if (slot === 'header') {
+          slots.push('header');
+        } else if (slot === 'emptyCart') {
+          slots.push('emptyCart');
+        }
+      });
       
-      // For now, use simple cartItems and sidebar layout
-      return ['cartItems', 'sidebar'];
+      console.log('Mapped slots for rendering:', slots);
+      return slots.length > 0 ? slots : ['emptyCart']; // Default to emptyCart if no valid slots
     }
     // Default order
     return ['cartItems', 'sidebar'];
@@ -378,13 +377,42 @@ export default function CartSlots({
         keywords="cart, shopping cart, checkout, e-commerce, online store"
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-        <h1 className="mb-8">
-          {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
-        </h1>
-        <CmsBlockRenderer position="cart_above_items" />
+        {/* Only show default header if 'header' is not in section order */}
+        {!sectionOrder.includes('header') && (
+          <>
+            <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+            <h1 className="mb-8">
+              {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
+            </h1>
+            <CmsBlockRenderer position="cart_above_items" />
+          </>
+        )}
         
-        {cartItems.length === 0 ? (
+        {/* Render based on section order from layout configuration */}
+        {sectionOrder.includes('emptyCart') || sectionOrder.includes('header') ? (
+          // Render empty cart layout from editor
+          <div className="space-y-8">
+            {sectionOrder.map(sectionId => {
+              switch (sectionId) {
+                case 'header':
+                  return (
+                    <div key={sectionId} className="mb-8">
+                      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+                      <h1 className="mb-8">
+                        {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
+                      </h1>
+                      <CmsBlockRenderer position="cart_above_items" />
+                    </div>
+                  );
+                case 'emptyCart':
+                  return <EmptyCart key={sectionId} />;
+                default:
+                  return null;
+              }
+            })}
+          </div>
+        ) : cartItems.length === 0 ? (
+          // Default empty cart if no layout config
           <EmptyCart />
         ) : (
           <>
