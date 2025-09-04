@@ -1524,7 +1524,16 @@ export default ${componentName};`;
                 <Button
                   variant={mode === 'layout' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setMode('layout')}
+                  onClick={() => {
+                    // When switching back to layout, reload the config to ensure it's up to date
+                    if (pageName === 'Cart' && mode !== 'layout') {
+                      const saved = localStorage.getItem('cart_slots_layout_config');
+                      if (saved) {
+                        setCartLayoutConfig(JSON.parse(saved));
+                      }
+                    }
+                    setMode('layout');
+                  }}
                   className="flex items-center gap-2"
                   title="Slot Layout Editor"
                 >
@@ -1534,7 +1543,15 @@ export default ${componentName};`;
                 <Button
                   variant={mode === 'preview' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setMode('preview')}
+                  onClick={() => {
+                    // Force save before switching to preview
+                    if (mode === 'layout' && pageName === 'Cart') {
+                      // Trigger an immediate save for CartSlotsEditor
+                      const event = new CustomEvent('force-save-cart-layout');
+                      window.dispatchEvent(event);
+                    }
+                    setMode('preview');
+                  }}
                   className="flex items-center gap-2"
                   title="Interactive Preview"
                 >
@@ -1569,29 +1586,6 @@ export default ${componentName};`;
             {/* Layout Mode Buttons */}
             {mode === 'layout' && (
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    // Reset all positions to default layout
-                    setSlotPositions({});
-                    triggerAutoSave();
-                  }}
-                  className="flex items-center gap-2"
-                  title="Reset all slots to default positions"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reset Layout
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleAddNewSlot}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add New Slot
-                </Button>
               </div>
             )}
           </div>
