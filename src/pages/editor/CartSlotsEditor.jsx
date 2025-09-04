@@ -2597,6 +2597,135 @@ export default function CartSlotsEditorWithMicroSlots({
     );
   };
 
+  // Render cart item with sample products
+  const renderCartItem = () => {
+    const microSlots = microSlotOrders.cartItem || MICRO_SLOT_DEFINITIONS.cartItem.microSlots;
+    const spans = microSlotSpans.cartItem || MICRO_SLOT_DEFINITIONS.cartItem.defaultSpans;
+    
+    // Sample product data
+    const sampleProducts = [
+      { id: 1, name: "Premium T-Shirt", price: 29.99, quantity: 2, image: "https://via.placeholder.com/80x80/3b82f6/ffffff?text=Shirt" },
+      { id: 2, name: "Classic Jeans", price: 79.99, quantity: 1, image: "https://via.placeholder.com/80x80/6366f1/ffffff?text=Jeans" }
+    ];
+    
+    return (
+      <SortableParentSlot
+        id="cartItem"
+        name="Cart Items"
+        microSlotOrder={microSlots}
+        onMicroSlotReorder={handleMicroSlotReorder}
+        onEdit={() => handleEditMicroSlot('cartItem')}
+        gridCols={MICRO_SLOT_DEFINITIONS.cartItem.gridCols}
+      >
+        <div className="col-span-12 space-y-4">
+          <div className="text-xs text-gray-500 font-medium px-2">Sample items (layout applies to all cart items)</div>
+          
+          {sampleProducts.map((product, index) => (
+            <div key={product.id} className="grid grid-cols-12 gap-4 p-4 bg-white rounded-lg border">
+              {microSlots.map(slotId => {
+                const slotSpan = spans[slotId] || { col: 12, row: 1 };
+                
+                if (slotId === 'cartItem.image') {
+                  const imageSize = componentSizes[slotId] || 80;
+                  return (
+                    <MicroSlot 
+                      key={`${slotId}-${index}`} 
+                      id={slotId} 
+                      onEdit={handleEditMicroSlot}
+                      colSpan={slotSpan.col}
+                      rowSpan={slotSpan.row}
+                      onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                      isDraggable={index === 0} // Only first item is draggable
+                    >
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="object-cover rounded"
+                        style={{ width: `${imageSize}px`, height: `${imageSize}px` }}
+                      />
+                    </MicroSlot>
+                  );
+                }
+                if (slotId === 'cartItem.details') {
+                  return (
+                    <MicroSlot 
+                      key={`${slotId}-${index}`}
+                      id={slotId} 
+                      onEdit={handleEditMicroSlot}
+                      colSpan={slotSpan.col}
+                      rowSpan={slotSpan.row}
+                      onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                      isDraggable={index === 0}
+                    >
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{product.name}</h3>
+                        <p className="text-sm text-gray-600">${product.price.toFixed(2)} each</p>
+                      </div>
+                    </MicroSlot>
+                  );
+                }
+                if (slotId === 'cartItem.quantity') {
+                  return (
+                    <MicroSlot 
+                      key={`${slotId}-${index}`}
+                      id={slotId} 
+                      onEdit={handleEditMicroSlot}
+                      colSpan={slotSpan.col}
+                      rowSpan={slotSpan.row}
+                      onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                      isDraggable={index === 0}
+                    >
+                      <div className="flex items-center gap-2 justify-center">
+                        <Button size="sm" variant="outline"><Minus className="w-3 h-3" /></Button>
+                        <span className="w-8 text-center font-medium">{product.quantity}</span>
+                        <Button size="sm" variant="outline"><Plus className="w-3 h-3" /></Button>
+                      </div>
+                    </MicroSlot>
+                  );
+                }
+                if (slotId === 'cartItem.price') {
+                  return (
+                    <MicroSlot 
+                      key={`${slotId}-${index}`}
+                      id={slotId} 
+                      onEdit={handleEditMicroSlot}
+                      colSpan={slotSpan.col}
+                      rowSpan={slotSpan.row}
+                      onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                      isDraggable={index === 0}
+                    >
+                      <div className="text-lg font-bold text-gray-900">
+                        ${(product.price * product.quantity).toFixed(2)}
+                      </div>
+                    </MicroSlot>
+                  );
+                }
+                if (slotId === 'cartItem.remove') {
+                  return (
+                    <MicroSlot 
+                      key={`${slotId}-${index}`}
+                      id={slotId} 
+                      onEdit={handleEditMicroSlot}
+                      colSpan={slotSpan.col}
+                      rowSpan={slotSpan.row}
+                      onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                      isDraggable={index === 0}
+                    >
+                      <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </MicroSlot>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          ))}
+        </div>
+      </SortableParentSlot>
+    );
+  };
+
   // Render coupon section placeholder
   const renderCoupon = () => {
     const microSlots = microSlotOrders.coupon || MICRO_SLOT_DEFINITIONS.coupon.microSlots;
