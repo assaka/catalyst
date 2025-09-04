@@ -2817,32 +2817,6 @@ export default function CartSlotsEditorWithMicroSlots({
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Empty Cart Layout Editor</h2>
             <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  // Reset only the spans to defaults
-                  const defaultSpans = {};
-                  Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-                    defaultSpans[key] = { ...def.defaultSpans };
-                  });
-                  setMicroSlotSpans(defaultSpans);
-                  // Save immediately
-                  saveConfiguration();
-                }}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Reset Spans Only
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm('This will reset all layout configurations to defaults. Are you sure?')) {
-                    localStorage.removeItem('cart_slots_layout_config');
-                    window.location.reload();
-                  }
-                }}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Reset All
-              </button>
             </div>
           </div>
           <DndContext
