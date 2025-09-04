@@ -1,7 +1,7 @@
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { StoreSelectionProvider } from "@/contexts/StoreSelectionContext"
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/pages/Layout'
 import Auth from '@/pages/Auth'
 
@@ -21,126 +21,6 @@ function PageWrapper({ Component, pageName }) {
       <Component />
     </Layout>
   );
-}
-
-// Component to handle routing logic
-function AppRoutes() {
-  const location = useLocation();
-  
-  // Determine which page to render based on the URL
-  const getPageComponent = () => {
-    const path = location.pathname;
-    
-    // Admin routes
-    if (path.startsWith('/admin')) {
-      // Dashboard
-      if (path === '/admin' || path === '/admin/dashboard') return { Component: Pages.Dashboard, name: 'Dashboard' };
-      
-      // Catalog
-      if (path === '/admin/categories') return { Component: Pages.Categories, name: 'CATEGORIES' };
-      if (path === '/admin/products') return { Component: Pages.Products, name: 'PRODUCTS' };
-      if (path === '/admin/attributes') return { Component: Pages.Attributes, name: 'ATTRIBUTES' };
-      if (path === '/admin/custom-option-rules') return { Component: Pages.CustomOptionRules, name: 'CUSTOM_OPTION_RULES' };
-      if (path === '/admin/product-tabs') return { Component: Pages.ProductTabs, name: 'PRODUCT_TABS' };
-      if (path === '/admin/product-labels') return { Component: Pages.ProductLabels, name: 'PRODUCT_LABELS' };
-      if (path === '/admin/stock-settings') return { Component: Pages.StockSettings, name: 'STOCK_SETTINGS' };
-      
-      // Sales
-      if (path === '/admin/orders') return { Component: Pages.Orders, name: 'ORDERS' };
-      if (path === '/admin/customers') return { Component: Pages.Customers, name: 'CUSTOMERS' };
-      if (path === '/admin/tax') return { Component: Pages.Tax, name: 'TAX' };
-      if (path === '/admin/shipping-methods') return { Component: Pages.ShippingMethods, name: 'SHIPPING_METHODS' };
-      if (path === '/admin/payment-methods') return { Component: Pages.PaymentMethods, name: 'PAYMENT_METHODS' };
-      if (path === '/admin/coupons') return { Component: Pages.Coupons, name: 'COUPONS' };
-      if (path === '/admin/delivery-settings') return { Component: Pages.DeliverySettings, name: 'DELIVERY_SETTINGS' };
-      
-      // Content
-      if (path === '/admin/cms-blocks') return { Component: Pages.CmsBlocks, name: 'CMS_BLOCKS' };
-      if (path === '/admin/cms-pages') return { Component: Pages.CmsPages, name: 'CMS_PAGES' };
-      if (path === '/admin/file-library') return { Component: Pages.FileLibrary, name: 'file-library' };
-      if (path === '/admin/file-manager') return { Component: Pages.FileManager, name: 'FileManager' };
-      
-      // Marketing
-      if (path === '/admin/cookie-consent') return { Component: Pages.CookieConsent, name: 'COOKIE_CONSENT' };
-      if (path === '/admin/analytics' || path === '/admin/analytics-settings') return { Component: Pages.AnalyticsSettings, name: 'ANALYTICS' };
-      if (path === '/admin/heatmaps' || path === '/admin/heatmap-analytics') return { Component: Pages.HeatmapAnalytics, name: 'HEATMAPS' };
-      if (path === '/admin/ab-testing') return { Component: Pages.ABTesting, name: 'ABTESTING' };
-      if (path === '/admin/customer-activity') return { Component: Pages.CustomerActivity, name: 'CUSTOMER_ACTIVITY' };
-      
-      // SEO - These use path-based routing
-      if (path.startsWith('/admin/seo-tools')) return { Component: Pages.SeoTools, name: 'seo-tools' };
-      if (path === '/admin/xml-sitemap') return { Component: Pages.XmlSitemap, name: 'XmlSitemap' };
-      if (path === '/admin/robots-txt') return { Component: Pages.RobotsTxt, name: 'RobotsTxt' };
-      if (path === '/admin/html-sitemap') return { Component: Pages.HtmlSitemap, name: 'HtmlSitemap' };
-      if (path === '/admin/google-tag-manager') return { Component: Pages.GoogleTagManager, name: 'GoogleTagManager' };
-      
-      // Plugins
-      if (path === '/admin/plugins') return { Component: Pages.Plugins, name: 'PLUGINS' };
-      if (path === '/admin/plugin-builder') return { Component: Pages.PluginBuilder, name: 'plugin-builder' };
-      if (path === '/admin/plugin-builder-complete') return { Component: Pages.PluginBuilderComplete, name: 'PluginBuilderComplete' };
-      if (path === '/admin/plugin-how-to') return { Component: Pages.PluginHowToFixed, name: 'plugin-how-to' };
-      
-      // Import & Export
-      if (path === '/admin/akeneo-integration') return { Component: Pages.AkeneoIntegration, name: 'akeneo-integration' };
-      if (path === '/admin/marketplace-export') return { Component: Pages.MarketplaceExport, name: 'MARKETPLACE_EXPORT' };
-      if (path === '/admin/ecommerce-integrations') return { Component: Pages.EcommerceIntegrations, name: 'ecommerce-integrations' };
-      if (path === '/admin/crm-integrations') return { Component: Pages.CRMIntegrations, name: 'crm-integrations' };
-      if (path === '/admin/shopify-integration') return { Component: Pages.ShopifyIntegration, name: 'ShopifyIntegration' };
-      
-      // Store
-      if (path === '/admin/settings') return { Component: Pages.Settings, name: 'SETTINGS' };
-      if (path === '/admin/theme-layout') return { Component: Pages.ThemeLayout, name: 'THEME_LAYOUT' };
-      if (path === '/admin/media-storage') return { Component: Pages.MediaStorage, name: 'media-storage' };
-      if (path === '/admin/database-integrations') return { Component: Pages.DatabaseIntegrations, name: 'database-integrations' };
-      if (path === '/admin/render-integration') return { Component: Pages.RenderIntegration, name: 'render-integration' };
-      if (path === '/admin/stores') return { Component: Pages.Stores, name: 'STORES' };
-      if (path === '/admin/supabase') return { Component: Pages.SupabasePage, name: 'SupabasePage' };
-      if (path === '/admin/integrations') return { Component: Pages.Integrations, name: 'Integrations' };
-      
-      // Advanced
-      if (path === '/admin/monitoring-dashboard') return { Component: Pages.MonitoringDashboard, name: 'monitoring-dashboard' };
-      if (path === '/admin/scheduled-jobs') return { Component: Pages.ScheduledJobs, name: 'scheduled-jobs' };
-      
-      // Other Admin Pages
-      if (path === '/admin/billing') return { Component: Pages.Billing, name: 'Billing' };
-      if (path === '/admin/team') return { Component: Pages.TeamPage, name: 'TeamPage' };
-      if (path === '/admin/onboarding') return { Component: Pages.Onboarding, name: 'Onboarding' };
-      
-      // Editor/AI Pages
-      if (path === '/admin/ai-context-window' || path === '/editor/ai-context-window') return { Component: Pages.AIContextWindow, name: 'AIContextWindow' };
-      if (path === '/admin/cart-slots-editor' || path === '/editor/cart-slots-editor') return { Component: Pages.CartSlotsEditor, name: 'CartSlotsEditor' };
-      
-      // Auth
-      if (path === '/admin/auth') return { Component: Auth, name: 'Auth' };
-    }
-    
-    // Public/Storefront routes
-    if (path === '/' || path.startsWith('/public') || path.startsWith('/category')) {
-      if (path.startsWith('/category/')) return { Component: Pages.Category, name: 'Category' };
-      if (path.includes('/product/')) return { Component: Pages.ProductDetail, name: 'ProductDetail' };
-      if (path.includes('/cart')) return { Component: Pages.Cart, name: 'Cart' };
-      if (path.includes('/checkout')) return { Component: Pages.Checkout, name: 'Checkout' };
-      if (path.includes('/order-success')) return { Component: Pages.OrderSuccess, name: 'OrderSuccess' };
-      if (path.includes('/order-cancel')) return { Component: Pages.OrderCancel, name: 'OrderCancel' };
-      if (path.includes('/login') || path.includes('/customer-auth')) return { Component: Pages.CustomerAuth, name: 'CustomerAuth' };
-      if (path.includes('/account') || path.includes('/customer-dashboard')) return { Component: Pages.CustomerDashboard, name: 'CustomerDashboard' };
-      if (path.includes('/client-dashboard')) return { Component: Pages.ClientDashboard, name: 'ClientDashboard' };
-      if (path.includes('/cms-page')) return { Component: Pages.CmsPageViewer, name: 'CmsPageViewer' };
-      if (path.includes('/landing')) return { Component: Pages.Landing, name: 'Landing' };
-      return { Component: Pages.Storefront, name: 'Storefront' };
-    }
-    
-    // Special routes
-    if (path === '/robots.txt') return { Component: Pages.RobotsPublic, name: 'RobotsPublic' };
-    if (path === '/cookie-consent') return { Component: Pages.CookieConsent, name: 'CookieConsent' };
-    
-    // Default to Dashboard
-    return { Component: Pages.Dashboard, name: 'Dashboard' };
-  };
-  
-  const { Component, name } = getPageComponent();
-  
-  return <PageWrapper Component={Component} pageName={name} />;
 }
 
 function App() {
@@ -203,7 +83,91 @@ function App() {
     <StoreSelectionProvider>
       <Router>
         <Routes>
-          <Route path="/*" element={<AppRoutes />} />
+          {/* Admin routes */}
+          <Route path="/admin" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
+          <Route path="/admin/dashboard" element={<PageWrapper Component={Pages.Dashboard} pageName="Dashboard" />} />
+          <Route path="/admin/categories" element={<PageWrapper Component={Pages.Categories} pageName="CATEGORIES" />} />
+          <Route path="/admin/products" element={<PageWrapper Component={Pages.Products} pageName="PRODUCTS" />} />
+          <Route path="/admin/attributes" element={<PageWrapper Component={Pages.Attributes} pageName="ATTRIBUTES" />} />
+          <Route path="/admin/custom-option-rules" element={<PageWrapper Component={Pages.CustomOptionRules} pageName="CUSTOM_OPTION_RULES" />} />
+          <Route path="/admin/product-tabs" element={<PageWrapper Component={Pages.ProductTabs} pageName="PRODUCT_TABS" />} />
+          <Route path="/admin/product-labels" element={<PageWrapper Component={Pages.ProductLabels} pageName="PRODUCT_LABELS" />} />
+          <Route path="/admin/stock-settings" element={<PageWrapper Component={Pages.StockSettings} pageName="STOCK_SETTINGS" />} />
+          <Route path="/admin/orders" element={<PageWrapper Component={Pages.Orders} pageName="ORDERS" />} />
+          <Route path="/admin/customers" element={<PageWrapper Component={Pages.Customers} pageName="CUSTOMERS" />} />
+          <Route path="/admin/tax" element={<PageWrapper Component={Pages.Tax} pageName="TAX" />} />
+          <Route path="/admin/shipping-methods" element={<PageWrapper Component={Pages.ShippingMethods} pageName="SHIPPING_METHODS" />} />
+          <Route path="/admin/payment-methods" element={<PageWrapper Component={Pages.PaymentMethods} pageName="PAYMENT_METHODS" />} />
+          <Route path="/admin/coupons" element={<PageWrapper Component={Pages.Coupons} pageName="COUPONS" />} />
+          <Route path="/admin/delivery-settings" element={<PageWrapper Component={Pages.DeliverySettings} pageName="DELIVERY_SETTINGS" />} />
+          <Route path="/admin/cms-blocks" element={<PageWrapper Component={Pages.CmsBlocks} pageName="CMS_BLOCKS" />} />
+          <Route path="/admin/cms-pages" element={<PageWrapper Component={Pages.CmsPages} pageName="CMS_PAGES" />} />
+          <Route path="/admin/file-library" element={<PageWrapper Component={Pages.FileLibrary} pageName="file-library" />} />
+          <Route path="/admin/file-manager" element={<PageWrapper Component={Pages.FileManager} pageName="FileManager" />} />
+          <Route path="/admin/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="COOKIE_CONSENT" />} />
+          <Route path="/admin/analytics" element={<PageWrapper Component={Pages.AnalyticsSettings} pageName="ANALYTICS" />} />
+          <Route path="/admin/analytics-settings" element={<PageWrapper Component={Pages.AnalyticsSettings} pageName="ANALYTICS" />} />
+          <Route path="/admin/heatmaps" element={<PageWrapper Component={Pages.HeatmapAnalytics} pageName="HEATMAPS" />} />
+          <Route path="/admin/heatmap-analytics" element={<PageWrapper Component={Pages.HeatmapAnalytics} pageName="HEATMAPS" />} />
+          <Route path="/admin/ab-testing" element={<PageWrapper Component={Pages.ABTesting} pageName="ABTESTING" />} />
+          <Route path="/admin/customer-activity" element={<PageWrapper Component={Pages.CustomerActivity} pageName="CUSTOMER_ACTIVITY" />} />
+          <Route path="/admin/seo-tools/*" element={<PageWrapper Component={Pages.SeoTools} pageName="seo-tools" />} />
+          <Route path="/admin/xml-sitemap" element={<PageWrapper Component={Pages.XmlSitemap} pageName="XmlSitemap" />} />
+          <Route path="/admin/robots-txt" element={<PageWrapper Component={Pages.RobotsTxt} pageName="RobotsTxt" />} />
+          <Route path="/admin/html-sitemap" element={<PageWrapper Component={Pages.HtmlSitemap} pageName="HtmlSitemap" />} />
+          <Route path="/admin/google-tag-manager" element={<PageWrapper Component={Pages.GoogleTagManager} pageName="GoogleTagManager" />} />
+          <Route path="/admin/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="PLUGINS" />} />
+          <Route path="/admin/plugin-builder" element={<PageWrapper Component={Pages.PluginBuilder} pageName="plugin-builder" />} />
+          <Route path="/admin/plugin-builder-complete" element={<PageWrapper Component={Pages.PluginBuilderComplete} pageName="PluginBuilderComplete" />} />
+          <Route path="/admin/plugin-how-to" element={<PageWrapper Component={Pages.PluginHowToFixed} pageName="plugin-how-to" />} />
+          <Route path="/admin/akeneo-integration" element={<PageWrapper Component={Pages.AkeneoIntegration} pageName="akeneo-integration" />} />
+          <Route path="/admin/marketplace-export" element={<PageWrapper Component={Pages.MarketplaceExport} pageName="MARKETPLACE_EXPORT" />} />
+          <Route path="/admin/ecommerce-integrations" element={<PageWrapper Component={Pages.EcommerceIntegrations} pageName="ecommerce-integrations" />} />
+          <Route path="/admin/crm-integrations" element={<PageWrapper Component={Pages.CRMIntegrations} pageName="crm-integrations" />} />
+          <Route path="/admin/shopify-integration" element={<PageWrapper Component={Pages.ShopifyIntegration} pageName="ShopifyIntegration" />} />
+          <Route path="/admin/settings" element={<PageWrapper Component={Pages.Settings} pageName="SETTINGS" />} />
+          <Route path="/admin/theme-layout" element={<PageWrapper Component={Pages.ThemeLayout} pageName="THEME_LAYOUT" />} />
+          <Route path="/admin/media-storage" element={<PageWrapper Component={Pages.MediaStorage} pageName="media-storage" />} />
+          <Route path="/admin/database-integrations" element={<PageWrapper Component={Pages.DatabaseIntegrations} pageName="database-integrations" />} />
+          <Route path="/admin/render-integration" element={<PageWrapper Component={Pages.RenderIntegration} pageName="render-integration" />} />
+          <Route path="/admin/stores" element={<PageWrapper Component={Pages.Stores} pageName="STORES" />} />
+          <Route path="/admin/supabase" element={<PageWrapper Component={Pages.SupabasePage} pageName="SupabasePage" />} />
+          <Route path="/admin/integrations" element={<PageWrapper Component={Pages.Integrations} pageName="Integrations" />} />
+          <Route path="/admin/monitoring-dashboard" element={<PageWrapper Component={Pages.MonitoringDashboard} pageName="monitoring-dashboard" />} />
+          <Route path="/admin/scheduled-jobs" element={<PageWrapper Component={Pages.ScheduledJobs} pageName="scheduled-jobs" />} />
+          <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />
+          <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
+          <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.Onboarding} pageName="Onboarding" />} />
+          <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
+          <Route path="/editor/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
+          <Route path="/admin/cart-slots-editor" element={<PageWrapper Component={Pages.CartSlotsEditor} pageName="CartSlotsEditor" />} />
+          <Route path="/editor/cart-slots-editor" element={<PageWrapper Component={Pages.CartSlotsEditor} pageName="CartSlotsEditor" />} />
+          <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
+          
+          {/* Public/Storefront routes with dynamic parameters */}
+          <Route path="/category/:categorySlug" element={<PageWrapper Component={Pages.Category} pageName="Category" />} />
+          <Route path="/product/:productSlug" element={<PageWrapper Component={Pages.ProductDetail} pageName="ProductDetail" />} />
+          <Route path="/cart" element={<PageWrapper Component={Pages.Cart} pageName="Cart" />} />
+          <Route path="/checkout" element={<PageWrapper Component={Pages.Checkout} pageName="Checkout" />} />
+          <Route path="/order-success" element={<PageWrapper Component={Pages.OrderSuccess} pageName="OrderSuccess" />} />
+          <Route path="/order-cancel" element={<PageWrapper Component={Pages.OrderCancel} pageName="OrderCancel" />} />
+          <Route path="/login" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+          <Route path="/customer-auth" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+          <Route path="/account" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
+          <Route path="/customer-dashboard" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
+          <Route path="/client-dashboard" element={<PageWrapper Component={Pages.ClientDashboard} pageName="ClientDashboard" />} />
+          <Route path="/cms-page/:pageSlug" element={<PageWrapper Component={Pages.CmsPageViewer} pageName="CmsPageViewer" />} />
+          <Route path="/landing" element={<PageWrapper Component={Pages.Landing} pageName="Landing" />} />
+          
+          {/* Special routes */}
+          <Route path="/robots.txt" element={<PageWrapper Component={Pages.RobotsPublic} pageName="RobotsPublic" />} />
+          <Route path="/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="CookieConsent" />} />
+          
+          {/* Homepage */}
+          <Route path="/" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />
+          
+          {/* Catch all - redirect to homepage */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
       <Toaster />

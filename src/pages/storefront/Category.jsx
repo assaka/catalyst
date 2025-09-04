@@ -27,17 +27,18 @@ export default function Category() {
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
   
-  const { storeCode, categorySlug: routeCategorySlug } = useParams();
+  const { categorySlug } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  // Extract category slug from the URL path
-  const pathname = window.location.pathname;
-  const categorySlugFromPath = pathname.startsWith('/category/') 
-    ? pathname.replace('/category/', '').split('/')[0]
-    : null;
-  
-  const categorySlug = categorySlugFromPath || searchParams.get('category') || routeCategorySlug;
+  // Debug logging
+  console.log('Category Component Debug:', {
+    categorySlug,
+    storeLoading,
+    store: store?.id,
+    categoriesCount: categories?.length,
+    categoriesList: categories?.map(c => ({ id: c.id, slug: c.slug, name: c.name }))
+  });
 
   useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
@@ -63,15 +64,27 @@ export default function Category() {
     try {
       setLoading(true);
       setActiveFilters({});
-      if (!store || !categorySlug) return;
+      
+      console.log('loadCategoryProducts called with:', {
+        store: store?.id,
+        categorySlug,
+        categories: categories?.map(c => ({ id: c.id, slug: c.slug, name: c.name }))
+      });
+      
+      if (!store || !categorySlug) {
+        console.log('Missing store or categorySlug:', { store: store?.id, categorySlug });
+        return;
+      }
 
       let category = null;
       if (categories) {
         category = categories.find(c => c?.slug === categorySlug);
       }
       
+      console.log('Category search result:', category);
+      
       if (!category) {
-        console.warn(`Category with slug '${categorySlug}' not found.`);
+        console.warn(`Category with slug '${categorySlug}' not found in:`, categories);
         showNotFound(`Category "${categorySlug}" not found`);
         return;
       }
