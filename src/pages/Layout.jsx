@@ -131,6 +131,7 @@ export default function Layout({ children, currentPageName }) {
     "Store": false,
     "Advanced": false, // Added new group for Advanced features
   });
+  const [dynamicNavItems, setDynamicNavItems] = useState([]);
 
 
   // Add this block to handle the RobotsTxt page
@@ -143,6 +144,7 @@ export default function Layout({ children, currentPageName }) {
     const loadData = async () => {
         await loadUserAndHandleCredits(); // Combined function
         await loadGTMConfig();
+        await loadDynamicNavigation();
     }
     loadData();
     
@@ -219,6 +221,39 @@ export default function Layout({ children, currentPageName }) {
         }
       }
     } catch (error) {
+    }
+  };
+
+  const loadDynamicNavigation = async () => {
+    try {
+      // Load dynamic navigation items from database
+      // This could come from a settings table, plugin configurations, or custom menu items
+      
+      // Example 1: Load from store settings
+      const storeSettings = localStorage.getItem('store_settings');
+      if (storeSettings) {
+        const settings = JSON.parse(storeSettings);
+        if (settings.customNavItems) {
+          setDynamicNavItems(settings.customNavItems);
+        }
+      }
+
+      // Example 2: Load from API (uncomment when API endpoint is ready)
+      // const response = await retryApiCall(() => 
+      //   apiClient.get('/api/admin/navigation-items')
+      // );
+      // if (response.data && Array.isArray(response.data)) {
+      //   setDynamicNavItems(response.data);
+      // }
+
+      // Example 3: Load from plugin system
+      // Plugins can register their own navigation items
+      const pluginNavItems = window.__PLUGIN_NAV_ITEMS__ || [];
+      if (pluginNavItems.length > 0) {
+        setDynamicNavItems(prev => [...prev, ...pluginNavItems]);
+      }
+    } catch (error) {
+      console.error('Error loading dynamic navigation:', error);
     }
   };
 

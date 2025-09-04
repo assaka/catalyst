@@ -1877,7 +1877,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <div className="relative">
+                <div className="flex justify-center items-center">
                   <SimpleInlineEdit
                     text={textContent[slotId]}
                     className={elementClasses[slotId] || 'text-xl font-semibold'}
@@ -1899,7 +1899,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <div className="relative">
+                <div className="flex justify-center items-center text-center">
                   <SimpleInlineEdit
                     text={textContent[slotId]}
                     className={elementClasses[slotId] || 'text-gray-600'}
