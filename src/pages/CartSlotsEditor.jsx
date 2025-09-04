@@ -140,6 +140,52 @@ const MICRO_SLOT_TEMPLATES = {
 function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
   const [tempText, setTempText] = useState(text);
   const [tempClass, setTempClass] = useState(className);
+  const [saveStatus, setSaveStatus] = useState(''); // '', 'auto-saving', 'saved'
+  const saveTimeoutRef = useRef(null);
+  const statusTimeoutRef = useRef(null);
+  
+  // Autosave effect with debouncing
+  useEffect(() => {
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Don't autosave on initial mount
+    if (tempText === text && tempClass === className) {
+      return;
+    }
+    
+    // Show auto-saving status immediately when user types
+    setSaveStatus('auto-saving');
+    
+    // Set new timeout for autosave (debounce for 800ms)
+    saveTimeoutRef.current = setTimeout(() => {
+      // Trigger the onChange callback
+      onChange(tempText, tempClass);
+      
+      // Show saved status
+      setSaveStatus('saved');
+      
+      // Clear saved status after 2 seconds
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      statusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('');
+      }, 2000);
+    }, 800);
+    
+    // Cleanup function
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    };
+  }, [tempText, tempClass, onChange, text, className]);
   
   // Preset color options
   const textColors = [
@@ -204,7 +250,18 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-        <h3 className="text-lg font-semibold mb-4">Edit Text & Style</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Edit Text & Style</h3>
+          {saveStatus && (
+            <span className={`text-sm px-2 py-1 rounded ${
+              saveStatus === 'auto-saving' 
+                ? 'text-blue-600 bg-blue-50' 
+                : 'text-green-600 bg-green-50'
+            }`}>
+              {saveStatus === 'auto-saving' ? 'Auto-saving...' : 'Saved'}
+            </span>
+          )}
+        </div>
         
         {/* Text Input */}
         <div className="mb-4">
@@ -304,14 +361,17 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
         
         {/* Buttons */}
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={() => {
-            onChange(tempText, tempClass);
+          <Button variant="outline" onClick={() => {
+            // Clear timeouts when closing
+            if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
+            }
+            if (statusTimeoutRef.current) {
+              clearTimeout(statusTimeoutRef.current);
+            }
             onClose();
           }}>
-            Apply
+            Close
           </Button>
         </div>
       </div>
@@ -1174,6 +1234,8 @@ export default function CartSlotsEditorWithMicroSlots({
   const [editingComponent, setEditingComponent] = useState(null);
   const [tempCode, setTempCode] = useState('');
   const [activeDragSlot, setActiveDragSlot] = useState(null);
+  const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved'
+  const saveStatusTimeoutRef = useRef(null);
   
   // State for inline editable content
   const [textContent, setTextContent] = useState({
@@ -1230,6 +1292,88 @@ export default function CartSlotsEditorWithMicroSlots({
 
   const formatPrice = (value) => typeof value === "number" ? value : parseFloat(value) || 0;
 
+  // Save configuration function
+  const saveConfiguration = useCallback(async () => {
+    setSaveStatus('saving');
+    
+    const config = {
+      majorSlots,
+      microSlotOrders,
+      microSlotSpans,
+      textContent,
+      elementClasses,
+      componentSizes,
+      componentCode,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Save to localStorage immediately
+    localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+    
+    // Try to save to database
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (storeId) {
+        // Import apiClient dynamically
+        const { default: apiClient } = await import('@/api/client');
+        
+        // Check if configuration exists
+        const queryParams = new URLSearchParams({
+          page_name: 'Cart',
+          slot_type: 'cart_layout',
+          store_id: storeId
+        }).toString();
+        
+        const response = await apiClient.get(`slot-configurations?${queryParams}`);
+        
+        if (response?.data?.data?.length > 0) {
+          // Update existing configuration
+          const configId = response.data.data[0].id;
+          await apiClient.put(`slot-configurations/${configId}`, {
+            configuration: config
+          });
+        } else {
+          // Create new configuration
+          await apiClient.post('slot-configurations', {
+            page_name: 'Cart',
+            slot_type: 'cart_layout',
+            store_id: storeId,
+            configuration: config
+          });
+        }
+      }
+      
+      // Call the parent onSave callback
+      onSave(config);
+      
+      // Show saved status
+      setSaveStatus('saved');
+      
+      // Clear status after 2 seconds
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('');
+      }, 2000);
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to save configuration to database:', error);
+      // Still show saved status since localStorage succeeded
+      setSaveStatus('saved');
+      
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('');
+      }, 2000);
+      
+      return true;
+    }
+  }, [majorSlots, microSlotOrders, microSlotSpans, textContent, elementClasses, componentSizes, componentCode, onSave]);
+  
   // Load saved configuration on mount
   useEffect(() => {
     const loadConfiguration = async () => {
@@ -1294,7 +1438,7 @@ export default function CartSlotsEditorWithMicroSlots({
   );
 
   // Handle major slot reordering
-  const handleMajorDragEnd = useCallback((event) => {
+  const handleMajorDragEnd = useCallback(async (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     
@@ -1302,12 +1446,15 @@ export default function CartSlotsEditorWithMicroSlots({
       const oldIndex = items.indexOf(active.id);
       const newIndex = items.indexOf(over.id);
       if (oldIndex !== -1 && newIndex !== -1) {
-        return arrayMove(items, oldIndex, newIndex);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        // Auto-save after drag
+        setTimeout(() => saveConfiguration(), 500);
+        return newOrder;
       }
       return items;
     });
     setActiveDragSlot(null);
-  }, []);
+  }, [saveConfiguration]);
 
   const handleMajorDragStart = useCallback((event) => {
     setActiveDragSlot(event.active.id);
@@ -1323,11 +1470,13 @@ export default function CartSlotsEditorWithMicroSlots({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         newOrders[parentId] = arrayMove(parentOrder, oldIndex, newIndex);
+        // Auto-save after micro-slot reorder
+        setTimeout(() => saveConfiguration(), 500);
       }
       
       return newOrders;
     });
-  }, []);
+  }, [saveConfiguration]);
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
@@ -1338,7 +1487,9 @@ export default function CartSlotsEditorWithMicroSlots({
         [microSlotId]: newSpans
       }
     }));
-  }, []);
+    // Auto-save after resize
+    setTimeout(() => saveConfiguration(), 800);
+  }, [saveConfiguration]);
   
   // Handle text content change
   const handleTextChange = useCallback((slotId, newText) => {
@@ -1346,7 +1497,9 @@ export default function CartSlotsEditorWithMicroSlots({
       ...prev,
       [slotId]: newText
     }));
-  }, []);
+    // Auto-save after text change
+    setTimeout(() => saveConfiguration(), 1000);
+  }, [saveConfiguration]);
   
   // Handle class change for elements
   const handleClassChange = useCallback((slotId, newClass) => {
@@ -1354,7 +1507,9 @@ export default function CartSlotsEditorWithMicroSlots({
       ...prev,
       [slotId]: newClass
     }));
-  }, []);
+    // Auto-save after class change
+    setTimeout(() => saveConfiguration(), 1000);
+  }, [saveConfiguration]);
   
   // Handle component size change
   const handleSizeChange = useCallback((slotId, newSize) => {
@@ -1362,7 +1517,9 @@ export default function CartSlotsEditorWithMicroSlots({
       ...prev,
       [slotId]: newSize
     }));
-  }, []);
+    // Auto-save after size change
+    setTimeout(() => saveConfiguration(), 1000);
+  }, [saveConfiguration]);
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
@@ -1699,28 +1856,24 @@ export default function CartSlotsEditorWithMicroSlots({
               </Badge>
               <span className="text-sm text-blue-800">Hover to adjust width (1-12) and height (1-4)</span>
               </div>
-              <Button 
-                onClick={() => {
-                  // Save all configuration
-                  const config = {
-                    majorSlots,
-                    microSlotOrders,
-                    microSlotSpans,
-                    textContent,
-                    elementClasses,
-                    componentSizes,
-                    componentCode,
-                    timestamp: new Date().toISOString()
-                  };
-                  onSave(config);
-                  // Show success message (optional)
-                  console.log('Layout configuration saved!', config);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save Layout
-              </Button>
+              <div className="flex items-center gap-3">
+                {saveStatus && (
+                  <span className={`text-sm px-2 py-1 rounded ${
+                    saveStatus === 'saving' 
+                      ? 'text-blue-600 bg-blue-50 animate-pulse' 
+                      : 'text-green-600 bg-green-50'
+                  }`}>
+                    {saveStatus === 'saving' ? 'Auto-saving...' : 'Saved'}
+                  </span>
+                )}
+                <Button 
+                  onClick={saveConfiguration}
+                  className="flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Layout
+                </Button>
+              </div>
             </div>
           </div>
         </div>
