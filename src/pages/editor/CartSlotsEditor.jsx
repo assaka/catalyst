@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -838,6 +838,9 @@ function RichTextEditor({ content, onSave, onCancel }) {
 function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange }) {
   const [showEditor, setShowEditor] = useState(false);
   
+  // Check if text contains HTML
+  const hasHtml = text && (text.includes('<') || text.includes('&'));
+  
   return (
     <>
       <div 
@@ -845,7 +848,11 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
         className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded ${className}`}
         title="Click to edit text and style"
       >
-        {text || <span className="text-gray-400">Click to edit...</span>}
+        {hasHtml ? (
+          <div dangerouslySetInnerHTML={{ __html: text }} />
+        ) : (
+          text || <span className="text-gray-400">Click to edit...</span>
+        )}
       </div>
       
       {showEditor && (
@@ -1434,6 +1441,12 @@ export default function CartSlotsEditorWithMicroSlots({
   const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved'
   const saveStatusTimeoutRef = useRef(null);
   
+  // State for custom slots
+  const [showAddSlotDialog, setShowAddSlotDialog] = useState(false);
+  const [newSlotType, setNewSlotType] = useState('text');
+  const [newSlotName, setNewSlotName] = useState('');
+  const [customSlots, setCustomSlots] = useState({});
+  
   // State for inline editable content
   const [textContent, setTextContent] = useState({
     'emptyCart.title': 'Your cart is empty',
@@ -1501,6 +1514,7 @@ export default function CartSlotsEditorWithMicroSlots({
       elementClasses,
       componentSizes,
       componentCode,
+      customSlots,
       timestamp: new Date().toISOString()
     };
     
@@ -1618,6 +1632,7 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.elementClasses) setElementClasses(prev => ({ ...prev, ...config.elementClasses }));
           if (config.componentSizes) setComponentSizes(prev => ({ ...prev, ...config.componentSizes }));
           if (config.componentCode) setComponentCode(prev => ({ ...prev, ...config.componentCode }));
+          if (config.customSlots) setCustomSlots(config.customSlots);
         }
         
         // Try to load from database if we have a store ID
@@ -1665,6 +1680,7 @@ export default function CartSlotsEditorWithMicroSlots({
             if (dbConfig.elementClasses) setElementClasses(prev => ({ ...prev, ...dbConfig.elementClasses }));
             if (dbConfig.componentSizes) setComponentSizes(prev => ({ ...prev, ...dbConfig.componentSizes }));
             if (dbConfig.componentCode) setComponentCode(prev => ({ ...prev, ...dbConfig.componentCode }));
+            if (dbConfig.customSlots) setCustomSlots(dbConfig.customSlots);
             
             // Save to localStorage for faster access
             localStorage.setItem('cart_slots_layout_config', JSON.stringify(dbConfig));
@@ -1798,6 +1814,70 @@ export default function CartSlotsEditorWithMicroSlots({
     setEditingComponent(null);
     setTempCode('');
   }, [editingComponent, tempCode, componentCode, majorSlots, microSlotOrders, onSave]);
+  
+  // Handle adding a new custom slot
+  const handleAddCustomSlot = useCallback(() => {
+    if (!newSlotName.trim()) {
+      alert('Please enter a slot name');
+      return;
+    }
+    
+    const slotId = `emptyCart.custom_${Date.now()}`;
+    const slotLabel = newSlotName.trim();
+    
+    // Add to micro slot orders
+    setMicroSlotOrders(prev => ({
+      ...prev,
+      emptyCart: [...(prev.emptyCart || []), slotId]
+    }));
+    
+    // Add default span
+    setMicroSlotSpans(prev => ({
+      ...prev,
+      emptyCart: {
+        ...prev.emptyCart,
+        [slotId]: { col: 12, row: 1 }
+      }
+    }));
+    
+    // Add custom slot definition
+    setCustomSlots(prev => ({
+      ...prev,
+      [slotId]: {
+        type: newSlotType,
+        label: slotLabel,
+        content: newSlotType === 'text' ? 'Custom text content' : 
+                 newSlotType === 'html' ? '<div>Custom HTML</div>' :
+                 '// Custom JavaScript\nconsole.log("Custom slot");'
+      }
+    }));
+    
+    // Add default content based on type
+    if (newSlotType === 'text') {
+      setTextContent(prev => ({
+        ...prev,
+        [slotId]: 'Custom text content'
+      }));
+      setElementClasses(prev => ({
+        ...prev,
+        [slotId]: 'text-gray-600'
+      }));
+    } else if (newSlotType === 'html' || newSlotType === 'javascript') {
+      setComponentCode(prev => ({
+        ...prev,
+        [slotId]: newSlotType === 'html' ? '<div class="custom-html">Custom HTML content</div>' : 
+                  '// Custom JavaScript\nconsole.log("Custom slot initialized");'
+      }));
+    }
+    
+    // Reset dialog
+    setShowAddSlotDialog(false);
+    setNewSlotName('');
+    setNewSlotType('text');
+    
+    // Auto-save
+    setTimeout(() => saveConfiguration(), 500);
+  }, [newSlotName, newSlotType, saveConfiguration]);
 
   // Render empty cart with micro-slots
   const renderEmptyCart = () => {
@@ -1988,8 +2068,83 @@ export default function CartSlotsEditorWithMicroSlots({
               </MicroSlot>
             );
           }
+          
+          // Handle custom slots
+          if (slotId.startsWith('emptyCart.custom_')) {
+            const customSlot = customSlots[slotId];
+            if (!customSlot) return null;
+            
+            if (customSlot.type === 'text') {
+              return (
+                <MicroSlot 
+                  key={slotId} 
+                  id={slotId} 
+                  onEdit={handleEditMicroSlot}
+                  colSpan={slotSpan.col}
+                  rowSpan={slotSpan.row}
+                  onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                >
+                  <div className="flex justify-center items-center text-center">
+                    <SimpleInlineEdit
+                      text={textContent[slotId] || customSlot.content}
+                      className={elementClasses[slotId] || 'text-gray-600'}
+                      onChange={(newText) => handleTextChange(slotId, newText)}
+                      slotId={slotId}
+                      onClassChange={handleClassChange}
+                    />
+                  </div>
+                </MicroSlot>
+              );
+            } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
+              return (
+                <MicroSlot 
+                  key={slotId} 
+                  id={slotId} 
+                  onEdit={() => {
+                    setEditingComponent(slotId);
+                    setTempCode(componentCode[slotId] || customSlot.content);
+                  }}
+                  colSpan={slotSpan.col}
+                  rowSpan={slotSpan.row}
+                  onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                >
+                  <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-gray-500">
+                        {customSlot.type === 'html' ? 'HTML' : 'JavaScript'}: {customSlot.label}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingComponent(slotId);
+                          setTempCode(componentCode[slotId] || customSlot.content);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        Edit Code
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-400 font-mono">
+                      {customSlot.type === 'html' ? <FileText className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
+                    </div>
+                  </div>
+                </MicroSlot>
+              );
+            }
+          }
+          
           return null;
         })}
+        
+        {/* Add New Slot Button */}
+        <div className="col-span-12 p-2 mt-2">
+          <button
+            onClick={() => setShowAddSlotDialog(true)}
+            className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add New Slot
+          </button>
+        </div>
       </SortableParentSlot>
     );
   };
@@ -2271,6 +2426,80 @@ export default function CartSlotsEditorWithMicroSlots({
             </Button>
             <Button onClick={handleSaveCode}>
               <Save className="w-4 h-4 mr-2" /> Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add New Slot Dialog */}
+      <Dialog open={showAddSlotDialog} onOpenChange={setShowAddSlotDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Slot</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Slot Name</label>
+              <Input
+                placeholder="Enter slot name..."
+                value={newSlotName}
+                onChange={(e) => setNewSlotName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Slot Type</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setNewSlotType('text')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    newSlotType === 'text' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Type className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-xs font-medium">Text</div>
+                </button>
+                <button
+                  onClick={() => setNewSlotType('html')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    newSlotType === 'html' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <FileText className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-xs font-medium">HTML</div>
+                </button>
+                <button
+                  onClick={() => setNewSlotType('javascript')}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    newSlotType === 'javascript' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Code2 className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-xs font-medium">JavaScript</div>
+                </button>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              {newSlotType === 'text' && 'Add editable text content with styling options'}
+              {newSlotType === 'html' && 'Add custom HTML markup for advanced layouts'}
+              {newSlotType === 'javascript' && 'Add dynamic JavaScript for interactive features'}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowAddSlotDialog(false);
+              setNewSlotName('');
+              setNewSlotType('text');
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCustomSlot}>
+              <PlusCircle className="w-4 h-4 mr-2" /> Add Slot
             </Button>
           </DialogFooter>
         </DialogContent>
