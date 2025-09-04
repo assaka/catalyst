@@ -190,10 +190,12 @@ export default function CartSlots({
     if (htmlContent && /<[^>]+>/.test(htmlContent)) {
       // Render as HTML to preserve formatting (including colors)
       return <span className={classes} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    } else if (htmlContent) {
+      // Render configured plain text without stripping
+      return <span className={classes}>{htmlContent}</span>;
     } else {
-      // Render as plain text
-      const text = getCustomText(key, defaultContent);
-      return <span className={classes}>{text}</span>;
+      // Use default content if nothing is configured
+      return <span className={classes}>{defaultContent}</span>;
     }
   };
 
@@ -319,7 +321,7 @@ export default function CartSlots({
                           window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
                         }}
                       >
-                        {getCustomText('emptyCart.button', 'Continue Shopping')}
+                        {layoutConfig?.textContent?.['emptyCart.button'] || 'Continue Shopping'}
                       </Button>
                     </div>
                   );
