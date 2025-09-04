@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -2123,38 +2123,58 @@ export default function CartSlotsEditorWithMicroSlots({
           keywords="cart, editor, empty-state"
         />
         
-        {/* Instructions and Save Button */}
+        {/* Cart Page Editor Header */}
         <div className="bg-blue-50 border-b border-blue-200 p-4">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="secondary" className="bg-blue-100">
-                <GripVertical className="w-3 h-3 mr-1" />
-                Empty Cart Editor
-              </Badge>
-              <span className="text-sm text-blue-800">Design your empty cart state</span>
-              <span className="mx-2 text-blue-400">•</span>
-              <Badge variant="secondary" className="bg-purple-100">
-                <Move className="w-3 h-3 mr-1" />
-                Grid Slots
-              </Badge>
-              <span className="text-sm text-blue-800">Drag & resize within 12-column grid</span>
-              <span className="mx-2 text-blue-400">•</span>
-              <Badge variant="secondary" className="bg-green-100">
-                W/H
-              </Badge>
-              <span className="text-sm text-blue-800">Hover to adjust width (1-12) and height (1-4)</span>
-              </div>
               <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-900">Cart Page Editor</h2>
+                
+                {/* Help Tooltip */}
+                <div className="relative group">
+                  <button className="text-gray-500 hover:text-gray-700 transition-colors">
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                  <div className="absolute left-0 top-8 w-80 p-4 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <h3 className="font-semibold text-sm mb-2">How to use the editor:</h3>
+                    <ul className="text-xs space-y-1.5 text-gray-600">
+                      <li className="flex gap-2">
+                        <GripVertical className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
+                        <span><strong>Drag sections:</strong> Use the blue handle to reorder major sections</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <Move className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" />
+                        <span><strong>Drag slots:</strong> Use the gray handle to move elements within the 12-column grid</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <div className="w-3 h-3 mt-0.5 flex-shrink-0 bg-blue-500 rounded-sm" />
+                        <span><strong>Resize:</strong> Drag blue corners/edges to adjust width and height</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <Edit className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-500" />
+                        <span><strong>Edit content:</strong> Click text to edit inline or use edit buttons for advanced options</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-green-600 font-semibold">✓</span>
+                        <span><strong>Auto-save:</strong> Changes are automatically saved after 2-3 seconds</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                
+                {/* Auto-save Status */}
                 {saveStatus && (
-                  <span className={`text-sm px-2 py-1 rounded ${
+                  <span className={`text-sm px-3 py-1 rounded-full font-medium ${
                     saveStatus === 'saving' 
-                      ? 'text-blue-600 bg-blue-50 animate-pulse' 
-                      : 'text-green-600 bg-green-50'
+                      ? 'text-blue-700 bg-blue-100 animate-pulse' 
+                      : 'text-green-700 bg-green-100'
                   }`}>
-                    {saveStatus === 'saving' ? 'Auto-saving...' : 'Saved'}
+                    {saveStatus === 'saving' ? 'Auto-saving...' : '✓ All changes saved'}
                   </span>
                 )}
+              </div>
+              
+              <div className="flex items-center gap-3">
                 <Button 
                   variant="outline"
                   onClick={() => {
@@ -2166,14 +2186,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  Reset
-                </Button>
-                <Button 
-                  onClick={saveConfiguration}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Save Layout
+                  Reset Layout
                 </Button>
               </div>
             </div>
