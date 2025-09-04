@@ -969,6 +969,10 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
   const slotRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   
+  // Ensure colSpan and rowSpan are valid numbers
+  const safeColSpan = typeof colSpan === 'number' && colSpan >= 1 && colSpan <= 12 ? colSpan : 12;
+  const safeRowSpan = typeof rowSpan === 'number' && rowSpan >= 1 && rowSpan <= 4 ? rowSpan : 1;
+  
   const {
     attributes,
     listeners,
@@ -1003,8 +1007,8 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       4: 'row-span-4'
     };
     
-    const colClass = colClasses[Math.min(12, Math.max(1, colSpan))] || 'col-span-12';
-    const rowClass = rowClasses[Math.min(4, Math.max(1, rowSpan))] || '';
+    const colClass = colClasses[Math.min(12, Math.max(1, safeColSpan))] || 'col-span-12';
+    const rowClass = rowClasses[Math.min(4, Math.max(1, safeRowSpan))] || '';
     return `${colClass} ${rowClass}`;
   };
 
@@ -1023,19 +1027,19 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
     setResizeStart({
       x: e.clientX,
       y: e.clientY,
-      colSpan,
-      rowSpan,
+      colSpan: safeColSpan,
+      rowSpan: safeRowSpan,
       direction
     });
-  }, [colSpan, rowSpan]);
+  }, [safeColSpan, safeRowSpan]);
 
   // Handle resize move
   useEffect(() => {
     if (!isResizing || !resizeStart) return;
 
     const handleMouseMove = (e) => {
-      const gridCellWidth = slotRef.current ? slotRef.current.offsetWidth / colSpan : 50;
-      const gridCellHeight = slotRef.current ? slotRef.current.offsetHeight / rowSpan : 50;
+      const gridCellWidth = slotRef.current ? slotRef.current.offsetWidth / safeColSpan : 50;
+      const gridCellHeight = slotRef.current ? slotRef.current.offsetHeight / safeRowSpan : 50;
       
       const deltaX = e.clientX - resizeStart.x;
       const deltaY = e.clientY - resizeStart.y;
@@ -1053,7 +1057,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         newRowSpan = Math.min(4, Math.max(1, resizeStart.rowSpan + rowDelta));
       }
       
-      if (newColSpan !== colSpan || newRowSpan !== rowSpan) {
+      if (newColSpan !== safeColSpan || newRowSpan !== safeRowSpan) {
         onSpanChange(id, { col: newColSpan, row: newRowSpan });
       }
     };
@@ -1164,8 +1168,12 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
               type="number"
               min="1"
               max="12"
-              value={colSpan}
-              onChange={(e) => onSpanChange(id, { col: parseInt(e.target.value) || 1, row: rowSpan })}
+              value={safeColSpan}
+              onChange={(e) => {
+                const newCol = parseInt(e.target.value) || 1;
+                console.log(`📏 W input change for ${id}: col=${newCol}, row=${safeRowSpan}`);
+                onSpanChange(id, { col: newCol, row: safeRowSpan });
+              }}
               className="w-8 text-xs border-0 focus:ring-0 p-0"
             />
           </div>
@@ -1175,8 +1183,12 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
               type="number"
               min="1"
               max="4"
-              value={rowSpan}
-              onChange={(e) => onSpanChange(id, { col: colSpan, row: parseInt(e.target.value) || 1 })}
+              value={safeRowSpan}
+              onChange={(e) => {
+                const newRow = parseInt(e.target.value) || 1;
+                console.log(`📏 H input change for ${id}: col=${safeColSpan}, row=${newRow}`);
+                onSpanChange(id, { col: safeColSpan, row: newRow });
+              }}
               className="w-8 text-xs border-0 focus:ring-0 p-0"
             />
           </div>

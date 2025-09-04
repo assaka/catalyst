@@ -812,12 +812,16 @@ export default ExampleComponent;`;
 
       {/* Main Content */}
       <div className={`flex-1 min-h-0 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
+        <ResizablePanelGroup 
+          direction="horizontal" 
+          className="h-[calc(100vh-200px)]"
+          autoSaveId={isFullscreen ? "ai-context-fullscreen" : "ai-context-normal"}
+        >
           {/* AI Context Window - First Column - Hidden in fullscreen */}
           {!isFullscreen && (
             <>
               <ResizablePanel
-                size={25}
+                defaultSize={25}
                 minSize={15}
                 maxSize={30}
               >
@@ -834,7 +838,7 @@ export default ExampleComponent;`;
 
               {/* File Tree Navigator - Hidden in fullscreen */}
               <ResizablePanel 
-                size={10}
+                defaultSize={15}
                 minSize={10}
                 maxSize={15}
               >
@@ -853,7 +857,7 @@ export default ExampleComponent;`;
 
           {/* Code Editor and Preview Panel - Expands to full width in fullscreen */}
           <ResizablePanel 
-            size={isFullscreen ? 100 : 60}
+            defaultSize={isFullscreen ? 100 : 60}
             minSize={isFullscreen ? 100 : 40}
             maxSize={isFullscreen ? 100 : 85}
           >
