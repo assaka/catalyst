@@ -1067,12 +1067,8 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
   );
 }
 
-// Parent slot container with micro-slots
-function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12 }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const hoverTimeoutRef = useRef(null);
-  const containerRef = useRef(null);
-  
+// Sortable wrapper for parent slots
+function SortableParentSlot(props) {
   const {
     attributes,
     listeners,
@@ -1080,13 +1076,36 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, disabled: !isDraggable });
+  } = useSortable({ id: props.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ParentSlot 
+        {...props} 
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        isDragging={isDragging}
+      />
+    </div>
+  );
+}
+
+// Parent slot container with micro-slots
+function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12, dragAttributes, dragListeners, isDragging: parentIsDragging }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverTimeoutRef = useRef(null);
+  const containerRef = useRef(null);
+  
+  // Use passed drag props if available (for major slot dragging)
+  const isDragging = parentIsDragging || false;
+  const attributes = dragAttributes || {};
+  const listeners = dragListeners || {};
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1137,11 +1156,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
 
   return (
     <div
-      ref={(el) => {
-        setNodeRef(el);
-        containerRef.current = el;
-      }}
-      style={style}
+      ref={containerRef}
       className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -1205,7 +1220,7 @@ export default function CartSlotsEditorWithMicroSlots({
   onSave = () => {},
 }) {
   // State for major slot order
-  const [majorSlots, setMajorSlots] = useState(['header', 'cartItems', 'coupon', 'orderSummary', 'recommendedProducts']);
+  const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts']);
   
   // State for resizing indicators
   const [isResizingIcon, setIsResizingIcon] = useState(null);
@@ -1553,7 +1568,7 @@ export default function CartSlotsEditorWithMicroSlots({
     const spans = microSlotSpans.emptyCart || MICRO_SLOT_DEFINITIONS.emptyCart.defaultSpans;
     
     return (
-      <ParentSlot
+      <SortableParentSlot
         id="emptyCart"
         name="Empty Cart"
         microSlotOrder={microSlots}
@@ -1738,7 +1753,7 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           return null;
         })}
-      </ParentSlot>
+      </SortableParentSlot>
     );
   };
 
@@ -1748,7 +1763,7 @@ export default function CartSlotsEditorWithMicroSlots({
     const spans = microSlotSpans.header || MICRO_SLOT_DEFINITIONS.header.defaultSpans;
     
     return (
-      <ParentSlot
+      <SortableParentSlot
         id="header"
         name="Page Header"
         microSlotOrder={microSlots}
@@ -1811,7 +1826,7 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           return null;
         })}
-      </ParentSlot>
+      </SortableParentSlot>
     );
   };
 
@@ -1889,12 +1904,27 @@ export default function CartSlotsEditorWithMicroSlots({
               <div className="space-y-8">
                 {majorSlots.map(slotId => {
                   if (slotId === 'header') {
-                    return <div key={slotId}>{renderHeader()}</div>;
+                    return renderHeader();
                   }
-                  if (slotId === 'cartItems' && cartItems.length === 0) {
-                    return <div key={slotId}>{renderEmptyCart()}</div>;
+                  if (slotId === 'emptyCart' && cartItems.length === 0) {
+                    return renderEmptyCart();
                   }
-                  // Add other slots here...
+                  if (slotId === 'cartItems' && cartItems.length > 0) {
+                    // TODO: Render cart items
+                    return null;
+                  }
+                  if (slotId === 'coupon') {
+                    // TODO: Render coupon section
+                    return null;
+                  }
+                  if (slotId === 'orderSummary') {
+                    // TODO: Render order summary
+                    return null;
+                  }
+                  if (slotId === 'recommendedProducts') {
+                    // TODO: Render recommended products
+                    return null;
+                  }
                   return null;
                 })}
               </div>

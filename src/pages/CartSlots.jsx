@@ -163,13 +163,18 @@ export default function CartSlots({
   
   // Helper to render text with custom classes
   const renderCustomText = (key, defaultContent, defaultClasses = '') => {
-    // Get text content - strip HTML if present
-    const text = getCustomText(key, defaultContent);
-    // Get Tailwind classes from elementClasses config
-    const classes = layoutConfig?.elementClasses?.[key] || getCustomClasses(key, defaultClasses);
+    const htmlContent = layoutConfig?.textContent?.[key];
+    const classes = getCustomClasses(key, defaultClasses);
     
-    // Always render as plain text with Tailwind classes
-    return <span className={classes}>{text}</span>;
+    // Check if the content has HTML tags (indicating rich text)
+    if (htmlContent && /<[^>]+>/.test(htmlContent)) {
+      // Render as HTML to preserve formatting (including colors)
+      return <span className={classes} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    } else {
+      // Render as plain text
+      const text = getCustomText(key, defaultContent);
+      return <span className={classes}>{text}</span>;
+    }
   };
 
   // Loading state matching Cart.jsx
