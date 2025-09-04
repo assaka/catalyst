@@ -969,14 +969,9 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
   const slotRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   
-  // Debug incoming props
-  console.log(`🎯 MicroSlot ${id} received props: colSpan=${colSpan} (${typeof colSpan}), rowSpan=${rowSpan} (${typeof rowSpan})`);
-  
   // Ensure colSpan and rowSpan are valid numbers
   const safeColSpan = typeof colSpan === 'number' && colSpan >= 1 && colSpan <= 12 ? colSpan : 12;
   const safeRowSpan = typeof rowSpan === 'number' && rowSpan >= 1 && rowSpan <= 4 ? rowSpan : 1;
-  
-  console.log(`🎯 MicroSlot ${id} using safe values: safeColSpan=${safeColSpan}, safeRowSpan=${safeRowSpan}`);
   
   const {
     attributes,
@@ -1176,7 +1171,6 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
               value={safeColSpan}
               onChange={(e) => {
                 const newCol = parseInt(e.target.value) || 1;
-                console.log(`📏 W input change for ${id}: col=${newCol}, row=${safeRowSpan}`);
                 onSpanChange(id, { col: newCol, row: safeRowSpan });
               }}
               className="w-8 text-xs border-0 focus:ring-0 p-0"
@@ -1191,7 +1185,6 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
               value={safeRowSpan}
               onChange={(e) => {
                 const newRow = parseInt(e.target.value) || 1;
-                console.log(`📏 H input change for ${id}: col=${safeColSpan}, row=${newRow}`);
                 onSpanChange(id, { col: safeColSpan, row: newRow });
               }}
               className="w-8 text-xs border-0 focus:ring-0 p-0"
@@ -1616,7 +1609,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 };
               });
             });
-            console.log('📐 Cleaned microSlotSpans from localStorage:', cleanedSpans);
             setMicroSlotSpans(cleanedSpans);
           }
           if (config.textContent) setTextContent(prev => ({ ...prev, ...config.textContent }));
@@ -1664,7 +1656,6 @@ export default function CartSlotsEditorWithMicroSlots({
                   };
                 });
               });
-              console.log('📐 Cleaned microSlotSpans from DB:', cleanedSpans);
               setMicroSlotSpans(cleanedSpans);
             }
             if (dbConfig.textContent) setTextContent(prev => ({ ...prev, ...dbConfig.textContent }));
@@ -1734,16 +1725,6 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
-    console.log('📐 Span change called:', { 
-      parentId, 
-      microSlotId, 
-      newSpans,
-      'newSpans.col': newSpans.col,
-      'newSpans.row': newSpans.row,
-      'typeof newSpans.col': typeof newSpans.col,
-      'typeof newSpans.row': typeof newSpans.row
-    });
-    
     setMicroSlotSpans(prev => {
       const updated = {
         ...prev,
@@ -1752,8 +1733,6 @@ export default function CartSlotsEditorWithMicroSlots({
           [microSlotId]: newSpans
         }
       };
-      console.log('📐 Updated microSlotSpans:', updated);
-      console.log('📐 Specific slot after update:', updated[parentId]?.[microSlotId]);
       return updated;
     });
     
@@ -1833,7 +1812,6 @@ export default function CartSlotsEditorWithMicroSlots({
       >
         {microSlots.map(slotId => {
           const slotSpan = spans[slotId] || { col: 12, row: 1 };
-          console.log(`🔍 Rendering ${slotId}: col=${slotSpan.col}, row=${slotSpan.row}, spans object:`, spans[slotId]);
           
           if (slotId === 'emptyCart.icon') {
             const iconSize = componentSizes[slotId] || 64;
@@ -2206,7 +2184,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     defaultSpans[key] = { ...def.defaultSpans };
                   });
                   setMicroSlotSpans(defaultSpans);
-                  console.log('Reset spans to defaults:', defaultSpans);
                   // Save immediately
                   setTimeout(() => saveConfiguration(), 100);
                 }}
