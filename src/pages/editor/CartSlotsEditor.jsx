@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -1153,7 +1153,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             e.stopPropagation();
             onEdit(id);
           }}
-          className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-20 hover:bg-gray-200"
+          className="absolute right-1 top-1 p-1.5 bg-gray-500/90 rounded-md z-30 hover:bg-gray-600 transition-colors shadow-sm pointer-events-auto"
           title="Edit micro-slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1163,7 +1163,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          <Edit className="w-3 h-3 text-gray-600" />
+          <Edit className="w-3.5 h-3.5 text-white" />
         </button>
       )}
       
@@ -1174,7 +1174,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute right-8 top-1 p-1 bg-red-100/80 rounded transition-opacity z-20 hover:bg-red-200"
+          className="absolute right-8 top-1 p-1.5 bg-red-500/90 rounded-md z-30 hover:bg-red-600 transition-colors shadow-sm pointer-events-auto"
           title="Delete custom slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1184,7 +1184,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          <Trash2 className="w-3 h-3 text-red-600" />
+          <Trash2 className="w-3.5 h-3.5 text-white" />
         </button>
       )}
       
@@ -2412,6 +2412,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         const baseUrl = getStoreBaseUrl(store);
                         window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
                       }}
+                      className={isResizingButton === slotId ? 'ring-2 ring-blue-500' : ''}
                     >
                       <InlineEdit
                         value={textContent[slotId]}
@@ -2448,6 +2449,30 @@ export default function CartSlotsEditorWithMicroSlots({
                           const newSize = sizes[newIndex];
                           if (newSize !== componentSizes[slotId]) {
                             handleSizeChange(slotId, newSize);
+                            
+                            // Auto-expand slot based on button size
+                            const currentSpan = spans[slotId] || { col: 12, row: 1 };
+                            let newColSpan = currentSpan.col;
+                            let newRowSpan = currentSpan.row;
+                            
+                            if (newSize === 'lg') {
+                              // Large button needs more space
+                              newColSpan = 12;
+                              newRowSpan = 2;
+                            } else if (newSize === 'default') {
+                              // Default button size
+                              newColSpan = 12;
+                              newRowSpan = 1;
+                            } else if (newSize === 'sm') {
+                              // Small button can fit in less space
+                              newColSpan = 6;
+                              newRowSpan = 1;
+                            }
+                            
+                            // Update span if it changed
+                            if (newColSpan !== currentSpan.col || newRowSpan !== currentSpan.row) {
+                              handleSpanChange('emptyCart', slotId, { col: newColSpan, row: newRowSpan });
+                            }
                           }
                         };
                         
@@ -2830,16 +2855,55 @@ export default function CartSlotsEditorWithMicroSlots({
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Empty Cart Layout Editor</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowResetModal(true)}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Reset Layout
-              </button>
+          <div className="mb-6">
+            {/* Header with title */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {viewMode === 'empty' ? 'Empty Cart Layout Editor' : 'Cart with Products Layout Editor'}
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowResetModal(true)}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reset Layout
+                </button>
+              </div>
+            </div>
+            
+            {/* View mode toggle */}
+            <div className="flex items-center gap-4 p-3 bg-white rounded-lg border">
+              <span className="text-sm font-medium text-gray-700">View Mode:</span>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('empty')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'empty' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <ShoppingCart className="w-4 h-4 inline mr-2" />
+                  Empty Cart
+                </button>
+                <button
+                  onClick={() => setViewMode('withProducts')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'withProducts' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Package className="w-4 h-4 inline mr-2" />
+                  With Products
+                </button>
+              </div>
+              <span className="text-xs text-gray-500 ml-2">
+                {viewMode === 'empty' 
+                  ? 'Customize the layout when cart is empty' 
+                  : 'Customize the layout when cart has products'}
+              </span>
             </div>
           </div>
           
@@ -2858,6 +2922,12 @@ export default function CartSlotsEditorWithMicroSlots({
                       return renderHeader();
                     case 'emptyCart':
                       return renderEmptyCart();
+                    case 'cartItem':
+                      return renderCartItem();
+                    case 'coupon':
+                      return renderCoupon();
+                    case 'orderSummary':
+                      return renderOrderSummary();
                     default:
                       return null;
                   }
