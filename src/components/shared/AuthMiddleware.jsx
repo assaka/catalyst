@@ -5,8 +5,8 @@ import { createAdminUrl, createPublicUrl, getStoreSlugFromPublicUrl } from "@/ut
 import { setRoleBasedAuthData } from "@/utils/auth";
 import { Auth as AuthService, User } from "@/api/entities";
 import apiClient from "@/api/client";
-import StoreOwnerAuthLayout from "../admin/StoreOwnerAuthLayout";
-import CustomerAuthLayout from "../storefront/CustomerAuthLayout";
+import StoreOwnerAuthLayout from "@/admin/StoreOwnerAuthLayout";
+import CustomerAuthLayout from "@/storefront/CustomerAuthLayout";
 
 // Helper function for debugging authentication status
 window.debugAuth = () => {
@@ -580,7 +580,7 @@ window.testAuthFlow = async () => {
   
   // Test the createAdminUrl function
   try {
-    const { createAdminUrl } = await import('../utils/urlUtils.js');
+    const { createAdminUrl } = await import('@/utils/urlUtils.js');
     const dashboardUrl = createAdminUrl("DASHBOARD");
     console.log('Dashboard URL from createAdminUrl:', dashboardUrl);
     
@@ -784,7 +784,7 @@ window.testDashboardAccess = async () => {
   
   console.log('🔍 Testing User.me() API call...');
   try {
-    const { User } = await import('../api/entities.js');
+    const { User } = await import('@/api/entities.js');
     const user = await User.me();
     console.log('✅ User.me() successful:', user);
     

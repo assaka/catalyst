@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import apiClient from '../api/client';
+import apiClient from '@/api/client';
 
 export default function ScheduledJobs() {
   const { selectedStore } = useStoreSelection();

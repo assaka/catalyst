@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, Server, Cloud, Check, Star, Shield, Lock, UserX } from 'lucide-react';
-import apiClient from '../api/client';
+import apiClient from '@/api/client';
 import { toast } from 'sonner';
-import { getCurrentUser } from '../utils/auth';
+import { getCurrentUser } from '@/utils/auth';
 
 const DatabaseIntegrations = () => {
   const { selectedStore } = useStoreSelection();

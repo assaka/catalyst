@@ -31,10 +31,10 @@ import {
 } from 'lucide-react';
 
 // Import new systems
-import hookSystem from '../../core/HookSystem.js';
-import eventSystem from '../../core/EventSystem.js';
-import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
-import { useStoreSelection } from '../../contexts/StoreSelectionContext';
+import hookSystem from '@/core/HookSystem.js';
+import eventSystem from '@/core/EventSystem.js';
+import UnifiedDiffFrontendService from '@/services/unified-diff-frontend-service';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 // PreviewFrame component for server-side preview
 const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {

@@ -15,7 +15,6 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-import CartSlots from './CartSlots';
 import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
 // Import new hook system
@@ -28,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
+import {CartSlots} from "@/pages/index.jsx";
 
 const getSessionId = () => {
   let sid = localStorage.getItem('cart_session_id');

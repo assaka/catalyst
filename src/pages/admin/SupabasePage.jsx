@@ -4,7 +4,7 @@ import SupabaseIntegration from '@/components/admin/integrations/SupabaseIntegra
 import { Database, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import apiClient from '../api/client';
+import apiClient from '@/api/client';
 
 const SupabasePage = () => {
   const { selectedStore } = useStoreSelection();

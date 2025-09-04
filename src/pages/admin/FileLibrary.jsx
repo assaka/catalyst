@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
-import apiClient from '../api/client';
+import apiClient from '@/api/client';
 
 const FileLibrary = () => {
   const { selectedStore } = useStoreSelection();

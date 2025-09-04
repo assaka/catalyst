@@ -60,11 +60,11 @@ import {
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useStoreSlug } from '../hooks/useStoreSlug';
+import { useStoreSlug } from '@/hooks/useStoreSlug';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import apiClient from '../api/client';
+import apiClient from '@/api/client';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { debugEnvironment } from '../utils/env-debug';
+import { debugEnvironment } from '@/utils/env-debug';
 
 // Error Boundary to catch component crashes
 class AkeneoErrorBoundary extends React.Component {

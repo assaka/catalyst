@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import apiClient from '../../api/client';
+import apiClient from '@/api/client';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {

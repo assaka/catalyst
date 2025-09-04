@@ -9,6 +9,7 @@
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)"
     ],
     "deny": [],

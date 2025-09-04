@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import apiClient from '../../api/client';
+import apiClient from '@/api/client';
 import { Rocket, ExternalLink, CheckCircle, AlertCircle, Clock, RefreshCw, Settings } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 
 const PublishButton = ({ storeId, storeName }) => {
   const [renderStatus, setRenderStatus] = useState(null);

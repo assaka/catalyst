@@ -22,8 +22,8 @@ import {
   Package
 } from 'lucide-react';
 
-import hookSystem from '../../core/HookSystem.js';
-import eventSystem from '../../core/EventSystem.js';
+import hookSystem from '@/core/HookSystem.js';
+import eventSystem from '@/core/EventSystem.js';
 
 const PreviewSystem = ({ 
   changes = [], 

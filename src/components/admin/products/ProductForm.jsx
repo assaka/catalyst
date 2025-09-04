@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react";
-import FlashMessage from "../storefront/FlashMessage";
+import FlashMessage from "@/storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/cms/MediaBrowser";
 import {

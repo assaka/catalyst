@@ -19,10 +19,10 @@ import {
   Shield,
   UserX
 } from 'lucide-react';
-import apiClient from '../api/client';
+import apiClient from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { getCurrentUser } from '../utils/auth';
+import { getCurrentUser } from '@/utils/auth';
 
 const MediaStorage = () => {
   const { selectedStore } = useStoreSelection();

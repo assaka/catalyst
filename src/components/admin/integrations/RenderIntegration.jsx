@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import apiClient from '../../api/client';
+import apiClient from '@/api/client';
 import { ExternalLink, Cloud, Server, Rocket, AlertCircle, Info, Copy, ArrowRight, RefreshCw, Globe, Activity, Zap, Building, Link2, Settings } from 'lucide-react';
 
 const RenderIntegration = ({ storeId, context = 'full' }) => {
