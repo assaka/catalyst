@@ -5,7 +5,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node backend/populate-file-baselines.js)"
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node backend/populate-file-baselines.js)",
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)"
     ],
     "deny": [],
     "ask": [],

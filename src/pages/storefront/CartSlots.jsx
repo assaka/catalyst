@@ -224,8 +224,11 @@ export default function CartSlots({
     
     return (
       <Card>
-        <CardContent className="py-12">
-          <div className="grid grid-cols-12 gap-2 max-w-6xl mx-auto" style={{ minHeight: '400px' }}>
+        <CardContent className="py-6">
+          <div className="grid grid-cols-12 gap-4 max-w-6xl mx-auto" style={{ 
+            gridAutoRows: 'min-content',
+            alignContent: 'start'
+          }}>
             {microSlotOrders.map(slotId => {
               const spans = microSlotSpans[slotId] || { col: 12, row: 1 };
               const gridStyle = getGridClasses(spans);
@@ -242,7 +245,7 @@ export default function CartSlots({
                     <div 
                       key={slotId} 
                       style={{ ...gridStyle, ...debugStyle }} 
-                      className="flex justify-center items-center p-2"
+                      className="flex justify-center items-center"
                       title={`Icon: ${spans.col}x${spans.row}`}
                     >
                       <ShoppingCart 
@@ -285,7 +288,7 @@ export default function CartSlots({
                     <div 
                       key={slotId} 
                       style={{ ...gridStyle, ...debugStyle }} 
-                      className="flex justify-center items-center p-2"
+                      className="flex justify-center items-center"
                       title={`Button: ${spans.col}x${spans.row}`}
                     >
                       <Button 
