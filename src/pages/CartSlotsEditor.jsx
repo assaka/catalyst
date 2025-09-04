@@ -738,6 +738,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const slotRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
   
   const {
     attributes,
@@ -842,6 +843,37 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
     };
   }, [isResizing, resizeStart, colSpan, rowSpan, id, onSpanChange]);
 
+  // Handle mouse enter with a slight delay to prevent flickering
+  const handleMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovered(true);
+  }, []);
+  
+  // Handle mouse leave with a small delay to prevent premature hiding
+  const handleMouseLeave = useCallback((e) => {
+    // Check if we're still within the component or its children
+    const relatedTarget = e.relatedTarget;
+    if (slotRef.current && slotRef.current.contains(relatedTarget)) {
+      return; // Don't hide if we're still inside the component
+    }
+    
+    // Add a small delay before hiding to prevent flickering
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 100);
+  }, []);
+  
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
       ref={(el) => {
@@ -850,15 +882,22 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       }}
       style={style}
       className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Edit button only - no drag icon needed */}
       {onEdit && isHovered && !isDragging && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-10 hover:bg-gray-200"
+          className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-20 hover:bg-gray-200 pointer-events-auto"
           title="Edit micro-slot"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
         >
           <Edit className="w-3 h-3 text-gray-600" />
         </button>
@@ -866,7 +905,16 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       
       {/* Span controls - moved inside to avoid conflicts */}
       {onSpanChange && (isHovered || isDragging) && (
-        <div className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-10">
+        <div 
+          className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-20 pointer-events-auto"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
+        >
           <div className="flex items-center bg-white rounded shadow-sm border px-1">
             <span className="text-xs text-gray-500 mr-1">W:</span>
             <input
@@ -893,7 +941,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       )}
       
       <div 
-        className={`${isDragging ? 'ring-2 ring-blue-400 cursor-grabbing' : isDraggable && !isResizing ? 'hover:ring-1 hover:ring-gray-300 cursor-grab' : ''} rounded transition-all relative z-1`}
+        className={`${isDragging ? 'ring-2 ring-blue-400 cursor-grabbing' : isDraggable && !isResizing ? 'hover:ring-1 hover:ring-gray-300 cursor-grab' : ''} ${isHovered ? 'bg-gray-50/50' : ''} rounded transition-all relative z-1`}
         {...(isDraggable && !isResizing ? listeners : {})}
         {...(isDraggable && !isResizing ? attributes : {})}
       >
@@ -906,16 +954,37 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
             <div
               className="absolute top-0 right-0 w-2 h-full cursor-ew-resize bg-blue-500/20 hover:bg-blue-500/30"
               onMouseDown={(e) => handleResizeStart(e, 'right')}
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+                setIsHovered(true);
+              }}
             />
             {/* Bottom edge */}
             <div
               className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize bg-blue-500/20 hover:bg-blue-500/30"
               onMouseDown={(e) => handleResizeStart(e, 'bottom')}
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+                setIsHovered(true);
+              }}
             />
             {/* Bottom-right corner */}
             <div
               className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
               onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+                setIsHovered(true);
+              }}
             >
               <div className="absolute bottom-1 right-1 w-2 h-2 bg-blue-500 rounded-sm" />
             </div>
@@ -929,6 +998,8 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
 // Parent slot container with micro-slots
 function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const hoverTimeoutRef = useRef(null);
+  const containerRef = useRef(null);
   
   const {
     attributes,
@@ -961,20 +1032,61 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     }
   };
 
+  // Handle mouse enter with a slight delay to prevent flickering
+  const handleMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovered(true);
+  }, []);
+  
+  // Handle mouse leave with a small delay to prevent premature hiding
+  const handleMouseLeave = useCallback((e) => {
+    // Check if we're still within the component or its children
+    const relatedTarget = e.relatedTarget;
+    if (containerRef.current && containerRef.current.contains(relatedTarget)) {
+      return; // Don't hide if we're still inside the component
+    }
+    
+    // Add a small delay before hiding to prevent flickering
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 150);
+  }, []);
+  
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el);
+        containerRef.current = el;
+      }}
       style={style}
       className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Edit button only - drag entire section */}
       {onEdit && isHovered && !isDragging && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-10 hover:bg-blue-200"
+          className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-30 hover:bg-blue-200 pointer-events-auto"
           title="Edit section"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
         >
           <Edit className="w-4 h-4 text-blue-600" />
         </button>
@@ -987,7 +1099,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       
       {/* Micro-slots container - draggable area */}
       <div 
-        className={`border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white relative z-1 ${isDraggable && !isDragging ? 'cursor-grab' : isDragging ? 'cursor-grabbing' : ''}`}
+        className={`border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'} rounded-lg p-4 bg-white relative z-1 ${isDraggable && !isDragging ? 'cursor-grab' : isDragging ? 'cursor-grabbing' : ''} transition-colors`}
         {...(isDraggable ? listeners : {})}
         {...(isDraggable ? attributes : {})}
       >
