@@ -3045,7 +3045,7 @@ export default function CartSlotsEditorWithMicroSlots({
           keywords="cart, editor, empty-state"
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           <div className="mb-6">
             {/* Header with title */}
             <div className="flex justify-end gap-2">
