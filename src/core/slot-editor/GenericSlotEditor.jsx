@@ -1625,8 +1625,11 @@ export default ${componentName};`;
                     onSave={async (config) => {
                       console.log('Saving Cart layout configuration:', config);
                       
-                      // Save layout configuration to state
+                      // Save layout configuration to state immediately for preview
                       setCartLayoutConfig(config);
+                      
+                      // Force a re-render of the preview by updating the state
+                      setHasUnsavedChanges(false);
                       
                       // Save to localStorage for quick access
                       localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
@@ -1706,7 +1709,11 @@ export default ${componentName};`;
                         // Fallback to localStorage is already done
                       }
                       
-                      triggerAutoSave();
+                      // Trigger auto-save is not needed here since CartSlotsEditor handles its own saving
+                      // triggerAutoSave();
+                      
+                      // Update the saved indicator
+                      lastSavedRef.current = { cartLayoutConfig: config };
                     }}
                   />
                 ) : (

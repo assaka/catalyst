@@ -1493,6 +1493,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Save to localStorage immediately
     localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+    console.log('💾 Saved to localStorage:', config);
     
     // Try to save to database
     try {
@@ -1513,17 +1514,24 @@ export default function CartSlotsEditorWithMicroSlots({
         if (response?.data?.data?.length > 0) {
           // Update existing configuration
           const configId = response.data.data[0].id;
-          await apiClient.put(`slot-configurations/${configId}`, {
-            configuration: config
-          });
-        } else {
-          // Create new configuration
-          await apiClient.post('slot-configurations', {
+          const updateResponse = await apiClient.put(`slot-configurations/${configId}`, {
             page_name: 'Cart',
             slot_type: 'cart_layout',
             store_id: storeId,
-            configuration: config
+            configuration: config,
+            is_active: true
           });
+          console.log('✅ Updated in database:', updateResponse);
+        } else {
+          // Create new configuration
+          const createResponse = await apiClient.post('slot-configurations', {
+            page_name: 'Cart',
+            slot_type: 'cart_layout',
+            store_id: storeId,
+            configuration: config,
+            is_active: true
+          });
+          console.log('✅ Created in database:', createResponse);
         }
       }
       
