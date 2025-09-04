@@ -2197,17 +2197,35 @@ export default function CartSlotsEditorWithMicroSlots({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Empty Cart Layout Editor</h2>
-            <button
-              onClick={() => {
-                if (confirm('This will reset all layout configurations to defaults. Are you sure?')) {
-                  localStorage.removeItem('cart_slot_configuration');
-                  window.location.reload();
-                }
-              }}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Reset to Defaults
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  // Reset only the spans to defaults
+                  const defaultSpans = {};
+                  Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+                    defaultSpans[key] = { ...def.defaultSpans };
+                  });
+                  setMicroSlotSpans(defaultSpans);
+                  console.log('Reset spans to defaults:', defaultSpans);
+                  // Save immediately
+                  setTimeout(() => saveConfiguration(), 100);
+                }}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Reset Spans Only
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('This will reset all layout configurations to defaults. Are you sure?')) {
+                    localStorage.removeItem('cart_slot_configuration');
+                    window.location.reload();
+                  }
+                }}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Reset All
+              </button>
+            </div>
           </div>
           <DndContext
             sensors={sensors}
