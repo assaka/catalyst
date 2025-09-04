@@ -1599,7 +1599,21 @@ export default function CartSlotsEditorWithMicroSlots({
             setMajorSlots(allSlots);
           }
           if (config.microSlotOrders) setMicroSlotOrders(config.microSlotOrders);
-          if (config.microSlotSpans) setMicroSlotSpans(config.microSlotSpans);
+          if (config.microSlotSpans) {
+            // Validate and fix any corrupted span values
+            const cleanedSpans = {};
+            Object.entries(config.microSlotSpans).forEach(([parentId, slots]) => {
+              cleanedSpans[parentId] = {};
+              Object.entries(slots).forEach(([slotId, spans]) => {
+                cleanedSpans[parentId][slotId] = {
+                  col: typeof spans.col === 'number' && spans.col >= 1 && spans.col <= 12 ? spans.col : 12,
+                  row: typeof spans.row === 'number' && spans.row >= 1 && spans.row <= 4 ? spans.row : 1
+                };
+              });
+            });
+            console.log('📐 Cleaned microSlotSpans from localStorage:', cleanedSpans);
+            setMicroSlotSpans(cleanedSpans);
+          }
           if (config.textContent) setTextContent(prev => ({ ...prev, ...config.textContent }));
           if (config.elementClasses) setElementClasses(prev => ({ ...prev, ...config.elementClasses }));
           if (config.componentSizes) setComponentSizes(prev => ({ ...prev, ...config.componentSizes }));
@@ -1633,7 +1647,21 @@ export default function CartSlotsEditorWithMicroSlots({
               setMajorSlots(allSlots);
             }
             if (dbConfig.microSlotOrders) setMicroSlotOrders(dbConfig.microSlotOrders);
-            if (dbConfig.microSlotSpans) setMicroSlotSpans(dbConfig.microSlotSpans);
+            if (dbConfig.microSlotSpans) {
+              // Validate and fix any corrupted span values
+              const cleanedSpans = {};
+              Object.entries(dbConfig.microSlotSpans).forEach(([parentId, slots]) => {
+                cleanedSpans[parentId] = {};
+                Object.entries(slots).forEach(([slotId, spans]) => {
+                  cleanedSpans[parentId][slotId] = {
+                    col: typeof spans.col === 'number' && spans.col >= 1 && spans.col <= 12 ? spans.col : 12,
+                    row: typeof spans.row === 'number' && spans.row >= 1 && spans.row <= 4 ? spans.row : 1
+                  };
+                });
+              });
+              console.log('📐 Cleaned microSlotSpans from DB:', cleanedSpans);
+              setMicroSlotSpans(cleanedSpans);
+            }
             if (dbConfig.textContent) setTextContent(prev => ({ ...prev, ...dbConfig.textContent }));
             if (dbConfig.elementClasses) setElementClasses(prev => ({ ...prev, ...dbConfig.elementClasses }));
             if (dbConfig.componentSizes) setComponentSizes(prev => ({ ...prev, ...dbConfig.componentSizes }));
@@ -2152,6 +2180,20 @@ export default function CartSlotsEditorWithMicroSlots({
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">Empty Cart Layout Editor</h2>
+            <button
+              onClick={() => {
+                if (confirm('This will reset all layout configurations to defaults. Are you sure?')) {
+                  localStorage.removeItem('cart_slot_configuration');
+                  window.location.reload();
+                }
+              }}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Reset to Defaults
+            </button>
+          </div>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
