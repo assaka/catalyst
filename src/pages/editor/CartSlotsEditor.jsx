@@ -2775,7 +2775,8 @@ export default function CartSlotsEditorWithMicroSlots({
               })}
             </div>
           ))}
-        </div>
+          </CardContent>
+        </Card>
       </SortableParentSlot>
     );
   };
