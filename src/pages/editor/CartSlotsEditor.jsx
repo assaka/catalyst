@@ -1685,7 +1685,7 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.customSlots) {
             setCustomSlots(config.customSlots);
             
-            // Ensure text content for custom text slots is properly synced
+            // Ensure content for custom slots is properly synced
             Object.entries(config.customSlots).forEach(([slotId, slot]) => {
               if (slot.type === 'text') {
                 // Always sync custom slot content with textContent
@@ -1703,6 +1703,25 @@ export default function CartSlotsEditorWithMicroSlots({
                 } else {
                   // If no saved content, ensure textContent has the slot's default
                   setTextContent(prev => ({
+                    ...prev,
+                    [slotId]: slot.content
+                  }));
+                }
+              } else if (slot.type === 'html' || slot.type === 'javascript') {
+                // For HTML/JS slots, sync with componentCode
+                const savedCode = config.componentCode?.[slotId];
+                if (savedCode !== undefined) {
+                  // Update the custom slot with the saved code
+                  setCustomSlots(prev => ({
+                    ...prev,
+                    [slotId]: {
+                      ...prev[slotId],
+                      content: savedCode
+                    }
+                  }));
+                } else {
+                  // If no saved code, ensure componentCode has the slot's default
+                  setComponentCode(prev => ({
                     ...prev,
                     [slotId]: slot.content
                   }));
@@ -1781,7 +1800,7 @@ export default function CartSlotsEditorWithMicroSlots({
             if (dbConfig.customSlots) {
               setCustomSlots(dbConfig.customSlots);
               
-              // Ensure text content for custom text slots is properly synced
+              // Ensure content for custom slots is properly synced
               Object.entries(dbConfig.customSlots).forEach(([slotId, slot]) => {
                 if (slot.type === 'text') {
                   // Always sync custom slot content with textContent
@@ -1799,6 +1818,25 @@ export default function CartSlotsEditorWithMicroSlots({
                   } else {
                     // If no saved content, ensure textContent has the slot's default
                     setTextContent(prev => ({
+                      ...prev,
+                      [slotId]: slot.content
+                    }));
+                  }
+                } else if (slot.type === 'html' || slot.type === 'javascript') {
+                  // For HTML/JS slots, sync with componentCode
+                  const savedCode = dbConfig.componentCode?.[slotId];
+                  if (savedCode !== undefined) {
+                    // Update the custom slot with the saved code
+                    setCustomSlots(prev => ({
+                      ...prev,
+                      [slotId]: {
+                        ...prev[slotId],
+                        content: savedCode
+                      }
+                    }));
+                  } else {
+                    // If no saved code, ensure componentCode has the slot's default
+                    setComponentCode(prev => ({
                       ...prev,
                       [slotId]: slot.content
                     }));
@@ -2323,24 +2361,40 @@ export default function CartSlotsEditorWithMicroSlots({
                     }
                   }}
                 >
-                  <div className="p-2 bg-gray-50 rounded border border-gray-200">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-gray-500">
-                        {customSlot.type === 'html' ? 'HTML' : 'JavaScript'}: {customSlot.label}
-                      </span>
-                      <button
-                        onClick={() => {
-                          setEditingComponent(slotId);
-                          setTempCode(componentCode[slotId] || customSlot.content);
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-700"
-                      >
-                        Edit Code
-                      </button>
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {customSlot.type === 'html' ? <FileText className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
-                    </div>
+                  <div className="relative">
+                    {/* Render HTML content if it's HTML type */}
+                    {customSlot.type === 'html' ? (
+                      <div 
+                        className="min-h-[40px] flex items-center justify-center"
+                        dangerouslySetInnerHTML={{ __html: componentCode[slotId] || customSlot.content }}
+                      />
+                    ) : (
+                      /* For JavaScript, show a placeholder since we can't safely execute it in editor */
+                      <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-500">
+                            JavaScript: {customSlot.label}
+                          </span>
+                          <Code2 className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Preview in right panel to see JavaScript execution
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Edit button overlay */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingComponent(slotId);
+                        setTempCode(componentCode[slotId] || customSlot.content);
+                      }}
+                      className="absolute top-1 right-1 px-2 py-1 bg-white/90 rounded shadow-sm border text-xs text-blue-600 hover:text-blue-700 hover:bg-white transition-colors"
+                    >
+                      <Edit className="w-3 h-3 inline mr-1" />
+                      Edit {customSlot.type === 'html' ? 'HTML' : 'JS'}
+                    </button>
                   </div>
                 </MicroSlot>
               );
