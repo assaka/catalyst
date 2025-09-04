@@ -1113,19 +1113,22 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         setNodeRef(el);
         slotRef.current = el;
       }}
-      style={style}
+      style={{
+        ...style,
+        minHeight: '48px' // Ensure minimum height for better drag handle visibility
+      }}
       className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Drag handle in top-left */}
+      {/* Drag handle in top-left - made more prominent */}
       {isDraggable && (isHovered || isDragging) && !isResizing && (
         <div 
-          className="absolute left-1 top-1 p-0.5 bg-gray-100/80 rounded z-20 cursor-grab hover:bg-gray-200"
+          className="absolute left-1 top-1 p-1 bg-blue-500/90 rounded-md z-20 cursor-grab hover:bg-blue-600 transition-colors shadow-sm"
           {...(isDraggable && !isResizing ? listeners : {})}
           {...(isDraggable && !isResizing ? attributes : {})}
         >
-          <GripVertical className="w-3 h-3 text-gray-400" />
+          <GripVertical className="w-4 h-4 text-white" />
         </div>
       )}
       
