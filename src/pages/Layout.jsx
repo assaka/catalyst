@@ -223,7 +223,7 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const publicPages = ['Landing', 'Auth', 'CustomerAuth', 'Pricing', 'Onboarding'];
-  const storefrontPages = ['Storefront', 'ProductDetail', 'Cart', 'Checkout', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
+  const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const isPublicPage = publicPages.includes(currentPageName);
   const isStorefrontPage = storefrontPages.includes(currentPageName);
