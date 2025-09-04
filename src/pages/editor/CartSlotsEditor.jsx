@@ -1593,17 +1593,26 @@ export default function CartSlotsEditorWithMicroSlots({
         const { default: apiClient } = await import('@/api/client');
         
         // Check if configuration exists
+        // Note: The backend filters by page_name and slot_type that are INSIDE the configuration JSON
         const queryParams = new URLSearchParams({
-          page_name: 'Cart',
-          slot_type: 'cart_layout',
           store_id: storeId
         }).toString();
         
+        console.log('🔍 Checking for existing configuration with store_id:', storeId);
         const response = await apiClient.get(`slot-configurations?${queryParams}`);
         
-        if (response?.data?.data?.length > 0) {
+        console.log('🔍 Found configurations:', response?.data?.data?.length);
+        
+        // Find the Cart configuration specifically
+        const cartConfig = response?.data?.data?.find(cfg => 
+          cfg.configuration?.page_name === 'Cart' && 
+          cfg.configuration?.slot_type === 'cart_layout'
+        );
+        
+        if (cartConfig) {
           // Update existing configuration
-          const configId = response.data.data[0].id;
+          const configId = cartConfig.id;
+          console.log('📝 Updating existing configuration with ID:', configId);
           const payload = {
             page_name: 'Cart',
             slot_type: 'cart_layout',
@@ -1735,8 +1744,6 @@ export default function CartSlotsEditorWithMicroSlots({
         
         // Load from database
         const queryParams = new URLSearchParams({
-          page_name: 'Cart',
-          slot_type: 'cart_layout',
           store_id: storeId
         }).toString();
         
@@ -1744,8 +1751,14 @@ export default function CartSlotsEditorWithMicroSlots({
         const { default: apiClient } = await import('@/api/client');
         const response = await apiClient.get(`slot-configurations?${queryParams}`);
         
-        if (response?.data?.data?.length > 0) {
-          const dbRecord = response.data.data[0];
+        // Find the Cart configuration specifically
+        const cartConfig = response?.data?.data?.find(cfg => 
+          cfg.configuration?.page_name === 'Cart' && 
+          cfg.configuration?.slot_type === 'cart_layout'
+        );
+        
+        if (cartConfig) {
+          const dbRecord = cartConfig;
           console.log('📦 Full database record:', dbRecord);
           const config = dbRecord.configuration;
           
