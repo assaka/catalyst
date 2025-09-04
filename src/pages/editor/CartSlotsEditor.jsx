@@ -1677,6 +1677,17 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           if (config.customSlots) {
             setCustomSlots(config.customSlots);
+            
+            // Ensure text content for custom text slots is loaded
+            Object.entries(config.customSlots).forEach(([slotId, slot]) => {
+              if (slot.type === 'text' && !config.textContent?.[slotId]) {
+                // If textContent doesn't have this custom slot's content, add it
+                setTextContent(prev => ({
+                  ...prev,
+                  [slotId]: slot.content
+                }));
+              }
+            });
           }
         }
         
@@ -1748,6 +1759,17 @@ export default function CartSlotsEditorWithMicroSlots({
             }
             if (dbConfig.customSlots) {
               setCustomSlots(dbConfig.customSlots);
+              
+              // Ensure text content for custom text slots is loaded
+              Object.entries(dbConfig.customSlots).forEach(([slotId, slot]) => {
+                if (slot.type === 'text' && !dbConfig.textContent?.[slotId]) {
+                  // If textContent doesn't have this custom slot's content, add it
+                  setTextContent(prev => ({
+                    ...prev,
+                    [slotId]: slot.content
+                  }));
+                }
+              });
             }
             
             // Save to localStorage for faster access
@@ -2229,7 +2251,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <div className="flex justify-center items-center text-center">
                     <SimpleInlineEdit
-                      text={textContent[slotId] || customSlot.content}
+                      text={textContent[slotId] !== undefined ? textContent[slotId] : customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
                       onChange={(newText) => handleTextChange(slotId, newText)}
                       slotId={slotId}
