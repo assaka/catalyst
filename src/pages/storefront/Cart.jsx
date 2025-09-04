@@ -867,19 +867,22 @@ export default function Cart() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
-                    <Card>
-                        <CardContent className="text-center py-12">
-                            <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                            <Button onClick={() => {
-                                const baseUrl = getStoreBaseUrl(store);
-                                window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                            }}>
-                                Continue Shopping
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    // Use CartSlots component to render the empty cart with custom slots
+                    <CartSlots 
+                        data={{
+                            store,
+                            cartItems: [],
+                            appliedCoupon: null,
+                            couponCode: '',
+                            subtotal: 0,
+                            discount: 0,
+                            tax: 0,
+                            total: 0,
+                            currencySymbol: store?.currency_symbol || '$',
+                            showEmptyCart: true
+                        }}
+                        layoutConfig={null} // Will load from localStorage/database
+                    />
                 ) : (
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                         <div className="lg:col-span-2">

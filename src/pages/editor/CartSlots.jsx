@@ -51,11 +51,32 @@ function SortableSection({ id, children, isDraggable = true }) {
 // Main CartSlots component matching Cart.jsx layout exactly
 export default function CartSlots({
   data = {},
-  layoutConfig = null, // Layout configuration from editor
+  layoutConfig: providedConfig = null, // Layout configuration from editor
   enableDragDrop = false, // Set to true to enable drag and drop
 }) {
+  // Load layout configuration from localStorage if not provided
+  const [layoutConfig, setLayoutConfig] = React.useState(providedConfig);
+  
+  React.useEffect(() => {
+    if (!providedConfig) {
+      // Try to load from localStorage
+      try {
+        const savedConfig = localStorage.getItem('cart_slots_layout_config');
+        if (savedConfig) {
+          const config = JSON.parse(savedConfig);
+          setLayoutConfig(config);
+          console.log('Loaded cart layout configuration from localStorage:', config);
+        }
+      } catch (error) {
+        console.error('Failed to load cart layout configuration:', error);
+      }
+    } else {
+      setLayoutConfig(providedConfig);
+    }
+  }, [providedConfig]);
+  
   // Debug: Log the received configuration
-  console.log('CartSlots received layoutConfig:', layoutConfig);
+  console.log('CartSlots using layoutConfig:', layoutConfig);
   // Destructure all props with defaults matching Cart.jsx
   const {
     store = {},
@@ -304,6 +325,69 @@ export default function CartSlots({
                   );
                   
                 default:
+                  // Handle custom slots
+                  if (slotId.startsWith('emptyCart.custom_')) {
+                    const customSlot = layoutConfig?.customSlots?.[slotId];
+                    if (!customSlot) return null;
+                    
+                    if (customSlot.type === 'text') {
+                      return (
+                        <div 
+                          key={slotId} 
+                          style={{ ...gridStyle, ...debugStyle }} 
+                          className="flex items-center justify-center p-2 text-center"
+                          title={`Custom Text: ${spans.col}x${spans.row}`}
+                        >
+                          <div className={layoutConfig?.elementClasses?.[slotId] || 'text-gray-600'}>
+                            {layoutConfig?.textContent?.[slotId] || customSlot.content}
+                          </div>
+                        </div>
+                      );
+                    } else if (customSlot.type === 'html') {
+                      const htmlContent = layoutConfig?.componentCode?.[slotId] || customSlot.content;
+                      return (
+                        <div 
+                          key={slotId} 
+                          style={{ ...gridStyle, ...debugStyle }} 
+                          className="flex items-center justify-center p-2"
+                          title={`Custom HTML: ${spans.col}x${spans.row}`}
+                        >
+                          <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                        </div>
+                      );
+                    } else if (customSlot.type === 'javascript') {
+                      // For JavaScript, we need to safely execute it
+                      // In production, this should be carefully sanitized
+                      const jsCode = layoutConfig?.componentCode?.[slotId] || customSlot.content;
+                      
+                      // Create a container div with a unique ID
+                      const containerId = `custom-js-${slotId.replace(/\./g, '-')}`;
+                      
+                      // Use useEffect to execute the JavaScript when component mounts
+                      React.useEffect(() => {
+                        try {
+                          // Create a sandboxed function with limited scope
+                          const executeCode = new Function('container', 'data', jsCode);
+                          const container = document.getElementById(containerId);
+                          if (container) {
+                            executeCode(container, { store, cartItems });
+                          }
+                        } catch (error) {
+                          console.error(`Error executing custom JavaScript for ${slotId}:`, error);
+                        }
+                      }, [jsCode]);
+                      
+                      return (
+                        <div 
+                          key={slotId} 
+                          id={containerId}
+                          style={{ ...gridStyle, ...debugStyle }} 
+                          className="flex items-center justify-center p-2"
+                          title={`Custom JavaScript: ${spans.col}x${spans.row}`}
+                        />
+                      );
+                    }
+                  }
                   return null;
               }
             })}
