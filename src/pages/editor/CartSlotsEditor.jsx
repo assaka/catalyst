@@ -1522,11 +1522,31 @@ export default function CartSlotsEditorWithMicroSlots({
     'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
     'emptyCart.button': 'Continue Shopping',
     'header.title': 'My Cart',
+    'coupon.title': 'Apply Coupon',
+    'coupon.input.placeholder': 'Enter coupon code',
+    'coupon.button': 'Apply',
+    'coupon.applied.title': 'Applied: ',
+    'coupon.applied.description': '20% off your order',
+    'coupon.remove': 'Remove',
+    'orderSummary.title': 'Order Summary',
+    'orderSummary.subtotal.label': 'Subtotal',
+    'orderSummary.discount.label': 'Discount',
+    'orderSummary.tax.label': 'Tax',
+    'orderSummary.total.label': 'Total',
+    'orderSummary.checkoutButton': 'Proceed to Checkout',
   });
   
   // State for Tailwind classes for each element
   const [elementClasses, setElementClasses] = useState({
     'header.title': 'text-3xl font-bold text-gray-900',
+    'coupon.title': 'text-lg font-semibold',
+    'coupon.applied.title': 'text-sm font-medium text-green-800',
+    'coupon.applied.description': 'text-xs text-green-600',
+    'orderSummary.title': 'text-lg font-semibold',
+    'orderSummary.subtotal.label': '',
+    'orderSummary.discount.label': '',
+    'orderSummary.tax.label': '',
+    'orderSummary.total.label': 'text-lg font-semibold',
     'emptyCart.title': 'text-xl font-semibold',
     'emptyCart.text': 'text-gray-600',
     'emptyCart.button': '',
@@ -2058,7 +2078,14 @@ export default function CartSlotsEditorWithMicroSlots({
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
     // Check if this is a text content slot
-    const textSlots = ['emptyCart.title', 'emptyCart.text', 'emptyCart.button', 'header.title'];
+    const textSlots = [
+      'emptyCart.title', 'emptyCart.text', 'emptyCart.button', 
+      'header.title',
+      'coupon.title', 'coupon.input.placeholder', 'coupon.button', 'coupon.applied.title', 
+      'coupon.applied.description', 'coupon.remove',
+      'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
+      'orderSummary.tax.label', 'orderSummary.total.label', 'orderSummary.checkoutButton'
+    ];
     
     if (textSlots.includes(microSlotId) || microSlotId.includes('.custom_')) {
       // For text content slots, edit the text content directly
@@ -2083,7 +2110,14 @@ export default function CartSlotsEditorWithMicroSlots({
       });
       
       // Check if this is a text content slot
-      const textSlots = ['emptyCart.title', 'emptyCart.text', 'emptyCart.button', 'header.title'];
+      const textSlots = [
+        'emptyCart.title', 'emptyCart.text', 'emptyCart.button', 
+        'header.title',
+        'coupon.title', 'coupon.input.placeholder', 'coupon.button', 'coupon.applied.title', 
+        'coupon.applied.description', 'coupon.remove',
+        'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
+        'orderSummary.tax.label', 'orderSummary.total.label', 'orderSummary.checkoutButton'
+      ];
       
       // Check if this is a custom slot and its type
       const isCustomSlot = editingComponent.includes('.custom_');
@@ -2775,45 +2809,170 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Render coupon section matching Cart.jsx
   const renderCoupon = () => {
+    const microSlots = microSlotOrders.coupon || MICRO_SLOT_DEFINITIONS.coupon.microSlots;
+    
     return (
       <SortableParentSlot
         id="coupon"
         name="Apply Coupon"
-        microSlotOrder={[]}
+        microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('coupon')}
         gridCols={12}
       >
         <Card className="col-span-12">
-          <CardHeader>
-            <CardTitle>Apply Coupon</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex space-x-2">
-              <Input 
-                placeholder="Enter coupon code" 
-                value="SAVE20"
-                disabled
-              />
-              <Button disabled>
-                <Tag className="w-4 h-4 mr-2" /> Apply
-              </Button>
-            </div>
-            <div className="mt-3 flex items-center justify-between bg-green-50 p-3 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-green-800">Applied: SAVE20</p>
-                <p className="text-xs text-green-600">20% off your order</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-red-600 hover:text-red-800"
-                disabled
-              >
-                Remove
-              </Button>
-            </div>
-          </CardContent>
+          <div className="grid grid-cols-12 gap-2 p-4">
+            {microSlots.map(slotId => {
+              const slotSpan = microSlotSpans.coupon?.[slotId] || MICRO_SLOT_DEFINITIONS.coupon.defaultSpans[slotId] || { col: 12, row: 1 };
+              
+              if (slotId === 'coupon.title') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                  >
+                    <div className="flex items-center justify-start mb-2">
+                      <SimpleInlineEdit
+                        text={textContent[slotId] || 'Apply Coupon'}
+                        className={elementClasses[slotId] || 'text-lg font-semibold'}
+                        onChange={(newText) => handleTextChange(slotId, newText)}
+                        slotId={slotId}
+                        onClassChange={handleClassChange}
+                      />
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'coupon.input') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                  >
+                    <Input 
+                      placeholder={textContent['coupon.input.placeholder'] || 'Enter coupon code'}
+                      value="SAVE20"
+                      disabled
+                      className="w-full"
+                    />
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'coupon.button') {
+                const buttonSize = componentSizes[slotId] || 'default';
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                  >
+                    <Button disabled size={buttonSize} className="w-full">
+                      <Tag className="w-4 h-4 mr-2" />
+                      {textContent[slotId] && textContent[slotId].includes('<') ? (
+                        <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
+                      ) : (
+                        <span>{textContent[slotId] || 'Apply'}</span>
+                      )}
+                    </Button>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'coupon.applied') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                  >
+                    <div className="mt-2 flex items-center justify-between bg-green-50 p-3 rounded-lg">
+                      <div>
+                        <p className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}>
+                          <SimpleInlineEdit
+                            text={textContent['coupon.applied.title'] || 'Applied: '}
+                            className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}
+                            onChange={(newText) => handleTextChange('coupon.applied.title', newText)}
+                            slotId="coupon.applied.title"
+                            onClassChange={handleClassChange}
+                          />
+                          SAVE20
+                        </p>
+                        <SimpleInlineEdit
+                          text={textContent['coupon.applied.description'] || '20% off your order'}
+                          className={elementClasses['coupon.applied.description'] || 'text-xs text-green-600'}
+                          onChange={(newText) => handleTextChange('coupon.applied.description', newText)}
+                          slotId="coupon.applied.description"
+                          onClassChange={handleClassChange}
+                        />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-800"
+                        disabled
+                      >
+                        {textContent['coupon.remove'] || 'Remove'}
+                      </Button>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              // Handle custom slots
+              if (slotId.startsWith('coupon.custom_')) {
+                const customSlot = customSlots[slotId];
+                if (!customSlot) return null;
+                
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    onDelete={() => handleDeleteCustomSlot(slotId)}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                  >
+                    <div className="p-2 bg-gray-50 rounded">
+                      {customSlot.type === 'text' && (
+                        <SimpleInlineEdit
+                          text={textContent[slotId] || customSlot.content}
+                          className={elementClasses[slotId] || 'text-gray-600'}
+                          onChange={(newText) => handleTextChange(slotId, newText)}
+                          slotId={slotId}
+                          onClassChange={handleClassChange}
+                        />
+                      )}
+                      {customSlot.type === 'html' && (
+                        <div 
+                          className="min-h-[40px] flex items-center justify-center"
+                          dangerouslySetInnerHTML={{ __html: componentCode[slotId] || customSlot.content }}
+                        />
+                      )}
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              return null;
+            })}
+          </div>
         </Card>
       </SortableParentSlot>
     );
@@ -2821,40 +2980,204 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Render order summary matching Cart.jsx
   const renderOrderSummary = () => {
+    const microSlots = microSlotOrders.orderSummary || MICRO_SLOT_DEFINITIONS.orderSummary.microSlots;
+    
     return (
       <SortableParentSlot
         id="orderSummary"
         name="Order Summary"
-        microSlotOrder={[]}
+        microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('orderSummary')}
         gridCols={12}
       >
         <Card className="col-span-12">
-          <CardHeader>
-            <CardTitle>Order Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>$139.97</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Discount</span>
-              <span className="text-green-600">-$27.99</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>$11.20</span>
-            </div>
-            <div className="flex justify-between text-lg font-semibold border-t pt-4">
-              <span>Total</span>
-              <span>$123.18</span>
-            </div>
-            <Button size="lg" className="w-full">
-              Proceed to Checkout
-            </Button>
-          </CardContent>
+          <div className="grid grid-cols-12 gap-2 p-4">
+            {microSlots.map(slotId => {
+              const slotSpan = microSlotSpans.orderSummary?.[slotId] || MICRO_SLOT_DEFINITIONS.orderSummary.defaultSpans[slotId] || { col: 12, row: 1 };
+              
+              if (slotId === 'orderSummary.title') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="flex items-center justify-start mb-2">
+                      <SimpleInlineEdit
+                        text={textContent[slotId] || 'Order Summary'}
+                        className={elementClasses[slotId] || 'text-lg font-semibold'}
+                        onChange={(newText) => handleTextChange(slotId, newText)}
+                        slotId={slotId}
+                        onClassChange={handleClassChange}
+                      />
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'orderSummary.subtotal') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <SimpleInlineEdit
+                        text={textContent['orderSummary.subtotal.label'] || 'Subtotal'}
+                        className={elementClasses['orderSummary.subtotal.label'] || ''}
+                        onChange={(newText) => handleTextChange('orderSummary.subtotal.label', newText)}
+                        slotId="orderSummary.subtotal.label"
+                        onClassChange={handleClassChange}
+                      />
+                      <span>$139.97</span>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'orderSummary.discount') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <SimpleInlineEdit
+                        text={textContent['orderSummary.discount.label'] || 'Discount'}
+                        className={elementClasses['orderSummary.discount.label'] || ''}
+                        onChange={(newText) => handleTextChange('orderSummary.discount.label', newText)}
+                        slotId="orderSummary.discount.label"
+                        onClassChange={handleClassChange}
+                      />
+                      <span className="text-green-600">-$27.99</span>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'orderSummary.tax') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <SimpleInlineEdit
+                        text={textContent['orderSummary.tax.label'] || 'Tax'}
+                        className={elementClasses['orderSummary.tax.label'] || ''}
+                        onChange={(newText) => handleTextChange('orderSummary.tax.label', newText)}
+                        slotId="orderSummary.tax.label"
+                        onClassChange={handleClassChange}
+                      />
+                      <span>$11.20</span>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'orderSummary.total') {
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="flex justify-between items-center border-t pt-2">
+                      <SimpleInlineEdit
+                        text={textContent['orderSummary.total.label'] || 'Total'}
+                        className={elementClasses['orderSummary.total.label'] || 'text-lg font-semibold'}
+                        onChange={(newText) => handleTextChange('orderSummary.total.label', newText)}
+                        slotId="orderSummary.total.label"
+                        onClassChange={handleClassChange}
+                      />
+                      <span className="text-lg font-semibold">$123.18</span>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'orderSummary.checkoutButton') {
+                const buttonSize = componentSizes[slotId] || 'lg';
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="pt-2">
+                      <Button size={buttonSize} className="w-full" disabled>
+                        {textContent[slotId] && textContent[slotId].includes('<') ? (
+                          <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
+                        ) : (
+                          <span>{textContent[slotId] || 'Proceed to Checkout'}</span>
+                        )}
+                      </Button>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              // Handle custom slots
+              if (slotId.startsWith('orderSummary.custom_')) {
+                const customSlot = customSlots[slotId];
+                if (!customSlot) return null;
+                
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    onDelete={() => handleDeleteCustomSlot(slotId)}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="p-2 bg-gray-50 rounded">
+                      {customSlot.type === 'text' && (
+                        <SimpleInlineEdit
+                          text={textContent[slotId] || customSlot.content}
+                          className={elementClasses[slotId] || 'text-gray-600'}
+                          onChange={(newText) => handleTextChange(slotId, newText)}
+                          slotId={slotId}
+                          onClassChange={handleClassChange}
+                        />
+                      )}
+                      {customSlot.type === 'html' && (
+                        <div 
+                          className="min-h-[40px] flex items-center justify-center"
+                          dangerouslySetInnerHTML={{ __html: componentCode[slotId] || customSlot.content }}
+                        />
+                      )}
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              return null;
+            })}
+          </div>
         </Card>
       </SortableParentSlot>
     );
@@ -3333,12 +3656,32 @@ export default function CartSlotsEditorWithMicroSlots({
                     'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
                     'emptyCart.button': 'Continue Shopping',
                     'header.title': 'My Cart',
+                    'coupon.title': 'Apply Coupon',
+                    'coupon.input.placeholder': 'Enter coupon code',
+                    'coupon.button': 'Apply',
+                    'coupon.applied.title': 'Applied: ',
+                    'coupon.applied.description': '20% off your order',
+                    'coupon.remove': 'Remove',
+                    'orderSummary.title': 'Order Summary',
+                    'orderSummary.subtotal.label': 'Subtotal',
+                    'orderSummary.discount.label': 'Discount',
+                    'orderSummary.tax.label': 'Tax',
+                    'orderSummary.total.label': 'Total',
+                    'orderSummary.checkoutButton': 'Proceed to Checkout',
                   });
                   setElementClasses({
                     'header.title': 'text-3xl font-bold text-gray-900',
                     'emptyCart.title': 'text-xl font-semibold',
                     'emptyCart.text': 'text-gray-600',
                     'emptyCart.button': '',
+                    'coupon.title': 'text-lg font-semibold',
+                    'coupon.applied.title': 'text-sm font-medium text-green-800',
+                    'coupon.applied.description': 'text-xs text-green-600',
+                    'orderSummary.title': 'text-lg font-semibold',
+                    'orderSummary.subtotal.label': '',
+                    'orderSummary.discount.label': '',
+                    'orderSummary.tax.label': '',
+                    'orderSummary.total.label': 'text-lg font-semibold',
                   });
                   setComponentSizes({
                     'emptyCart.icon': 64,
