@@ -59,6 +59,8 @@ export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CartSlots } from './editor/CartSlots';
 
 // Storefront Pages
+export { default as Homepage } from './storefront/Homepage';
+export { default as Category } from './storefront/Category';
 export { default as ProductDetail } from './storefront/ProductDetail';
 export { default as Cart } from './storefront/Cart';
 export { default as Checkout } from './storefront/Checkout';
@@ -130,6 +132,8 @@ const Pages = {
   AIContextWindow,
   CartSlotsEditor,
   // Storefront
+  Homepage,
+  Category,
   ProductDetail,
   Cart,
   CartSlots,
