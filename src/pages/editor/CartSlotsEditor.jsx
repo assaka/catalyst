@@ -1459,7 +1459,10 @@ export default function CartSlotsEditorWithMicroSlots({
   data = {},
   onSave = () => {},
 }) {
-  // State for major slot order - only show empty cart state
+  // State for view mode - 'empty' or 'withProducts'
+  const [viewMode, setViewMode] = useState('empty');
+  
+  // State for major slot order - changes based on view mode
   const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
   
   // State for resizing indicators
@@ -1494,6 +1497,9 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // State for custom slots
   const [showAddSlotDialog, setShowAddSlotDialog] = useState(false);
+  
+  // State for reset confirmation modal
+  const [showResetModal, setShowResetModal] = useState(false);
   const [currentParentSlot, setCurrentParentSlot] = useState(null);
   const [newSlotType, setNewSlotType] = useState('text');
   const [newSlotName, setNewSlotName] = useState('');
@@ -1742,6 +1748,16 @@ export default function CartSlotsEditorWithMicroSlots({
       delete window.onAddNewSlot;
     };
   }, []);
+  
+  // Update major slots when view mode changes
+  useEffect(() => {
+    if (viewMode === 'empty') {
+      setMajorSlots(['header', 'emptyCart']);
+    } else {
+      // Show cart with products - include cart items, coupon, and order summary
+      setMajorSlots(['header', 'cartItem', 'coupon', 'orderSummary']);
+    }
+  }, [viewMode]);
   
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
@@ -2817,8 +2833,16 @@ export default function CartSlotsEditorWithMicroSlots({
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Empty Cart Layout Editor</h2>
             <div className="flex gap-2">
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reset Layout
+              </button>
             </div>
           </div>
+          
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -2974,6 +2998,85 @@ export default function CartSlotsEditorWithMicroSlots({
             </Button>
             <Button onClick={handleAddCustomSlot}>
               <PlusCircle className="w-4 h-4 mr-2" /> Add Slot
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Reset Confirmation Modal */}
+      <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Layout Configuration</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to reset the layout configuration? This will delete all customizations and restore the default layout.
+            </p>
+            <p className="text-sm text-red-600 mt-2">
+              This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowResetModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  setSaveStatus('saving');
+                  
+                  // Get store ID
+                  const storeId = data?.store?.id || 1;
+                  const queryParams = new URLSearchParams({
+                    store_id: storeId,
+                    type: 'empty_cart'
+                  }).toString();
+                  
+                  // Import apiClient
+                  const { default: apiClient } = await import('@/api/client');
+                  
+                  // Get existing configuration
+                  const response = await apiClient.get(`slot-configurations?${queryParams}`);
+                  const existingConfig = response?.data?.[0] || response?.[0];
+                  
+                  if (existingConfig?.id) {
+                    // Delete the configuration from database
+                    await apiClient.delete(`slot-configurations/${existingConfig.id}`);
+                    console.log('✅ Deleted configuration from database');
+                  }
+                  
+                  // Clear local storage
+                  localStorage.removeItem('cart_slots_layout_config');
+                  
+                  // Show success message
+                  setSaveStatus('saved');
+                  setTimeout(() => {
+                    setSaveStatus('');
+                  }, 2000);
+                  
+                  // Close modal
+                  setShowResetModal(false);
+                  
+                  // Reload the page to reset everything
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 500);
+                  
+                } catch (error) {
+                  console.error('❌ Failed to reset configuration:', error);
+                  setSaveStatus('error');
+                  setTimeout(() => {
+                    setSaveStatus('');
+                  }, 3000);
+                }
+              }}
+            >
+              Reset Layout
             </Button>
           </DialogFooter>
         </DialogContent>
