@@ -2135,17 +2135,28 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
+    console.log('handleDeleteCustomSlot called with:', slotId);
+    
     // Check if this is a custom slot
-    if (!slotId.includes('.custom_')) return;
+    if (!slotId.includes('.custom_')) {
+      console.log('Not a custom slot, returning');
+      return;
+    }
     
     // Determine the parent slot (e.g., 'header', 'emptyCart')
     const parentSlot = slotId.split('.')[0];
+    console.log('Parent slot:', parentSlot);
     
     // Remove from micro slot orders
-    setMicroSlotOrders(prev => ({
-      ...prev,
-      [parentSlot]: (prev[parentSlot] || []).filter(id => id !== slotId)
-    }));
+    setMicroSlotOrders(prev => {
+      console.log('Current microSlotOrders:', prev);
+      const updated = {
+        ...prev,
+        [parentSlot]: (prev[parentSlot] || []).filter(id => id !== slotId)
+      };
+      console.log('Updated microSlotOrders:', updated);
+      return updated;
+    });
     
     // Remove from micro slot spans
     setMicroSlotSpans(prev => {
@@ -2153,6 +2164,7 @@ export default function CartSlotsEditorWithMicroSlots({
       if (updated[parentSlot]) {
         delete updated[parentSlot][slotId];
       }
+      console.log('Updated microSlotSpans:', updated);
       return updated;
     });
     
@@ -2160,6 +2172,7 @@ export default function CartSlotsEditorWithMicroSlots({
     setCustomSlots(prev => {
       const updated = { ...prev };
       delete updated[slotId];
+      console.log('Updated customSlots:', updated);
       return updated;
     });
     
@@ -2184,6 +2197,7 @@ export default function CartSlotsEditorWithMicroSlots({
       return updated;
     });
     
+    console.log('Slot deletion complete, triggering auto-save');
     // Auto-save after delete
     debouncedSave();
   }, [debouncedSave]);
@@ -2430,9 +2444,10 @@ export default function CartSlotsEditorWithMicroSlots({
                     </Button>
                     {/* Button resize handle - bottom-right corner */}
                     <div
-                      className={`absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-sm cursor-nwse-resize z-20 transition-opacity ${
+                      className={`absolute -bottom-2 -right-2 w-6 h-6 bg-blue-500 rounded-sm cursor-nwse-resize z-20 transition-opacity flex items-center justify-center ${
                         isResizingButton === slotId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`}
+                      title="Drag to resize button"
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
@@ -2454,7 +2469,9 @@ export default function CartSlotsEditorWithMicroSlots({
                           }
                           
                           const newSize = sizes[newIndex];
-                          if (newSize !== componentSizes[slotId]) {
+                          const currentComponentSize = componentSizes[slotId] || 'default';
+                          if (newSize !== currentComponentSize) {
+                            console.log('Changing button size from', currentComponentSize, 'to', newSize);
                             handleSizeChange(slotId, newSize);
                             
                             // Auto-expand slot based on button size
@@ -2493,7 +2510,11 @@ export default function CartSlotsEditorWithMicroSlots({
                         document.addEventListener('mousemove', handleMouseMove);
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
-                    />
+                    >
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
+                        <path stroke="currentColor" strokeWidth="2" d="M1 11L11 1M6 11L11 6" strokeLinecap="round"/>
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </MicroSlot>
@@ -2515,7 +2536,11 @@ export default function CartSlotsEditorWithMicroSlots({
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                   onDelete={() => {
-                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                    console.log('onDelete callback triggered for:', slotId, customSlot.label);
+                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
+                    console.log('User confirmed deletion:', shouldDelete);
+                    if (shouldDelete) {
+                      console.log('Calling handleDeleteCustomSlot for:', slotId);
                       handleDeleteCustomSlot(slotId);
                     }
                   }}
@@ -2554,7 +2579,11 @@ export default function CartSlotsEditorWithMicroSlots({
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                   onDelete={() => {
-                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                    console.log('onDelete callback triggered for:', slotId, customSlot.label);
+                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
+                    console.log('User confirmed deletion:', shouldDelete);
+                    if (shouldDelete) {
+                      console.log('Calling handleDeleteCustomSlot for:', slotId);
                       handleDeleteCustomSlot(slotId);
                     }
                   }}
@@ -2605,15 +2634,32 @@ export default function CartSlotsEditorWithMicroSlots({
     );
   };
 
-  // Render cart item with sample products
+  // Render cart item matching Cart.jsx structure
   const renderCartItem = () => {
     const microSlots = microSlotOrders.cartItem || MICRO_SLOT_DEFINITIONS.cartItem.microSlots;
     const spans = microSlotSpans.cartItem || MICRO_SLOT_DEFINITIONS.cartItem.defaultSpans;
     
-    // Sample product data
+    // Sample product data matching real cart
     const sampleProducts = [
-      { id: 1, name: "Premium T-Shirt", price: 29.99, quantity: 2, image: "https://via.placeholder.com/80x80/3b82f6/ffffff?text=Shirt" },
-      { id: 2, name: "Classic Jeans", price: 79.99, quantity: 1, image: "https://via.placeholder.com/80x80/6366f1/ffffff?text=Jeans" }
+      { 
+        id: 1, 
+        name: "Premium Cotton T-Shirt", 
+        price: 29.99, 
+        quantity: 2, 
+        image: "https://placehold.co/100x100?text=T-Shirt",
+        selected_options: [
+          { name: "Size: Large", price: 0 },
+          { name: "Color: Blue", price: 2.00 }
+        ]
+      },
+      { 
+        id: 2, 
+        name: "Classic Denim Jeans", 
+        price: 79.99, 
+        quantity: 1, 
+        image: "https://placehold.co/100x100?text=Jeans",
+        selected_options: []
+      }
     ];
     
     return (
@@ -2623,13 +2669,13 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('cartItem')}
-        gridCols={MICRO_SLOT_DEFINITIONS.cartItem.gridCols}
+        gridCols={12}
       >
-        <div className="col-span-12 space-y-4">
-          <div className="text-xs text-gray-500 font-medium px-2">Sample items (layout applies to all cart items)</div>
-          
-          {sampleProducts.map((product, index) => (
-            <div key={product.id} className="grid grid-cols-12 gap-4 p-4 bg-white rounded-lg border">
+        {/* Match Cart.jsx Card structure */}
+        <Card className="col-span-12">
+          <CardContent className="px-4 divide-y divide-gray-200">
+            {sampleProducts.map((product, index) => (
+              <div key={product.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
               {microSlots.map(slotId => {
                 const slotSpan = spans[slotId] || { col: 12, row: 1 };
                 
@@ -2906,7 +2952,11 @@ export default function CartSlotsEditorWithMicroSlots({
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
                   onDelete={() => {
-                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                    console.log('onDelete callback triggered for:', slotId, customSlot.label);
+                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
+                    console.log('User confirmed deletion:', shouldDelete);
+                    if (shouldDelete) {
+                      console.log('Calling handleDeleteCustomSlot for:', slotId);
                       handleDeleteCustomSlot(slotId);
                     }
                   }}
@@ -2943,7 +2993,11 @@ export default function CartSlotsEditorWithMicroSlots({
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
                   onDelete={() => {
-                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                    console.log('onDelete callback triggered for:', slotId, customSlot.label);
+                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
+                    console.log('User confirmed deletion:', shouldDelete);
+                    if (shouldDelete) {
+                      console.log('Calling handleDeleteCustomSlot for:', slotId);
                       handleDeleteCustomSlot(slotId);
                     }
                   }}
@@ -2994,53 +3048,36 @@ export default function CartSlotsEditorWithMicroSlots({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           <div className="mb-6">
             {/* Header with title */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {viewMode === 'empty' ? 'Empty Cart Layout Editor' : 'Cart with Products Layout Editor'}
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowResetModal(true)}
-                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reset Layout
-                </button>
-              </div>
-            </div>
-            
-            {/* View mode toggle */}
-            <div className="flex items-center gap-4 p-3 bg-white rounded-lg border">
-              <span className="text-sm font-medium text-gray-700">View Mode:</span>
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
+            <div className="flex justify-end gap-2">
+              <button
                   onClick={() => setViewMode('empty')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'empty' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      viewMode === 'empty'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
                   }`}
-                >
-                  <ShoppingCart className="w-4 h-4 inline mr-2" />
-                  Empty Cart
-                </button>
-                <button
+              >
+                <ShoppingCart className="w-4 h-4 inline mr-2" />
+                Empty Cart
+              </button>
+              <button
                   onClick={() => setViewMode('withProducts')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'withProducts' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      viewMode === 'withProducts'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
                   }`}
-                >
-                  <Package className="w-4 h-4 inline mr-2" />
-                  With Products
-                </button>
-              </div>
-              <span className="text-xs text-gray-500 ml-2">
-                {viewMode === 'empty' 
-                  ? 'Customize the layout when cart is empty' 
-                  : 'Customize the layout when cart has products'}
-              </span>
+              >
+                <Package className="w-4 h-4 inline mr-2" />
+                With Products
+              </button>
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reset Layout
+              </button>
             </div>
           </div>
           
@@ -3268,6 +3305,29 @@ export default function CartSlotsEditorWithMicroSlots({
                   // Clear local storage
                   localStorage.removeItem('cart_slots_layout_config');
                   
+                  // Reset all state to defaults
+                  setMicroSlotOrders({});
+                  setMicroSlotSpans({});
+                  setCustomSlots({});
+                  setTextContent({
+                    'emptyCart.title': 'Your cart is empty',
+                    'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
+                    'emptyCart.button': 'Continue Shopping',
+                    'header.title': 'My Cart',
+                  });
+                  setElementClasses({
+                    'header.title': 'text-3xl font-bold text-gray-900',
+                    'emptyCart.title': 'text-xl font-semibold',
+                    'emptyCart.text': 'text-gray-600',
+                    'emptyCart.button': '',
+                  });
+                  setComponentSizes({
+                    'emptyCart.icon': 64,
+                    'emptyCart.button': 'default',
+                    'cartItem.image': 80,
+                  });
+                  setComponentCode({});
+                  
                   // Show success message
                   setSaveStatus('saved');
                   setTimeout(() => {
@@ -3276,11 +3336,6 @@ export default function CartSlotsEditorWithMicroSlots({
                   
                   // Close modal
                   setShowResetModal(false);
-                  
-                  // Reload the page to reset everything
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 500);
                   
                 } catch (error) {
                   console.error('❌ Failed to reset configuration:', error);
