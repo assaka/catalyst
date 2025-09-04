@@ -5,8 +5,8 @@ import { createAdminUrl, createPublicUrl, getStoreSlugFromPublicUrl } from "@/ut
 import { setRoleBasedAuthData } from "@/utils/auth";
 import { Auth as AuthService, User } from "@/api/entities";
 import apiClient from "@/api/client";
-import StoreOwnerAuthLayout from "@/admin/StoreOwnerAuthLayout";
-import CustomerAuthLayout from "@/storefront/CustomerAuthLayout";
+import StoreOwnerAuthLayout from "@/components/admin/StoreOwnerAuthLayout";
+import CustomerAuthLayout from "@/components/storefront/CustomerAuthLayout";
 
 // Helper function for debugging authentication status
 window.debugAuth = () => {

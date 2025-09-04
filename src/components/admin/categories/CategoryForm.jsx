@@ -14,7 +14,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, AlertTriangle, Image as ImageIcon, X } from "lucide-react";
-import MediaBrowser from '@/components/cms/MediaBrowser';
+import MediaBrowser from '@/components/admin/cms/MediaBrowser';
 import {
   Accordion,
   AccordionContent,
