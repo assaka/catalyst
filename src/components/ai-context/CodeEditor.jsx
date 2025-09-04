@@ -9,8 +9,6 @@ import {
   Undo, 
   Redo, 
   Search, 
-  Maximize2,
-  Minimize2,
   Code,
   Diff,
   Eye,
@@ -28,7 +26,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Info,
-  RefreshCw
+  RefreshCw,
+  Minimize2
 } from 'lucide-react';
 
 // Import new systems
@@ -366,7 +365,6 @@ const CodeEditor = ({
 }) => {
   const [localCode, setLocalCode] = useState(value);
   const [isModified, setIsModified] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [diffData, setDiffData] = useState(null);
   const [showDiffView, setShowDiffView] = useState(false);
@@ -1190,7 +1188,7 @@ const CodeEditor = ({
   };
 
   return (
-    <div className={`h-full flex flex-col bg-background ${className} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className={`h-full flex flex-col bg-background ${className}`}>
       {/* Header */}
       <div className="border-b p-2">
         <div className="flex items-center justify-between">
@@ -1318,13 +1316,6 @@ const CodeEditor = ({
               </Button>
             )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
           </div>
         </div>
       </div>
