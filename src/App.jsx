@@ -1,7 +1,22 @@
 import './App.css'
-// import Pages from "@/pages/index.jsx" // Removed - Pages object no longer exported
 import { Toaster } from "@/components/ui/toaster"
 import { StoreSelectionProvider } from "@/contexts/StoreSelectionContext"
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+
+// Import pages
+import { 
+  Dashboard, 
+  Storefront,
+  ProductDetail,
+  Cart,
+  Checkout,
+  CustomerAuth,
+  Settings,
+  Products,
+  Categories,
+  Orders,
+  Customers
+} from '@/pages'
 
 // Import new hook-based systems
 import { useEffect } from 'react'
@@ -67,11 +82,34 @@ function App() {
 
   return (
     <StoreSelectionProvider>
-      {/* Router should be added here */}
-      <div>App content - Router needs to be configured</div>
+      <Router>
+        <Routes>
+          {/* Public/Storefront Routes */}
+          <Route path="/" element={<Navigate to="/public" replace />} />
+          <Route path="/public" element={<Storefront />} />
+          <Route path="/public/:storeCode" element={<Storefront />} />
+          <Route path="/public/:storeCode/category/:categorySlug" element={<Storefront />} />
+          <Route path="/public/:storeCode/product/:productSlug" element={<ProductDetail />} />
+          <Route path="/public/:storeCode/cart" element={<Cart />} />
+          <Route path="/public/:storeCode/checkout" element={<Checkout />} />
+          <Route path="/login" element={<CustomerAuth />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/products" element={<Products />} />
+          <Route path="/admin/categories" element={<Categories />} />
+          <Route path="/admin/orders" element={<Orders />} />
+          <Route path="/admin/customers" element={<Customers />} />
+          <Route path="/admin/settings" element={<Settings />} />
+          
+          {/* Default redirect */}
+          <Route path="*" element={<Navigate to="/public" replace />} />
+        </Routes>
+      </Router>
       <Toaster />
     </StoreSelectionProvider>
   )
 }
 
-export default App 
+export default App
