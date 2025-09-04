@@ -212,6 +212,10 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
   
   const [selectedTextColor, setSelectedTextColor] = useState(null);
   const [selectedBgColor, setSelectedBgColor] = useState(null);
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [customTextColor, setCustomTextColor] = useState('#000000');
+  const [customBgColor, setCustomBgColor] = useState('#ffffff');
   
   const fontSizes = [
     { label: 'XS', value: 'text-xs' },
@@ -286,15 +290,18 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
           )}
         </div>
         
-        {/* Text Input */}
+        {/* Text Input with Live Preview */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Text Content</label>
           <input
             type="text"
             value={tempText}
             onChange={(e) => setTempText(e.target.value)}
-            className="w-full p-2 border rounded"
+            className={`w-full p-3 border rounded-lg ${tempClass}`}
+            style={{ transition: 'all 0.2s ease' }}
+            placeholder="Enter your text here..."
           />
+          <div className="text-xs text-gray-500 mt-1">Live preview with your selected styles</div>
         </div>
         
         {/* Style Options */}
@@ -331,6 +338,50 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
                     title={color.label}
                   />
                 ))}
+                {/* Custom Color Picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowTextColorPicker(!showTextColorPicker)}
+                    className="w-8 h-8 rounded border-2 border-gray-300 hover:scale-110 transition-transform bg-gradient-to-br from-red-500 via-green-500 to-blue-500"
+                    title="Custom Color"
+                  >
+                    <span className="text-white text-xs font-bold">+</span>
+                  </button>
+                  {showTextColorPicker && (
+                    <div className="absolute top-10 left-0 z-10 bg-white border rounded-lg shadow-lg p-3">
+                      <input
+                        type="color"
+                        value={customTextColor}
+                        onChange={(e) => {
+                          setCustomTextColor(e.target.value);
+                          // Map to closest Tailwind color
+                          const hex = e.target.value.toUpperCase();
+                          let closestColor = colorPalette[0];
+                          let minDiff = Infinity;
+                          
+                          colorPalette.forEach(color => {
+                            const diff = Math.abs(parseInt(hex.slice(1), 16) - parseInt(color.hex.slice(1), 16));
+                            if (diff < minDiff) {
+                              minDiff = diff;
+                              closestColor = color;
+                            }
+                          });
+                          
+                          setSelectedTextColor(closestColor);
+                          handleClassToggle(`text-${closestColor.tailwind}`, 'text-color');
+                        }}
+                        className="w-full h-10"
+                      />
+                      <div className="text-xs text-gray-500 mt-2">Pick custom color</div>
+                      <button
+                        onClick={() => setShowTextColorPicker(false)}
+                        className="text-xs text-blue-600 hover:underline mt-1"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               {selectedTextColor && (
                 <div className="text-xs text-gray-600">
@@ -377,6 +428,51 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
                     />
                   );
                 })}
+                {/* Custom Background Color Picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                    className="w-8 h-8 rounded border-2 border-gray-300 hover:scale-110 transition-transform bg-gradient-to-br from-pink-200 via-purple-200 to-indigo-200"
+                    title="Custom Background"
+                  >
+                    <span className="text-gray-700 text-xs font-bold">+</span>
+                  </button>
+                  {showBgColorPicker && (
+                    <div className="absolute top-10 left-0 z-10 bg-white border rounded-lg shadow-lg p-3">
+                      <input
+                        type="color"
+                        value={customBgColor}
+                        onChange={(e) => {
+                          setCustomBgColor(e.target.value);
+                          // Map to closest light Tailwind color for background
+                          const hex = e.target.value.toUpperCase();
+                          let closestColor = colorPalette[3]; // Default to light gray
+                          let minDiff = Infinity;
+                          
+                          colorPalette.slice(4).forEach(color => {
+                            const diff = Math.abs(parseInt(hex.slice(1), 16) - parseInt(color.hex.slice(1), 16));
+                            if (diff < minDiff) {
+                              minDiff = diff;
+                              closestColor = color;
+                            }
+                          });
+                          
+                          setSelectedBgColor(closestColor);
+                          const bgClass = `bg-${closestColor.tailwind.replace('600', '100')}`;
+                          handleClassToggle(bgClass, 'bg-color');
+                        }}
+                        className="w-full h-10"
+                      />
+                      <div className="text-xs text-gray-500 mt-2">Pick background</div>
+                      <button
+                        onClick={() => setShowBgColorPicker(false)}
+                        className="text-xs text-blue-600 hover:underline mt-1"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               {selectedBgColor && (
                 <div className="text-xs text-gray-600">
@@ -419,12 +515,6 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
           </div>
         </div>
         
-        {/* Preview */}
-        <div className="mt-4 p-4 border rounded">
-          <p className="text-sm text-gray-500 mb-1">Preview:</p>
-          <div className={tempClass}>{tempText}</div>
-        </div>
-        
         {/* Custom Classes Input */}
         <div className="mt-4">
           <label className="block text-sm font-medium mb-1">Custom Tailwind Classes</label>
@@ -435,6 +525,7 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
             className="w-full p-2 border rounded font-mono text-sm"
             placeholder="e.g., text-2xl font-bold text-blue-600"
           />
+          <div className="text-xs text-gray-500 mt-1">Advanced: Add custom Tailwind classes</div>
         </div>
         
         {/* Buttons */}
@@ -1477,7 +1568,15 @@ export default function CartSlotsEditorWithMicroSlots({
           const config = JSON.parse(localConfig);
           console.log('Loading saved configuration from localStorage:', config);
           
-          if (config.majorSlots) setMajorSlots(config.majorSlots);
+          // Ensure all required slots are present
+          if (config.majorSlots) {
+            const requiredSlots = ['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts'];
+            const savedSlots = config.majorSlots;
+            // Add any missing required slots to the end
+            const missingSlots = requiredSlots.filter(slot => !savedSlots.includes(slot));
+            const allSlots = [...savedSlots, ...missingSlots];
+            setMajorSlots(allSlots);
+          }
           if (config.microSlotOrders) setMicroSlotOrders(config.microSlotOrders);
           if (config.microSlotSpans) setMicroSlotSpans(config.microSlotSpans);
           if (config.textContent) setTextContent(prev => ({ ...prev, ...config.textContent }));
@@ -1503,7 +1602,15 @@ export default function CartSlotsEditorWithMicroSlots({
             const dbConfig = response.data.data[0].configuration;
             console.log('Loading saved configuration from database:', dbConfig);
             
-            if (dbConfig.majorSlots) setMajorSlots(dbConfig.majorSlots);
+            // Ensure all required slots are present
+            if (dbConfig.majorSlots) {
+              const requiredSlots = ['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts'];
+              const savedSlots = dbConfig.majorSlots;
+              // Add any missing required slots to the end
+              const missingSlots = requiredSlots.filter(slot => !savedSlots.includes(slot));
+              const allSlots = [...savedSlots, ...missingSlots];
+              setMajorSlots(allSlots);
+            }
             if (dbConfig.microSlotOrders) setMicroSlotOrders(dbConfig.microSlotOrders);
             if (dbConfig.microSlotSpans) setMicroSlotSpans(dbConfig.microSlotSpans);
             if (dbConfig.textContent) setTextContent(prev => ({ ...prev, ...dbConfig.textContent }));
@@ -2048,6 +2155,19 @@ export default function CartSlotsEditorWithMicroSlots({
                     {saveStatus === 'saving' ? 'Auto-saving...' : 'Saved'}
                   </span>
                 )}
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    if (confirm('This will reset the layout to default settings. Are you sure?')) {
+                      localStorage.removeItem('cart_slots_layout_config');
+                      window.location.reload();
+                    }
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reset
+                </Button>
                 <Button 
                   onClick={saveConfiguration}
                   className="flex items-center gap-2"
