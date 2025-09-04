@@ -1561,7 +1561,7 @@ export default ${componentName};`;
               )}
               {!hasUnsavedChanges && lastSavedRef.current && (
                 <span className="text-sm px-3 py-1 rounded-full font-medium text-green-700 bg-green-100">
-                  ✓ All changes saved
+                  Saved
                 </span>
               )}
             </div>
