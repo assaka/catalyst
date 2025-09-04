@@ -27,18 +27,9 @@ export default function Category() {
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
   
-  const { categorySlug } = useParams();
+  const { storeCode, categorySlug } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
-  // Debug logging
-  console.log('Category Component Debug:', {
-    categorySlug,
-    storeLoading,
-    store: store?.id,
-    categoriesCount: categories?.length,
-    categoriesList: categories?.map(c => ({ id: c.id, slug: c.slug, name: c.name }))
-  });
 
   useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
@@ -65,14 +56,7 @@ export default function Category() {
       setLoading(true);
       setActiveFilters({});
       
-      console.log('loadCategoryProducts called with:', {
-        store: store?.id,
-        categorySlug,
-        categories: categories?.map(c => ({ id: c.id, slug: c.slug, name: c.name }))
-      });
-      
       if (!store || !categorySlug) {
-        console.log('Missing store or categorySlug:', { store: store?.id, categorySlug });
         return;
       }
 
@@ -81,10 +65,8 @@ export default function Category() {
         category = categories.find(c => c?.slug === categorySlug);
       }
       
-      console.log('Category search result:', category);
-      
       if (!category) {
-        console.warn(`Category with slug '${categorySlug}' not found in:`, categories);
+        console.warn(`Category with slug '${categorySlug}' not found.`);
         showNotFound(`Category "${categorySlug}" not found`);
         return;
       }
