@@ -174,7 +174,7 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
       statusTimeoutRef.current = setTimeout(() => {
         setSaveStatus('');
       }, 2000);
-    }, 800);
+    }, 2000); // Increased from 800ms to 2 seconds
     
     // Cleanup function
     return () => {
@@ -187,26 +187,31 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     };
   }, [tempText, tempClass, onChange, text, className]);
   
-  // Preset color options
-  const textColors = [
-    { label: 'Black', value: 'text-black' },
-    { label: 'Gray', value: 'text-gray-600' },
-    { label: 'Red', value: 'text-red-600' },
-    { label: 'Blue', value: 'text-blue-600' },
-    { label: 'Green', value: 'text-green-600' },
-    { label: 'Yellow', value: 'text-yellow-600' },
-    { label: 'Purple', value: 'text-purple-600' },
+  // Color palette with Tailwind mappings
+  const colorPalette = [
+    // Grayscale
+    { hex: '#000000', tailwind: 'black', label: 'Black' },
+    { hex: '#374151', tailwind: 'gray-700', label: 'Dark Gray' },
+    { hex: '#6B7280', tailwind: 'gray-500', label: 'Gray' },
+    { hex: '#D1D5DB', tailwind: 'gray-300', label: 'Light Gray' },
+    // Primary colors
+    { hex: '#DC2626', tailwind: 'red-600', label: 'Red' },
+    { hex: '#EA580C', tailwind: 'orange-600', label: 'Orange' },
+    { hex: '#D97706', tailwind: 'amber-600', label: 'Amber' },
+    { hex: '#CA8A04', tailwind: 'yellow-600', label: 'Yellow' },
+    { hex: '#16A34A', tailwind: 'green-600', label: 'Green' },
+    { hex: '#059669', tailwind: 'emerald-600', label: 'Emerald' },
+    { hex: '#0891B2', tailwind: 'cyan-600', label: 'Cyan' },
+    { hex: '#2563EB', tailwind: 'blue-600', label: 'Blue' },
+    { hex: '#4F46E5', tailwind: 'indigo-600', label: 'Indigo' },
+    { hex: '#7C3AED', tailwind: 'purple-600', label: 'Purple' },
+    { hex: '#C026D3', tailwind: 'fuchsia-600', label: 'Fuchsia' },
+    { hex: '#DB2777', tailwind: 'pink-600', label: 'Pink' },
+    { hex: '#E11D48', tailwind: 'rose-600', label: 'Rose' },
   ];
   
-  const bgColors = [
-    { label: 'None', value: '' },
-    { label: 'Gray', value: 'bg-gray-100' },
-    { label: 'Red', value: 'bg-red-100' },
-    { label: 'Blue', value: 'bg-blue-100' },
-    { label: 'Green', value: 'bg-green-100' },
-    { label: 'Yellow', value: 'bg-yellow-100' },
-    { label: 'Purple', value: 'bg-purple-100' },
-  ];
+  const [selectedTextColor, setSelectedTextColor] = useState(null);
+  const [selectedBgColor, setSelectedBgColor] = useState(null);
   
   const fontSizes = [
     { label: 'XS', value: 'text-xs' },
@@ -247,6 +252,24 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     setTempClass(classes.join(' '));
   };
   
+  // Initialize selected colors from existing classes
+  useEffect(() => {
+    // Find text color
+    const textColorClass = tempClass.split(' ').find(c => c.startsWith('text-') && 
+      colorPalette.some(p => c === `text-${p.tailwind}`));
+    if (textColorClass) {
+      const colorName = textColorClass.replace('text-', '');
+      setSelectedTextColor(colorPalette.find(p => p.tailwind === colorName));
+    }
+    
+    // Find bg color
+    const bgColorClass = tempClass.split(' ').find(c => c.startsWith('bg-'));
+    if (bgColorClass) {
+      const colorName = bgColorClass.replace('bg-', '').replace('100', '600');
+      setSelectedBgColor(colorPalette.find(p => p.tailwind === colorName));
+    }
+  }, []);
+  
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
@@ -278,33 +301,88 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
         <div className="space-y-4">
           {/* Text Color */}
           <div>
-            <label className="block text-sm font-medium mb-1">Text Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {textColors.map(color => (
+            <label className="block text-sm font-medium mb-2">Text Color</label>
+            <div className="space-y-2">
+              {/* Color Grid */}
+              <div className="flex flex-wrap gap-1">
                 <button
-                  key={color.value}
-                  onClick={() => handleClassToggle(color.value, 'text-color')}
-                  className={`px-3 py-1 rounded border ${tempClass.includes(color.value) ? 'ring-2 ring-blue-500' : ''}`}
+                  onClick={() => {
+                    setSelectedTextColor(null);
+                    handleClassToggle('', 'text-color');
+                  }}
+                  className="w-8 h-8 rounded border-2 border-gray-300 bg-white relative hover:scale-110 transition-transform"
+                  title="Default/Inherit"
                 >
-                  <span className={color.value}>{color.label}</span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-px h-6 bg-red-500 rotate-45 absolute"></div>
+                  </div>
                 </button>
-              ))}
+                {colorPalette.map(color => (
+                  <button
+                    key={color.hex}
+                    onClick={() => {
+                      setSelectedTextColor(color);
+                      handleClassToggle(`text-${color.tailwind}`, 'text-color');
+                    }}
+                    className={`w-8 h-8 rounded border-2 hover:scale-110 transition-transform ${
+                      selectedTextColor?.hex === color.hex ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'
+                    }`}
+                    style={{ backgroundColor: color.hex }}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+              {selectedTextColor && (
+                <div className="text-xs text-gray-600">
+                  Selected: <span className="font-medium">{selectedTextColor.label}</span>
+                </div>
+              )}
             </div>
           </div>
           
           {/* Background Color */}
           <div>
-            <label className="block text-sm font-medium mb-1">Background Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {bgColors.map(color => (
+            <label className="block text-sm font-medium mb-2">Background Color</label>
+            <div className="space-y-2">
+              {/* Color Grid */}
+              <div className="flex flex-wrap gap-1">
                 <button
-                  key={color.value || 'none'}
-                  onClick={() => handleClassToggle(color.value, 'bg-color')}
-                  className={`px-3 py-1 rounded border ${color.value} ${tempClass.includes(color.value) || (!color.value && !bgColors.slice(1).some(c => tempClass.includes(c.value))) ? 'ring-2 ring-blue-500' : ''}`}
+                  onClick={() => {
+                    setSelectedBgColor(null);
+                    handleClassToggle('', 'bg-color');
+                  }}
+                  className="w-8 h-8 rounded border-2 border-gray-300 bg-white relative hover:scale-110 transition-transform"
+                  title="None/Transparent"
                 >
-                  {color.label}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-px h-6 bg-red-500 rotate-45 absolute"></div>
+                  </div>
                 </button>
-              ))}
+                {/* Light background colors */}
+                {colorPalette.filter((_, i) => i > 3).map(color => {
+                  const bgHex = color.hex.replace(/[0-9a-f]{2}$/i, 'E5'); // Lighten colors for backgrounds
+                  const bgClass = `bg-${color.tailwind.replace('600', '100')}`;
+                  return (
+                    <button
+                      key={`bg-${color.hex}`}
+                      onClick={() => {
+                        setSelectedBgColor(color);
+                        handleClassToggle(bgClass, 'bg-color');
+                      }}
+                      className={`w-8 h-8 rounded border-2 hover:scale-110 transition-transform ${
+                        selectedBgColor?.hex === color.hex ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: bgHex }}
+                      title={`${color.label} Background`}
+                    />
+                  );
+                })}
+              </div>
+              {selectedBgColor && (
+                <div className="text-xs text-gray-600">
+                  Selected: <span className="font-medium">{selectedBgColor.label} Background</span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -1463,7 +1541,7 @@ export default function CartSlotsEditorWithMicroSlots({
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(items, oldIndex, newIndex);
         // Auto-save after drag
-        setTimeout(() => saveConfiguration(), 500);
+        setTimeout(() => saveConfiguration(), 2000);
         return newOrder;
       }
       return items;
@@ -1486,7 +1564,7 @@ export default function CartSlotsEditorWithMicroSlots({
       if (oldIndex !== -1 && newIndex !== -1) {
         newOrders[parentId] = arrayMove(parentOrder, oldIndex, newIndex);
         // Auto-save after micro-slot reorder
-        setTimeout(() => saveConfiguration(), 500);
+        setTimeout(() => saveConfiguration(), 2000);
       }
       
       return newOrders;
@@ -1503,7 +1581,7 @@ export default function CartSlotsEditorWithMicroSlots({
       }
     }));
     // Auto-save after resize
-    setTimeout(() => saveConfiguration(), 800);
+    setTimeout(() => saveConfiguration(), 3000);
   }, [saveConfiguration]);
   
   // Handle text content change
@@ -1513,7 +1591,7 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newText
     }));
     // Auto-save after text change
-    setTimeout(() => saveConfiguration(), 1000);
+    setTimeout(() => saveConfiguration(), 2500);
   }, [saveConfiguration]);
   
   // Handle class change for elements
@@ -1523,7 +1601,7 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newClass
     }));
     // Auto-save after class change
-    setTimeout(() => saveConfiguration(), 1000);
+    setTimeout(() => saveConfiguration(), 2500);
   }, [saveConfiguration]);
   
   // Handle component size change
@@ -1533,7 +1611,7 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newSize
     }));
     // Auto-save after size change
-    setTimeout(() => saveConfiguration(), 1000);
+    setTimeout(() => saveConfiguration(), 2500);
   }, [saveConfiguration]);
 
   // Edit micro-slot
