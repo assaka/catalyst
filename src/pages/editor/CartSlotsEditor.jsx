@@ -1576,9 +1576,14 @@ export default function CartSlotsEditorWithMicroSlots({
     };
     
     // Save to localStorage immediately
-    localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+    const configString = JSON.stringify(config);
+    localStorage.setItem('cart_slots_layout_config', configString);
     console.log('💾 Saved configuration:', config);
     console.log('📝 Saved textContent specifically:', config.textContent);
+    console.log('🎨 Saved elementClasses:', config.elementClasses);
+    console.log('📏 Saved componentSizes:', config.componentSizes);
+    console.log('📐 Saved microSlotSpans:', config.microSlotSpans);
+    console.log('📊 Configuration size:', (configString.length / 1024).toFixed(2) + ' KB');
     
     // Try to save to database
     try {
@@ -1599,24 +1604,34 @@ export default function CartSlotsEditorWithMicroSlots({
         if (response?.data?.data?.length > 0) {
           // Update existing configuration
           const configId = response.data.data[0].id;
-          const updateResponse = await apiClient.put(`slot-configurations/${configId}`, {
+          const payload = {
             page_name: 'Cart',
             slot_type: 'cart_layout',
             store_id: storeId,
             configuration: config,
             is_active: true
-          });
+          };
+          console.log('📤 Sending UPDATE to database with payload:', payload);
+          console.log('📤 Config elementClasses:', config.elementClasses);
+          console.log('📤 Config textContent:', config.textContent);
+          const updateResponse = await apiClient.put(`slot-configurations/${configId}`, payload);
           console.log('✅ Updated in database:', updateResponse);
+          console.log('✅ Response data:', updateResponse?.data);
         } else {
           // Create new configuration
-          const createResponse = await apiClient.post('slot-configurations', {
+          const payload = {
             page_name: 'Cart',
             slot_type: 'cart_layout',
             store_id: storeId,
             configuration: config,
             is_active: true
-          });
+          };
+          console.log('📤 Sending CREATE to database with payload:', payload);
+          console.log('📤 Config elementClasses:', config.elementClasses);
+          console.log('📤 Config textContent:', config.textContent);
+          const createResponse = await apiClient.post('slot-configurations', payload);
           console.log('✅ Created in database:', createResponse);
+          console.log('✅ Response data:', createResponse?.data);
         }
       }
       
@@ -1636,7 +1651,18 @@ export default function CartSlotsEditorWithMicroSlots({
       
       return true;
     } catch (error) {
-      console.error('Failed to save configuration to database:', error);
+      console.error('❌ Failed to save configuration to database:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error data:', error.response?.data);
+      
+      // Check if it's a specific error type
+      if (error.response?.status === 413) {
+        console.error('❌ Payload too large! Configuration size exceeds server limit');
+        alert('Configuration is too large to save to database. Try removing some custom slots or content.');
+      } else if (error.response?.status === 400) {
+        console.error('❌ Bad request:', error.response?.data?.error);
+      }
+      
       // Still show saved status since localStorage succeeded
       setSaveStatus('saved');
       
@@ -1719,10 +1745,24 @@ export default function CartSlotsEditorWithMicroSlots({
         const response = await apiClient.get(`slot-configurations?${queryParams}`);
         
         if (response?.data?.data?.length > 0) {
-          const config = response.data.data[0].configuration;
+          const dbRecord = response.data.data[0];
+          console.log('📦 Full database record:', dbRecord);
+          const config = dbRecord.configuration;
+          
+          if (!config) {
+            console.error('⚠️ No configuration found in database record');
+            return;
+          }
+          
           console.log('✅ Loading configuration from DATABASE:', config);
           console.log('📐 Loaded microSlotSpans:', config.microSlotSpans);
           console.log('📝 Loaded textContent:', config.textContent);
+          console.log('🎨 Loaded elementClasses:', config.elementClasses);
+          console.log('📏 Loaded componentSizes:', config.componentSizes);
+          
+          // Verify the data types
+          console.log('Type check - elementClasses is:', typeof config.elementClasses, config.elementClasses);
+          console.log('Type check - textContent is:', typeof config.textContent, config.textContent);
           
           // Only load header and emptyCart slots
           if (config.majorSlots) {
