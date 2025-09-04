@@ -1297,7 +1297,7 @@ export default function CartSlotsEditorWithMicroSlots({
   data = {},
   onSave = () => {},
 }) {
-  // State for major slot order
+  // State for major slot order - show all slots in editor
   const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts']);
   
   // State for resizing indicators
@@ -1835,6 +1835,95 @@ export default function CartSlotsEditorWithMicroSlots({
     );
   };
 
+  // Render coupon section placeholder
+  const renderCoupon = () => {
+    const microSlots = microSlotOrders.coupon || MICRO_SLOT_DEFINITIONS.coupon.microSlots;
+    const spans = microSlotSpans.coupon || MICRO_SLOT_DEFINITIONS.coupon.defaultSpans;
+    
+    return (
+      <SortableParentSlot
+        id="coupon"
+        name="Coupon Section"
+        microSlotOrder={microSlots}
+        onMicroSlotReorder={handleMicroSlotReorder}
+        onEdit={() => handleEditMicroSlot('coupon')}
+        gridCols={MICRO_SLOT_DEFINITIONS.coupon.gridCols}
+      >
+        {microSlots.map(slotId => {
+          const slotSpan = spans[slotId] || { col: 12, row: 1 };
+          return (
+            <MicroSlot 
+              key={slotId} 
+              id={slotId} 
+              onEdit={handleEditMicroSlot}
+              colSpan={slotSpan.col}
+              rowSpan={slotSpan.row}
+              onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+            >
+              <div className="p-2 bg-gray-100 rounded text-center text-gray-600">
+                {slotId}
+              </div>
+            </MicroSlot>
+          );
+        })}
+      </SortableParentSlot>
+    );
+  };
+  
+  // Render order summary placeholder
+  const renderOrderSummary = () => {
+    const microSlots = microSlotOrders.orderSummary || MICRO_SLOT_DEFINITIONS.orderSummary.microSlots;
+    const spans = microSlotSpans.orderSummary || MICRO_SLOT_DEFINITIONS.orderSummary.defaultSpans;
+    
+    return (
+      <SortableParentSlot
+        id="orderSummary"
+        name="Order Summary"
+        microSlotOrder={microSlots}
+        onMicroSlotReorder={handleMicroSlotReorder}
+        onEdit={() => handleEditMicroSlot('orderSummary')}
+        gridCols={MICRO_SLOT_DEFINITIONS.orderSummary.gridCols}
+      >
+        {microSlots.map(slotId => {
+          const slotSpan = spans[slotId] || { col: 12, row: 1 };
+          return (
+            <MicroSlot 
+              key={slotId} 
+              id={slotId} 
+              onEdit={handleEditMicroSlot}
+              colSpan={slotSpan.col}
+              rowSpan={slotSpan.row}
+              onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+            >
+              <div className="p-2 bg-gray-100 rounded text-center text-gray-600">
+                {slotId}
+              </div>
+            </MicroSlot>
+          );
+        })}
+      </SortableParentSlot>
+    );
+  };
+  
+  // Render recommended products placeholder  
+  const renderRecommendedProducts = () => {
+    return (
+      <SortableParentSlot
+        id="recommendedProducts"
+        name="Recommended Products"
+        microSlotOrder={[]}
+        onMicroSlotReorder={handleMicroSlotReorder}
+        onEdit={() => handleEditMicroSlot('recommendedProducts')}
+        gridCols={12}
+      >
+        <div className="col-span-12 p-8 bg-gray-100 rounded text-center text-gray-600">
+          <div className="text-lg font-semibold mb-2">Recommended Products</div>
+          <div className="text-sm">Product recommendations will appear here</div>
+        </div>
+      </SortableParentSlot>
+    );
+  };
+  
   // Render header with micro-slots
   const renderHeader = () => {
     const microSlots = microSlotOrders.header || MICRO_SLOT_DEFINITIONS.header.microSlots;
@@ -1981,29 +2070,25 @@ export default function CartSlotsEditorWithMicroSlots({
             <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
               <div className="space-y-8">
                 {majorSlots.map(slotId => {
-                  if (slotId === 'header') {
-                    return renderHeader();
+                  // In editor mode, show all slots regardless of cart state
+                  switch (slotId) {
+                    case 'header':
+                      return renderHeader();
+                    case 'emptyCart':
+                      // Always show empty cart in editor
+                      return renderEmptyCart();
+                    case 'cartItems':
+                      // Skip cartItems slot since we're showing emptyCart
+                      return null;
+                    case 'coupon':
+                      return renderCoupon();
+                    case 'orderSummary':
+                      return renderOrderSummary();
+                    case 'recommendedProducts':
+                      return renderRecommendedProducts();
+                    default:
+                      return null;
                   }
-                  if (slotId === 'emptyCart' && cartItems.length === 0) {
-                    return renderEmptyCart();
-                  }
-                  if (slotId === 'cartItems' && cartItems.length > 0) {
-                    // TODO: Render cart items
-                    return null;
-                  }
-                  if (slotId === 'coupon') {
-                    // TODO: Render coupon section
-                    return null;
-                  }
-                  if (slotId === 'orderSummary') {
-                    // TODO: Render order summary
-                    return null;
-                  }
-                  if (slotId === 'recommendedProducts') {
-                    // TODO: Render recommended products
-                    return null;
-                  }
-                  return null;
                 })}
               </div>
             </SortableContext>
