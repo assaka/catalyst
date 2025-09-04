@@ -515,7 +515,7 @@ export default ExampleComponent;`;
   const handleDiffStatsChange = useCallback((diffStats) => {
     if (!selectedFile) return;
     
-    // Check if there are any actual changes in the diff stats
+    // Check if there are any actual changes Rin the diff stats
     // Note: DiffService returns 'additions', 'deletions', 'modifications' (not addedLines, etc.)
     console.log('🔍 DiffStats for', selectedFile.name, ':', {
       additions: diffStats?.additions,
@@ -911,6 +911,13 @@ export default ExampleComponent;`;
                         </button>
                       </div>
                     </div>
+                    <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                    >
+                      {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    </button>
                   </div>
 
                   {/* Header */}

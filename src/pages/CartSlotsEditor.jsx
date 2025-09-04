@@ -1575,6 +1575,7 @@ export default function CartSlotsEditorWithMicroSlots({
         if (localConfig) {
           const config = JSON.parse(localConfig);
           console.log('Loading saved configuration from localStorage:', config);
+          console.log('📐 Loaded microSlotSpans:', config.microSlotSpans);
           
           // Only load header and emptyCart slots
           if (config.majorSlots) {
@@ -1688,13 +1689,20 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
-    setMicroSlotSpans(prev => ({
-      ...prev,
-      [parentId]: {
-        ...prev[parentId],
-        [microSlotId]: newSpans
-      }
-    }));
+    console.log('📐 Span change:', { parentId, microSlotId, newSpans });
+    
+    setMicroSlotSpans(prev => {
+      const updated = {
+        ...prev,
+        [parentId]: {
+          ...prev[parentId],
+          [microSlotId]: newSpans
+        }
+      };
+      console.log('📐 Updated microSlotSpans:', updated);
+      return updated;
+    });
+    
     // Auto-save after resize
     setTimeout(() => saveConfiguration(), 3000);
   }, [saveConfiguration]);
