@@ -812,55 +812,9 @@ export default ExampleComponent;`;
 
       {/* Main Content */}
       <div className={`flex-1 min-h-0 overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-        <ResizablePanelGroup 
-          direction="horizontal" 
-          className="h-[calc(100vh-200px)]"
-          autoSaveId={isFullscreen ? "ai-context-fullscreen" : "ai-context-normal"}
-        >
-          {/* AI Context Window - First Column - Hidden in fullscreen */}
-          {!isFullscreen && (
-            <>
-              <ResizablePanel
-                defaultSize={25}
-                minSize={15}
-                maxSize={30}
-              >
-                <AIContextWindow
-                  sourceCode={sourceCode}
-                  filePath={selectedFile?.path || ''}
-                  onPatchGenerated={handlePatchGenerated}
-                  onPreviewGenerated={handlePreviewGenerated}
-                  className="h-full"
-                />
-              </ResizablePanel>
-
-              <ResizableHandle />
-
-              {/* File Tree Navigator - Hidden in fullscreen */}
-              <ResizablePanel 
-                defaultSize={15}
-                minSize={10}
-                maxSize={15}
-              >
-                <FileTreeNavigator
-                  onFileSelect={handleFileSelect}
-                  selectedFile={selectedFile}
-                  modifiedFiles={modifiedFiles}
-                  onRefresh={handleFileTreeRefresh}
-                  className="h-[calc(100vh-200px)]"
-                />
-              </ResizablePanel>
-
-              <ResizableHandle />
-            </>
-          )}
-
-          {/* Code Editor and Preview Panel - Expands to full width in fullscreen */}
-          <ResizablePanel 
-            defaultSize={isFullscreen ? 100 : 60}
-            minSize={isFullscreen ? 100 : 40}
-            maxSize={isFullscreen ? 100 : 85}
-          >
+        {isFullscreen ? (
+          // Fullscreen mode - single panel without ResizablePanelGroup
+          <div className="h-full w-full">
             <div className="h-[calc(100vh-200px)] flex flex-col">
               {selectedFile ? (
                 <>
@@ -1091,8 +1045,267 @@ export default ExampleComponent;`;
                 </div>
               )}
             </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          </div>
+        ) : (
+          // Normal mode with ResizablePanelGroup
+          <ResizablePanelGroup 
+            direction="horizontal" 
+            className="h-[calc(100vh-200px)]"
+            autoSaveId="ai-context-window-v2"
+          >
+            {/* AI Context Window - First Column */}
+            <ResizablePanel
+              defaultSize={25}
+              minSize={15}
+              maxSize={30}
+            >
+              <AIContextWindow
+                sourceCode={sourceCode}
+                filePath={selectedFile?.path || ''}
+                onPatchGenerated={handlePatchGenerated}
+                onPreviewGenerated={handlePreviewGenerated}
+                className="h-full"
+              />
+            </ResizablePanel>
+
+            <ResizableHandle />
+
+            {/* File Tree Navigator */}
+            <ResizablePanel 
+              defaultSize={15}
+              minSize={10}
+              maxSize={15}
+            >
+              <FileTreeNavigator
+                onFileSelect={handleFileSelect}
+                selectedFile={selectedFile}
+                modifiedFiles={modifiedFiles}
+                onRefresh={handleFileTreeRefresh}
+                className="h-[calc(100vh-200px)]"
+              />
+            </ResizablePanel>
+
+            <ResizableHandle />
+
+            {/* Code Editor and Preview Panel */}
+            <ResizablePanel 
+              defaultSize={60}
+              minSize={40}
+              maxSize={85}
+            >
+              <div className="h-[calc(100vh-200px)] flex flex-col">
+                {selectedFile ? (
+                  <>
+                    {/* Tab Interface Above File Name */}
+                    <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
+                      <div className="flex justify-between border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
+                          <button
+                            onClick={() => {
+                              setPreviewMode('code');
+                              handlePreviewModeChange('code');
+                            }}
+                            className={cn(
+                              "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
+                              previewMode === 'code' 
+                                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                            )}
+                          >
+                            <Code className="w-4 h-4 mr-2" />
+                            Code
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPreviewMode('patch');
+                              handlePreviewModeChange('patch');
+                            }}
+                            className={cn(
+                              "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
+                              previewMode === 'patch' 
+                                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                            )}
+                          >
+                            <Diff className="w-4 h-4 mr-2" />
+                            Diff
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPreviewMode('hybrid');
+                              handlePreviewModeChange('hybrid');
+                            }}
+                            className={cn(
+                              "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
+                              previewMode === 'hybrid' 
+                                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                            )}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Customize
+                          </button>
+                          <button
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                          >
+                            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Header */}
+                    <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {selectedFile.name}
+                        </span>
+                        {modifiedFiles.includes(selectedFile.path) && (
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        {/* Download Button - Only show in Preview mode */}
+                        {previewMode === 'live' && (
+                          <button
+                            onClick={handleDownload}
+                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            title="Download current file"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      
+                      {isFileLoading && (
+                        <span className="text-xs text-gray-500">Loading...</span>
+                      )}
+                    </div>
+
+                    {/* Single Content Area - Tab-based Content */}
+                    <div className="flex-1 overflow-hidden">
+                      {previewMode === 'code' ? (
+                        // Advanced Code Editor with Database Persistence
+                        <CodeEditor
+                          value={sourceCode}
+                          onChange={handleCodeChange}
+                          fileName={selectedFile.name}
+                          onCursorPositionChange={setCursorPosition}
+                          onSelectionChange={setSelection}
+                          onManualEdit={handleManualEdit}
+                          originalCode={originalCode}
+                          initialContent={originalCode}
+                          enableDiffDetection={true}
+                          enableTabs={true}
+                          className="h-full"
+                        />
+                      ) : previewMode === 'patch' ? (
+                        // Diff View - Enhanced with AST diff functionality
+                        <DiffPreviewSystem
+                          originalCode={manualEditResult?.originalCode || originalCode}
+                          modifiedCode={manualEditResult?.newCode || sourceCode}
+                          fileName={selectedFile?.path || ''}
+                          filePath={selectedFile?.path}
+                          useAstDiff={true}
+                          className="h-full"
+                          onCodeChange={handleCodeChange}
+                          onDiffStatsChange={handleDiffStatsChange}
+                        />
+                      ) : (
+                        // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
+                        <div className="h-full overflow-y-auto">
+                          {selectedFile.name.includes('Slots.jsx') || selectedFile.path.includes('Slots.jsx') ? (
+                            // This is a slots file - use GenericSlotEditor
+                            <GenericSlotEditor
+                              pageName={selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '')}
+                              onSave={async (data) => {
+                                const pageName = selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '');
+                                console.log(`💾 Saving ${pageName} slots configuration...`);
+                                
+                                // Save to localStorage for now (until backend API is ready)
+                                try {
+                                  const storageKey = `slot_config_${pageName}`;
+                                  const configData = {
+                                    page_name: pageName,
+                                    configuration: data.slotDefinitions,
+                                    slot_order: data.pageConfig?.slotOrder || [],
+                                    slot_positions: data.slotPositions || {},
+                                    code: data.slotsFileCode,
+                                    updated_at: new Date().toISOString()
+                                  };
+                                  
+                                  localStorage.setItem(storageKey, JSON.stringify(configData));
+                                  console.log('✅ Configuration saved to localStorage');
+                                } catch (error) {
+                                  console.error('❌ Failed to save configuration:', error);
+                                }
+                              }}
+                              onCancel={() => {
+                                setPreviewMode('code');
+                              }}
+                              className="min-h-full"
+                            />
+                          ) : (
+                            // Regular file - use CodeEditor
+                            <CodeEditor
+                              value={sourceCode}
+                              onChange={handleCodeChange}
+                              fileName={selectedFile.name}
+                              language={getLanguageFromFileName(selectedFile.name)}
+                              onCursorPositionChange={setCursorPosition}
+                              onSelectionChange={setSelection}
+                              onManualEdit={handleManualEdit}
+                              originalCode={originalCode}
+                              initialContent={originalCode}
+                              enableDiffDetection={true}
+                              enableTabs={true}
+                              className="h-full"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                    <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
+                      <p className="text-lg mb-2">Select a file to begin editing</p>
+                      <p className="text-sm mb-4">
+                        Choose a file from the navigator or{' '}
+                        <button
+                          onClick={() => loadFileContent('/demo/example.jsx')}
+                          className="text-blue-500 hover:text-blue-600 underline"
+                        >
+                          load a demo file
+                        </button>
+                      </p>
+                      
+                      {!connectionStatus && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-700 mb-2">
+                            <strong>Having trouble loading files?</strong>
+                          </p>
+                          <p className="text-xs text-blue-600 mb-3">
+                            Click "Test Connection" in the header to diagnose API access issues.
+                          </p>
+                          <button
+                            onClick={testConnection}
+                            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                          >
+                            Test API Connection
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
 
       {/* Status Bar */}

@@ -969,9 +969,14 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
   const slotRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   
+  // Debug incoming props
+  console.log(`🎯 MicroSlot ${id} received props: colSpan=${colSpan} (${typeof colSpan}), rowSpan=${rowSpan} (${typeof rowSpan})`);
+  
   // Ensure colSpan and rowSpan are valid numbers
   const safeColSpan = typeof colSpan === 'number' && colSpan >= 1 && colSpan <= 12 ? colSpan : 12;
   const safeRowSpan = typeof rowSpan === 'number' && rowSpan >= 1 && rowSpan <= 4 ? rowSpan : 1;
+  
+  console.log(`🎯 MicroSlot ${id} using safe values: safeColSpan=${safeColSpan}, safeRowSpan=${safeRowSpan}`);
   
   const {
     attributes,
@@ -1729,7 +1734,15 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
-    console.log('📐 Span change:', { parentId, microSlotId, newSpans });
+    console.log('📐 Span change called:', { 
+      parentId, 
+      microSlotId, 
+      newSpans,
+      'newSpans.col': newSpans.col,
+      'newSpans.row': newSpans.row,
+      'typeof newSpans.col': typeof newSpans.col,
+      'typeof newSpans.row': typeof newSpans.row
+    });
     
     setMicroSlotSpans(prev => {
       const updated = {
@@ -1740,6 +1753,7 @@ export default function CartSlotsEditorWithMicroSlots({
         }
       };
       console.log('📐 Updated microSlotSpans:', updated);
+      console.log('📐 Specific slot after update:', updated[parentId]?.[microSlotId]);
       return updated;
     });
     
@@ -1819,6 +1833,7 @@ export default function CartSlotsEditorWithMicroSlots({
       >
         {microSlots.map(slotId => {
           const slotSpan = spans[slotId] || { col: 12, row: 1 };
+          console.log(`🔍 Rendering ${slotId}: col=${slotSpan.col}, row=${slotSpan.row}, spans object:`, spans[slotId]);
           
           if (slotId === 'emptyCart.icon') {
             const iconSize = componentSizes[slotId] || 64;
