@@ -3089,25 +3089,41 @@ export default function CartSlotsEditorWithMicroSlots({
             onDragEnd={handleMajorDragEnd}
           >
             <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
-              <div className="space-y-8">
-                {majorSlots.map(slotId => {
-                  // In editor mode, show all slots regardless of cart state
-                  switch (slotId) {
-                    case 'header':
-                      return renderHeader();
-                    case 'emptyCart':
-                      return renderEmptyCart();
-                    case 'cartItem':
-                      return renderCartItem();
-                    case 'coupon':
-                      return renderCoupon();
-                    case 'orderSummary':
-                      return renderOrderSummary();
-                    default:
-                      return null;
-                  }
-                })}
-              </div>
+              {viewMode === 'empty' ? (
+                // Empty cart layout - simple vertical
+                <div className="space-y-8">
+                  {majorSlots.map(slotId => {
+                    switch (slotId) {
+                      case 'header':
+                        return renderHeader();
+                      case 'emptyCart':
+                        return renderEmptyCart();
+                      default:
+                        return null;
+                    }
+                  })}
+                </div>
+              ) : (
+                // With products layout - matching Cart.jsx structure
+                <div className="space-y-8">
+                  {/* Header at top */}
+                  {majorSlots.includes('header') && renderHeader()}
+                  
+                  {/* Main content grid - cart items left, coupon/summary right */}
+                  <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+                    {/* Left side - Cart items (2 columns width) */}
+                    <div className="lg:col-span-2">
+                      {majorSlots.includes('cartItem') && renderCartItem()}
+                    </div>
+                    
+                    {/* Right side - Coupon and Order Summary (1 column width) */}
+                    <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
+                      {majorSlots.includes('coupon') && renderCoupon()}
+                      {majorSlots.includes('orderSummary') && renderOrderSummary()}
+                    </div>
+                  </div>
+                </div>
+              )}
             </SortableContext>
             
             {/* Drag overlay */}
