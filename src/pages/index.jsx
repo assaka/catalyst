@@ -53,14 +53,15 @@ export { default as Billing } from './admin/Billing';
 export { default as TeamPage } from './admin/TeamPage';
 export { default as Onboarding } from './admin/Onboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
-export { default as AIContextWindow } from './admin/AIContextWindow';
-export { default as CartSlotsEditor } from './admin/CartSlotsEditor';
+// Editor Pages
+export { default as AIContextWindow } from './editor/AIContextWindow';
+export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
+export { default as CartSlots } from './editor/CartSlots';
 
 // Storefront Pages
 export { default as HomePage } from './storefront/HomePage';
 export { default as ProductDetail } from './storefront/ProductDetail';
 export { default as Cart } from './storefront/Cart';
-export { default as CartSlots } from './storefront/CartSlots';
 export { default as Checkout } from './storefront/Checkout';
 export { default as OrderSuccess } from './storefront/OrderSuccess';
 export { default as OrderCancel } from './storefront/OrderCancel';
