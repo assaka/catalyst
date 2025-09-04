@@ -844,9 +844,16 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
   return (
     <>
       <div 
-        onClick={() => setShowEditor(true)}
+        onClick={() => {
+          // Only open TailwindStyleEditor for plain text
+          // For HTML content, user should use the pencil icon
+          if (!hasHtml) {
+            setShowEditor(true);
+          }
+        }}
         className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded ${className}`}
-        title="Click to edit text and style"
+        title={hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style"}
+        style={hasHtml ? { cursor: 'default' } : {}}
       >
         {hasHtml ? (
           <div dangerouslySetInnerHTML={{ __html: text }} />
@@ -855,7 +862,7 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
         )}
       </div>
       
-      {showEditor && (
+      {showEditor && !hasHtml && (
         <TailwindStyleEditor
           text={text}
           className={className}
@@ -1678,14 +1685,28 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.customSlots) {
             setCustomSlots(config.customSlots);
             
-            // Ensure text content for custom text slots is loaded
+            // Ensure text content for custom text slots is properly synced
             Object.entries(config.customSlots).forEach(([slotId, slot]) => {
-              if (slot.type === 'text' && !config.textContent?.[slotId]) {
-                // If textContent doesn't have this custom slot's content, add it
-                setTextContent(prev => ({
-                  ...prev,
-                  [slotId]: slot.content
-                }));
+              if (slot.type === 'text') {
+                // Always sync custom slot content with textContent
+                // Use saved textContent if available, otherwise use slot.content
+                const savedContent = config.textContent?.[slotId];
+                if (savedContent !== undefined) {
+                  // Update the custom slot with the saved content
+                  setCustomSlots(prev => ({
+                    ...prev,
+                    [slotId]: {
+                      ...prev[slotId],
+                      content: savedContent
+                    }
+                  }));
+                } else {
+                  // If no saved content, ensure textContent has the slot's default
+                  setTextContent(prev => ({
+                    ...prev,
+                    [slotId]: slot.content
+                  }));
+                }
               }
             });
           }
@@ -1760,14 +1781,28 @@ export default function CartSlotsEditorWithMicroSlots({
             if (dbConfig.customSlots) {
               setCustomSlots(dbConfig.customSlots);
               
-              // Ensure text content for custom text slots is loaded
+              // Ensure text content for custom text slots is properly synced
               Object.entries(dbConfig.customSlots).forEach(([slotId, slot]) => {
-                if (slot.type === 'text' && !dbConfig.textContent?.[slotId]) {
-                  // If textContent doesn't have this custom slot's content, add it
-                  setTextContent(prev => ({
-                    ...prev,
-                    [slotId]: slot.content
-                  }));
+                if (slot.type === 'text') {
+                  // Always sync custom slot content with textContent
+                  // Use saved textContent if available, otherwise use slot.content
+                  const savedContent = dbConfig.textContent?.[slotId];
+                  if (savedContent !== undefined) {
+                    // Update the custom slot with the saved content
+                    setCustomSlots(prev => ({
+                      ...prev,
+                      [slotId]: {
+                        ...prev[slotId],
+                        content: savedContent
+                      }
+                    }));
+                  } else {
+                    // If no saved content, ensure textContent has the slot's default
+                    setTextContent(prev => ({
+                      ...prev,
+                      [slotId]: slot.content
+                    }));
+                  }
                 }
               });
             }
@@ -2251,9 +2286,19 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <div className="flex justify-center items-center text-center">
                     <SimpleInlineEdit
-                      text={textContent[slotId] !== undefined ? textContent[slotId] : customSlot.content}
+                      text={textContent[slotId] || customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
-                      onChange={(newText) => handleTextChange(slotId, newText)}
+                      onChange={(newText) => {
+                        handleTextChange(slotId, newText);
+                        // Also update the custom slot content
+                        setCustomSlots(prev => ({
+                          ...prev,
+                          [slotId]: {
+                            ...prev[slotId],
+                            content: newText
+                          }
+                        }));
+                      }}
                       slotId={slotId}
                       onClassChange={handleClassChange}
                     />
