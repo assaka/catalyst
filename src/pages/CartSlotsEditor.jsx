@@ -783,7 +783,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
     transform: CSS.Transform.toString(transform),
     transition: isResizing ? 'none' : transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: isResizing ? 'nwse-resize' : isDraggable && !isResizing ? 'grab' : 'auto',
+    cursor: isResizing ? 'nwse-resize' : 'auto',
   };
 
   // Handle resize start
@@ -881,15 +881,17 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         slotRef.current = el;
       }}
       style={style}
-      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50 cursor-grabbing' : ''}`}
+      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable && !isResizing ? listeners : {})}
-      {...(isDraggable && !isResizing ? attributes : {})}
     >
-      {/* Drag indicator icon in top-left */}
+      {/* Drag handle in top-left */}
       {isDraggable && (isHovered || isDragging) && !isResizing && (
-        <div className="absolute left-1 top-1 p-0.5 bg-gray-100/80 rounded pointer-events-none z-20">
+        <div 
+          className="absolute left-1 top-1 p-0.5 bg-gray-100/80 rounded z-20 cursor-grab hover:bg-gray-200"
+          {...(isDraggable && !isResizing ? listeners : {})}
+          {...(isDraggable && !isResizing ? attributes : {})}
+        >
           <GripVertical className="w-3 h-3 text-gray-400" />
         </div>
       )}
@@ -1024,7 +1026,6 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDraggable ? 'grab' : 'auto',
   };
 
   const sensors = useSensors(
@@ -1081,15 +1082,17 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         containerRef.current = el;
       }}
       style={style}
-      className={`relative ${isDragging ? 'ring-2 ring-blue-500 cursor-grabbing' : ''}`}
+      className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable ? listeners : {})}
-      {...(isDraggable ? attributes : {})}
     >
-      {/* Drag indicator in top-left */}
+      {/* Drag handle in top-left */}
       {isDraggable && (isHovered || isDragging) && (
-        <div className="absolute left-2 top-2 p-1 bg-blue-100/80 rounded pointer-events-none z-30">
+        <div 
+          className="absolute left-2 top-2 p-1 bg-blue-100/80 rounded z-30 cursor-grab hover:bg-blue-200"
+          {...(isDraggable ? listeners : {})}
+          {...(isDraggable ? attributes : {})}
+        >
           <GripVertical className="w-4 h-4 text-blue-400" />
         </div>
       )}
@@ -1469,12 +1472,12 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="relative">
-                  <InlineEdit
-                    value={textContent[slotId]}
+                  <SimpleInlineEdit
+                    text={textContent[slotId]}
+                    className={elementClasses[slotId] || 'text-xl font-semibold'}
                     onChange={(newText) => handleTextChange(slotId, newText)}
-                    className="text-xl font-semibold block border-b-2 border-dashed border-gray-300 pb-1"
-                    tag="h2"
-                    richText
+                    slotId={slotId}
+                    onClassChange={handleClassChange}
                   />
                 </div>
               </MicroSlot>
@@ -1491,12 +1494,12 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="relative">
-                  <InlineEdit
-                    value={textContent[slotId]}
+                  <SimpleInlineEdit
+                    text={textContent[slotId]}
+                    className={elementClasses[slotId] || 'text-gray-600'}
                     onChange={(newText) => handleTextChange(slotId, newText)}
-                    className="text-gray-600 block border-2 border-dashed border-gray-300 p-2 rounded"
-                    tag="div"
-                    richText
+                    slotId={slotId}
+                    onClassChange={handleClassChange}
                   />
                 </div>
               </MicroSlot>
@@ -1624,12 +1627,12 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
               >
                 <div className="relative">
-                  <InlineEdit
-                    value={textContent[slotId]}
+                  <SimpleInlineEdit
+                    text={textContent[slotId]}
+                    className={elementClasses[slotId] || 'text-3xl font-bold text-gray-900'}
                     onChange={(newText) => handleTextChange(slotId, newText)}
-                    className="text-3xl font-bold text-gray-900 block border-b-2 border-dashed border-gray-300 pb-2"
-                    tag="h1"
-                    richText
+                    slotId={slotId}
+                    onClassChange={handleClassChange}
                   />
                 </div>
               </MicroSlot>
