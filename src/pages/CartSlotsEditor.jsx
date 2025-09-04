@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, Move, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -850,44 +850,22 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       }}
       style={style}
       className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Invisible hover zone - smaller to avoid resize conflicts */}
-      <div 
-        className="absolute -inset-y-2 z-0"
-        style={{ left: '-20px', right: '-20px' }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      />
-      
-      {isDraggable && isHovered && (
-        <div 
-          className="absolute left-1 top-1 transition-opacity z-10"
-          onMouseEnter={() => setIsHovered(true)}
-        >
-          <div
-            {...listeners}
-            {...attributes}
-            className="p-1 bg-blue-100/80 rounded cursor-grab active:cursor-grabbing hover:bg-blue-200"
-            title="Drag to reorder within parent"
-          >
-            <Move className="w-3 h-3 text-blue-600" />
-          </div>
-        </div>
-      )}
-      
-      {onEdit && isHovered && (
+      {/* Edit button only - no drag icon needed */}
+      {onEdit && isHovered && !isDragging && (
         <button
           onClick={() => onEdit(id)}
           className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-10 hover:bg-gray-200"
           title="Edit micro-slot"
-          onMouseEnter={() => setIsHovered(true)}
         >
           <Edit className="w-3 h-3 text-gray-600" />
         </button>
       )}
       
       {/* Span controls - moved inside to avoid conflicts */}
-      {onSpanChange && isHovered && (
+      {onSpanChange && (isHovered || isDragging) && (
         <div className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-10">
           <div className="flex items-center bg-white rounded shadow-sm border px-1">
             <span className="text-xs text-gray-500 mr-1">W:</span>
@@ -914,11 +892,15 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         </div>
       )}
       
-      <div className={`${isDragging ? 'ring-2 ring-blue-400' : 'hover:ring-1 hover:ring-gray-300'} rounded transition-all relative z-1`}>
+      <div 
+        className={`${isDragging ? 'ring-2 ring-blue-400 cursor-grabbing' : isDraggable && !isResizing ? 'hover:ring-1 hover:ring-gray-300 cursor-grab' : ''} rounded transition-all relative z-1`}
+        {...(isDraggable && !isResizing ? listeners : {})}
+        {...(isDraggable && !isResizing ? attributes : {})}
+      >
         {children}
         
         {/* Resize handles */}
-        {onSpanChange && !isDragging && isHovered && (
+        {onSpanChange && !isDragging && (isHovered || isResizing) && (
           <>
             {/* Right edge */}
             <div
@@ -984,39 +966,15 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       ref={setNodeRef}
       style={style}
       className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Invisible hover zone - smaller area to avoid conflicts */}
-      <div 
-        className="absolute -inset-y-2 z-0"
-        style={{ left: '-25px', right: '-25px' }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      />
-      
-      {/* Parent drag handle - moved inside */}
-      {isDraggable && isHovered && (
-        <div 
-          className="absolute left-2 top-2 transition-opacity z-10"
-          onMouseEnter={() => setIsHovered(true)}
-        >
-          <div
-            {...listeners}
-            {...attributes}
-            className="p-1.5 bg-gray-100/90 rounded cursor-grab active:cursor-grabbing hover:bg-gray-200"
-            title="Drag to reorder section"
-          >
-            <GripVertical className="w-4 h-4 text-gray-600" />
-          </div>
-        </div>
-      )}
-      
-      {/* Parent edit button - moved inside */}
-      {onEdit && isHovered && (
+      {/* Edit button only - drag entire section */}
+      {onEdit && isHovered && !isDragging && (
         <button
           onClick={() => onEdit(id)}
           className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-10 hover:bg-blue-200"
           title="Edit section"
-          onMouseEnter={() => setIsHovered(true)}
         >
           <Edit className="w-4 h-4 text-blue-600" />
         </button>
@@ -1027,8 +985,12 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         {name} (12 column grid)
       </div>
       
-      {/* Micro-slots container */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white relative z-1">
+      {/* Micro-slots container - draggable area */}
+      <div 
+        className={`border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white relative z-1 ${isDraggable && !isDragging ? 'cursor-grab' : isDragging ? 'cursor-grabbing' : ''}`}
+        {...(isDraggable ? listeners : {})}
+        {...(isDraggable ? attributes : {})}
+      >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
           <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
