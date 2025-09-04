@@ -1519,37 +1519,51 @@ export default ${componentName};`;
         <div className="flex items-center gap-3">
           {/* Mode Toggle and Layout Buttons */}
           <div className="flex flex-col gap-3 items-end">
-            <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
-              <Button
-                variant={mode === 'layout' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setMode('layout')}
-                className="flex items-center gap-2"
-                title="Slot Layout Editor"
-              >
-                <Layout className="w-4 h-4" />
-                Layout
-              </Button>
-              <Button
-                variant={mode === 'preview' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setMode('preview')}
-                className="flex items-center gap-2"
-                title="Interactive Preview"
-              >
-                <Eye className="w-4 h-4" />
-                Preview
-              </Button>
-              <Button
-                variant={mode === 'code' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setMode('code')}
-                className="flex items-center gap-2"
-                title="Code Editor"
-              >
-                <Code className="w-4 h-4" />
-                Code
-              </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
+                <Button
+                  variant={mode === 'layout' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMode('layout')}
+                  className="flex items-center gap-2"
+                  title="Slot Layout Editor"
+                >
+                  <Layout className="w-4 h-4" />
+                  Layout
+                </Button>
+                <Button
+                  variant={mode === 'preview' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMode('preview')}
+                  className="flex items-center gap-2"
+                  title="Interactive Preview"
+                >
+                  <Eye className="w-4 h-4" />
+                  Preview
+                </Button>
+                <Button
+                  variant={mode === 'code' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMode('code')}
+                  className="flex items-center gap-2"
+                  title="Code Editor"
+                >
+                  <Code className="w-4 h-4" />
+                  Code
+                </Button>
+              </div>
+              
+              {/* Auto-save indicator */}
+              {hasUnsavedChanges && (
+                <span className="text-sm px-3 py-1 rounded-full font-medium text-blue-700 bg-blue-100 animate-pulse">
+                  Auto-saving...
+                </span>
+              )}
+              {!hasUnsavedChanges && lastSavedRef.current && (
+                <span className="text-sm px-3 py-1 rounded-full font-medium text-green-700 bg-green-100">
+                  ✓ All changes saved
+                </span>
+              )}
             </div>
             
             {/* Layout Mode Buttons */}
@@ -1581,20 +1595,6 @@ export default ${componentName};`;
               </div>
             )}
           </div>
-
-          {/* Auto-save indicator */}
-          {hasUnsavedChanges && (
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 flex items-center">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse mr-2" />
-              Auto-saving...
-            </Badge>
-          )}
-          {!hasUnsavedChanges && lastSavedRef.current && (
-            <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-              Saved
-            </Badge>
-          )}
         </div>
       </div>
 
