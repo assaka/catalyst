@@ -1601,13 +1601,24 @@ export default function CartSlotsEditorWithMicroSlots({
         console.log('🔍 Checking for existing configuration with store_id:', storeId);
         const response = await apiClient.get(`slot-configurations?${queryParams}`);
         
-        console.log('🔍 Found configurations:', response?.data?.data?.length);
+        console.log('🔍 API Response:', response);
+        console.log('🔍 Response data:', response?.data);
+        console.log('🔍 Found configurations:', response?.data?.length || response?.data?.data?.length);
+        
+        // Handle both response formats (response.data might be the array directly)
+        const configurations = Array.isArray(response?.data) ? response.data : response?.data?.data;
+        console.log('🔍 Configurations array:', configurations);
         
         // Find the Cart configuration specifically
-        const cartConfig = response?.data?.data?.find(cfg => 
-          cfg.configuration?.page_name === 'Cart' && 
-          cfg.configuration?.slot_type === 'cart_layout'
-        );
+        const cartConfig = configurations?.find(cfg => {
+          console.log('🔍 Checking config:', cfg);
+          console.log('  - page_name:', cfg.configuration?.page_name);
+          console.log('  - slot_type:', cfg.configuration?.slot_type);
+          return cfg.configuration?.page_name === 'Cart' && 
+                 cfg.configuration?.slot_type === 'cart_layout';
+        });
+        
+        console.log('🔍 Cart config found?', !!cartConfig, cartConfig);
         
         if (cartConfig) {
           // Update existing configuration
@@ -1751,8 +1762,15 @@ export default function CartSlotsEditorWithMicroSlots({
         const { default: apiClient } = await import('@/api/client');
         const response = await apiClient.get(`slot-configurations?${queryParams}`);
         
+        console.log('📥 Load API Response:', response);
+        console.log('📥 Load Response data:', response?.data);
+        
+        // Handle both response formats (response.data might be the array directly)
+        const configurations = Array.isArray(response?.data) ? response.data : response?.data?.data;
+        console.log('📥 Load Configurations array:', configurations);
+        
         // Find the Cart configuration specifically
-        const cartConfig = response?.data?.data?.find(cfg => 
+        const cartConfig = configurations?.find(cfg => 
           cfg.configuration?.page_name === 'Cart' && 
           cfg.configuration?.slot_type === 'cart_layout'
         );
