@@ -85,13 +85,14 @@ const MICRO_SLOT_DEFINITIONS = {
   coupon: {
     id: 'coupon',
     name: 'Coupon Section',
-    microSlots: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied'],
+    microSlots: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied', 'coupon.removeButton'],
     gridCols: 12,
     defaultSpans: {
       'coupon.title': { col: 12, row: 1 },
       'coupon.input': { col: 8, row: 1 },
       'coupon.button': { col: 4, row: 1 },
-      'coupon.applied': { col: 12, row: 1 }
+      'coupon.applied': { col: 9, row: 1 },
+      'coupon.removeButton': { col: 3, row: 1 }
     }
   },
   orderSummary: {
@@ -1527,7 +1528,7 @@ export default function CartSlotsEditorWithMicroSlots({
     'coupon.button': 'Apply',
     'coupon.applied.title': 'Applied: ',
     'coupon.applied.description': '20% off your order',
-    'coupon.remove': 'Remove',
+    'coupon.removeButton': 'Remove',
     'orderSummary.title': 'Order Summary',
     'orderSummary.subtotal.label': 'Subtotal',
     'orderSummary.discount.label': 'Discount',
@@ -2082,7 +2083,7 @@ export default function CartSlotsEditorWithMicroSlots({
       'emptyCart.title', 'emptyCart.text', 'emptyCart.button', 
       'header.title',
       'coupon.title', 'coupon.input.placeholder', 'coupon.button', 'coupon.applied.title', 
-      'coupon.applied.description', 'coupon.remove',
+      'coupon.applied.description', 'coupon.removeButton',
       'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
       'orderSummary.tax.label', 'orderSummary.total.label', 'orderSummary.checkoutButton'
     ];
@@ -2901,33 +2902,52 @@ export default function CartSlotsEditorWithMicroSlots({
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
                   >
-                    <div className="mt-2 flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                      <div>
-                        <p className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}>
-                          <SimpleInlineEdit
-                            text={textContent['coupon.applied.title'] || 'Applied: '}
-                            className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}
-                            onChange={(newText) => handleTextChange('coupon.applied.title', newText)}
-                            slotId="coupon.applied.title"
-                            onClassChange={handleClassChange}
-                          />
-                          SAVE20
-                        </p>
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}>
                         <SimpleInlineEdit
-                          text={textContent['coupon.applied.description'] || '20% off your order'}
-                          className={elementClasses['coupon.applied.description'] || 'text-xs text-green-600'}
-                          onChange={(newText) => handleTextChange('coupon.applied.description', newText)}
-                          slotId="coupon.applied.description"
+                          text={textContent['coupon.applied.title'] || 'Applied: '}
+                          className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}
+                          onChange={(newText) => handleTextChange('coupon.applied.title', newText)}
+                          slotId="coupon.applied.title"
                           onClassChange={handleClassChange}
                         />
-                      </div>
+                        SAVE20
+                      </p>
+                      <SimpleInlineEdit
+                        text={textContent['coupon.applied.description'] || '20% off your order'}
+                        className={elementClasses['coupon.applied.description'] || 'text-xs text-green-600'}
+                        onChange={(newText) => handleTextChange('coupon.applied.description', newText)}
+                        slotId="coupon.applied.description"
+                        onClassChange={handleClassChange}
+                      />
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'coupon.removeButton') {
+                const buttonSize = componentSizes[slotId] || 'sm';
+                return (
+                  <MicroSlot
+                    key={slotId}
+                    id={slotId}
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                  >
+                    <div className="flex items-center justify-center h-full">
                       <Button 
                         variant="outline" 
-                        size="sm" 
-                        className="text-red-600 hover:text-red-800"
+                        size={buttonSize}
+                        className="text-red-600 hover:text-red-800 w-full"
                         disabled
                       >
-                        {textContent['coupon.remove'] || 'Remove'}
+                        {textContent[slotId] && textContent[slotId].includes('<') ? (
+                          <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
+                        ) : (
+                          <span>{textContent[slotId] || 'Remove'}</span>
+                        )}
                       </Button>
                     </div>
                   </MicroSlot>
@@ -3661,7 +3681,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     'coupon.button': 'Apply',
                     'coupon.applied.title': 'Applied: ',
                     'coupon.applied.description': '20% off your order',
-                    'coupon.remove': 'Remove',
+                    'coupon.removeButton': 'Remove',
                     'orderSummary.title': 'Order Summary',
                     'orderSummary.subtotal.label': 'Subtotal',
                     'orderSummary.discount.label': 'Discount',
