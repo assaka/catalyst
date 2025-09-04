@@ -2023,19 +2023,23 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
-    if (!slotId.startsWith('emptyCart.custom_')) return;
+    // Check if this is a custom slot
+    if (!slotId.includes('.custom_')) return;
+    
+    // Determine the parent slot (e.g., 'header', 'emptyCart')
+    const parentSlot = slotId.split('.')[0];
     
     // Remove from micro slot orders
     setMicroSlotOrders(prev => ({
       ...prev,
-      emptyCart: (prev.emptyCart || []).filter(id => id !== slotId)
+      [parentSlot]: (prev[parentSlot] || []).filter(id => id !== slotId)
     }));
     
     // Remove from micro slot spans
     setMicroSlotSpans(prev => {
       const updated = { ...prev };
-      if (updated.emptyCart) {
-        delete updated.emptyCart[slotId];
+      if (updated[parentSlot]) {
+        delete updated[parentSlot][slotId];
       }
       return updated;
     });
@@ -2600,6 +2604,82 @@ export default function CartSlotsEditorWithMicroSlots({
               </MicroSlot>
             );
           }
+          
+          // Handle custom slots for header
+          if (slotId.startsWith('header.custom_')) {
+            const customSlot = customSlots[slotId];
+            if (!customSlot) return null;
+            
+            if (customSlot.type === 'text') {
+              return (
+                <MicroSlot 
+                  key={slotId} 
+                  id={slotId} 
+                  onEdit={handleEditMicroSlot}
+                  colSpan={slotSpan.col}
+                  rowSpan={slotSpan.row}
+                  onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                  onDelete={() => {
+                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                      handleDeleteCustomSlot(slotId);
+                    }
+                  }}
+                >
+                  <div className="flex justify-center items-center text-center">
+                    <SimpleInlineEdit
+                      text={textContent[slotId] !== undefined ? textContent[slotId] : customSlot.content}
+                      className={elementClasses[slotId] || 'text-gray-600'}
+                      onChange={(newText) => {
+                        handleTextChange(slotId, newText);
+                        // Also update the custom slot content
+                        setCustomSlots(prev => ({
+                          ...prev,
+                          [slotId]: {
+                            ...prev[slotId],
+                            content: newText
+                          }
+                        }));
+                      }}
+                      slotId={slotId}
+                      onClassChange={handleClassChange}
+                    />
+                  </div>
+                </MicroSlot>
+              );
+            } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
+              const content = componentCode[slotId] || customSlot.content || '';
+              return (
+                <MicroSlot 
+                  key={slotId} 
+                  id={slotId} 
+                  onEdit={handleEditMicroSlot}
+                  colSpan={slotSpan.col}
+                  rowSpan={slotSpan.row}
+                  onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                  onDelete={() => {
+                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                      handleDeleteCustomSlot(slotId);
+                    }
+                  }}
+                >
+                  <div className="relative bg-gray-50 border border-dashed border-gray-300 rounded-md p-3 min-h-[60px]">
+                    {customSlot.type === 'html' ? (
+                      <div dangerouslySetInnerHTML={{ __html: content }} />
+                    ) : (
+                      <div className="text-xs text-gray-500 font-mono">
+                        <Badge variant="secondary" className="mb-2">
+                          <Code2 className="w-3 h-3 mr-1" />
+                          JavaScript: {customSlot.label}
+                        </Badge>
+                        <pre className="whitespace-pre-wrap">{content.substring(0, 100)}...</pre>
+                      </div>
+                    )}
+                  </div>
+                </MicroSlot>
+              );
+            }
+          }
+          
           return null;
         })}
       </SortableParentSlot>
