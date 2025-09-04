@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import ShopifyIntegrationComponent from '../components/integrations/ShopifyIntegration';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { Badge } from '../components/ui/badge';
+import ShopifyIntegrationComponent from '@/components/admin/integrations/ShopifyIntegration';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { 
   ShoppingBag, 
   BookOpen, 

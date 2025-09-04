@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import SupabasePage from './SupabasePage';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Database, Server, Cloud, Check, Star, Shield, Lock, UserX } from 'lucide-react';
 import apiClient from '../api/client';
 import { toast } from 'sonner';

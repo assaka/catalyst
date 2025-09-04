@@ -37,8 +37,8 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 
-import PluginForm from "../components/plugins/PluginForm";
-import UninstallDialog from "../components/plugins/UninstallDialog";
+import PluginForm from "@/components/admin/plugins/PluginForm";
+import UninstallDialog from "@/components/admin/plugins/UninstallDialog";
 
 export default function Plugins() {
   const [plugins, setPlugins] = useState([]);

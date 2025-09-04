@@ -1,8 +1,8 @@
 import React from 'react';
-import RenderIntegrationComponent from '../components/integrations/RenderIntegration';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import RenderIntegrationComponent from '@/components/admin/integrations/RenderIntegration';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Cloud, ExternalLink } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Button } from '@/components/ui/button';
 
 const RenderIntegration = () => {
   const { selectedStore } = useStoreSelection();

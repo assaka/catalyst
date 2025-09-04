@@ -26,8 +26,8 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog";
 
-import CouponForm from "../components/coupons/CouponForm";
-import FlashMessage from "../components/storefront/FlashMessage";
+import CouponForm from "@/components/admin/coupons/CouponForm";
+import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function CouponsPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();

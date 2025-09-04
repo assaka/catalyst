@@ -26,8 +26,8 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 
-import FlashMessage from "../components/storefront/FlashMessage";
-import ProductTabForm from "../components/products/ProductTabForm";
+import FlashMessage from "@/components/storefront/FlashMessage";
+import ProductTabForm from "@/components/admin/products/ProductTabForm";
 
 export default function ProductTabs() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();

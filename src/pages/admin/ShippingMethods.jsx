@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 
-import ShippingMethodForm from "../components/shipping/ShippingMethodForm";
+import ShippingMethodForm from "@/components/admin/shipping/ShippingMethodForm";
 
 const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     for (let i = 0; i < maxRetries; i++) {

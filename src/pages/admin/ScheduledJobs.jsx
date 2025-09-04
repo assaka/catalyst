@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Progress } from '../components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   RefreshCw,
   PlayCircle,
@@ -15,7 +15,7 @@ import {
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import apiClient from '../api/client';
 
 export default function ScheduledJobs() {

@@ -25,8 +25,8 @@ import {
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createCmsPageUrl } from "@/utils/urlUtils";
-import FlashMessage from "../components/storefront/FlashMessage";
-import CmsPageForm from "../components/cms/CmsPageForm";
+import FlashMessage from "@/components/storefront/FlashMessage";
+import CmsPageForm from "@/components/admin/cms/CmsPageForm";
 
 export default function CmsPages() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();

@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAlertTypes } from "@/hooks/useAlert";
 
-import TaxForm from "../components/tax/TaxForm";
+import TaxForm from "@/components/admin/tax/TaxForm";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

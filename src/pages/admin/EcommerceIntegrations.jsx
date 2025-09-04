@@ -1,6 +1,6 @@
 import React from 'react';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingBag } from 'lucide-react';
 
 const EcommerceIntegrations = () => {

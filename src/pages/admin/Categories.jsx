@@ -48,7 +48,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-import CategoryForm from "../components/categories/CategoryForm";
+import CategoryForm from "@/components/admin/categories/CategoryForm";
 
 export default function Categories() {
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();

@@ -29,18 +29,18 @@ if (typeof window !== 'undefined' && !window.__akeneoErrorHandlerInstalled) {
     }
   });
 }
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Switch } from '../components/ui/switch';
-import { Checkbox } from '../components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { Badge } from '../components/ui/badge';
-import { Progress } from '../components/ui/progress';
-import { Separator } from '../components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import {
   AlertCircle,
   CheckCircle,
@@ -61,9 +61,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import apiClient from '../api/client';
-import { MultiSelect } from '../components/ui/multi-select';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { debugEnvironment } from '../utils/env-debug';
 
 // Error Boundary to catch component crashes

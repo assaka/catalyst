@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
-import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import SupabaseIntegration from '@/components/admin/integrations/SupabaseIntegration';
 import { Database, Check } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import apiClient from '../api/client';
 

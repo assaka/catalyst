@@ -51,8 +51,8 @@ import {
   SelectValue
 } from "@/components/ui/select";
 
-import ProductForm from "../components/products/ProductForm";
-import ProductFilters from "../components/products/ProductFilters";
+import ProductForm from "@/components/admin/products/ProductForm";
+import ProductFilters from "@/components/admin/products/ProductFilters";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

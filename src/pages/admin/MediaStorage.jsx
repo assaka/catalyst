@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
-import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Badge } from '../components/ui/badge';
-import { Alert, AlertDescription } from '../components/ui/alert';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import SupabaseIntegration from '@/components/admin/integrations/SupabaseIntegration';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Database, 
   Cloud, 
@@ -20,7 +20,7 @@ import {
   UserX
 } from 'lucide-react';
 import apiClient from '../api/client';
-import { Button } from '../components/ui/button';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { getCurrentUser } from '../utils/auth';
 

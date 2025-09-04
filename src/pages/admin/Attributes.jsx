@@ -43,8 +43,8 @@ import {
   SelectValue
 } from "@/components/ui/select";
 
-import AttributeForm from "../components/attributes/AttributeForm";
-import AttributeSetForm from "../components/attributes/AttributeSetForm";
+import AttributeForm from "@/components/admin/attributes/AttributeForm";
+import AttributeSetForm from "@/components/admin/attributes/AttributeSetForm";
 
 export default function Attributes() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();

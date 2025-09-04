@@ -1,8 +1,8 @@
 import React from 'react';
-import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Database, ShoppingBag, Package } from 'lucide-react';
 
 const Integrations = () => {
