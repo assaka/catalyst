@@ -1153,7 +1153,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             e.stopPropagation();
             onEdit(id);
           }}
-          className="absolute right-1 top-1 p-1.5 bg-gray-500/90 rounded-md z-30 hover:bg-gray-600 transition-colors shadow-sm pointer-events-auto"
+          className="absolute right-1 top-1 p-2 bg-gray-500 rounded-md z-40 hover:bg-gray-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
           title="Edit micro-slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1163,7 +1163,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          <Edit className="w-3.5 h-3.5 text-white" />
+          <Edit className="w-4 h-4 text-white" />
         </button>
       )}
       
@@ -1172,9 +1172,16 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            e.preventDefault();
+            console.log('Delete button clicked for slot:', id);
+            if (onDelete) {
+              onDelete();
+            }
           }}
-          className="absolute right-8 top-1 p-1.5 bg-red-500/90 rounded-md z-30 hover:bg-red-600 transition-colors shadow-sm pointer-events-auto"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          className="absolute right-10 top-1 p-2 bg-red-500 rounded-md z-40 hover:bg-red-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
           title="Delete custom slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1184,7 +1191,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          <Trash2 className="w-3.5 h-3.5 text-white" />
+          <Trash2 className="w-4 h-4 text-white" />
         </button>
       )}
       
@@ -2451,7 +2458,8 @@ export default function CartSlotsEditorWithMicroSlots({
                             handleSizeChange(slotId, newSize);
                             
                             // Auto-expand slot based on button size
-                            const currentSpan = spans[slotId] || { col: 12, row: 1 };
+                            const currentSpanData = microSlotSpans.emptyCart || {};
+                            const currentSpan = currentSpanData[slotId] || { col: 12, row: 1 };
                             let newColSpan = currentSpan.col;
                             let newRowSpan = currentSpan.row;
                             
