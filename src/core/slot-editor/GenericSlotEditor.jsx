@@ -1684,12 +1684,10 @@ export default ${componentName};`;
                           // Update existing configuration
                           const response = await apiClient.put(`slot-configurations/${existing.data.data[0].id}`, slotConfig);
                           console.log('✅ Updated cart layout configuration in database', response);
-                          alert('Cart layout configuration updated successfully!');
                         } else {
                           // Create new configuration
                           const response = await apiClient.post('slot-configurations', slotConfig);
                           console.log('✅ Created cart layout configuration in database', response);
-                          alert('Cart layout configuration saved successfully!');
                         }
                       } catch (error) {
                         console.error('Failed to save to database:', error);
