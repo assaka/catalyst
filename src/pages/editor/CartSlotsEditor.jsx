@@ -1559,6 +1559,8 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
+    console.log('💾 saveConfiguration called');
+    console.log('📋 Current textContent state:', textContent);
     setSaveStatus('saving');
     
     const config = {
@@ -1575,7 +1577,8 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Save to localStorage immediately
     localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
-    console.log('💾 Saved to localStorage:', config);
+    console.log('💾 Saved configuration:', config);
+    console.log('📝 Saved textContent specifically:', config.textContent);
     
     // Try to save to database
     try {
@@ -1650,6 +1653,7 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Debounced save function
   const debouncedSave = useCallback(() => {
+    console.log('⏱️ Debounced save triggered, will save in 1 second');
     // Clear any existing timer
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -1657,6 +1661,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Set a new timer for 1 second
     saveTimerRef.current = setTimeout(() => {
+      console.log('⏱️ Debounce timer fired, calling saveConfiguration');
       saveConfiguration();
     }, 1000);
   }, [saveConfiguration]);
@@ -1973,6 +1978,12 @@ export default function CartSlotsEditorWithMicroSlots({
   // Save edited code
   const handleSaveCode = useCallback(() => {
     if (editingComponent) {
+      console.log('🔧 Saving Monaco editor content:', { 
+        component: editingComponent, 
+        content: tempCode,
+        contentLength: tempCode?.length 
+      });
+      
       // Check if this is a text content slot
       const textSlots = ['emptyCart.title', 'emptyCart.text', 'emptyCart.button', 'header.title'];
       
@@ -1981,11 +1992,16 @@ export default function CartSlotsEditorWithMicroSlots({
       const customSlot = isCustomSlot ? customSlots[editingComponent] : null;
       
       if (textSlots.includes(editingComponent) || (isCustomSlot && customSlot?.type === 'text')) {
+        console.log('📝 Saving as text content to slot:', editingComponent);
         // Save to text content for text slots
-        setTextContent(prev => ({
-          ...prev,
-          [editingComponent]: tempCode
-        }));
+        setTextContent(prev => {
+          const updated = {
+            ...prev,
+            [editingComponent]: tempCode
+          };
+          console.log('📦 Updated textContent state:', updated);
+          return updated;
+        });
         // Also update custom slot content if it's a custom text slot
         if (isCustomSlot && customSlot?.type === 'text') {
           setCustomSlots(prev => ({
@@ -1997,6 +2013,7 @@ export default function CartSlotsEditorWithMicroSlots({
           }));
         }
       } else {
+        console.log('💻 Saving as component code to slot:', editingComponent);
         // Save to component code for HTML/JS slots
         setComponentCode(prev => ({
           ...prev,
@@ -2019,7 +2036,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, saveConfiguration, customSlots]);
+  }, [editingComponent, tempCode, debouncedSave, customSlots]);
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
@@ -2140,7 +2157,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Auto-save
     debouncedSave();
-  }, [newSlotName, newSlotType, saveConfiguration]);
+  }, [newSlotName, newSlotType, currentParentSlot, debouncedSave]);
 
   // Render empty cart with micro-slots
   const renderEmptyCart = () => {
