@@ -11,7 +11,7 @@ import { hasBothRolesLoggedIn, handleLogout } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
-import RoleSwitcher from '@/components/RoleSwitcher';
+import RoleSwitcher from '@/components/admin/RoleSwitcher';
 import ModeHeader from '@/components/shared/ModeHeader';
 
 import {
