@@ -783,7 +783,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
     transform: CSS.Transform.toString(transform),
     transition: isResizing ? 'none' : transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: isResizing ? 'nwse-resize' : 'auto',
+    cursor: isResizing ? 'nwse-resize' : isDraggable && !isResizing ? 'grab' : 'auto',
   };
 
   // Handle resize start
@@ -881,15 +881,27 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         slotRef.current = el;
       }}
       style={style}
-      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
+      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50 cursor-grabbing' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      {...(isDraggable && !isResizing ? listeners : {})}
+      {...(isDraggable && !isResizing ? attributes : {})}
     >
-      {/* Edit button only - no drag icon needed */}
-      {onEdit && isHovered && !isDragging && (
+      {/* Drag indicator icon in top-left */}
+      {isDraggable && (isHovered || isDragging) && !isResizing && (
+        <div className="absolute left-1 top-1 p-0.5 bg-gray-100/80 rounded pointer-events-none z-20">
+          <GripVertical className="w-3 h-3 text-gray-400" />
+        </div>
+      )}
+      
+      {/* Edit button in top-right */}
+      {onEdit && isHovered && !isDragging && !isResizing && (
         <button
-          onClick={() => onEdit(id)}
-          className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-20 hover:bg-gray-200 pointer-events-auto"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(id);
+          }}
+          className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-20 hover:bg-gray-200"
           title="Edit micro-slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -903,8 +915,8 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         </button>
       )}
       
-      {/* Span controls - moved inside to avoid conflicts */}
-      {onSpanChange && (isHovered || isDragging) && (
+      {/* Span controls - hide during drag to avoid conflicts */}
+      {onSpanChange && isHovered && !isDragging && !isResizing && (
         <div 
           className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-20 pointer-events-auto"
           onMouseEnter={(e) => {
@@ -941,14 +953,12 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       )}
       
       <div 
-        className={`${isDragging ? 'ring-2 ring-blue-400 cursor-grabbing' : isDraggable && !isResizing ? 'hover:ring-1 hover:ring-gray-300 cursor-grab' : ''} ${isHovered ? 'bg-gray-50/50' : ''} rounded transition-all relative z-1`}
-        {...(isDraggable && !isResizing ? listeners : {})}
-        {...(isDraggable && !isResizing ? attributes : {})}
+        className={`${isDragging ? 'ring-2 ring-blue-400' : isHovered ? 'ring-1 ring-gray-300 bg-gray-50/50' : ''} rounded transition-all relative z-1`}
       >
         {children}
         
-        {/* Resize handles */}
-        {onSpanChange && !isDragging && (isHovered || isResizing) && (
+        {/* Resize handles - hide during drag */}
+        {onSpanChange && !isDragging && isHovered && !isResizing && (
           <>
             {/* Right edge */}
             <div
@@ -1014,6 +1024,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    cursor: isDraggable ? 'grab' : 'auto',
   };
 
   const sensors = useSensors(
@@ -1070,15 +1081,27 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         containerRef.current = el;
       }}
       style={style}
-      className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
+      className={`relative ${isDragging ? 'ring-2 ring-blue-500 cursor-grabbing' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      {...(isDraggable ? listeners : {})}
+      {...(isDraggable ? attributes : {})}
     >
-      {/* Edit button only - drag entire section */}
+      {/* Drag indicator in top-left */}
+      {isDraggable && (isHovered || isDragging) && (
+        <div className="absolute left-2 top-2 p-1 bg-blue-100/80 rounded pointer-events-none z-30">
+          <GripVertical className="w-4 h-4 text-blue-400" />
+        </div>
+      )}
+      
+      {/* Edit button in top-right */}
       {onEdit && isHovered && !isDragging && (
         <button
-          onClick={() => onEdit(id)}
-          className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-30 hover:bg-blue-200 pointer-events-auto"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(id);
+          }}
+          className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-30 hover:bg-blue-200"
           title="Edit section"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1097,11 +1120,9 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         {name} (12 column grid)
       </div>
       
-      {/* Micro-slots container - draggable area */}
+      {/* Micro-slots container */}
       <div 
-        className={`border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'} rounded-lg p-4 bg-white relative z-1 ${isDraggable && !isDragging ? 'cursor-grab' : isDragging ? 'cursor-grabbing' : ''} transition-colors`}
-        {...(isDraggable ? listeners : {})}
-        {...(isDraggable ? attributes : {})}
+        className={`border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'} rounded-lg p-4 bg-white relative z-1 transition-colors`}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
           <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
@@ -1432,7 +1453,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                     />
                   </div>
-                  <div className="text-xs text-gray-500">Icon: {iconSize}px (drag corner to resize)</div>
+                  <div className="text-xs text-gray-500">Icon: {iconSize}px</div>
                 </div>
               </MicroSlot>
             );
@@ -1455,7 +1476,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     tag="h2"
                     richText
                   />
-                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit with rich text</span>
                 </div>
               </MicroSlot>
             );
@@ -1478,7 +1498,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     tag="div"
                     richText
                   />
-                  <span className="absolute -top-2 left-2 text-xs bg-white px-1 text-blue-600">Click to edit with rich text</span>
                 </div>
               </MicroSlot>
             );
@@ -1552,7 +1571,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                     />
                   </div>
-                  <div className="text-xs text-gray-500">Button: {buttonSize} (drag corner to resize)</div>
+                  <div className="text-xs text-gray-500">Button: {buttonSize}</div>
                 </div>
               </MicroSlot>
             );
@@ -1612,7 +1631,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     tag="h1"
                     richText
                   />
-                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit with rich text</span>
                 </div>
               </MicroSlot>
             );
