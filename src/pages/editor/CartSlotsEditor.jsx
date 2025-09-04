@@ -1708,23 +1708,36 @@ export default function CartSlotsEditorWithMicroSlots({
                   }));
                 }
               } else if (slot.type === 'html' || slot.type === 'javascript') {
-                // For HTML/JS slots, sync with componentCode
+                // For HTML/JS slots, check both componentCode and textContent (for migration)
                 const savedCode = config.componentCode?.[slotId];
-                if (savedCode !== undefined) {
-                  // Update the custom slot with the saved code
-                  setCustomSlots(prev => ({
-                    ...prev,
-                    [slotId]: {
-                      ...prev[slotId],
-                      content: savedCode
-                    }
-                  }));
-                } else {
-                  // If no saved code, ensure componentCode has the slot's default
-                  setComponentCode(prev => ({
-                    ...prev,
-                    [slotId]: slot.content
-                  }));
+                const textContentCode = config.textContent?.[slotId];
+                
+                // Use componentCode if available, otherwise migrate from textContent if it exists
+                const finalCode = savedCode !== undefined ? savedCode : 
+                                 (textContentCode !== undefined ? textContentCode : slot.content);
+                
+                // Update the custom slot with the content
+                setCustomSlots(prev => ({
+                  ...prev,
+                  [slotId]: {
+                    ...prev[slotId],
+                    content: finalCode
+                  }
+                }));
+                
+                // Ensure componentCode has the content
+                setComponentCode(prev => ({
+                  ...prev,
+                  [slotId]: finalCode
+                }));
+                
+                // Clean up textContent if it had HTML/JS content
+                if (textContentCode !== undefined && savedCode === undefined) {
+                  setTextContent(prev => {
+                    const updated = { ...prev };
+                    delete updated[slotId];
+                    return updated;
+                  });
                 }
               }
             });
@@ -1823,23 +1836,36 @@ export default function CartSlotsEditorWithMicroSlots({
                     }));
                   }
                 } else if (slot.type === 'html' || slot.type === 'javascript') {
-                  // For HTML/JS slots, sync with componentCode
+                  // For HTML/JS slots, check both componentCode and textContent (for migration)
                   const savedCode = dbConfig.componentCode?.[slotId];
-                  if (savedCode !== undefined) {
-                    // Update the custom slot with the saved code
-                    setCustomSlots(prev => ({
-                      ...prev,
-                      [slotId]: {
-                        ...prev[slotId],
-                        content: savedCode
-                      }
-                    }));
-                  } else {
-                    // If no saved code, ensure componentCode has the slot's default
-                    setComponentCode(prev => ({
-                      ...prev,
-                      [slotId]: slot.content
-                    }));
+                  const textContentCode = dbConfig.textContent?.[slotId];
+                  
+                  // Use componentCode if available, otherwise migrate from textContent if it exists
+                  const finalCode = savedCode !== undefined ? savedCode : 
+                                   (textContentCode !== undefined ? textContentCode : slot.content);
+                  
+                  // Update the custom slot with the content
+                  setCustomSlots(prev => ({
+                    ...prev,
+                    [slotId]: {
+                      ...prev[slotId],
+                      content: finalCode
+                    }
+                  }));
+                  
+                  // Ensure componentCode has the content
+                  setComponentCode(prev => ({
+                    ...prev,
+                    [slotId]: finalCode
+                  }));
+                  
+                  // Clean up textContent if it had HTML/JS content
+                  if (textContentCode !== undefined && savedCode === undefined) {
+                    setTextContent(prev => {
+                      const updated = { ...prev };
+                      delete updated[slotId];
+                      return updated;
+                    });
                   }
                 }
               });
@@ -1976,18 +2002,42 @@ export default function CartSlotsEditorWithMicroSlots({
       // Check if this is a text content slot
       const textSlots = ['emptyCart.title', 'emptyCart.text', 'emptyCart.button', 'header.title'];
       
-      if (textSlots.includes(editingComponent) || editingComponent.includes('.custom_')) {
-        // Save to text content
+      // Check if this is a custom slot and its type
+      const isCustomSlot = editingComponent.includes('.custom_');
+      const customSlot = isCustomSlot ? customSlots[editingComponent] : null;
+      
+      if (textSlots.includes(editingComponent) || (isCustomSlot && customSlot?.type === 'text')) {
+        // Save to text content for text slots
         setTextContent(prev => ({
           ...prev,
           [editingComponent]: tempCode
         }));
+        // Also update custom slot content if it's a custom text slot
+        if (isCustomSlot && customSlot?.type === 'text') {
+          setCustomSlots(prev => ({
+            ...prev,
+            [editingComponent]: {
+              ...prev[editingComponent],
+              content: tempCode
+            }
+          }));
+        }
       } else {
-        // Save to component code
+        // Save to component code for HTML/JS slots
         setComponentCode(prev => ({
           ...prev,
           [editingComponent]: tempCode
         }));
+        // Also update custom slot content if it's a custom HTML/JS slot
+        if (isCustomSlot && (customSlot?.type === 'html' || customSlot?.type === 'javascript')) {
+          setCustomSlots(prev => ({
+            ...prev,
+            [editingComponent]: {
+              ...prev[editingComponent],
+              content: tempCode
+            }
+          }));
+        }
       }
       
       // Auto-save configuration
@@ -1995,7 +2045,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, saveConfiguration]);
+  }, [editingComponent, tempCode, saveConfiguration, customSlots]);
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
