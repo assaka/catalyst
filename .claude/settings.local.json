@@ -8,7 +8,8 @@
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node backend/populate-file-baselines.js)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)"
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)"
     ],
     "deny": [],
     "ask": [],
