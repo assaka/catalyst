@@ -1497,6 +1497,7 @@ export default function CartSlotsEditorWithMicroSlots({
   const [currentParentSlot, setCurrentParentSlot] = useState(null);
   const [newSlotType, setNewSlotType] = useState('text');
   const [newSlotName, setNewSlotName] = useState('');
+  const [newSlotContent, setNewSlotContent] = useState('');
   const [customSlots, setCustomSlots] = useState({});
   
   // State for inline editable content
@@ -2190,15 +2191,19 @@ export default function CartSlotsEditorWithMicroSlots({
       }
     }));
     
+    // Use the initial content provided by user, or fallback to defaults
+    const initialContent = newSlotContent.trim() || 
+      (newSlotType === 'text' ? 'Custom text content' : 
+       newSlotType === 'html' ? '<div>Custom HTML</div>' :
+       '// Custom JavaScript\nconsole.log("Custom slot");');
+    
     // Add custom slot definition
     setCustomSlots(prev => ({
       ...prev,
       [slotId]: {
         type: newSlotType,
         label: slotLabel,
-        content: newSlotType === 'text' ? 'Custom text content' : 
-                 newSlotType === 'html' ? '<div>Custom HTML</div>' :
-                 '// Custom JavaScript\nconsole.log("Custom slot");'
+        content: initialContent
       }
     }));
     
@@ -2206,7 +2211,7 @@ export default function CartSlotsEditorWithMicroSlots({
     if (newSlotType === 'text') {
       setTextContent(prev => ({
         ...prev,
-        [slotId]: 'Custom text content'
+        [slotId]: initialContent
       }));
       setElementClasses(prev => ({
         ...prev,
@@ -2215,8 +2220,7 @@ export default function CartSlotsEditorWithMicroSlots({
     } else if (newSlotType === 'html' || newSlotType === 'javascript') {
       setComponentCode(prev => ({
         ...prev,
-        [slotId]: newSlotType === 'html' ? '<div class="custom-html">Custom HTML content</div>' : 
-                  '// Custom JavaScript\nconsole.log("Custom slot initialized");'
+        [slotId]: initialContent
       }));
     }
     
@@ -2224,11 +2228,12 @@ export default function CartSlotsEditorWithMicroSlots({
     setShowAddSlotDialog(false);
     setCurrentParentSlot(null);
     setNewSlotName('');
+    setNewSlotContent('');
     setNewSlotType('text');
     
     // Auto-save
     debouncedSave();
-  }, [newSlotName, newSlotType, currentParentSlot, debouncedSave]);
+  }, [newSlotName, newSlotContent, newSlotType, currentParentSlot, debouncedSave]);
 
   // Render empty cart with micro-slots
   const renderEmptyCart = () => {
@@ -2281,8 +2286,36 @@ export default function CartSlotsEditorWithMicroSlots({
                           const deltaX = e.clientX - startX;
                           const deltaY = e.clientY - startY;
                           const delta = Math.max(deltaX, deltaY);
-                          const newSize = Math.min(128, Math.max(16, startSize + delta));
+                          const newSize = Math.min(256, Math.max(16, startSize + delta));
                           handleSizeChange(slotId, newSize);
+                          
+                          // Auto-expand slot if icon grows beyond certain thresholds
+                          const currentSpan = spans[slotId] || { col: 2, row: 1 };
+                          let newColSpan = currentSpan.col;
+                          let newRowSpan = currentSpan.row;
+                          
+                          // Adjust column span based on icon size
+                          if (newSize >= 200) {
+                            newColSpan = Math.min(12, 6);
+                            newRowSpan = Math.min(4, 3);
+                          } else if (newSize >= 150) {
+                            newColSpan = Math.min(12, 5);
+                            newRowSpan = Math.min(4, 2);
+                          } else if (newSize >= 100) {
+                            newColSpan = Math.min(12, 4);
+                            newRowSpan = Math.min(4, 2);
+                          } else if (newSize >= 80) {
+                            newColSpan = Math.min(12, 3);
+                            newRowSpan = Math.min(4, 2);
+                          } else {
+                            newColSpan = Math.min(12, 2);
+                            newRowSpan = 1;
+                          }
+                          
+                          // Update span if it changed
+                          if (newColSpan !== currentSpan.col || newRowSpan !== currentSpan.row) {
+                            handleSpanChange('emptyCart', slotId, { col: newColSpan, row: newRowSpan });
+                          }
                         };
                         
                         const handleMouseUp = () => {
@@ -2943,12 +2976,24 @@ export default function CartSlotsEditorWithMicroSlots({
               {newSlotType === 'html' && 'Add custom HTML markup for advanced layouts'}
               {newSlotType === 'javascript' && 'Add dynamic JavaScript for interactive features'}
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {newSlotType === 'text' ? 'Initial Text' : newSlotType === 'html' ? 'HTML Content' : 'JavaScript Code'}
+              </label>
+              <textarea
+                className="w-full p-2 border rounded-md min-h-[100px] font-mono text-sm"
+                placeholder={newSlotType === 'text' ? 'Enter your text here...' : newSlotType === 'html' ? '<div>Your HTML here...</div>' : '// Your JavaScript code here'}
+                value={newSlotContent}
+                onChange={(e) => setNewSlotContent(e.target.value)}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowAddSlotDialog(false);
               setCurrentParentSlot(null);
               setNewSlotName('');
+              setNewSlotContent('');
               setNewSlotType('text');
             }}>
               Cancel
