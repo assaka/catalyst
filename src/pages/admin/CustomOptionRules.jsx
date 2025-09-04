@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CustomOptionRule } from '@/api/entities';
-import CustomOptionRuleForm from '@/components/products/CustomOptionRuleForm';
+import CustomOptionRuleForm from '@/components/admin/products/CustomOptionRuleForm';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

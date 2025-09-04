@@ -18,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import PublishButton from '@/components/store/PublishButton';
+import PublishButton from '@/components/admin/store/PublishButton';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));

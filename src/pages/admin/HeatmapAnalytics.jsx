@@ -32,8 +32,8 @@ import {
   Power
 } from 'lucide-react';
 
-import HeatmapVisualization from '@/components/heatmap/HeatmapVisualization';
-import HeatmapTrackerComponent from '@/components/heatmap/HeatmapTracker';
+import HeatmapVisualization from '@/components/admin/heatmap/HeatmapVisualization';
+import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 
 export default function HeatmapAnalytics() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();

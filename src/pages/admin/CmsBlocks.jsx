@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { CmsBlock } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
-import CmsBlockForm from "@/components/cms/CmsBlockForm";
+import CmsBlockForm from "@/components/admin/cms/CmsBlockForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

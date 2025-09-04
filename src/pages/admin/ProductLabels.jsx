@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ProductLabel } from '@/api/entities';
 import { Attribute } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
-import ProductLabelForm from '@/components/products/ProductLabelForm';
+import ProductLabelForm from '@/components/admin/products/ProductLabelForm';
 import { clearLabelsCache } from '@/utils/cacheUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

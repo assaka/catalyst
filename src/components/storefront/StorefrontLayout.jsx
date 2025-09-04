@@ -18,14 +18,14 @@ import CategoryNav from './CategoryNav';
 import HeaderSearch from './HeaderSearch';
 import CmsBlockRenderer from './CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
-import RedirectHandler from '@/components/RedirectHandler';
+import RedirectHandler from '@/components/shared/RedirectHandler';
 import { SeoSettingsProvider } from '@/components/storefront/SeoSettingsProvider';
 import { CountrySelect } from "@/components/ui/country-select";
 import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
-import RoleSwitcher from '@/components/RoleSwitcher';
-import HeatmapTrackerComponent from '@/components/heatmap/HeatmapTracker';
+import RoleSwitcher from '@/components/admin/RoleSwitcher';
+import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

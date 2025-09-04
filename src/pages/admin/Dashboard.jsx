@@ -33,7 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Added CardDescription
 import { Badge } from "@/components/ui/badge";
-import { SetupGuide } from '@/components/dashboard/SetupGuide'; // Moved SetupGuide to its own file
+import { SetupGuide } from '@/components/admin/dashboard/SetupGuide'; // Moved SetupGuide to its own file
 import { checkStripeConnectStatus } from '@/api/functions';
 import { createStripeConnectLink } from '@/api/functions';
 

@@ -191,7 +191,7 @@ export default {
 
 ### Usage
 ```javascript
-import PreviewSystem from '@/components/ai-context/PreviewSystem.jsx';
+import PreviewSystem from '@/components/editor/ai-context/PreviewSystem.jsx';
 
 <PreviewSystem
   changes={changesArray}
@@ -306,7 +306,7 @@ await versionSystem.publishRelease(release.id);
 
 ### Managing Extensions
 ```javascript
-import ExtensionManager from '@/components/ExtensionManager.jsx';
+import ExtensionManager from '@/components/admin/ExtensionManager.jsx';
 
 <ExtensionManager storeId={storeId} />
 ```

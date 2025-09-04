@@ -45,7 +45,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import CodeEditor from '@/components/ai-context/CodeEditor.jsx';
+import CodeEditor from '@/components/editor/ai-context/CodeEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 

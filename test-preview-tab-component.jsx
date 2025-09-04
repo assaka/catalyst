@@ -1,5 +1,5 @@
 import React from 'react';
-import PreviewTab from '@/components/ai-context/PreviewTab';
+import PreviewTab from '@/components/editor/ai-context/PreviewTab';
 
 /**
  * Test component for the new Preview Tab
