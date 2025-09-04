@@ -1,28 +1,61 @@
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
 import { StoreSelectionProvider } from "@/contexts/StoreSelectionContext"
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import Layout from '@/pages/Layout'
+import Auth from '@/pages/Auth'
 
-// Import pages
-import { 
-  Dashboard, 
-  Storefront,
-  ProductDetail,
-  Cart,
-  Checkout,
-  CustomerAuth,
-  Settings,
-  Products,
-  Categories,
-  Orders,
-  Customers
-} from '@/pages'
+// Import pages - using the exports from pages/index.jsx
+import * as Pages from '@/pages'
 
 // Import new hook-based systems
 import { useEffect } from 'react'
 import extensionSystem from '@/core/ExtensionSystem.js'
 import hookSystem from '@/core/HookSystem.js'
 import eventSystem from '@/core/EventSystem.js'
+
+// Component to wrap pages with Layout
+function PageWrapper({ Component, pageName }) {
+  return (
+    <Layout currentPageName={pageName}>
+      <Component />
+    </Layout>
+  );
+}
+
+// Component to handle routing logic
+function AppRoutes() {
+  const location = useLocation();
+  
+  // Determine which page to render based on the URL
+  const getPageComponent = () => {
+    const path = location.pathname;
+    
+    // Admin routes
+    if (path.startsWith('/admin')) {
+      if (path === '/admin' || path === '/admin/dashboard') return { Component: Pages.Dashboard, name: 'Dashboard' };
+      if (path === '/admin/products') return { Component: Pages.Products, name: 'Products' };
+      if (path === '/admin/categories') return { Component: Pages.Categories, name: 'Categories' };
+      if (path === '/admin/orders') return { Component: Pages.Orders, name: 'Orders' };
+      if (path === '/admin/customers') return { Component: Pages.Customers, name: 'Customers' };
+      if (path === '/admin/settings') return { Component: Pages.Settings, name: 'Settings' };
+      if (path === '/admin/auth') return { Component: Auth, name: 'Auth' };
+      // Add more admin routes as needed
+    }
+    
+    // Public/Storefront routes
+    if (path === '/' || path.startsWith('/public')) {
+      return { Component: Pages.Storefront, name: 'Storefront' };
+    }
+    
+    // Default to Dashboard
+    return { Component: Pages.Dashboard, name: 'Dashboard' };
+  };
+  
+  const { Component, name } = getPageComponent();
+  
+  return <PageWrapper Component={Component} pageName={name} />;
+}
 
 function App() {
   // Initialize the new hook-based architecture
@@ -84,27 +117,7 @@ function App() {
     <StoreSelectionProvider>
       <Router>
         <Routes>
-          {/* Public/Storefront Routes */}
-          <Route path="/" element={<Navigate to="/public" replace />} />
-          <Route path="/public" element={<Storefront />} />
-          <Route path="/public/:storeCode" element={<Storefront />} />
-          <Route path="/public/:storeCode/category/:categorySlug" element={<Storefront />} />
-          <Route path="/public/:storeCode/product/:productSlug" element={<ProductDetail />} />
-          <Route path="/public/:storeCode/cart" element={<Cart />} />
-          <Route path="/public/:storeCode/checkout" element={<Checkout />} />
-          <Route path="/login" element={<CustomerAuth />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          <Route path="/admin/products" element={<Products />} />
-          <Route path="/admin/categories" element={<Categories />} />
-          <Route path="/admin/orders" element={<Orders />} />
-          <Route path="/admin/customers" element={<Customers />} />
-          <Route path="/admin/settings" element={<Settings />} />
-          
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/public" replace />} />
+          <Route path="/*" element={<AppRoutes />} />
         </Routes>
       </Router>
       <Toaster />
