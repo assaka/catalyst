@@ -2122,61 +2122,7 @@ export default function CartSlotsEditorWithMicroSlots({
           description="Edit empty cart state layout"
           keywords="cart, editor, empty-state"
         />
-        
-        {/* Cart Page Editor Header */}
-        <div className="bg-blue-50 border-b border-blue-200 p-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-semibold text-gray-900">Cart Page Editor</h2>
-                
-                {/* Help Tooltip */}
-                <div className="relative group">
-                  <button className="text-gray-500 hover:text-gray-700 transition-colors">
-                    <HelpCircle className="w-5 h-5" />
-                  </button>
-                  <div className="absolute left-0 top-8 w-80 p-4 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <h3 className="font-semibold text-sm mb-2">How to use the editor:</h3>
-                    <ul className="text-xs space-y-1.5 text-gray-600">
-                      <li className="flex gap-2">
-                        <GripVertical className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
-                        <span><strong>Drag sections:</strong> Use the blue handle to reorder major sections</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <Move className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" />
-                        <span><strong>Drag slots:</strong> Use the gray handle to move elements within the 12-column grid</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <div className="w-3 h-3 mt-0.5 flex-shrink-0 bg-blue-500 rounded-sm" />
-                        <span><strong>Resize:</strong> Drag blue corners/edges to adjust width and height</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <Edit className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-500" />
-                        <span><strong>Edit content:</strong> Click text to edit inline or use edit buttons for advanced options</span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="text-green-600 font-semibold">✓</span>
-                        <span><strong>Auto-save:</strong> Changes are automatically saved after 2-3 seconds</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                
-                {/* Auto-save Status */}
-                {saveStatus && (
-                  <span className={`text-sm px-3 py-1 rounded-full font-medium ${
-                    saveStatus === 'saving' 
-                      ? 'text-blue-700 bg-blue-100 animate-pulse' 
-                      : 'text-green-700 bg-green-100'
-                  }`}>
-                    {saveStatus === 'saving' ? 'Auto-saving...' : '✓ All changes saved'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           <DndContext
             sensors={sensors}

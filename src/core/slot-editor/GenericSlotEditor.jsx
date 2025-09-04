@@ -1471,29 +1471,46 @@ export default ${componentName};`;
               <HelpCircle className="w-5 h-5" />
             </button>
             <div className="absolute left-0 top-8 w-80 p-4 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <h3 className="font-semibold text-sm mb-2">Editor Modes:</h3>
-              <ul className="text-xs space-y-2 text-gray-600">
+              <h3 className="font-semibold text-sm mb-2">How to use the editor:</h3>
+              <ul className="text-xs space-y-1.5 text-gray-600">
                 <li className="flex gap-2">
-                  <Layout className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
-                  <div>
-                    <strong>Layout Mode:</strong> Drag and drop slots to rearrange your page structure. Hover over slots to see positioning controls.
-                  </div>
+                  <GripVertical className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
+                  <span><strong>Drag sections:</strong> Use the blue handle to reorder major sections</span>
                 </li>
                 <li className="flex gap-2">
-                  <Eye className="w-3 h-3 mt-0.5 flex-shrink-0 text-green-500" />
-                  <div>
-                    <strong>Preview Mode:</strong> See how your page looks and works. All buttons, forms, and interactions are fully functional.
-                  </div>
+                  <GripVertical className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-400" />
+                  <span><strong>Drag slots:</strong> Use the gray handle to move elements within the 12-column grid</span>
                 </li>
                 <li className="flex gap-2">
-                  <Code className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" />
-                  <div>
-                    <strong>Code Mode:</strong> Edit the raw slot configuration and layout code directly for advanced customization.
-                  </div>
+                  <div className="w-3 h-3 mt-0.5 flex-shrink-0 bg-blue-500 rounded-sm" />
+                  <span><strong>Resize:</strong> Drag blue corners/edges to adjust width and height</span>
+                </li>
+                <li className="flex gap-2">
+                  <Settings className="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-500" />
+                  <span><strong>Edit content:</strong> Click text to edit inline or use edit buttons for advanced options</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600 font-semibold">✓</span>
+                  <span><strong>Auto-save:</strong> Changes are automatically saved after 2-3 seconds</span>
                 </li>
               </ul>
+              
               <div className="mt-3 pt-3 border-t">
-                <p className="text-xs text-gray-500">💡 Tip: Changes auto-save after a few seconds of inactivity.</p>
+                <h3 className="font-semibold text-sm mb-2">Editor Modes:</h3>
+                <ul className="text-xs space-y-1.5 text-gray-600">
+                  <li className="flex gap-2">
+                    <Layout className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
+                    <span><strong>Layout:</strong> Arrange page structure</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Eye className="w-3 h-3 mt-0.5 flex-shrink-0 text-green-500" />
+                    <span><strong>Preview:</strong> Test functionality</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <Code className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" />
+                    <span><strong>Code:</strong> Advanced editing</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
