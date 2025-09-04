@@ -31,7 +31,13 @@ export default function Category() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  const categorySlug = searchParams.get('category') || routeCategorySlug;
+  // Extract category slug from the URL path
+  const pathname = window.location.pathname;
+  const categorySlugFromPath = pathname.startsWith('/category/') 
+    ? pathname.replace('/category/', '').split('/')[0]
+    : null;
+  
+  const categorySlug = categorySlugFromPath || searchParams.get('category') || routeCategorySlug;
 
   useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {

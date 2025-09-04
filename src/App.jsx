@@ -115,7 +115,8 @@ function AppRoutes() {
     }
     
     // Public/Storefront routes
-    if (path === '/' || path.startsWith('/public')) {
+    if (path === '/' || path.startsWith('/public') || path.startsWith('/category')) {
+      if (path.startsWith('/category/')) return { Component: Pages.Category, name: 'Category' };
       if (path.includes('/product/')) return { Component: Pages.ProductDetail, name: 'ProductDetail' };
       if (path.includes('/cart')) return { Component: Pages.Cart, name: 'Cart' };
       if (path.includes('/checkout')) return { Component: Pages.Checkout, name: 'Checkout' };
