@@ -163,10 +163,18 @@ export default function CartSlots({
   
   // Helper to render text with custom classes
   const renderCustomText = (key, defaultContent, defaultClasses = '') => {
-    const text = getCustomText(key, defaultContent);
+    const htmlContent = layoutConfig?.textContent?.[key];
     const classes = getCustomClasses(key, defaultClasses);
     
-    return <span className={classes}>{text}</span>;
+    // Check if the content has HTML tags (indicating rich text)
+    if (htmlContent && /<[^>]+>/.test(htmlContent)) {
+      // Render as HTML to preserve formatting (including colors)
+      return <span className={classes} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    } else {
+      // Render as plain text
+      const text = getCustomText(key, defaultContent);
+      return <span className={classes}>{text}</span>;
+    }
   };
 
   // Loading state matching Cart.jsx
@@ -184,16 +192,16 @@ export default function CartSlots({
       <CardContent className="text-center py-12">
         <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-          {getCustomText('emptyCart.title', 'Your cart is empty')}
+          {renderCustomText('emptyCart.title', 'Your cart is empty', 'text-xl font-semibold')}
         </h2>
         <p className="text-gray-600 mb-6">
-          {getCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.")}
+          {renderCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.", 'text-gray-600')}
         </p>
         <Button onClick={() => {
           const baseUrl = getStoreBaseUrl(store);
           window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
         }}>
-          {getCustomText('emptyCart.button', 'Continue Shopping')}
+          {renderCustomText('emptyCart.button', 'Continue Shopping', '')}
         </Button>
       </CardContent>
     </Card>
