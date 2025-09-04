@@ -3237,11 +3237,19 @@ export default function CartSlotsEditorWithMicroSlots({
                 try {
                   setSaveStatus('saving');
                   
-                  // Get store ID
-                  const storeId = data?.store?.id || 1;
+                  // Get store ID from localStorage (same as save/load functions)
+                  const storeId = localStorage.getItem('selectedStoreId');
+                  if (!storeId) {
+                    console.error('No store ID found');
+                    setSaveStatus('error');
+                    setTimeout(() => {
+                      setSaveStatus('');
+                    }, 3000);
+                    return;
+                  }
+                  
                   const queryParams = new URLSearchParams({
-                    store_id: storeId,
-                    type: 'empty_cart'
+                    store_id: storeId
                   }).toString();
                   
                   // Import apiClient
