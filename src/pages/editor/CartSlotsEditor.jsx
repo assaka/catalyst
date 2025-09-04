@@ -1410,6 +1410,29 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </button>
       )}
       
+      {/* Add new slot button in bottom-right */}
+      {isHovered && !isDragging && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.onAddNewSlot) {
+              window.onAddNewSlot(id);
+            }
+          }}
+          className="absolute right-2 bottom-2 p-1.5 bg-green-100/90 rounded transition-opacity z-30 hover:bg-green-200 group"
+          title="Add new slot"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
+        >
+          <Plus className="w-4 h-4 text-green-600 group-hover:scale-110 transition-transform" />
+        </button>
+      )}
+      
       {/* Section label */}
       <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
         {name} (12 column grid)
@@ -1471,6 +1494,7 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // State for custom slots
   const [showAddSlotDialog, setShowAddSlotDialog] = useState(false);
+  const [currentParentSlot, setCurrentParentSlot] = useState(null);
   const [newSlotType, setNewSlotType] = useState('text');
   const [newSlotName, setNewSlotName] = useState('');
   const [customSlots, setCustomSlots] = useState({});
@@ -1530,6 +1554,9 @@ export default function CartSlotsEditorWithMicroSlots({
 
   const formatPrice = (value) => typeof value === "number" ? value : parseFloat(value) || 0;
 
+  // Debounce timer ref for auto-save
+  const saveTimerRef = useRef(null);
+  
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
     setSaveStatus('saving');
@@ -1621,16 +1648,58 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [majorSlots, microSlotOrders, microSlotSpans, textContent, elementClasses, componentSizes, componentCode, customSlots, onSave]);
   
-  // Load saved configuration on mount
+  // Debounced save function
+  const debouncedSave = useCallback(() => {
+    // Clear any existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    
+    // Set a new timer for 1 second
+    saveTimerRef.current = setTimeout(() => {
+      saveConfiguration();
+    }, 1000);
+  }, [debouncedSave]);
+  
+  // Set up window handler for adding new slots
+  useEffect(() => {
+    window.onAddNewSlot = (parentSlotId) => {
+      setCurrentParentSlot(parentSlotId);
+      setShowAddSlotDialog(true);
+    };
+    
+    return () => {
+      delete window.onAddNewSlot;
+    };
+  }, []);
+  
+  // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
     const loadConfiguration = async () => {
       try {
-        // First try to load from localStorage
-        const localConfig = localStorage.getItem('cart_slots_layout_config');
-        if (localConfig) {
-          const config = JSON.parse(localConfig);
-          console.log('Loading saved configuration from localStorage:', config);
+        // ONLY load from database, skip localStorage
+        const storeId = localStorage.getItem('selectedStoreId');
+        if (!storeId) {
+          console.log('No store ID found, using default configuration');
+          return;
+        }
+        
+        // Load from database
+        const queryParams = new URLSearchParams({
+          page_name: 'Cart',
+          slot_type: 'cart_layout',
+          store_id: storeId
+        }).toString();
+        
+        // Import apiClient dynamically to avoid circular dependencies
+        const { default: apiClient } = await import('@/api/client');
+        const response = await apiClient.get(`slot-configurations?${queryParams}`);
+        
+        if (response?.data?.data?.length > 0) {
+          const config = response.data.data[0].configuration;
+          console.log('✅ Loading configuration from DATABASE:', config);
           console.log('📐 Loaded microSlotSpans:', config.microSlotSpans);
+          console.log('📝 Loaded textContent:', config.textContent);
           
           // Only load header and emptyCart slots
           if (config.majorSlots) {
@@ -1758,150 +1827,6 @@ export default function CartSlotsEditorWithMicroSlots({
           }
         }
         
-        // Try to load from database if we have a store ID
-        const storeId = localStorage.getItem('selectedStoreId');
-        if (storeId) {
-          const queryParams = new URLSearchParams({
-            page_name: 'Cart',
-            slot_type: 'cart_layout',
-            store_id: storeId
-          }).toString();
-          
-          // Import apiClient dynamically to avoid circular dependencies
-          const { default: apiClient } = await import('@/api/client');
-          const response = await apiClient.get(`slot-configurations?${queryParams}`);
-          
-          if (response?.data?.data?.length > 0) {
-            const dbConfig = response.data.data[0].configuration;
-            console.log('Loading saved configuration from database:', dbConfig);
-            
-            // Only load header and emptyCart slots
-            if (dbConfig.majorSlots) {
-              const requiredSlots = ['header', 'emptyCart'];
-              const savedSlots = dbConfig.majorSlots.filter(slot => requiredSlots.includes(slot));
-              // Ensure both required slots are present
-              const missingSlots = requiredSlots.filter(slot => !savedSlots.includes(slot));
-              const allSlots = [...savedSlots, ...missingSlots];
-              setMajorSlots(allSlots);
-            }
-            if (dbConfig.microSlotOrders) setMicroSlotOrders(dbConfig.microSlotOrders);
-            if (dbConfig.microSlotSpans) {
-              // Validate and fix any corrupted span values
-              const cleanedSpans = {};
-              Object.entries(dbConfig.microSlotSpans).forEach(([parentId, slots]) => {
-                cleanedSpans[parentId] = {};
-                Object.entries(slots).forEach(([slotId, spans]) => {
-                  cleanedSpans[parentId][slotId] = {
-                    col: typeof spans.col === 'number' && spans.col >= 1 && spans.col <= 12 ? spans.col : 12,
-                    row: typeof spans.row === 'number' && spans.row >= 1 && spans.row <= 4 ? spans.row : 1
-                  };
-                });
-              });
-              setMicroSlotSpans(cleanedSpans);
-            }
-            // Load saved configuration from database
-            if (dbConfig.textContent) {
-              setTextContent(prev => ({
-                ...prev,
-                ...dbConfig.textContent
-              }));
-            }
-            if (dbConfig.elementClasses) {
-              setElementClasses(prev => ({
-                ...prev,
-                ...dbConfig.elementClasses
-              }));
-            }
-            if (dbConfig.componentSizes) {
-              setComponentSizes(prev => ({
-                ...prev,
-                ...dbConfig.componentSizes
-              }));
-            }
-            if (dbConfig.componentCode) {
-              setComponentCode(prev => ({
-                ...prev,
-                ...dbConfig.componentCode
-              }));
-            }
-            if (dbConfig.customSlots) {
-              setCustomSlots(dbConfig.customSlots);
-              
-              // Ensure content for custom slots is properly synced
-              Object.entries(dbConfig.customSlots).forEach(([slotId, slot]) => {
-                if (slot.type === 'text') {
-                  // Always sync custom slot content with textContent
-                  const savedContent = dbConfig.textContent?.[slotId];
-                  
-                  // Always ensure textContent has the value
-                  if (savedContent !== undefined) {
-                    // Use saved content
-                    setTextContent(prev => ({
-                      ...prev,
-                      [slotId]: savedContent
-                    }));
-                    // Update the custom slot with the saved content
-                    setCustomSlots(prev => ({
-                      ...prev,
-                      [slotId]: {
-                        ...prev[slotId],
-                        content: savedContent
-                      }
-                    }));
-                  } else {
-                    // Use slot's default content
-                    setTextContent(prev => ({
-                      ...prev,
-                      [slotId]: slot.content || 'Custom text content'
-                    }));
-                    // Keep custom slot content in sync
-                    setCustomSlots(prev => ({
-                      ...prev,
-                      [slotId]: {
-                        ...prev[slotId],
-                        content: slot.content || 'Custom text content'
-                      }
-                    }));
-                  }
-                } else if (slot.type === 'html' || slot.type === 'javascript') {
-                  // For HTML/JS slots, check both componentCode and textContent (for migration)
-                  const savedCode = dbConfig.componentCode?.[slotId];
-                  const textContentCode = dbConfig.textContent?.[slotId];
-                  
-                  // Use componentCode if available, otherwise migrate from textContent if it exists
-                  const finalCode = savedCode !== undefined ? savedCode : 
-                                   (textContentCode !== undefined ? textContentCode : slot.content);
-                  
-                  // Update the custom slot with the content
-                  setCustomSlots(prev => ({
-                    ...prev,
-                    [slotId]: {
-                      ...prev[slotId],
-                      content: finalCode
-                    }
-                  }));
-                  
-                  // Ensure componentCode has the content
-                  setComponentCode(prev => ({
-                    ...prev,
-                    [slotId]: finalCode
-                  }));
-                  
-                  // Clean up textContent if it had HTML/JS content
-                  if (textContentCode !== undefined && savedCode === undefined) {
-                    setTextContent(prev => {
-                      const updated = { ...prev };
-                      delete updated[slotId];
-                      return updated;
-                    });
-                  }
-                }
-              });
-            }
-            
-            // Save to localStorage for faster access
-            localStorage.setItem('cart_slots_layout_config', JSON.stringify(dbConfig));
-          }
         }
       } catch (error) {
         console.error('Failed to load configuration:', error);
@@ -1929,13 +1854,13 @@ export default function CartSlotsEditorWithMicroSlots({
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(items, oldIndex, newIndex);
         // Auto-save after drag
-        setTimeout(() => saveConfiguration(), 2000);
+        debouncedSave();
         return newOrder;
       }
       return items;
     });
     setActiveDragSlot(null);
-  }, [saveConfiguration]);
+  }, [debouncedSave]);
 
   const handleMajorDragStart = useCallback((event) => {
     setActiveDragSlot(event.active.id);
@@ -1952,12 +1877,12 @@ export default function CartSlotsEditorWithMicroSlots({
       if (oldIndex !== -1 && newIndex !== -1) {
         newOrders[parentId] = arrayMove(parentOrder, oldIndex, newIndex);
         // Auto-save after micro-slot reorder
-        setTimeout(() => saveConfiguration(), 2000);
+        debouncedSave();
       }
       
       return newOrders;
     });
-  }, [saveConfiguration]);
+  }, [debouncedSave]);
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
@@ -1973,8 +1898,8 @@ export default function CartSlotsEditorWithMicroSlots({
     });
     
     // Auto-save after resize
-    setTimeout(() => saveConfiguration(), 3000);
-  }, [saveConfiguration]);
+    debouncedSave();
+  }, [debouncedSave]);
   
   // Handle text content change
   const handleTextChange = useCallback((slotId, newText) => {
@@ -1983,8 +1908,8 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newText
     }));
     // Auto-save after text change
-    setTimeout(() => saveConfiguration(), 2500);
-  }, [saveConfiguration]);
+    debouncedSave();
+  }, [debouncedSave]);
   
   // Handle class change for elements
   const handleClassChange = useCallback((slotId, newClass) => {
@@ -1993,8 +1918,8 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newClass
     }));
     // Auto-save after class change
-    setTimeout(() => saveConfiguration(), 2500);
-  }, [saveConfiguration]);
+    debouncedSave();
+  }, [debouncedSave]);
   
   // Handle component size change
   const handleSizeChange = useCallback((slotId, newSize) => {
@@ -2003,8 +1928,8 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newSize
     }));
     // Auto-save after size change
-    setTimeout(() => saveConfiguration(), 2500);
-  }, [saveConfiguration]);
+    debouncedSave();
+  }, [debouncedSave]);
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
@@ -2069,7 +1994,7 @@ export default function CartSlotsEditorWithMicroSlots({
       }
       
       // Auto-save configuration
-      setTimeout(() => saveConfiguration(), 500);
+      debouncedSave();
     }
     setEditingComponent(null);
     setTempCode('');
@@ -2123,8 +2048,8 @@ export default function CartSlotsEditorWithMicroSlots({
     });
     
     // Auto-save after delete
-    setTimeout(() => saveConfiguration(), 500);
-  }, [saveConfiguration]);
+    debouncedSave();
+  }, [debouncedSave]);
   
   // Handle adding a new custom slot
   const handleAddCustomSlot = useCallback(() => {
@@ -2133,20 +2058,21 @@ export default function CartSlotsEditorWithMicroSlots({
       return;
     }
     
-    const slotId = `emptyCart.custom_${Date.now()}`;
+    const parentSlot = currentParentSlot || 'emptyCart';
+    const slotId = `${parentSlot}.custom_${Date.now()}`;
     const slotLabel = newSlotName.trim();
     
     // Add to micro slot orders
     setMicroSlotOrders(prev => ({
       ...prev,
-      emptyCart: [...(prev.emptyCart || []), slotId]
+      [parentSlot]: [...(prev[parentSlot] || []), slotId]
     }));
     
     // Add default span
     setMicroSlotSpans(prev => ({
       ...prev,
-      emptyCart: {
-        ...prev.emptyCart,
+      [parentSlot]: {
+        ...prev[parentSlot],
         [slotId]: { col: 12, row: 1 }
       }
     }));
@@ -2183,11 +2109,12 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Reset dialog
     setShowAddSlotDialog(false);
+    setCurrentParentSlot(null);
     setNewSlotName('');
     setNewSlotType('text');
     
     // Auto-save
-    setTimeout(() => saveConfiguration(), 500);
+    debouncedSave();
   }, [newSlotName, newSlotType, saveConfiguration]);
 
   // Render empty cart with micro-slots
@@ -2690,7 +2617,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   });
                   setMicroSlotSpans(defaultSpans);
                   // Save immediately
-                  setTimeout(() => saveConfiguration(), 100);
+                  saveConfiguration();
                 }}
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
               >
@@ -2782,7 +2709,11 @@ export default function CartSlotsEditorWithMicroSlots({
       <Dialog open={showAddSlotDialog} onOpenChange={setShowAddSlotDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Slot</DialogTitle>
+            <DialogTitle>
+              Add New Slot
+              {currentParentSlot && MICRO_SLOT_DEFINITIONS[currentParentSlot] && 
+                ` to ${MICRO_SLOT_DEFINITIONS[currentParentSlot].name}`}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -2840,6 +2771,7 @@ export default function CartSlotsEditorWithMicroSlots({
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowAddSlotDialog(false);
+              setCurrentParentSlot(null);
               setNewSlotName('');
               setNewSlotType('text');
             }}>
