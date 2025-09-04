@@ -1649,11 +1649,23 @@ export default function CartSlotsEditorWithMicroSlots({
             });
             setMicroSlotSpans(cleanedSpans);
           }
-          if (config.textContent) setTextContent(prev => ({ ...prev, ...config.textContent }));
-          if (config.elementClasses) setElementClasses(prev => ({ ...prev, ...config.elementClasses }));
-          if (config.componentSizes) setComponentSizes(prev => ({ ...prev, ...config.componentSizes }));
-          if (config.componentCode) setComponentCode(prev => ({ ...prev, ...config.componentCode }));
-          if (config.customSlots) setCustomSlots(config.customSlots);
+          // Load saved configuration, using it completely (not merging with defaults)
+          // This ensures user changes (including empty values) are preserved
+          if (config.textContent) {
+            setTextContent(config.textContent);
+          }
+          if (config.elementClasses) {
+            setElementClasses(config.elementClasses);
+          }
+          if (config.componentSizes) {
+            setComponentSizes(config.componentSizes);
+          }
+          if (config.componentCode) {
+            setComponentCode(config.componentCode);
+          }
+          if (config.customSlots) {
+            setCustomSlots(config.customSlots);
+          }
         }
         
         // Try to load from database if we have a store ID
@@ -1697,11 +1709,22 @@ export default function CartSlotsEditorWithMicroSlots({
               });
               setMicroSlotSpans(cleanedSpans);
             }
-            if (dbConfig.textContent) setTextContent(prev => ({ ...prev, ...dbConfig.textContent }));
-            if (dbConfig.elementClasses) setElementClasses(prev => ({ ...prev, ...dbConfig.elementClasses }));
-            if (dbConfig.componentSizes) setComponentSizes(prev => ({ ...prev, ...dbConfig.componentSizes }));
-            if (dbConfig.componentCode) setComponentCode(prev => ({ ...prev, ...dbConfig.componentCode }));
-            if (dbConfig.customSlots) setCustomSlots(dbConfig.customSlots);
+            // Load saved configuration from database
+            if (dbConfig.textContent) {
+              setTextContent(dbConfig.textContent);
+            }
+            if (dbConfig.elementClasses) {
+              setElementClasses(dbConfig.elementClasses);
+            }
+            if (dbConfig.componentSizes) {
+              setComponentSizes(dbConfig.componentSizes);
+            }
+            if (dbConfig.componentCode) {
+              setComponentCode(dbConfig.componentCode);
+            }
+            if (dbConfig.customSlots) {
+              setCustomSlots(dbConfig.customSlots);
+            }
             
             // Save to localStorage for faster access
             localStorage.setItem('cart_slots_layout_config', JSON.stringify(dbConfig));
