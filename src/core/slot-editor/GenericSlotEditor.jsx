@@ -24,7 +24,8 @@ import {
   Plus,
   Tag,
   ShoppingCart,
-  Minus
+  Minus,
+  HelpCircle
 } from 'lucide-react';
 
 import {
@@ -1451,16 +1452,51 @@ export default ${componentName};`;
     <div className={`generic-slot-editor h-screen flex flex-col ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
-            <FileCode className="w-6 h-6" />
-            {pageName === 'Cart' ? 'Cart' : pageName} Page Editor
-          </h1>
-          <p className="text-sm text-gray-600">
-            {mode === 'layout' && 'Drag slots to position them. Hover to see controls. Click settings to edit properties.'}
-            {mode === 'preview' && 'Interact with your cart page components. Buttons, forms, and inputs are fully functional.'}
-            {mode === 'code' && 'Edit slot definitions and layout configuration directly'}
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              <FileCode className="w-6 h-6" />
+              {pageName === 'Cart' ? 'Cart' : pageName} Page Editor
+            </h1>
+            <p className="text-sm text-gray-600">
+              {mode === 'layout' && 'Drag slots to position them. Hover to see controls. Click settings to edit properties.'}
+              {mode === 'preview' && 'Interact with your cart page components. Buttons, forms, and inputs are fully functional.'}
+              {mode === 'code' && 'Edit slot definitions and layout configuration directly'}
+            </p>
+          </div>
+          
+          {/* Help Tooltip */}
+          <div className="relative group">
+            <button className="text-gray-500 hover:text-gray-700 transition-colors">
+              <HelpCircle className="w-5 h-5" />
+            </button>
+            <div className="absolute left-0 top-8 w-80 p-4 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <h3 className="font-semibold text-sm mb-2">Editor Modes:</h3>
+              <ul className="text-xs space-y-2 text-gray-600">
+                <li className="flex gap-2">
+                  <Layout className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
+                  <div>
+                    <strong>Layout Mode:</strong> Drag and drop slots to rearrange your page structure. Hover over slots to see positioning controls.
+                  </div>
+                </li>
+                <li className="flex gap-2">
+                  <Eye className="w-3 h-3 mt-0.5 flex-shrink-0 text-green-500" />
+                  <div>
+                    <strong>Preview Mode:</strong> See how your page looks and works. All buttons, forms, and interactions are fully functional.
+                  </div>
+                </li>
+                <li className="flex gap-2">
+                  <Code className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" />
+                  <div>
+                    <strong>Code Mode:</strong> Edit the raw slot configuration and layout code directly for advanced customization.
+                  </div>
+                </li>
+              </ul>
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-gray-500">💡 Tip: Changes auto-save after a few seconds of inactivity.</p>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
