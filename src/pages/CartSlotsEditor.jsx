@@ -2194,7 +2194,7 @@ export default function CartSlotsEditorWithMicroSlots({
               <button
                 onClick={() => {
                   if (confirm('This will reset all layout configurations to defaults. Are you sure?')) {
-                    localStorage.removeItem('cart_slot_configuration');
+                    localStorage.removeItem('cart_slots_layout_config');
                     window.location.reload();
                   }
                 }}

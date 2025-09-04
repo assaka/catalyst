@@ -205,7 +205,8 @@ export default function CartSlots({
       sizes: {
         icon: layoutConfig?.componentSizes?.['emptyCart.icon'],
         button: layoutConfig?.componentSizes?.['emptyCart.button']
-      }
+      },
+      fullLayoutConfig: layoutConfig
     });
     
     // Get icon size from configuration
