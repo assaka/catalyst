@@ -2433,17 +2433,6 @@ export default function CartSlotsEditorWithMicroSlots({
           
           return null;
         })}
-        
-        {/* Add New Slot Button */}
-        <div className="col-span-12 p-2 mt-2">
-          <button
-            onClick={() => setShowAddSlotDialog(true)}
-            className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Add New Slot
-          </button>
-        </div>
       </SortableParentSlot>
     );
   };
