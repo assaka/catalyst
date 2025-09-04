@@ -909,15 +909,15 @@ export default ExampleComponent;`;
                           <Eye className="w-4 h-4 mr-2" />
                           Customize
                         </button>
+                        <button
+                          onClick={() => setIsFullscreen(!isFullscreen)}
+                          className="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                        >
+                          {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                        </button>
                       </div>
                     </div>
-                    <button
-                        onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-                    >
-                      {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                    </button>
                   </div>
 
                   {/* Header */}
