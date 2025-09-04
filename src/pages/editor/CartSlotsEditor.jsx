@@ -1432,12 +1432,12 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
           <Plus className="w-4 h-4 text-green-600 group-hover:scale-110 transition-transform" />
         </button>
       )}
-      
+
       {/* Section label */}
       <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
-        {name} (12 column grid)
+        {name}
       </div>
-      
+
       {/* Micro-slots container */}
       <div 
         className={`border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'} rounded-lg p-4 bg-white relative z-1 transition-colors`}
@@ -2208,7 +2208,6 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                     />
                   </div>
-                  <div className="text-xs text-gray-500">Icon: {iconSize}px</div>
                 </div>
               </MicroSlot>
             );
@@ -2326,7 +2325,6 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                     />
                   </div>
-                  <div className="text-xs text-gray-500">Button: {buttonSize}</div>
                 </div>
               </MicroSlot>
             );
