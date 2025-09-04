@@ -1659,7 +1659,7 @@ export default function CartSlotsEditorWithMicroSlots({
     saveTimerRef.current = setTimeout(() => {
       saveConfiguration();
     }, 1000);
-  }, [debouncedSave]);
+  }, [saveConfiguration]);
   
   // Listen for force save event from GenericSlotEditor
   useEffect(() => {
