@@ -969,7 +969,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1157,6 +1157,27 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
           }}
         >
           <Edit className="w-3 h-3 text-gray-600" />
+        </button>
+      )}
+      
+      {/* Delete button for custom slots */}
+      {onDelete && isHovered && !isDragging && !isResizing && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute right-8 top-1 p-1 bg-red-100/80 rounded transition-opacity z-20 hover:bg-red-200"
+          title="Delete custom slot"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
+        >
+          <Trash2 className="w-3 h-3 text-red-600" />
         </button>
       )}
       
@@ -1591,7 +1612,7 @@ export default function CartSlotsEditorWithMicroSlots({
       
       return true;
     }
-  }, [majorSlots, microSlotOrders, microSlotSpans, textContent, elementClasses, componentSizes, componentCode, onSave]);
+  }, [majorSlots, microSlotOrders, microSlotSpans, textContent, elementClasses, componentSizes, componentCode, customSlots, onSave]);
   
   // Load saved configuration on mount
   useEffect(() => {
@@ -1814,6 +1835,57 @@ export default function CartSlotsEditorWithMicroSlots({
     setEditingComponent(null);
     setTempCode('');
   }, [editingComponent, tempCode, componentCode, majorSlots, microSlotOrders, onSave]);
+  
+  // Handle deleting a custom slot
+  const handleDeleteCustomSlot = useCallback((slotId) => {
+    if (!slotId.startsWith('emptyCart.custom_')) return;
+    
+    // Remove from micro slot orders
+    setMicroSlotOrders(prev => ({
+      ...prev,
+      emptyCart: (prev.emptyCart || []).filter(id => id !== slotId)
+    }));
+    
+    // Remove from micro slot spans
+    setMicroSlotSpans(prev => {
+      const updated = { ...prev };
+      if (updated.emptyCart) {
+        delete updated.emptyCart[slotId];
+      }
+      return updated;
+    });
+    
+    // Remove from custom slots
+    setCustomSlots(prev => {
+      const updated = { ...prev };
+      delete updated[slotId];
+      return updated;
+    });
+    
+    // Remove from text content
+    setTextContent(prev => {
+      const updated = { ...prev };
+      delete updated[slotId];
+      return updated;
+    });
+    
+    // Remove from element classes
+    setElementClasses(prev => {
+      const updated = { ...prev };
+      delete updated[slotId];
+      return updated;
+    });
+    
+    // Remove from component code
+    setComponentCode(prev => {
+      const updated = { ...prev };
+      delete updated[slotId];
+      return updated;
+    });
+    
+    // Auto-save after delete
+    setTimeout(() => saveConfiguration(), 500);
+  }, [saveConfiguration]);
   
   // Handle adding a new custom slot
   const handleAddCustomSlot = useCallback(() => {
@@ -2083,6 +2155,11 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                  onDelete={() => {
+                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                      handleDeleteCustomSlot(slotId);
+                    }
+                  }}
                 >
                   <div className="flex justify-center items-center text-center">
                     <SimpleInlineEdit
@@ -2107,6 +2184,11 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                  onDelete={() => {
+                    if (confirm(`Delete custom slot "${customSlot.label}"?`)) {
+                      handleDeleteCustomSlot(slotId);
+                    }
+                  }}
                 >
                   <div className="p-2 bg-gray-50 rounded border border-gray-200">
                     <div className="flex items-center justify-between mb-1">
