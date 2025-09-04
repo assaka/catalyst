@@ -1661,6 +1661,24 @@ export default function CartSlotsEditorWithMicroSlots({
     }, 1000);
   }, [debouncedSave]);
   
+  // Listen for force save event from GenericSlotEditor
+  useEffect(() => {
+    const handleForceSave = () => {
+      // Clear any pending debounced saves
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+      // Save immediately
+      saveConfiguration();
+    };
+    
+    window.addEventListener('force-save-cart-layout', handleForceSave);
+    
+    return () => {
+      window.removeEventListener('force-save-cart-layout', handleForceSave);
+    };
+  }, [saveConfiguration]);
+  
   // Set up window handler for adding new slots
   useEffect(() => {
     window.onAddNewSlot = (parentSlotId) => {
@@ -1825,11 +1843,14 @@ export default function CartSlotsEditorWithMicroSlots({
               }
             });
           }
-        }
-        
+          
+          // Cache to localStorage for quick access
+          localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+        } else {
+          console.log('No configuration found in database, using defaults');
         }
       } catch (error) {
-        console.error('Failed to load configuration:', error);
+        console.error('Failed to load configuration from database:', error);
       }
     };
     
