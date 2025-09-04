@@ -1513,6 +1513,9 @@ export default function CartSlotsEditorWithMicroSlots({
   const [newSlotContent, setNewSlotContent] = useState('');
   const [customSlots, setCustomSlots] = useState({});
   
+  // State for delete confirmation dialog
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, slotId: null, slotLabel: '' });
+  
   // State for inline editable content
   const [textContent, setTextContent] = useState({
     'emptyCart.title': 'Your cart is empty',
@@ -2537,12 +2540,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
-                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
-                    console.log('User confirmed deletion:', shouldDelete);
-                    if (shouldDelete) {
-                      console.log('Calling handleDeleteCustomSlot for:', slotId);
-                      handleDeleteCustomSlot(slotId);
-                    }
+                    setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
                   <div className="flex justify-center items-center text-center">
@@ -2580,12 +2578,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
-                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
-                    console.log('User confirmed deletion:', shouldDelete);
-                    if (shouldDelete) {
-                      console.log('Calling handleDeleteCustomSlot for:', slotId);
-                      handleDeleteCustomSlot(slotId);
-                    }
+                    setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
                   <div className="relative">
@@ -2971,12 +2964,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
-                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
-                    console.log('User confirmed deletion:', shouldDelete);
-                    if (shouldDelete) {
-                      console.log('Calling handleDeleteCustomSlot for:', slotId);
-                      handleDeleteCustomSlot(slotId);
-                    }
+                    setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
                   <div className="flex justify-center items-center text-center">
@@ -3012,12 +3000,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
-                    const shouldDelete = confirm(`Delete custom slot "${customSlot.label}"?`);
-                    console.log('User confirmed deletion:', shouldDelete);
-                    if (shouldDelete) {
-                      console.log('Calling handleDeleteCustomSlot for:', slotId);
-                      handleDeleteCustomSlot(slotId);
-                    }
+                    setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
                   <div className="relative bg-gray-50 border border-dashed border-gray-300 rounded-md p-3 min-h-[60px]">
@@ -3368,6 +3351,43 @@ export default function CartSlotsEditorWithMicroSlots({
               }}
             >
               Reset Layout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirm.show} onOpenChange={(open) => !open && setDeleteConfirm({ show: false, slotId: null, slotLabel: '' })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Custom Slot</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete the custom slot <strong>"{deleteConfirm.slotLabel}"</strong>?
+            </p>
+            <p className="text-sm text-red-600 mt-2">
+              This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirm({ show: false, slotId: null, slotLabel: '' })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                console.log('User confirmed deletion for:', deleteConfirm.slotId);
+                if (deleteConfirm.slotId) {
+                  handleDeleteCustomSlot(deleteConfirm.slotId);
+                }
+                setDeleteConfirm({ show: false, slotId: null, slotLabel: '' });
+              }}
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
