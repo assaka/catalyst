@@ -2780,72 +2780,89 @@ export default function CartSlotsEditorWithMicroSlots({
     );
   };
 
-  // Render coupon section placeholder
+  // Render coupon section matching Cart.jsx
   const renderCoupon = () => {
-    const microSlots = microSlotOrders.coupon || MICRO_SLOT_DEFINITIONS.coupon.microSlots;
-    const spans = microSlotSpans.coupon || MICRO_SLOT_DEFINITIONS.coupon.defaultSpans;
-    
     return (
       <SortableParentSlot
         id="coupon"
-        name="Coupon Section"
-        microSlotOrder={microSlots}
+        name="Apply Coupon"
+        microSlotOrder={[]}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('coupon')}
-        gridCols={MICRO_SLOT_DEFINITIONS.coupon.gridCols}
+        gridCols={12}
       >
-        {microSlots.map(slotId => {
-          const slotSpan = spans[slotId] || { col: 12, row: 1 };
-          return (
-            <MicroSlot 
-              key={slotId} 
-              id={slotId} 
-              onEdit={handleEditMicroSlot}
-              colSpan={slotSpan.col}
-              rowSpan={slotSpan.row}
-              onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
-            >
-              <div className="p-2 bg-gray-100 rounded text-center text-gray-600">
-                {slotId}
+        <Card className="col-span-12">
+          <CardHeader>
+            <CardTitle>Apply Coupon</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex space-x-2">
+              <Input 
+                placeholder="Enter coupon code" 
+                value="SAVE20"
+                disabled
+              />
+              <Button disabled>
+                <Tag className="w-4 h-4 mr-2" /> Apply
+              </Button>
+            </div>
+            <div className="mt-3 flex items-center justify-between bg-green-50 p-3 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-green-800">Applied: SAVE20</p>
+                <p className="text-xs text-green-600">20% off your order</p>
               </div>
-            </MicroSlot>
-          );
-        })}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-red-600 hover:text-red-800"
+                disabled
+              >
+                Remove
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </SortableParentSlot>
     );
   };
   
-  // Render order summary placeholder
+  // Render order summary matching Cart.jsx
   const renderOrderSummary = () => {
-    const microSlots = microSlotOrders.orderSummary || MICRO_SLOT_DEFINITIONS.orderSummary.microSlots;
-    const spans = microSlotSpans.orderSummary || MICRO_SLOT_DEFINITIONS.orderSummary.defaultSpans;
-    
     return (
       <SortableParentSlot
         id="orderSummary"
         name="Order Summary"
-        microSlotOrder={microSlots}
+        microSlotOrder={[]}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('orderSummary')}
-        gridCols={MICRO_SLOT_DEFINITIONS.orderSummary.gridCols}
+        gridCols={12}
       >
-        {microSlots.map(slotId => {
-          const slotSpan = spans[slotId] || { col: 12, row: 1 };
-          return (
-            <MicroSlot 
-              key={slotId} 
-              id={slotId} 
-              onEdit={handleEditMicroSlot}
-              colSpan={slotSpan.col}
-              rowSpan={slotSpan.row}
-              onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
-            >
-              <div className="p-2 bg-gray-100 rounded text-center text-gray-600">
-                {slotId}
-              </div>
-            </MicroSlot>
-          );
-        })}
+        <Card className="col-span-12">
+          <CardHeader>
+            <CardTitle>Order Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>$139.97</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Discount</span>
+              <span className="text-green-600">-$27.99</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax</span>
+              <span>$11.20</span>
+            </div>
+            <div className="flex justify-between text-lg font-semibold border-t pt-4">
+              <span>Total</span>
+              <span>$123.18</span>
+            </div>
+            <Button size="lg" className="w-full">
+              Proceed to Checkout
+            </Button>
+          </CardContent>
+        </Card>
       </SortableParentSlot>
     );
   };
@@ -3251,11 +3268,14 @@ export default function CartSlotsEditorWithMicroSlots({
       <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Reset Layout Configuration</DialogTitle>
+            <DialogTitle>Reset Cart Page Layout</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to reset the layout configuration? This will delete all customizations and restore the default layout.
+              Are you sure you want to reset the layout configuration for the <strong>Cart page</strong>? This will delete all customizations and restore the default layout for this page only.
+            </p>
+            <p className="text-sm text-blue-600 mt-2">
+              <strong>Note:</strong> Only the Cart page layout will be reset. Other pages will not be affected.
             </p>
             <p className="text-sm text-red-600 mt-2">
               This action cannot be undone.
