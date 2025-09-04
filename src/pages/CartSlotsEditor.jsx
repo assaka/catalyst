@@ -1388,8 +1388,8 @@ export default function CartSlotsEditorWithMicroSlots({
   data = {},
   onSave = () => {},
 }) {
-  // State for major slot order - show all slots in editor
-  const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts']);
+  // State for major slot order - only show empty cart state
+  const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
   
   // State for resizing indicators
   const [isResizingIcon, setIsResizingIcon] = useState(null);
@@ -1568,11 +1568,11 @@ export default function CartSlotsEditorWithMicroSlots({
           const config = JSON.parse(localConfig);
           console.log('Loading saved configuration from localStorage:', config);
           
-          // Ensure all required slots are present
+          // Only load header and emptyCart slots
           if (config.majorSlots) {
-            const requiredSlots = ['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts'];
-            const savedSlots = config.majorSlots;
-            // Add any missing required slots to the end
+            const requiredSlots = ['header', 'emptyCart'];
+            const savedSlots = config.majorSlots.filter(slot => requiredSlots.includes(slot));
+            // Ensure both required slots are present
             const missingSlots = requiredSlots.filter(slot => !savedSlots.includes(slot));
             const allSlots = [...savedSlots, ...missingSlots];
             setMajorSlots(allSlots);
@@ -1602,11 +1602,11 @@ export default function CartSlotsEditorWithMicroSlots({
             const dbConfig = response.data.data[0].configuration;
             console.log('Loading saved configuration from database:', dbConfig);
             
-            // Ensure all required slots are present
+            // Only load header and emptyCart slots
             if (dbConfig.majorSlots) {
-              const requiredSlots = ['header', 'emptyCart', 'coupon', 'orderSummary', 'recommendedProducts'];
-              const savedSlots = dbConfig.majorSlots;
-              // Add any missing required slots to the end
+              const requiredSlots = ['header', 'emptyCart'];
+              const savedSlots = dbConfig.majorSlots.filter(slot => requiredSlots.includes(slot));
+              // Ensure both required slots are present
               const missingSlots = requiredSlots.filter(slot => !savedSlots.includes(slot));
               const allSlots = [...savedSlots, ...missingSlots];
               setMajorSlots(allSlots);
@@ -2118,9 +2118,9 @@ export default function CartSlotsEditorWithMicroSlots({
     <>
       <div className="bg-gray-50 cart-page min-h-screen" style={{ backgroundColor: '#f9fafb' }}>
         <SeoHeadManager
-          title="Cart Editor - Micro Slots"
-          description="Edit cart layout with micro-slot precision"
-          keywords="cart, editor, micro-slots"
+          title="Empty Cart Editor"
+          description="Edit empty cart state layout"
+          keywords="cart, editor, empty-state"
         />
         
         {/* Instructions and Save Button */}
@@ -2130,9 +2130,9 @@ export default function CartSlotsEditorWithMicroSlots({
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" className="bg-blue-100">
                 <GripVertical className="w-3 h-3 mr-1" />
-                Sections
+                Empty Cart Editor
               </Badge>
-              <span className="text-sm text-blue-800">Drag to reorder sections</span>
+              <span className="text-sm text-blue-800">Design your empty cart state</span>
               <span className="mx-2 text-blue-400">•</span>
               <Badge variant="secondary" className="bg-purple-100">
                 <Move className="w-3 h-3 mr-1" />
@@ -2195,17 +2195,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     case 'header':
                       return renderHeader();
                     case 'emptyCart':
-                      // Always show empty cart in editor
                       return renderEmptyCart();
-                    case 'cartItems':
-                      // Skip cartItems slot since we're showing emptyCart
-                      return null;
-                    case 'coupon':
-                      return renderCoupon();
-                    case 'orderSummary':
-                      return renderOrderSummary();
-                    case 'recommendedProducts':
-                      return renderRecommendedProducts();
                     default:
                       return null;
                   }
