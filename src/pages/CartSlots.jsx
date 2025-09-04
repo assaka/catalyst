@@ -185,26 +185,93 @@ export default function CartSlots({
     );
   }
 
-  // Empty cart view with custom text support
-  const EmptyCart = () => (
-    <Card>
-      <CardContent className="text-center py-12">
-        <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">
-          {renderCustomText('emptyCart.title', 'Your cart is empty', 'text-xl font-semibold')}
-        </h2>
-        <p className="text-gray-600 mb-6">
-          {renderCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.", 'text-gray-600')}
-        </p>
-        <Button onClick={() => {
-          const baseUrl = getStoreBaseUrl(store);
-          window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-        }}>
-          {renderCustomText('emptyCart.button', 'Continue Shopping', '')}
-        </Button>
-      </CardContent>
-    </Card>
-  );
+  // Empty cart view with custom text support and grid layout
+  const EmptyCart = () => {
+    // Get micro-slot configuration
+    const microSlotOrders = layoutConfig?.microSlotOrders?.emptyCart || [
+      'emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'
+    ];
+    const microSlotSpans = layoutConfig?.microSlotSpans?.emptyCart || {
+      'emptyCart.icon': { col: 12, row: 1 },
+      'emptyCart.title': { col: 12, row: 1 },
+      'emptyCart.text': { col: 12, row: 1 },
+      'emptyCart.button': { col: 12, row: 1 }
+    };
+    
+    // Get icon size from configuration
+    const iconSize = layoutConfig?.componentSizes?.['emptyCart.icon'] || 64;
+    const buttonSize = layoutConfig?.componentSizes?.['emptyCart.button'] || 'default';
+    
+    // Helper to get grid classes dynamically
+    const getGridClasses = (spans) => {
+      // Use style attribute for dynamic spans to avoid Tailwind purging issues
+      return {
+        gridColumn: `span ${spans.col || 12}`,
+        gridRow: `span ${spans.row || 1}`
+      };
+    };
+    
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="grid grid-cols-12 gap-4 max-w-4xl mx-auto">
+            {microSlotOrders.map(slotId => {
+              const spans = microSlotSpans[slotId] || { col: 12, row: 1 };
+              const gridStyle = getGridClasses(spans);
+              
+              switch(slotId) {
+                case 'emptyCart.icon':
+                  return (
+                    <div key={slotId} style={gridStyle} className="flex justify-center items-center">
+                      <ShoppingCart 
+                        className="text-gray-400" 
+                        style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
+                      />
+                    </div>
+                  );
+                  
+                case 'emptyCart.title':
+                  return (
+                    <div key={slotId} style={gridStyle} className="flex items-center justify-center">
+                      <h2 className="text-xl font-semibold text-center">
+                        {renderCustomText('emptyCart.title', 'Your cart is empty', 'text-xl font-semibold')}
+                      </h2>
+                    </div>
+                  );
+                  
+                case 'emptyCart.text':
+                  return (
+                    <div key={slotId} style={gridStyle} className="flex items-center justify-center">
+                      <p className="text-gray-600 text-center">
+                        {renderCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.", 'text-gray-600')}
+                      </p>
+                    </div>
+                  );
+                  
+                case 'emptyCart.button':
+                  return (
+                    <div key={slotId} style={gridStyle} className="flex justify-center items-center">
+                      <Button 
+                        size={buttonSize}
+                        onClick={() => {
+                          const baseUrl = getStoreBaseUrl(store);
+                          window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                        }}
+                      >
+                        {getCustomText('emptyCart.button', 'Continue Shopping')}
+                      </Button>
+                    </div>
+                  );
+                  
+                default:
+                  return null;
+              }
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // Cart items section
   const CartItemsSection = () => (
@@ -395,13 +462,51 @@ export default function CartSlots({
             {sectionOrder.map(sectionId => {
               switch (sectionId) {
                 case 'header':
+                  // Get header micro-slot configuration
+                  const headerMicroSlots = layoutConfig?.microSlotOrders?.header || [
+                    'header.flashMessage', 'header.title', 'header.cmsBlock'
+                  ];
+                  const headerSpans = layoutConfig?.microSlotSpans?.header || {};
+                  
                   return (
                     <div key={sectionId} className="mb-8">
-                      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                      <h1 className="mb-8">
-                        {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
-                      </h1>
-                      <CmsBlockRenderer position="cart_above_items" />
+                      <div className="grid grid-cols-12 gap-4">
+                        {headerMicroSlots.map(microSlotId => {
+                          const spans = headerSpans[microSlotId] || { col: 12, row: 1 };
+                          const gridStyle = {
+                            gridColumn: `span ${spans.col || 12}`,
+                            gridRow: `span ${spans.row || 1}`
+                          };
+                          
+                          switch(microSlotId) {
+                            case 'header.flashMessage':
+                              return flashMessage ? (
+                                <div key={microSlotId} style={gridStyle}>
+                                  <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+                                </div>
+                              ) : null;
+                              
+                            case 'header.title':
+                              return (
+                                <div key={microSlotId} style={gridStyle}>
+                                  <h1 className="text-3xl font-bold text-gray-900">
+                                    {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
+                                  </h1>
+                                </div>
+                              );
+                              
+                            case 'header.cmsBlock':
+                              return (
+                                <div key={microSlotId} style={gridStyle}>
+                                  <CmsBlockRenderer position="cart_above_items" />
+                                </div>
+                              );
+                              
+                            default:
+                              return null;
+                          }
+                        })}
+                      </div>
                     </div>
                   );
                 case 'emptyCart':
