@@ -8,7 +8,7 @@ import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/editor/ai-context/DiffPreviewSystem';
 import VersionHistory from '@/components/editor/ai-context/VersionHistory';
-import GenericSlotEditor from '@/core/slot-editor/GenericSlotEditor.jsx';
+import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 // Store context no longer needed - backend resolves store automatically
