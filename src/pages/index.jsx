@@ -53,6 +53,7 @@ export { default as Billing } from './admin/Billing';
 export { default as TeamPage } from './admin/TeamPage';
 export { default as Onboarding } from './admin/Onboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
+
 // Editor Pages
 export { default as AIContextWindow } from './editor/AIContextWindow';
 export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
@@ -74,80 +75,3 @@ export { default as CmsPageViewer } from './storefront/CmsPageViewer';
 export { default as CookieConsent } from './storefront/CookieConsent';
 export { default as RobotsPublic } from './storefront/RobotsPublic';
 export { default as Landing } from './storefront/Landing';
-
-// Re-export all pages as default for backward compatibility
-const Pages = {
-  // Admin
-  Dashboard,
-  Products,
-  Categories,
-  Attributes,
-  Orders,
-  Customers,
-  CustomerActivity,
-  Coupons,
-  Tax,
-  ShippingMethods,
-  PaymentMethods,
-  DeliverySettings,
-  StockSettings,
-  CmsBlocks,
-  CmsPages,
-  FileManager,
-  FileLibrary,
-  MediaStorage,
-  Stores,
-  Settings,
-  Integrations,
-  EcommerceIntegrations,
-  CRMIntegrations,
-  DatabaseIntegrations,
-  ShopifyIntegration,
-  AkeneoIntegration,
-  RenderIntegration,
-  SupabasePage,
-  Plugins,
-  PluginBuilder,
-  PluginBuilderComplete,
-  PluginHowToFixed,
-  ProductTabs,
-  ProductLabels,
-  CustomOptionRules,
-  MarketplaceExport,
-  SeoTools,
-  XmlSitemap,
-  RobotsTxt,
-  HtmlSitemap,
-  GoogleTagManager,
-  AnalyticsSettings,
-  HeatmapAnalytics,
-  HeatMaps,
-  ScheduledJobs,
-  MonitoringDashboard,
-  ABTesting,
-  Billing,
-  TeamPage,
-  Onboarding,
-  ThemeLayout,
-  AIContextWindow,
-  CartSlotsEditor,
-  // Storefront
-  Homepage,
-  Category,
-  ProductDetail,
-  Cart,
-  CartSlots,
-  Checkout,
-  OrderSuccess,
-  OrderCancel,
-  CustomerAuth,
-  CustomerDashboard,
-  ClientDashboard,
-  Storefront,
-  CmsPageViewer,
-  CookieConsent,
-  RobotsPublic,
-  Landing
-};
-
-export default Pages;

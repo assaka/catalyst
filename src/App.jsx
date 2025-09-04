@@ -1,5 +1,5 @@
 import './App.css'
-import Pages from "@/pages/index.jsx"
+// import Pages from "@/pages/index.jsx" // Removed - Pages object no longer exported
 import { Toaster } from "@/components/ui/toaster"
 import { StoreSelectionProvider } from "@/contexts/StoreSelectionContext"
 
@@ -67,7 +67,8 @@ function App() {
 
   return (
     <StoreSelectionProvider>
-      <Pages />
+      {/* Router should be added here */}
+      <div>App content - Router needs to be configured</div>
       <Toaster />
     </StoreSelectionProvider>
   )
