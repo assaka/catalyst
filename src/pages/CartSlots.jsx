@@ -198,6 +198,16 @@ export default function CartSlots({
       'emptyCart.button': { col: 12, row: 1 }
     };
     
+    // Debug logging
+    console.log('EmptyCart micro-slot configuration:', {
+      orders: microSlotOrders,
+      spans: microSlotSpans,
+      sizes: {
+        icon: layoutConfig?.componentSizes?.['emptyCart.icon'],
+        button: layoutConfig?.componentSizes?.['emptyCart.button']
+      }
+    });
+    
     // Get icon size from configuration
     const iconSize = layoutConfig?.componentSizes?.['emptyCart.icon'] || 64;
     const buttonSize = layoutConfig?.componentSizes?.['emptyCart.button'] || 'default';
@@ -214,15 +224,26 @@ export default function CartSlots({
     return (
       <Card>
         <CardContent className="py-12">
-          <div className="grid grid-cols-12 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-12 gap-2 max-w-6xl mx-auto" style={{ minHeight: '400px' }}>
             {microSlotOrders.map(slotId => {
               const spans = microSlotSpans[slotId] || { col: 12, row: 1 };
               const gridStyle = getGridClasses(spans);
               
+              // Add visual debugging in development
+              const debugStyle = process.env.NODE_ENV === 'development' ? {
+                border: '1px dashed #e5e7eb',
+                position: 'relative'
+              } : {};
+              
               switch(slotId) {
                 case 'emptyCart.icon':
                   return (
-                    <div key={slotId} style={gridStyle} className="flex justify-center items-center">
+                    <div 
+                      key={slotId} 
+                      style={{ ...gridStyle, ...debugStyle }} 
+                      className="flex justify-center items-center p-2"
+                      title={`Icon: ${spans.col}x${spans.row}`}
+                    >
                       <ShoppingCart 
                         className="text-gray-400" 
                         style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
@@ -232,8 +253,13 @@ export default function CartSlots({
                   
                 case 'emptyCart.title':
                   return (
-                    <div key={slotId} style={gridStyle} className="flex items-center justify-center">
-                      <h2 className="text-xl font-semibold text-center">
+                    <div 
+                      key={slotId} 
+                      style={{ ...gridStyle, ...debugStyle }} 
+                      className="flex items-center justify-center p-2"
+                      title={`Title: ${spans.col}x${spans.row}`}
+                    >
+                      <h2 className="text-xl font-semibold text-center w-full">
                         {renderCustomText('emptyCart.title', 'Your cart is empty', 'text-xl font-semibold')}
                       </h2>
                     </div>
@@ -241,8 +267,13 @@ export default function CartSlots({
                   
                 case 'emptyCart.text':
                   return (
-                    <div key={slotId} style={gridStyle} className="flex items-center justify-center">
-                      <p className="text-gray-600 text-center">
+                    <div 
+                      key={slotId} 
+                      style={{ ...gridStyle, ...debugStyle }} 
+                      className="flex items-center justify-center p-2"
+                      title={`Text: ${spans.col}x${spans.row}`}
+                    >
+                      <p className="text-gray-600 text-center w-full">
                         {renderCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.", 'text-gray-600')}
                       </p>
                     </div>
@@ -250,7 +281,12 @@ export default function CartSlots({
                   
                 case 'emptyCart.button':
                   return (
-                    <div key={slotId} style={gridStyle} className="flex justify-center items-center">
+                    <div 
+                      key={slotId} 
+                      style={{ ...gridStyle, ...debugStyle }} 
+                      className="flex justify-center items-center p-2"
+                      title={`Button: ${spans.col}x${spans.row}`}
+                    >
                       <Button 
                         size={buttonSize}
                         onClick={() => {
