@@ -1649,19 +1649,31 @@ export default function CartSlotsEditorWithMicroSlots({
             });
             setMicroSlotSpans(cleanedSpans);
           }
-          // Load saved configuration, using it completely (not merging with defaults)
-          // This ensures user changes (including empty values) are preserved
+          // Load saved configuration, merging with current state to preserve defaults for unsaved items
+          // But use saved values directly (including empty strings) when they exist
           if (config.textContent) {
-            setTextContent(config.textContent);
+            setTextContent(prev => ({
+              ...prev,  // Keep defaults for any keys not in saved config
+              ...config.textContent  // Override with saved values (including empty strings)
+            }));
           }
           if (config.elementClasses) {
-            setElementClasses(config.elementClasses);
+            setElementClasses(prev => ({
+              ...prev,
+              ...config.elementClasses
+            }));
           }
           if (config.componentSizes) {
-            setComponentSizes(config.componentSizes);
+            setComponentSizes(prev => ({
+              ...prev,
+              ...config.componentSizes
+            }));
           }
           if (config.componentCode) {
-            setComponentCode(config.componentCode);
+            setComponentCode(prev => ({
+              ...prev,
+              ...config.componentCode
+            }));
           }
           if (config.customSlots) {
             setCustomSlots(config.customSlots);
@@ -1711,16 +1723,28 @@ export default function CartSlotsEditorWithMicroSlots({
             }
             // Load saved configuration from database
             if (dbConfig.textContent) {
-              setTextContent(dbConfig.textContent);
+              setTextContent(prev => ({
+                ...prev,
+                ...dbConfig.textContent
+              }));
             }
             if (dbConfig.elementClasses) {
-              setElementClasses(dbConfig.elementClasses);
+              setElementClasses(prev => ({
+                ...prev,
+                ...dbConfig.elementClasses
+              }));
             }
             if (dbConfig.componentSizes) {
-              setComponentSizes(dbConfig.componentSizes);
+              setComponentSizes(prev => ({
+                ...prev,
+                ...dbConfig.componentSizes
+              }));
             }
             if (dbConfig.componentCode) {
-              setComponentCode(dbConfig.componentCode);
+              setComponentCode(prev => ({
+                ...prev,
+                ...dbConfig.componentCode
+              }));
             }
             if (dbConfig.customSlots) {
               setCustomSlots(dbConfig.customSlots);
@@ -1835,29 +1859,48 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
-    const code = componentCode[microSlotId] || MICRO_SLOT_TEMPLATES[microSlotId] || '// Micro-slot code';
-    setEditingComponent(microSlotId);
-    setTempCode(code);
-  }, [componentCode]);
+    // Check if this is a text content slot
+    const textSlots = ['emptyCart.title', 'emptyCart.text', 'emptyCart.button', 'header.title'];
+    
+    if (textSlots.includes(microSlotId) || microSlotId.includes('.custom_')) {
+      // For text content slots, edit the text content directly
+      const content = textContent[microSlotId] || '';
+      setEditingComponent(microSlotId);
+      setTempCode(content);
+    } else {
+      // For component code slots, edit the component code
+      const code = componentCode[microSlotId] || MICRO_SLOT_TEMPLATES[microSlotId] || '// Micro-slot code';
+      setEditingComponent(microSlotId);
+      setTempCode(code);
+    }
+  }, [componentCode, textContent]);
 
   // Save edited code
   const handleSaveCode = useCallback(() => {
     if (editingComponent) {
-      setComponentCode(prev => ({
-        ...prev,
-        [editingComponent]: tempCode
-      }));
-      onSave({
-        componentCode: { ...componentCode, [editingComponent]: tempCode },
-        majorSlots,
-        microSlotOrders,
-        microSlotSpans,
-        timestamp: new Date().toISOString()
-      });
+      // Check if this is a text content slot
+      const textSlots = ['emptyCart.title', 'emptyCart.text', 'emptyCart.button', 'header.title'];
+      
+      if (textSlots.includes(editingComponent) || editingComponent.includes('.custom_')) {
+        // Save to text content
+        setTextContent(prev => ({
+          ...prev,
+          [editingComponent]: tempCode
+        }));
+      } else {
+        // Save to component code
+        setComponentCode(prev => ({
+          ...prev,
+          [editingComponent]: tempCode
+        }));
+      }
+      
+      // Auto-save configuration
+      setTimeout(() => saveConfiguration(), 500);
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, componentCode, majorSlots, microSlotOrders, onSave]);
+  }, [editingComponent, tempCode, saveConfiguration]);
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
@@ -2513,7 +2556,7 @@ export default function CartSlotsEditorWithMicroSlots({
           <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
             <Editor
               height="100%"
-              defaultLanguage="javascript"
+              defaultLanguage={editingComponent && (editingComponent.includes('.title') || editingComponent.includes('.text') || editingComponent.includes('.button') || editingComponent.includes('.custom_')) ? 'html' : 'javascript'}
               value={tempCode}
               onChange={(value) => setTempCode(value || '')}
               theme="vs-dark"
