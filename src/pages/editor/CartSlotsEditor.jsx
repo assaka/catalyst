@@ -61,12 +61,11 @@ const MICRO_SLOT_DEFINITIONS = {
   header: {
     id: 'header',
     name: 'Page Header',
-    microSlots: ['header.flashMessage', 'header.title', 'header.cmsBlock'],
+    microSlots: ['header.flashMessage', 'header.title'], // Removed cmsBlock - not draggable
     gridCols: 12,
     defaultSpans: {
       'header.flashMessage': { col: 12, row: 1 },
-      'header.title': { col: 12, row: 1 },
-      'header.cmsBlock': { col: 12, row: 1 }
+      'header.title': { col: 12, row: 1 }
     }
   },
   cartItem: {
@@ -98,16 +97,14 @@ const MICRO_SLOT_DEFINITIONS = {
   orderSummary: {
     id: 'orderSummary',
     name: 'Order Summary',
-    microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.cmsBlockAboveTotal', 'orderSummary.total', 'orderSummary.cmsBlockBelowTotal', 'orderSummary.checkoutButton'],
+    microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'], // Removed CMS blocks - not draggable
     gridCols: 12,
     defaultSpans: {
       'orderSummary.title': { col: 12, row: 1 },
       'orderSummary.subtotal': { col: 12, row: 1 },
       'orderSummary.discount': { col: 12, row: 1 },
       'orderSummary.tax': { col: 12, row: 1 },
-      'orderSummary.cmsBlockAboveTotal': { col: 12, row: 1 },
       'orderSummary.total': { col: 12, row: 1 },
-      'orderSummary.cmsBlockBelowTotal': { col: 12, row: 1 },
       'orderSummary.checkoutButton': { col: 12, row: 1 }
     }
   }
@@ -3042,27 +3039,11 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'orderSummary.cmsBlockAboveTotal') {
-                const position = slotContent[slotId] || 'cart_above_total';
+                // Render actual CMS block content - no editing
                 return (
-                  <MicroSlot 
-                    key={slotId} 
-                    id={slotId} 
-                    onEdit={handleEditMicroSlot}
-                    colSpan={slotSpan.col}
-                    rowSpan={slotSpan.row}
-                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
-                  >
-                    <div className="w-full">
-                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-blue-900">CMS Block</span>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                            {position}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </MicroSlot>
+                  <div key={slotId} className="col-span-12">
+                    <CmsBlockRenderer position="cart_above_total" />
+                  </div>
                 );
               }
               
@@ -3091,27 +3072,11 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'orderSummary.cmsBlockBelowTotal') {
-                const position = slotContent[slotId] || 'cart_below_total';
+                // Render actual CMS block content - no editing
                 return (
-                  <MicroSlot 
-                    key={slotId} 
-                    id={slotId} 
-                    onEdit={handleEditMicroSlot}
-                    colSpan={slotSpan.col}
-                    rowSpan={slotSpan.row}
-                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
-                  >
-                    <div className="w-full">
-                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-blue-900">CMS Block</span>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                            {position}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </MicroSlot>
+                  <div key={slotId} className="col-span-12">
+                    <CmsBlockRenderer position="cart_below_total" />
+                  </div>
                 );
               }
               
@@ -3250,33 +3215,12 @@ export default function CartSlotsEditorWithMicroSlots({
             );
           }
           if (slotId === 'header.cmsBlock') {
-            const position = slotContent[slotId] || 'cart_above_items';
+            // Simply render the actual CMS block content
+            // No editing or dragging - managed in admin
             return (
-              <MicroSlot 
-                key={slotId} 
-                id={slotId} 
-                onEdit={handleEditMicroSlot}
-                colSpan={slotSpan.col}
-                rowSpan={slotSpan.row}
-                onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
-              >
-                <div className="w-full">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-blue-900">CMS Block</span>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        Position: {position}
-                      </span>
-                    </div>
-                    <div className="text-xs text-blue-700">
-                      Content from CMS blocks with position identifier: <strong>{position}</strong>
-                    </div>
-                    <div className="mt-2 text-xs text-blue-600">
-                      Edit to change position identifier
-                    </div>
-                  </div>
-                </div>
-              </MicroSlot>
+              <div key={slotId} className="col-span-12">
+                <CmsBlockRenderer position="cart_above_items" />
+              </div>
             );
           }
           

@@ -25,7 +25,8 @@ import {
   Tag,
   ShoppingCart,
   Minus,
-  HelpCircle
+  HelpCircle,
+  Package
 } from 'lucide-react';
 
 import {
@@ -1723,12 +1724,88 @@ export default ${componentName};`;
           /* PREVIEW MODE: Interactive Full Page Preview */
           <div className="h-full p-4">
             <Card className="h-full">
+              {pageName === 'Cart' && (
+                <div className="border-b p-3 flex justify-end gap-2">
+                  <button
+                    onClick={() => setCartPreviewMode('empty')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      cartPreviewMode === 'empty'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+                    Empty Cart
+                  </button>
+                  <button
+                    onClick={() => setCartPreviewMode('withProducts')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      cartPreviewMode === 'withProducts'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Package className="w-4 h-4 inline mr-1.5" />
+                    With Products
+                  </button>
+                </div>
+              )}
               <CardContent className="p-0 h-full">
                 <div className="h-full overflow-auto bg-white">
                   {pageName === 'Cart' ? (
                     <CartSlots 
                       layoutConfig={cartLayoutConfig}
-                      data={{}}
+                      data={cartPreviewMode === 'empty' ? {} : {
+                        cartItems: [
+                          { 
+                            id: 1, 
+                            quantity: 2,
+                            price: 29.99,
+                            product: {
+                              id: 1,
+                              name: "Premium Cotton T-Shirt", 
+                              price: 29.99,
+                              sale_price: null,
+                              compare_price: null,
+                              images: ["https://placehold.co/100x100?text=T-Shirt"]
+                            },
+                            selected_options: [
+                              { name: "Size: Large", price: 0 },
+                              { name: "Color: Blue", price: 2.00 }
+                            ]
+                          },
+                          { 
+                            id: 2, 
+                            quantity: 1,
+                            price: 79.99,
+                            product: {
+                              id: 2,
+                              name: "Classic Denim Jeans", 
+                              price: 79.99,
+                              sale_price: null,
+                              compare_price: null,
+                              images: ["https://placehold.co/100x100?text=Jeans"]
+                            },
+                            selected_options: []
+                          }
+                        ],
+                        subtotal: 139.97,
+                        discount: 0,
+                        tax: 11.20,
+                        total: 151.17,
+                        currencySymbol: '$',
+                        calculateItemTotal: (item) => item.quantity * item.price,
+                        safeToFixed: (val) => (val || 0).toFixed(2),
+                        formatDisplayPrice: (value, symbol) => `${symbol}${(value || 0).toFixed(2)}`,
+                        updateQuantity: () => {},
+                        removeItem: () => {},
+                        handleCheckout: () => {},
+                        handleApplyCoupon: () => {},
+                        handleRemoveCoupon: () => {},
+                        handleCouponKeyPress: () => {},
+                        setCouponCode: () => {},
+                        setFlashMessage: () => {}
+                      }}
                     />
                   ) : (
                     <LayoutPreview isDraggable={false} showSettings={false} />
