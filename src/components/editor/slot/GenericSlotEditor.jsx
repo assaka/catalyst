@@ -1767,7 +1767,7 @@ export default ${componentName};`;
                               price: 29.99,
                               sale_price: null,
                               compare_price: null,
-                              images: ["https://placehold.co/100x100?text=T-Shirt"]
+                              images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop"]
                             },
                             selected_options: [
                               { name: "Size: Large", price: 0 },
@@ -1784,16 +1784,38 @@ export default ${componentName};`;
                               price: 79.99,
                               sale_price: null,
                               compare_price: null,
-                              images: ["https://placehold.co/100x100?text=Jeans"]
+                              images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=200&fit=crop"]
                             },
-                            selected_options: []
+                            selected_options: [
+                              { name: "Size: 32", price: 0 },
+                              { name: "Color: Dark Blue", price: 0 }
+                            ]
+                          },
+                          { 
+                            id: 3, 
+                            quantity: 1,
+                            price: 149.99,
+                            product: {
+                              id: 3,
+                              name: "Leather Sneakers", 
+                              price: 149.99,
+                              sale_price: 129.99,
+                              compare_price: 179.99,
+                              images: ["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=200&fit=crop"]
+                            },
+                            selected_options: [
+                              { name: "Size: 10", price: 0 },
+                              { name: "Color: White", price: 0 }
+                            ]
                           }
                         ],
-                        subtotal: 139.97,
-                        discount: 0,
-                        tax: 11.20,
-                        total: 151.17,
+                        subtotal: 259.96,
+                        discount: 26.00,
+                        tax: 18.72,
+                        total: 252.68,
                         currencySymbol: '$',
+                        appliedCoupon: { code: 'SAVE10', discount: 10 },
+                        couponCode: 'SAVE10',
                         calculateItemTotal: (item) => item.quantity * item.price,
                         safeToFixed: (val) => (val || 0).toFixed(2),
                         formatDisplayPrice: (value, symbol) => `${symbol}${(value || 0).toFixed(2)}`,

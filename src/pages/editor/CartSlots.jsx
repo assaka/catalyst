@@ -113,8 +113,7 @@ export default function CartSlots({
   const [sectionOrder, setSectionOrder] = useState(() => {
     if (layoutConfig?.majorSlots) {
       console.log('Using saved majorSlots configuration:', layoutConfig.majorSlots);
-      // For empty cart editor, we only have header and emptyCart slots
-      // Map them to the actual rendering sections
+      // Map slots to the actual rendering sections based on cart state
       const slots = [];
       
       layoutConfig.majorSlots.forEach(slot => {
@@ -122,11 +121,20 @@ export default function CartSlots({
           slots.push('header');
         } else if (slot === 'emptyCart') {
           slots.push('emptyCart');
+        } else if (slot === 'cartItem') {
+          slots.push('cartItems');
+        } else if (slot === 'coupon' || slot === 'orderSummary') {
+          // Include sidebar if either coupon or orderSummary is present
+          if (!slots.includes('sidebar')) {
+            slots.push('sidebar');
+          }
+        } else if (slot === 'flashMessage') {
+          // Flash message is handled separately
         }
       });
       
       console.log('Mapped slots for rendering:', slots);
-      return slots.length > 0 ? slots : ['emptyCart']; // Default to emptyCart if no valid slots
+      return slots.length > 0 ? slots : ['cartItems', 'sidebar']; // Default order
     }
     // Default order
     return ['cartItems', 'sidebar'];
@@ -592,6 +600,9 @@ export default function CartSlots({
         keywords="cart, shopping cart, checkout, e-commerce, online store"
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* CMS Block at cart header */}
+        <CmsBlockRenderer position="cart_header" />
+        
         {/* Only show default header if 'header' is not in section order */}
         {!sectionOrder.includes('header') && (
           <>
@@ -604,7 +615,7 @@ export default function CartSlots({
         )}
         
         {/* Render based on section order from layout configuration */}
-        {sectionOrder.includes('emptyCart') || sectionOrder.includes('header') ? (
+        {(sectionOrder.includes('emptyCart') && cartItems.length === 0) ? (
           // Render empty cart layout from editor
           <div className="space-y-8">
             {sectionOrder.map(sectionId => {
@@ -669,6 +680,21 @@ export default function CartSlots({
           <EmptyCart />
         ) : (
           <>
+            {/* Show flash message and header for product view if configured */}
+            {layoutConfig?.majorSlots?.includes('flashMessage') && layoutConfig?.slotContent?.['flashMessage.content'] && (
+              <div className="mb-6" dangerouslySetInnerHTML={{ __html: layoutConfig.slotContent['flashMessage.content'] }} />
+            )}
+            
+            {layoutConfig?.majorSlots?.includes('header') && (
+              <div className="mb-8">
+                <h1 className={getCustomClasses('header.title', 'text-3xl font-bold text-gray-900')}>
+                  {renderCustomText('header.title', 'My Cart')}
+                </h1>
+              </div>
+            )}
+            
+            <CmsBlockRenderer position="cart_above_items" />
+            
             {enableDragDrop ? (
               <DndContext
                 sensors={sensors}
@@ -703,10 +729,18 @@ export default function CartSlots({
               </DndContext>
             ) : (
               <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                <CartItemsSection />
-                <SidebarSection />
+                <div className="lg:col-span-2">
+                  <CartItemsSection />
+                  <CmsBlockRenderer position="cart_below_items" />
+                </div>
+                <div className="lg:col-span-1">
+                  <CmsBlockRenderer position="cart_sidebar" />
+                  <SidebarSection />
+                </div>
               </div>
             )}
+            
+            <CmsBlockRenderer position="cart_footer" />
           </>
         )}
         
