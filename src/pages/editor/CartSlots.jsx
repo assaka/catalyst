@@ -495,7 +495,7 @@ export default function CartSlots({
           })}
         </CardContent>
       </Card>
-      <CmsBlockRenderer position={layoutConfig?.slotContent?.['cart.cmsBlockBelowItems'] || "cart_below_items"} />
+      <CmsBlockRenderer position="cart_below_items" />
     </div>
   );
 
@@ -554,12 +554,12 @@ export default function CartSlots({
             <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span></div>
           )}
           <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span></div>
-          <CmsBlockRenderer position={layoutConfig?.slotContent?.['orderSummary.cmsBlockAboveTotal'] || "cart_above_total"} />
+          <CmsBlockRenderer position="cart_above_total" />
           <div className="flex justify-between text-lg font-semibold border-t pt-4">
             <span>Total</span>
             <span>{currencySymbol}{safeToFixed(total)}</span>
           </div>
-          <CmsBlockRenderer position={layoutConfig?.slotContent?.['orderSummary.cmsBlockBelowTotal'] || "cart_below_total"} />
+          <CmsBlockRenderer position="cart_below_total" />
           <div className="border-t mt-6 pt-6">
             <Button
               size="lg"
@@ -594,7 +594,7 @@ export default function CartSlots({
             <h1 className="mb-8">
               {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
             </h1>
-            <CmsBlockRenderer position={layoutConfig?.slotContent?.['header.cmsBlock'] || "cart_above_items"} />
+            <CmsBlockRenderer position="cart_above_items" />
           </>
         )}
         
@@ -641,7 +641,7 @@ export default function CartSlots({
                             case 'header.cmsBlock':
                               return (
                                 <div key={microSlotId} style={gridStyle}>
-                                  <CmsBlockRenderer position={layoutConfig?.slotContent?.['header.cmsBlock'] || "cart_above_items"} />
+                                  <CmsBlockRenderer position="cart_above_items" />
                                 </div>
                               );
                               

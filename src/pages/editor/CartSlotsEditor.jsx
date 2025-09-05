@@ -120,7 +120,6 @@ const MICRO_SLOT_TEMPLATES = {
 </button>`,
   'header.flashMessage': `<FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />`,
   'header.title': `<h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>`,
-  'header.cmsBlock': `cart_above_items`,
   'cartItem.image': `<img src={product.images?.[0] || placeholder} alt={product.name} className="w-20 h-20 object-cover rounded-lg" />`,
   'cartItem.details': `<div className="flex-1"><h3 className="text-lg font-semibold">{product.name}</h3><p className="text-gray-600">{price} each</p></div>`,
   'cartItem.quantity': `<div className="flex items-center space-x-3"><Button size="sm" variant="outline"><Minus /></Button><span>{quantity}</span><Button size="sm" variant="outline"><Plus /></Button></div>`,
@@ -142,9 +141,7 @@ const MICRO_SLOT_TEMPLATES = {
   'orderSummary.subtotal': `<div className="flex justify-between"><span>Subtotal</span><span>{subtotal}</span></div>`,
   'orderSummary.discount': `<div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{discount}</span></div>`,
   'orderSummary.tax': `<div className="flex justify-between"><span>Tax</span><span>{tax}</span></div>`,
-  'orderSummary.cmsBlockAboveTotal': `cart_above_total`,
   'orderSummary.total': `<div className="flex justify-between text-lg font-semibold border-t pt-4"><span>Total</span><span>{total}</span></div>`,
-  'orderSummary.cmsBlockBelowTotal': `cart_below_total`,
   'orderSummary.checkoutButton': `<button class="w-full px-6 py-3 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-lg">
   Proceed to Checkout
 </button>`
@@ -3167,16 +3164,17 @@ export default function CartSlotsEditorWithMicroSlots({
     const spans = microSlotSpans.header || MICRO_SLOT_DEFINITIONS.header.defaultSpans;
     
     return (
-      <SortableParentSlot
-        id="header"
-        name="Page Header"
-        microSlotOrder={microSlots}
-        onMicroSlotReorder={handleMicroSlotReorder}
-        onEdit={() => handleEditMicroSlot('header')}
-        gridCols={MICRO_SLOT_DEFINITIONS.header.gridCols}
-      >
-        {microSlots.map(slotId => {
-          const slotSpan = spans[slotId] || { col: 12, row: 1 };
+      <div>
+        <SortableParentSlot
+          id="header"
+          name="Page Header"
+          microSlotOrder={microSlots}
+          onMicroSlotReorder={handleMicroSlotReorder}
+          onEdit={() => handleEditMicroSlot('header')}
+          gridCols={MICRO_SLOT_DEFINITIONS.header.gridCols}
+        >
+          {microSlots.map(slotId => {
+            const slotSpan = spans[slotId] || { col: 12, row: 1 };
           
           if (slotId === 'header.flashMessage') {
             return (
