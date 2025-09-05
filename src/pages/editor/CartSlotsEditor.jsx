@@ -892,7 +892,7 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
   );
 }
 
-// Inline editable text component (keeping for backward compatibility)
+// Inline editable text component
 function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false, richText = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
@@ -1862,12 +1862,7 @@ export default function CartSlotsEditorWithMicroSlots({
             setMajorSlots(allSlots);
           }
           if (config.microSlotOrders) {
-            // Migration: ensure coupon.removeButton is in coupon microSlots
-            const orders = { ...config.microSlotOrders };
-            if (orders.coupon && !orders.coupon.includes('coupon.removeButton')) {
-              orders.coupon = [...orders.coupon, 'coupon.removeButton'];
-            }
-            setMicroSlotOrders(orders);
+            setMicroSlotOrders(config.microSlotOrders);
           }
           if (config.microSlotSpans) {
             // Validate and fix any corrupted span values
@@ -1888,9 +1883,7 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.slotContent) {
             setSlotContent(prev => ({
               ...prev,  // Keep defaults for any keys not in saved config
-              ...config.slotContent,  // Override with saved values (including empty strings)
-              // Migration: ensure coupon.removeButton has default text if not present
-              'coupon.removeButton': config.slotContent['coupon.removeButton'] || prev['coupon.removeButton'] || 'Remove'
+              ...config.slotContent  // Override with saved values (including empty strings)
             }));
           }
           if (config.elementClasses) {

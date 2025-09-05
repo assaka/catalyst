@@ -158,8 +158,7 @@ export default function CartSlots({
 
   // Extract custom text from layoutConfig if available
   const getCustomText = (key, defaultValue, renderAsHtml = false) => {
-    // Check slotContent first (new unified system), fall back to textContent for backward compatibility
-    const content = layoutConfig?.slotContent?.[key] || layoutConfig?.textContent?.[key];
+    const content = layoutConfig?.slotContent?.[key];
     if (content) {
       const htmlText = content;
       
@@ -185,8 +184,7 @@ export default function CartSlots({
   
   // Helper to render text with custom classes
   const renderCustomText = (key, defaultContent, defaultClasses = '') => {
-    // Check slotContent first (new unified system), fall back to textContent for backward compatibility
-    const htmlContent = layoutConfig?.slotContent?.[key] || layoutConfig?.textContent?.[key];
+    const htmlContent = layoutConfig?.slotContent?.[key];
     const classes = getCustomClasses(key, defaultClasses);
     
     // Check if the content has HTML tags (indicating rich text)
@@ -311,7 +309,7 @@ export default function CartSlots({
                   
                 case 'emptyCart.button':
                   // Check if we have HTML button content
-                  const buttonContent = layoutConfig?.slotContent?.['emptyCart.button'] || layoutConfig?.textContent?.['emptyCart.button'];
+                  const buttonContent = layoutConfig?.slotContent?.['emptyCart.button'];
                   const isHtmlButton = buttonContent && buttonContent.includes('<button');
                   
                   return (
@@ -360,12 +358,12 @@ export default function CartSlots({
                           title={`Custom Text: ${spans.col}x${spans.row}`}
                         >
                           <div className={layoutConfig?.elementClasses?.[slotId] || 'text-gray-600'}>
-                            {layoutConfig?.textContent?.[slotId] || customSlot.content}
+                            {layoutConfig?.slotContent?.[slotId] || customSlot.content}
                           </div>
                         </div>
                       );
                     } else if (customSlot.type === 'html') {
-                      const htmlContent = layoutConfig?.slotContent?.[slotId] || layoutConfig?.componentCode?.[slotId] || customSlot.content;
+                      const htmlContent = layoutConfig?.slotContent?.[slotId] || customSlot.content;
                       return (
                         <div 
                           key={slotId} 
@@ -379,7 +377,7 @@ export default function CartSlots({
                     } else if (customSlot.type === 'javascript') {
                       // For JavaScript, we need to safely execute it
                       // In production, this should be carefully sanitized
-                      const jsCode = layoutConfig?.slotContent?.[slotId] || layoutConfig?.componentCode?.[slotId] || customSlot.content;
+                      const jsCode = layoutConfig?.slotContent?.[slotId] || customSlot.content;
                       
                       // Create a container div with a unique ID
                       const containerId = `custom-js-${slotId.replace(/\./g, '-')}`;
