@@ -1176,7 +1176,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         ...style,
         minHeight: '48px' // Ensure minimum height for better drag handle visibility
       }}
-      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
+      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50 ring-2 ring-gray-400' : isHovered ? 'ring-1 ring-gray-200/70' : ''} rounded transition-all`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -1240,8 +1240,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </button>
       )}
       
-      {/* Text formatting controls - centered at bottom for better accessibility */}
-      {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
+      {/* Text formatting controls - only for non-button slots */}
+      {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
           className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
           style={{ maxWidth: '90%' }}
@@ -1253,111 +1253,20 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          {/* Alignment controls */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
-            <button
-              onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(left|center|right|justify)/g, '')
-                  .trim() + ' text-left';
-                onClassChange(id, newClasses.trim());
-              }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-left') ? 'bg-blue-100' : ''}`}
-              title="Align left"
-            >
+          {/* Align left button */}
+          <button
+            onClick={() => {
+              const currentClasses = elementClasses[id] || '';
+              const newClasses = currentClasses
+                .replace(/text-(left|center|right|justify)/g, '')
+                .trim() + ' text-left';
+              onClassChange(id, newClasses.trim());
+            }}
+            className="p-1.5 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200"
+            title="Align left"
+          >
               <AlignLeft className="w-4 h-4 text-gray-600" />
-            </button>
-            <button
-              onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(left|center|right|justify)/g, '')
-                  .trim() + ' text-center';
-                onClassChange(id, newClasses.trim());
-              }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-center') ? 'bg-blue-100' : ''}`}
-              title="Align center"
-            >
-              <AlignCenter className="w-4 h-4 text-gray-600" />
-            </button>
-            <button
-              onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(left|center|right|justify)/g, '')
-                  .trim() + ' text-right';
-                onClassChange(id, newClasses.trim());
-              }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-right') ? 'bg-blue-100' : ''}`}
-              title="Align right"
-            >
-              <AlignRight className="w-4 h-4 text-gray-600" />
-            </button>
-          </div>
-          
-          {/* Font style controls */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
-            <button
-              onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
-                let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
-                if (!hasBold) {
-                  newClasses += ' font-bold';
-                }
-                onClassChange(id, newClasses.trim());
-              }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('font-bold') || (elementClasses[id] || '').includes('font-semibold') ? 'bg-blue-100' : ''}`}
-              title="Bold"
-            >
-              <Bold className="w-4 h-4 text-gray-600" />
-            </button>
-            <button
-              onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const hasItalic = currentClasses.includes('italic');
-                let newClasses = currentClasses;
-                if (hasItalic) {
-                  newClasses = newClasses.replace(/italic/g, '').trim();
-                } else {
-                  newClasses += ' italic';
-                }
-                onClassChange(id, newClasses.trim());
-              }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('italic') ? 'bg-blue-100' : ''}`}
-              title="Italic"
-            >
-              <Italic className="w-4 h-4 text-gray-600" />
-            </button>
-          </div>
-
-          {/* Font size control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
-            <select
-              value={
-                elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)/)?.[1] || 'base'
-              }
-              onChange={(e) => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)/g, '')
-                  .trim() + ` text-${e.target.value}`;
-                onClassChange(id, newClasses.trim());
-              }}
-              className="px-1 py-1 text-xs border-0 focus:ring-0 cursor-pointer"
-              title="Font size"
-            >
-              <option value="xs">XS</option>
-              <option value="sm">SM</option>
-              <option value="base">Base</option>
-              <option value="lg">LG</option>
-              <option value="xl">XL</option>
-              <option value="2xl">2XL</option>
-              <option value="3xl">3XL</option>
-              <option value="4xl">4XL</option>
-            </select>
-          </div>
+          </button>
 
           {/* Text color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
@@ -1401,9 +1310,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      <div 
-        className={`${isDragging ? 'ring-2 ring-gray-400' : isHovered ? 'ring-1 ring-gray-200/70' : ''} rounded transition-all relative z-1`}
-      >
+      <div className="relative z-1">
         {children}
         
         {/* Resize handles - improved visibility and interaction */}
@@ -3695,48 +3602,58 @@ export default function CartSlotsEditorWithMicroSlots({
   // Main render
   return (
     <>
-      <div className="bg-gray-50 cart-page min-h-screen" style={{ backgroundColor: '#f9fafb' }}>
+      <div className="bg-gray-50 cart-page min-h-screen flex flex-col" style={{ backgroundColor: '#f9fafb' }}>
         <SeoHeadManager
           title="Empty Cart Editor"
           description="Edit empty cart state layout"
           keywords="cart, editor, empty-state"
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-          <div className="mb-6">
-            {/* Header with title */}
-            <div className="flex justify-end gap-2">
-              <button
+        {/* White header bar with controls */}
+        <div className="bg-white border-b shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
+            <div className="flex justify-between items-center py-3">
+              <div className="text-sm text-gray-500">
+                Cart Layout Editor
+              </div>
+              <div className="flex gap-2">
+                <button
                   onClick={() => setViewMode('empty')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      viewMode === 'empty'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'empty'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
-              >
-                <ShoppingCart className="w-4 h-4 inline mr-2" />
-                Empty Cart
-              </button>
-              <button
+                >
+                  <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+                  Empty Cart
+                </button>
+                <button
                   onClick={() => setViewMode('withProducts')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      viewMode === 'withProducts'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'withProducts'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
-              >
-                <Package className="w-4 h-4 inline mr-2" />
-                With Products
-              </button>
-              <button
-                onClick={() => setShowResetModal(true)}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Reset Layout
-              </button>
+                >
+                  <Package className="w-4 h-4 inline mr-1.5" />
+                  With Products
+                </button>
+                <div className="border-l mx-2" />
+                <button
+                  onClick={() => setShowResetModal(true)}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reset Layout
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           
           <DndContext
             sensors={sensors}
@@ -3823,6 +3740,7 @@ export default function CartSlotsEditorWithMicroSlots({
               ) : null}
             </DragOverlay>
           </DndContext>
+          </div>
         </div>
       </div>
 
