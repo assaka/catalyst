@@ -1240,11 +1240,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </button>
       )}
       
-      {/* Text formatting controls - only for non-button slots */}
+      {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '90%' }}
+          className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '95%' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
@@ -1253,20 +1253,111 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          {/* Align left button */}
-          <button
-            onClick={() => {
-              const currentClasses = elementClasses[id] || '';
-              const newClasses = currentClasses
-                .replace(/text-(left|center|right|justify)/g, '')
-                .trim() + ' text-left';
-              onClassChange(id, newClasses.trim());
-            }}
-            className="p-1.5 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200"
-            title="Align left"
-          >
+          {/* Alignment controls */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(left|center|right|justify)/g, '')
+                  .trim() + ' text-left';
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-left') ? 'bg-blue-100' : ''}`}
+              title="Align left"
+            >
               <AlignLeft className="w-4 h-4 text-gray-600" />
-          </button>
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(left|center|right|justify)/g, '')
+                  .trim() + ' text-center';
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-center') ? 'bg-blue-100' : ''}`}
+              title="Align center"
+            >
+              <AlignCenter className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(left|center|right|justify)/g, '')
+                  .trim() + ' text-right';
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-right') ? 'bg-blue-100' : ''}`}
+              title="Align right"
+            >
+              <AlignRight className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
+          
+          {/* Font style controls */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
+                let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
+                if (!hasBold) {
+                  newClasses += ' font-bold';
+                }
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('font-bold') || (elementClasses[id] || '').includes('font-semibold') ? 'bg-blue-100' : ''}`}
+              title="Bold"
+            >
+              <Bold className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const hasItalic = currentClasses.includes('italic');
+                let newClasses = currentClasses;
+                if (hasItalic) {
+                  newClasses = newClasses.replace(/italic/g, '').trim();
+                } else {
+                  newClasses += ' italic';
+                }
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('italic') ? 'bg-blue-100' : ''}`}
+              title="Italic"
+            >
+              <Italic className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Font size control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+            <select
+              value={
+                elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/)?.[1] || 'base'
+              }
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/g, '')
+                  .trim() + ` text-${e.target.value}`;
+                onClassChange(id, newClasses.trim());
+              }}
+              className="px-1 py-0.5 text-xs border-0 cursor-pointer focus:outline-none"
+              title="Font size"
+            >
+              <option value="xs">XS</option>
+              <option value="sm">SM</option>
+              <option value="base">Base</option>
+              <option value="lg">LG</option>
+              <option value="xl">XL</option>
+              <option value="2xl">2XL</option>
+              <option value="3xl">3XL</option>
+              <option value="4xl">4XL</option>
+            </select>
+          </div>
 
           {/* Text color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
@@ -1306,6 +1397,88 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               className="w-5 h-5 cursor-pointer border-0"
               title="Background color"
             />
+          </div>
+        </div>
+      )}
+      
+      {/* Button formatting controls - only color and border radius */}
+      {id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
+        <div 
+          className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '90%' }}
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
+        >
+          {/* Text color control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <Palette className="w-3 h-3 text-gray-600 mr-1" />
+            <input
+              type="color"
+              value={elementStyles[id]?.color || '#ffffff'}
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|black|white)-([0-9]+)/g, '')
+                  .trim();
+                onClassChange(id, newClasses, { color: e.target.value });
+              }}
+              className="w-5 h-5 cursor-pointer border-0"
+              title="Text color"
+            />
+          </div>
+
+          {/* Background color control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
+            <input
+              type="color"
+              value={elementStyles[id]?.backgroundColor || '#0000ff'}
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                  .trim();
+                onClassChange(id, newClasses, { backgroundColor: e.target.value });
+              }}
+              className="w-5 h-5 cursor-pointer border-0"
+              title="Background color"
+            />
+          </div>
+          
+          {/* Border radius control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+            <select
+              value={
+                elementClasses[id]?.match(/rounded-(none|sm|md|lg|xl|2xl|3xl|full)/)?.[1] || 
+                (elementClasses[id]?.includes('rounded') && !elementClasses[id]?.includes('rounded-') ? 'default' : 'md')
+              }
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/rounded-(none|sm|md|lg|xl|2xl|3xl|full)/g, '')
+                  .replace(/rounded(?!-)/g, '') // Remove standalone 'rounded'
+                  .trim();
+                const roundedClass = e.target.value === 'default' ? 'rounded' : `rounded-${e.target.value}`;
+                onClassChange(id, newClasses + ' ' + roundedClass);
+              }}
+              className="px-2 py-0.5 text-xs border-0 cursor-pointer focus:outline-none"
+              title="Border radius"
+            >
+              <option value="none">None</option>
+              <option value="sm">Small</option>
+              <option value="default">Default</option>
+              <option value="md">Medium</option>
+              <option value="lg">Large</option>
+              <option value="xl">XL</option>
+              <option value="2xl">2XL</option>
+              <option value="3xl">3XL</option>
+              <option value="full">Full</option>
+            </select>
           </div>
         </div>
       )}
@@ -3612,42 +3785,37 @@ export default function CartSlotsEditorWithMicroSlots({
         {/* White header bar with controls */}
         <div className="bg-white border-b shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-            <div className="flex justify-between items-center py-3">
-              <div className="text-sm text-gray-500">
-                Cart Layout Editor
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setViewMode('empty')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'empty'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-                  Empty Cart
-                </button>
-                <button
-                  onClick={() => setViewMode('withProducts')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'withProducts'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <Package className="w-4 h-4 inline mr-1.5" />
-                  With Products
-                </button>
-                <div className="border-l mx-2" />
-                <button
-                  onClick={() => setShowResetModal(true)}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reset Layout
-                </button>
-              </div>
+            <div className="border-b p-3 flex justify-end gap-2">
+              <button
+                onClick={() => setViewMode('empty')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'empty'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+                Empty Cart
+              </button>
+              <button
+                onClick={() => setViewMode('withProducts')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'withProducts'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Package className="w-4 h-4 inline mr-1.5" />
+                With Products
+              </button>
+              <div className="border-l mx-2" />
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reset Layout
+              </button>
             </div>
           </div>
         </div>
