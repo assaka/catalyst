@@ -241,12 +241,14 @@ const AIContextWindowPage = () => {
         
         // Keep original baseline code for comparison
         setOriginalCode(baselineCode);
-        setSelectedFile({
+        const fileObj = {
           path: filePath,
           name: filePath.split('/').pop(),
           type: 'file',
           isSupported: true
-        });
+        };
+        console.log('📝 Setting selectedFile:', fileObj);
+        setSelectedFile(fileObj);
         
         // Update URL
         setSearchParams({ file: filePath });
@@ -388,6 +390,11 @@ export default ExampleComponent;`;
 
   // Handle file selection from tree navigator
   const handleFileSelect = useCallback((file) => {
+    console.log('🎯 AIContextWindow: handleFileSelect called', {
+      newFile: file,
+      currentFile: selectedFile,
+      isDifferent: file.path !== selectedFile?.path
+    });
     if (file.path !== selectedFile?.path) {
       // Reset manual edit result when switching files
       setManualEditResult(null);
@@ -854,6 +861,12 @@ export default ExampleComponent;`;
                         </button>
                         <button
                           onClick={() => {
+                            console.log('🖱️ Customize tab clicked!', {
+                              currentFile: selectedFile ? {
+                                name: selectedFile.name,
+                                path: selectedFile.path
+                              } : 'No file selected'
+                            });
                             setPreviewMode('hybrid');
                             handlePreviewModeChange('hybrid');
                           }}
@@ -880,6 +893,17 @@ export default ExampleComponent;`;
 
                   {/* Single Content Area - Tab-based Content */}
                   <div className="flex-1 overflow-hidden">
+                    {console.log('🎨 Render Decision:', {
+                      previewMode,
+                      selectedFile: selectedFile ? {
+                        name: selectedFile.name,
+                        path: selectedFile.path,
+                        type: selectedFile.type
+                      } : null,
+                      isCodeMode: previewMode === 'code',
+                      isDiffMode: previewMode === 'diff',
+                      isHybridMode: previewMode === 'hybrid'
+                    })}
                     {previewMode === 'code' ? (
                       // Advanced Code Editor with Database Persistence
                       <CodeEditor
@@ -1093,6 +1117,12 @@ export default ExampleComponent;`;
                           </button>
                           <button
                             onClick={() => {
+                              console.log('🖱️ Customize tab clicked (mobile)!', {
+                                currentFile: selectedFile ? {
+                                  name: selectedFile.name,
+                                  path: selectedFile.path
+                                } : 'No file selected'
+                              });
                               setPreviewMode('hybrid');
                               handlePreviewModeChange('hybrid');
                             }}

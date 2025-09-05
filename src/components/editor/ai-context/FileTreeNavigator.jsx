@@ -222,6 +222,12 @@ const FileTreeNavigator = ({
 
   const handleFileClick = (file, path) => {
     if (file.type === 'file') {
+      console.log('📁 FileTreeNavigator: File clicked', {
+        fileName: file.name,
+        filePath: path,
+        fileType: file.type,
+        fullFileObject: file
+      });
       onFileSelect && onFileSelect({ ...file, path });
     }
   };
