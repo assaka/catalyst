@@ -1952,7 +1952,19 @@ export default function CartSlotsEditorWithMicroSlots({
   // Update major slots when view mode changes
   useEffect(() => {
     if (viewMode === 'empty') {
-      setMajorSlots(['flashMessage', 'header', 'emptyCart']);
+      // Only update if not already in the right mode (preserve custom order)
+      setMajorSlots(prev => {
+        const requiredSlots = ['flashMessage', 'header', 'emptyCart'];
+        const hasAllSlots = requiredSlots.every(slot => prev.includes(slot));
+        const hasOnlyTheseSlots = prev.every(slot => requiredSlots.includes(slot));
+        
+        if (!hasAllSlots || !hasOnlyTheseSlots) {
+          // Only reset if slots don't match
+          return ['flashMessage', 'header', 'emptyCart'];
+        }
+        // Keep existing order
+        return prev;
+      });
       // Update FlashMessage content for empty cart (product removed message)
       setSlotContent(prev => ({
         ...prev,
@@ -1960,7 +1972,18 @@ export default function CartSlotsEditorWithMicroSlots({
       }));
     } else {
       // Show cart with products - include cart items, coupon, and order summary
-      setMajorSlots(['flashMessage', 'header', 'cartItem', 'coupon', 'orderSummary']);
+      setMajorSlots(prev => {
+        const requiredSlots = ['flashMessage', 'header', 'cartItem', 'coupon', 'orderSummary'];
+        const hasAllSlots = requiredSlots.every(slot => prev.includes(slot));
+        const hasOnlyTheseSlots = prev.every(slot => requiredSlots.includes(slot));
+        
+        if (!hasAllSlots || !hasOnlyTheseSlots) {
+          // Only reset if slots don't match
+          return ['flashMessage', 'header', 'cartItem', 'coupon', 'orderSummary'];
+        }
+        // Keep existing order
+        return prev;
+      });
       // Update FlashMessage content for cart with products (quantity updated message)
       setSlotContent(prev => ({
         ...prev,
@@ -3411,12 +3434,8 @@ export default function CartSlotsEditorWithMicroSlots({
           const slotSpan = spans[slotId] || { col: 12, row: 1 };
           
           if (slotId === 'flashMessage.content') {
-            // Use different template based on view mode
-            const defaultTemplate = viewMode === 'empty' 
-              ? MICRO_SLOT_TEMPLATES['flashMessage.content']  // Product removed message
-              : MICRO_SLOT_TEMPLATES['flashMessage.contentWithProducts']; // Quantity updated message
-            
-            const content = slotContent[slotId] || defaultTemplate;
+            // Get content from slotContent state (already set based on viewMode)
+            const content = slotContent[slotId] || '';
             return (
               <MicroSlot 
                 key={slotId} 
