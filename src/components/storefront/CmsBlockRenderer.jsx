@@ -52,7 +52,9 @@ const loadCmsBlocksWithCache = async (storeId) => {
   // Create new request to load CMS blocks
   const requestPromise = retryApiCall(async () => {
     try {
+      console.log(`🔄 Fetching CMS blocks for store_id: ${storeId}`);
       const blocks = await CmsBlock.findAll({ store_id: storeId });
+      console.log(`✅ CMS blocks API returned:`, blocks);
       return blocks;
     } catch (error) {
       console.warn('⚠️ CmsBlockRenderer: Backend CMS blocks API failed, this is expected if backend is not properly configured:', error.message);
@@ -113,6 +115,14 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
       storeIdToUse = adminStore.id;
     }
   }
+  
+  console.log('🔍 CmsBlockRenderer Debug:', {
+    position,
+    storeId,
+    storeIdToUse,
+    adminStore: adminStore?.id,
+    storefrontStore: storefrontStore?.id
+  });
 
   useEffect(() => {
     const loadBlocks = async () => {
@@ -125,6 +135,16 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
         }
 
         const allBlocks = await loadCmsBlocksWithCache(storeIdToUse);
+        
+        console.log(`📦 CMS blocks loaded for position "${position}":`, {
+          totalBlocks: allBlocks.length,
+          blocks: allBlocks.map(b => ({
+            id: b.id,
+            title: b.title,
+            placement: b.placement,
+            is_active: b.is_active
+          }))
+        });
         
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
@@ -147,8 +167,14 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
           }
 
           // Check if the requested position is in the block's placements
-          return placements.includes(position);
+          const matches = placements.includes(position);
+          if (matches) {
+            console.log(`✅ Block "${block.title}" matches position "${position}"`);
+          }
+          return matches;
         });
+        
+        console.log(`🎯 Filtered blocks for position "${position}":`, filteredBlocks.length);
 
         // Sort by sort_order field from the block model
         filteredBlocks.sort((a, b) => {
