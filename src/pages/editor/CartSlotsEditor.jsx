@@ -98,14 +98,16 @@ const MICRO_SLOT_DEFINITIONS = {
   orderSummary: {
     id: 'orderSummary',
     name: 'Order Summary',
-    microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
+    microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.cmsBlockAboveTotal', 'orderSummary.total', 'orderSummary.cmsBlockBelowTotal', 'orderSummary.checkoutButton'],
     gridCols: 12,
     defaultSpans: {
       'orderSummary.title': { col: 12, row: 1 },
       'orderSummary.subtotal': { col: 12, row: 1 },
       'orderSummary.discount': { col: 12, row: 1 },
       'orderSummary.tax': { col: 12, row: 1 },
+      'orderSummary.cmsBlockAboveTotal': { col: 12, row: 1 },
       'orderSummary.total': { col: 12, row: 1 },
+      'orderSummary.cmsBlockBelowTotal': { col: 12, row: 1 },
       'orderSummary.checkoutButton': { col: 12, row: 1 }
     }
   }
@@ -121,7 +123,7 @@ const MICRO_SLOT_TEMPLATES = {
 </button>`,
   'header.flashMessage': `<FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />`,
   'header.title': `<h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>`,
-  'header.cmsBlock': `<CmsBlockRenderer position="cart_above_items" />`,
+  'header.cmsBlock': `cart_above_items`,
   'cartItem.image': `<img src={product.images?.[0] || placeholder} alt={product.name} className="w-20 h-20 object-cover rounded-lg" />`,
   'cartItem.details': `<div className="flex-1"><h3 className="text-lg font-semibold">{product.name}</h3><p className="text-gray-600">{price} each</p></div>`,
   'cartItem.quantity': `<div className="flex items-center space-x-3"><Button size="sm" variant="outline"><Minus /></Button><span>{quantity}</span><Button size="sm" variant="outline"><Plus /></Button></div>`,
@@ -143,7 +145,9 @@ const MICRO_SLOT_TEMPLATES = {
   'orderSummary.subtotal': `<div className="flex justify-between"><span>Subtotal</span><span>{subtotal}</span></div>`,
   'orderSummary.discount': `<div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{discount}</span></div>`,
   'orderSummary.tax': `<div className="flex justify-between"><span>Tax</span><span>{tax}</span></div>`,
+  'orderSummary.cmsBlockAboveTotal': `cart_above_total`,
   'orderSummary.total': `<div className="flex justify-between text-lg font-semibold border-t pt-4"><span>Total</span><span>{total}</span></div>`,
+  'orderSummary.cmsBlockBelowTotal': `cart_below_total`,
   'orderSummary.checkoutButton': `<button class="w-full px-6 py-3 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-lg">
   Proceed to Checkout
 </button>`
@@ -3037,6 +3041,31 @@ export default function CartSlotsEditorWithMicroSlots({
                 );
               }
               
+              if (slotId === 'orderSummary.cmsBlockAboveTotal') {
+                const position = slotContent[slotId] || 'cart_above_total';
+                return (
+                  <MicroSlot 
+                    key={slotId} 
+                    id={slotId} 
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="w-full">
+                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-blue-900">CMS Block</span>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            {position}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
               if (slotId === 'orderSummary.total') {
                 return (
                   <MicroSlot
@@ -3056,6 +3085,31 @@ export default function CartSlotsEditorWithMicroSlots({
                         onClassChange={handleClassChange}
                       />
                       <span className="text-lg font-semibold">$123.18</span>
+                    </div>
+                  </MicroSlot>
+                );
+              }
+              
+              if (slotId === 'orderSummary.cmsBlockBelowTotal') {
+                const position = slotContent[slotId] || 'cart_below_total';
+                return (
+                  <MicroSlot 
+                    key={slotId} 
+                    id={slotId} 
+                    onEdit={handleEditMicroSlot}
+                    colSpan={slotSpan.col}
+                    rowSpan={slotSpan.row}
+                    onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                  >
+                    <div className="w-full">
+                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-blue-900">CMS Block</span>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            {position}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </MicroSlot>
                 );
@@ -3196,6 +3250,7 @@ export default function CartSlotsEditorWithMicroSlots({
             );
           }
           if (slotId === 'header.cmsBlock') {
+            const position = slotContent[slotId] || 'cart_above_items';
             return (
               <MicroSlot 
                 key={slotId} 
@@ -3205,7 +3260,22 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
               >
-                <CmsBlockRenderer position="cart_above_items" />
+                <div className="w-full">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-blue-900">CMS Block</span>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        Position: {position}
+                      </span>
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      Content from CMS blocks with position identifier: <strong>{position}</strong>
+                    </div>
+                    <div className="mt-2 text-xs text-blue-600">
+                      Edit to change position identifier
+                    </div>
+                  </div>
+                </div>
               </MicroSlot>
             );
           }

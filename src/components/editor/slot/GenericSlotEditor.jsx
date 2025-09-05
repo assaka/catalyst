@@ -73,6 +73,9 @@ const GenericSlotEditor = ({
   // Cart layout configuration state
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
   
+  // Cart preview mode state (for toggling between empty cart and with products)
+  const [cartPreviewMode, setCartPreviewMode] = useState('withProducts'); // 'empty' | 'withProducts'
+  
   // Load cart layout configuration from database
   useEffect(() => {
     const loadCartLayoutConfig = async () => {
