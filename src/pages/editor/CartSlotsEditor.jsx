@@ -879,7 +879,7 @@ function RichTextEditor({ content, onSave, onCancel }) {
 }
 
 // Simplified Inline Edit with Tailwind styles
-function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange }) {
+function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange, style = {} }) {
   const [showEditor, setShowEditor] = useState(false);
   
   // Check if text contains HTML
@@ -897,7 +897,7 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
         }}
         className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded ${className}`}
         title={hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style"}
-        style={hasHtml ? { cursor: 'default' } : {}}
+        style={hasHtml ? { cursor: 'default', ...style } : style}
       >
         {hasHtml ? (
           <div dangerouslySetInnerHTML={{ __html: text }} />
@@ -1020,7 +1020,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {} }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {} }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1364,64 +1364,43 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Text color control */}
-          <div className="flex items-center bg-white rounded shadow-sm border">
-            <select
-              value={
-                elementClasses[id]?.match(/text-(gray|red|blue|green|yellow|purple|pink|indigo)-([0-9]+)/)?.[0] || 'text-gray-900'
-              }
+          <div className="flex items-center bg-white rounded shadow-sm border p-1">
+            <Palette className="w-3 h-3 text-gray-600 mr-1" />
+            <input
+              type="color"
+              value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 const currentClasses = elementClasses[id] || '';
+                // Remove any existing text color classes
                 const newClasses = currentClasses
                   .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|black|white)-([0-9]+)/g, '')
-                  .trim() + ` ${e.target.value}`;
-                onClassChange(id, newClasses.trim());
+                  .trim();
+                // Store the color as an inline style
+                onClassChange(id, newClasses, { color: e.target.value });
               }}
-              className="px-1 py-1 text-xs border-0 focus:ring-0 cursor-pointer"
+              className="w-5 h-5 cursor-pointer border-0"
               title="Text color"
-            >
-              <option value="text-gray-900">Gray Dark</option>
-              <option value="text-gray-600">Gray</option>
-              <option value="text-gray-400">Gray Light</option>
-              <option value="text-red-600">Red</option>
-              <option value="text-blue-600">Blue</option>
-              <option value="text-green-600">Green</option>
-              <option value="text-yellow-600">Yellow</option>
-              <option value="text-purple-600">Purple</option>
-              <option value="text-pink-600">Pink</option>
-              <option value="text-indigo-600">Indigo</option>
-              <option value="text-white">White</option>
-              <option value="text-black">Black</option>
-            </select>
+            />
           </div>
 
           {/* Background color control */}
-          <div className="flex items-center bg-white rounded shadow-sm border">
-            <select
-              value={
-                elementClasses[id]?.match(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-([0-9]+)?/)?.[0] || 'bg-transparent'
-              }
+          <div className="flex items-center bg-white rounded shadow-sm border p-1">
+            <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
+            <input
+              type="color"
+              value={elementStyles[id]?.backgroundColor || '#ffffff'}
               onChange={(e) => {
                 const currentClasses = elementClasses[id] || '';
+                // Remove any existing bg color classes
                 const newClasses = currentClasses
                   .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
-                  .trim() + ` ${e.target.value}`;
-                onClassChange(id, newClasses.trim());
+                  .trim();
+                // Store the background color as an inline style
+                onClassChange(id, newClasses, { backgroundColor: e.target.value });
               }}
-              className="px-1 py-1 text-xs border-0 focus:ring-0 cursor-pointer"
+              className="w-5 h-5 cursor-pointer border-0"
               title="Background color"
-            >
-              <option value="bg-transparent">None</option>
-              <option value="bg-gray-100">Gray Light</option>
-              <option value="bg-gray-200">Gray</option>
-              <option value="bg-gray-800">Gray Dark</option>
-              <option value="bg-red-100">Red Light</option>
-              <option value="bg-blue-100">Blue Light</option>
-              <option value="bg-green-100">Green Light</option>
-              <option value="bg-yellow-100">Yellow Light</option>
-              <option value="bg-purple-100">Purple Light</option>
-              <option value="bg-white">White</option>
-              <option value="bg-black">Black</option>
-            </select>
+            />
           </div>
         </div>
       )}
@@ -1737,6 +1716,9 @@ export default function CartSlotsEditorWithMicroSlots({
     'emptyCart.text': 'text-gray-600',
     'emptyCart.button': '',
   });
+
+  // State for inline styles for each element (colors, etc)
+  const [elementStyles, setElementStyles] = useState({});
   
   // State for component sizes
   const [componentSizes, setComponentSizes] = useState({
@@ -1792,6 +1774,7 @@ export default function CartSlotsEditorWithMicroSlots({
       microSlotSpans,
       slotContent,
       elementClasses,
+      elementStyles,
       componentSizes,
       customSlots,
       timestamp: new Date().toISOString()
@@ -2232,12 +2215,24 @@ export default function CartSlotsEditorWithMicroSlots({
     debouncedSave();
   }, [debouncedSave]);
   
-  // Handle class change for elements
-  const handleClassChange = useCallback((slotId, newClass) => {
+  // Handle class change for elements (now also supports inline styles)
+  const handleClassChange = useCallback((slotId, newClass, newStyles = null) => {
     setElementClasses(prev => ({
       ...prev,
       [slotId]: newClass
     }));
+    
+    // If styles are provided, update them too
+    if (newStyles) {
+      setElementStyles(prev => ({
+        ...prev,
+        [slotId]: {
+          ...prev[slotId],
+          ...newStyles
+        }
+      }));
+    }
+    
     // Auto-save after class change
     debouncedSave();
   }, [debouncedSave]);
@@ -2462,6 +2457,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
+                elementStyles={elementStyles}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="relative group">
@@ -2544,11 +2540,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
+                elementStyles={elementStyles}
               >
                 <div className={`w-full ${elementClasses[slotId]?.includes('text-center') ? 'flex justify-center' : elementClasses[slotId]?.includes('text-right') ? 'flex justify-end' : 'flex justify-start'}`}>
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-xl font-semibold'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
@@ -2568,11 +2566,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
+                elementStyles={elementStyles}
               >
                 <div className={`w-full ${elementClasses[slotId]?.includes('text-center') ? 'flex justify-center' : elementClasses[slotId]?.includes('text-right') ? 'flex justify-end' : 'flex justify-start'}`}>
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-gray-600'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
@@ -2593,6 +2593,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
+                elementStyles={elementStyles}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div 
@@ -3446,6 +3447,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
+                elementStyles={elementStyles}
               >
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
               </MicroSlot>
@@ -3462,6 +3464,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
+                elementStyles={elementStyles}
               >
                 <div className="relative">
                   <SimpleInlineEdit
