@@ -1486,10 +1486,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       <div className="relative z-1">
         {children}
         
-        {/* Resize icon only - no borders */}
+        {/* Resize icon only - more visible */}
         {onSpanChange && !isDragging && isHovered && !isResizing && (
           <div
-            className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize group"
+            className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize group"
             onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
             onMouseEnter={(e) => {
               e.stopPropagation();
@@ -1500,12 +1500,14 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             }}
             style={{ zIndex: 35 }}
           >
-            {/* Resize icon */}
-            <svg className="absolute bottom-0 right-0 w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M4.646 11.646a.5.5 0 01.708 0L11 6v4.5a.5.5 0 001 0v-6a.5.5 0 00-.5-.5h-6a.5.5 0 000 1H10L4.354 10.646a.5.5 0 000 .708z"/>
-              <path d="M11.354 12.354L8 9v2.5a.5.5 0 001 0V10l2.354 2.354a.25.25 0 00.354-.354z"/>
-              <path d="M14.354 15.354L11 12v2.5a.5.5 0 001 0V13l2.354 2.354a.25.25 0 00.354-.354z"/>
-            </svg>
+            {/* Clearer resize icon with diagonal lines */}
+            <div className="absolute bottom-0 right-0 w-6 h-6 bg-gray-300/90 group-hover:bg-gray-400 rounded-tl-md transition-all">
+              <svg className="w-full h-full text-white/80" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M14 20 L20 14" />
+                <path d="M17 20 L20 17" />
+                <path d="M20 20 L20 20" strokeLinecap="round" />
+              </svg>
+            </div>
           </div>
         )}
       </div>
@@ -2761,6 +2763,13 @@ export default function CartSlotsEditorWithMicroSlots({
             const styles = elementStyles[slotId] || {};
             const classes = elementClasses[slotId] || '';
             
+            // Remove existing color classes if we have custom styles
+            if (styles.backgroundColor || styles.color) {
+              // Remove bg-* and text-* color classes
+              buttonCode = buttonCode.replace(/\b(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+              buttonCode = buttonCode.replace(/\bhover:(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+            }
+            
             // Apply inline styles to the button
             if (Object.keys(styles).length > 0) {
               const styleStr = Object.entries(styles)
@@ -2776,10 +2785,13 @@ export default function CartSlotsEditorWithMicroSlots({
             }
             
             // Apply rounded classes to the button
-            if (classes.includes('rounded')) {
-              buttonCode = buttonCode.replace(/rounded(-\w+)?/g, ''); // Remove existing rounded classes
+            if (classes) {
+              // First remove all existing rounded classes
+              buttonCode = buttonCode.replace(/\brounded(-\w+)?\b/g, '');
+              // Then add the new rounded class
               buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
-                return `class="${existingClasses} ${classes}"`;
+                const cleanedClasses = existingClasses.replace(/\s+/g, ' ').trim();
+                return `class="${cleanedClasses} ${classes}"`;
               });
             }
             
@@ -3213,6 +3225,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 const styles = elementStyles[slotId] || {};
                 const classes = elementClasses[slotId] || '';
                 
+                // Remove existing color classes if we have custom styles
+                if (styles.backgroundColor || styles.color) {
+                  // Remove bg-* and text-* color classes
+                  buttonCode = buttonCode.replace(/\b(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+                  buttonCode = buttonCode.replace(/\bhover:(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+                }
+                
                 // Apply inline styles to the button
                 if (Object.keys(styles).length > 0) {
                   const styleStr = Object.entries(styles)
@@ -3228,10 +3247,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 }
                 
                 // Apply rounded classes to the button
-                if (classes.includes('rounded')) {
-                  buttonCode = buttonCode.replace(/rounded(-\w+)?/g, ''); // Remove existing rounded classes
+                if (classes) {
+                  // First remove all existing rounded classes
+                  buttonCode = buttonCode.replace(/\brounded(-\w+)?\b/g, '');
+                  // Then add the new rounded class
                   buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
-                    return `class="${existingClasses} ${classes}"`;
+                    const cleanedClasses = existingClasses.replace(/\s+/g, ' ').trim();
+                    return `class="${cleanedClasses} ${classes}"`;
                   });
                 }
                 return (
@@ -3296,6 +3318,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 const styles = elementStyles[slotId] || {};
                 const classes = elementClasses[slotId] || '';
                 
+                // Remove existing color classes if we have custom styles
+                if (styles.backgroundColor || styles.color) {
+                  // Remove bg-* and text-* color classes
+                  buttonCode = buttonCode.replace(/\b(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+                  buttonCode = buttonCode.replace(/\bhover:(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+                }
+                
                 // Apply inline styles to the button
                 if (Object.keys(styles).length > 0) {
                   const styleStr = Object.entries(styles)
@@ -3311,10 +3340,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 }
                 
                 // Apply rounded classes to the button
-                if (classes.includes('rounded')) {
-                  buttonCode = buttonCode.replace(/rounded(-\w+)?/g, ''); // Remove existing rounded classes
+                if (classes) {
+                  // First remove all existing rounded classes
+                  buttonCode = buttonCode.replace(/\brounded(-\w+)?\b/g, '');
+                  // Then add the new rounded class
                   buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
-                    return `class="${existingClasses} ${classes}"`;
+                    const cleanedClasses = existingClasses.replace(/\s+/g, ' ').trim();
+                    return `class="${cleanedClasses} ${classes}"`;
                   });
                 }
                 return (
