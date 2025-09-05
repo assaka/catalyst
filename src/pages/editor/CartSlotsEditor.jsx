@@ -1852,7 +1852,14 @@ export default function CartSlotsEditorWithMicroSlots({
             const allSlots = [...savedSlots, ...missingSlots];
             setMajorSlots(allSlots);
           }
-          if (config.microSlotOrders) setMicroSlotOrders(config.microSlotOrders);
+          if (config.microSlotOrders) {
+            // Migration: ensure coupon.removeButton is in coupon microSlots
+            const orders = { ...config.microSlotOrders };
+            if (orders.coupon && !orders.coupon.includes('coupon.removeButton')) {
+              orders.coupon = [...orders.coupon, 'coupon.removeButton'];
+            }
+            setMicroSlotOrders(orders);
+          }
           if (config.microSlotSpans) {
             // Validate and fix any corrupted span values
             const cleanedSpans = {};
@@ -1872,7 +1879,9 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.textContent) {
             setTextContent(prev => ({
               ...prev,  // Keep defaults for any keys not in saved config
-              ...config.textContent  // Override with saved values (including empty strings)
+              ...config.textContent,  // Override with saved values (including empty strings)
+              // Migration: ensure coupon.removeButton has default text if not present
+              'coupon.removeButton': config.textContent['coupon.removeButton'] || prev['coupon.removeButton'] || 'Remove'
             }));
           }
           if (config.elementClasses) {
