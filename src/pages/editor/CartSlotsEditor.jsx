@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -987,7 +987,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {} }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1206,8 +1206,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </button>
       )}
       
-      {/* Span controls - hide during drag to avoid conflicts */}
-      {onSpanChange && isHovered && !isDragging && !isResizing && (
+      {/* Text formatting controls - for text-based slots */}
+      {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
           className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-20 pointer-events-auto"
           onMouseEnter={(e) => {
@@ -1218,33 +1218,83 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          <div className="flex items-center bg-white rounded shadow-sm border px-1">
-            <span className="text-xs text-gray-500 mr-1">W:</span>
-            <input
-              type="number"
-              min="1"
-              max="12"
-              value={safeColSpan}
-              onChange={(e) => {
-                const newCol = parseInt(e.target.value) || 1;
-                onSpanChange(id, { col: newCol, row: safeRowSpan });
+          {/* Alignment controls */}
+          <div className="flex items-center bg-white rounded shadow-sm border">
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(left|center|right)/g, '')
+                  .trim() + ' text-left';
+                onClassChange(id, newClasses.trim());
               }}
-              className="w-8 text-xs border-0 focus:ring-0 p-0"
-            />
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Align left"
+            >
+              <AlignLeft className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(left|center|right)/g, '')
+                  .trim() + ' text-center';
+                onClassChange(id, newClasses.trim());
+              }}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Align center"
+            >
+              <AlignCenter className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(left|center|right)/g, '')
+                  .trim() + ' text-right';
+                onClassChange(id, newClasses.trim());
+              }}
+              className="p-1 hover:bg-gray-100 rounded"
+              title="Align right"
+            >
+              <AlignRight className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
-          <div className="flex items-center bg-white rounded shadow-sm border px-1">
-            <span className="text-xs text-gray-500 mr-1">H:</span>
-            <input
-              type="number"
-              min="1"
-              max="4"
-              value={safeRowSpan}
-              onChange={(e) => {
-                const newRow = parseInt(e.target.value) || 1;
-                onSpanChange(id, { col: safeColSpan, row: newRow });
+          
+          {/* Font style controls */}
+          <div className="flex items-center bg-white rounded shadow-sm border">
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
+                let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
+                if (!hasBold) {
+                  newClasses += ' font-bold';
+                }
+                onClassChange(id, newClasses.trim());
               }}
-              className="w-8 text-xs border-0 focus:ring-0 p-0"
-            />
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('font-bold') || (elementClasses[id] || '').includes('font-semibold') ? 'bg-blue-100' : ''}`}
+              title="Bold"
+            >
+              <Bold className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const hasItalic = currentClasses.includes('italic');
+                let newClasses = currentClasses;
+                if (hasItalic) {
+                  newClasses = newClasses.replace(/italic/g, '').trim();
+                } else {
+                  newClasses += ' italic';
+                }
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('italic') ? 'bg-blue-100' : ''}`}
+              title="Italic"
+            >
+              <Italic className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
         </div>
       )}
@@ -2283,6 +2333,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                onClassChange={handleClassChange}
+                elementClasses={elementClasses}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="relative group">
@@ -2363,6 +2415,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                onClassChange={handleClassChange}
+                elementClasses={elementClasses}
               >
                 <div className="flex justify-center items-center">
                   <SimpleInlineEdit
@@ -2385,6 +2439,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                onClassChange={handleClassChange}
+                elementClasses={elementClasses}
               >
                 <div className="flex justify-center items-center text-center">
                   <SimpleInlineEdit
@@ -2408,6 +2464,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                onClassChange={handleClassChange}
+                elementClasses={elementClasses}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div 
@@ -2510,6 +2568,8 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                  onClassChange={handleClassChange}
+                  elementClasses={elementClasses}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
@@ -2655,6 +2715,8 @@ export default function CartSlotsEditorWithMicroSlots({
                       rowSpan={slotSpan.row}
                       onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
                       isDraggable={index === 0} // Only first item is draggable
+                      onClassChange={handleClassChange}
+                      elementClasses={elementClasses}
                     >
                       <img 
                         src={product.image} 
@@ -2773,6 +2835,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="flex items-center justify-start mb-2">
                       <SimpleInlineEdit
@@ -2796,6 +2860,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <Input 
                       placeholder={slotContent['coupon.input.placeholder'] || 'Enter coupon code'}
@@ -2817,6 +2883,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div 
                       className="w-full pointer-events-none"
@@ -2835,6 +2903,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="bg-green-50 p-3 rounded-lg">
                       <p className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}>
@@ -2869,6 +2939,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div 
                       className="flex items-center justify-center h-full pointer-events-none"
@@ -2892,6 +2964,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="p-2 bg-gray-50 rounded">
                       {customSlot.type === 'text' && (
@@ -2949,6 +3023,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="flex items-center justify-start mb-2">
                       <SimpleInlineEdit
@@ -2972,6 +3048,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
@@ -2996,6 +3074,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
@@ -3020,6 +3100,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
@@ -3053,6 +3135,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="flex justify-between items-center border-t pt-2">
                       <SimpleInlineEdit
@@ -3087,6 +3171,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="pt-2 pointer-events-none">
                       <div dangerouslySetInnerHTML={{ __html: buttonCode }} />
@@ -3109,6 +3195,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                    onClassChange={handleClassChange}
+                    elementClasses={elementClasses}
                   >
                     <div className="p-2 bg-gray-50 rounded">
                       {customSlot.type === 'text' && (
@@ -3185,6 +3273,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                onClassChange={handleClassChange}
+                elementClasses={elementClasses}
               >
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
               </MicroSlot>
@@ -3199,6 +3289,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                onClassChange={handleClassChange}
+                elementClasses={elementClasses}
               >
                 <div className="relative">
                   <SimpleInlineEdit
