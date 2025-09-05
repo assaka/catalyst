@@ -1450,8 +1450,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             />
           </div>
           
-          {/* Border radius control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+          {/* Border radius control with icon */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="3" y="3" width="14" height="14" rx="2" strokeWidth="1.5"/>
+            </svg>
             <select
               value={
                 elementClasses[id]?.match(/rounded-(none|sm|md|lg|xl|2xl|3xl|full)/)?.[1] || 
@@ -1466,7 +1469,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const roundedClass = e.target.value === 'default' ? 'rounded' : `rounded-${e.target.value}`;
                 onClassChange(id, newClasses + ' ' + roundedClass);
               }}
-              className="px-2 py-0.5 text-xs border-0 cursor-pointer focus:outline-none"
+              className="text-xs border-0 cursor-pointer focus:outline-none bg-transparent"
               title="Border radius"
             >
               <option value="none">None</option>
@@ -1478,6 +1481,25 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               <option value="2xl">2XL</option>
               <option value="3xl">3XL</option>
               <option value="full">Full</option>
+            </select>
+          </div>
+          
+          {/* Size control for buttons */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 7h11M4 10h7M4 13h5" />
+            </svg>
+            <select
+              value={componentSizes[id] || 'default'}
+              onChange={(e) => {
+                handleSizeChange(id, e.target.value);
+              }}
+              className="text-xs border-0 cursor-pointer focus:outline-none bg-transparent"
+              title="Button size"
+            >
+              <option value="sm">Small</option>
+              <option value="default">Default</option>
+              <option value="lg">Large</option>
             </select>
           </div>
         </div>
@@ -2807,93 +2829,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
               >
-                <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <div className="relative group inline-block transition-all duration-200">
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: buttonCode }}
-                      style={{ pointerEvents: 'none' }}
-                      className="select-none transition-all duration-200"
-                      title="Button is disabled in editor mode"
-                    />
-                    {/* Size indicator badge - always visible */}
-                    <div className={`absolute -top-2 -right-2 text-white text-xs px-1.5 py-0.5 rounded z-40 transition-all ${
-                      isResizingButton === slotId ? 'bg-blue-600 scale-110' : 'bg-blue-500'
-                    }`}>
-                      {buttonSize.toUpperCase()}
-                    </div>
-                    {/* Button resize handle - inside relative container */}
-                    <div
-                      className={`absolute -bottom-3 -right-3 w-8 h-8 bg-blue-500 rounded cursor-nwse-resize z-50 transition-all flex items-center justify-center hover:bg-blue-600 hover:scale-110 ${
-                        isResizingButton === slotId ? 'opacity-100 scale-110' : 'opacity-80 group-hover:opacity-100'
-                      }`}
-                      title="Drag to resize button (sm, default, lg)"
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        setIsResizingButton(slotId);
-                        const currentSize = componentSizes[slotId] || 'default';
-                        const sizes = ['sm', 'default', 'lg'];
-                        const startX = e.clientX;
-                        const startIndex = sizes.indexOf(currentSize);
-                        
-                        const handleMouseMove = (e) => {
-                          const deltaX = e.clientX - startX;
-                          
-                          // Change size based on drag distance (every 30px for more fluent resizing)
-                          let newIndex = startIndex;
-                          if (deltaX > 30) {
-                            newIndex = Math.min(sizes.length - 1, startIndex + Math.floor(deltaX / 30));
-                          } else if (deltaX < -30) {
-                            newIndex = Math.max(0, startIndex + Math.ceil(deltaX / 30));
-                          }
-                          
-                          const newSize = sizes[newIndex];
-                          const currentComponentSize = componentSizes[slotId] || 'default';
-                          if (newSize !== currentComponentSize) {
-                            handleSizeChange(slotId, newSize);
-                            
-                            // Auto-expand slot based on button size
-                            const currentSpanData = microSlotSpans.emptyCart || {};
-                            const currentSpan = currentSpanData[slotId] || { col: 12, row: 1 };
-                            let newColSpan = currentSpan.col;
-                            let newRowSpan = currentSpan.row;
-                            
-                            if (newSize === 'lg') {
-                              // Large button needs more space
-                              newColSpan = 12;
-                              newRowSpan = 2;
-                            } else if (newSize === 'default') {
-                              // Default button size
-                              newColSpan = 12;
-                              newRowSpan = 1;
-                            } else if (newSize === 'sm') {
-                              // Small button can fit in less space
-                              newColSpan = 6;
-                              newRowSpan = 1;
-                            }
-                            
-                            // Update span if it changed
-                            if (newColSpan !== currentSpan.col || newRowSpan !== currentSpan.row) {
-                              handleSpanChange('emptyCart', slotId, { col: newColSpan, row: newRowSpan });
-                            }
-                          }
-                        };
-                        
-                        const handleMouseUp = () => {
-                          setIsResizingButton(null);
-                          document.removeEventListener('mousemove', handleMouseMove);
-                          document.removeEventListener('mouseup', handleMouseUp);
-                        };
-                        
-                        document.addEventListener('mousemove', handleMouseMove);
-                        document.addEventListener('mouseup', handleMouseUp);
-                      }}
-                    >
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
-                        <path stroke="currentColor" strokeWidth="2" d="M1 11L11 1M6 11L11 6" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                  </div>
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: buttonCode }}
+                    style={{ pointerEvents: 'none' }}
+                    className="select-none"
+                    title="Button is disabled in editor mode"
+                  />
                 </div>
               </MicroSlot>
             );
