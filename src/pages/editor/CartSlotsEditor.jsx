@@ -116,7 +116,9 @@ const MICRO_SLOT_TEMPLATES = {
   'emptyCart.icon': `<ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />`,
   'emptyCart.title': `<h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>`,
   'emptyCart.text': `<p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>`,
-  'emptyCart.button': `<Button onClick={handleContinueShopping}>Continue Shopping</Button>`,
+  'emptyCart.button': `<button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+  Continue Shopping
+</button>`,
   'header.flashMessage': `<FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />`,
   'header.title': `<h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>`,
   'header.cmsBlock': `<CmsBlockRenderer position="cart_above_items" />`,
@@ -127,14 +129,24 @@ const MICRO_SLOT_TEMPLATES = {
   'cartItem.remove': `<Button size="sm" variant="destructive"><Trash2 className="w-4 h-4" /></Button>`,
   'coupon.title': `<CardTitle>Apply Coupon</CardTitle>`,
   'coupon.input': `<Input placeholder="Enter coupon code" value={couponCode} onChange={handleCouponChange} />`,
-  'coupon.button': `<Button onClick={handleApplyCoupon}><Tag className="w-4 h-4 mr-2" /> Apply</Button>`,
+  'coupon.button': `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+  <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+  </svg>
+  Apply
+</button>`,
+  'coupon.removeButton': `<button class="px-3 py-1.5 border border-red-600 text-red-600 rounded hover:bg-red-50 transition-colors text-sm">
+  Remove
+</button>`,
   'coupon.applied': `<div className="bg-green-50 p-3 rounded-lg">Applied: {appliedCoupon.name}</div>`,
   'orderSummary.title': `<CardTitle>Order Summary</CardTitle>`,
   'orderSummary.subtotal': `<div className="flex justify-between"><span>Subtotal</span><span>{subtotal}</span></div>`,
   'orderSummary.discount': `<div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{discount}</span></div>`,
   'orderSummary.tax': `<div className="flex justify-between"><span>Tax</span><span>{tax}</span></div>`,
   'orderSummary.total': `<div className="flex justify-between text-lg font-semibold border-t pt-4"><span>Total</span><span>{total}</span></div>`,
-  'orderSummary.checkoutButton': `<Button size="lg" className="w-full">Proceed to Checkout</Button>`
+  'orderSummary.checkoutButton': `<button class="w-full px-6 py-3 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-lg">
+  Proceed to Checkout
+</button>`
 };
 
 // Tailwind Style Editor component
@@ -2087,14 +2099,14 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
-    // Check if this is a text content slot
+    // Check if this is a text content slot (not including buttons which use componentCode)
     const textSlots = [
-      'emptyCart.title', 'emptyCart.text', 'emptyCart.button', 
+      'emptyCart.title', 'emptyCart.text', 
       'header.title',
-      'coupon.title', 'coupon.input.placeholder', 'coupon.button', 'coupon.applied.title', 
-      'coupon.applied.description', 'coupon.removeButton',
+      'coupon.title', 'coupon.input.placeholder', 'coupon.applied.title', 
+      'coupon.applied.description',
       'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
-      'orderSummary.tax.label', 'orderSummary.total.label', 'orderSummary.checkoutButton'
+      'orderSummary.tax.label', 'orderSummary.total.label'
     ];
     
     if (textSlots.includes(microSlotId) || microSlotId.includes('.custom_')) {
@@ -2119,14 +2131,14 @@ export default function CartSlotsEditorWithMicroSlots({
         contentLength: tempCode?.length 
       });
       
-      // Check if this is a text content slot
+      // Check if this is a text content slot (not including buttons which use componentCode)
       const textSlots = [
-        'emptyCart.title', 'emptyCart.text', 'emptyCart.button', 
+        'emptyCart.title', 'emptyCart.text', 
         'header.title',
-        'coupon.title', 'coupon.input.placeholder', 'coupon.button', 'coupon.applied.title', 
-        'coupon.applied.description', 'coupon.remove',
+        'coupon.title', 'coupon.input.placeholder', 'coupon.applied.title', 
+        'coupon.applied.description',
         'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
-        'orderSummary.tax.label', 'orderSummary.total.label', 'orderSummary.checkoutButton'
+        'orderSummary.tax.label', 'orderSummary.total.label'
       ];
       
       // Check if this is a custom slot and its type
@@ -2462,7 +2474,7 @@ export default function CartSlotsEditorWithMicroSlots({
             );
           }
           if (slotId === 'emptyCart.button') {
-            const buttonSize = componentSizes[slotId] || 'default';
+            const buttonCode = componentCode[slotId] || `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Continue Shopping</button>`;
             return (
               <MicroSlot 
                 key={slotId} 
@@ -2473,21 +2485,14 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <div className="relative group inline-block">
-                    <Button 
-                      size={buttonSize}
-                      onClick={() => {
-                        const baseUrl = getStoreBaseUrl(store);
-                        window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                      }}
-                      className={isResizingButton === slotId ? 'ring-2 ring-blue-500' : ''}
-                    >
-                      {textContent[slotId] && textContent[slotId].includes('<') ? (
-                        <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
-                      ) : (
-                        <span>{textContent[slotId] || 'Continue Shopping'}</span>
-                      )}
-                    </Button>
+                  <div 
+                    className="relative group inline-block"
+                    onClick={() => {
+                      const baseUrl = getStoreBaseUrl(store);
+                      window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                    }}
+                    dangerouslySetInnerHTML={{ __html: buttonCode }}
+                  />
                     {/* Button resize handle - bottom-right corner */}
                     <div
                       className={`absolute -bottom-2 -right-2 w-6 h-6 bg-blue-500 rounded-sm cursor-nwse-resize z-50 transition-opacity flex items-center justify-center hover:bg-blue-600 ${
@@ -2879,7 +2884,7 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'coupon.button') {
-                const buttonSize = componentSizes[slotId] || 'default';
+                const buttonCode = componentCode[slotId] || MICRO_SLOT_TEMPLATES['coupon.button'];
                 return (
                   <MicroSlot
                     key={slotId}
@@ -2889,14 +2894,10 @@ export default function CartSlotsEditorWithMicroSlots({
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
                   >
-                    <Button disabled size={buttonSize} className="w-full">
-                      <Tag className="w-4 h-4 mr-2" />
-                      {textContent[slotId] && textContent[slotId].includes('<') ? (
-                        <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
-                      ) : (
-                        <span>{textContent[slotId] || 'Apply'}</span>
-                      )}
-                    </Button>
+                    <div 
+                      className="w-full pointer-events-none"
+                      dangerouslySetInnerHTML={{ __html: buttonCode }}
+                    />
                   </MicroSlot>
                 );
               }
@@ -2935,7 +2936,7 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'coupon.removeButton') {
-                const buttonSize = componentSizes[slotId] || 'sm';
+                const buttonCode = componentCode[slotId] || MICRO_SLOT_TEMPLATES['coupon.removeButton'];
                 return (
                   <MicroSlot
                     key={slotId}
@@ -2945,20 +2946,10 @@ export default function CartSlotsEditorWithMicroSlots({
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
                   >
-                    <div className="flex items-center justify-center h-full">
-                      <Button 
-                        variant="outline" 
-                        size={buttonSize}
-                        className="text-red-600 hover:text-red-800 w-full"
-                        disabled
-                      >
-                        {textContent[slotId] && textContent[slotId].includes('<') ? (
-                          <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
-                        ) : (
-                          <span>{textContent[slotId] || 'Remove'}</span>
-                        )}
-                      </Button>
-                    </div>
+                    <div 
+                      className="flex items-center justify-center h-full pointer-events-none"
+                      dangerouslySetInnerHTML={{ __html: buttonCode }}
+                    />
                   </MicroSlot>
                 );
               }
@@ -3145,7 +3136,7 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'orderSummary.checkoutButton') {
-                const buttonSize = componentSizes[slotId] || 'lg';
+                const buttonCode = componentCode[slotId] || MICRO_SLOT_TEMPLATES['orderSummary.checkoutButton'];
                 return (
                   <MicroSlot
                     key={slotId}
@@ -3155,14 +3146,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
                   >
-                    <div className="pt-2">
-                      <Button size={buttonSize} className="w-full" disabled>
-                        {textContent[slotId] && textContent[slotId].includes('<') ? (
-                          <span dangerouslySetInnerHTML={{ __html: textContent[slotId] }} />
-                        ) : (
-                          <span>{textContent[slotId] || 'Proceed to Checkout'}</span>
-                        )}
-                      </Button>
+                    <div className="pt-2 pointer-events-none">
+                      <div dangerouslySetInnerHTML={{ __html: buttonCode }} />
                     </div>
                   </MicroSlot>
                 );
