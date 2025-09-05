@@ -1021,7 +1021,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {} }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1492,7 +1492,9 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <select
               value={componentSizes[id] || 'default'}
               onChange={(e) => {
-                handleSizeChange(id, e.target.value);
+                if (onSizeChange) {
+                  onSizeChange(id, e.target.value);
+                }
               }}
               className="text-xs border-0 cursor-pointer focus:outline-none bg-transparent"
               title="Button size"
@@ -2828,6 +2830,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
+                componentSizes={componentSizes}
+                onSizeChange={handleSizeChange}
               >
                 <div className="flex flex-col items-center justify-center h-full">
                   <div 
@@ -3209,6 +3213,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                     elementStyles={elementStyles}
+                    componentSizes={componentSizes}
+                    onSizeChange={handleSizeChange}
                   >
                     <div 
                       className="w-full pointer-events-none"
@@ -3302,6 +3308,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                     elementStyles={elementStyles}
+                    componentSizes={componentSizes}
+                    onSizeChange={handleSizeChange}
                   >
                     <div 
                       className="flex items-center justify-center h-full pointer-events-none"
