@@ -46,6 +46,15 @@ import { FontFamily } from '@tiptap/extension-font-family';
 
 // Micro-slot definitions for each major slot
 const MICRO_SLOT_DEFINITIONS = {
+  flashMessage: {
+    id: 'flashMessage',
+    name: 'Flash Message',
+    microSlots: ['flashMessage.content'],
+    gridCols: 12,
+    defaultSpans: {
+      'flashMessage.content': { col: 12, row: 1 }
+    }
+  },
   emptyCart: {
     id: 'emptyCart',
     name: 'Empty Cart',
@@ -61,10 +70,9 @@ const MICRO_SLOT_DEFINITIONS = {
   header: {
     id: 'header',
     name: 'Page Header',
-    microSlots: ['header.flashMessage', 'header.title'], // Removed cmsBlock - not draggable
+    microSlots: ['header.title'], // Only title, flashMessage moved to its own section
     gridCols: 12,
     defaultSpans: {
-      'header.flashMessage': { col: 12, row: 1 },
       'header.title': { col: 12, row: 1 }
     }
   },
@@ -112,13 +120,25 @@ const MICRO_SLOT_DEFINITIONS = {
 
 // Component code templates for micro-slots
 const MICRO_SLOT_TEMPLATES = {
+  'flashMessage.content': `<div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+      </svg>
+    </div>
+    <div class="ml-3">
+      <h3 class="text-sm font-medium text-green-800">Special Offer!</h3>
+      <p class="text-sm text-green-700">Free shipping on orders over $50. Limited time only!</p>
+    </div>
+  </div>
+</div>`,
   'emptyCart.icon': `<ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />`,
   'emptyCart.title': `<h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>`,
   'emptyCart.text': `<p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>`,
   'emptyCart.button': `<button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
   Continue Shopping
 </button>`,
-  'header.flashMessage': `<FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />`,
   'header.title': `<h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>`,
   'cartItem.image': `<img src={product.images?.[0] || placeholder} alt={product.name} className="w-20 h-20 object-cover rounded-lg" />`,
   'cartItem.details': `<div className="flex-1"><h3 className="text-lg font-semibold">{product.name}</h3><p className="text-gray-600">{price} each</p></div>`,
@@ -1625,7 +1645,7 @@ export default function CartSlotsEditorWithMicroSlots({
   const [viewMode, setViewMode] = useState('empty');
   
   // State for major slot order - changes based on view mode
-  const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
+  const [majorSlots, setMajorSlots] = useState(['flashMessage', 'header', 'emptyCart']);
   
   // State for resizing indicators
   const [isResizingIcon, setIsResizingIcon] = useState(null);
@@ -1934,10 +1954,10 @@ export default function CartSlotsEditorWithMicroSlots({
   // Update major slots when view mode changes
   useEffect(() => {
     if (viewMode === 'empty') {
-      setMajorSlots(['header', 'emptyCart']);
+      setMajorSlots(['flashMessage', 'header', 'emptyCart']);
     } else {
       // Show cart with products - include cart items, coupon, and order summary
-      setMajorSlots(['header', 'cartItem', 'coupon', 'orderSummary']);
+      setMajorSlots(['flashMessage', 'header', 'cartItem', 'coupon', 'orderSummary']);
     }
   }, [viewMode]);
   
@@ -3340,6 +3360,45 @@ export default function CartSlotsEditorWithMicroSlots({
     );
   };
   
+  // Render flash message
+  const renderFlashMessage = () => {
+    const microSlots = microSlotOrders.flashMessage || MICRO_SLOT_DEFINITIONS.flashMessage.microSlots;
+    const spans = microSlotSpans.flashMessage || MICRO_SLOT_DEFINITIONS.flashMessage.defaultSpans;
+    
+    return (
+      <SortableParentSlot
+        id="flashMessage"
+        name="Flash Message"
+        microSlotOrder={microSlots}
+        onMicroSlotReorder={handleMicroSlotReorder}
+        onEdit={() => handleEditMicroSlot('flashMessage')}
+        gridCols={MICRO_SLOT_DEFINITIONS.flashMessage.gridCols}
+      >
+        {microSlots.map(slotId => {
+          const slotSpan = spans[slotId] || { col: 12, row: 1 };
+          
+          if (slotId === 'flashMessage.content') {
+            const content = slotContent[slotId] || MICRO_SLOT_TEMPLATES['flashMessage.content'];
+            return (
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('flashMessage', id, newSpan)}
+              >
+                <div dangerouslySetInnerHTML={{ __html: content }} />
+              </MicroSlot>
+            );
+          }
+          
+          return null;
+        })}
+      </SortableParentSlot>
+    );
+  };
+
   // Render header with micro-slots
   const renderHeader = () => {
     const microSlots = microSlotOrders.header || MICRO_SLOT_DEFINITIONS.header.microSlots;
@@ -3559,6 +3618,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 <div className="space-y-8">
                   {majorSlots.map(slotId => {
                     switch (slotId) {
+                      case 'flashMessage':
+                        return renderFlashMessage();
                       case 'header':
                         return renderHeader();
                       case 'emptyCart':
