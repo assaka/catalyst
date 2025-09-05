@@ -1180,10 +1180,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Drag handle in top-left - made more prominent */}
+      {/* Drag handle in top-left - subtle styling */}
       {isDraggable && (isHovered || isDragging) && !isResizing && (
         <div 
-          className="absolute left-1 top-1 p-1 bg-blue-500/90 rounded-md z-20 cursor-grab hover:bg-blue-600 transition-colors shadow-sm"
+          className="absolute left-1 top-1 p-1 bg-gray-500/70 rounded-md z-20 cursor-grab hover:bg-gray-600/80 transition-colors shadow-sm"
           {...(isDraggable && !isResizing ? listeners : {})}
           {...(isDraggable && !isResizing ? attributes : {})}
         >
@@ -1402,7 +1402,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       )}
       
       <div 
-        className={`${isDragging ? 'ring-2 ring-blue-400' : isHovered ? 'ring-1 ring-gray-300 bg-gray-50/50' : ''} rounded transition-all relative z-1`}
+        className={`${isDragging ? 'ring-2 ring-gray-400' : isHovered ? 'ring-1 ring-gray-200/70' : ''} rounded transition-all relative z-1`}
       >
         {children}
         
@@ -1411,7 +1411,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           <>
             {/* Right edge - made wider for easier grabbing */}
             <div
-              className="absolute top-2 right-0 w-3 h-[calc(100%-16px)] cursor-ew-resize bg-blue-500/30 hover:bg-blue-500/50 rounded-l transition-colors"
+              className="absolute top-2 right-0 w-3 h-[calc(100%-16px)] cursor-ew-resize bg-gray-400/20 hover:bg-gray-400/40 rounded-l transition-colors"
               onMouseDown={(e) => handleResizeStart(e, 'right')}
               onMouseEnter={(e) => {
                 e.stopPropagation();
@@ -1422,11 +1422,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               style={{ zIndex: 30 }}
             >
-              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-blue-500" />
+              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-gray-400" />
             </div>
             {/* Bottom edge - made taller for easier grabbing */}
             <div
-              className="absolute bottom-0 left-2 w-[calc(100%-16px)] h-3 cursor-ns-resize bg-blue-500/30 hover:bg-blue-500/50 rounded-t transition-colors"
+              className="absolute bottom-0 left-2 w-[calc(100%-16px)] h-3 cursor-ns-resize bg-gray-400/20 hover:bg-gray-400/40 rounded-t transition-colors"
               onMouseDown={(e) => handleResizeStart(e, 'bottom')}
               onMouseEnter={(e) => {
                 e.stopPropagation();
@@ -1437,7 +1437,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               style={{ zIndex: 30 }}
             >
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-500" />
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-gray-400" />
             </div>
             {/* Bottom-right corner - larger and more visible */}
             <div
@@ -1452,8 +1452,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               style={{ zIndex: 35 }}
             >
-              <div className="absolute bottom-0 right-0 w-0 h-0 border-b-[12px] border-r-[12px] border-b-blue-500 border-r-blue-500 border-t-transparent border-l-transparent group-hover:border-b-blue-600 group-hover:border-r-blue-600 transition-colors" />
-              <div className="absolute bottom-1 right-1 w-2 h-2 bg-white rounded-sm" />
+              {/* Resize icon */}
+              <svg className="absolute bottom-0 right-0 w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4.646 11.646a.5.5 0 01.708 0L11 6v4.5a.5.5 0 001 0v-6a.5.5 0 00-.5-.5h-6a.5.5 0 000 1H10L4.354 10.646a.5.5 0 000 .708z"/>
+                <path d="M11.354 12.354L8 9v2.5a.5.5 0 001 0V10l2.354 2.354a.25.25 0 00.354-.354z"/>
+                <path d="M14.354 15.354L11 12v2.5a.5.5 0 001 0V13l2.354 2.354a.25.25 0 00.354-.354z"/>
+              </svg>
             </div>
           </>
         )}
