@@ -2719,19 +2719,19 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementStyles={elementStyles}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <div className="relative group inline-block">
+                  <div className="relative group inline-block transition-all duration-200">
                     <div 
                       dangerouslySetInnerHTML={{ __html: buttonCode }}
                       style={{ pointerEvents: 'none' }} // Disable all clicks in editor mode
-                      className="select-none" // Prevent text selection as well
+                      className="select-none transition-all duration-200" // Add transition for smooth resize
                       title="Button is disabled in editor mode"
                     />
-                    {/* Size indicator badge */}
-                    {buttonSize !== 'default' && (
-                      <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded z-40">
-                        {buttonSize.toUpperCase()}
-                      </div>
-                    )}
+                    {/* Size indicator badge - always visible */}
+                    <div className={`absolute -top-2 -right-2 text-white text-xs px-1.5 py-0.5 rounded z-40 transition-all ${
+                      isResizingButton === slotId ? 'bg-blue-600 scale-110' : 'bg-blue-500'
+                    }`}>
+                      {buttonSize.toUpperCase()}
+                    </div>
                     {/* Button resize handle - inside relative container */}
                     <div
                       className={`absolute -bottom-3 -right-3 w-8 h-8 bg-blue-500 rounded cursor-nwse-resize z-50 transition-all flex items-center justify-center hover:bg-blue-600 hover:scale-110 ${
@@ -2750,18 +2750,17 @@ export default function CartSlotsEditorWithMicroSlots({
                         const handleMouseMove = (e) => {
                           const deltaX = e.clientX - startX;
                           
-                          // Change size based on drag distance (every 50px)
+                          // Change size based on drag distance (every 30px for more fluent resizing)
                           let newIndex = startIndex;
-                          if (deltaX > 50) {
-                            newIndex = Math.min(sizes.length - 1, startIndex + Math.floor(deltaX / 50));
-                          } else if (deltaX < -50) {
-                            newIndex = Math.max(0, startIndex + Math.ceil(deltaX / 50));
+                          if (deltaX > 30) {
+                            newIndex = Math.min(sizes.length - 1, startIndex + Math.floor(deltaX / 30));
+                          } else if (deltaX < -30) {
+                            newIndex = Math.max(0, startIndex + Math.ceil(deltaX / 30));
                           }
                           
                           const newSize = sizes[newIndex];
                           const currentComponentSize = componentSizes[slotId] || 'default';
                           if (newSize !== currentComponentSize) {
-                            console.log('Changing button size from', currentComponentSize, 'to', newSize);
                             handleSizeChange(slotId, newSize);
                             
                             // Auto-expand slot based on button size
