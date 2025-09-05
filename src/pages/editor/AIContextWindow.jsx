@@ -935,12 +935,26 @@ export default ExampleComponent;`;
                       // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
                       <div className="h-full overflow-y-auto">
                         {(() => {
+                          console.log('🚀 Hybrid/Other mode rendering', {
+                            previewMode,
+                            selectedFile: selectedFile ? {
+                              name: selectedFile?.name,
+                              path: selectedFile?.path
+                            } : 'No file selected'
+                          });
+                          
+                          // Early return if no file is selected
+                          if (!selectedFile) {
+                            console.log('⚠️ No file selected, showing placeholder');
+                            return <div className="p-8 text-center text-gray-500">Please select a file from the tree navigator</div>;
+                          }
+                          
                           console.log('🔍 Checking file:', {
                             name: selectedFile.name,
                             path: selectedFile.path,
-                            includesSlots: selectedFile.name.includes('Slots.jsx'),
-                            includesSlotsEditor: selectedFile.name.includes('SlotsEditor.jsx'),
-                            includesSlotEditor: selectedFile.name.includes('SlotEditor.jsx')
+                            includesSlots: selectedFile.name?.includes('Slots.jsx'),
+                            includesSlotsEditor: selectedFile.name?.includes('SlotsEditor.jsx'),
+                            includesSlotEditor: selectedFile.name?.includes('SlotEditor.jsx')
                           });
                           
                           // Check both name and path, handle both forward and back slashes
