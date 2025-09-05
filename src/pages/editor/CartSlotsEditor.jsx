@@ -3287,13 +3287,9 @@ export default function CartSlotsEditorWithMicroSlots({
                 );
               }
               
+              // Remove cmsBlockAboveTotal - handled in main layout
               if (slotId === 'orderSummary.cmsBlockAboveTotal') {
-                // Render actual CMS block content - no editing
-                return (
-                  <div key={slotId} className="col-span-12">
-                    <CmsBlockRenderer position="cart_above_total" />
-                  </div>
-                );
+                return null;
               }
               
               if (slotId === 'orderSummary.total') {
@@ -3322,13 +3318,9 @@ export default function CartSlotsEditorWithMicroSlots({
                 );
               }
               
+              // Remove cmsBlockBelowTotal - handled in main layout
               if (slotId === 'orderSummary.cmsBlockBelowTotal') {
-                // Render actual CMS block content - no editing
-                return (
-                  <div key={slotId} className="col-span-12">
-                    <CmsBlockRenderer position="cart_below_total" />
-                  </div>
-                );
+                return null;
               }
               
               if (slotId === 'orderSummary.checkoutButton') {
@@ -3516,14 +3508,9 @@ export default function CartSlotsEditorWithMicroSlots({
               </MicroSlot>
             );
           }
+          // Remove header.cmsBlock - CMS blocks are handled in main layout
           if (slotId === 'header.cmsBlock') {
-            // Simply render the actual CMS block content
-            // No editing or dragging - managed in admin
-            return (
-              <div key={slotId} className="col-span-12">
-                <CmsBlockRenderer position="cart_above_items" />
-              </div>
-            );
+            return null;
           }
           
           // Handle custom slots for header
@@ -3602,10 +3589,6 @@ export default function CartSlotsEditorWithMicroSlots({
           return null;
         })}
       </SortableParentSlot>
-      {/* CMS Block - shown but not editable */}
-      <div className="mt-4">
-        <CmsBlockRenderer position="cart_above_items" />
-      </div>
     </div>
     );
   };
@@ -3675,6 +3658,9 @@ export default function CartSlotsEditorWithMicroSlots({
               {viewMode === 'empty' ? (
                 // Empty cart layout - simple vertical
                 <div className="space-y-8">
+                  {/* CMS Block at cart header */}
+                  <CmsBlockRenderer position="cart_header" />
+                  
                   {majorSlots.map(slotId => {
                     switch (slotId) {
                       case 'flashMessage':
@@ -3687,29 +3673,53 @@ export default function CartSlotsEditorWithMicroSlots({
                         return null;
                     }
                   })}
+                  
+                  {/* CMS Block at cart footer */}
+                  <CmsBlockRenderer position="cart_footer" />
                 </div>
               ) : (
                 // With products layout - matching Cart.jsx structure
                 <div className="space-y-8">
+                  {/* CMS Block at cart header */}
+                  <CmsBlockRenderer position="cart_header" />
+                  
                   {/* Flash message at top */}
                   {majorSlots.includes('flashMessage') && renderFlashMessage()}
                   
                   {/* Header below flash message */}
                   {majorSlots.includes('header') && renderHeader()}
                   
+                  {/* CMS Block above cart items */}
+                  <CmsBlockRenderer position="cart_above_items" />
+                  
                   {/* Main content grid - cart items left, coupon/summary right */}
                   <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                     {/* Left side - Cart items (2 columns width) */}
                     <div className="lg:col-span-2">
                       {majorSlots.includes('cartItem') && renderCartItem()}
+                      {/* CMS Block below cart items */}
+                      <CmsBlockRenderer position="cart_below_items" />
                     </div>
                     
                     {/* Right side - Coupon and Order Summary (1 column width) */}
                     <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
+                      {/* CMS Block in cart sidebar (top) */}
+                      <CmsBlockRenderer position="cart_sidebar" />
+                      
                       {majorSlots.includes('coupon') && renderCoupon()}
+                      
+                      {/* CMS Block above total */}
+                      <CmsBlockRenderer position="cart_above_total" />
+                      
                       {majorSlots.includes('orderSummary') && renderOrderSummary()}
+                      
+                      {/* CMS Block below total */}
+                      <CmsBlockRenderer position="cart_below_total" />
                     </div>
                   </div>
+                  
+                  {/* CMS Block at cart footer */}
+                  <CmsBlockRenderer position="cart_footer" />
                 </div>
               )}
             </SortableContext>
