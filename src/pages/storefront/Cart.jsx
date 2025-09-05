@@ -27,7 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
-import {CartSlots} from "@/pages/index.jsx";
+import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor';
+import { getPageConfig } from '@/components/editor/slot/page-configs';
 
 const getSessionId = () => {
   let sid = localStorage.getItem('cart_session_id');
@@ -845,10 +846,19 @@ export default function Cart() {
         getExternalStoreUrl
     };
     
-    // If custom layout configuration exists and not in layout loading state, use CartSlots
+    // If custom layout configuration exists and not in layout loading state, use GenericSlotEditor
     if (cartLayoutConfig && !layoutLoading) {
-        console.log('Using CartSlots with custom layout configuration');
-        return <CartSlots data={cartSlotsData} layoutConfig={cartLayoutConfig} enableDragDrop={false} />;
+        console.log('Using GenericSlotEditor with custom layout configuration');
+        const cartPageConfig = getPageConfig('cart');
+        return (
+            <GenericSlotEditor
+                pageType="cart"
+                pageConfig={cartPageConfig}
+                data={cartSlotsData}
+                mode="display"
+                className="cart-page"
+            />
+        );
     }
     
     // Otherwise render the default cart layout
@@ -867,22 +877,18 @@ export default function Cart() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
-                    // Use CartSlots component to render the empty cart with custom slots
-                    <CartSlots 
-                        data={{
-                            store,
-                            cartItems: [],
-                            appliedCoupon: null,
-                            couponCode: '',
-                            subtotal: 0,
-                            discount: 0,
-                            tax: 0,
-                            total: 0,
-                            currencySymbol: store?.currency_symbol || '$',
-                            showEmptyCart: true
-                        }}
-                        layoutConfig={null} // Will load from localStorage/database
-                    />
+                    // Empty cart state
+                    <div className="text-center py-12">
+                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                        <Button 
+                            onClick={() => navigate(getStoreBaseUrl(store))}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            Continue Shopping
+                        </Button>
+                    </div>
                 ) : (
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                         <div className="lg:col-span-2">

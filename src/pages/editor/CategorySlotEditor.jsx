@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import GenericSlotEditor from '@/components/editor/slot-system/GenericSlotEditor';
-import { getPageConfig } from '@/components/editor/slot-system/page-configs';
+import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor';
+import { getPageConfig } from '@/components/editor/slot/page-configs';
 
 // Category-specific slot components
 function CategoryHeaderSlot({ data, content }) {
