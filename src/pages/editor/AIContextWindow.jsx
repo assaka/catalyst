@@ -910,12 +910,36 @@ export default ExampleComponent;`;
                     ) : (
                       // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
                       <div className="h-full overflow-y-auto">
-                        {(selectedFile.name.includes('Slots.jsx') || 
-                          selectedFile.path.includes('Slots.jsx') || 
-                          selectedFile.name.includes('SlotsEditor.jsx') || 
-                          selectedFile.path.includes('SlotsEditor.jsx') ||
-                          selectedFile.name.includes('SlotEditor.jsx') || 
-                          selectedFile.path.includes('SlotEditor.jsx')) ? (
+                        {(() => {
+                          console.log('🔍 Checking file:', {
+                            name: selectedFile.name,
+                            path: selectedFile.path,
+                            includesSlots: selectedFile.name.includes('Slots.jsx'),
+                            includesSlotsEditor: selectedFile.name.includes('SlotsEditor.jsx'),
+                            includesSlotEditor: selectedFile.name.includes('SlotEditor.jsx')
+                          });
+                          
+                          // Check both name and path, handle both forward and back slashes
+                          const fileName = selectedFile.name || '';
+                          const filePath = (selectedFile.path || '').replace(/\\/g, '/');
+                          
+                          const isSlotFile = 
+                            fileName.includes('Slots.jsx') || 
+                            fileName.includes('SlotsEditor.jsx') || 
+                            fileName.includes('SlotEditor.jsx') ||
+                            filePath.includes('Slots.jsx') || 
+                            filePath.includes('SlotsEditor.jsx') ||
+                            filePath.includes('SlotEditor.jsx') ||
+                            // Also check for Cart, Category, Product etc. editors
+                            fileName === 'CartSlotsEditor.jsx' ||
+                            fileName === 'CategorySlotEditor.jsx' ||
+                            fileName === 'ProductSlotEditor.jsx' ||
+                            fileName === 'HomepageSlotEditor.jsx';
+                          
+                          console.log('🎯 Is slot file?', isSlotFile);
+                          
+                          return isSlotFile;
+                        })() ? (
                           // This is a slots/editor file - use UnifiedSlotEditor
                           <UnifiedSlotEditor
                             pageName={selectedFile.name
