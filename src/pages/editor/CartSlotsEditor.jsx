@@ -2288,12 +2288,40 @@ export default function CartSlotsEditorWithMicroSlots({
   }, [debouncedSave]);
 
   // Edit micro-slot
-  const handleEditMicroSlot = useCallback((microSlotId) => {
-    // Get content from unified slotContent storage
-    const content = slotContent[microSlotId] || MICRO_SLOT_TEMPLATES[microSlotId] || '';
-    setEditingComponent(microSlotId);
-    setTempCode(content);
-  }, [slotContent]);
+  const handleEditMicroSlot = useCallback((slotId) => {
+    // Check if this is a parent slot (doesn't contain a dot)
+    const isParentSlot = !slotId.includes('.');
+    
+    if (isParentSlot) {
+      // For parent slots, show the configuration JSON
+      const parentConfig = {
+        id: slotId,
+        name: MICRO_SLOT_DEFINITIONS[slotId]?.name || slotId,
+        microSlots: microSlotOrders[slotId] || [],
+        spans: microSlotSpans[slotId] || {},
+        gridCols: MICRO_SLOT_DEFINITIONS[slotId]?.gridCols || 12,
+        slots: {}
+      };
+      
+      // Include all slot content for this parent
+      const parentSlotPrefix = `${slotId}.`;
+      Object.keys(slotContent).forEach(key => {
+        if (key.startsWith(parentSlotPrefix)) {
+          parentConfig.slots[key] = slotContent[key];
+        }
+      });
+      
+      // Convert to formatted JSON
+      const jsonContent = JSON.stringify(parentConfig, null, 2);
+      setEditingComponent(slotId);
+      setTempCode(jsonContent);
+    } else {
+      // For micro slots, get content from unified slotContent storage
+      const content = slotContent[slotId] || MICRO_SLOT_TEMPLATES[slotId] || '';
+      setEditingComponent(slotId);
+      setTempCode(content);
+    }
+  }, [slotContent, microSlotOrders, microSlotSpans]);
 
   // Save edited code
   const handleSaveCode = useCallback(() => {
@@ -2304,22 +2332,63 @@ export default function CartSlotsEditorWithMicroSlots({
         contentLength: tempCode?.length 
       });
       
-      // Save to unified slotContent
-      setSlotContent(prev => ({
-        ...prev,
-        [editingComponent]: tempCode
-      }));
+      // Check if this is a parent slot (doesn't contain a dot)
+      const isParentSlot = !editingComponent.includes('.');
       
-      // Also update custom slot content if it's a custom slot
-      const isCustomSlot = editingComponent.includes('.custom_');
-      if (isCustomSlot) {
-        setCustomSlots(prev => ({
-          ...prev,
-          [editingComponent]: {
-            ...prev[editingComponent],
-            content: tempCode
+      if (isParentSlot) {
+        try {
+          // Parse the JSON configuration
+          const parentConfig = JSON.parse(tempCode);
+          
+          // Update micro slot orders
+          if (parentConfig.microSlots) {
+            setMicroSlotOrders(prev => ({
+              ...prev,
+              [editingComponent]: parentConfig.microSlots
+            }));
           }
+          
+          // Update micro slot spans
+          if (parentConfig.spans) {
+            setMicroSlotSpans(prev => ({
+              ...prev,
+              [editingComponent]: parentConfig.spans
+            }));
+          }
+          
+          // Update slot content for all child slots
+          if (parentConfig.slots) {
+            setSlotContent(prev => {
+              const updated = { ...prev };
+              Object.keys(parentConfig.slots).forEach(key => {
+                updated[key] = parentConfig.slots[key];
+              });
+              return updated;
+            });
+          }
+        } catch (error) {
+          console.error('Invalid JSON configuration:', error);
+          alert('Invalid JSON configuration. Please check your syntax.');
+          return;
+        }
+      } else {
+        // For micro slots, save to unified slotContent
+        setSlotContent(prev => ({
+          ...prev,
+          [editingComponent]: tempCode
         }));
+        
+        // Also update custom slot content if it's a custom slot
+        const isCustomSlot = editingComponent.includes('.custom_');
+        if (isCustomSlot) {
+          setCustomSlots(prev => ({
+            ...prev,
+            [editingComponent]: {
+              ...prev[editingComponent],
+              content: tempCode
+            }
+          }));
+        }
       }
       
       // Auto-save configuration
@@ -2636,15 +2705,15 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementStyles={elementStyles}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <div 
-                    className="relative group inline-block"
-                    onClick={() => {
-                      const baseUrl = getStoreBaseUrl(store);
-                      window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                    }}
-                    dangerouslySetInnerHTML={{ __html: buttonCode }}
-                  />
-                    {/* Button resize handle - bottom-right corner */}
+                  <div className="relative group inline-block">
+                    <div 
+                      onClick={() => {
+                        const baseUrl = getStoreBaseUrl(store);
+                        window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                      }}
+                      dangerouslySetInnerHTML={{ __html: buttonCode }}
+                    />
+                    {/* Button resize handle - inside relative container */}
                     <div
                       className={`absolute -bottom-2 -right-2 w-6 h-6 bg-blue-500 rounded-sm cursor-nwse-resize z-50 transition-opacity flex items-center justify-center hover:bg-blue-600 ${
                         isResizingButton === slotId ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
@@ -2718,6 +2787,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       </svg>
                     </div>
                   </div>
+                </div>
               </MicroSlot>
             );
           }
@@ -3734,19 +3804,33 @@ export default function CartSlotsEditorWithMicroSlots({
         </div>
       </div>
 
-      {/* Monaco Editor Modal for micro-slots */}
+      {/* Monaco Editor Modal for micro-slots and parent slots */}
       <Dialog open={!!editingComponent} onOpenChange={(open) => !open && setEditingComponent(null)}>
         <DialogContent className="max-w-4xl w-[90vw] h-[70vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Code className="w-5 h-5" />
-              Edit Micro-Slot: {editingComponent}
+              {editingComponent && !editingComponent.includes('.') 
+                ? `Edit Parent Slot Configuration: ${MICRO_SLOT_DEFINITIONS[editingComponent]?.name || editingComponent}`
+                : `Edit Micro-Slot: ${editingComponent}`
+              }
             </DialogTitle>
+            {editingComponent && !editingComponent.includes('.') && (
+              <p className="text-sm text-gray-500 mt-1">
+                Edit the JSON configuration for this parent slot including micro-slot order, spans, and content
+              </p>
+            )}
           </DialogHeader>
           <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
             <Editor
               height="100%"
-              defaultLanguage={editingComponent && (editingComponent.includes('.title') || editingComponent.includes('.text') || editingComponent.includes('.button') || editingComponent.includes('.custom_')) ? 'html' : 'javascript'}
+              defaultLanguage={
+                editingComponent && !editingComponent.includes('.') 
+                  ? 'json' 
+                  : (editingComponent && (editingComponent.includes('.title') || editingComponent.includes('.text') || editingComponent.includes('.button') || editingComponent.includes('.custom_')) 
+                    ? 'html' 
+                    : 'javascript')
+              }
               value={tempCode}
               onChange={(value) => setTempCode(value || '')}
               theme="vs-dark"
