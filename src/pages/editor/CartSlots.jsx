@@ -182,21 +182,22 @@ export default function CartSlots({
     return defaultClasses;
   };
   
-  // Helper to render text with custom classes
+  // Helper to render text with custom classes and styles
   const renderCustomText = (key, defaultContent, defaultClasses = '') => {
     const htmlContent = layoutConfig?.slotContent?.[key];
     const classes = getCustomClasses(key, defaultClasses);
+    const styles = layoutConfig?.elementStyles?.[key] || {};
     
     // Check if the content has HTML tags (indicating rich text)
     if (htmlContent && /<[^>]+>/.test(htmlContent)) {
       // Render as HTML to preserve formatting (including colors)
-      return <span className={classes} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+      return <span className={classes} style={styles} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
     } else if (htmlContent) {
       // Render configured plain text without stripping
-      return <span className={classes}>{htmlContent}</span>;
+      return <span className={classes} style={styles}>{htmlContent}</span>;
     } else {
       // Use default content if nothing is configured
-      return <span className={classes}>{defaultContent}</span>;
+      return <span className={classes} style={styles}>{defaultContent}</span>;
     }
   };
 

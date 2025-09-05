@@ -1679,6 +1679,8 @@ export default function CartSlotsEditorWithMicroSlots({
     'orderSummary.discount.label': 'Discount',
     'orderSummary.tax.label': 'Tax',
     'orderSummary.total.label': 'Total',
+    // Initialize FlashMessage with the empty cart template by default
+    'flashMessage.content': MICRO_SLOT_TEMPLATES['flashMessage.content'],
   });
   const [editingComponent, setEditingComponent] = useState(null);
   const [tempCode, setTempCode] = useState('');
@@ -1951,9 +1953,19 @@ export default function CartSlotsEditorWithMicroSlots({
   useEffect(() => {
     if (viewMode === 'empty') {
       setMajorSlots(['flashMessage', 'header', 'emptyCart']);
+      // Update FlashMessage content for empty cart (product removed message)
+      setSlotContent(prev => ({
+        ...prev,
+        'flashMessage.content': MICRO_SLOT_TEMPLATES['flashMessage.content']
+      }));
     } else {
       // Show cart with products - include cart items, coupon, and order summary
       setMajorSlots(['flashMessage', 'header', 'cartItem', 'coupon', 'orderSummary']);
+      // Update FlashMessage content for cart with products (quantity updated message)
+      setSlotContent(prev => ({
+        ...prev,
+        'flashMessage.content': MICRO_SLOT_TEMPLATES['flashMessage.contentWithProducts']
+      }));
     }
   }, [viewMode]);
   
@@ -2004,6 +2016,7 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('📐 Loaded microSlotSpans:', config.microSlotSpans);
           console.log('📝 Loaded slotContent:', config.slotContent);
           console.log('🎨 Loaded elementClasses:', config.elementClasses);
+          console.log('🎨 Loaded elementStyles:', config.elementStyles);
           console.log('📏 Loaded componentSizes:', config.componentSizes);
           
           // Verify the data types
@@ -2048,6 +2061,12 @@ export default function CartSlotsEditorWithMicroSlots({
             setElementClasses(prev => ({
               ...prev,
               ...config.elementClasses
+            }));
+          }
+          if (config.elementStyles) {
+            setElementStyles(prev => ({
+              ...prev,
+              ...config.elementStyles
             }));
           }
           if (config.componentSizes) {
