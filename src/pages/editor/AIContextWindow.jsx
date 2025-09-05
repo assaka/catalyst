@@ -8,7 +8,7 @@ import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/editor/ai-context/DiffPreviewSystem';
 import VersionHistory from '@/components/editor/ai-context/VersionHistory';
-import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor.jsx';
+import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 // Store context no longer needed - backend resolves store automatically
@@ -910,47 +910,22 @@ export default ExampleComponent;`;
                     ) : (
                       // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
                       <div className="h-full overflow-y-auto">
-                        {selectedFile.name.includes('Slots.jsx') || selectedFile.path.includes('Slots.jsx') ? (
-                          // This is a slots file - use GenericSlotEditor
-                          <GenericSlotEditor
-                            pageName={selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '')}
-                            onSave={async (data) => {
-                              const pageName = selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '');
-                              console.log(`💾 Saving ${pageName} slots configuration...`);
-                              
-                              // Save to localStorage for now (until backend API is ready)
-                              try {
-                                const storageKey = `slot_config_${pageName}`;
-                                const configData = {
-                                  page_name: pageName,
-                                  configuration: data.slotDefinitions,
-                                  slot_order: data.pageConfig?.slotOrder || [],
-                                  slot_positions: data.slotPositions || {},
-                                  code: data.slotsFileCode,
-                                  updated_at: new Date().toISOString()
-                                };
-                                
-                                localStorage.setItem(storageKey, JSON.stringify(configData));
-                                console.log('✅ Configuration saved to localStorage');
-                                
-                                // TODO: When backend is ready, uncomment this:
-                                // const existing = await SlotConfiguration.findAll({
-                                //   where: { page_name: pageName },
-                                //   limit: 1
-                                // });
-                                // if (existing.data && existing.data.length > 0) {
-                                //   await SlotConfiguration.update(existing.data[0].id, configData);
-                                // } else {
-                                //   await SlotConfiguration.create(configData);
-                                // }
-                              } catch (error) {
-                                console.error('❌ Failed to save configuration:', error);
-                              }
-                            }}
-                            onCancel={() => {
-                              setPreviewMode('code');
-                            }}
-                            className="min-h-full"
+                        {(selectedFile.name.includes('Slots.jsx') || 
+                          selectedFile.path.includes('Slots.jsx') || 
+                          selectedFile.name.includes('SlotsEditor.jsx') || 
+                          selectedFile.path.includes('SlotsEditor.jsx') ||
+                          selectedFile.name.includes('SlotEditor.jsx') || 
+                          selectedFile.path.includes('SlotEditor.jsx')) ? (
+                          // This is a slots/editor file - use UnifiedSlotEditor
+                          <UnifiedSlotEditor
+                            pageName={selectedFile.name
+                              .replace('SlotsEditor.jsx', '')
+                              .replace('SlotEditor.jsx', '')
+                              .replace('Slots.jsx', '')
+                              .replace('.jsx', '')}
+                            onClose={() => {}}
+                            slotType="layout"
+                            pageId={null}
                           />
                         ) : (
                           // Regular file - use CodeEditor
