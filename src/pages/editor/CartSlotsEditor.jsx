@@ -1243,8 +1243,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '95%' }}
+          className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full flex flex-col gap-1 transition-opacity z-40 pointer-events-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '200px' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
@@ -1404,8 +1404,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Button formatting controls - only color and border radius */}
       {id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '90%' }}
+          className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full flex flex-col gap-1 transition-opacity z-40 pointer-events-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '200px' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
@@ -1499,9 +1499,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               className="text-xs border-0 cursor-pointer focus:outline-none bg-transparent"
               title="Button size"
             >
-              <option value="sm">Small</option>
-              <option value="default">Default</option>
-              <option value="lg">Large</option>
+              <option value="xs">XS</option>
+              <option value="sm">S</option>
+              <option value="default">M</option>
+              <option value="lg">L</option>
+              <option value="xl">XL</option>
             </select>
           </div>
         </div>
@@ -2777,10 +2779,16 @@ export default function CartSlotsEditorWithMicroSlots({
             let buttonCode = slotContent[slotId] || `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Continue Shopping</button>`;
             
             // Apply size classes to the button HTML
-            if (buttonSize === 'sm') {
+            if (buttonSize === 'xs') {
+              buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-2 py-1 text-xs');
+            } else if (buttonSize === 'sm') {
               buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-3 py-1.5 text-sm');
+            } else if (buttonSize === 'default') {
+              buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-4 py-2');
             } else if (buttonSize === 'lg') {
               buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-6 py-3 text-lg');
+            } else if (buttonSize === 'xl') {
+              buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-8 py-4 text-xl');
             }
             
             // Apply styles and classes to the button
