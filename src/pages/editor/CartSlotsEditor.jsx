@@ -1508,7 +1508,24 @@ export default function CartSlotsEditorWithMicroSlots({
   });
   
   // State for component code
-  const [componentCode, setComponentCode] = useState({ ...MICRO_SLOT_TEMPLATES });
+  // Unified content storage - can be plain text, HTML, or component code
+  const [slotContent, setSlotContent] = useState({
+    // Initialize with templates and text content merged
+    ...MICRO_SLOT_TEMPLATES,
+    // Text content overrides (these will be plain text initially)
+    'emptyCart.title': 'Your cart is empty',
+    'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
+    'header.title': 'My Cart',
+    'coupon.title': 'Apply Coupon',
+    'coupon.input.placeholder': 'Enter coupon code',
+    'coupon.applied.title': 'Applied: ',
+    'coupon.applied.description': '20% off your order',
+    'orderSummary.title': 'Order Summary',
+    'orderSummary.subtotal.label': 'Subtotal',
+    'orderSummary.discount.label': 'Discount',
+    'orderSummary.tax.label': 'Tax',
+    'orderSummary.total.label': 'Total',
+  });
   const [editingComponent, setEditingComponent] = useState(null);
   const [tempCode, setTempCode] = useState('');
   const [activeDragSlot, setActiveDragSlot] = useState(null);
@@ -1529,25 +1546,6 @@ export default function CartSlotsEditorWithMicroSlots({
   // State for delete confirmation dialog
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, slotId: null, slotLabel: '' });
   
-  // State for inline editable content
-  const [textContent, setTextContent] = useState({
-    'emptyCart.title': 'Your cart is empty',
-    'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
-    'emptyCart.button': 'Continue Shopping',
-    'header.title': 'My Cart',
-    'coupon.title': 'Apply Coupon',
-    'coupon.input.placeholder': 'Enter coupon code',
-    'coupon.button': 'Apply',
-    'coupon.applied.title': 'Applied: ',
-    'coupon.applied.description': '20% off your order',
-    'coupon.removeButton': 'Remove',
-    'orderSummary.title': 'Order Summary',
-    'orderSummary.subtotal.label': 'Subtotal',
-    'orderSummary.discount.label': 'Discount',
-    'orderSummary.tax.label': 'Tax',
-    'orderSummary.total.label': 'Total',
-    'orderSummary.checkoutButton': 'Proceed to Checkout',
-  });
   
   // State for Tailwind classes for each element
   const [elementClasses, setElementClasses] = useState({
@@ -1610,17 +1608,16 @@ export default function CartSlotsEditorWithMicroSlots({
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
     console.log('💾 saveConfiguration called');
-    console.log('📋 Current textContent state:', textContent);
+    console.log('📋 Current slotContent state:', slotContent);
     setSaveStatus('saving');
     
     const config = {
       majorSlots,
       microSlotOrders,
       microSlotSpans,
-      textContent,
+      slotContent,
       elementClasses,
       componentSizes,
-      componentCode,
       customSlots,
       timestamp: new Date().toISOString()
     };
@@ -1629,7 +1626,7 @@ export default function CartSlotsEditorWithMicroSlots({
     const configString = JSON.stringify(config);
     localStorage.setItem('cart_slots_layout_config', configString);
     console.log('💾 Saved configuration:', config);
-    console.log('📝 Saved textContent specifically:', config.textContent);
+    console.log('📝 Saved slotContent specifically:', config.slotContent);
     console.log('🎨 Saved elementClasses:', config.elementClasses);
     console.log('📏 Saved componentSizes:', config.componentSizes);
     console.log('📐 Saved microSlotSpans:', config.microSlotSpans);
@@ -1683,7 +1680,7 @@ export default function CartSlotsEditorWithMicroSlots({
           };
           console.log('📤 Sending UPDATE to database with payload:', payload);
           console.log('📤 Config elementClasses:', config.elementClasses);
-          console.log('📤 Config textContent:', config.textContent);
+          console.log('📤 Config slotContent:', config.slotContent);
           const updateResponse = await apiClient.put(`slot-configurations/${configId}`, payload);
           console.log('✅ Updated in database:', updateResponse);
           console.log('✅ Response data:', updateResponse?.data);
@@ -1698,7 +1695,7 @@ export default function CartSlotsEditorWithMicroSlots({
           };
           console.log('📤 Sending CREATE to database with payload:', payload);
           console.log('📤 Config elementClasses:', config.elementClasses);
-          console.log('📤 Config textContent:', config.textContent);
+          console.log('📤 Config slotContent:', config.slotContent);
           const createResponse = await apiClient.post('slot-configurations', payload);
           console.log('✅ Created in database:', createResponse);
           console.log('✅ Response data:', createResponse?.data);
@@ -1745,7 +1742,7 @@ export default function CartSlotsEditorWithMicroSlots({
       
       return true;
     }
-  }, [majorSlots, microSlotOrders, microSlotSpans, textContent, elementClasses, componentSizes, componentCode, customSlots, onSave]);
+  }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, componentSizes, slotContent, customSlots, onSave]);
   
   // Debounced save function
   const debouncedSave = useCallback(() => {
@@ -1847,13 +1844,13 @@ export default function CartSlotsEditorWithMicroSlots({
           
           console.log('✅ Loading configuration from DATABASE:', config);
           console.log('📐 Loaded microSlotSpans:', config.microSlotSpans);
-          console.log('📝 Loaded textContent:', config.textContent);
+          console.log('📝 Loaded slotContent:', config.slotContent);
           console.log('🎨 Loaded elementClasses:', config.elementClasses);
           console.log('📏 Loaded componentSizes:', config.componentSizes);
           
           // Verify the data types
           console.log('Type check - elementClasses is:', typeof config.elementClasses, config.elementClasses);
-          console.log('Type check - textContent is:', typeof config.textContent, config.textContent);
+          console.log('Type check - slotContent is:', typeof config.slotContent, config.slotContent);
           
           // Only load header and emptyCart slots
           if (config.majorSlots) {
@@ -1888,12 +1885,12 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           // Load saved configuration, merging with current state to preserve defaults for unsaved items
           // But use saved values directly (including empty strings) when they exist
-          if (config.textContent) {
-            setTextContent(prev => ({
+          if (config.slotContent) {
+            setSlotContent(prev => ({
               ...prev,  // Keep defaults for any keys not in saved config
-              ...config.textContent,  // Override with saved values (including empty strings)
+              ...config.slotContent,  // Override with saved values (including empty strings)
               // Migration: ensure coupon.removeButton has default text if not present
-              'coupon.removeButton': config.textContent['coupon.removeButton'] || prev['coupon.removeButton'] || 'Remove'
+              'coupon.removeButton': config.slotContent['coupon.removeButton'] || prev['coupon.removeButton'] || 'Remove'
             }));
           }
           if (config.elementClasses) {
@@ -1908,25 +1905,19 @@ export default function CartSlotsEditorWithMicroSlots({
               ...config.componentSizes
             }));
           }
-          if (config.componentCode) {
-            setComponentCode(prev => ({
-              ...prev,
-              ...config.componentCode
-            }));
-          }
           if (config.customSlots) {
             setCustomSlots(config.customSlots);
             
             // Ensure content for custom slots is properly synced
             Object.entries(config.customSlots).forEach(([slotId, slot]) => {
               if (slot.type === 'text') {
-                // Always sync custom slot content with textContent
-                const savedContent = config.textContent?.[slotId];
+                // Always sync custom slot content with slotContent
+                const savedContent = config.slotContent?.[slotId];
                 
-                // Always ensure textContent has the value
+                // Always ensure slotContent has the value
                 if (savedContent !== undefined) {
                   // Use saved content
-                  setTextContent(prev => ({
+                  setSlotContent(prev => ({
                     ...prev,
                     [slotId]: savedContent
                   }));
@@ -1940,7 +1931,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   }));
                 } else {
                   // Use slot's default content
-                  setTextContent(prev => ({
+                  setSlotContent(prev => ({
                     ...prev,
                     [slotId]: slot.content || 'Custom text content'
                   }));
@@ -1954,13 +1945,9 @@ export default function CartSlotsEditorWithMicroSlots({
                   }));
                 }
               } else if (slot.type === 'html' || slot.type === 'javascript') {
-                // For HTML/JS slots, check both componentCode and textContent (for migration)
-                const savedCode = config.componentCode?.[slotId];
-                const textContentCode = config.textContent?.[slotId];
-                
-                // Use componentCode if available, otherwise migrate from textContent if it exists
-                const finalCode = savedCode !== undefined ? savedCode : 
-                                 (textContentCode !== undefined ? textContentCode : slot.content);
+                // For HTML/JS slots, get from slotContent
+                const savedCode = config.slotContent?.[slotId];
+                const finalCode = savedCode !== undefined ? savedCode : slot.content;
                 
                 // Update the custom slot with the content
                 setCustomSlots(prev => ({
@@ -1971,15 +1958,15 @@ export default function CartSlotsEditorWithMicroSlots({
                   }
                 }));
                 
-                // Ensure componentCode has the content
-                setComponentCode(prev => ({
+                // Ensure slotContent has the content
+                setSlotContent(prev => ({
                   ...prev,
                   [slotId]: finalCode
                 }));
                 
-                // Clean up textContent if it had HTML/JS content
-                if (textContentCode !== undefined && savedCode === undefined) {
-                  setTextContent(prev => {
+                // Clean up slotContent if it had HTML/JS content
+                if (slotContentCode !== undefined && savedCode === undefined) {
+                  setSlotContent(prev => {
                     const updated = { ...prev };
                     delete updated[slotId];
                     return updated;
@@ -2069,7 +2056,7 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle text content change
   const handleTextChange = useCallback((slotId, newText) => {
-    setTextContent(prev => ({
+    setSlotContent(prev => ({
       ...prev,
       [slotId]: newText
     }));
@@ -2099,28 +2086,11 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
-    // Check if this is a text content slot (not including buttons which use componentCode)
-    const textSlots = [
-      'emptyCart.title', 'emptyCart.text', 
-      'header.title',
-      'coupon.title', 'coupon.input.placeholder', 'coupon.applied.title', 
-      'coupon.applied.description',
-      'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
-      'orderSummary.tax.label', 'orderSummary.total.label'
-    ];
-    
-    if (textSlots.includes(microSlotId) || microSlotId.includes('.custom_')) {
-      // For text content slots, edit the text content directly
-      const content = textContent[microSlotId] || '';
-      setEditingComponent(microSlotId);
-      setTempCode(content);
-    } else {
-      // For component code slots, edit the component code
-      const code = componentCode[microSlotId] || MICRO_SLOT_TEMPLATES[microSlotId] || '// Micro-slot code';
-      setEditingComponent(microSlotId);
-      setTempCode(code);
-    }
-  }, [componentCode, textContent]);
+    // Get content from unified slotContent storage
+    const content = slotContent[microSlotId] || MICRO_SLOT_TEMPLATES[microSlotId] || '';
+    setEditingComponent(microSlotId);
+    setTempCode(content);
+  }, [slotContent]);
 
   // Save edited code
   const handleSaveCode = useCallback(() => {
@@ -2131,58 +2101,22 @@ export default function CartSlotsEditorWithMicroSlots({
         contentLength: tempCode?.length 
       });
       
-      // Check if this is a text content slot (not including buttons which use componentCode)
-      const textSlots = [
-        'emptyCart.title', 'emptyCart.text', 
-        'header.title',
-        'coupon.title', 'coupon.input.placeholder', 'coupon.applied.title', 
-        'coupon.applied.description',
-        'orderSummary.title', 'orderSummary.subtotal.label', 'orderSummary.discount.label', 
-        'orderSummary.tax.label', 'orderSummary.total.label'
-      ];
+      // Save to unified slotContent
+      setSlotContent(prev => ({
+        ...prev,
+        [editingComponent]: tempCode
+      }));
       
-      // Check if this is a custom slot and its type
+      // Also update custom slot content if it's a custom slot
       const isCustomSlot = editingComponent.includes('.custom_');
-      const customSlot = isCustomSlot ? customSlots[editingComponent] : null;
-      
-      if (textSlots.includes(editingComponent) || (isCustomSlot && customSlot?.type === 'text')) {
-        console.log('📝 Saving as text content to slot:', editingComponent);
-        // Save to text content for text slots
-        setTextContent(prev => {
-          const updated = {
-            ...prev,
-            [editingComponent]: tempCode
-          };
-          console.log('📦 Updated textContent state:', updated);
-          return updated;
-        });
-        // Also update custom slot content if it's a custom text slot
-        if (isCustomSlot && customSlot?.type === 'text') {
-          setCustomSlots(prev => ({
-            ...prev,
-            [editingComponent]: {
-              ...prev[editingComponent],
-              content: tempCode
-            }
-          }));
-        }
-      } else {
-        console.log('💻 Saving as component code to slot:', editingComponent);
-        // Save to component code for HTML/JS slots
-        setComponentCode(prev => ({
+      if (isCustomSlot) {
+        setCustomSlots(prev => ({
           ...prev,
-          [editingComponent]: tempCode
+          [editingComponent]: {
+            ...prev[editingComponent],
+            content: tempCode
+          }
         }));
-        // Also update custom slot content if it's a custom HTML/JS slot
-        if (isCustomSlot && (customSlot?.type === 'html' || customSlot?.type === 'javascript')) {
-          setCustomSlots(prev => ({
-            ...prev,
-            [editingComponent]: {
-              ...prev[editingComponent],
-              content: tempCode
-            }
-          }));
-        }
       }
       
       // Auto-save configuration
@@ -2190,7 +2124,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, debouncedSave, customSlots]);
+  }, [editingComponent, tempCode, debouncedSave]);
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
@@ -2236,7 +2170,7 @@ export default function CartSlotsEditorWithMicroSlots({
     });
     
     // Remove from text content
-    setTextContent(prev => {
+    setSlotContent(prev => {
       const updated = { ...prev };
       delete updated[slotId];
       return updated;
@@ -2250,7 +2184,7 @@ export default function CartSlotsEditorWithMicroSlots({
     });
     
     // Remove from component code
-    setComponentCode(prev => {
+    setSlotContent(prev => {
       const updated = { ...prev };
       delete updated[slotId];
       return updated;
@@ -2305,7 +2239,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Add default content based on type
     if (newSlotType === 'text') {
-      setTextContent(prev => ({
+      setSlotContent(prev => ({
         ...prev,
         [slotId]: initialContent
       }));
@@ -2314,7 +2248,7 @@ export default function CartSlotsEditorWithMicroSlots({
         [slotId]: 'text-gray-600'
       }));
     } else if (newSlotType === 'html' || newSlotType === 'javascript') {
-      setComponentCode(prev => ({
+      setSlotContent(prev => ({
         ...prev,
         [slotId]: initialContent
       }));
@@ -2441,7 +2375,7 @@ export default function CartSlotsEditorWithMicroSlots({
               >
                 <div className="flex justify-center items-center">
                   <SimpleInlineEdit
-                    text={textContent[slotId]}
+                    text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-xl font-semibold'}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
@@ -2463,7 +2397,7 @@ export default function CartSlotsEditorWithMicroSlots({
               >
                 <div className="flex justify-center items-center text-center">
                   <SimpleInlineEdit
-                    text={textContent[slotId]}
+                    text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-gray-600'}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
@@ -2474,7 +2408,7 @@ export default function CartSlotsEditorWithMicroSlots({
             );
           }
           if (slotId === 'emptyCart.button') {
-            const buttonCode = componentCode[slotId] || `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Continue Shopping</button>`;
+            const buttonCode = slotContent[slotId] || `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Continue Shopping</button>`;
             return (
               <MicroSlot 
                 key={slotId} 
@@ -2593,7 +2527,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <div className="flex justify-center items-center text-center">
                     <SimpleInlineEdit
-                      text={textContent[slotId] !== undefined ? textContent[slotId] : customSlot.content}
+                      text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
                       onChange={(newText) => {
                         handleTextChange(slotId, newText);
@@ -2619,7 +2553,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   id={slotId} 
                   onEdit={() => {
                     setEditingComponent(slotId);
-                    setTempCode(componentCode[slotId] || customSlot.content);
+                    setTempCode(slotContent[slotId] || customSlot.content);
                   }}
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
@@ -2634,7 +2568,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     {customSlot.type === 'html' ? (
                       <div 
                         className="min-h-[40px] flex items-center justify-center"
-                        dangerouslySetInnerHTML={{ __html: componentCode[slotId] || customSlot.content }}
+                        dangerouslySetInnerHTML={{ __html: slotContent[slotId] || customSlot.content }}
                       />
                     ) : (
                       /* For JavaScript, show a placeholder since we can't safely execute it in editor */
@@ -2656,7 +2590,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingComponent(slotId);
-                        setTempCode(componentCode[slotId] || customSlot.content);
+                        setTempCode(slotContent[slotId] || customSlot.content);
                       }}
                       className="absolute top-1 right-1 px-2 py-1 bg-white/90 rounded shadow-sm border text-xs text-blue-600 hover:text-blue-700 hover:bg-white transition-colors"
                     >
@@ -2852,7 +2786,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   >
                     <div className="flex items-center justify-start mb-2">
                       <SimpleInlineEdit
-                        text={textContent[slotId] || 'Apply Coupon'}
+                        text={slotContent[slotId] || 'Apply Coupon'}
                         className={elementClasses[slotId] || 'text-lg font-semibold'}
                         onChange={(newText) => handleTextChange(slotId, newText)}
                         slotId={slotId}
@@ -2874,7 +2808,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
                   >
                     <Input 
-                      placeholder={textContent['coupon.input.placeholder'] || 'Enter coupon code'}
+                      placeholder={slotContent['coupon.input.placeholder'] || 'Enter coupon code'}
                       value="SAVE20"
                       disabled
                       className="w-full"
@@ -2884,7 +2818,7 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'coupon.button') {
-                const buttonCode = componentCode[slotId] || MICRO_SLOT_TEMPLATES['coupon.button'];
+                const buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['coupon.button'];
                 return (
                   <MicroSlot
                     key={slotId}
@@ -2915,7 +2849,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     <div className="bg-green-50 p-3 rounded-lg">
                       <p className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}>
                         <SimpleInlineEdit
-                          text={textContent['coupon.applied.title'] || 'Applied: '}
+                          text={slotContent['coupon.applied.title'] || 'Applied: '}
                           className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}
                           onChange={(newText) => handleTextChange('coupon.applied.title', newText)}
                           slotId="coupon.applied.title"
@@ -2924,7 +2858,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         SAVE20
                       </p>
                       <SimpleInlineEdit
-                        text={textContent['coupon.applied.description'] || '20% off your order'}
+                        text={slotContent['coupon.applied.description'] || '20% off your order'}
                         className={elementClasses['coupon.applied.description'] || 'text-xs text-green-600'}
                         onChange={(newText) => handleTextChange('coupon.applied.description', newText)}
                         slotId="coupon.applied.description"
@@ -2936,7 +2870,7 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'coupon.removeButton') {
-                const buttonCode = componentCode[slotId] || MICRO_SLOT_TEMPLATES['coupon.removeButton'];
+                const buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['coupon.removeButton'];
                 return (
                   <MicroSlot
                     key={slotId}
@@ -2972,7 +2906,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     <div className="p-2 bg-gray-50 rounded">
                       {customSlot.type === 'text' && (
                         <SimpleInlineEdit
-                          text={textContent[slotId] || customSlot.content}
+                          text={slotContent[slotId] || customSlot.content}
                           className={elementClasses[slotId] || 'text-gray-600'}
                           onChange={(newText) => handleTextChange(slotId, newText)}
                           slotId={slotId}
@@ -2982,7 +2916,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       {customSlot.type === 'html' && (
                         <div 
                           className="min-h-[40px] flex items-center justify-center"
-                          dangerouslySetInnerHTML={{ __html: componentCode[slotId] || customSlot.content }}
+                          dangerouslySetInnerHTML={{ __html: slotContent[slotId] || customSlot.content }}
                         />
                       )}
                     </div>
@@ -3028,7 +2962,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   >
                     <div className="flex items-center justify-start mb-2">
                       <SimpleInlineEdit
-                        text={textContent[slotId] || 'Order Summary'}
+                        text={slotContent[slotId] || 'Order Summary'}
                         className={elementClasses[slotId] || 'text-lg font-semibold'}
                         onChange={(newText) => handleTextChange(slotId, newText)}
                         slotId={slotId}
@@ -3051,7 +2985,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
-                        text={textContent['orderSummary.subtotal.label'] || 'Subtotal'}
+                        text={slotContent['orderSummary.subtotal.label'] || 'Subtotal'}
                         className={elementClasses['orderSummary.subtotal.label'] || ''}
                         onChange={(newText) => handleTextChange('orderSummary.subtotal.label', newText)}
                         slotId="orderSummary.subtotal.label"
@@ -3075,7 +3009,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
-                        text={textContent['orderSummary.discount.label'] || 'Discount'}
+                        text={slotContent['orderSummary.discount.label'] || 'Discount'}
                         className={elementClasses['orderSummary.discount.label'] || ''}
                         onChange={(newText) => handleTextChange('orderSummary.discount.label', newText)}
                         slotId="orderSummary.discount.label"
@@ -3099,7 +3033,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
-                        text={textContent['orderSummary.tax.label'] || 'Tax'}
+                        text={slotContent['orderSummary.tax.label'] || 'Tax'}
                         className={elementClasses['orderSummary.tax.label'] || ''}
                         onChange={(newText) => handleTextChange('orderSummary.tax.label', newText)}
                         slotId="orderSummary.tax.label"
@@ -3123,7 +3057,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   >
                     <div className="flex justify-between items-center border-t pt-2">
                       <SimpleInlineEdit
-                        text={textContent['orderSummary.total.label'] || 'Total'}
+                        text={slotContent['orderSummary.total.label'] || 'Total'}
                         className={elementClasses['orderSummary.total.label'] || 'text-lg font-semibold'}
                         onChange={(newText) => handleTextChange('orderSummary.total.label', newText)}
                         slotId="orderSummary.total.label"
@@ -3136,7 +3070,7 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'orderSummary.checkoutButton') {
-                const buttonCode = componentCode[slotId] || MICRO_SLOT_TEMPLATES['orderSummary.checkoutButton'];
+                const buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['orderSummary.checkoutButton'];
                 return (
                   <MicroSlot
                     key={slotId}
@@ -3171,7 +3105,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     <div className="p-2 bg-gray-50 rounded">
                       {customSlot.type === 'text' && (
                         <SimpleInlineEdit
-                          text={textContent[slotId] || customSlot.content}
+                          text={slotContent[slotId] || customSlot.content}
                           className={elementClasses[slotId] || 'text-gray-600'}
                           onChange={(newText) => handleTextChange(slotId, newText)}
                           slotId={slotId}
@@ -3181,7 +3115,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       {customSlot.type === 'html' && (
                         <div 
                           className="min-h-[40px] flex items-center justify-center"
-                          dangerouslySetInnerHTML={{ __html: componentCode[slotId] || customSlot.content }}
+                          dangerouslySetInnerHTML={{ __html: slotContent[slotId] || customSlot.content }}
                         />
                       )}
                     </div>
@@ -3259,7 +3193,7 @@ export default function CartSlotsEditorWithMicroSlots({
               >
                 <div className="relative">
                   <SimpleInlineEdit
-                    text={textContent[slotId]}
+                    text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-3xl font-bold text-gray-900'}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
@@ -3305,7 +3239,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <div className="flex justify-center items-center text-center">
                     <SimpleInlineEdit
-                      text={textContent[slotId] !== undefined ? textContent[slotId] : customSlot.content}
+                      text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
                       onChange={(newText) => {
                         handleTextChange(slotId, newText);
@@ -3325,7 +3259,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 </MicroSlot>
               );
             } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
-              const content = componentCode[slotId] || customSlot.content || '';
+              const content = slotContent[slotId] || customSlot.content || '';
               return (
                 <MicroSlot 
                   key={slotId} 
@@ -3665,23 +3599,22 @@ export default function CartSlotsEditorWithMicroSlots({
                   setMicroSlotOrders({});
                   setMicroSlotSpans({});
                   setCustomSlots({});
-                  setTextContent({
+                  // Reset to default templates and text
+                  setSlotContent({
+                    ...MICRO_SLOT_TEMPLATES,  // Include all templates
+                    // Override with default text values
                     'emptyCart.title': 'Your cart is empty',
                     'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
-                    'emptyCart.button': 'Continue Shopping',
                     'header.title': 'My Cart',
                     'coupon.title': 'Apply Coupon',
                     'coupon.input.placeholder': 'Enter coupon code',
-                    'coupon.button': 'Apply',
                     'coupon.applied.title': 'Applied: ',
                     'coupon.applied.description': '20% off your order',
-                    'coupon.removeButton': 'Remove',
                     'orderSummary.title': 'Order Summary',
                     'orderSummary.subtotal.label': 'Subtotal',
                     'orderSummary.discount.label': 'Discount',
                     'orderSummary.tax.label': 'Tax',
                     'orderSummary.total.label': 'Total',
-                    'orderSummary.checkoutButton': 'Proceed to Checkout',
                   });
                   setElementClasses({
                     'header.title': 'text-3xl font-bold text-gray-900',
@@ -3702,7 +3635,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     'emptyCart.button': 'default',
                     'cartItem.image': 80,
                   });
-                  setComponentCode({});
                   
                   // Show success message
                   setSaveStatus('saved');
