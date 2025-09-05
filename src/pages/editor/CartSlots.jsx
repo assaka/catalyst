@@ -158,8 +158,10 @@ export default function CartSlots({
 
   // Extract custom text from layoutConfig if available
   const getCustomText = (key, defaultValue, renderAsHtml = false) => {
-    if (layoutConfig?.textContent?.[key]) {
-      const htmlText = layoutConfig.textContent[key];
+    // Check slotContent first (new unified system), fall back to textContent for backward compatibility
+    const content = layoutConfig?.slotContent?.[key] || layoutConfig?.textContent?.[key];
+    if (content) {
+      const htmlText = content;
       
       if (renderAsHtml) {
         // Return the HTML as-is for rendering with dangerouslySetInnerHTML
@@ -183,7 +185,8 @@ export default function CartSlots({
   
   // Helper to render text with custom classes
   const renderCustomText = (key, defaultContent, defaultClasses = '') => {
-    const htmlContent = layoutConfig?.textContent?.[key];
+    // Check slotContent first (new unified system), fall back to textContent for backward compatibility
+    const htmlContent = layoutConfig?.slotContent?.[key] || layoutConfig?.textContent?.[key];
     const classes = getCustomClasses(key, defaultClasses);
     
     // Check if the content has HTML tags (indicating rich text)
@@ -307,6 +310,10 @@ export default function CartSlots({
                   );
                   
                 case 'emptyCart.button':
+                  // Check if we have HTML button content
+                  const buttonContent = layoutConfig?.slotContent?.['emptyCart.button'] || layoutConfig?.textContent?.['emptyCart.button'];
+                  const isHtmlButton = buttonContent && buttonContent.includes('<button');
+                  
                   return (
                     <div 
                       key={slotId} 
@@ -314,19 +321,27 @@ export default function CartSlots({
                       className="flex justify-center items-center"
                       title={`Button: ${spans.col}x${spans.row}`}
                     >
-                      <Button 
-                        size={buttonSize}
-                        onClick={() => {
-                          const baseUrl = getStoreBaseUrl(store);
-                          window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                        }}
-                      >
-                        {layoutConfig?.textContent?.['emptyCart.button'] && layoutConfig.textContent['emptyCart.button'].includes('<') ? (
-                          <span dangerouslySetInnerHTML={{ __html: layoutConfig.textContent['emptyCart.button'] }} />
-                        ) : (
-                          layoutConfig?.textContent?.['emptyCart.button'] || 'Continue Shopping'
-                        )}
-                      </Button>
+                      {isHtmlButton ? (
+                        // Render the full HTML button
+                        <div 
+                          onClick={() => {
+                            const baseUrl = getStoreBaseUrl(store);
+                            window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                          }}
+                          dangerouslySetInnerHTML={{ __html: buttonContent }}
+                        />
+                      ) : (
+                        // Fall back to default Button component
+                        <Button 
+                          size={buttonSize}
+                          onClick={() => {
+                            const baseUrl = getStoreBaseUrl(store);
+                            window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                          }}
+                        >
+                          {buttonContent || 'Continue Shopping'}
+                        </Button>
+                      )}
                     </div>
                   );
                   
@@ -350,7 +365,7 @@ export default function CartSlots({
                         </div>
                       );
                     } else if (customSlot.type === 'html') {
-                      const htmlContent = layoutConfig?.componentCode?.[slotId] || customSlot.content;
+                      const htmlContent = layoutConfig?.slotContent?.[slotId] || layoutConfig?.componentCode?.[slotId] || customSlot.content;
                       return (
                         <div 
                           key={slotId} 
@@ -364,7 +379,7 @@ export default function CartSlots({
                     } else if (customSlot.type === 'javascript') {
                       // For JavaScript, we need to safely execute it
                       // In production, this should be carefully sanitized
-                      const jsCode = layoutConfig?.componentCode?.[slotId] || customSlot.content;
+                      const jsCode = layoutConfig?.slotContent?.[slotId] || layoutConfig?.componentCode?.[slotId] || customSlot.content;
                       
                       // Create a container div with a unique ID
                       const containerId = `custom-js-${slotId.replace(/\./g, '-')}`;
