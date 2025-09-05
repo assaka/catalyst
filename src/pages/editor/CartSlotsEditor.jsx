@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Palette, PaintBucket, Type as TypeIcon, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -1209,7 +1209,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - for text-based slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-20 pointer-events-auto"
+          className="absolute bottom-1 left-1 flex flex-wrap gap-1 transition-opacity z-20 pointer-events-auto max-w-xs"
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
@@ -1224,11 +1224,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               onClick={() => {
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
-                  .replace(/text-(left|center|right)/g, '')
-                  .trim() + ' text-left';
+                  .replace(/text-(left|center|right|justify)/g, '')
+                  .replace(/justify-(start|center|end)/g, '')
+                  .replace(/items-(start|center|end)/g, '')
+                  .trim() + ' text-left justify-start items-start';
                 onClassChange(id, newClasses.trim());
               }}
-              className="p-1 hover:bg-gray-100 rounded"
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-left') ? 'bg-blue-100' : ''}`}
               title="Align left"
             >
               <AlignLeft className="w-4 h-4 text-gray-600" />
@@ -1237,11 +1239,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               onClick={() => {
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
-                  .replace(/text-(left|center|right)/g, '')
-                  .trim() + ' text-center';
+                  .replace(/text-(left|center|right|justify)/g, '')
+                  .replace(/justify-(start|center|end)/g, '')
+                  .replace(/items-(start|center|end)/g, '')
+                  .trim() + ' text-center justify-center items-center';
                 onClassChange(id, newClasses.trim());
               }}
-              className="p-1 hover:bg-gray-100 rounded"
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-center') ? 'bg-blue-100' : ''}`}
               title="Align center"
             >
               <AlignCenter className="w-4 h-4 text-gray-600" />
@@ -1250,11 +1254,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               onClick={() => {
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
-                  .replace(/text-(left|center|right)/g, '')
-                  .trim() + ' text-right';
+                  .replace(/text-(left|center|right|justify)/g, '')
+                  .replace(/justify-(start|center|end)/g, '')
+                  .replace(/items-(start|center|end)/g, '')
+                  .trim() + ' text-right justify-end items-end';
                 onClassChange(id, newClasses.trim());
               }}
-              className="p-1 hover:bg-gray-100 rounded"
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-right') ? 'bg-blue-100' : ''}`}
               title="Align right"
             >
               <AlignRight className="w-4 h-4 text-gray-600" />
@@ -1295,6 +1301,94 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             >
               <Italic className="w-4 h-4 text-gray-600" />
             </button>
+          </div>
+
+          {/* Font size control */}
+          <div className="flex items-center bg-white rounded shadow-sm border">
+            <select
+              value={
+                elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)/)?.[1] || 'base'
+              }
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)/g, '')
+                  .trim() + ` text-${e.target.value}`;
+                onClassChange(id, newClasses.trim());
+              }}
+              className="px-1 py-1 text-xs border-0 focus:ring-0 cursor-pointer"
+              title="Font size"
+            >
+              <option value="xs">XS</option>
+              <option value="sm">SM</option>
+              <option value="base">Base</option>
+              <option value="lg">LG</option>
+              <option value="xl">XL</option>
+              <option value="2xl">2XL</option>
+              <option value="3xl">3XL</option>
+              <option value="4xl">4XL</option>
+            </select>
+          </div>
+
+          {/* Text color control */}
+          <div className="flex items-center bg-white rounded shadow-sm border">
+            <select
+              value={
+                elementClasses[id]?.match(/text-(gray|red|blue|green|yellow|purple|pink|indigo)-([0-9]+)/)?.[0] || 'text-gray-900'
+              }
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|black|white)-([0-9]+)/g, '')
+                  .trim() + ` ${e.target.value}`;
+                onClassChange(id, newClasses.trim());
+              }}
+              className="px-1 py-1 text-xs border-0 focus:ring-0 cursor-pointer"
+              title="Text color"
+            >
+              <option value="text-gray-900">Gray Dark</option>
+              <option value="text-gray-600">Gray</option>
+              <option value="text-gray-400">Gray Light</option>
+              <option value="text-red-600">Red</option>
+              <option value="text-blue-600">Blue</option>
+              <option value="text-green-600">Green</option>
+              <option value="text-yellow-600">Yellow</option>
+              <option value="text-purple-600">Purple</option>
+              <option value="text-pink-600">Pink</option>
+              <option value="text-indigo-600">Indigo</option>
+              <option value="text-white">White</option>
+              <option value="text-black">Black</option>
+            </select>
+          </div>
+
+          {/* Background color control */}
+          <div className="flex items-center bg-white rounded shadow-sm border">
+            <select
+              value={
+                elementClasses[id]?.match(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-([0-9]+)?/)?.[0] || 'bg-transparent'
+              }
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                  .trim() + ` ${e.target.value}`;
+                onClassChange(id, newClasses.trim());
+              }}
+              className="px-1 py-1 text-xs border-0 focus:ring-0 cursor-pointer"
+              title="Background color"
+            >
+              <option value="bg-transparent">None</option>
+              <option value="bg-gray-100">Gray Light</option>
+              <option value="bg-gray-200">Gray</option>
+              <option value="bg-gray-800">Gray Dark</option>
+              <option value="bg-red-100">Red Light</option>
+              <option value="bg-blue-100">Blue Light</option>
+              <option value="bg-green-100">Green Light</option>
+              <option value="bg-yellow-100">Yellow Light</option>
+              <option value="bg-purple-100">Purple Light</option>
+              <option value="bg-white">White</option>
+              <option value="bg-black">Black</option>
+            </select>
           </div>
         </div>
       )}
@@ -2418,7 +2512,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
               >
-                <div className="flex justify-center items-center">
+                <div className={`w-full ${elementClasses[slotId]?.includes('text-center') ? 'flex justify-center' : elementClasses[slotId]?.includes('text-right') ? 'flex justify-end' : 'flex justify-start'}`}>
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-xl font-semibold'}
@@ -2442,7 +2536,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
               >
-                <div className="flex justify-center items-center text-center">
+                <div className={`w-full ${elementClasses[slotId]?.includes('text-center') ? 'flex justify-center' : elementClasses[slotId]?.includes('text-right') ? 'flex justify-end' : 'flex justify-start'}`}>
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-gray-600'}
