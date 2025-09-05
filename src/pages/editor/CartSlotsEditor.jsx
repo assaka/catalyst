@@ -1242,7 +1242,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - centered at bottom for better accessibility */}
       {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
           style={{ maxWidth: '90%' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -2707,23 +2707,22 @@ export default function CartSlotsEditorWithMicroSlots({
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="relative group inline-block">
                     <div 
-                      onClick={() => {
-                        const baseUrl = getStoreBaseUrl(store);
-                        window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                      }}
                       dangerouslySetInnerHTML={{ __html: buttonCode }}
+                      style={{ pointerEvents: 'none' }} // Disable all clicks in editor mode
+                      className="select-none" // Prevent text selection as well
+                      title="Button is disabled in editor mode"
                     />
                     {/* Button resize handle - inside relative container */}
                     <div
-                      className={`absolute -bottom-2 -right-2 w-6 h-6 bg-blue-500 rounded-sm cursor-nwse-resize z-50 transition-opacity flex items-center justify-center hover:bg-blue-600 ${
-                        isResizingButton === slotId ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      className={`absolute -bottom-3 -right-3 w-8 h-8 bg-blue-500 rounded cursor-nwse-resize z-50 transition-all flex items-center justify-center hover:bg-blue-600 hover:scale-110 ${
+                        isResizingButton === slotId ? 'opacity-100 scale-110' : 'opacity-80 group-hover:opacity-100'
                       }`}
                       title="Drag to resize button (sm, default, lg)"
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
                         setIsResizingButton(slotId);
-                        const currentSize = buttonSize;
+                        const currentSize = componentSizes[slotId] || 'default';
                         const sizes = ['sm', 'default', 'lg'];
                         const startX = e.clientX;
                         const startIndex = sizes.indexOf(currentSize);
