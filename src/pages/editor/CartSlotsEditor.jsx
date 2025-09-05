@@ -1239,10 +1239,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </button>
       )}
       
-      {/* Text formatting controls - for text-based slots */}
+      {/* Text formatting controls - centered at bottom for better accessibility */}
       {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute bottom-1 left-1 flex flex-wrap gap-1 transition-opacity z-20 pointer-events-auto max-w-xs"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '90%' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
@@ -1252,7 +1253,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           }}
         >
           {/* Alignment controls */}
-          <div className="flex items-center bg-white rounded shadow-sm border">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
             <button
               onClick={() => {
                 const currentClasses = elementClasses[id] || '';
@@ -1295,7 +1296,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
           
           {/* Font style controls */}
-          <div className="flex items-center bg-white rounded shadow-sm border">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
             <button
               onClick={() => {
                 const currentClasses = elementClasses[id] || '';
@@ -1331,7 +1332,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Font size control */}
-          <div className="flex items-center bg-white rounded shadow-sm border">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
             <select
               value={
                 elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)/)?.[1] || 'base'
@@ -1358,7 +1359,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Text color control */}
-          <div className="flex items-center bg-white rounded shadow-sm border p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
@@ -1378,7 +1379,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Background color control */}
-          <div className="flex items-center bg-white rounded shadow-sm border p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
