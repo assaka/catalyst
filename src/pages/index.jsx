@@ -64,6 +64,7 @@ export { default as ThemeLayout } from './admin/ThemeLayout';
 
 // Editor Pages
 export { default as AIContextWindow } from './editor/AIContextWindow';
+export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CategorySlotEditor } from './editor/CategorySlotEditor';
 
 // Storefront Pages
