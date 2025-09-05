@@ -1190,14 +1190,14 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      {/* Edit button in top-right */}
+      {/* Edit button - positioned to avoid resize corner */}
       {onEdit && isHovered && !isDragging && !isResizing && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onEdit(id);
           }}
-          className="absolute right-1 top-1 p-2 bg-gray-500 rounded-md z-40 hover:bg-gray-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
+          className="absolute right-10 top-1 p-2 bg-gray-500 rounded-md z-40 hover:bg-gray-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
           title="Edit micro-slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1225,7 +1225,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           onPointerDown={(e) => {
             e.stopPropagation();
           }}
-          className="absolute right-10 top-1 p-2 bg-red-500 rounded-md z-40 hover:bg-red-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
+          className="absolute right-20 top-1 p-2 bg-red-500 rounded-md z-40 hover:bg-red-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
           title="Delete custom slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1404,12 +1404,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       >
         {children}
         
-        {/* Resize handles - hide during drag */}
+        {/* Resize handles - improved visibility and interaction */}
         {onSpanChange && !isDragging && isHovered && !isResizing && (
           <>
-            {/* Right edge */}
+            {/* Right edge - made wider for easier grabbing */}
             <div
-              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize bg-blue-500/20 hover:bg-blue-500/30"
+              className="absolute top-2 right-0 w-3 h-[calc(100%-16px)] cursor-ew-resize bg-blue-500/30 hover:bg-blue-500/50 rounded-l transition-colors"
               onMouseDown={(e) => handleResizeStart(e, 'right')}
               onMouseEnter={(e) => {
                 e.stopPropagation();
@@ -1418,10 +1418,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
                 setIsHovered(true);
               }}
-            />
-            {/* Bottom edge */}
+              style={{ zIndex: 30 }}
+            >
+              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-blue-500" />
+            </div>
+            {/* Bottom edge - made taller for easier grabbing */}
             <div
-              className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize bg-blue-500/20 hover:bg-blue-500/30"
+              className="absolute bottom-0 left-2 w-[calc(100%-16px)] h-3 cursor-ns-resize bg-blue-500/30 hover:bg-blue-500/50 rounded-t transition-colors"
               onMouseDown={(e) => handleResizeStart(e, 'bottom')}
               onMouseEnter={(e) => {
                 e.stopPropagation();
@@ -1430,10 +1433,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
                 setIsHovered(true);
               }}
-            />
-            {/* Bottom-right corner */}
+              style={{ zIndex: 30 }}
+            >
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-500" />
+            </div>
+            {/* Bottom-right corner - larger and more visible */}
             <div
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
+              className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize group"
               onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
               onMouseEnter={(e) => {
                 e.stopPropagation();
@@ -1442,8 +1448,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
                 setIsHovered(true);
               }}
+              style={{ zIndex: 35 }}
             >
-              <div className="absolute bottom-1 right-1 w-2 h-2 bg-blue-500 rounded-sm" />
+              <div className="absolute bottom-0 right-0 w-0 h-0 border-b-[12px] border-r-[12px] border-b-blue-500 border-r-blue-500 border-t-transparent border-l-transparent group-hover:border-b-blue-600 group-hover:border-r-blue-600 transition-colors" />
+              <div className="absolute bottom-1 right-1 w-2 h-2 bg-white rounded-sm" />
             </div>
           </>
         )}
@@ -2040,14 +2048,9 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('Type check - elementClasses is:', typeof config.elementClasses, config.elementClasses);
           console.log('Type check - slotContent is:', typeof config.slotContent, config.slotContent);
           
-          // Only load header and emptyCart slots
+          // Load saved majorSlots order
           if (config.majorSlots) {
-            const requiredSlots = ['header', 'emptyCart'];
-            const savedSlots = config.majorSlots.filter(slot => requiredSlots.includes(slot));
-            // Ensure both required slots are present
-            const missingSlots = requiredSlots.filter(slot => !savedSlots.includes(slot));
-            const allSlots = [...savedSlots, ...missingSlots];
-            setMajorSlots(allSlots);
+            setMajorSlots(config.majorSlots);
           }
           if (config.microSlotOrders) {
             setMicroSlotOrders(config.microSlotOrders);

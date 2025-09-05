@@ -281,30 +281,34 @@ export default function CartSlots({
                   );
                   
                 case 'emptyCart.title':
+                  const titleClasses = layoutConfig?.elementClasses?.['emptyCart.title'] || 'text-xl font-semibold text-center';
+                  const titleStyles = layoutConfig?.elementStyles?.['emptyCart.title'] || {};
                   return (
                     <div 
                       key={slotId} 
                       style={{ ...gridStyle, ...debugStyle }} 
-                      className="flex items-center justify-center p-2"
+                      className="p-2"
                       title={`Title: ${spans.col}x${spans.row}`}
                     >
-                      <h2 className="text-xl font-semibold text-center w-full">
-                        {renderCustomText('emptyCart.title', 'Your cart is empty', 'text-xl font-semibold')}
-                      </h2>
+                      <div className={`w-full ${titleClasses}`} style={titleStyles}>
+                        {renderCustomText('emptyCart.title', 'Your cart is empty', '')}
+                      </div>
                     </div>
                   );
                   
                 case 'emptyCart.text':
+                  const textClasses = layoutConfig?.elementClasses?.['emptyCart.text'] || 'text-gray-600 text-center';
+                  const textStyles = layoutConfig?.elementStyles?.['emptyCart.text'] || {};
                   return (
                     <div 
                       key={slotId} 
                       style={{ ...gridStyle, ...debugStyle }} 
-                      className="flex items-center justify-center p-2"
+                      className="p-2"
                       title={`Text: ${spans.col}x${spans.row}`}
                     >
-                      <p className="text-gray-600 text-center w-full">
-                        {renderCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.", 'text-gray-600')}
-                      </p>
+                      <div className={`w-full ${textClasses}`} style={textStyles}>
+                        {renderCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.", '')}
+                      </div>
                     </div>
                   );
                   
