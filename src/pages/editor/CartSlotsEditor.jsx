@@ -1243,8 +1243,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full flex flex-col gap-1 transition-opacity z-40 pointer-events-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '200px' }}
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '95%' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
@@ -1404,8 +1404,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Button formatting controls - only color and border radius */}
       {id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full flex flex-col gap-1 transition-opacity z-40 pointer-events-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '200px' }}
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
+          style={{ maxWidth: '95%' }}
           onMouseEnter={(e) => {
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
