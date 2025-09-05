@@ -23,6 +23,7 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,10 @@ export default function CartSlots({
   layoutConfig: providedConfig = null, // Layout configuration from editor
   enableDragDrop = false, // Set to true to enable drag and drop
 }) {
+  // Get selected store from context
+  const { selectedStore } = useStoreSelection();
+  const currentStoreId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  
   // Load layout configuration from localStorage if not provided
   const [layoutConfig, setLayoutConfig] = React.useState(providedConfig);
   
@@ -508,7 +513,7 @@ export default function CartSlots({
           })}
         </CardContent>
       </Card>
-      <CmsBlockRenderer position="cart_below_items" />
+      <CmsBlockRenderer position="cart_below_items" storeId={currentStoreId} />
     </div>
   );
 
@@ -567,12 +572,12 @@ export default function CartSlots({
             <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span></div>
           )}
           <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span></div>
-          <CmsBlockRenderer position="cart_above_total" />
+          <CmsBlockRenderer position="cart_above_total" storeId={currentStoreId} />
           <div className="flex justify-between text-lg font-semibold border-t pt-4">
             <span>Total</span>
             <span>{currencySymbol}{safeToFixed(total)}</span>
           </div>
-          <CmsBlockRenderer position="cart_below_total" />
+          <CmsBlockRenderer position="cart_below_total" storeId={currentStoreId} />
           <div className="border-t mt-6 pt-6">
             <Button
               size="lg"
@@ -601,7 +606,7 @@ export default function CartSlots({
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* CMS Block at cart header */}
-        <CmsBlockRenderer position="cart_header" />
+        <CmsBlockRenderer position="cart_header" storeId={currentStoreId} />
         
         {/* Only show default header if 'header' is not in section order */}
         {!sectionOrder.includes('header') && (
@@ -610,7 +615,7 @@ export default function CartSlots({
             <h1 className="mb-8">
               {renderCustomText('header.title', 'My Cart', 'text-3xl font-bold text-gray-900')}
             </h1>
-            <CmsBlockRenderer position="cart_above_items" />
+            <CmsBlockRenderer position="cart_above_items" storeId={currentStoreId} />
           </>
         )}
         
@@ -657,7 +662,7 @@ export default function CartSlots({
                             case 'header.cmsBlock':
                               return (
                                 <div key={microSlotId} style={gridStyle}>
-                                  <CmsBlockRenderer position="cart_above_items" />
+                                  <CmsBlockRenderer position="cart_above_items" storeId={currentStoreId} />
                                 </div>
                               );
                               
@@ -693,7 +698,7 @@ export default function CartSlots({
               </div>
             )}
             
-            <CmsBlockRenderer position="cart_above_items" />
+            <CmsBlockRenderer position="cart_above_items" storeId={currentStoreId} />
             
             {enableDragDrop ? (
               <DndContext
@@ -731,16 +736,16 @@ export default function CartSlots({
               <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                 <div className="lg:col-span-2">
                   <CartItemsSection />
-                  <CmsBlockRenderer position="cart_below_items" />
+                  <CmsBlockRenderer position="cart_below_items" storeId={currentStoreId} />
                 </div>
                 <div className="lg:col-span-1">
-                  <CmsBlockRenderer position="cart_sidebar" />
+                  <CmsBlockRenderer position="cart_sidebar" storeId={currentStoreId} />
                   <SidebarSection />
                 </div>
               </div>
             )}
             
-            <CmsBlockRenderer position="cart_footer" />
+            <CmsBlockRenderer position="cart_footer" storeId={currentStoreId} />
           </>
         )}
         

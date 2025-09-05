@@ -26,6 +26,7 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -895,7 +896,7 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
             setShowEditor(true);
           }
         }}
-        className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded inline-block ${className}`}
+        className={`cursor-pointer hover:ring-1 hover:ring-gray-300 px-1 rounded inline-block ${className}`}
         title={hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style"}
         style={hasHtml ? { cursor: 'default', ...style } : style}
       >
@@ -1636,6 +1637,10 @@ export default function CartSlotsEditorWithMicroSlots({
   data = {},
   onSave = () => {},
 }) {
+  // Get selected store from context
+  const { selectedStore } = useStoreSelection();
+  const currentStoreId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  
   // State for view mode - 'empty' or 'withProducts'
   const [viewMode, setViewMode] = useState('empty');
   
@@ -2691,7 +2696,16 @@ export default function CartSlotsEditorWithMicroSlots({
             );
           }
           if (slotId === 'emptyCart.button') {
-            const buttonCode = slotContent[slotId] || `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Continue Shopping</button>`;
+            const buttonSize = componentSizes[slotId] || 'default';
+            let buttonCode = slotContent[slotId] || `<button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Continue Shopping</button>`;
+            
+            // Apply size classes to the button HTML
+            if (buttonSize === 'sm') {
+              buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-3 py-1.5 text-sm');
+            } else if (buttonSize === 'lg') {
+              buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-6 py-3 text-lg');
+            }
+            
             return (
               <MicroSlot 
                 key={slotId} 
@@ -2712,6 +2726,12 @@ export default function CartSlotsEditorWithMicroSlots({
                       className="select-none" // Prevent text selection as well
                       title="Button is disabled in editor mode"
                     />
+                    {/* Size indicator badge */}
+                    {buttonSize !== 'default' && (
+                      <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded z-40">
+                        {buttonSize.toUpperCase()}
+                      </div>
+                    )}
                     {/* Button resize handle - inside relative container */}
                     <div
                       className={`absolute -bottom-3 -right-3 w-8 h-8 bg-blue-500 rounded cursor-nwse-resize z-50 transition-all flex items-center justify-center hover:bg-blue-600 hover:scale-110 ${
@@ -3726,7 +3746,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 // Empty cart layout - simple vertical
                 <div className="space-y-8">
                   {/* CMS Block at cart header */}
-                  <CmsBlockRenderer position="cart_header" />
+                  <CmsBlockRenderer position="cart_header" storeId={currentStoreId} />
                   
                   {majorSlots.map(slotId => {
                     switch (slotId) {
@@ -3742,13 +3762,13 @@ export default function CartSlotsEditorWithMicroSlots({
                   })}
                   
                   {/* CMS Block at cart footer */}
-                  <CmsBlockRenderer position="cart_footer" />
+                  <CmsBlockRenderer position="cart_footer" storeId={currentStoreId} />
                 </div>
               ) : (
                 // With products layout - matching Cart.jsx structure
                 <div className="space-y-8">
                   {/* CMS Block at cart header */}
-                  <CmsBlockRenderer position="cart_header" />
+                  <CmsBlockRenderer position="cart_header" storeId={currentStoreId} />
                   
                   {/* Flash message at top */}
                   {majorSlots.includes('flashMessage') && renderFlashMessage()}
@@ -3757,7 +3777,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   {majorSlots.includes('header') && renderHeader()}
                   
                   {/* CMS Block above cart items */}
-                  <CmsBlockRenderer position="cart_above_items" />
+                  <CmsBlockRenderer position="cart_above_items" storeId={currentStoreId} />
                   
                   {/* Main content grid - cart items left, coupon/summary right */}
                   <div className="lg:grid lg:grid-cols-3 lg:gap-8">
@@ -3765,28 +3785,28 @@ export default function CartSlotsEditorWithMicroSlots({
                     <div className="lg:col-span-2">
                       {majorSlots.includes('cartItem') && renderCartItem()}
                       {/* CMS Block below cart items */}
-                      <CmsBlockRenderer position="cart_below_items" />
+                      <CmsBlockRenderer position="cart_below_items" storeId={currentStoreId} />
                     </div>
                     
                     {/* Right side - Coupon and Order Summary (1 column width) */}
                     <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
                       {/* CMS Block in cart sidebar (top) */}
-                      <CmsBlockRenderer position="cart_sidebar" />
+                      <CmsBlockRenderer position="cart_sidebar" storeId={currentStoreId} />
                       
                       {majorSlots.includes('coupon') && renderCoupon()}
                       
                       {/* CMS Block above total */}
-                      <CmsBlockRenderer position="cart_above_total" />
+                      <CmsBlockRenderer position="cart_above_total" storeId={currentStoreId} />
                       
                       {majorSlots.includes('orderSummary') && renderOrderSummary()}
                       
                       {/* CMS Block below total */}
-                      <CmsBlockRenderer position="cart_below_total" />
+                      <CmsBlockRenderer position="cart_below_total" storeId={currentStoreId} />
                     </div>
                   </div>
                   
                   {/* CMS Block at cart footer */}
-                  <CmsBlockRenderer position="cart_footer" />
+                  <CmsBlockRenderer position="cart_footer" storeId={currentStoreId} />
                 </div>
               )}
             </SortableContext>
