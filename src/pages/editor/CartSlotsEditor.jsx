@@ -3298,6 +3298,11 @@ export default function CartSlotsEditorWithMicroSlots({
           return null;
         })}
       </SortableParentSlot>
+      {/* CMS Block - shown but not editable */}
+      <div className="mt-4">
+        <CmsBlockRenderer position="cart_above_items" />
+      </div>
+    </div>
     );
   };
 
