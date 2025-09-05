@@ -2501,7 +2501,6 @@ export default function CartSlotsEditorWithMicroSlots({
                       </svg>
                     </div>
                   </div>
-                </div>
               </MicroSlot>
             );
           }
