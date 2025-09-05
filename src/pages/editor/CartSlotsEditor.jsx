@@ -895,7 +895,7 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
             setShowEditor(true);
           }
         }}
-        className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded ${className}`}
+        className={`cursor-pointer hover:ring-2 hover:ring-blue-300 px-1 rounded inline-block ${className}`}
         title={hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style"}
         style={hasHtml ? { cursor: 'default', ...style } : style}
       >
@@ -1258,9 +1258,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/text-(left|center|right|justify)/g, '')
-                  .replace(/justify-(start|center|end)/g, '')
-                  .replace(/items-(start|center|end)/g, '')
-                  .trim() + ' text-left justify-start items-start';
+                  .trim() + ' text-left';
                 onClassChange(id, newClasses.trim());
               }}
               className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-left') ? 'bg-blue-100' : ''}`}
@@ -1273,9 +1271,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/text-(left|center|right|justify)/g, '')
-                  .replace(/justify-(start|center|end)/g, '')
-                  .replace(/items-(start|center|end)/g, '')
-                  .trim() + ' text-center justify-center items-center';
+                  .trim() + ' text-center';
                 onClassChange(id, newClasses.trim());
               }}
               className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-center') ? 'bg-blue-100' : ''}`}
@@ -1288,9 +1284,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/text-(left|center|right|justify)/g, '')
-                  .replace(/justify-(start|center|end)/g, '')
-                  .replace(/items-(start|center|end)/g, '')
-                  .trim() + ' text-right justify-end items-end';
+                  .trim() + ' text-right';
                 onClassChange(id, newClasses.trim());
               }}
               className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-right') ? 'bg-blue-100' : ''}`}
@@ -2584,11 +2578,11 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
               >
-                <div className={`w-full ${elementClasses[slotId]?.includes('text-center') ? 'flex justify-center' : elementClasses[slotId]?.includes('text-right') ? 'flex justify-end' : 'flex justify-start'}`}>
+                <div className={`w-full ${elementClasses[slotId] || 'text-xl font-semibold text-center'}`} style={elementStyles[slotId] || {}}>
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
-                    className={elementClasses[slotId] || 'text-xl font-semibold'}
-                    style={elementStyles[slotId] || {}}
+                    className=""
+                    style={{}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
@@ -2610,11 +2604,11 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
               >
-                <div className={`w-full ${elementClasses[slotId]?.includes('text-center') ? 'flex justify-center' : elementClasses[slotId]?.includes('text-right') ? 'flex justify-end' : 'flex justify-start'}`}>
+                <div className={`w-full ${elementClasses[slotId] || 'text-gray-600 text-center'}`} style={elementStyles[slotId] || {}}>
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
-                    className={elementClasses[slotId] || 'text-gray-600'}
-                    style={elementStyles[slotId] || {}}
+                    className=""
+                    style={{}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
