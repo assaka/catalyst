@@ -1486,60 +1486,27 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       <div className="relative z-1">
         {children}
         
-        {/* Resize handles - improved visibility and interaction */}
+        {/* Resize icon only - no borders */}
         {onSpanChange && !isDragging && isHovered && !isResizing && (
-          <>
-            {/* Right edge - made wider for easier grabbing */}
-            <div
-              className="absolute top-2 right-0 w-3 h-[calc(100%-16px)] cursor-ew-resize bg-gray-400/20 hover:bg-gray-400/40 rounded-l transition-colors"
-              onMouseDown={(e) => handleResizeStart(e, 'right')}
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-                setIsHovered(true);
-              }}
-              style={{ zIndex: 30 }}
-            >
-              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-gray-400" />
-            </div>
-            {/* Bottom edge - made taller for easier grabbing */}
-            <div
-              className="absolute bottom-0 left-2 w-[calc(100%-16px)] h-3 cursor-ns-resize bg-gray-400/20 hover:bg-gray-400/40 rounded-t transition-colors"
-              onMouseDown={(e) => handleResizeStart(e, 'bottom')}
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-                setIsHovered(true);
-              }}
-              style={{ zIndex: 30 }}
-            >
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-gray-400" />
-            </div>
-            {/* Bottom-right corner - larger and more visible */}
-            <div
-              className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize group"
-              onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-                setIsHovered(true);
-              }}
-              style={{ zIndex: 35 }}
-            >
-              {/* Resize icon */}
-              <svg className="absolute bottom-0 right-0 w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4.646 11.646a.5.5 0 01.708 0L11 6v4.5a.5.5 0 001 0v-6a.5.5 0 00-.5-.5h-6a.5.5 0 000 1H10L4.354 10.646a.5.5 0 000 .708z"/>
-                <path d="M11.354 12.354L8 9v2.5a.5.5 0 001 0V10l2.354 2.354a.25.25 0 00.354-.354z"/>
-                <path d="M14.354 15.354L11 12v2.5a.5.5 0 001 0V13l2.354 2.354a.25.25 0 00.354-.354z"/>
-              </svg>
-            </div>
-          </>
+          <div
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize group"
+            onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
+            onMouseEnter={(e) => {
+              e.stopPropagation();
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+              }
+              setIsHovered(true);
+            }}
+            style={{ zIndex: 35 }}
+          >
+            {/* Resize icon */}
+            <svg className="absolute bottom-0 right-0 w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M4.646 11.646a.5.5 0 01.708 0L11 6v4.5a.5.5 0 001 0v-6a.5.5 0 00-.5-.5h-6a.5.5 0 000 1H10L4.354 10.646a.5.5 0 000 .708z"/>
+              <path d="M11.354 12.354L8 9v2.5a.5.5 0 001 0V10l2.354 2.354a.25.25 0 00.354-.354z"/>
+              <path d="M14.354 15.354L11 12v2.5a.5.5 0 001 0V13l2.354 2.354a.25.25 0 00.354-.354z"/>
+            </svg>
+          </div>
         )}
       </div>
     </div>
@@ -2790,6 +2757,32 @@ export default function CartSlotsEditorWithMicroSlots({
               buttonCode = buttonCode.replace(/px-\d+ py-\d+/, 'px-6 py-3 text-lg');
             }
             
+            // Apply styles and classes to the button
+            const styles = elementStyles[slotId] || {};
+            const classes = elementClasses[slotId] || '';
+            
+            // Apply inline styles to the button
+            if (Object.keys(styles).length > 0) {
+              const styleStr = Object.entries(styles)
+                .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+                .join('; ');
+              buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
+                if (attrs.includes('style=')) {
+                  return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
+                } else {
+                  return `<button${attrs} style="${styleStr}">`;
+                }
+              });
+            }
+            
+            // Apply rounded classes to the button
+            if (classes.includes('rounded')) {
+              buttonCode = buttonCode.replace(/rounded(-\w+)?/g, ''); // Remove existing rounded classes
+              buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
+                return `class="${existingClasses} ${classes}"`;
+              });
+            }
+            
             return (
               <MicroSlot 
                 key={slotId} 
@@ -2806,8 +2799,8 @@ export default function CartSlotsEditorWithMicroSlots({
                   <div className="relative group inline-block transition-all duration-200">
                     <div 
                       dangerouslySetInnerHTML={{ __html: buttonCode }}
-                      style={{ pointerEvents: 'none' }} // Disable all clicks in editor mode
-                      className="select-none transition-all duration-200" // Add transition for smooth resize
+                      style={{ pointerEvents: 'none' }}
+                      className="select-none transition-all duration-200"
                       title="Button is disabled in editor mode"
                     />
                     {/* Size indicator badge - always visible */}
@@ -3214,7 +3207,33 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'coupon.button') {
-                const buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['coupon.button'];
+                let buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['coupon.button'];
+                
+                // Apply styles and classes to the button
+                const styles = elementStyles[slotId] || {};
+                const classes = elementClasses[slotId] || '';
+                
+                // Apply inline styles to the button
+                if (Object.keys(styles).length > 0) {
+                  const styleStr = Object.entries(styles)
+                    .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+                    .join('; ');
+                  buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
+                    if (attrs.includes('style=')) {
+                      return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
+                    } else {
+                      return `<button${attrs} style="${styleStr}">`;
+                    }
+                  });
+                }
+                
+                // Apply rounded classes to the button
+                if (classes.includes('rounded')) {
+                  buttonCode = buttonCode.replace(/rounded(-\w+)?/g, ''); // Remove existing rounded classes
+                  buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
+                    return `class="${existingClasses} ${classes}"`;
+                  });
+                }
                 return (
                   <MicroSlot
                     key={slotId}
@@ -3225,6 +3244,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    elementStyles={elementStyles}
                   >
                     <div 
                       className="w-full pointer-events-none"
@@ -3270,7 +3290,33 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'coupon.removeButton') {
-                const buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['coupon.removeButton'];
+                let buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['coupon.removeButton'];
+                
+                // Apply styles and classes to the button
+                const styles = elementStyles[slotId] || {};
+                const classes = elementClasses[slotId] || '';
+                
+                // Apply inline styles to the button
+                if (Object.keys(styles).length > 0) {
+                  const styleStr = Object.entries(styles)
+                    .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+                    .join('; ');
+                  buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
+                    if (attrs.includes('style=')) {
+                      return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
+                    } else {
+                      return `<button${attrs} style="${styleStr}">`;
+                    }
+                  });
+                }
+                
+                // Apply rounded classes to the button
+                if (classes.includes('rounded')) {
+                  buttonCode = buttonCode.replace(/rounded(-\w+)?/g, ''); // Remove existing rounded classes
+                  buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
+                    return `class="${existingClasses} ${classes}"`;
+                  });
+                }
                 return (
                   <MicroSlot
                     key={slotId}
@@ -3281,6 +3327,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    elementStyles={elementStyles}
                   >
                     <div 
                       className="flex items-center justify-center h-full pointer-events-none"
