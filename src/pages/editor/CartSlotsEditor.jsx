@@ -1953,6 +1953,8 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('📤 Sending UPDATE to database with payload:', payload);
           console.log('📤 Config elementClasses:', config.elementClasses);
           console.log('📤 Config slotContent:', config.slotContent);
+          console.log('📤 Config customSlots:', config.customSlots);
+          console.log('📤 Full configuration being saved:', JSON.stringify(config, null, 2));
           const updateResponse = await apiClient.put(`slot-configurations/${configId}`, payload);
           console.log('✅ Updated in database:', updateResponse);
           console.log('✅ Response data:', updateResponse?.data);
@@ -1968,6 +1970,8 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('📤 Sending CREATE to database with payload:', payload);
           console.log('📤 Config elementClasses:', config.elementClasses);
           console.log('📤 Config slotContent:', config.slotContent);
+          console.log('📤 Config customSlots:', config.customSlots);
+          console.log('📤 Full configuration being saved:', JSON.stringify(config, null, 2));
           const createResponse = await apiClient.post('slot-configurations', payload);
           console.log('✅ Created in database:', createResponse);
           console.log('✅ Response data:', createResponse?.data);
@@ -2160,6 +2164,7 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('🎨 Loaded elementStyles:', config.elementStyles);
           console.log('📏 Loaded componentSizes:', config.componentSizes);
           console.log('🔧 Loaded customSlots:', config.customSlots);
+          console.log('📥 Full configuration loaded:', JSON.stringify(config, null, 2));
           
           // Verify the data types
           console.log('Type check - elementClasses is:', typeof config.elementClasses, config.elementClasses);
@@ -2753,6 +2758,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
                     />
+                    )}
                   </div>
                 </div>
               </MicroSlot>
