@@ -142,53 +142,6 @@ export const ConfigurationPreviewPropTypes = {
 };
 
 /**
- * Props interface for SlotsWorkspace
- */
-export const SlotsWorkspacePropTypes = {
-  /** Component to configure */
-  componentName: {
-    type: 'string',
-    required: true,
-    description: 'Name of the component to configure'
-  },
-  
-  /** User ID for configuration persistence */
-  userId: {
-    type: 'string',
-    required: true,
-    description: 'User ID for saving configurations'
-  },
-  
-  /** Store ID for configuration context */
-  storeId: {
-    type: 'string',
-    required: true,
-    description: 'Store ID for configuration context'
-  },
-  
-  /** Initial user configuration */
-  initialUserConfig: {
-    type: 'object',
-    required: false,
-    description: 'Initial user configuration to load'
-  },
-  
-  /** Save callback */
-  onSave: {
-    type: 'function',
-    required: false,
-    description: 'Callback fired when configuration is saved'
-  },
-  
-  /** Cancel callback */
-  onCancel: {
-    type: 'function',
-    required: false,
-    description: 'Callback fired when editing is cancelled'
-  }
-};
-
-/**
  * JSON Schema for slot configuration validation
  */
 export const SlotConfigurationJSONSchema = {
