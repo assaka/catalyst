@@ -120,11 +120,13 @@ export default function UnifiedSlotEditor({
       
       if (storeId) {
         config = await SlotStorage.loadFromDatabase(pageType, storeId);
+        console.log('Loaded from database:', config);
       }
       
       // Fallback to localStorage
       if (!config) {
         config = SlotStorage.load(pageType);
+        console.log('Loaded from localStorage:', config);
       }
       
       const loadedPageConfig = getPageConfig(pageType);
@@ -133,9 +135,16 @@ export default function UnifiedSlotEditor({
       
       // Initialize slot order
       if (config?.majorSlots) {
+        console.log('Setting slot order from config:', config.majorSlots);
         setSlotOrder(config.majorSlots);
       } else if (loadedPageConfig?.defaultSlots) {
+        console.log('Setting slot order from defaults:', loadedPageConfig.defaultSlots);
         setSlotOrder(loadedPageConfig.defaultSlots);
+      }
+      
+      // Load any saved slot content
+      if (config?.slotContent) {
+        setSlotContent(config.slotContent);
       }
       
       // Set code content for code mode
@@ -187,18 +196,21 @@ export default function UnifiedSlotEditor({
   const handleDragEnd = (event) => {
     const { active, over } = event;
     
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       setSlotOrder((items) => {
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
         const newOrder = arrayMove(items, oldIndex, newIndex);
         
-        // Save the new order
-        const updatedConfig = {
-          ...slotConfig,
-          majorSlots: newOrder
-        };
-        handleSave(updatedConfig);
+        // Only save for non-cart pages (cart pages handle their own saving)
+        if (pageType !== 'cart') {
+          const updatedConfig = {
+            ...(slotConfig || {}),
+            majorSlots: newOrder,
+            slotContent: slotContent
+          };
+          handleSave(updatedConfig);
+        }
         
         return newOrder;
       });
@@ -268,7 +280,11 @@ export default function UnifiedSlotEditor({
                   {/* Edit button for editor mode */}
                   {mode === 'editor' && (
                     <button
-                      onClick={() => setActiveSlot(slotId)}
+                      onClick={() => {
+                        setActiveSlot(slotId);
+                        // TODO: Open edit dialog for slot content
+                        console.log('Edit slot:', slotId);
+                      }}
                       className="absolute top-2 right-2 p-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
                     >
                       <Edit className="w-4 h-4" />

@@ -883,7 +883,7 @@ function RichTextEditor({ content, onSave, onCancel }) {
 }
 
 // Simplified Inline Edit with Tailwind styles
-function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange, style = {} }) {
+function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange, style = {}, mode = 'edit' }) {
   const [showEditor, setShowEditor] = useState(false);
   
   // Check if text contains HTML
@@ -893,24 +893,23 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
     <>
       <div 
         onClick={() => {
-          // Only open TailwindStyleEditor for plain text
-          // For HTML content, user should use the pencil icon
-          if (!hasHtml) {
+          // Only allow editing in edit mode
+          if (mode === 'edit' && !hasHtml) {
             setShowEditor(true);
           }
         }}
-        className={`cursor-pointer hover:ring-1 hover:ring-gray-300 px-1 rounded inline-block ${className}`}
-        title={hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style"}
-        style={hasHtml ? { cursor: 'default', ...style } : style}
+        className={`${mode === 'edit' ? 'cursor-pointer hover:ring-1 hover:ring-gray-300' : ''} px-1 rounded inline-block ${className}`}
+        title={mode === 'edit' ? (hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style") : ""}
+        style={hasHtml || mode === 'preview' ? { cursor: 'default', ...style } : style}
       >
         {hasHtml ? (
           <div dangerouslySetInnerHTML={{ __html: text }} />
         ) : (
-          text || <span className="text-gray-400">Click to edit...</span>
+          text || (mode === 'edit' ? <span className="text-gray-400">Click to edit...</span> : '')
         )}
       </div>
       
-      {showEditor && !hasHtml && (
+      {showEditor && !hasHtml && mode === 'edit' && (
         <TailwindStyleEditor
           text={text}
           className={className}
