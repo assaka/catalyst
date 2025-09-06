@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor';
-import { getPageConfig } from '@/components/editor/slot/page-configs';
+import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor';
+import { getPageConfig } from '@/components/editor/slot/configs/index';
 
 // Category-specific slot components
 function CategoryHeaderSlot({ data, content }) {
@@ -161,11 +161,9 @@ export default function CategorySlotEditor({ data = {}, onSave, mode = 'editor' 
   
   return (
     <div className="category-slot-editor">
-      <GenericSlotEditor
-        pageType="category"
-        pageConfig={categoryPageConfig}
+      <UnifiedSlotEditor
+        pageName="Category"
         data={sampleData}
-        mode={mode}
         onSave={onSave}
         className="max-w-7xl mx-auto px-4"
       />

@@ -45,8 +45,11 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { Underline } from '@tiptap/extension-underline';
 import { FontFamily } from '@tiptap/extension-font-family';
 
-// Micro-slot definitions for each major slot
-const MICRO_SLOT_DEFINITIONS = {
+// Import micro-slot definitions from new config structure
+import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
+
+// Get cart-specific micro-slot definitions
+const MICRO_SLOT_DEFINITIONS = getMicroSlotDefinitions('cart') || {
   flashMessage: {
     id: 'flashMessage',
     name: 'Flash Message',
@@ -1700,10 +1703,12 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </button>
       )}
 
-      {/* Section label */}
-      <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
-        {name}
-      </div>
+      {/* Section label - only in edit mode */}
+      {mode === 'edit' && (
+        <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
+          {name}
+        </div>
+      )}
 
       {/* Micro-slots container */}
       <div 

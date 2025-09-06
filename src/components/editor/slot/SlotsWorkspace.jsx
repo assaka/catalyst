@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 // Import slot editor components
-import GenericSlotEditor from './GenericSlotEditor.jsx';
+import UnifiedSlotEditor from './UnifiedSlotEditor.jsx';
 
 const SlotsWorkspace = ({
   componentName = 'ProductCard',
@@ -44,10 +44,10 @@ const SlotsWorkspace = ({
   return (
     <div className={`slots-workspace ${className}`}>
       {/* Direct slot editor - no redundant tabs or headers */}
-      <GenericSlotEditor
+      <UnifiedSlotEditor
         pageName={componentName}
+        onClose={onCancel}
         onSave={handleSlotSave}
-        onCancel={onCancel}
       />
 
       {/* Exit confirmation dialog */}

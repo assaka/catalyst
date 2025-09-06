@@ -27,8 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
-import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor';
-import { getPageConfig } from '@/components/editor/slot/page-configs';
+import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor';
+import { getPageConfig } from '@/components/editor/slot/configs/index';
 
 const getSessionId = () => {
   let sid = localStorage.getItem('cart_session_id');
@@ -846,17 +846,14 @@ export default function Cart() {
         getExternalStoreUrl
     };
     
-    // If custom layout configuration exists and not in layout loading state, use GenericSlotEditor
+    // If custom layout configuration exists and not in layout loading state, use UnifiedSlotEditor  
     if (cartLayoutConfig && !layoutLoading) {
-        console.log('Using GenericSlotEditor with custom layout configuration');
-        const cartPageConfig = getPageConfig('cart');
+        console.log('Using UnifiedSlotEditor for storefront display');
         return (
-            <GenericSlotEditor
-                pageType="cart"
-                pageConfig={cartPageConfig}
-                data={cartSlotsData}
+            <UnifiedSlotEditor
+                pageName="Cart"
                 mode="display"
-                className="cart-page"
+                data={cartSlotsData}
             />
         );
     }

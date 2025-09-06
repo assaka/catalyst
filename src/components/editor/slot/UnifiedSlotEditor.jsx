@@ -6,8 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import GenericSlotEditor from '@/components/editor/slot/GenericSlotEditor';
-import { getPageConfig } from '@/components/editor/slot/page-configs';
+import { getPageConfig, getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
 import { SlotStorage } from '@/components/editor/slot/slot-utils';
 import Editor from "@monaco-editor/react";
 import {
@@ -20,10 +19,31 @@ import {
   FileText,
   Save,
   Download,
-  Upload
+  Upload,
+  GripVertical,
+  Edit,
+  Plus
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-// Import page-specific editors
+// Import specialized editors for advanced features
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 
 export default function UnifiedSlotEditor({
@@ -38,6 +58,9 @@ export default function UnifiedSlotEditor({
   const [slotConfig, setSlotConfig] = useState(null);
   const [codeContent, setCodeContent] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Simple slot state for non-cart pages
+  const [slotContent, setSlotContent] = useState({});
   
   // Map old page names to new page types
   const pageTypeMap = {
@@ -162,10 +185,11 @@ export default function UnifiedSlotEditor({
     return {};
   };
   
-  // Render the editor
+  // Render the editor - unified for all page types
   const renderEditor = () => {
-    if (pageType === 'cart') {
-      // Use the full CartSlotsEditor which has all the interactive features
+    // For cart pages with advanced features, delegate to CartSlotsEditor temporarily
+    // TODO: Move CartSlotsEditor logic here to make truly unified
+    if (pageType === 'cart' && pageConfig?.microSlotDefinitions) {
       return (
         <div className="h-full">
           <CartSlotsEditor mode="edit" onSave={handleSave} />
@@ -173,21 +197,14 @@ export default function UnifiedSlotEditor({
       );
     }
     
-    return (
-      <GenericSlotEditor
-        pageType={pageType}
-        pageConfig={pageConfig}
-        data={getSampleData()}
-        mode="editor"
-        onSave={handleSave}
-        className="p-4"
-      />
-    );
+    // For all other pages, render simple slots directly here
+    return renderSimpleSlots('editor');
   };
   
   const renderPreview = () => {
-    if (pageType === 'cart') {
-      // Use the full CartSlotsEditor in preview mode (read-only)
+    // For cart pages with advanced features, delegate to CartSlotsEditor temporarily  
+    // TODO: Move CartSlotsEditor logic here to make truly unified
+    if (pageType === 'cart' && pageConfig?.microSlotDefinitions) {
       return (
         <div className="h-full">
           <CartSlotsEditor mode="preview" />
@@ -195,14 +212,49 @@ export default function UnifiedSlotEditor({
       );
     }
     
+    // For all other pages, render simple slots directly here
+    return renderSimpleSlots('display');
+  };
+
+  // Simple slot rendering - will eventually handle both simple and advanced cases
+  const renderSimpleSlots = (mode) => {
+    // This is a simplified implementation
+    // TODO: Add full micro-slot support here to make truly unified
+    
+    const slotIds = pageConfig?.defaultSlots || [];
+    
     return (
-      <GenericSlotEditor
-        pageType={pageType}
-        pageConfig={pageConfig}
-        data={getSampleData()}
-        mode="display"
-        className="p-4"
-      />
+      <div className={`unified-slots ${mode} p-4`}>
+        <div className="space-y-6">
+          {slotIds.map(slotId => {
+            const slotConfig = pageConfig?.slots?.[slotId];
+            const content = slotContent[slotId] || slotConfig?.defaultContent || `<div class="p-4 border rounded">${slotConfig?.name || slotId}</div>`;
+            
+            return (
+              <div key={slotId} className={`slot-container relative ${mode === 'editor' ? 'border-2 border-dashed border-gray-300 rounded-lg p-4' : ''}`}>
+                {mode === 'editor' && (
+                  <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
+                    {slotConfig?.name || slotId}
+                  </div>
+                )}
+                
+                <div dangerouslySetInnerHTML={{ __html: content }} />
+                
+                {/* CMS blocks */}
+                {pageConfig?.cmsBlocks?.map(cmsBlock => 
+                  cmsBlock.includes(slotId) && (
+                    <CmsBlockRenderer 
+                      key={cmsBlock}
+                      position={cmsBlock} 
+                      storeId={localStorage.getItem('selectedStoreId')} 
+                    />
+                  )
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     );
   };
   
