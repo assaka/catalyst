@@ -106,6 +106,39 @@ export default function Cart() {
     // State for cart layout configuration
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
     
+    // Load cart layout configuration directly
+    useEffect(() => {
+        const loadCartLayoutConfig = async () => {
+            if (!store?.id) return;
+            
+            try {
+                // For now, load configuration directly using a simple API call
+                // This bypasses the cart API issue until backend is fixed
+                const { SlotConfiguration } = await import('@/api/entities');
+                
+                const configurations = await SlotConfiguration.findAll({ 
+                    store_id: store.id, 
+                    is_active: true 
+                });
+                
+                // Find Cart configuration
+                const cartConfig = configurations.find(config => {
+                    const conf = config.configuration || {};
+                    return conf.page_name === 'Cart' && conf.slot_type === 'cart_layout';
+                });
+                
+                if (cartConfig) {
+                    setCartLayoutConfig(cartConfig.configuration);
+                    console.log('✅ Loaded cart layout configuration directly:', cartConfig.configuration);
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not load slot configuration:', error);
+            }
+        };
+        
+        loadCartLayoutConfig();
+    }, [store?.id]);
+    
     // Initialize customization system for Cart component
     const {
         isInitialized: customizationsInitialized,
@@ -260,11 +293,6 @@ export default function Cart() {
                 cartItems = cartResult.items;
             }
 
-            // Extract slot configuration from cart result
-            if (cartResult.success && cartResult.data && cartResult.data.slotConfiguration) {
-                setCartLayoutConfig(cartResult.data.slotConfiguration);
-                console.log('✅ Loaded cart layout configuration:', cartResult.data.slotConfiguration);
-            }
 
             
             if (!cartItems || cartItems.length === 0) {
