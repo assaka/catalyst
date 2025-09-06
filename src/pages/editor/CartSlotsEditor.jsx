@@ -1558,6 +1558,15 @@ function SortableParentSlot(props) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // In preview mode, don't apply sortable functionality
+  if (props.mode === 'preview') {
+    return (
+      <div>
+        <ParentSlot {...props} />
+      </div>
+    );
+  }
+
   return (
     <div ref={setNodeRef} style={style}>
       <ParentSlot 
@@ -1699,13 +1708,19 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       <div 
         className={`border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'} rounded-lg p-4 bg-white relative z-1 transition-colors`}
       >
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
-          <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {children}
-            </div>
-          </SortableContext>
-        </DndContext>
+        {mode === 'edit' ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
+            <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                {children}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="grid grid-cols-12 gap-2 auto-rows-min">
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3896,10 +3911,11 @@ export default function CartSlotsEditorWithMicroSlots({
           keywords="cart, editor, empty-state"
         />
 
-        {/* White header bar with controls */}
-        <div className="bg-white border-b shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-            <div className="border-b p-3 flex justify-end gap-2">
+        {/* White header bar with controls - only show in edit mode */}
+        {mode === 'edit' && (
+          <div className="bg-white border-b shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
+              <div className="border-b p-3 flex justify-end gap-2">
               <button
                 onClick={() => setViewMode('empty')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
@@ -3930,9 +3946,10 @@ export default function CartSlotsEditorWithMicroSlots({
                 <RefreshCw className="w-4 h-4" />
                 Reset Layout
               </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
