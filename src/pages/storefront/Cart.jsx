@@ -806,14 +806,21 @@ export default function Cart() {
     }, [loading, cartItems, subtotal, discount, tax, total, cartContext]);
 
 
+    // Debug loading states
+    console.log('🔍 Cart loading states:', { loading, storeLoading, store: !!store });
+    console.log('🔍 Cart items:', cartItems?.length || 0);
+    
     // Wait for both store data and cart data to load
     if (loading || storeLoading) {
+        console.log('🔄 Cart component is loading - showing spinner');
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
     }
+    
+    console.log('✅ Cart component loaded - proceeding to render');
     
     // Prepare data object for CartSlots component
     const cartSlotsData = {

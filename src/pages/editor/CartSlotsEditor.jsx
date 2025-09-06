@@ -1908,29 +1908,22 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('🔧 Saved customSlots:', config.customSlots);
     console.log('📊 Configuration size:', (configString.length / 1024).toFixed(2) + ' KB');
     
-    // Try to save to database
+    // Try to save to database using SlotConfiguration entity directly (backend API is down)
     try {
       const storeId = localStorage.getItem('selectedStoreId');
       if (storeId) {
-        // Import apiClient dynamically
-        const { default: apiClient } = await import('@/api/client');
-        
-        // Check if configuration exists
-        // Note: The backend filters by page_name and slot_type that are INSIDE the configuration JSON
-        const queryParams = new URLSearchParams({
-          store_id: storeId
-        }).toString();
+        // Import SlotConfiguration entity directly
+        const { SlotConfiguration } = await import('@/api/entities');
         
         console.log('🔍 Checking for existing configuration with store_id:', storeId);
-        const response = await apiClient.get(`slot-configurations?${queryParams}`);
         
-        console.log('🔍 API Response:', response);
-        console.log('🔍 Response data:', response?.data);
-        console.log('🔍 Found configurations:', response?.data?.length || response?.data?.data?.length);
+        // Get existing configurations
+        const configurations = await SlotConfiguration.findAll({ 
+          store_id: storeId, 
+          is_active: true 
+        });
         
-        // Handle both response formats (response.data might be the array directly)
-        const configurations = Array.isArray(response?.data) ? response.data : response?.data?.data;
-        console.log('🔍 Configurations array:', configurations);
+        console.log('🔍 Found configurations:', configurations?.length);
         
         // Find the Cart configuration specifically
         const cartConfig = configurations?.find(cfg => {
@@ -1947,40 +1940,23 @@ export default function CartSlotsEditorWithMicroSlots({
           // Update existing configuration
           const configId = cartConfig.id;
           console.log('📝 Updating existing configuration with ID:', configId);
-          const payload = {
-            page_name: 'Cart',
-            page_type: 'cart',
-            slot_type: 'cart_layout',
-            store_id: storeId,
+          const updateData = {
             configuration: config,
             is_active: true
           };
-          console.log('📤 Sending UPDATE to database with payload:', payload);
-          console.log('📤 Config elementClasses:', config.elementClasses);
-          console.log('📤 Config slotContent:', config.slotContent);
-          console.log('📤 Config customSlots:', config.customSlots);
-          console.log('📤 Full configuration being saved:', JSON.stringify(config, null, 2));
-          const updateResponse = await apiClient.put(`slot-configurations/${configId}`, payload);
+          console.log('📤 Updating database with config:', JSON.stringify(config, null, 2));
+          const updateResponse = await SlotConfiguration.update(configId, updateData);
           console.log('✅ Updated in database:', updateResponse);
-          console.log('✅ Response data:', updateResponse?.data);
         } else {
           // Create new configuration
-          const payload = {
-            page_name: 'Cart',
-            page_type: 'cart',
-            slot_type: 'cart_layout',
+          const createData = {
             store_id: storeId,
             configuration: config,
             is_active: true
           };
-          console.log('📤 Sending CREATE to database with payload:', payload);
-          console.log('📤 Config elementClasses:', config.elementClasses);
-          console.log('📤 Config slotContent:', config.slotContent);
-          console.log('📤 Config customSlots:', config.customSlots);
-          console.log('📤 Full configuration being saved:', JSON.stringify(config, null, 2));
-          const createResponse = await apiClient.post('slot-configurations', payload);
+          console.log('📤 Creating new configuration in database:', JSON.stringify(config, null, 2));
+          const createResponse = await SlotConfiguration.create(createData);
           console.log('✅ Created in database:', createResponse);
-          console.log('✅ Response data:', createResponse?.data);
         }
       }
       
@@ -2145,15 +2121,18 @@ export default function CartSlotsEditorWithMicroSlots({
           store_id: storeId
         }).toString();
         
-        // Import apiClient dynamically to avoid circular dependencies
-        const { default: apiClient } = await import('@/api/client');
-        const response = await apiClient.get(`slot-configurations?${queryParams}`);
+        // Import SlotConfiguration entity directly (backend API is down)
+        const { SlotConfiguration } = await import('@/api/entities');
         
-        console.log('📥 Load API Response:', response);
-        console.log('📥 Load Response data:', response?.data);
+        console.log('📥 Loading configurations from database...');
         
-        // Handle both response formats (response.data might be the array directly)
-        const configurations = Array.isArray(response?.data) ? response.data : response?.data?.data;
+        // Get existing configurations
+        const configurations = await SlotConfiguration.findAll({ 
+          store_id: storeId, 
+          is_active: true 
+        });
+        
+        console.log('📥 Load Response data:', configurations);
         console.log('📥 Load Configurations array:', configurations);
         
         // Find the Cart configuration specifically
@@ -4309,16 +4288,24 @@ export default function CartSlotsEditorWithMicroSlots({
                     store_id: storeId
                   }).toString();
                   
-                  // Import apiClient
-                  const { default: apiClient } = await import('@/api/client');
+                  // Import SlotConfiguration entity directly (backend API is down)
+                  const { SlotConfiguration } = await import('@/api/entities');
                   
-                  // Get existing configuration
-                  const response = await apiClient.get(`slot-configurations?${queryParams}`);
-                  const existingConfig = response?.data?.[0] || response?.[0];
+                  // Get existing configurations
+                  const configurations = await SlotConfiguration.findAll({ 
+                    store_id: storeId, 
+                    is_active: true 
+                  });
+                  
+                  // Find the Cart configuration specifically
+                  const existingConfig = configurations?.find(cfg => 
+                    cfg.configuration?.page_name === 'Cart' && 
+                    cfg.configuration?.slot_type === 'cart_layout'
+                  );
                   
                   if (existingConfig?.id) {
                     // Delete the configuration from database
-                    await apiClient.delete(`slot-configurations/${existingConfig.id}`);
+                    await SlotConfiguration.delete(existingConfig.id);
                     console.log('✅ Deleted configuration from database');
                   }
                   
