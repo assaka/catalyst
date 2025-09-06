@@ -43,6 +43,44 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
+// Dynamically import CartSlotsEditor for cart pages
+const CartSlotsEditor = React.lazy(() => import('@/pages/editor/CartSlotsEditor'));
+
+// Sortable Slot Component
+function SortableSlot({ id, children, mode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id,
+    disabled: mode !== 'editor'
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      {mode === 'editor' && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute left-2 top-1/2 -translate-y-1/2 cursor-move z-10 p-1 bg-gray-100 rounded hover:bg-gray-200"
+        >
+          <GripVertical className="w-4 h-4 text-gray-600" />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
 
 export default function UnifiedSlotEditor({
   pageName,
@@ -55,11 +93,23 @@ export default function UnifiedSlotEditor({
   const [slotConfig, setSlotConfig] = useState(null);
   const [codeContent, setCodeContent] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [activeSlot, setActiveSlot] = useState(null);
+  const [draggedSlot, setDraggedSlot] = useState(null);
   
-  // Simple slot state for non-cart pages
+  // Slot content and order state
   const [slotContent, setSlotContent] = useState({});
+  const [slotOrder, setSlotOrder] = useState([]);
   
   const pageType = pageName.toLowerCase();
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
   
   // Load configuration on mount
   useEffect(() => {
@@ -77,8 +127,16 @@ export default function UnifiedSlotEditor({
         config = SlotStorage.load(pageType);
       }
       
+      const loadedPageConfig = getPageConfig(pageType);
       setSlotConfig(config);
-      setPageConfig(getPageConfig(pageType));
+      setPageConfig(loadedPageConfig);
+      
+      // Initialize slot order
+      if (config?.majorSlots) {
+        setSlotOrder(config.majorSlots);
+      } else if (loadedPageConfig?.defaultSlots) {
+        setSlotOrder(loadedPageConfig.defaultSlots);
+      }
       
       // Set code content for code mode
       if (config) {
@@ -119,55 +177,146 @@ export default function UnifiedSlotEditor({
     }
   }, [codeContent, handleSave]);
   
+  // Handle drag start
+  const handleDragStart = (event) => {
+    const { active } = event;
+    setDraggedSlot(active.id);
+  };
+
+  // Handle drag end
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over.id) {
+      setSlotOrder((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Save the new order
+        const updatedConfig = {
+          ...slotConfig,
+          majorSlots: newOrder
+        };
+        handleSave(updatedConfig);
+        
+        return newOrder;
+      });
+    }
+    
+    setDraggedSlot(null);
+  };
+  
   // Render the editor - unified for all page types
   const renderEditor = () => {
+    // For cart pages with micro-slots, use specialized editor
+    if (pageType === 'cart' && getMicroSlotDefinitions('cart')) {
+      return (
+        <React.Suspense fallback={<div className="p-4">Loading cart editor...</div>}>
+          <CartSlotsEditor 
+            mode="edit" 
+            onSave={handleSave}
+            data={slotConfig}
+          />
+        </React.Suspense>
+      );
+    }
     return renderSlots('editor');
   };
   
   const renderPreview = () => {
+    // For cart pages with micro-slots, use specialized editor
+    if (pageType === 'cart' && getMicroSlotDefinitions('cart')) {
+      return (
+        <React.Suspense fallback={<div className="p-4">Loading cart preview...</div>}>
+          <CartSlotsEditor 
+            mode="preview"
+            data={slotConfig}
+          />
+        </React.Suspense>
+      );
+    }
     return renderSlots('display');
   };
 
   // Slot rendering - handles all page types uniformly
   const renderSlots = (mode) => {
-    // This is a simplified implementation
-    // TODO: Add full micro-slot support here to make truly unified
+    const slotIds = slotOrder.length > 0 ? slotOrder : (pageConfig?.defaultSlots || []);
     
-    const slotIds = pageConfig?.defaultSlots || [];
-    
-    return (
+    const content = (
       <div className={`unified-slots ${mode} p-4`}>
-        <div className="space-y-6">
+        <div className="space-y-4">
           {slotIds.map(slotId => {
-            const slotConfig = pageConfig?.slots?.[slotId];
-            const content = slotContent[slotId] || slotConfig?.defaultContent || `<div class="p-4 border rounded">${slotConfig?.name || slotId}</div>`;
+            const slotData = pageConfig?.slots?.[slotId];
+            const slotHtml = slotContent[slotId] || slotData?.defaultContent || 
+              `<div class="p-4 border rounded">${slotData?.name || slotId}</div>`;
             
             return (
-              <div key={slotId} className={`slot-container relative ${mode === 'editor' ? 'border-2 border-dashed border-gray-300 rounded-lg p-4' : ''}`}>
-                {mode === 'editor' && (
-                  <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
-                    {slotConfig?.name || slotId}
-                  </div>
-                )}
-                
-                <div dangerouslySetInnerHTML={{ __html: content }} />
-                
-                {/* CMS blocks */}
-                {pageConfig?.cmsBlocks?.map(cmsBlock => 
-                  cmsBlock.includes(slotId) && (
-                    <CmsBlockRenderer 
-                      key={cmsBlock}
-                      position={cmsBlock} 
-                      storeId={localStorage.getItem('selectedStoreId')} 
-                    />
-                  )
-                )}
-              </div>
+              <SortableSlot key={slotId} id={slotId} mode={mode}>
+                <div className={`slot-container relative ${mode === 'editor' ? 'border-2 border-dashed border-gray-300 rounded-lg p-4 pl-12 hover:border-blue-400' : ''}`}>
+                  {mode === 'editor' && (
+                    <div className="absolute -top-3 left-12 px-2 bg-white text-xs font-medium text-gray-500">
+                      {slotData?.name || slotId}
+                    </div>
+                  )}
+                  
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: slotHtml }}
+                    className={mode === 'editor' ? 'pointer-events-none' : ''}
+                  />
+                  
+                  {/* Edit button for editor mode */}
+                  {mode === 'editor' && (
+                    <button
+                      onClick={() => setActiveSlot(slotId)}
+                      className="absolute top-2 right-2 p-1.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+                  
+                  {/* CMS blocks */}
+                  {pageConfig?.cmsBlocks?.map(cmsBlock => 
+                    cmsBlock.includes(slotId) && (
+                      <CmsBlockRenderer 
+                        key={cmsBlock}
+                        position={cmsBlock} 
+                        storeId={localStorage.getItem('selectedStoreId')} 
+                      />
+                    )
+                  )}
+                </div>
+              </SortableSlot>
             );
           })}
         </div>
       </div>
     );
+
+    // Wrap in DndContext for editor mode
+    if (mode === 'editor') {
+      return (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={slotIds} strategy={verticalListSortingStrategy}>
+            {content}
+          </SortableContext>
+          <DragOverlay>
+            {draggedSlot ? (
+              <div className="bg-blue-100 border-2 border-blue-400 rounded-lg p-4 opacity-80">
+                {pageConfig?.slots?.[draggedSlot]?.name || draggedSlot}
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      );
+    }
+
+    return content;
   };
   
   return (

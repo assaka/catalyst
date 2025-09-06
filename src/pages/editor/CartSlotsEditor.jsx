@@ -3947,8 +3947,8 @@ export default function CartSlotsEditorWithMicroSlots({
           keywords="cart, editor, empty-state"
         />
 
-        {/* White header bar with controls - only show in edit mode */}
-        {mode === 'edit' && (
+        {/* White header bar with controls - show in both edit and preview modes */}
+        {(mode === 'edit' || mode === 'preview') && (
           <div className="bg-white border-b shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
               <div className="border-b p-3 flex justify-end gap-2">
@@ -3974,14 +3974,18 @@ export default function CartSlotsEditorWithMicroSlots({
                 <Package className="w-4 h-4 inline mr-1.5" />
                 With Products
               </button>
-              <div className="border-l mx-2" />
-              <button
-                onClick={() => setShowResetModal(true)}
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Reset Layout
-              </button>
+              {mode === 'edit' && (
+                <>
+                  <div className="border-l mx-2" />
+                  <button
+                    onClick={() => setShowResetModal(true)}
+                    className="px-3 py-1.5 rounded-md text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reset Layout
+                  </button>
+                </>
+              )}
               </div>
             </div>
           </div>
