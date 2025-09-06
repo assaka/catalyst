@@ -27,7 +27,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
-import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor';
 import { getPageConfig } from '@/components/editor/slot/configs/index';
 
 const getSessionId = () => {
@@ -845,6 +844,103 @@ export default function Cart() {
     
     console.log('✅ Cart component loaded - proceeding to render');
     
+    // Helper function to render a single slot (custom or standard) with ALL editor customizations
+    const renderSlot = (slotId, parentSlot) => {
+        // Handle custom slots
+        if (slotId.includes('.custom_')) {
+            const customSlot = cartLayoutConfig?.customSlots?.[slotId];
+            const slotContent = cartLayoutConfig?.slotContent?.[slotId] || customSlot?.content || '';
+            
+            if (!customSlot) return null;
+            
+            // Get all editor customizations
+            const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
+            const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
+            const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
+            
+            // Container styles with positioning and spacing
+            const containerStyle = {
+                ...elementStyles,
+                gridColumn: `span ${microSlotSpans.col || 12}`,
+                gridRow: `span ${microSlotSpans.row || 1}`
+            };
+            
+            if (customSlot.type === 'text') {
+                return (
+                    <div 
+                        key={slotId} 
+                        className="custom-slot text-slot"
+                        style={containerStyle}
+                    >
+                        <div 
+                            className={elementClasses || 'text-gray-600'}
+                            style={elementStyles}
+                        >
+                            {slotContent}
+                        </div>
+                    </div>
+                );
+            } else if (customSlot.type === 'html') {
+                return (
+                    <div 
+                        key={slotId} 
+                        className="custom-slot html-slot"
+                        style={containerStyle}
+                    >
+                        <div 
+                            className={elementClasses}
+                            style={elementStyles}
+                            dangerouslySetInnerHTML={{ __html: slotContent }} 
+                        />
+                    </div>
+                );
+            } else if (customSlot.type === 'javascript') {
+                return (
+                    <div 
+                        key={slotId} 
+                        className="custom-slot js-slot"
+                        style={containerStyle}
+                    >
+                        <div 
+                            className={elementClasses}
+                            style={elementStyles}
+                            dangerouslySetInnerHTML={{ __html: slotContent }} 
+                        />
+                    </div>
+                );
+            }
+        }
+        
+        return null; // Standard slots will be handled by the normal cart rendering
+    };
+    
+    // Helper function to render ALL slots in a section (mixing custom and standard slots dynamically)
+    const renderSectionSlots = (parentSlot) => {
+        if (!cartLayoutConfig?.microSlotOrders?.[parentSlot]) return null;
+        
+        const microSlotOrder = cartLayoutConfig.microSlotOrders[parentSlot] || [];
+        const slots = [];
+        
+        microSlotOrder.forEach(slotId => {
+            if (slotId.includes('.custom_')) {
+                // Render custom slots
+                const slot = renderSlot(slotId, parentSlot);
+                if (slot) slots.push(slot);
+            }
+            // Standard slots are handled by normal cart rendering, 
+            // but we could extend this to handle them too for full dynamic layout
+        });
+        
+        if (slots.length === 0) return null;
+        
+        // Render in a grid if there are multiple slots
+        return (
+            <div className={`section-slots ${parentSlot}-slots ${slots.length > 1 ? 'grid grid-cols-12 gap-2 mb-4' : 'mb-4'}`}>
+                {slots}
+            </div>
+        );
+    };
+    
     // Prepare data object for CartSlots component
     const cartSlotsData = {
         store,
@@ -879,21 +975,68 @@ export default function Cart() {
         ...(cartLayoutConfig || {})
     };
     
-    // If custom layout configuration exists, use UnifiedSlotEditor  
-    if (cartLayoutConfig) {
-        console.log('Using UnifiedSlotEditor for storefront display');
-        console.log('🔧 cartSlotsData customSlots:', cartSlotsData.customSlots);
-        console.log('📐 cartSlotsData microSlotOrders:', cartSlotsData.microSlotOrders);
+    // Helper function to render custom slots with ALL editor customizations
+    const renderCustomSlot = (slotId, parentSlot) => {
+        if (!cartLayoutConfig?.customSlots?.[slotId]) return null;
+        
+        const customSlot = cartLayoutConfig.customSlots[slotId];
+        const slotContent = cartLayoutConfig.slotContent?.[slotId] || customSlot?.content || '';
+        
+        // Get all editor customizations
+        const elementClasses = cartLayoutConfig.elementClasses?.[slotId] || '';
+        const elementStyles = cartLayoutConfig.elementStyles?.[slotId] || {};
+        const microSlotSpans = cartLayoutConfig.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
+        
+        // Build container styles with positioning from editor
+        const containerStyle = {
+            ...elementStyles,
+            // Apply Tailwind grid classes for positioning
+            gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col || 12))}`,
+            gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`
+        };
+        
+        const renderContent = () => {
+            if (customSlot.type === 'text') {
+                return (
+                    <div 
+                        className={elementClasses || 'text-gray-600'}
+                        style={elementStyles}
+                    >
+                        {slotContent}
+                    </div>
+                );
+            } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
+                return (
+                    <div 
+                        className={elementClasses}
+                        style={elementStyles}
+                        dangerouslySetInnerHTML={{ __html: slotContent }} 
+                    />
+                );
+            }
+            return null;
+        };
+        
         return (
-            <UnifiedSlotEditor
-                pageName="Cart"
-                mode="display"
-                data={cartSlotsData}
-            />
+            <div 
+                key={slotId} 
+                className={`custom-slot ${customSlot.type}-slot`}
+                style={containerStyle}
+                data-slot-id={slotId}
+            >
+                {renderContent()}
+            </div>
         );
+    };
+
+    // Log custom slots if configuration exists
+    if (cartLayoutConfig) {
+        console.log('✅ Cart layout configuration found, using custom rendering system');
+        console.log('🔧 Available customSlots:', cartLayoutConfig.customSlots);
+        console.log('📐 MicroSlotOrders:', cartLayoutConfig.microSlotOrders);
     }
     
-    // Otherwise render the default cart layout
+    // Render the default cart layout (when no custom configuration)
     return (
         <div 
             {...getCustomProps({ className: "bg-gray-50 cart-page" })}
@@ -905,21 +1048,54 @@ export default function Cart() {
                 keywords="cart, shopping cart, checkout, e-commerce, online store"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
+                {/* FlashMessage Section with Custom Slots */}
+                <div className="flashMessage-section mb-6">
+                    <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+                    {cartLayoutConfig?.microSlotOrders?.flashMessage && (
+                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                            {cartLayoutConfig.microSlotOrders.flashMessage.map(slotId => 
+                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'flashMessage') : null
+                            )}
+                        </div>
+                    )}
+                </div>
+                
+                {/* Header Section with Custom Slots */}
+                <div className="header-section mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                    {cartLayoutConfig?.microSlotOrders?.header && (
+                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                            {cartLayoutConfig.microSlotOrders.header.map(slotId => 
+                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'header') : null
+                            )}
+                        </div>
+                    )}
+                </div>
+                
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
-                    // Empty cart state
-                    <div className="text-center py-12">
-                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
-                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                        <Button 
-                            onClick={() => navigate(getStoreBaseUrl(store))}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
-                            Continue Shopping
-                        </Button>
+                    // Empty cart state with custom slots
+                    <div className="emptyCart-section">
+                        <div className="text-center py-12">
+                            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                            <Button 
+                                onClick={() => navigate(getStoreBaseUrl(store))}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Continue Shopping
+                            </Button>
+                        </div>
+                        
+                        {/* Custom slots for emptyCart section */}
+                        {cartLayoutConfig?.microSlotOrders?.emptyCart && (
+                            <div className="grid grid-cols-12 gap-2 auto-rows-min mt-6">
+                                {cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => 
+                                    slotId.includes('.custom_') ? renderCustomSlot(slotId, 'emptyCart') : null
+                                )}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">
@@ -1047,6 +1223,15 @@ export default function Cart() {
                                             </Button>
                                         </div>
                                     )}
+                                    
+                                    {/* Custom slots for coupon section */}
+                                    {cartLayoutConfig?.microSlotOrders?.coupon && (
+                                        <div className="grid grid-cols-12 gap-2 auto-rows-min mt-4">
+                                            {cartLayoutConfig.microSlotOrders.coupon.map(slotId => 
+                                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'coupon') : null
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                             <Card>
@@ -1076,6 +1261,15 @@ export default function Cart() {
                                             Proceed to Checkout
                                         </Button>
                                     </div>
+                                    
+                                    {/* Custom slots for orderSummary section */}
+                                    {cartLayoutConfig?.microSlotOrders?.orderSummary && (
+                                        <div className="grid grid-cols-12 gap-2 auto-rows-min mt-4">
+                                            {cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => 
+                                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'orderSummary') : null
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
