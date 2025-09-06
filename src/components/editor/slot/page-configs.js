@@ -20,43 +20,102 @@ export const PAGE_CONFIGS = {
       { id: 'empty', label: 'Empty Cart', icon: ShoppingCart },
       { id: 'withProducts', label: 'With Products', icon: Package }
     ],
-    defaultSlots: ['header', 'flashMessage', 'cartContent', 'recommendations'],
+    defaultSlots: ['flashMessage', 'header', 'emptyCart', 'cartItem', 'coupon', 'orderSummary'],
     slots: {
-      header: {
-        name: 'Page Header',
-        views: ['empty', 'withProducts'],
-        defaultContent: '<h1>Shopping Cart</h1>',
-        component: null // Use default HTML rendering
-      },
       flashMessage: {
         name: 'Flash Messages',
         views: ['empty', 'withProducts'],
-        defaultContent: '<div class="alert">Cart updated</div>',
-        component: null
+        defaultContent: '<div class="alert alert-info">Cart updated successfully!</div>',
+        component: null,
+        microSlots: ['flashMessage.content'],
+        gridCols: 12,
+        defaultSpans: {
+          'flashMessage.content': { col: 12, row: 1 }
+        }
       },
-      cartContent: {
-        name: 'Cart Content',
-        views: ['withProducts'],
-        defaultContent: '',
-        component: null // Would be CartItemsComponent
+      header: {
+        name: 'Page Header',
+        views: ['empty', 'withProducts'],
+        defaultContent: '<h1 class="text-2xl font-bold">Shopping Cart</h1>',
+        component: null,
+        microSlots: ['header.title'],
+        gridCols: 12,
+        defaultSpans: {
+          'header.title': { col: 12, row: 1 }
+        }
       },
       emptyCart: {
         name: 'Empty Cart Message',
         views: ['empty'],
-        defaultContent: '<div class="empty-cart">Your cart is empty</div>',
-        component: null
+        defaultContent: '<div class="empty-cart text-center py-8"><p class="text-gray-500 mb-4">Your cart is empty</p><button class="btn btn-primary">Continue Shopping</button></div>',
+        component: null,
+        microSlots: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
+        gridCols: 12,
+        defaultSpans: {
+          'emptyCart.icon': { col: 2, row: 1 },
+          'emptyCart.title': { col: 10, row: 1 },
+          'emptyCart.text': { col: 12, row: 1 },
+          'emptyCart.button': { col: 12, row: 1 }
+        }
+      },
+      cartItem: {
+        name: 'Cart Items',
+        views: ['withProducts'],
+        defaultContent: '',
+        component: null,
+        microSlots: ['cartItem.image', 'cartItem.details', 'cartItem.quantity', 'cartItem.price', 'cartItem.remove'],
+        gridCols: 12,
+        defaultSpans: {
+          'cartItem.image': { col: 2, row: 2 },
+          'cartItem.details': { col: 4, row: 2 },
+          'cartItem.quantity': { col: 3, row: 1 },
+          'cartItem.price': { col: 2, row: 1 },
+          'cartItem.remove': { col: 1, row: 1 }
+        }
+      },
+      coupon: {
+        name: 'Coupon Section',
+        views: ['withProducts'],
+        defaultContent: '<div class="coupon-section"><input type="text" placeholder="Enter coupon code" class="form-control"><button class="btn btn-secondary">Apply</button></div>',
+        component: null,
+        microSlots: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied', 'coupon.removeButton'],
+        gridCols: 12,
+        defaultSpans: {
+          'coupon.title': { col: 12, row: 1 },
+          'coupon.input': { col: 8, row: 1 },
+          'coupon.button': { col: 4, row: 1 },
+          'coupon.applied': { col: 8, row: 1 },
+          'coupon.removeButton': { col: 4, row: 1 }
+        }
       },
       orderSummary: {
         name: 'Order Summary',
         views: ['withProducts'],
-        defaultContent: '',
-        component: null // Would be OrderSummaryComponent
+        defaultContent: '<div class="order-summary"><h3>Order Summary</h3><div class="summary-line">Subtotal: $0.00</div><div class="summary-line">Tax: $0.00</div><div class="summary-total">Total: $0.00</div><button class="btn btn-primary btn-block">Proceed to Checkout</button></div>',
+        component: null,
+        microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.tax', 'orderSummary.shipping', 'orderSummary.discount', 'orderSummary.total', 'orderSummary.checkout'],
+        gridCols: 12,
+        defaultSpans: {
+          'orderSummary.title': { col: 12, row: 1 },
+          'orderSummary.subtotal': { col: 12, row: 1 },
+          'orderSummary.tax': { col: 12, row: 1 },
+          'orderSummary.shipping': { col: 12, row: 1 },
+          'orderSummary.discount': { col: 12, row: 1 },
+          'orderSummary.total': { col: 12, row: 1 },
+          'orderSummary.checkout': { col: 12, row: 1 }
+        }
       },
       recommendations: {
         name: 'Product Recommendations',
         views: ['empty', 'withProducts'],
-        defaultContent: '',
-        component: null // Would be RecommendationsComponent
+        defaultContent: '<div class="recommendations"><h3>You might also like</h3></div>',
+        component: null,
+        microSlots: ['recommendations.title', 'recommendations.products'],
+        gridCols: 12,
+        defaultSpans: {
+          'recommendations.title': { col: 12, row: 1 },
+          'recommendations.products': { col: 12, row: 3 }
+        }
       }
     },
     cmsBlocks: [
