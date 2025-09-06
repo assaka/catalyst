@@ -1901,6 +1901,7 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('🎨 Saved elementClasses:', config.elementClasses);
     console.log('📏 Saved componentSizes:', config.componentSizes);
     console.log('📐 Saved microSlotSpans:', config.microSlotSpans);
+    console.log('🔧 Saved customSlots:', config.customSlots);
     console.log('📊 Configuration size:', (configString.length / 1024).toFixed(2) + ' KB');
     
     // Try to save to database
@@ -2103,6 +2104,12 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [viewMode]);
   
+  // Debug: Track customSlots changes
+  useEffect(() => {
+    console.log('🔍 customSlots state changed:', customSlots);
+    console.log('🔍 customSlots keys:', Object.keys(customSlots));
+  }, [customSlots]);
+
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
     const loadConfiguration = async () => {
@@ -2152,10 +2159,12 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('🎨 Loaded elementClasses:', config.elementClasses);
           console.log('🎨 Loaded elementStyles:', config.elementStyles);
           console.log('📏 Loaded componentSizes:', config.componentSizes);
+          console.log('🔧 Loaded customSlots:', config.customSlots);
           
           // Verify the data types
           console.log('Type check - elementClasses is:', typeof config.elementClasses, config.elementClasses);
           console.log('Type check - slotContent is:', typeof config.slotContent, config.slotContent);
+          console.log('Type check - customSlots is:', typeof config.customSlots, config.customSlots);
           
           // Load saved majorSlots order
           if (config.majorSlots) {
