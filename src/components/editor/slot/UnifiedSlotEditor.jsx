@@ -23,6 +23,9 @@ import {
   Upload
 } from 'lucide-react';
 
+// Import page-specific editors
+import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
+
 export default function UnifiedSlotEditor({
   pageName = 'Cart',
   slotType = 'cart_layout',
@@ -161,6 +164,15 @@ export default function UnifiedSlotEditor({
   
   // Render the editor
   const renderEditor = () => {
+    if (pageType === 'cart') {
+      // Use the full CartSlotsEditor which has all the interactive features
+      return (
+        <div className="h-full">
+          <CartSlotsEditor />
+        </div>
+      );
+    }
+    
     return (
       <GenericSlotEditor
         pageType={pageType}
@@ -174,6 +186,15 @@ export default function UnifiedSlotEditor({
   };
   
   const renderPreview = () => {
+    if (pageType === 'cart') {
+      // Use the full CartSlotsEditor in preview mode
+      return (
+        <div className="h-full">
+          <CartSlotsEditor />
+        </div>
+      );
+    }
+    
     return (
       <GenericSlotEditor
         pageType={pageType}
