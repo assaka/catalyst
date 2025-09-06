@@ -1571,7 +1571,7 @@ function SortableParentSlot(props) {
 }
 
 // Parent slot container with micro-slots
-function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12, dragAttributes, dragListeners, isDragging: parentIsDragging }) {
+function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12, dragAttributes, dragListeners, isDragging: parentIsDragging, mode = 'edit' }) {
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef(null);
   const containerRef = useRef(null);
@@ -1635,8 +1635,8 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Drag handle in top-left */}
-      {isDraggable && (isHovered || isDragging) && (
+      {/* Drag handle in top-left - only in edit mode */}
+      {mode === 'edit' && isDraggable && (isHovered || isDragging) && (
         <div 
           className="absolute left-2 top-2 p-1 bg-blue-100/80 rounded z-30 cursor-grab hover:bg-blue-200"
           {...(isDraggable ? listeners : {})}
@@ -1646,8 +1646,8 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </div>
       )}
       
-      {/* Edit button in top-right */}
-      {onEdit && isHovered && !isDragging && (
+      {/* Edit button in top-right - only in edit mode */}
+      {mode === 'edit' && onEdit && isHovered && !isDragging && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1667,8 +1667,8 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </button>
       )}
       
-      {/* Add new slot button in bottom-right */}
-      {isHovered && !isDragging && (
+      {/* Add new slot button in bottom-right - only in edit mode */}
+      {mode === 'edit' && isHovered && !isDragging && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1715,6 +1715,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
 export default function CartSlotsEditorWithMicroSlots({
   data = {},
   onSave = () => {},
+  mode = 'edit', // 'edit' or 'preview'
 }) {
   // Get selected store from context
   const { selectedStore } = useStoreSelection();
@@ -2633,6 +2634,7 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('emptyCart')}
+        mode={mode}
         gridCols={MICRO_SLOT_DEFINITIONS.emptyCart.gridCols}
       >
         {microSlots.map(slotId => {
@@ -2993,6 +2995,7 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('cartItem')}
+        mode={mode}
         gridCols={12}
       >
         {/* Match Cart.jsx Card structure */}
@@ -3118,6 +3121,7 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('coupon')}
+        mode={mode}
         gridCols={12}
       >
         <Card className="col-span-12">
@@ -3384,6 +3388,7 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('orderSummary')}
+        mode={mode}
         gridCols={12}
       >
         <Card className="col-span-12">
@@ -3605,6 +3610,7 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={[]}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('recommendedProducts')}
+        mode={mode}
         gridCols={12}
       >
         <div className="col-span-12 p-8 bg-gray-100 rounded text-center text-gray-600">
@@ -3627,6 +3633,7 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('flashMessage')}
+        mode={mode}
         gridCols={MICRO_SLOT_DEFINITIONS.flashMessage.gridCols}
       >
         {microSlots.map(slotId => {
@@ -3668,6 +3675,7 @@ export default function CartSlotsEditorWithMicroSlots({
           microSlotOrder={microSlots}
           onMicroSlotReorder={handleMicroSlotReorder}
           onEdit={() => handleEditMicroSlot('header')}
+          mode={mode}
           gridCols={MICRO_SLOT_DEFINITIONS.header.gridCols}
         >
           {microSlots.map(slotId => {
@@ -3800,6 +3808,75 @@ export default function CartSlotsEditorWithMicroSlots({
     );
   };
 
+  // Render the main slot content
+  const renderSlotContent = () => {
+    return viewMode === 'empty' ? (
+      // Empty cart layout - simple vertical
+      <div className="space-y-8">
+        {/* CMS Block at cart header */}
+        <CmsBlockRenderer position="cart_header" storeId={currentStoreId} />
+        
+        {majorSlots.map(slotId => {
+          switch (slotId) {
+            case 'flashMessage':
+              return renderFlashMessage();
+            case 'header':
+              return renderHeader();
+            case 'emptyCart':
+              return renderEmptyCart();
+            default:
+              return null;
+          }
+        })}
+        
+        {/* CMS Block at cart footer */}
+        <CmsBlockRenderer position="cart_footer" storeId={currentStoreId} />
+      </div>
+    ) : (
+      // With products layout - matching Cart.jsx structure
+      <div className="space-y-8">
+        {/* CMS Block at cart header */}
+        <CmsBlockRenderer position="cart_header" storeId={currentStoreId} />
+        
+        {/* Flash message at top */}
+        {majorSlots.includes('flashMessage') && renderFlashMessage()}
+        
+        {/* Header below flash message */}
+        {majorSlots.includes('header') && renderHeader()}
+        
+        {/* CMS Block above cart items */}
+        <CmsBlockRenderer position="cart_above_items" storeId={currentStoreId} />
+        
+        {/* Main content grid - cart items left, coupon/summary right */}
+        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          {/* Left side - Cart items (2 columns width) */}
+          <div className="lg:col-span-2">
+            {majorSlots.includes('cartItem') && renderCartItem()}
+            {/* CMS Block below cart items */}
+            <CmsBlockRenderer position="cart_below_items" storeId={currentStoreId} />
+          </div>
+          
+          {/* Right side - Coupon and Summary (1 column width) */}
+          <div className="lg:col-span-1 space-y-6">
+            
+            {majorSlots.includes('coupon') && renderCoupon()}
+            
+            {/* CMS Block above total */}
+            <CmsBlockRenderer position="cart_above_total" storeId={currentStoreId} />
+            
+            {majorSlots.includes('orderSummary') && renderOrderSummary()}
+            
+            {/* CMS Block below total */}
+            <CmsBlockRenderer position="cart_below_total" storeId={currentStoreId} />
+          </div>
+        </div>
+        
+        {/* CMS Block at cart footer */}
+        <CmsBlockRenderer position="cart_footer" storeId={currentStoreId} />
+      </div>
+    );
+  };
+
   // Loading state
   if (loading || storeLoading) {
     return (
@@ -3860,14 +3937,28 @@ export default function CartSlotsEditorWithMicroSlots({
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleMajorDragStart}
-            onDragEnd={handleMajorDragEnd}
-          >
-            <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
-              {viewMode === 'empty' ? (
+          {mode === 'edit' ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleMajorDragStart}
+              onDragEnd={handleMajorDragEnd}
+            >
+              <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
+                {renderSlotContent()}
+              </SortableContext>
+              
+              <DragOverlay>
+                {activeMajorSlot ? (
+                  <div className="bg-white border rounded-lg shadow-lg p-4 opacity-90">
+                    {activeMajorSlot}
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          ) : (
+            renderSlotContent()
+          )}
                 // Empty cart layout - simple vertical
                 <div className="space-y-8">
                   {/* CMS Block at cart header */}

@@ -168,7 +168,7 @@ export default function UnifiedSlotEditor({
       // Use the full CartSlotsEditor which has all the interactive features
       return (
         <div className="h-full">
-          <CartSlotsEditor />
+          <CartSlotsEditor mode="edit" onSave={handleSave} />
         </div>
       );
     }
@@ -187,10 +187,10 @@ export default function UnifiedSlotEditor({
   
   const renderPreview = () => {
     if (pageType === 'cart') {
-      // Use the full CartSlotsEditor in preview mode
+      // Use the full CartSlotsEditor in preview mode (read-only)
       return (
         <div className="h-full">
-          <CartSlotsEditor />
+          <CartSlotsEditor mode="preview" />
         </div>
       );
     }
