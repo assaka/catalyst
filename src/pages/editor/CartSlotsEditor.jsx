@@ -1910,7 +1910,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Try to save to database using SlotConfiguration entity directly (backend API is down)
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (storeId) {
         // Import SlotConfiguration entity and API client to check auth status
         const { SlotConfiguration } = await import('@/api/entities');
@@ -2099,7 +2099,7 @@ export default function CartSlotsEditorWithMicroSlots({
     const loadConfiguration = async () => {
       try {
         // ONLY load from database, skip localStorage
-        const storeId = localStorage.getItem('selectedStoreId');
+        const storeId = selectedStore?.id;
         if (!storeId) {
           console.log('No store ID found, using default configuration');
           return;
@@ -4271,7 +4271,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   setSaveStatus('saving');
                   
                   // Get store ID from localStorage (same as save/load functions)
-                  const storeId = localStorage.getItem('selectedStoreId');
+                  const storeId = selectedStore?.id;
                   if (!storeId) {
                     console.error('No store ID found');
                     setSaveStatus('error');

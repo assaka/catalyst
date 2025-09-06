@@ -45,26 +45,6 @@ export const SlotStorage = {
         configSize: JSON.stringify(config).length
       });
       
-      // Check if configuration exists
-      const queryParams = new URLSearchParams({
-        store_id: storeId,
-        page_type: pageType
-      }).toString();
-      
-      console.log('🔍 Checking for existing configuration:', queryParams);
-      
-      let existing = null;
-      try {
-        const response = await apiClient.get(`slot-configurations?${queryParams}`);
-        console.log('📥 Existing configurations response:', response);
-        existing = response?.data?.find(cfg => 
-          cfg.page_type === pageType && cfg.store_id === storeId
-        );
-        console.log('🔍 Found existing config:', existing ? 'YES' : 'NO', existing?.id);
-      } catch (getError) {
-        console.log('⚠️ Error checking existing config (may not exist):', getError.message);
-      }
-      
       // Ensure page_name matches what's in database (capitalize first letter)
       const pageName = pageType.charAt(0).toUpperCase() + pageType.slice(1);
       
@@ -86,14 +66,10 @@ export const SlotStorage = {
         }
       });
       
-      if (existing) {
-        console.log('🔄 Updating existing configuration:', existing.id);
-        await apiClient.put(`slot-configurations/${existing.id}`, payload);
-      } else {
-        console.log('➕ Creating new configuration');
-        const result = await apiClient.post('slot-configurations', payload);
-        console.log('✅ Configuration created successfully:', result);
-      }
+      // Always use POST - backend handles UPSERT automatically
+      console.log('📤 Using POST with backend UPSERT logic');
+      const result = await apiClient.post('slot-configurations', payload);
+      console.log('✅ Configuration saved successfully:', result);
       
       return true;
     } catch (error) {
