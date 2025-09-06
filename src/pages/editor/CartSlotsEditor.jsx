@@ -4324,8 +4324,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     store_id: storeId
                   }).toString();
                   
-                  // Import localStorage-based SlotConfiguration (backend API is broken)
-                  const SlotConfiguration = (await import('@/api/localStorage-slot-config')).default;
+                  // Import standard SlotConfiguration
+                  const { SlotConfiguration } = await import('@/api/entities');
                   
                   // Get existing configurations
                   const configurations = await SlotConfiguration.findAll({ 
