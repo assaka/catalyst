@@ -1912,8 +1912,15 @@ export default function CartSlotsEditorWithMicroSlots({
     try {
       const storeId = localStorage.getItem('selectedStoreId');
       if (storeId) {
-        // Import SlotConfiguration entity
+        // Import SlotConfiguration entity and API client to check auth status
         const { SlotConfiguration } = await import('@/api/entities');
+        const { default: apiClient } = await import('@/api/client');
+        
+        // Debug authentication
+        const token = apiClient.getToken();
+        console.log('🔐 Auth token available:', !!token);
+        console.log('🔐 Token preview:', token ? token.substring(0, 20) + '...' : 'none');
+        console.log('🔐 Store owner token in localStorage:', !!localStorage.getItem('store_owner_auth_token'));
         
         console.log('🔍 Checking for existing configuration with store_id:', storeId);
         
@@ -1945,8 +1952,19 @@ export default function CartSlotsEditorWithMicroSlots({
             is_active: true
           };
           console.log('📤 Updating database with config:', JSON.stringify(config, null, 2));
-          const updateResponse = await SlotConfiguration.update(configId, updateData);
-          console.log('✅ Updated in database:', updateResponse);
+          console.log('📤 Update data payload:', updateData);
+          console.log('📤 Config ID for update:', configId);
+          
+          try {
+            const updateResponse = await SlotConfiguration.update(configId, updateData);
+            console.log('✅ Updated in database:', updateResponse);
+          } catch (updateError) {
+            console.error('❌ Update failed with error:', updateError);
+            console.error('❌ Update error response:', updateError.response);
+            console.error('❌ Update error status:', updateError.response?.status);
+            console.error('❌ Update error data:', updateError.response?.data);
+            throw updateError;
+          }
         } else {
           // Create new configuration
           const createData = {
@@ -1955,8 +1973,18 @@ export default function CartSlotsEditorWithMicroSlots({
             is_active: true
           };
           console.log('📤 Creating new configuration in database:', JSON.stringify(config, null, 2));
-          const createResponse = await SlotConfiguration.create(createData);
-          console.log('✅ Created in database:', createResponse);
+          console.log('📤 Create data payload:', createData);
+          
+          try {
+            const createResponse = await SlotConfiguration.create(createData);
+            console.log('✅ Created in database:', createResponse);
+          } catch (createError) {
+            console.error('❌ Create failed with error:', createError);
+            console.error('❌ Create error response:', createError.response);
+            console.error('❌ Create error status:', createError.response?.status);
+            console.error('❌ Create error data:', createError.response?.data);
+            throw createError;
+          }
         }
       }
       
@@ -2121,18 +2149,26 @@ export default function CartSlotsEditorWithMicroSlots({
           store_id: storeId
         }).toString();
         
-        // Import SlotConfiguration entity
-        const { SlotConfiguration } = await import('@/api/entities');
+        // Use public API endpoint for reading (no auth required)
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${storeId}`;
         
-        console.log('📥 Loading configurations from database...');
+        console.log('📥 Loading configurations from public endpoint:', endpoint);
         
-        // Get existing configurations
-        const configurations = await SlotConfiguration.findAll({ 
-          store_id: storeId, 
-          is_active: true 
-        });
+        const response = await fetch(endpoint);
+        let configurations = [];
         
-        console.log('📥 Load Response data:', configurations);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📥 Load Response data:', data);
+          
+          if (data.success && data.data) {
+            configurations = data.data;
+          }
+        } else {
+          console.warn('⚠️ Failed to load from public endpoint:', response.status, response.statusText);
+        }
+        
         console.log('📥 Load Configurations array:', configurations);
         
         // Find the Cart configuration specifically
