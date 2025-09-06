@@ -105,42 +105,6 @@ export default function Cart() {
     
     // State for cart layout configuration
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
-    const [layoutLoading, setLayoutLoading] = useState(true);
-    
-    // Load cart layout configuration from database
-    useEffect(() => {
-        const loadCartLayoutConfig = async () => {
-            if (!store?.id) return;
-            
-            try {
-                // Build the API URL based on environment
-                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-                const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${store.id}&page_name=Cart&slot_type=cart_layout`;
-                
-                console.log('Loading cart configuration from:', endpoint);
-                
-                // Load from slot_configurations table (public endpoint for storefront)
-                const response = await fetch(endpoint);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data?.data?.length > 0) {
-                        // Configuration might be a JSON string that needs parsing
-                        const config = data.data[0].configuration;
-                        const parsedConfig = typeof config === 'string' ? JSON.parse(config) : config;
-                        setCartLayoutConfig(parsedConfig);
-                        console.log('✅ Loaded cart layout configuration for storefront:', parsedConfig);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load cart layout configuration:', error);
-            } finally {
-                setLayoutLoading(false);
-            }
-        };
-        
-        loadCartLayoutConfig();
-    }, [store?.id]);
     
     // Initialize customization system for Cart component
     const {
@@ -294,6 +258,12 @@ export default function Cart() {
             let cartItems = [];
             if (cartResult.success && cartResult.items) {
                 cartItems = cartResult.items;
+            }
+
+            // Extract slot configuration from cart result
+            if (cartResult.success && cartResult.data && cartResult.data.slotConfiguration) {
+                setCartLayoutConfig(cartResult.data.slotConfiguration);
+                console.log('✅ Loaded cart layout configuration:', cartResult.data.slotConfiguration);
             }
 
             
@@ -846,8 +816,8 @@ export default function Cart() {
         getExternalStoreUrl
     };
     
-    // If custom layout configuration exists and not in layout loading state, use UnifiedSlotEditor  
-    if (cartLayoutConfig && !layoutLoading) {
+    // If custom layout configuration exists, use UnifiedSlotEditor  
+    if (cartLayoutConfig) {
         console.log('Using UnifiedSlotEditor for storefront display');
         return (
             <UnifiedSlotEditor

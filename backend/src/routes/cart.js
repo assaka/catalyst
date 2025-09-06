@@ -1,5 +1,5 @@
 const express = require('express');
-const { Cart } = require('../models');
+const { Cart, SlotConfiguration } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -87,9 +87,39 @@ router.get('/', async (req, res) => {
       });
     }
 
+    // Load slot configuration for cart layout if we have a store_id
+    let slotConfiguration = null;
+    if (cart.store_id) {
+      try {
+        const configurations = await SlotConfiguration.findAll({
+          where: {
+            store_id: cart.store_id,
+            is_active: true
+          },
+          order: [['updated_at', 'DESC']]
+        });
+        
+        // Filter for Cart page configuration
+        const cartConfig = configurations.find(config => {
+          const conf = config.configuration || {};
+          return conf.page_name === 'Cart' && conf.slot_type === 'cart_layout';
+        });
+        
+        if (cartConfig) {
+          slotConfiguration = cartConfig.configuration;
+        }
+      } catch (error) {
+        console.error('Error loading slot configuration for cart:', error);
+        // Don't fail the cart request if slot config fails to load
+      }
+    }
+
     res.json({
       success: true,
-      data: cart
+      data: {
+        ...cart,
+        slotConfiguration
+      }
     });
   } catch (error) {
     console.error('Get cart error:', error);
