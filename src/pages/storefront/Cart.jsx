@@ -117,29 +117,37 @@ export default function Cart() {
             console.log('✅ Store ID found, loading slot configuration for store:', store.id);
             
             try {
-                // Load configuration using SlotConfiguration entity
-                const { SlotConfiguration } = await import('@/api/entities');
+                // Load configuration using public API endpoint directly (no auth required)
+                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+                const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${store.id}`;
                 
-                const configurations = await SlotConfiguration.findAll({ 
-                    store_id: store.id, 
-                    is_active: true 
-                });
+                console.log('📡 Loading from public endpoint:', endpoint);
+                const response = await fetch(endpoint);
                 
-                // Find Cart configuration
-                const cartConfig = configurations.find(config => {
-                    const conf = config.configuration || {};
-                    return (conf.page_name === 'Cart' && conf.slot_type === 'cart_layout') ||
-                           (conf.page_type === 'cart');
-                });
-                
-                if (cartConfig) {
-                    setCartLayoutConfig(cartConfig.configuration);
-                    console.log('✅ Loaded cart layout configuration directly:', cartConfig.configuration);
-                    console.log('🔧 CustomSlots in loaded config:', cartConfig.configuration?.customSlots);
-                    console.log('📐 MicroSlotOrders in loaded config:', cartConfig.configuration?.microSlotOrders);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📡 Public API response:', data);
+                    
+                    if (data.success && data.data?.length > 0) {
+                        // Find Cart configuration
+                        const cartConfig = data.data.find(config => {
+                            const conf = config.configuration || {};
+                            return (conf.page_name === 'Cart' && conf.slot_type === 'cart_layout') ||
+                                   (conf.page_type === 'cart');
+                        });
+                        
+                        if (cartConfig) {
+                            setCartLayoutConfig(cartConfig.configuration);
+                            console.log('✅ Loaded cart layout configuration from public API:', cartConfig.configuration);
+                            console.log('🔧 CustomSlots in loaded config:', cartConfig.configuration?.customSlots);
+                            console.log('📐 MicroSlotOrders in loaded config:', cartConfig.configuration?.microSlotOrders);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ Public slot config API returned:', response.status, response.statusText);
                 }
             } catch (error) {
-                console.warn('⚠️ Could not load slot configuration:', error);
+                console.warn('⚠️ Could not load slot configuration from public API:', error);
             }
         };
         
