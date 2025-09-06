@@ -1809,6 +1809,7 @@ export default function CartSlotsEditorWithMicroSlots({
   const [newSlotName, setNewSlotName] = useState('');
   const [newSlotContent, setNewSlotContent] = useState('');
   const [customSlots, setCustomSlots] = useState({});
+  const [justAddedCustomSlot, setJustAddedCustomSlot] = useState(false);
   
   // State for delete confirmation dialog
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, slotId: null, slotLabel: '' });
@@ -1945,6 +1946,7 @@ export default function CartSlotsEditorWithMicroSlots({
           console.log('📝 Updating existing configuration with ID:', configId);
           const payload = {
             page_name: 'Cart',
+            page_type: 'cart',
             slot_type: 'cart_layout',
             store_id: storeId,
             configuration: config,
@@ -1962,6 +1964,7 @@ export default function CartSlotsEditorWithMicroSlots({
           // Create new configuration
           const payload = {
             page_name: 'Cart',
+            page_type: 'cart',
             slot_type: 'cart_layout',
             store_id: storeId,
             configuration: config,
@@ -2113,6 +2116,15 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('🔍 customSlots state changed:', customSlots);
     console.log('🔍 customSlots keys:', Object.keys(customSlots));
   }, [customSlots]);
+
+  // Auto-save when customSlots changes after adding a slot
+  useEffect(() => {
+    if (justAddedCustomSlot) {
+      console.log('🔧 CustomSlot was just added, triggering save with current customSlots:', customSlots);
+      setJustAddedCustomSlot(false);
+      debouncedSave();
+    }
+  }, [customSlots, justAddedCustomSlot, debouncedSave]);
 
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
@@ -2655,9 +2667,11 @@ export default function CartSlotsEditorWithMicroSlots({
     setNewSlotContent('');
     setNewSlotType('text');
     
-    // Auto-save
-    debouncedSave();
-  }, [newSlotName, newSlotContent, newSlotType, currentParentSlot, debouncedSave]);
+    // Mark that we just added a custom slot
+    setJustAddedCustomSlot(true);
+    
+    // Don't auto-save immediately - let the useEffect handle it after state updates
+  }, [newSlotName, newSlotContent, newSlotType, currentParentSlot]);
 
   // Render empty cart with micro-slots
   const renderEmptyCart = () => {

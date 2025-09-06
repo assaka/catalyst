@@ -124,7 +124,8 @@ export default function Cart() {
                 // Find Cart configuration
                 const cartConfig = configurations.find(config => {
                     const conf = config.configuration || {};
-                    return conf.page_name === 'Cart' && conf.slot_type === 'cart_layout';
+                    return (conf.page_name === 'Cart' && conf.slot_type === 'cart_layout') ||
+                           (conf.page_type === 'cart');
                 });
                 
                 if (cartConfig) {
