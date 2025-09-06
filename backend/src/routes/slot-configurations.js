@@ -108,7 +108,7 @@ router.post('/slot-configurations', authMiddleware, async (req, res) => {
       slot_type
     };
     
-    // Check if a configuration already exists for this user/store/page/slot_type
+    // Check if a configuration already exists for this user/store
     const existing = await SlotConfiguration.findOne({
       where: {
         user_id: req.user.id,
@@ -117,20 +117,18 @@ router.post('/slot-configurations', authMiddleware, async (req, res) => {
     });
     
     if (existing) {
-      // Check if this specific page/slot_type already exists in the configuration
-      const existingPageConfig = existing.configuration;
-      if (existingPageConfig?.page_name === page_name && existingPageConfig?.slot_type === slot_type) {
-        // Update instead of create
-        existing.configuration = fullConfiguration;
-        existing.is_active = is_active !== undefined ? is_active : true;
-        existing.changed('configuration', true);
-        await existing.save();
-        
-        return res.json({ success: true, data: existing });
-      }
+      // Update the existing configuration (since we only allow one per user/store)
+      console.log('🔄 Updating existing slot configuration for user/store:', req.user.id, store_id);
+      existing.configuration = fullConfiguration;
+      existing.is_active = is_active !== undefined ? is_active : true;
+      existing.changed('configuration', true);
+      await existing.save();
+      
+      return res.json({ success: true, data: existing });
     }
     
     // Create new configuration
+    console.log('➕ Creating new slot configuration for user/store:', req.user.id, store_id);
     const newConfiguration = await SlotConfiguration.create({
       user_id: req.user.id,
       store_id: store_id || req.user.active_store_id,
