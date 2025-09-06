@@ -1021,7 +1021,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, mode = 'edit' }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1039,7 +1039,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, disabled: !isDraggable || isResizing });
+  } = useSortable({ id, disabled: !isDraggable || isResizing || mode === 'preview' });
 
   // Calculate grid span classes
   const getGridSpanClass = () => {
@@ -1135,13 +1135,14 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     };
   }, [isResizing, resizeStart, colSpan, rowSpan, id, onSpanChange]);
 
-  // Handle mouse enter with a slight delay to prevent flickering
+  // Handle mouse enter with a slight delay to prevent flickering - only in edit mode
   const handleMouseEnter = useCallback(() => {
+    if (mode === 'preview') return; // Don't show hover states in preview mode
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
     setIsHovered(true);
-  }, []);
+  }, [mode]);
   
   // Handle mouse leave with a small delay to prevent premature hiding
   const handleMouseLeave = useCallback((e) => {
@@ -1191,8 +1192,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      {/* Edit button - positioned to avoid resize corner */}
-      {onEdit && isHovered && !isDragging && !isResizing && (
+      {/* Edit button - positioned to avoid resize corner - only in edit mode */}
+      {mode === 'edit' && onEdit && isHovered && !isDragging && !isResizing && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1212,8 +1213,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </button>
       )}
       
-      {/* Delete button for custom slots */}
-      {onDelete && isHovered && !isDragging && !isResizing && (
+      {/* Delete button for custom slots - only in edit mode */}
+      {mode === 'edit' && onDelete && isHovered && !isDragging && !isResizing && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1512,8 +1513,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       <div className="relative z-1">
         {children}
         
-        {/* Resize icon only - more visible */}
-        {onSpanChange && !isDragging && isHovered && !isResizing && (
+        {/* Resize icon only - more visible - only in edit mode */}
+        {mode === 'edit' && onSpanChange && !isDragging && isHovered && !isResizing && (
           <div
             className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize group"
             onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
@@ -1706,7 +1707,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
 
       {/* Micro-slots container */}
       <div 
-        className={`border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'} rounded-lg p-4 bg-white relative z-1 transition-colors`}
+        className={`${mode === 'edit' ? `border-2 border-dashed ${isHovered ? 'border-gray-400 bg-gray-50/30' : 'border-gray-300'}` : 'border-transparent'} rounded-lg p-4 bg-white relative z-1 transition-colors`}
       >
         {mode === 'edit' ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
@@ -2665,6 +2666,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                mode={mode}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
@@ -2748,6 +2750,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                mode={mode}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
@@ -2774,6 +2777,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                mode={mode}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
@@ -2852,6 +2856,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                mode={mode}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
@@ -2884,6 +2889,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                mode={mode}
                   onClassChange={handleClassChange}
                   elementClasses={elementClasses}
                   onDelete={() => {
@@ -2924,6 +2930,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+                mode={mode}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
@@ -3031,6 +3038,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       colSpan={slotSpan.col}
                       rowSpan={slotSpan.row}
                       onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                mode={mode}
                       isDraggable={index === 0} // Only first item is draggable
                       onClassChange={handleClassChange}
                       elementClasses={elementClasses}
@@ -3053,6 +3061,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       colSpan={slotSpan.col}
                       rowSpan={slotSpan.row}
                       onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                mode={mode}
                       isDraggable={index === 0}
                     >
                       <div>
@@ -3071,6 +3080,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       colSpan={slotSpan.col}
                       rowSpan={slotSpan.row}
                       onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                mode={mode}
                       isDraggable={index === 0}
                     >
                       <div className="flex items-center gap-2 justify-center">
@@ -3090,6 +3100,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       colSpan={slotSpan.col}
                       rowSpan={slotSpan.row}
                       onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                mode={mode}
                       isDraggable={index === 0}
                     >
                       <div className="text-lg font-bold text-gray-900">
@@ -3107,6 +3118,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       colSpan={slotSpan.col}
                       rowSpan={slotSpan.row}
                       onSpanChange={(id, newSpan) => handleSpanChange('cartItem', id, newSpan)}
+                mode={mode}
                       isDraggable={index === 0}
                     >
                       <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
@@ -3153,6 +3165,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3178,6 +3191,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3237,6 +3251,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                     elementStyles={elementStyles}
@@ -3260,6 +3275,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3332,6 +3348,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                     elementStyles={elementStyles}
@@ -3360,6 +3377,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('coupon', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3420,6 +3438,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3445,6 +3464,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3471,6 +3491,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3497,6 +3518,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3528,6 +3550,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3560,6 +3583,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3584,6 +3608,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     colSpan={slotSpan.col}
                     rowSpan={slotSpan.row}
                     onSpanChange={(id, newSpan) => handleSpanChange('orderSummary', id, newSpan)}
+                mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
                   >
@@ -3665,6 +3690,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('flashMessage', id, newSpan)}
+                mode={mode}
               >
                 <div dangerouslySetInnerHTML={{ __html: content }} />
               </MicroSlot>
@@ -3705,6 +3731,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                mode={mode}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
@@ -3722,6 +3749,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 colSpan={slotSpan.col}
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                mode={mode}
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
@@ -3757,6 +3785,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                mode={mode}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
@@ -3793,12 +3822,13 @@ export default function CartSlotsEditorWithMicroSlots({
                   colSpan={slotSpan.col}
                   rowSpan={slotSpan.row}
                   onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+                mode={mode}
                   onDelete={() => {
                     console.log('onDelete callback triggered for:', slotId, customSlot.label);
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
-                  <div className="relative bg-gray-50 border border-dashed border-gray-300 rounded-md p-3 min-h-[60px]">
+                  <div className={`relative bg-gray-50 ${mode === 'edit' ? 'border border-dashed border-gray-300' : 'border-transparent'} rounded-md p-3 min-h-[60px]`}>
                     {customSlot.type === 'html' ? (
                       <div dangerouslySetInnerHTML={{ __html: content }} />
                     ) : (
