@@ -1705,7 +1705,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         )}
       </div>
 
-      {/* Add new slot button at bottom - only in edit mode */}
+      {/* Add new slot button at bottom center, overlapping border - only in edit mode */}
       {mode === 'edit' && isHovered && !isDragging && (
         <button
           onClick={(e) => {
@@ -1714,7 +1714,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
               window.onAddNewSlot(id);
             }
           }}
-          className="absolute right-2 bottom-2 p-1.5 bg-green-100/90 rounded transition-opacity z-30 hover:bg-green-200 group"
+          className="absolute left-1/2 transform -translate-x-1/2 -bottom-3 p-1.5 bg-green-100/90 rounded transition-opacity z-30 hover:bg-green-200 group"
           title="Add new slot"
           onMouseEnter={(e) => {
             e.stopPropagation();
