@@ -1734,11 +1734,13 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
 
 // Main editor component with micro-slots
 export default function CartSlotsEditorWithMicroSlots({
-  data = {},
+  data,
   onSave = () => {},
   mode = 'edit', // 'edit' or 'preview'
   viewMode: propViewMode, // 'empty' or 'withProducts' - when passed from parent
 }) {
+  // Ensure data is always an object
+  const safeData = data || {};
   // Get selected store from context
   const { selectedStore } = useStoreSelection();
   const currentStoreId = selectedStore?.id || localStorage.getItem('selectedStoreId');
@@ -1867,7 +1869,7 @@ export default function CartSlotsEditorWithMicroSlots({
     formatDisplayPrice = (value) => `${currencySymbol}${(value || 0).toFixed(2)}`,
     getStoreBaseUrl = (store) => store?.baseUrl || "/",
     getExternalStoreUrl = (slug, path, baseUrl) => `${baseUrl}${slug || ""}${path || ""}`,
-  } = data;
+  } = safeData;
 
   const formatPrice = (value) => typeof value === "number" ? value : parseFloat(value) || 0;
 

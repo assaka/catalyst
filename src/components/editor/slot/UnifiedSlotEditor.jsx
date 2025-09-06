@@ -216,7 +216,7 @@ export default function UnifiedSlotEditor({
           <CartSlotsEditor 
             mode="edit" 
             onSave={handleSave}
-            data={slotConfig}
+            data={slotConfig || {}}
           />
         </React.Suspense>
       );
@@ -231,7 +231,7 @@ export default function UnifiedSlotEditor({
         <React.Suspense fallback={<div className="p-4">Loading cart preview...</div>}>
           <CartSlotsEditor 
             mode="preview"
-            data={slotConfig}
+            data={slotConfig || {}}
           />
         </React.Suspense>
       );
