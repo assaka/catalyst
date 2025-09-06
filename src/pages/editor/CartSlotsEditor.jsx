@@ -1665,7 +1665,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
             e.stopPropagation();
             onEdit(id);
           }}
-          className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-30 hover:bg-blue-200"
+          className="absolute right-1 top-1 p-1.5 bg-blue-100/90 rounded transition-opacity z-30 hover:bg-blue-200"
           title="Edit section"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -1706,7 +1706,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       </div>
 
       {/* Add new slot button at bottom center, overlapping border - only in edit mode */}
-      {mode === 'edit' && isHovered && !isDragging && (
+      {mode === 'edit' && !isDragging && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -2684,7 +2684,8 @@ export default function CartSlotsEditorWithMicroSlots({
                       className="text-gray-400" 
                       style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
                     />
-                    {/* Icon resize handle - bottom-right corner */}
+                    {/* Icon resize handle - bottom-right corner - only in edit mode */}
+                    {mode === 'edit' && (
                     <div
                       className={`absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-sm cursor-nwse-resize transition-opacity ${
                         isResizingIcon === slotId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
