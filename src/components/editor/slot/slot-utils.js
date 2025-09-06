@@ -38,16 +38,31 @@ export const SlotStorage = {
     try {
       const { default: apiClient } = await import('@/api/client');
       
+      console.log('📤 Saving slot configuration to database:', {
+        pageType,
+        storeId,
+        configKeys: Object.keys(config),
+        configSize: JSON.stringify(config).length
+      });
+      
       // Check if configuration exists
       const queryParams = new URLSearchParams({
         store_id: storeId,
         page_type: pageType
       }).toString();
       
-      const response = await apiClient.get(`slot-configurations?${queryParams}`);
-      const existing = response?.data?.find(cfg => 
-        cfg.page_name === pageType && cfg.store_id === storeId
-      );
+      console.log('🔍 Checking for existing configuration:', queryParams);
+      
+      let existing = null;
+      try {
+        const response = await apiClient.get(`slot-configurations?${queryParams}`);
+        console.log('📥 Existing configurations response:', response);
+        existing = response?.data?.find(cfg => 
+          cfg.page_name === pageType && cfg.store_id === storeId
+        );
+      } catch (getError) {
+        console.log('⚠️ Error checking existing config (may not exist):', getError.message);
+      }
       
       const payload = {
         page_name: pageType,
@@ -57,17 +72,38 @@ export const SlotStorage = {
         is_active: true
       };
       
+      console.log('📦 Payload to send:', {
+        ...payload,
+        configuration: {
+          keys: Object.keys(payload.configuration),
+          majorSlotsCount: payload.configuration.majorSlots?.length,
+          slotContentKeys: Object.keys(payload.configuration.slotContent || {})
+        }
+      });
+      
       if (existing) {
-        // Update existing
+        console.log('🔄 Updating existing configuration:', existing.id);
         await apiClient.put(`slot-configurations/${existing.id}`, payload);
       } else {
-        // Create new
-        await apiClient.post('slot-configurations', payload);
+        console.log('➕ Creating new configuration');
+        const result = await apiClient.post('slot-configurations', payload);
+        console.log('✅ Configuration created successfully:', result);
       }
       
       return true;
     } catch (error) {
-      console.error('Failed to save to database:', error);
+      console.error('❌ Failed to save to database:', {
+        error: error.message,
+        response: error.response,
+        data: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Try to extract more details from the error
+      if (error.response?.data) {
+        console.error('🔍 Server error details:', error.response.data);
+      }
+      
       return false;
     }
   },
