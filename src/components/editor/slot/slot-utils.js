@@ -58,14 +58,19 @@ export const SlotStorage = {
         const response = await apiClient.get(`slot-configurations?${queryParams}`);
         console.log('📥 Existing configurations response:', response);
         existing = response?.data?.find(cfg => 
-          cfg.page_name === pageType && cfg.store_id === storeId
+          cfg.page_type === pageType && cfg.store_id === storeId
         );
+        console.log('🔍 Found existing config:', existing ? 'YES' : 'NO', existing?.id);
       } catch (getError) {
         console.log('⚠️ Error checking existing config (may not exist):', getError.message);
       }
       
+      // Ensure page_name matches what's in database (capitalize first letter)
+      const pageName = pageType.charAt(0).toUpperCase() + pageType.slice(1);
+      
       const payload = {
-        page_name: pageType,
+        page_name: pageName,
+        page_type: pageType,
         slot_type: `${pageType}_layout`,
         store_id: storeId,
         configuration: config,
