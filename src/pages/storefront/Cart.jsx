@@ -122,16 +122,21 @@ export default function Cart() {
                 const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${store.id}`;
                 
                 console.log('📡 Loading from public endpoint:', endpoint);
+                console.log('📡 API Base URL:', apiBaseUrl);
+                
                 const response = await fetch(endpoint);
+                console.log('📡 Response status:', response.status, response.statusText);
                 
                 if (response.ok) {
                     const data = await response.json();
                     console.log('📡 Public API response:', data);
                     
                     if (data.success && data.data?.length > 0) {
+                        console.log('📡 Found configurations, filtering for cart...');
                         // Find Cart configuration
                         const cartConfig = data.data.find(config => {
                             const conf = config.configuration || {};
+                            console.log('📡 Checking config:', conf.page_name, conf.slot_type);
                             return (conf.page_name === 'Cart' && conf.slot_type === 'cart_layout') ||
                                    (conf.page_type === 'cart');
                         });
@@ -141,10 +146,16 @@ export default function Cart() {
                             console.log('✅ Loaded cart layout configuration from public API:', cartConfig.configuration);
                             console.log('🔧 CustomSlots in loaded config:', cartConfig.configuration?.customSlots);
                             console.log('📐 MicroSlotOrders in loaded config:', cartConfig.configuration?.microSlotOrders);
+                        } else {
+                            console.warn('⚠️ No cart configuration found in response');
                         }
+                    } else {
+                        console.warn('⚠️ No configurations found or API unsuccessful:', data);
                     }
                 } else {
                     console.warn('⚠️ Public slot config API returned:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.warn('⚠️ Error response body:', errorText);
                 }
             } catch (error) {
                 console.warn('⚠️ Could not load slot configuration from public API:', error);
