@@ -131,6 +131,8 @@ export default function Cart() {
                 if (cartConfig) {
                     setCartLayoutConfig(cartConfig.configuration);
                     console.log('✅ Loaded cart layout configuration directly:', cartConfig.configuration);
+                    console.log('🔧 CustomSlots in loaded config:', cartConfig.configuration?.customSlots);
+                    console.log('📐 MicroSlotOrders in loaded config:', cartConfig.configuration?.microSlotOrders);
                 }
             } catch (error) {
                 console.warn('⚠️ Could not load slot configuration:', error);
@@ -842,12 +844,16 @@ export default function Cart() {
         setFlashMessage,
         formatDisplayPrice,
         getStoreBaseUrl,
-        getExternalStoreUrl
+        getExternalStoreUrl,
+        // Layout configuration - merge the cart layout config into the data
+        ...(cartLayoutConfig || {})
     };
     
     // If custom layout configuration exists, use UnifiedSlotEditor  
     if (cartLayoutConfig) {
         console.log('Using UnifiedSlotEditor for storefront display');
+        console.log('🔧 cartSlotsData customSlots:', cartSlotsData.customSlots);
+        console.log('📐 cartSlotsData microSlotOrders:', cartSlotsData.microSlotOrders);
         return (
             <UnifiedSlotEditor
                 pageName="Cart"
