@@ -1191,38 +1191,54 @@ export default ExampleComponent;`;
                           onDiffStatsChange={handleDiffStatsChange}
                         />
                       ) : (
-                        // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
+                        // Smart Editor Selection - UnifiedSlotEditor for slots files, CodeEditor for others
                         <div className="h-full overflow-y-auto">
-                          {selectedFile.name.includes('Slots.jsx') || selectedFile.path.includes('Slots.jsx') ? (
-                            // This is a slots file - use GenericSlotEditor
-                            <GenericSlotEditor
-                              pageName={selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '')}
-                              onSave={async (data) => {
-                                const pageName = selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '');
-                                console.log(`💾 Saving ${pageName} slots configuration...`);
-                                
-                                // Save to localStorage for now (until backend API is ready)
-                                try {
-                                  const storageKey = `slot_config_${pageName}`;
-                                  const configData = {
-                                    page_name: pageName,
-                                    configuration: data.slotDefinitions,
-                                    slot_order: data.pageConfig?.slotOrder || [],
-                                    slot_positions: data.slotPositions || {},
-                                    code: data.slotsFileCode,
-                                    updated_at: new Date().toISOString()
-                                  };
-                                  
-                                  localStorage.setItem(storageKey, JSON.stringify(configData));
-                                  console.log('✅ Configuration saved to localStorage');
-                                } catch (error) {
-                                  console.error('❌ Failed to save configuration:', error);
-                                }
-                              }}
-                              onCancel={() => {
-                                setPreviewMode('code');
-                              }}
-                              className="min-h-full"
+                          {(() => {
+                            console.log('🚀 Mobile: Hybrid/Other mode rendering', {
+                              previewMode,
+                              selectedFile: selectedFile ? {
+                                name: selectedFile?.name,
+                                path: selectedFile?.path
+                              } : 'No file selected'
+                            });
+                            
+                            // Early return if no file is selected
+                            if (!selectedFile) {
+                              console.log('⚠️ Mobile: No file selected, showing placeholder');
+                              return <div className="p-8 text-center text-gray-500">Please select a file from the tree navigator</div>;
+                            }
+                            
+                            // Check both name and path, handle both forward and back slashes
+                            const fileName = selectedFile.name || '';
+                            const filePath = (selectedFile.path || '').replace(/\\/g, '/');
+                            
+                            const isSlotFile = 
+                              fileName.includes('Slots.jsx') || 
+                              fileName.includes('SlotsEditor.jsx') || 
+                              fileName.includes('SlotEditor.jsx') ||
+                              filePath.includes('Slots.jsx') || 
+                              filePath.includes('SlotsEditor.jsx') ||
+                              filePath.includes('SlotEditor.jsx') ||
+                              // Also check for specific editor files
+                              fileName === 'CartSlotsEditor.jsx' ||
+                              fileName === 'CategorySlotEditor.jsx' ||
+                              fileName === 'ProductSlotEditor.jsx' ||
+                              fileName === 'HomepageSlotEditor.jsx';
+                            
+                            console.log('🎯 Mobile: Is slot file?', isSlotFile, { fileName, filePath });
+                            
+                            return isSlotFile;
+                          })() ? (
+                            // This is a slots/editor file - use UnifiedSlotEditor
+                            <UnifiedSlotEditor
+                              pageName={selectedFile.name
+                                .replace('SlotsEditor.jsx', '')
+                                .replace('SlotEditor.jsx', '')
+                                .replace('Slots.jsx', '')
+                                .replace('.jsx', '')}
+                              onClose={() => {}}
+                              slotType="layout"
+                              pageId={null}
                             />
                           ) : (
                             // Regular file - use CodeEditor
