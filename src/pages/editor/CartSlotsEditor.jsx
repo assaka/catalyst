@@ -3949,9 +3949,9 @@ export default function CartSlotsEditorWithMicroSlots({
               </SortableContext>
               
               <DragOverlay>
-                {activeMajorSlot ? (
+                {activeDragSlot ? (
                   <div className="bg-white border rounded-lg shadow-lg p-4 opacity-90">
-                    {activeMajorSlot}
+                    {activeDragSlot}
                   </div>
                 ) : null}
               </DragOverlay>
