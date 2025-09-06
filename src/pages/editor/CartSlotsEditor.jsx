@@ -2770,6 +2770,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
+                    mode={mode}
                   />
                 </div>
               </MicroSlot>
@@ -2797,6 +2798,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
+                    mode={mode}
                   />
                 </div>
               </MicroSlot>
@@ -3001,7 +3003,7 @@ export default function CartSlotsEditorWithMicroSlots({
         name: "Premium Cotton T-Shirt", 
         price: 29.99, 
         quantity: 2, 
-        image: "https://placehold.co/100x100?text=T-Shirt",
+        image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop&crop=center",
         selected_options: [
           { name: "Size: Large", price: 0 },
           { name: "Color: Blue", price: 2.00 }
@@ -3012,7 +3014,7 @@ export default function CartSlotsEditorWithMicroSlots({
         name: "Classic Denim Jeans", 
         price: 79.99, 
         quantity: 1, 
-        image: "https://placehold.co/100x100?text=Jeans",
+        image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop&crop=center",
         selected_options: []
       }
     ];
@@ -3183,6 +3185,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange(slotId, newText)}
                         slotId={slotId}
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                     </div>
                   </MicroSlot>
@@ -3294,6 +3297,7 @@ export default function CartSlotsEditorWithMicroSlots({
                           onChange={(newText) => handleTextChange('coupon.applied.title', newText)}
                           slotId="coupon.applied.title"
                           onClassChange={handleClassChange}
+                          mode={mode}
                         />
                         SAVE20
                       </p>
@@ -3303,6 +3307,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange('coupon.applied.description', newText)}
                         slotId="coupon.applied.description"
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                     </div>
                   </MicroSlot>
@@ -3396,6 +3401,7 @@ export default function CartSlotsEditorWithMicroSlots({
                           onChange={(newText) => handleTextChange(slotId, newText)}
                           slotId={slotId}
                           onClassChange={handleClassChange}
+                          mode={mode}
                         />
                       )}
                       {customSlot.type === 'html' && (
@@ -3456,6 +3462,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange(slotId, newText)}
                         slotId={slotId}
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                     </div>
                   </MicroSlot>
@@ -3482,6 +3489,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange('orderSummary.subtotal.label', newText)}
                         slotId="orderSummary.subtotal.label"
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                       <span>$139.97</span>
                     </div>
@@ -3509,6 +3517,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange('orderSummary.discount.label', newText)}
                         slotId="orderSummary.discount.label"
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                       <span className="text-green-600">-$27.99</span>
                     </div>
@@ -3536,6 +3545,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange('orderSummary.tax.label', newText)}
                         slotId="orderSummary.tax.label"
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                       <span>$11.20</span>
                     </div>
@@ -3568,6 +3578,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         onChange={(newText) => handleTextChange('orderSummary.total.label', newText)}
                         slotId="orderSummary.total.label"
                         onClassChange={handleClassChange}
+                        mode={mode}
                       />
                       <span className="text-lg font-semibold">$123.18</span>
                     </div>
@@ -3627,6 +3638,7 @@ export default function CartSlotsEditorWithMicroSlots({
                           onChange={(newText) => handleTextChange(slotId, newText)}
                           slotId={slotId}
                           onClassChange={handleClassChange}
+                          mode={mode}
                         />
                       )}
                       {customSlot.type === 'html' && (
@@ -3768,6 +3780,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
+                    mode={mode}
                   />
                 </div>
               </MicroSlot>
