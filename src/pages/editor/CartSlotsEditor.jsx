@@ -1922,69 +1922,30 @@ export default function CartSlotsEditorWithMicroSlots({
         console.log('🔐 Token preview:', token ? token.substring(0, 20) + '...' : 'none');
         console.log('🔐 Store owner token in localStorage:', !!localStorage.getItem('store_owner_auth_token'));
         
-        console.log('🔍 Checking for existing configuration with store_id:', storeId);
+        console.log('💾 Using UPSERT approach - backend will handle create vs update automatically');
         
-        // Get existing configurations
-        const configurations = await SlotConfiguration.findAll({ 
-          store_id: storeId, 
-          is_active: true 
-        });
+        // Always use CREATE (POST) - backend handles upsert logic automatically
+        const upsertData = {
+          page_name: 'Cart',
+          page_type: 'cart', 
+          slot_type: 'cart_layout',
+          store_id: storeId,
+          configuration: config,
+          is_active: true
+        };
         
-        console.log('🔍 Found configurations:', configurations?.length);
+        console.log('📤 Sending UPSERT to database:', JSON.stringify(config, null, 2));
+        console.log('📤 UPSERT data payload:', upsertData);
         
-        // Find the Cart configuration specifically
-        const cartConfig = configurations?.find(cfg => {
-          console.log('🔍 Checking config:', cfg);
-          console.log('  - page_name:', cfg.configuration?.page_name);
-          console.log('  - slot_type:', cfg.configuration?.slot_type);
-          return cfg.configuration?.page_name === 'Cart' && 
-                 cfg.configuration?.slot_type === 'cart_layout';
-        });
-        
-        console.log('🔍 Cart config found?', !!cartConfig, cartConfig);
-        
-        if (cartConfig) {
-          // Update existing configuration
-          const configId = cartConfig.id;
-          console.log('📝 Updating existing configuration with ID:', configId);
-          const updateData = {
-            configuration: config,
-            is_active: true
-          };
-          console.log('📤 Updating database with config:', JSON.stringify(config, null, 2));
-          console.log('📤 Update data payload:', updateData);
-          console.log('📤 Config ID for update:', configId);
-          
-          try {
-            const updateResponse = await SlotConfiguration.update(configId, updateData);
-            console.log('✅ Updated in database:', updateResponse);
-          } catch (updateError) {
-            console.error('❌ Update failed with error:', updateError);
-            console.error('❌ Update error response:', updateError.response);
-            console.error('❌ Update error status:', updateError.response?.status);
-            console.error('❌ Update error data:', updateError.response?.data);
-            throw updateError;
-          }
-        } else {
-          // Create new configuration
-          const createData = {
-            store_id: storeId,
-            configuration: config,
-            is_active: true
-          };
-          console.log('📤 Creating new configuration in database:', JSON.stringify(config, null, 2));
-          console.log('📤 Create data payload:', createData);
-          
-          try {
-            const createResponse = await SlotConfiguration.create(createData);
-            console.log('✅ Created in database:', createResponse);
-          } catch (createError) {
-            console.error('❌ Create failed with error:', createError);
-            console.error('❌ Create error response:', createError.response);
-            console.error('❌ Create error status:', createError.response?.status);
-            console.error('❌ Create error data:', createError.response?.data);
-            throw createError;
-          }
+        try {
+          const upsertResponse = await SlotConfiguration.create(upsertData);
+          console.log('✅ UPSERT successful:', upsertResponse);
+        } catch (upsertError) {
+          console.error('❌ UPSERT failed with error:', upsertError);
+          console.error('❌ UPSERT error response:', upsertError.response);
+          console.error('❌ UPSERT error status:', upsertError.response?.status);
+          console.error('❌ UPSERT error data:', upsertError.response?.data);
+          throw upsertError;
         }
       }
       
