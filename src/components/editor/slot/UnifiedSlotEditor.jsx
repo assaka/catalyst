@@ -395,6 +395,12 @@ export default function UnifiedSlotEditor({
           </div>
         )}
         
+        {mode === 'display' && (
+          <div className="h-full">
+            {renderPreview()}
+          </div>
+        )}
+        
         {mode === 'code' && (
           <div className="h-full p-4">
             <Card className="h-full">

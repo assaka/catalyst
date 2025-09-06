@@ -1883,6 +1883,9 @@ export default function CartSlotsEditorWithMicroSlots({
     setSaveStatus('saving');
     
     const config = {
+      page_name: 'Cart',
+      page_type: 'cart',
+      slot_type: 'cart_layout',
       majorSlots,
       microSlotOrders,
       microSlotSpans,
@@ -3744,6 +3747,63 @@ export default function CartSlotsEditorWithMicroSlots({
                 <div dangerouslySetInnerHTML={{ __html: content }} />
               </MicroSlot>
             );
+          }
+          
+          // Handle custom slots for flashMessage
+          if (slotId.startsWith('flashMessage.custom_')) {
+            const customSlot = customSlots[slotId];
+            if (!customSlot) return null;
+            
+            if (customSlot.type === 'text') {
+              const content = slotContent[slotId] || customSlot.content || '';
+              return (
+                <MicroSlot 
+                  key={slotId} 
+                  id={slotId} 
+                  onEdit={handleEditMicroSlot}
+                  colSpan={slotSpan.col}
+                  rowSpan={slotSpan.row}
+                  onSpanChange={(id, newSpan) => handleSpanChange('flashMessage', id, newSpan)}
+                  mode={mode}
+                  onClassChange={handleClassChange}
+                  elementClasses={elementClasses}
+                  elementStyles={elementStyles}
+                  onDelete={() => handleDeleteCustomSlot(slotId)}
+                  customSlot={true}
+                  slotLabel={customSlot.label}
+                >
+                  <SimpleInlineEdit
+                    id={slotId}
+                    text={content}
+                    onSave={(text) => handleTextSave(slotId, text)}
+                    className={elementClasses[slotId] || 'text-gray-600'}
+                    style={elementStyles[slotId] || {}}
+                    mode={mode}
+                  />
+                </MicroSlot>
+              );
+            } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
+              const content = slotContent[slotId] || customSlot.content || '';
+              return (
+                <MicroSlot 
+                  key={slotId} 
+                  id={slotId} 
+                  onEdit={handleEditMicroSlot}
+                  colSpan={slotSpan.col}
+                  rowSpan={slotSpan.row}
+                  onSpanChange={(id, newSpan) => handleSpanChange('flashMessage', id, newSpan)}
+                  mode={mode}
+                  onClassChange={handleClassChange}
+                  elementClasses={elementClasses}
+                  elementStyles={elementStyles}
+                  onDelete={() => handleDeleteCustomSlot(slotId)}
+                  customSlot={true}
+                  slotLabel={customSlot.label}
+                >
+                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                </MicroSlot>
+              );
+            }
           }
           
           return null;
