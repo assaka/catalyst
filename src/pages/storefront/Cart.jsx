@@ -987,6 +987,13 @@ export default function Cart() {
         const elementStyles = cartLayoutConfig.elementStyles?.[slotId] || {};
         const microSlotSpans = cartLayoutConfig.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
         
+        // Debug: Log what customizations are being applied
+        console.log(`🎨 Rendering custom slot ${slotId}:`);
+        console.log('  - elementClasses:', elementClasses);
+        console.log('  - elementStyles:', elementStyles);
+        console.log('  - microSlotSpans:', microSlotSpans);
+        console.log('  - slotContent:', slotContent);
+        
         // Build container styles with positioning from editor
         const containerStyle = {
             ...elementStyles,
@@ -996,11 +1003,20 @@ export default function Cart() {
         };
         
         const renderContent = () => {
+            // Combine inline styles with container positioning
+            const combinedStyles = {
+                ...elementStyles,
+                ...containerStyle
+            };
+            
+            console.log(`🎨 Final styles for ${slotId}:`, combinedStyles);
+            console.log(`🎨 Final classes for ${slotId}:`, elementClasses);
+            
             if (customSlot.type === 'text') {
                 return (
                     <div 
-                        className={elementClasses || 'text-gray-600'}
-                        style={elementStyles}
+                        className={`custom-slot-content ${elementClasses || 'text-gray-600'}`}
+                        style={combinedStyles}
                     >
                         {slotContent}
                     </div>
@@ -1008,8 +1024,8 @@ export default function Cart() {
             } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
                 return (
                     <div 
-                        className={elementClasses}
-                        style={elementStyles}
+                        className={`custom-slot-content ${elementClasses || ''}`}
+                        style={combinedStyles}
                         dangerouslySetInnerHTML={{ __html: slotContent }} 
                     />
                 );
@@ -1021,8 +1037,8 @@ export default function Cart() {
             <div 
                 key={slotId} 
                 className={`custom-slot ${customSlot.type}-slot`}
-                style={containerStyle}
                 data-slot-id={slotId}
+                data-parent-slot={parentSlot}
             >
                 {renderContent()}
             </div>

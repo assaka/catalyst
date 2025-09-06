@@ -1742,7 +1742,16 @@ export default function CartSlotsEditorWithMicroSlots({
   const safeData = data || {};
   // Get selected store from context
   const { selectedStore } = useStoreSelection();
-  const currentStoreId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  const currentStoreId = selectedStore?.id;
+  
+  // Debug store context
+  useEffect(() => {
+    console.log('🏪 Store context debug:', {
+      selectedStore,
+      currentStoreId,
+      storeId: selectedStore?.id
+    });
+  }, [selectedStore]);
   
   // State for view mode - 'empty' or 'withProducts'
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
@@ -1911,6 +1920,12 @@ export default function CartSlotsEditorWithMicroSlots({
     // Try to save to database using SlotConfiguration entity directly (backend API is down)
     try {
       const storeId = selectedStore?.id;
+      console.log('💾 Save attempt - Store ID check:', {
+        selectedStore,
+        storeId,
+        hasStoreId: !!storeId
+      });
+      
       if (storeId) {
         // Import SlotConfiguration entity and API client to check auth status
         const { SlotConfiguration } = await import('@/api/entities');
@@ -2100,6 +2115,12 @@ export default function CartSlotsEditorWithMicroSlots({
       try {
         // ONLY load from database, skip localStorage
         const storeId = selectedStore?.id;
+        console.log('📥 Load attempt - Store ID check:', {
+          selectedStore,
+          storeId,
+          hasStoreId: !!storeId
+        });
+        
         if (!storeId) {
           console.log('No store ID found, using default configuration');
           return;
