@@ -43,17 +43,14 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-// Import specialized editors for advanced features
-import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 
 export default function UnifiedSlotEditor({
-  pageName = 'Cart',
-  slotType = 'cart_layout',
+  pageName,
+  slotType = 'layout',
   pageId = null,
   onClose = () => {},
 }) {
   const [mode, setMode] = useState('layout'); // 'layout', 'preview', 'code'
-  const [cartPreviewMode, setCartPreviewMode] = useState('empty');
   const [pageConfig, setPageConfig] = useState(null);
   const [slotConfig, setSlotConfig] = useState(null);
   const [codeContent, setCodeContent] = useState('');
@@ -62,16 +59,7 @@ export default function UnifiedSlotEditor({
   // Simple slot state for non-cart pages
   const [slotContent, setSlotContent] = useState({});
   
-  // Map old page names to new page types
-  const pageTypeMap = {
-    'Cart': 'cart',
-    'Category': 'category',
-    'Product': 'product',
-    'Homepage': 'homepage',
-    'Checkout': 'checkout'
-  };
-  
-  const pageType = pageTypeMap[pageName] || pageName.toLowerCase();
+  const pageType = pageName.toLowerCase();
   
   // Load configuration on mount
   useEffect(() => {
@@ -131,93 +119,17 @@ export default function UnifiedSlotEditor({
     }
   }, [codeContent, handleSave]);
   
-  // Get sample data for preview
-  const getSampleData = () => {
-    if (pageType === 'cart') {
-      if (cartPreviewMode === 'empty') {
-        return {
-          cartItems: [],
-          subtotal: 0,
-          total: 0
-        };
-      } else {
-        return {
-          cartItems: [
-            { 
-              id: 1, 
-              quantity: 2,
-              price: 29.99,
-              product: {
-                id: 1,
-                name: "Premium Cotton T-Shirt", 
-                price: 29.99,
-                images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop"]
-              },
-            },
-            { 
-              id: 2, 
-              quantity: 1,
-              price: 79.99,
-              product: {
-                id: 2,
-                name: "Classic Denim Jeans", 
-                price: 79.99,
-                images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=200&fit=crop"]
-              },
-            }
-          ],
-          subtotal: 139.97,
-          tax: 11.20,
-          total: 151.17,
-          currencySymbol: '$'
-        };
-      }
-    } else if (pageType === 'category') {
-      return {
-        category: { name: 'Electronics', description: 'Latest gadgets' },
-        products: [
-          { id: 1, name: 'Product 1', price: 99.99 },
-          { id: 2, name: 'Product 2', price: 149.99 },
-          { id: 3, name: 'Product 3', price: 199.99 },
-        ]
-      };
-    }
-    return {};
-  };
-  
   // Render the editor - unified for all page types
   const renderEditor = () => {
-    // For cart pages with advanced features, delegate to CartSlotsEditor temporarily
-    // TODO: Move CartSlotsEditor logic here to make truly unified
-    if (pageType === 'cart' && pageConfig?.microSlotDefinitions) {
-      return (
-        <div className="h-full">
-          <CartSlotsEditor mode="edit" onSave={handleSave} />
-        </div>
-      );
-    }
-    
-    // For all other pages, render simple slots directly here
-    return renderSimpleSlots('editor');
+    return renderSlots('editor');
   };
   
   const renderPreview = () => {
-    // For cart pages with advanced features, delegate to CartSlotsEditor temporarily  
-    // TODO: Move CartSlotsEditor logic here to make truly unified
-    if (pageType === 'cart' && pageConfig?.microSlotDefinitions) {
-      return (
-        <div className="h-full">
-          <CartSlotsEditor mode="preview" />
-        </div>
-      );
-    }
-    
-    // For all other pages, render simple slots directly here
-    return renderSimpleSlots('display');
+    return renderSlots('display');
   };
 
-  // Simple slot rendering - will eventually handle both simple and advanced cases
-  const renderSimpleSlots = (mode) => {
+  // Slot rendering - handles all page types uniformly
+  const renderSlots = (mode) => {
     // This is a simplified implementation
     // TODO: Add full micro-slot support here to make truly unified
     
@@ -314,33 +226,6 @@ export default function UnifiedSlotEditor({
         
         {mode === 'preview' && (
           <div className="h-full">
-            {/* Preview mode toggle for cart */}
-            {pageType === 'cart' && (
-              <div className="bg-white border-b p-3 flex justify-end gap-2">
-                <button
-                  onClick={() => setCartPreviewMode('empty')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    cartPreviewMode === 'empty'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-                  Empty Cart
-                </button>
-                <button
-                  onClick={() => setCartPreviewMode('withProducts')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    cartPreviewMode === 'withProducts'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <Package className="w-4 h-4 inline mr-1.5" />
-                  With Products
-                </button>
-              </div>
-            )}
             {renderPreview()}
           </div>
         )}

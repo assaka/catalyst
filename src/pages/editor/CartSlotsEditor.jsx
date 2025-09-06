@@ -1737,13 +1737,14 @@ export default function CartSlotsEditorWithMicroSlots({
   data = {},
   onSave = () => {},
   mode = 'edit', // 'edit' or 'preview'
+  viewMode: propViewMode, // 'empty' or 'withProducts' - when passed from parent
 }) {
   // Get selected store from context
   const { selectedStore } = useStoreSelection();
   const currentStoreId = selectedStore?.id || localStorage.getItem('selectedStoreId');
   
   // State for view mode - 'empty' or 'withProducts'
-  const [viewMode, setViewMode] = useState('empty');
+  const [viewMode, setViewMode] = useState(propViewMode || 'empty');
   
   // State for major slot order - changes based on view mode
   const [majorSlots, setMajorSlots] = useState(['flashMessage', 'header', 'emptyCart']);
