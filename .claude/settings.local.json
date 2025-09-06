@@ -10,7 +10,10 @@
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages/**)",
       "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)",
-      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)"
+      "Read(/C:\\Users\\info\\PhpstormProjects\\catalyst\\src\\pages\\admin/**)",
+      "Bash(sed:*)",
+      "Bash(grep:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],

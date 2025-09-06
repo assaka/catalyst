@@ -1679,29 +1679,6 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </button>
       )}
       
-      {/* Add new slot button in bottom-right - only in edit mode */}
-      {mode === 'edit' && isHovered && !isDragging && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (window.onAddNewSlot) {
-              window.onAddNewSlot(id);
-            }
-          }}
-          className="absolute right-2 bottom-2 p-1.5 bg-green-100/90 rounded transition-opacity z-30 hover:bg-green-200 group"
-          title="Add new slot"
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            if (hoverTimeoutRef.current) {
-              clearTimeout(hoverTimeoutRef.current);
-            }
-            setIsHovered(true);
-          }}
-        >
-          <Plus className="w-4 h-4 text-green-600 group-hover:scale-110 transition-transform" />
-        </button>
-      )}
-
       {/* Section label - only in edit mode */}
       {mode === 'edit' && (
         <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
@@ -1727,6 +1704,29 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
           </div>
         )}
       </div>
+
+      {/* Add new slot button at bottom - only in edit mode */}
+      {mode === 'edit' && isHovered && !isDragging && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.onAddNewSlot) {
+              window.onAddNewSlot(id);
+            }
+          }}
+          className="absolute right-2 bottom-2 p-1.5 bg-green-100/90 rounded transition-opacity z-30 hover:bg-green-200 group"
+          title="Add new slot"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+            }
+            setIsHovered(true);
+          }}
+        >
+          <Plus className="w-4 h-4 text-green-600 group-hover:scale-110 transition-transform" />
+        </button>
+      )}
     </div>
   );
 }
