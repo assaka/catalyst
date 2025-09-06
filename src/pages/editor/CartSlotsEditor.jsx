@@ -1912,7 +1912,7 @@ export default function CartSlotsEditorWithMicroSlots({
     try {
       const storeId = localStorage.getItem('selectedStoreId');
       if (storeId) {
-        // Import SlotConfiguration entity directly
+        // Import SlotConfiguration entity
         const { SlotConfiguration } = await import('@/api/entities');
         
         console.log('🔍 Checking for existing configuration with store_id:', storeId);
@@ -2121,7 +2121,7 @@ export default function CartSlotsEditorWithMicroSlots({
           store_id: storeId
         }).toString();
         
-        // Import SlotConfiguration entity directly (backend API is down)
+        // Import SlotConfiguration entity
         const { SlotConfiguration } = await import('@/api/entities');
         
         console.log('📥 Loading configurations from database...');
@@ -4288,8 +4288,8 @@ export default function CartSlotsEditorWithMicroSlots({
                     store_id: storeId
                   }).toString();
                   
-                  // Import SlotConfiguration entity directly (backend API is down)
-                  const { SlotConfiguration } = await import('@/api/entities');
+                  // Import localStorage-based SlotConfiguration (backend API is broken)
+                  const SlotConfiguration = (await import('@/api/localStorage-slot-config')).default;
                   
                   // Get existing configurations
                   const configurations = await SlotConfiguration.findAll({ 

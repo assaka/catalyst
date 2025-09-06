@@ -108,12 +108,16 @@ export default function Cart() {
     
     // Load cart layout configuration directly
     useEffect(() => {
+        console.log('🔄 loadCartLayoutConfig useEffect triggered, store:', store);
         const loadCartLayoutConfig = async () => {
-            if (!store?.id) return;
+            if (!store?.id) {
+                console.log('❌ No store.id found, skipping slot config loading');
+                return;
+            }
+            console.log('✅ Store ID found, loading slot configuration for store:', store.id);
             
             try {
-                // For now, load configuration directly using a simple API call
-                // This bypasses the cart API issue until backend is fixed
+                // Load configuration using SlotConfiguration entity
                 const { SlotConfiguration } = await import('@/api/entities');
                 
                 const configurations = await SlotConfiguration.findAll({ 
