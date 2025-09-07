@@ -1626,8 +1626,13 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
   const handleMouseLeave = useCallback((e) => {
     // Check if we're still within the component or its children
     const relatedTarget = e.relatedTarget;
-    if (containerRef.current && containerRef.current.contains(relatedTarget)) {
-      return; // Don't hide if we're still inside the component
+    try {
+      if (containerRef.current && relatedTarget && typeof relatedTarget.nodeType === 'number' && containerRef.current.contains(relatedTarget)) {
+        return; // Don't hide if we're still inside the component
+      }
+    } catch (error) {
+      // If contains() fails, just continue with the timeout
+      console.log('Mouse leave check failed, continuing...', error);
     }
     
     // Add a small delay before hiding to prevent flickering
@@ -1932,17 +1937,7 @@ export default function CartSlotsEditorWithMicroSlots({
       });
       
       if (!storeId) {
-        console.warn('⚠️ No store ID available, cannot save to database. Will retry when store context loads.');
-        // Set up a retry mechanism
-        const retryWhenStoreLoads = () => {
-          if (selectedStore?.id) {
-            console.log('🔄 Store context now available, retrying save...');
-            saveConfiguration(); // Recursive call
-          } else {
-            setTimeout(retryWhenStoreLoads, 1000); // Try again in 1 second
-          }
-        };
-        setTimeout(retryWhenStoreLoads, 1000);
+        console.warn('⚠️ No store ID available, cannot save to database');
         return;
       }
       
