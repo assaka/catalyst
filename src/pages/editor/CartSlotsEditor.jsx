@@ -5139,12 +5139,21 @@ export default function CartSlotsEditorWithMicroSlots({
                 console.log('🎨 Apply button clicked');
                 console.log('Modal state:', colorPickerModal);
                 console.log('handleClassChange exists?', typeof handleClassChange);
+                console.log('elementStyles state:', elementStyles);
+                console.log('elementClasses state:', elementClasses);
                 
                 if (colorPickerModal.slotId) {
                   console.log('🎨 Applying color:', colorPickerModal.currentColor, 'to:', colorPickerModal.slotId);
                   const styleKey = colorPickerModal.type === 'text' ? 'color' : 'backgroundColor';
                   
+                  // Try using handleClassChange if it exists
                   if (typeof handleClassChange === 'function') {
+                    console.log('📞 Calling handleClassChange with:', {
+                      slotId: colorPickerModal.slotId,
+                      newClass: elementClasses[colorPickerModal.slotId] || '',
+                      newStyles: { [styleKey]: colorPickerModal.currentColor }
+                    });
+                    
                     handleClassChange(
                       colorPickerModal.slotId, 
                       elementClasses[colorPickerModal.slotId] || '', 
@@ -5152,7 +5161,17 @@ export default function CartSlotsEditorWithMicroSlots({
                     );
                     console.log('✅ handleClassChange called successfully');
                   } else {
-                    console.error('❌ handleClassChange is not a function!', typeof handleClassChange);
+                    // Fallback: directly update the state
+                    console.warn('⚠️ handleClassChange not available, updating state directly');
+                    setElementStyles(prev => ({
+                      ...prev,
+                      [colorPickerModal.slotId]: {
+                        ...prev[colorPickerModal.slotId],
+                        [styleKey]: colorPickerModal.currentColor
+                      }
+                    }));
+                    // Trigger save
+                    debouncedSave();
                   }
                 } else {
                   console.error('❌ No slotId in colorPickerModal');

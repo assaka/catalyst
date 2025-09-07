@@ -44,6 +44,47 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
     defaultValue: true,
     comment: 'Whether this configuration is currently active'
   },
+  status: {
+    type: DataTypes.ENUM('draft', 'published', 'reverted'),
+    allowNull: false,
+    defaultValue: 'published',
+    comment: 'Status of the configuration version'
+  },
+  version_number: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+    comment: 'Version number for tracking configuration history'
+  },
+  page_type: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'cart',
+    comment: 'Type of page this configuration applies to'
+  },
+  published_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Timestamp when this version was published'
+  },
+  published_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    comment: 'User who published this version'
+  },
+  parent_version_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'slot_configurations',
+      key: 'id'
+    },
+    comment: 'Reference to the parent version this was based on'
+  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,
@@ -60,9 +101,16 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
   timestamps: true,
   indexes: [
     {
-      fields: ['user_id', 'store_id'],
-      unique: true,
-      name: 'unique_user_store_config'
+      fields: ['user_id', 'store_id', 'status', 'page_type'],
+      name: 'idx_user_store_status_page'
+    },
+    {
+      fields: ['store_id', 'status', 'page_type', 'version_number'],
+      name: 'idx_store_status_page_version'
+    },
+    {
+      fields: ['parent_version_id'],
+      name: 'idx_parent_version'
     },
     {
       fields: ['store_id']
@@ -102,6 +150,165 @@ SlotConfiguration.findActiveByUserStore = async function(userId, storeId) {
       is_active: true
     }
   });
+};
+
+// Find the latest draft for editing
+SlotConfiguration.findLatestDraft = async function(userId, storeId, pageType = 'cart') {
+  return this.findOne({
+    where: {
+      user_id: userId,
+      store_id: storeId,
+      status: 'draft',
+      page_type: pageType
+    },
+    order: [['version_number', 'DESC']]
+  });
+};
+
+// Find the latest published version for display
+SlotConfiguration.findLatestPublished = async function(storeId, pageType = 'cart') {
+  return this.findOne({
+    where: {
+      store_id: storeId,
+      status: 'published',
+      page_type: pageType
+    },
+    order: [['version_number', 'DESC']]
+  });
+};
+
+// Create a new draft based on the latest published version
+SlotConfiguration.createDraft = async function(userId, storeId, pageType = 'cart') {
+  // First check if a draft already exists
+  const existingDraft = await this.findLatestDraft(userId, storeId, pageType);
+  if (existingDraft) {
+    return existingDraft;
+  }
+
+  // Find the latest published version to base the draft on
+  const latestPublished = await this.findLatestPublished(storeId, pageType);
+  
+  let newConfig;
+  if (latestPublished) {
+    // Create draft based on published version
+    const maxVersion = await this.max('version_number', {
+      where: {
+        store_id: storeId,
+        page_type: pageType
+      }
+    });
+    
+    newConfig = await this.create({
+      user_id: userId,
+      store_id: storeId,
+      configuration: latestPublished.configuration,
+      version: latestPublished.version,
+      is_active: true,
+      status: 'draft',
+      version_number: (maxVersion || 0) + 1,
+      page_type: pageType,
+      parent_version_id: latestPublished.id
+    });
+  } else {
+    // Create a new draft with default configuration
+    const defaultConfig = {
+      slots: {},
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+    };
+    
+    newConfig = await this.create({
+      user_id: userId,
+      store_id: storeId,
+      configuration: defaultConfig,
+      version: '1.0',
+      is_active: true,
+      status: 'draft',
+      version_number: 1,
+      page_type: pageType,
+      parent_version_id: null
+    });
+  }
+  
+  return newConfig;
+};
+
+// Publish a draft
+SlotConfiguration.publishDraft = async function(draftId, publishedByUserId) {
+  const draft = await this.findByPk(draftId);
+  if (!draft || draft.status !== 'draft') {
+    throw new Error('Draft not found or already published');
+  }
+  
+  // Update the draft to published
+  draft.status = 'published';
+  draft.published_at = new Date();
+  draft.published_by = publishedByUserId;
+  await draft.save();
+  
+  return draft;
+};
+
+// Get version history for a store and page
+SlotConfiguration.getVersionHistory = async function(storeId, pageType = 'cart', limit = 20) {
+  return this.findAll({
+    where: {
+      store_id: storeId,
+      page_type: pageType,
+      status: 'published'
+    },
+    order: [['version_number', 'DESC']],
+    limit
+  });
+};
+
+// Revert to a specific version
+SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
+  const targetVersion = await this.findByPk(versionId);
+  if (!targetVersion || targetVersion.status !== 'published') {
+    throw new Error('Version not found or not published');
+  }
+  
+  // Mark all versions after this one as reverted
+  await this.update(
+    { status: 'reverted' },
+    {
+      where: {
+        store_id: storeId,
+        page_type: targetVersion.page_type,
+        status: 'published',
+        version_number: {
+          [require('sequelize').Op.gt]: targetVersion.version_number
+        }
+      }
+    }
+  );
+  
+  // Create a new published version based on the target version
+  const maxVersion = await this.max('version_number', {
+    where: {
+      store_id: storeId,
+      page_type: targetVersion.page_type
+    }
+  });
+  
+  const newVersion = await this.create({
+    user_id: userId,
+    store_id: storeId,
+    configuration: targetVersion.configuration,
+    version: targetVersion.version,
+    is_active: true,
+    status: 'published',
+    version_number: (maxVersion || 0) + 1,
+    page_type: targetVersion.page_type,
+    parent_version_id: targetVersion.id,
+    published_at: new Date(),
+    published_by: userId
+  });
+  
+  return newVersion;
 };
 
 SlotConfiguration.findByMigrationSource = async function(source, limit = 100) {
