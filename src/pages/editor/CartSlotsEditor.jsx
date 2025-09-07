@@ -1689,7 +1689,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             defaultValue="#000000"
             onChange={(e) => {
               console.log('🎨 SIMPLE color picker changed for:', id, 'color:', e.target.value);
-              onClassChange(id, elementClasses[id] || '', { color: e.target.value });
+              console.log('🔍 onClassChange function:', typeof onClassChange, onClassChange?.name);
+              if (onClassChange) {
+                onClassChange(id, elementClasses[id] || '', { color: e.target.value });
+              } else {
+                console.log('❌ onClassChange is null/undefined');
+              }
             }}
             className="w-8 h-8 cursor-pointer border-0 rounded"
             title="Text color"
@@ -3342,11 +3347,11 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
               >
-                <div className={`w-full ${elementClasses[slotId] || 'text-xl font-semibold text-center'}`} style={elementStyles[slotId] || {}}>
+                <div className="w-full">
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
-                    className=""
-                    style={{}}
+                    className={elementClasses[slotId] || 'text-xl font-semibold text-center'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
@@ -3371,11 +3376,11 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
               >
-                <div className={`w-full ${elementClasses[slotId] || 'text-gray-600 text-center'}`} style={elementStyles[slotId] || {}}>
+                <div className="w-full">
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
-                    className=""
-                    style={{}}
+                    className={elementClasses[slotId] || 'text-gray-600 text-center'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
