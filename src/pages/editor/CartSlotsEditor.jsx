@@ -303,8 +303,27 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     }
     
     const newClassName = classes.join(' ');
-    console.log('🎨 Color class toggle:', { category, newClass, newClassName });
+    console.log('🎨 Tailwind class toggle:', { category, newClass, newClassName });
+    
+    // Clear conflicting inline styles when using Tailwind classes
+    let stylesToClear = null;
+    if (category === 'text-color' && newClass) {
+      console.log('🧹 Clearing inline text color for Tailwind class');
+      stylesToClear = { color: null }; // This will remove the inline color
+    } else if (category === 'bg-color' && newClass) {
+      console.log('🧹 Clearing inline background color for Tailwind class');
+      stylesToClear = { backgroundColor: null };
+    }
+    
     setTempClass(newClassName);
+    
+    // If we have styles to clear, trigger onChange immediately to clear them
+    if (stylesToClear && onChange) {
+      console.log('💨 Immediately clearing conflicting styles:', stylesToClear);
+      setTimeout(() => {
+        onChange(tempText, newClassName, stylesToClear);
+      }, 50);
+    }
   };
   
   // Initialize selected colors from existing classes
@@ -913,12 +932,12 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
         <TailwindStyleEditor
           text={text}
           className={className}
-          onChange={(newText, newClass) => {
-            console.log('📨 SimpleInlineEdit received onChange:', { slotId, newText, newClass });
+          onChange={(newText, newClass, stylesToClear) => {
+            console.log('📨 SimpleInlineEdit received onChange:', { slotId, newText, newClass, stylesToClear });
             onChange(newText);
             if (onClassChange) {
-              console.log('🔄 Calling onClassChange for:', slotId, newClass);
-              onClassChange(slotId, newClass);
+              console.log('🔄 Calling onClassChange for:', slotId, newClass, stylesToClear);
+              onClassChange(slotId, newClass, stylesToClear);
             } else {
               console.log('⚠️ No onClassChange provided for:', slotId);
             }
@@ -1382,10 +1401,15 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 const currentClasses = elementClasses[id] || '';
-                // Remove any existing text color classes
+                console.log('🔴 Before color removal:', currentClasses);
+                // Remove any existing text color classes (dynamic pattern)
                 const newClasses = currentClasses
-                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|black|white)-([0-9]+)/g, '')
+                  .replace(/text-[a-zA-Z]+-[0-9]+/g, '') // Matches text-{anyColor}-{number}
+                  .replace(/text-(black|white|transparent|current|inherit)/g, '') // Special cases without numbers
+                  .replace(/\s+/g, ' ')
                   .trim();
+                console.log('🟢 After color removal:', newClasses);
+                console.log('🎨 Setting inline color:', e.target.value);
                 // Store the color as an inline style
                 onClassChange(id, newClasses, { color: e.target.value });
               }}
@@ -2439,13 +2463,25 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // If styles are provided, update them too
     if (newStyles) {
-      setElementStyles(prev => ({
-        ...prev,
-        [slotId]: {
-          ...prev[slotId],
-          ...newStyles
-        }
-      }));
+      setElementStyles(prev => {
+        const currentStyles = { ...prev[slotId] };
+        
+        // Handle clearing styles (when value is null)
+        Object.keys(newStyles).forEach(styleKey => {
+          if (newStyles[styleKey] === null) {
+            console.log('🗑️ Removing style:', styleKey, 'from', slotId);
+            delete currentStyles[styleKey];
+          } else {
+            console.log('📝 Setting style:', styleKey, '=', newStyles[styleKey], 'for', slotId);
+            currentStyles[styleKey] = newStyles[styleKey];
+          }
+        });
+        
+        return {
+          ...prev,
+          [slotId]: currentStyles
+        };
+      });
     }
     
     // Auto-save after class change
