@@ -1658,6 +1658,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           console.log('🔍 emptyCart.button hover check:', { isHovered, isDragging, isResizing, onClassChange: !!onClassChange });
         }
         return isHovered && !isDragging && !isResizing && onClassChange;
+      })() && (() => {
+        if (id === 'emptyCart.button') {
+          console.log('🎨 Rendering color controls for emptyCart.button!');
+        }
+        return true;
       })() && (
         <div 
           className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto mx-auto"
@@ -1727,6 +1732,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .join(' ')
                   .replace(/\s+/g, ' ')
                   .trim();
+                console.log('🎨 Color picker onChange called for:', id, 'with color:', e.target.value);
                 onClassChange(id, newClasses, { color: e.target.value });
               }}
               className="w-5 h-5 cursor-pointer border-0"
