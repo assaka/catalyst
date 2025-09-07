@@ -1684,69 +1684,16 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           }}
         >
           {/* Text color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
-            <Palette className="w-3 h-3 text-gray-600 mr-1" />
-            <input
-              type="color"
-              key={`text-${id}-${elementStyles[id]?.color || 'default'}`}
-              value={elementStyles[id]?.color || '#000000'}
-              onFocus={(e) => {
-                // Keep hover state active when color picker is focused
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-              }}
-              onChange={(e) => {
-                // Keep hover state active during changes
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-                const currentClasses = elementClasses[id] || '';
-                // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
-                const newClasses = currentClasses
-                  .split(' ')
-                  .filter(cls => {
-                    // Check if it's a text class
-                    if (!cls.startsWith('text-')) return true;
-                    
-                    const parts = cls.split('-');
-                    // text-red-500 = ['text', 'red', '500'] - remove (color)
-                    // text-2xl = ['text', '2xl'] - keep (size)
-                    // text-black = ['text', 'black'] - remove (special color)
-                    
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-                      // It's text-{word}-{number} - this is a color
-                      console.log(`  Removing color class: ${cls}`);
-                      return false;
-                    }
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-                      // Special color cases without numbers
-                      console.log(`  Removing special color: ${cls}`);
-                      return false;
-                    }
-                    // Keep everything else (text-xl, text-2xl, text-center, etc.)
-                    return true;
-                  })
-                  .join(' ')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                console.log('🎨 Color picker onChange called for:', id, 'with color:', e.target.value);
-                onClassChange(id, newClasses, { color: e.target.value });
-              }}
-              className="w-5 h-5 cursor-pointer border-0"
-              title="Text color"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Keep hover state active when clicking color picker
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-              }}
-            />
-          </div>
+          <input
+            type="color"
+            defaultValue="#000000"
+            onChange={(e) => {
+              console.log('🎨 SIMPLE color picker changed for:', id, 'color:', e.target.value);
+              onClassChange(id, elementClasses[id] || '', { color: e.target.value });
+            }}
+            className="w-8 h-8 cursor-pointer border-0 rounded"
+            title="Text color"
+          />
 
           {/* Background color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
