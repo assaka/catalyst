@@ -1702,14 +1702,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           <input
             type="color"
             defaultValue="#000000"
+            onInput={(e) => {
+              console.log('🎨 Color picker onInput for:', id, 'color:', e.target.value);
+              onClassChange(id, elementClasses[id] || '', { color: e.target.value });
+            }}
             onChange={(e) => {
-              console.log('🎨 SIMPLE color picker changed for:', id, 'color:', e.target.value);
-              console.log('🔍 onClassChange function:', typeof onClassChange, onClassChange?.name);
-              if (onClassChange) {
-                onClassChange(id, elementClasses[id] || '', { color: e.target.value });
-              } else {
-                console.log('❌ onClassChange is null/undefined');
-              }
+              console.log('🎨 Color picker onChange for:', id, 'color:', e.target.value);
+              onClassChange(id, elementClasses[id] || '', { color: e.target.value });
             }}
             className="w-8 h-8 cursor-pointer border-0 rounded"
             title="Text color"
