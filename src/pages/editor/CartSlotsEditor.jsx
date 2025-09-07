@@ -1493,6 +1493,41 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 e.stopPropagation();
                 console.log('🖱️ Color picker #1 click');
               }}
+              onInput={(e) => {
+                e.stopPropagation();
+                console.log('📝 ACTIONS BAR Color picker onInput triggered!', e.target.value);
+                
+                // Same logic as onChange - duplicate to ensure it works
+                const currentClasses = elementClasses[id] || '';
+                console.log('🔴 onInput - Before color removal:', currentClasses);
+                const newClasses = currentClasses
+                  .split(' ')
+                  .filter(cls => {
+                    if (!cls.startsWith('text-')) return true;
+                    const parts = cls.split('-');
+                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                      console.log(`  Removing color class: ${cls}`);
+                      return false;
+                    }
+                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                      console.log(`  Removing special color: ${cls}`);
+                      return false;
+                    }
+                    return true;
+                  })
+                  .join(' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                console.log('🟢 onInput - After color removal:', newClasses);
+                console.log('🎨 onInput - Setting inline color:', e.target.value);
+                
+                if (onClassChange) {
+                  console.log('✅ onInput - Calling onClassChange with:', { id, newClasses, color: e.target.value });
+                  onClassChange(id, newClasses, { color: e.target.value });
+                } else {
+                  console.error('❌ onInput - onClassChange is not available!');
+                }
+              }}
             />
           </div>
 
@@ -3169,6 +3204,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                       slotId={slotId}
                       onClassChange={handleClassChange}
+                      mode={mode}
                     />
                   </div>
                 </MicroSlot>
@@ -4133,6 +4169,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       }}
                       slotId={slotId}
                       onClassChange={handleClassChange}
+                      mode={mode}
                     />
                   </div>
                 </MicroSlot>
