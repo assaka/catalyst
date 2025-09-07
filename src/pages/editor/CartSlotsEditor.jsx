@@ -1077,7 +1077,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, mode = 'edit' }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, microSlotSpans = {}, mode = 'edit' }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -2577,6 +2577,19 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [customSlots, justAddedCustomSlot, debouncedSave]);
 
+  // Auto-save when microSlotOrders changes (for drag-and-drop persistence)
+  useEffect(() => {
+    // Skip initial load and only save after user interactions
+    const isInitialLoad = Object.keys(microSlotOrders).length === 0;
+    if (isInitialLoad) {
+      console.log('⏭️ Skipping microSlotOrders save - initial load');
+      return;
+    }
+    
+    console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders);
+    debouncedSave();
+  }, [microSlotOrders, debouncedSave]);
+
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
     if (!selectedStore?.id) {
@@ -2643,6 +2656,7 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           
           console.log('✅ Loading configuration from DATABASE:', config);
+          console.log('🔄 Loaded microSlotOrders:', config.microSlotOrders);
           console.log('📐 Loaded microSlotSpans:', config.microSlotSpans);
           console.log('📝 Loaded slotContent:', config.slotContent);
           console.log('🎨 Loaded elementClasses:', config.elementClasses);
@@ -2661,6 +2675,7 @@ export default function CartSlotsEditorWithMicroSlots({
             setMajorSlots(config.majorSlots);
           }
           if (config.microSlotOrders) {
+            console.log('📥 Setting microSlotOrders from database:', config.microSlotOrders);
             setMicroSlotOrders(config.microSlotOrders);
           }
           if (config.microSlotSpans) {
@@ -2826,13 +2841,12 @@ export default function CartSlotsEditorWithMicroSlots({
       
       if (oldIndex !== -1 && newIndex !== -1) {
         newOrders[parentId] = arrayMove(parentOrder, oldIndex, newIndex);
-        // Auto-save after micro-slot reorder
-        debouncedSave();
+        console.log('🔄 Micro-slot reordered:', { parentId, from: oldIndex, to: newIndex, newOrder: newOrders[parentId] });
       }
       
       return newOrders;
     });
-  }, [debouncedSave]);
+  }, []);
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
