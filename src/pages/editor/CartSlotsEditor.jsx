@@ -3424,6 +3424,8 @@ export default function CartSlotsEditorWithMicroSlots({
             const styles = elementStyles[slotId] || {};
             const classes = elementClasses[slotId] || '';
             
+            console.log('🔧 Button styling debug for', slotId, '- styles:', styles, 'classes:', classes);
+            
             // Remove existing color classes if we have custom styles
             if (styles.backgroundColor || styles.color) {
               // Remove bg-* and text-* color classes
@@ -3436,6 +3438,8 @@ export default function CartSlotsEditorWithMicroSlots({
               const styleStr = Object.entries(styles)
                 .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
                 .join('; ');
+              console.log('🎨 Applying inline styles to button:', styleStr);
+              const originalButtonCode = buttonCode;
               buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
                 if (attrs.includes('style=')) {
                   return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
@@ -3443,6 +3447,8 @@ export default function CartSlotsEditorWithMicroSlots({
                   return `<button${attrs} style="${styleStr}">`;
                 }
               });
+              console.log('🔄 Button code before styling:', originalButtonCode);
+              console.log('🔄 Button code after styling:', buttonCode);
             }
             
             // Apply rounded classes to the button
@@ -4219,6 +4225,8 @@ export default function CartSlotsEditorWithMicroSlots({
                 // Apply styles and classes to the button
                 const styles = elementStyles[slotId] || {};
                 const classes = elementClasses[slotId] || '';
+                
+                console.log('🔧 Checkout button styling debug for', slotId, '- styles:', styles, 'classes:', classes);
                 
                 // Remove existing color classes if we have custom styles
                 if (styles.backgroundColor || styles.color) {
