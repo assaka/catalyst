@@ -1320,57 +1320,59 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         >
           {/* Alignment controls */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200">
-            <button
-              onClick={() => {
-                // Store horizontal alignment in microSlotSpans for parent container
-                const parentSlot = id.split('.')[0];
-                if (onSpanChange) {
-                  onSpanChange(id, { 
-                    col: colSpan, 
-                    row: rowSpan, 
-                    align: 'left'  // Store alignment preference
-                  });
-                }
-              }}
-              className={`p-1 hover:bg-gray-100 rounded`}
-              title="Align left"
-            >
-              <AlignLeft className="w-4 h-4 text-gray-600" />
-            </button>
-            <button
-              onClick={() => {
-                // Store horizontal alignment in microSlotSpans for parent container  
-                const parentSlot = id.split('.')[0];
-                if (onSpanChange) {
-                  onSpanChange(id, { 
-                    col: colSpan, 
-                    row: rowSpan, 
-                    align: 'center'  // Store alignment preference
-                  });
-                }
-              }}
-              className={`p-1 hover:bg-gray-100 rounded`}
-              title="Align center"
-            >
-              <AlignCenter className="w-4 h-4 text-gray-600" />
-            </button>
-            <button
-              onClick={() => {
-                // Store horizontal alignment in microSlotSpans for parent container
-                const parentSlot = id.split('.')[0];
-                if (onSpanChange) {
-                  onSpanChange(id, { 
-                    col: colSpan, 
-                    row: rowSpan, 
-                    align: 'right'  // Store alignment preference
-                  });
-                }
-              }}
-              className={`p-1 hover:bg-gray-100 rounded`}
-              title="Align right"
-            >
-              <AlignRight className="w-4 h-4 text-gray-600" />
-            </button>
+            {(() => {
+              const parentSlot = id.split('.')[0];
+              const currentAlign = microSlotSpans[parentSlot]?.[id]?.align || 'left';
+              return (
+                <>
+                  <button
+                    onClick={() => {
+                      if (onSpanChange) {
+                        onSpanChange(id, { 
+                          col: colSpan, 
+                          row: rowSpan, 
+                          align: 'left'
+                        });
+                      }
+                    }}
+                    className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'left' ? 'bg-blue-100' : ''}`}
+                    title="Align left"
+                  >
+                    <AlignLeft className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onSpanChange) {
+                        onSpanChange(id, { 
+                          col: colSpan, 
+                          row: rowSpan, 
+                          align: 'center'
+                        });
+                      }
+                    }}
+                    className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'center' ? 'bg-blue-100' : ''}`}
+                    title="Align center"
+                  >
+                    <AlignCenter className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onSpanChange) {
+                        onSpanChange(id, { 
+                          col: colSpan, 
+                          row: rowSpan, 
+                          align: 'right'
+                        });
+                      }
+                    }}
+                    className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'right' ? 'bg-blue-100' : ''}`}
+                    title="Align right"
+                  >
+                    <AlignRight className="w-4 h-4 text-gray-600" />
+                  </button>
+                </>
+              );
+            })()}
           </div>
           
           {/* Font style controls */}
@@ -1481,7 +1483,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
-              value={elementStyles[id]?.backgroundColor || '#ffffff'}
+              value={elementStyles[id]?.backgroundColor || '#000000'}
               onChange={(e) => {
                 const currentClasses = elementClasses[id] || '';
                 // Remove bg-{word}-{number} (colors) using smart detection
@@ -1682,7 +1684,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
-              value={elementStyles[id]?.color || '#ffffff'}
+              value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 console.log('🎨 Second color picker onChange triggered!', e.target.value);
                 const currentClasses = elementClasses[id] || '';
@@ -1740,7 +1742,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
-              value={elementStyles[id]?.backgroundColor || '#0000ff'}
+              value={elementStyles[id]?.backgroundColor || '#3b82f6'}
               onChange={(e) => {
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
