@@ -3215,6 +3215,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
+                microSlotSpans={microSlotSpans}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="relative group">
@@ -3301,6 +3302,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
+                microSlotSpans={microSlotSpans}
               >
                 <div className={`w-full ${elementClasses[slotId] || 'text-xl font-semibold text-center'}`} style={elementStyles[slotId] || {}}>
                   <SimpleInlineEdit
@@ -3329,6 +3331,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
+                microSlotSpans={microSlotSpans}
               >
                 <div className={`w-full ${elementClasses[slotId] || 'text-gray-600 text-center'}`} style={elementStyles[slotId] || {}}>
                   <SimpleInlineEdit
@@ -3718,6 +3721,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="flex items-center justify-start mb-2">
                       <SimpleInlineEdit
@@ -3745,6 +3749,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <Input 
                       placeholder={slotContent['coupon.input.placeholder'] || 'Enter coupon code'}
@@ -3808,6 +3813,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     elementStyles={elementStyles}
                     componentSizes={componentSizes}
                     onSizeChange={handleSizeChange}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div 
                       className="w-full pointer-events-none"
@@ -3829,6 +3835,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="bg-green-50 p-3 rounded-lg">
                       <p className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}>
@@ -3907,6 +3914,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     elementStyles={elementStyles}
                     componentSizes={componentSizes}
                     onSizeChange={handleSizeChange}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div 
                       className="flex items-center justify-center h-full pointer-events-none"
@@ -3933,6 +3941,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="p-2 bg-gray-50 rounded">
                       {customSlot.type === 'text' && (
@@ -3995,6 +4004,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="flex items-center justify-start mb-2">
                       <SimpleInlineEdit
@@ -4022,6 +4032,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
@@ -4050,6 +4061,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
@@ -4078,6 +4090,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="flex justify-between items-center">
                       <SimpleInlineEdit
@@ -4111,6 +4124,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="flex justify-between items-center border-t pt-2">
                       <SimpleInlineEdit
@@ -4182,6 +4196,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="pt-2 pointer-events-none">
                       <div dangerouslySetInnerHTML={{ __html: buttonCode }} />
@@ -4207,6 +4222,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 mode={mode}
                     onClassChange={handleClassChange}
                     elementClasses={elementClasses}
+                    microSlotSpans={microSlotSpans}
                   >
                     <div className="p-2 bg-gray-50 rounded">
                       {customSlot.type === 'text' && (
@@ -4389,6 +4405,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
+                microSlotSpans={microSlotSpans}
               >
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
               </MicroSlot>
@@ -4407,6 +4424,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 onClassChange={handleClassChange}
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
+                microSlotSpans={microSlotSpans}
               >
                 <div className="relative">
                   <SimpleInlineEdit
