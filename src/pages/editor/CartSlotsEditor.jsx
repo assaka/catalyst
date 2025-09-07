@@ -1327,8 +1327,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto"
-          style={{ maxWidth: '95%', whiteSpace: 'nowrap' }}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex flex-nowrap gap-1 transition-opacity z-50 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto"
+          style={{ maxWidth: '90vw', whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -1654,8 +1654,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Button formatting controls - only color and border radius */}
       {id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto"
-          style={{ maxWidth: '95%', whiteSpace: 'nowrap' }}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex flex-nowrap gap-1 transition-opacity z-50 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto"
+          style={{ maxWidth: '90vw', whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
