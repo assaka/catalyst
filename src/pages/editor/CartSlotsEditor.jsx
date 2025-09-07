@@ -289,9 +289,40 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     let classes = tempClass.split(' ').filter(c => c);
     
     if (category === 'text-color') {
-      classes = classes.filter(c => !c.startsWith('text-'));
+      // Only remove text COLOR classes, keep text sizes and utilities
+      classes = classes.filter(cls => {
+        if (!cls.startsWith('text-')) return true;
+        
+        const parts = cls.split('-');
+        // text-red-500 = ['text', 'red', '500'] - remove (color)
+        // text-2xl = ['text', '2xl'] - keep (size)
+        // text-center = ['text', 'center'] - keep (utility)
+        
+        if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+          console.log(`  🗑️ Tailwind modal removing color class: ${cls}`);
+          return false; // Remove color classes
+        }
+        if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+          console.log(`  🗑️ Tailwind modal removing special color: ${cls}`);
+          return false; // Remove special colors
+        }
+        console.log(`  ✅ Tailwind modal keeping utility: ${cls}`);
+        return true; // Keep everything else
+      });
     } else if (category === 'bg-color') {
-      classes = classes.filter(c => !c.startsWith('bg-'));
+      // Only remove background COLOR classes, keep bg utilities
+      classes = classes.filter(cls => {
+        if (!cls.startsWith('bg-')) return true;
+        
+        const parts = cls.split('-');
+        if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+          return false; // Remove color classes
+        }
+        if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+          return false; // Remove special colors
+        }
+        return true; // Keep utilities like bg-cover, bg-gradient-to-r
+      });
     } else if (category === 'font-size') {
       classes = classes.filter(c => !['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl'].includes(c));
     } else if (category === 'font-weight') {
