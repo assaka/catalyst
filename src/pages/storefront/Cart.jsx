@@ -1111,7 +1111,14 @@ export default function Cart() {
                 
                 {/* Header Section with Custom Slots */}
                 <div className="header-section mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                    {(() => {
+                        const headerTitleStyling = getMicroSlotStyling('header.title');
+                        return (
+                            <h1 className={`text-3xl font-bold text-gray-900 mb-4 ${headerTitleStyling.elementClasses}`} style={headerTitleStyling.elementStyles}>
+                                My Cart
+                            </h1>
+                        );
+                    })()}
                     {cartLayoutConfig?.microSlotOrders?.header && (
                         <div className="grid grid-cols-12 gap-2 auto-rows-min">
                             {cartLayoutConfig.microSlotOrders.header.map(slotId => 
@@ -1127,8 +1134,22 @@ export default function Cart() {
                     <div className="emptyCart-section">
                         <div className="text-center py-12">
                             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
-                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                            {(() => {
+                                const titleStyling = getMicroSlotStyling('emptyCart.title');
+                                return (
+                                    <h2 className={`text-xl font-semibold text-gray-900 mb-2 ${titleStyling.elementClasses}`} style={titleStyling.elementStyles}>
+                                        Your cart is empty
+                                    </h2>
+                                );
+                            })()}
+                            {(() => {
+                                const textStyling = getMicroSlotStyling('emptyCart.text');
+                                return (
+                                    <p className={`text-gray-600 mb-6 ${textStyling.elementClasses}`} style={textStyling.elementStyles}>
+                                        Looks like you haven't added anything to your cart yet.
+                                    </p>
+                                );
+                            })()}
                             <Button 
                                 onClick={() => navigate(getStoreBaseUrl(store))}
                                 className="bg-blue-600 hover:bg-blue-700"
