@@ -1327,8 +1327,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '95%' }}
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto"
+          style={{ maxWidth: '95%', whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -1339,7 +1339,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           }}
         >
           {/* Alignment controls */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             {(() => {
               const parentSlot = id.split('.')[0];
               const currentAlign = microSlotSpans[parentSlot]?.[id]?.align || 'left';
@@ -1399,7 +1399,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
           
           {/* Font style controls */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             <button
               onClick={() => {
                 const currentClasses = elementClasses[id] || '';
@@ -1435,7 +1435,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Font size control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             <select
               value={
                 elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/)?.[1] || 'base'
@@ -1463,7 +1463,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
 
 
           {/* Background color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
@@ -1506,7 +1506,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
           
           {/* Margin Horizontal control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="2" y="6" width="16" height="8" strokeWidth="1" strokeDasharray="2,2"/>
               <path d="M4 10 L7 10 M13 10 L16 10" strokeWidth="1.5"/>
@@ -1543,7 +1543,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Margin Vertical control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="6" y="2" width="8" height="16" strokeWidth="1" strokeDasharray="2,2"/>
               <path d="M10 4 L10 7 M10 13 L10 16" strokeWidth="1.5"/>
@@ -1580,7 +1580,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Padding Horizontal control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="3" y="6" width="14" height="8" strokeWidth="1.5"/>
               <path d="M5 8 L5 12 M15 8 L15 12" strokeWidth="1.5"/>
@@ -1615,7 +1615,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Padding Vertical control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="6" y="3" width="8" height="14" strokeWidth="1.5"/>
               <path d="M8 5 L12 5 M8 15 L12 15" strokeWidth="1.5"/>
@@ -1654,8 +1654,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Button formatting controls - only color and border radius */}
       {id.includes('.button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
-          style={{ maxWidth: '95%' }}
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto"
+          style={{ maxWidth: '95%', whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -1666,7 +1666,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           }}
         >
           {/* Text color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
@@ -1725,7 +1725,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Background color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
@@ -1745,7 +1745,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
           
           {/* Margin Horizontal control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="2" y="6" width="16" height="8" strokeWidth="1" strokeDasharray="2,2"/>
               <path d="M4 10 L7 10 M13 10 L16 10" strokeWidth="1.5"/>
@@ -1782,7 +1782,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Margin Vertical control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="6" y="2" width="8" height="16" strokeWidth="1" strokeDasharray="2,2"/>
               <path d="M10 4 L10 7 M10 13 L10 16" strokeWidth="1.5"/>
@@ -1819,7 +1819,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Padding Horizontal control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="3" y="6" width="14" height="8" strokeWidth="1.5"/>
               <path d="M5 8 L5 12 M15 8 L15 12" strokeWidth="1.5"/>
@@ -1854,7 +1854,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Padding Vertical control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="6" y="3" width="8" height="14" strokeWidth="1.5"/>
               <path d="M8 5 L12 5 M8 15 L12 15" strokeWidth="1.5"/>
@@ -1889,7 +1889,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
           
           {/* Border radius control with icon */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <rect x="3" y="3" width="14" height="14" rx="2" strokeWidth="1.5"/>
             </svg>
@@ -1923,7 +1923,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
           
           {/* Size control for buttons */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 7h11M4 10h7M4 13h5" />
             </svg>
