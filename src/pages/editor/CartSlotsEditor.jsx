@@ -1684,6 +1684,21 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           }}
         >
           {/* Text color control */}
+          <button
+            onClick={() => {
+              console.log('🎨 TEST button clicked for:', id);
+              if (onClassChange) {
+                console.log('✅ onClassChange exists, calling with red color');
+                onClassChange(id, elementClasses[id] || '', { color: '#ff0000' });
+              } else {
+                console.log('❌ onClassChange is null/undefined');
+              }
+            }}
+            className="bg-red-500 w-8 h-8 rounded cursor-pointer text-white text-xs"
+            title="Test red color"
+          >
+            R
+          </button>
           <input
             type="color"
             defaultValue="#000000"
