@@ -1427,9 +1427,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           {/* Text color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
+            {console.log('🔍 RENDERING color picker for:', id, 'hover state:', typeof isHovered !== 'undefined' ? isHovered : 'unknown')}
             <input
               type="color"
               value={elementStyles[id]?.color || '#000000'}
+              onClick={() => console.log('👆 BASIC CLICK on color picker for:', id)}
               onChange={(e) => {
                 console.log('🎨 SIMPLE onChange triggered:', e.target.value);
                 if (onClassChange) {

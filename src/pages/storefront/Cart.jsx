@@ -858,11 +858,20 @@ export default function Cart() {
             const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
             const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
             
-            // Container styles with positioning and spacing
+            // Container styles with positioning from slot configuration
             const containerStyle = {
                 ...elementStyles,
-                gridColumn: `span ${microSlotSpans.col || 12}`,
-                gridRow: `span ${microSlotSpans.row || 1}`
+                // Get positioning from slot configuration instead of fixed grid spans
+                ...(microSlotSpans.position ? { position: microSlotSpans.position } : {}),
+                ...(microSlotSpans.left ? { left: microSlotSpans.left } : {}),
+                ...(microSlotSpans.top ? { top: microSlotSpans.top } : {}),
+                ...(microSlotSpans.right ? { right: microSlotSpans.right } : {}),
+                ...(microSlotSpans.bottom ? { bottom: microSlotSpans.bottom } : {}),
+                ...(microSlotSpans.width ? { width: microSlotSpans.width } : {}),
+                ...(microSlotSpans.height ? { height: microSlotSpans.height } : {}),
+                // Only apply grid spans if they exist in configuration
+                ...(microSlotSpans.col ? { gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col))}` } : {}),
+                ...(microSlotSpans.row ? { gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row))}` } : {})
             };
             
             if (customSlot.type === 'text') {
@@ -975,6 +984,14 @@ export default function Cart() {
         ...(cartLayoutConfig || {})
     };
     
+    // Helper function to get slot styling from configuration
+    const getSlotStyling = (slotId) => {
+        return {
+            elementClasses: cartLayoutConfig?.elementClasses?.[slotId] || '',
+            elementStyles: cartLayoutConfig?.elementStyles?.[slotId] || {}
+        };
+    };
+
     // Helper function to render custom slots with ALL editor customizations
     const renderCustomSlot = (slotId, parentSlot) => {
         if (!cartLayoutConfig?.customSlots?.[slotId]) return null;
@@ -994,12 +1011,20 @@ export default function Cart() {
         console.log('  - microSlotSpans:', microSlotSpans);
         console.log('  - slotContent:', slotContent);
         
-        // Build container styles with positioning from editor
+        // Build container styles with positioning from slot configuration
         const containerStyle = {
             ...elementStyles,
-            // Apply Tailwind grid classes for positioning
-            gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col || 12))}`,
-            gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`
+            // Get positioning from slot configuration instead of fixed grid spans
+            ...(microSlotSpans.position ? { position: microSlotSpans.position } : {}),
+            ...(microSlotSpans.left ? { left: microSlotSpans.left } : {}),
+            ...(microSlotSpans.top ? { top: microSlotSpans.top } : {}),
+            ...(microSlotSpans.right ? { right: microSlotSpans.right } : {}),
+            ...(microSlotSpans.bottom ? { bottom: microSlotSpans.bottom } : {}),
+            ...(microSlotSpans.width ? { width: microSlotSpans.width } : {}),
+            ...(microSlotSpans.height ? { height: microSlotSpans.height } : {}),
+            // Only apply grid spans if they exist in configuration
+            ...(microSlotSpans.col ? { gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col))}` } : {}),
+            ...(microSlotSpans.row ? { gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row))}` } : {})
         };
         
         const renderContent = () => {
@@ -1106,7 +1131,7 @@ export default function Cart() {
                         
                         {/* Custom slots for emptyCart section */}
                         {cartLayoutConfig?.microSlotOrders?.emptyCart && (
-                            <div className="grid grid-cols-12 gap-2 auto-rows-min mt-6">
+                            <div className="mt-6">
                                 {cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => 
                                     slotId.includes('.custom_') ? renderCustomSlot(slotId, 'emptyCart') : null
                                 )}
@@ -1116,8 +1141,11 @@ export default function Cart() {
                 ) : (
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                         <div className="lg:col-span-2">
-                            <Card>
-                                <CardContent className="px-4 divide-y divide-gray-200">
+                            {(() => {
+                                const cartItemsStyling = getSlotStyling('cartItems');
+                                return (
+                                    <Card className={cartItemsStyling.elementClasses} style={cartItemsStyling.elementStyles}>
+                                        <CardContent className="px-4 divide-y divide-gray-200">
                                     {cartItems.map(item => {
                                         const product = item.product;
                                         if (!product) return null;
@@ -1196,13 +1224,18 @@ export default function Cart() {
                                         );
                                     })}
                                 </CardContent>
-                            </Card>
+                                    </Card>
+                                );
+                            })()}
                             <CmsBlockRenderer position="cart_below_items" />
                         </div>
                         <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
-                            <Card>
-                                <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
-                                <CardContent>
+                            {(() => {
+                                const couponStyling = getSlotStyling('coupon');
+                                return (
+                                    <Card className={couponStyling.elementClasses} style={couponStyling.elementStyles}>
+                                        <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
+                                        <CardContent>
                                     {!appliedCoupon ? (
                                         <div className="flex space-x-2">
                                             <Input 
@@ -1249,10 +1282,15 @@ export default function Cart() {
                                         </div>
                                     )}
                                 </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
+                                    </Card>
+                                );
+                            })()}
+                            {(() => {
+                                const orderSummaryStyling = getSlotStyling('orderSummary');
+                                return (
+                                    <Card className={orderSummaryStyling.elementClasses} style={orderSummaryStyling.elementStyles}>
+                                        <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
+                                        <CardContent className="space-y-4">
                                     <div className="flex justify-between"><span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span></div>
                                     {discount > 0 && (
                                         <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span></div>
@@ -1287,7 +1325,9 @@ export default function Cart() {
                                         </div>
                                     )}
                                 </CardContent>
-                            </Card>
+                                    </Card>
+                                );
+                            })()
                         </div>
                     </div>
                 )}
