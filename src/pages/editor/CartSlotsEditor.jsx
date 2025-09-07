@@ -1084,6 +1084,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
   const slotRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   
+  // Debug hover state changes
+  useEffect(() => {
+    if (id.includes('button') || id.includes('Button')) {
+      console.log('🔄 Button hover state changed for', id, ':', isHovered);
+    }
+  }, [isHovered, id]);
+  
   // Ensure colSpan and rowSpan are valid numbers
   const safeColSpan = typeof colSpan === 'number' && colSpan >= 1 && colSpan <= 12 ? colSpan : 12;
   const safeRowSpan = typeof rowSpan === 'number' && rowSpan >= 1 && rowSpan <= 4 ? rowSpan : 1;
@@ -1219,6 +1226,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       clearTimeout(hoverTimeoutRef.current);
     }
     setIsHovered(true);
+    console.log('✅ setIsHovered(true) called for:', id);
   }, [mode]);
   
   // Handle mouse leave with a small delay to prevent premature hiding
@@ -1235,8 +1243,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     }
     
     // Add a small delay before hiding to prevent flickering
+    console.log('🐭 MicroSlot hover leave for:', id);
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
+      console.log('❌ setIsHovered(false) called for:', id);
     }, 100);
   }, []);
   
