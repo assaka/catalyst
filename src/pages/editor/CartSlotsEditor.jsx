@@ -33,7 +33,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Palette, PaintBucket, Type as TypeIcon, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
-import { ColorPicker } from 'react-beautiful-color';
+import { ColorPicker, useColorState } from 'react-beautiful-color';
+import 'react-beautiful-color/dist/react-beautiful-color.css';
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -5092,13 +5093,19 @@ export default function CartSlotsEditorWithMicroSlots({
           </DialogHeader>
           
           <div className="flex flex-col items-center space-y-4 py-4">
-            <ColorPicker
-              color={colorPickerModal.currentColor}
-              onChange={(color) => {
-                console.log('🎨 Color picker changed:', color);
-                setColorPickerModal(prev => ({ ...prev, currentColor: color }));
+            <ColorPicker 
+              color={colorPickerModal.currentColor} 
+              onChange={(newColor) => {
+                console.log('🎨 Color picker changed:', newColor);
+                setColorPickerModal(prev => ({ ...prev, currentColor: newColor.hex }));
               }}
-            />
+            >
+              <ColorPicker.Saturation className="w-64 h-32 mb-3" />
+              <div className="flex items-center gap-3 w-64">
+                <ColorPicker.Hue className="flex-1 h-6" />
+                <ColorPicker.Alpha className="w-6 h-6" />
+              </div>
+            </ColorPicker>
             
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Current color:</span>
