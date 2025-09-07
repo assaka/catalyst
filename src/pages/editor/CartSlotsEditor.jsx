@@ -1247,7 +1247,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
       console.log('❌ setIsHovered(false) called for:', id);
-    }, 100);
+    }, 500);
   }, []);
   
   // Clean up timeout on unmount
