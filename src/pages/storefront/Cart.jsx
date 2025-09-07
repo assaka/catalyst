@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { getPageConfig } from '@/components/editor/slot/configs/index';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 const getSessionId = () => {
   let sid = localStorage.getItem('cart_session_id');
@@ -118,51 +119,54 @@ export default function Cart() {
                 console.log('❌ No store.id found, skipping slot config loading');
                 return;
             }
-            console.log('✅ Store ID found, loading slot configuration for store:', store.id);
+            console.log('✅ Store ID found, loading published slot configuration for store:', store.id);
             
             try {
-                // Load configuration using public API endpoint directly (no auth required)
-                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-                const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${store.id}`;
+                // Load published configuration using the new versioning API
+                const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
                 
-                console.log('📡 Loading from public endpoint:', endpoint);
-                console.log('📡 API Base URL:', apiBaseUrl);
+                console.log('📡 Published config response:', response);
                 
-                const response = await fetch(endpoint);
-                console.log('📡 Response status:', response.status, response.statusText);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📡 Public API response:', data);
+                if (response.success && response.data) {
+                    const publishedConfig = response.data;
                     
-                    if (data.success && data.data?.length > 0) {
-                        console.log('📡 Found configurations, filtering for cart...');
-                        // Find Cart configuration
-                        const cartConfig = data.data.find(config => {
-                            const conf = config.configuration || {};
-                            console.log('📡 Checking config:', conf.page_name, conf.slot_type);
-                            return (conf.page_name === 'Cart' && conf.slot_type === 'cart_layout') ||
-                                   (conf.page_type === 'cart');
-                        });
-                        
-                        if (cartConfig) {
-                            setCartLayoutConfig(cartConfig.configuration);
-                            console.log('✅ Loaded cart layout configuration from public API:', cartConfig.configuration);
-                            console.log('🔧 CustomSlots in loaded config:', cartConfig.configuration?.customSlots);
-                            console.log('📐 MicroSlotOrders in loaded config:', cartConfig.configuration?.microSlotOrders);
-                        } else {
-                            console.warn('⚠️ No cart configuration found in response');
-                        }
+                    if (publishedConfig.configuration) {
+                        setCartLayoutConfig(publishedConfig.configuration);
+                        console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
+                        console.log('🔧 CustomSlots in loaded config:', publishedConfig.configuration?.customSlots);
+                        console.log('📐 MicroSlotOrders in loaded config:', publishedConfig.configuration?.microSlotOrders);
                     } else {
-                        console.warn('⚠️ No configurations found or API unsuccessful:', data);
+                        console.warn('⚠️ Published configuration has no configuration data');
+                        // Fallback to default configuration
+                        setCartLayoutConfig({
+                            slots: {},
+                            metadata: {
+                                created: new Date().toISOString(),
+                                lastModified: new Date().toISOString()
+                            }
+                        });
                     }
                 } else {
-                    console.warn('⚠️ Public slot config API returned:', response.status, response.statusText);
-                    const errorText = await response.text();
-                    console.warn('⚠️ Error response body:', errorText);
+                    console.warn('⚠️ No published configuration found, using default');
+                    // Set default configuration
+                    setCartLayoutConfig({
+                        slots: {},
+                        metadata: {
+                            created: new Date().toISOString(),
+                            lastModified: new Date().toISOString()
+                        }
+                    });
                 }
             } catch (error) {
-                console.warn('⚠️ Could not load slot configuration from public API:', error);
+                console.warn('⚠️ Could not load published slot configuration:', error);
+                // Fallback to default configuration
+                setCartLayoutConfig({
+                    slots: {},
+                    metadata: {
+                        created: new Date().toISOString(),
+                        lastModified: new Date().toISOString()
+                    }
+                });
             }
         };
         

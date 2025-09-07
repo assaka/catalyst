@@ -112,6 +112,7 @@ const cronJobRoutes = require('./routes/cron-jobs');
 const extensionsRoutes = require('./routes/extensions');
 const debugStoreRoutes = require('./routes/debug-store');
 const previewRoutes = require('./routes/preview');
+const slotConfigurationRoutes = require('./routes/slotConfigurations');
 
 const app = express();
 
@@ -1601,6 +1602,7 @@ app.use('/api/background-jobs', backgroundJobRoutes); // Background job manageme
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting store resolution
+app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 // Conditional auth middleware that excludes preview routes
 const conditionalAuthMiddleware = (req, res, next) => {
