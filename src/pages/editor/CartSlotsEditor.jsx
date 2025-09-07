@@ -1084,12 +1084,6 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
   const slotRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
   
-  // Debug hover state changes
-  useEffect(() => {
-    if (id.includes('button') || id.includes('Button')) {
-      console.log('🔄 Button hover state changed for', id, ':', isHovered);
-    }
-  }, [isHovered, id]);
   
   // Ensure colSpan and rowSpan are valid numbers
   const safeColSpan = typeof colSpan === 'number' && colSpan >= 1 && colSpan <= 12 ? colSpan : 12;
@@ -1221,12 +1215,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
   // Handle mouse enter with a slight delay to prevent flickering - only in edit mode
   const handleMouseEnter = useCallback(() => {
     if (mode === 'preview') return; // Don't show hover states in preview mode
-    console.log('🐭 MicroSlot hover detected for:', id, 'onClassChange available:', !!onClassChange);
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
     setIsHovered(true);
-    console.log('✅ setIsHovered(true) called for:', id);
   }, [mode]);
   
   // Handle mouse leave with a small delay to prevent premature hiding
@@ -1243,10 +1235,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     }
     
     // Add a small delay before hiding to prevent flickering
-    console.log('🐭 MicroSlot hover leave for:', id);
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-      console.log('❌ setIsHovered(false) called for:', id);
     }, 800);
   }, []);
   
@@ -1663,25 +1653,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       )}
       
       {/* Button formatting controls - only color and border radius */}
-      {(() => {
-        const shouldShow = (id.includes('.button') || id.includes('Button')) && isHovered && !isDragging && !isResizing && onClassChange;
-        console.log('🎛️ Button controls condition for', id, ':', {
-          isButtonType: id.includes('.button') || id.includes('Button'),
-          isHovered,
-          isDragging,
-          isResizing,
-          hasOnClassChange: !!onClassChange,
-          shouldShow
-        });
-        return shouldShow;
-      })() && (
+      {(id.includes('.button') || id.includes('Button')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
           className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto mx-auto"
           style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
-            console.log('🎛️ Button action bar mouseEnter - keeping hover active');
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
             }
@@ -1690,10 +1668,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           onMouseLeave={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
-            console.log('🎛️ Button action bar mouseLeave - starting timeout');
             hoverTimeoutRef.current = setTimeout(() => {
               setIsHovered(false);
-              console.log('❌ Button action bar timeout - setIsHovered(false)');
             }, 1000);
           }}
         >
@@ -1712,15 +1688,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
               }}
               onChange={(e) => {
-                console.log('🚨 TEXT COLOR PICKER TRIGGERED for button:', id, 'value:', e.target.value);
-                console.log('🎨 Text Color change for', id, 'from', elementStyles[id]?.color, 'to', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
                 const currentClasses = elementClasses[id] || '';
-                console.log('🔴 Before color removal (2nd picker):', currentClasses);
                 // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
                 const newClasses = currentClasses
                   .split(' ')
@@ -1749,22 +1722,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .join(' ')
                   .replace(/\s+/g, ' ')
                   .trim();
-                console.log('🟢 After color removal (2nd picker):', newClasses);
                 onClassChange(id, newClasses, { color: e.target.value });
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Text color"
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                console.log('🖱️ Color picker #2 mouseDown');
-              }}
-              onMouseUp={(e) => {
-                e.stopPropagation();
-                console.log('🖱️ Color picker #2 mouseUp');
-              }}
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('🖱️ Color picker #2 click');
                 // Keep hover state active when clicking color picker
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1789,8 +1752,6 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
               }}
               onChange={(e) => {
-                console.log('🚨 BACKGROUND COLOR PICKER TRIGGERED for button:', id, 'value:', e.target.value);
-                console.log('🎨 Button BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1811,7 +1772,6 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             <button
               onClick={() => {
-                console.log('🚨 BOLD BUTTON CLICKED for button:', id);
                 const currentClasses = elementClasses[id] || '';
                 const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
                 let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
@@ -3488,8 +3448,6 @@ export default function CartSlotsEditorWithMicroSlots({
             const styles = elementStyles[slotId] || {};
             const classes = elementClasses[slotId] || '';
             
-            console.log('🔧 Button styling debug for', slotId, '- styles:', styles, 'classes:', classes);
-            
             // Remove existing color classes if we have custom styles
             if (styles.backgroundColor || styles.color) {
               // Remove bg-* and text-* color classes
@@ -3502,8 +3460,6 @@ export default function CartSlotsEditorWithMicroSlots({
               const styleStr = Object.entries(styles)
                 .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
                 .join('; ');
-              console.log('🎨 Applying inline styles to button:', styleStr);
-              const originalButtonCode = buttonCode;
               buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
                 if (attrs.includes('style=')) {
                   return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
@@ -3511,8 +3467,6 @@ export default function CartSlotsEditorWithMicroSlots({
                   return `<button${attrs} style="${styleStr}">`;
                 }
               });
-              console.log('🔄 Button code before styling:', originalButtonCode);
-              console.log('🔄 Button code after styling:', buttonCode);
             }
             
             // Apply rounded classes to the button
@@ -4289,8 +4243,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 // Apply styles and classes to the button
                 const styles = elementStyles[slotId] || {};
                 const classes = elementClasses[slotId] || '';
-                
-                console.log('🔧 Checkout button styling debug for', slotId, '- styles:', styles, 'classes:', classes);
                 
                 // Remove existing color classes if we have custom styles
                 if (styles.backgroundColor || styles.color) {
