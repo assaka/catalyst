@@ -1505,29 +1505,32 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             />
           </div>
           
-          {/* Margin control */}
+          {/* Margin Horizontal control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
-              <rect x="2" y="2" width="16" height="16" strokeWidth="1" strokeDasharray="2,2"/>
-              <rect x="5" y="5" width="10" height="10" strokeWidth="1.5"/>
+              <rect x="2" y="6" width="16" height="8" strokeWidth="1" strokeDasharray="2,2"/>
+              <path d="M4 10 L7 10 M13 10 L16 10" strokeWidth="1.5"/>
+              <polygon points="4,9 4,11 2,10" fill="currentColor"/>
+              <polygon points="16,9 16,11 18,10" fill="currentColor"/>
             </svg>
             <input
               type="number"
-              value={parseInt(elementStyles[id]?.margin || '0')}
+              value={parseInt(elementStyles[id]?.marginLeft || elementStyles[id]?.marginRight || '0')}
               onChange={(e) => {
                 const value = e.target.value;
-                // Update both elementStyles and microSlotSpans
+                const marginValue = value ? `${value}px` : undefined;
                 onClassChange(id, elementClasses[id] || '', { 
                   ...elementStyles[id], 
-                  margin: value ? `${value}px` : undefined 
+                  marginLeft: marginValue,
+                  marginRight: marginValue
                 });
-                // Also trigger span change to save margin to microSlotSpans
                 const parentSlot = id.split('.')[0];
                 if (onSpanChange) {
                   onSpanChange(id, { 
                     col: colSpan, 
                     row: rowSpan, 
-                    margin: value ? `${value}px` : undefined 
+                    marginLeft: marginValue,
+                    marginRight: marginValue
                   });
                 }
               }}
@@ -1535,33 +1538,36 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               placeholder="0"
               min="0"
               max="100"
-              title="Margin (px)"
+              title="Margin Horizontal (px)"
             />
           </div>
 
-          {/* Padding control */}
+          {/* Margin Vertical control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
-              <rect x="3" y="3" width="14" height="14" strokeWidth="1.5"/>
-              <rect x="6" y="6" width="8" height="8" strokeWidth="1" strokeDasharray="1,1"/>
+              <rect x="6" y="2" width="8" height="16" strokeWidth="1" strokeDasharray="2,2"/>
+              <path d="M10 4 L10 7 M10 13 L10 16" strokeWidth="1.5"/>
+              <polygon points="9,4 11,4 10,2" fill="currentColor"/>
+              <polygon points="9,16 11,16 10,18" fill="currentColor"/>
             </svg>
             <input
               type="number"
-              value={parseInt(elementStyles[id]?.padding || '0')}
+              value={parseInt(elementStyles[id]?.marginTop || elementStyles[id]?.marginBottom || '0')}
               onChange={(e) => {
                 const value = e.target.value;
-                // Update both elementStyles and microSlotSpans
+                const marginValue = value ? `${value}px` : undefined;
                 onClassChange(id, elementClasses[id] || '', { 
                   ...elementStyles[id], 
-                  padding: value ? `${value}px` : undefined 
+                  marginTop: marginValue,
+                  marginBottom: marginValue
                 });
-                // Also trigger span change to save padding to microSlotSpans
                 const parentSlot = id.split('.')[0];
                 if (onSpanChange) {
                   onSpanChange(id, { 
                     col: colSpan, 
                     row: rowSpan, 
-                    padding: value ? `${value}px` : undefined 
+                    marginTop: marginValue,
+                    marginBottom: marginValue
                   });
                 }
               }}
@@ -1569,7 +1575,77 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               placeholder="0"
               min="0"
               max="100"
-              title="Padding (px)"
+              title="Margin Vertical (px)"
+            />
+          </div>
+
+          {/* Padding Horizontal control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="3" y="6" width="14" height="8" strokeWidth="1.5"/>
+              <path d="M5 8 L5 12 M15 8 L15 12" strokeWidth="1.5"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.paddingLeft || elementStyles[id]?.paddingRight || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                const paddingValue = value ? `${value}px` : undefined;
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  paddingLeft: paddingValue,
+                  paddingRight: paddingValue
+                });
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    paddingLeft: paddingValue,
+                    paddingRight: paddingValue
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Padding Horizontal (px)"
+            />
+          </div>
+
+          {/* Padding Vertical control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="6" y="3" width="8" height="14" strokeWidth="1.5"/>
+              <path d="M8 5 L12 5 M8 15 L12 15" strokeWidth="1.5"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.paddingTop || elementStyles[id]?.paddingBottom || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                const paddingValue = value ? `${value}px` : undefined;
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  paddingTop: paddingValue,
+                  paddingBottom: paddingValue
+                });
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    paddingTop: paddingValue,
+                    paddingBottom: paddingValue
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Padding Vertical (px)"
             />
           </div>
         </div>
@@ -1665,29 +1741,32 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             />
           </div>
           
-          {/* Margin control */}
+          {/* Margin Horizontal control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
-              <rect x="2" y="2" width="16" height="16" strokeWidth="1" strokeDasharray="2,2"/>
-              <rect x="5" y="5" width="10" height="10" strokeWidth="1.5"/>
+              <rect x="2" y="6" width="16" height="8" strokeWidth="1" strokeDasharray="2,2"/>
+              <path d="M4 10 L7 10 M13 10 L16 10" strokeWidth="1.5"/>
+              <polygon points="4,9 4,11 2,10" fill="currentColor"/>
+              <polygon points="16,9 16,11 18,10" fill="currentColor"/>
             </svg>
             <input
               type="number"
-              value={parseInt(elementStyles[id]?.margin || '0')}
+              value={parseInt(elementStyles[id]?.marginLeft || elementStyles[id]?.marginRight || '0')}
               onChange={(e) => {
                 const value = e.target.value;
-                // Update both elementStyles and microSlotSpans
+                const marginValue = value ? `${value}px` : undefined;
                 onClassChange(id, elementClasses[id] || '', { 
                   ...elementStyles[id], 
-                  margin: value ? `${value}px` : undefined 
+                  marginLeft: marginValue,
+                  marginRight: marginValue
                 });
-                // Also trigger span change to save margin to microSlotSpans
                 const parentSlot = id.split('.')[0];
                 if (onSpanChange) {
                   onSpanChange(id, { 
                     col: colSpan, 
                     row: rowSpan, 
-                    margin: value ? `${value}px` : undefined 
+                    marginLeft: marginValue,
+                    marginRight: marginValue
                   });
                 }
               }}
@@ -1695,33 +1774,36 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               placeholder="0"
               min="0"
               max="100"
-              title="Margin (px)"
+              title="Margin Horizontal (px)"
             />
           </div>
 
-          {/* Padding control */}
+          {/* Margin Vertical control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
-              <rect x="3" y="3" width="14" height="14" strokeWidth="1.5"/>
-              <rect x="6" y="6" width="8" height="8" strokeWidth="1" strokeDasharray="1,1"/>
+              <rect x="6" y="2" width="8" height="16" strokeWidth="1" strokeDasharray="2,2"/>
+              <path d="M10 4 L10 7 M10 13 L10 16" strokeWidth="1.5"/>
+              <polygon points="9,4 11,4 10,2" fill="currentColor"/>
+              <polygon points="9,16 11,16 10,18" fill="currentColor"/>
             </svg>
             <input
               type="number"
-              value={parseInt(elementStyles[id]?.padding || '0')}
+              value={parseInt(elementStyles[id]?.marginTop || elementStyles[id]?.marginBottom || '0')}
               onChange={(e) => {
                 const value = e.target.value;
-                // Update both elementStyles and microSlotSpans
+                const marginValue = value ? `${value}px` : undefined;
                 onClassChange(id, elementClasses[id] || '', { 
                   ...elementStyles[id], 
-                  padding: value ? `${value}px` : undefined 
+                  marginTop: marginValue,
+                  marginBottom: marginValue
                 });
-                // Also trigger span change to save padding to microSlotSpans
                 const parentSlot = id.split('.')[0];
                 if (onSpanChange) {
                   onSpanChange(id, { 
                     col: colSpan, 
                     row: rowSpan, 
-                    padding: value ? `${value}px` : undefined 
+                    marginTop: marginValue,
+                    marginBottom: marginValue
                   });
                 }
               }}
@@ -1729,7 +1811,77 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               placeholder="0"
               min="0"
               max="100"
-              title="Padding (px)"
+              title="Margin Vertical (px)"
+            />
+          </div>
+
+          {/* Padding Horizontal control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="3" y="6" width="14" height="8" strokeWidth="1.5"/>
+              <path d="M5 8 L5 12 M15 8 L15 12" strokeWidth="1.5"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.paddingLeft || elementStyles[id]?.paddingRight || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                const paddingValue = value ? `${value}px` : undefined;
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  paddingLeft: paddingValue,
+                  paddingRight: paddingValue
+                });
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    paddingLeft: paddingValue,
+                    paddingRight: paddingValue
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Padding Horizontal (px)"
+            />
+          </div>
+
+          {/* Padding Vertical control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="6" y="3" width="8" height="14" strokeWidth="1.5"/>
+              <path d="M8 5 L12 5 M8 15 L12 15" strokeWidth="1.5"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.paddingTop || elementStyles[id]?.paddingBottom || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                const paddingValue = value ? `${value}px` : undefined;
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  paddingTop: paddingValue,
+                  paddingBottom: paddingValue
+                });
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    paddingTop: paddingValue,
+                    paddingBottom: paddingValue
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Padding Vertical (px)"
             />
           </div>
           
@@ -2729,7 +2881,19 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Auto-save after class change
     debouncedSave();
-  }, [debouncedSave]);
+    
+    // Notify storefront of configuration update
+    if (selectedStore?.id) {
+      setTimeout(() => {
+        console.log('🔔 Notifying storefront of configuration update');
+        localStorage.setItem('slot_config_updated', JSON.stringify({
+          storeId: selectedStore.id,
+          timestamp: Date.now(),
+          type: 'style_change'
+        }));
+      }, 100); // Small delay to ensure save completes first
+    }
+  }, [debouncedSave, selectedStore?.id]);
   
   // Handle component size change
   const handleSizeChange = useCallback((slotId, newSize) => {
