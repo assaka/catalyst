@@ -1431,96 +1431,17 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
-                e.stopPropagation();
-                console.log('🎨 Color picker onChange:', e.target.value, 'for', id);
-                const currentClasses = elementClasses[id] || '';
-                // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
-                const newClasses = currentClasses
-                  .split(' ')
-                  .filter(cls => {
-                    // Check if it's a text class
-                    if (!cls.startsWith('text-')) return true;
-                    
-                    const parts = cls.split('-');
-                    // text-red-500 = ['text', 'red', '500'] - remove (color)
-                    // text-2xl = ['text', '2xl'] - keep (size)
-                    // text-black = ['text', 'black'] - remove (special color)
-                    
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-                      // It's text-{word}-{number} - this is a color
-                      console.log(`  Removing color class: ${cls}`);
-                      return false;
-                    }
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-                      // Special color cases without numbers
-                      console.log(`  Removing special color: ${cls}`);
-                      return false;
-                    }
-                    // Keep everything else (text-xl, text-2xl, text-center, etc.)
-                    return true;
-                  })
-                  .join(' ')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                
-                console.log('✅ Calling onClassChange:', id, newClasses, { color: e.target.value });
-                onClassChange(id, newClasses, { color: e.target.value });
+                console.log('🎨 SIMPLE onChange triggered:', e.target.value);
+                if (onClassChange) {
+                  const classes = (elementClasses[id] || '').replace(/text-\w+-\d+/g, '').replace(/text-(black|white|transparent)/g, '').trim();
+                  onClassChange(id, classes, { color: e.target.value });
+                  console.log('✅ Called onClassChange');
+                } else {
+                  console.error('❌ onClassChange missing');
+                }
               }}
-              className="w-5 h-5 cursor-pointer border-0"
-              title="Text color"
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                console.log('🖱️ Color picker clicked!');
-              }}
-              onMouseUp={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('👆 Color picker click event');
-              }}
-              onInput={(e) => {
-                e.stopPropagation();
-                console.log('📝 Color picker onInput:', e.target.value, 'for', id);
-                
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .split(' ')
-                  .filter(cls => {
-                    if (!cls.startsWith('text-')) return true;
-                    const parts = cls.split('-');
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) return false;
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) return false;
-                    return true;
-                  })
-                  .join(' ')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                
-                console.log('✅ onInput calling onClassChange:', id, newClasses, { color: e.target.value });
-                onClassChange(id, newClasses, { color: e.target.value });
-              }}
-              onFocus={() => console.log('🎯 Color picker focused (dialog opened)')}
-              onBlur={() => console.log('😴 Color picker blurred (dialog closed)')}
-              onChangeCapture={(e) => {
-                e.stopPropagation();
-                console.log('🔄 Color picker onChangeCapture:', e.target.value, 'for', id);
-                
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .split(' ')
-                  .filter(cls => {
-                    if (!cls.startsWith('text-')) return true;
-                    const parts = cls.split('-');
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) return false;
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) return false;
-                    return true;
-                  })
-                  .join(' ')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                
-                console.log('✅ onChangeCapture calling onClassChange:', id, newClasses, { color: e.target.value });
-                onClassChange(id, newClasses, { color: e.target.value });
-              }}
+              className="w-5 h-5 cursor-pointer"
+              style={{ border: 'none', padding: 0 }}
             />
           </div>
 
