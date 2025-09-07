@@ -1113,8 +1113,10 @@ export default function Cart() {
                 <div className="header-section mb-8">
                     {(() => {
                         const headerTitleStyling = getMicroSlotStyling('header.title');
+                        const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
+                        const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                         return (
-                            <h1 className={`text-3xl font-bold text-gray-900 mb-4 ${headerTitleStyling.elementClasses}`} style={headerTitleStyling.elementStyles}>
+                            <h1 className={finalClasses} style={headerTitleStyling.elementStyles}>
                                 My Cart
                             </h1>
                         );
@@ -1136,16 +1138,20 @@ export default function Cart() {
                             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                             {(() => {
                                 const titleStyling = getMicroSlotStyling('emptyCart.title');
+                                const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
+                                const finalClasses = titleStyling.elementClasses || defaultClasses;
                                 return (
-                                    <h2 className={`text-xl font-semibold text-gray-900 mb-2 ${titleStyling.elementClasses}`} style={titleStyling.elementStyles}>
+                                    <h2 className={finalClasses} style={titleStyling.elementStyles}>
                                         Your cart is empty
                                     </h2>
                                 );
                             })()}
                             {(() => {
                                 const textStyling = getMicroSlotStyling('emptyCart.text');
+                                const defaultClasses = 'text-gray-600 mb-6';
+                                const finalClasses = textStyling.elementClasses || defaultClasses;
                                 return (
-                                    <p className={`text-gray-600 mb-6 ${textStyling.elementClasses}`} style={textStyling.elementStyles}>
+                                    <p className={finalClasses} style={textStyling.elementStyles}>
                                         Looks like you haven't added anything to your cart yet.
                                     </p>
                                 );
@@ -1266,8 +1272,9 @@ export default function Cart() {
                                         <CardHeader>
                                             {(() => {
                                                 const titleStyling = getMicroSlotStyling('coupon.title');
+                                                const finalClasses = titleStyling.elementClasses || '';
                                                 return (
-                                                    <CardTitle className={titleStyling.elementClasses} style={titleStyling.elementStyles}>
+                                                    <CardTitle className={finalClasses} style={titleStyling.elementStyles}>
                                                         Apply Coupon
                                                     </CardTitle>
                                                 );
@@ -1330,8 +1337,9 @@ export default function Cart() {
                                         <CardHeader>
                                             {(() => {
                                                 const titleStyling = getMicroSlotStyling('orderSummary.title');
+                                                const finalClasses = titleStyling.elementClasses || '';
                                                 return (
-                                                    <CardTitle className={titleStyling.elementClasses} style={titleStyling.elementStyles}>
+                                                    <CardTitle className={finalClasses} style={titleStyling.elementStyles}>
                                                         Order Summary
                                                     </CardTitle>
                                                 );
@@ -1340,24 +1348,30 @@ export default function Cart() {
                                         <CardContent className="space-y-4">
                                     {(() => {
                                         const subtotalStyling = getMicroSlotStyling('orderSummary.subtotal');
+                                        const defaultClasses = 'flex justify-between';
+                                        const finalClasses = subtotalStyling.elementClasses || defaultClasses;
                                         return (
-                                            <div className={`flex justify-between ${subtotalStyling.elementClasses}`} style={subtotalStyling.elementStyles}>
+                                            <div className={finalClasses} style={subtotalStyling.elementStyles}>
                                                 <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
                                             </div>
                                         );
                                     })()}
                                     {discount > 0 && (() => {
                                         const discountStyling = getMicroSlotStyling('orderSummary.discount');
+                                        const defaultClasses = 'flex justify-between';
+                                        const finalClasses = discountStyling.elementClasses || defaultClasses;
                                         return (
-                                            <div className={`flex justify-between ${discountStyling.elementClasses}`} style={discountStyling.elementStyles}>
+                                            <div className={finalClasses} style={discountStyling.elementStyles}>
                                                 <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
                                             </div>
                                         );
                                     })()}
                                     {(() => {
                                         const taxStyling = getMicroSlotStyling('orderSummary.tax');
+                                        const defaultClasses = 'flex justify-between';
+                                        const finalClasses = taxStyling.elementClasses || defaultClasses;
                                         return (
-                                            <div className={`flex justify-between ${taxStyling.elementClasses}`} style={taxStyling.elementStyles}>
+                                            <div className={finalClasses} style={taxStyling.elementStyles}>
                                                 <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
                                             </div>
                                         );
@@ -1365,8 +1379,10 @@ export default function Cart() {
                                     <CmsBlockRenderer position="cart_above_total" />
                                     {(() => {
                                         const totalStyling = getMicroSlotStyling('orderSummary.total');
+                                        const defaultClasses = 'flex justify-between text-lg font-semibold border-t pt-4';
+                                        const finalClasses = totalStyling.elementClasses || defaultClasses;
                                         return (
-                                            <div className={`flex justify-between text-lg font-semibold border-t pt-4 ${totalStyling.elementClasses}`} style={totalStyling.elementStyles}>
+                                            <div className={finalClasses} style={totalStyling.elementStyles}>
                                                 <span>Total</span>
                                                 <span>{currencySymbol}{safeToFixed(total)}</span>
                                             </div>
@@ -1376,10 +1392,12 @@ export default function Cart() {
                                     <div className="border-t mt-6 pt-6">
                                         {(() => {
                                             const buttonStyling = getMicroSlotStyling('orderSummary.checkoutButton');
+                                            const defaultClasses = 'w-full';
+                                            const finalClasses = buttonStyling.elementClasses || defaultClasses;
                                             return (
                                                 <Button 
                                                     size="lg" 
-                                                    className={`w-full ${buttonStyling.elementClasses}`}
+                                                    className={finalClasses}
                                                     onClick={handleCheckout}
                                                     style={{
                                                         backgroundColor: settings?.theme?.checkout_button_color || '#007bff',

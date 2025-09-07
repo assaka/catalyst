@@ -1432,22 +1432,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               defaultValue={elementStyles[id]?.color || '#000000'}
               onClick={() => console.log('👆 BASIC CLICK on color picker for:', id)}
-              onChange={(e) => {
-                console.log('🎨 onChange - target.value:', e.target.value);
-                console.log('🎨 onChange - currentTarget.value:', e.currentTarget.value);
-                console.log('🎨 onChange - element value attr:', e.target.getAttribute('value'));
-                console.log('🎨 onChange - element current value:', e.target.getAttribute('value'));
-                const actualValue = e.target.value || e.currentTarget.value;
-                console.log('🎨 Using color value:', actualValue);
-                
-                if (onClassChange) {
-                  const classes = (elementClasses[id] || '').replace(/text-\w+-\d+/g, '').replace(/text-(black|white|transparent)/g, '').trim();
-                  onClassChange(id, classes, { color: actualValue });
-                  console.log('✅ Called onClassChange with color:', actualValue);
-                } else {
-                  console.error('❌ onClassChange missing');
-                }
-              }}
+              onFocus={() => console.log('🎯 Color dialog opened')}
+              onChange={() => console.log('⚠️ onChange fired (ignoring - using onBlur instead)')}
               onBlur={(e) => {
                 console.log('😴 Color picker onBlur triggered:', e.target.value);
                 if (onClassChange) {
