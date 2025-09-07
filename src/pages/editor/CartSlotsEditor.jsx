@@ -1431,7 +1431,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
-                console.log('🎨 Color picker onChange triggered!', e.target.value);
+                e.stopPropagation();
+                console.log('🎨 ACTIONS BAR Color picker onChange triggered!', { 
+                  value: e.target.value, 
+                  id: id,
+                  timestamp: new Date().toISOString(),
+                  currentStyles: elementStyles[id]
+                });
                 const currentClasses = elementClasses[id] || '';
                 console.log('🔴 Before color removal:', currentClasses);
                 // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
@@ -1464,11 +1470,29 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .trim();
                 console.log('🟢 After color removal:', newClasses);
                 console.log('🎨 Setting inline color:', e.target.value);
+                console.log('🔧 onClassChange function available:', typeof onClassChange);
                 // Store the color as an inline style
-                onClassChange(id, newClasses, { color: e.target.value });
+                if (onClassChange) {
+                  console.log('✅ Calling onClassChange with:', { id, newClasses, color: e.target.value });
+                  onClassChange(id, newClasses, { color: e.target.value });
+                } else {
+                  console.error('❌ onClassChange is not available!');
+                }
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Text color"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker #1 mouseDown');
+              }}
+              onMouseUp={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker #1 mouseUp');
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker #1 click');
+              }}
             />
           </div>
 
@@ -1572,6 +1596,18 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Text color"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker #2 mouseDown');
+              }}
+              onMouseUp={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker #2 mouseUp');
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker #2 click');
+              }}
             />
           </div>
 
