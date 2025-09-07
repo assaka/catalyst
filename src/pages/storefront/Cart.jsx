@@ -167,6 +167,24 @@ export default function Cart() {
         };
         
         loadCartLayoutConfig();
+        
+        // Set up polling to refresh configuration every 10 seconds if in development
+        const isDev = import.meta.env.DEV;
+        let pollInterval;
+        
+        if (isDev && store?.id) {
+            console.log('🔄 Setting up config polling for development');
+            pollInterval = setInterval(() => {
+                console.log('🔄 Polling for config updates...');
+                loadCartLayoutConfig();
+            }, 10000); // Poll every 10 seconds in development
+        }
+        
+        return () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        };
     }, [store?.id]);
     
     // Initialize customization system for Cart component
