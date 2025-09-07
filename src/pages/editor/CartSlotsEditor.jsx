@@ -1150,8 +1150,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
   const handleMouseLeave = useCallback((e) => {
     // Check if we're still within the component or its children
     const relatedTarget = e.relatedTarget;
-    if (slotRef.current && slotRef.current.contains(relatedTarget)) {
-      return; // Don't hide if we're still inside the component
+    try {
+      if (slotRef.current && relatedTarget && typeof relatedTarget.nodeType === 'number' && slotRef.current.contains(relatedTarget)) {
+        return; // Don't hide if we're still inside the component
+      }
+    } catch (error) {
+      // If contains() fails, just continue with the timeout
+      console.log('Mouse leave check failed, continuing...', error);
     }
     
     // Add a small delay before hiding to prevent flickering
