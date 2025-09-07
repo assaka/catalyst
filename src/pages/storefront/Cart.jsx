@@ -1423,64 +1423,145 @@ export default function Cart() {
                                 const couponStyling = getSlotStyling('coupon');
                                 return (
                                     <Card className={couponStyling.elementClasses} style={couponStyling.elementStyles}>
-                                        <CardHeader>
-                                            {(() => {
-                                                const titleStyling = getMicroSlotStyling('coupon.title');
-                                                const finalClasses = titleStyling.elementClasses || '';
-                                                return (
-                                                    <CardTitle className={finalClasses} style={titleStyling.elementStyles}>
-                                                        Apply Coupon
-                                                    </CardTitle>
-                                                );
-                                            })()}
-                                        </CardHeader>
-                                        <CardContent>
-                                    {!appliedCoupon ? (
-                                        <div className="flex space-x-2">
-                                            <Input 
-                                                placeholder="Enter coupon code" 
-                                                value={couponCode}
-                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                                onKeyPress={handleCouponKeyPress}
-                                            />
-                                            <Button 
-                                                onClick={handleApplyCoupon}
-                                                disabled={!couponCode.trim()}
-                                            >
-                                                <Tag className="w-4 h-4 mr-2" /> Apply
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                                            <div>
-                                                <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
-                                                <p className="text-xs text-green-600">
-                                                    {appliedCoupon.discount_type === 'fixed' 
-                                                        ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
-                                                        : `${safeToFixed(appliedCoupon.discount_value)}% off`
-                                                    }
-                                                </p>
+                                        <CardContent className="p-4">
+                                            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                                                {cartLayoutConfig?.microSlotOrders?.coupon ? (
+                                                    cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
+                                                        const positioning = getSlotPositioning(slotId, 'coupon');
+                                                        
+                                                        if (slotId.includes('.custom_')) {
+                                                            return renderCustomSlot(slotId, 'coupon');
+                                                        }
+                                                        
+                                                        // Render standard coupon micro-slots
+                                                        if (slotId === 'coupon.title') {
+                                                            const titleStyling = getMicroSlotStyling('coupon.title');
+                                                            const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                        Apply Coupon
+                                                                    </h3>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'coupon.input' && !appliedCoupon) {
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <Input 
+                                                                        placeholder="Enter coupon code" 
+                                                                        value={couponCode}
+                                                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                                        onKeyPress={handleCouponKeyPress}
+                                                                        style={positioning.elementStyles}
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'coupon.button' && !appliedCoupon) {
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <Button 
+                                                                        onClick={handleApplyCoupon}
+                                                                        disabled={!couponCode.trim()}
+                                                                        style={positioning.elementStyles}
+                                                                    >
+                                                                        <Tag className="w-4 h-4 mr-2" /> Apply
+                                                                    </Button>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'coupon.applied' && appliedCoupon) {
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className="bg-green-50 p-3 rounded-lg" style={positioning.elementStyles}>
+                                                                        <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
+                                                                        <p className="text-xs text-green-600">
+                                                                            {appliedCoupon.discount_type === 'fixed' 
+                                                                                ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
+                                                                                : `${safeToFixed(appliedCoupon.discount_value)}% off`
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'coupon.removeButton' && appliedCoupon) {
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <Button 
+                                                                        variant="outline" 
+                                                                        size="sm" 
+                                                                        onClick={handleRemoveCoupon}
+                                                                        className="text-red-600 hover:text-red-800"
+                                                                        style={positioning.elementStyles}
+                                                                    >
+                                                                        Remove
+                                                                    </Button>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        return null;
+                                                    })
+                                                ) : (
+                                                    // Fallback to default layout if no microSlotOrders
+                                                    <>
+                                                        <div className="col-span-12">
+                                                            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+                                                        </div>
+                                                        {!appliedCoupon ? (
+                                                            <>
+                                                                <div className="col-span-8">
+                                                                    <Input 
+                                                                        placeholder="Enter coupon code" 
+                                                                        value={couponCode}
+                                                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                                        onKeyPress={handleCouponKeyPress}
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-4">
+                                                                    <Button 
+                                                                        onClick={handleApplyCoupon}
+                                                                        disabled={!couponCode.trim()}
+                                                                    >
+                                                                        <Tag className="w-4 h-4 mr-2" /> Apply
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="col-span-8">
+                                                                    <div className="bg-green-50 p-3 rounded-lg">
+                                                                        <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
+                                                                        <p className="text-xs text-green-600">
+                                                                            {appliedCoupon.discount_type === 'fixed' 
+                                                                                ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
+                                                                                : `${safeToFixed(appliedCoupon.discount_value)}% off`
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-span-4">
+                                                                    <Button 
+                                                                        variant="outline" 
+                                                                        size="sm" 
+                                                                        onClick={handleRemoveCoupon}
+                                                                        className="text-red-600 hover:text-red-800"
+                                                                    >
+                                                                        Remove
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
                                             </div>
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                onClick={handleRemoveCoupon}
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                Remove
-                                            </Button>
-                                        </div>
-                                    )}
-                                    
-                                    {/* Custom slots for coupon section */}
-                                    {cartLayoutConfig?.microSlotOrders?.coupon && (
-                                        <div className="grid grid-cols-12 gap-2 auto-rows-min mt-4">
-                                            {cartLayoutConfig.microSlotOrders.coupon.map(slotId => 
-                                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'coupon') : null
-                                            )}
-                                        </div>
-                                    )}
-                                </CardContent>
+                                        </CardContent>
                                     </Card>
                                 );
                             })()}
