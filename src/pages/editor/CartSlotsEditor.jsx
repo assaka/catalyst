@@ -2677,7 +2677,9 @@ export default function CartSlotsEditorWithMicroSlots({
               Object.entries(slots).forEach(([slotId, spans]) => {
                 cleanedSpans[parentId][slotId] = {
                   col: typeof spans.col === 'number' && spans.col >= 1 && spans.col <= 12 ? spans.col : 12,
-                  row: typeof spans.row === 'number' && spans.row >= 1 && spans.row <= 4 ? spans.row : 1
+                  row: typeof spans.row === 'number' && spans.row >= 1 && spans.row <= 4 ? spans.row : 1,
+                  // Preserve alignment setting
+                  ...(spans.align && { align: spans.align })
                 };
               });
             });
