@@ -1442,6 +1442,24 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   console.error('❌ onClassChange missing');
                 }
               }}
+              onBlur={(e) => {
+                console.log('😴 Color picker onBlur triggered:', e.target.value);
+                if (onClassChange) {
+                  const classes = (elementClasses[id] || '').replace(/text-\w+-\d+/g, '').replace(/text-(black|white|transparent)/g, '').trim();
+                  onClassChange(id, classes, { color: e.target.value });
+                  console.log('✅ onBlur called onClassChange');
+                } else {
+                  console.error('❌ onClassChange missing in onBlur');
+                }
+              }}
+              onInput={(e) => {
+                console.log('📝 Color picker onInput triggered:', e.target.value);
+                if (onClassChange) {
+                  const classes = (elementClasses[id] || '').replace(/text-\w+-\d+/g, '').replace(/text-(black|white|transparent)/g, '').trim();
+                  onClassChange(id, classes, { color: e.target.value });
+                  console.log('✅ onInput called onClassChange');
+                }
+              }}
               className="w-5 h-5 cursor-pointer"
               style={{ border: 'none', padding: 0 }}
             />
