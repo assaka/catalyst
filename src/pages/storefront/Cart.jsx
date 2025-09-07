@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
@@ -99,6 +99,11 @@ const useDebouncedEffect = (effect, deps, delay) => {
 
 export default function Cart() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    
+    // Check if we're in editor mode (for action bars on custom slots)
+    const isEditorMode = searchParams.get('mode') === 'editor';
+    
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
     
@@ -1000,6 +1005,38 @@ export default function Cart() {
         };
     };
 
+    // Helper function to get positioning and styling for slots with grid support
+    const getSlotPositioning = (slotId, parentSlot) => {
+        const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
+        const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
+        const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
+        
+        // Build grid positioning classes
+        const gridClasses = `col-span-${Math.min(12, Math.max(1, microSlotSpans.col || 12))} row-span-${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`;
+        
+        // Add margin and padding support from configuration
+        const spacingStyles = {
+            ...(microSlotSpans.margin ? { margin: microSlotSpans.margin } : {}),
+            ...(microSlotSpans.padding ? { padding: microSlotSpans.padding } : {}),
+            ...(microSlotSpans.marginTop ? { marginTop: microSlotSpans.marginTop } : {}),
+            ...(microSlotSpans.marginRight ? { marginRight: microSlotSpans.marginRight } : {}),
+            ...(microSlotSpans.marginBottom ? { marginBottom: microSlotSpans.marginBottom } : {}),
+            ...(microSlotSpans.marginLeft ? { marginLeft: microSlotSpans.marginLeft } : {}),
+            ...(microSlotSpans.paddingTop ? { paddingTop: microSlotSpans.paddingTop } : {}),
+            ...(microSlotSpans.paddingRight ? { paddingRight: microSlotSpans.paddingRight } : {}),
+            ...(microSlotSpans.paddingBottom ? { paddingBottom: microSlotSpans.paddingBottom } : {}),
+            ...(microSlotSpans.paddingLeft ? { paddingLeft: microSlotSpans.paddingLeft } : {}),
+            ...elementStyles
+        };
+        
+        return {
+            gridClasses,
+            elementClasses,
+            elementStyles: spacingStyles,
+            microSlotSpans
+        };
+    };
+
     // Helper function to render custom slots with ALL editor customizations
     const renderCustomSlot = (slotId, parentSlot) => {
         if (!cartLayoutConfig?.customSlots?.[slotId]) return null;
@@ -1066,13 +1103,33 @@ export default function Cart() {
             return null;
         };
         
+        const positioning = getSlotPositioning(slotId, parentSlot);
+        
         return (
             <div 
                 key={slotId} 
-                className={`custom-slot ${customSlot.type}-slot`}
+                className={`custom-slot ${customSlot.type}-slot ${positioning.gridClasses} ${isEditorMode ? 'relative group' : ''}`}
                 data-slot-id={slotId}
                 data-parent-slot={parentSlot}
+                style={positioning.elementStyles}
             >
+                {/* Action bar for editor mode */}
+                {isEditorMode && (
+                    <div className="absolute top-0 right-0 bg-blue-600 text-white px-2 py-1 text-xs rounded-bl opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button 
+                            onClick={() => window.dispatchEvent(new CustomEvent('editCustomSlot', { detail: { slotId, parentSlot } }))}
+                            className="mr-2 hover:underline"
+                        >
+                            Edit
+                        </button>
+                        <button 
+                            onClick={() => window.dispatchEvent(new CustomEvent('deleteCustomSlot', { detail: { slotId, parentSlot } }))}
+                            className="text-red-200 hover:text-red-100 hover:underline"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                )}
                 {renderContent()}
             </div>
         );
@@ -1109,25 +1166,29 @@ export default function Cart() {
                     )}
                 </div>
                 
-                {/* Header Section with Custom Slots */}
+                {/* Header Section with Grid Layout */}
                 <div className="header-section mb-8">
-                    {(() => {
-                        const headerTitleStyling = getMicroSlotStyling('header.title');
-                        const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                        const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
-                        return (
-                            <h1 className={finalClasses} style={headerTitleStyling.elementStyles}>
-                                My Cart
-                            </h1>
-                        );
-                    })()}
-                    {cartLayoutConfig?.microSlotOrders?.header && (
-                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                            {cartLayoutConfig.microSlotOrders.header.map(slotId => 
-                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'header') : null
-                            )}
-                        </div>
-                    )}
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                        {/* Default header title slot */}
+                        {(() => {
+                            const headerTitleStyling = getMicroSlotStyling('header.title');
+                            const positioning = getSlotPositioning('header.title', 'header');
+                            const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
+                            const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
+                            return (
+                                <div className={positioning.gridClasses}>
+                                    <h1 className={finalClasses} style={positioning.elementStyles}>
+                                        My Cart
+                                    </h1>
+                                </div>
+                            );
+                        })()}
+                        
+                        {/* Custom slots */}
+                        {cartLayoutConfig?.microSlotOrders?.header?.map(slotId => 
+                            slotId.includes('.custom_') ? renderCustomSlot(slotId, 'header') : null
+                        )}
+                    </div>
                 </div>
                 
                 <CmsBlockRenderer position="cart_above_items" />
