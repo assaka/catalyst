@@ -1432,14 +1432,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 e.stopPropagation();
-                console.log('🎨 ACTIONS BAR Color picker onChange triggered!', { 
-                  value: e.target.value, 
-                  id: id,
-                  timestamp: new Date().toISOString(),
-                  currentStyles: elementStyles[id]
-                });
+                console.log('🎨 Color picker onChange:', e.target.value, 'for', id);
                 const currentClasses = elementClasses[id] || '';
-                console.log('🔴 Before color removal:', currentClasses);
                 // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
                 const newClasses = currentClasses
                   .split(' ')
@@ -1468,65 +1462,35 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .join(' ')
                   .replace(/\s+/g, ' ')
                   .trim();
-                console.log('🟢 After color removal:', newClasses);
-                console.log('🎨 Setting inline color:', e.target.value);
-                console.log('🔧 onClassChange function available:', typeof onClassChange);
-                // Store the color as an inline style
-                if (onClassChange) {
-                  console.log('✅ Calling onClassChange with:', { id, newClasses, color: e.target.value });
-                  onClassChange(id, newClasses, { color: e.target.value });
-                } else {
-                  console.error('❌ onClassChange is not available!');
-                }
+                
+                console.log('✅ Calling onClassChange:', id, newClasses, { color: e.target.value });
+                onClassChange(id, newClasses, { color: e.target.value });
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Text color"
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                console.log('🖱️ Color picker #1 mouseDown');
-              }}
-              onMouseUp={(e) => {
-                e.stopPropagation();
-                console.log('🖱️ Color picker #1 mouseUp');
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('🖱️ Color picker #1 click');
-              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               onInput={(e) => {
                 e.stopPropagation();
-                console.log('📝 ACTIONS BAR Color picker onInput triggered!', e.target.value);
+                console.log('📝 Color picker onInput:', e.target.value, 'for', id);
                 
-                // Same logic as onChange - duplicate to ensure it works
                 const currentClasses = elementClasses[id] || '';
-                console.log('🔴 onInput - Before color removal:', currentClasses);
                 const newClasses = currentClasses
                   .split(' ')
                   .filter(cls => {
                     if (!cls.startsWith('text-')) return true;
                     const parts = cls.split('-');
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-                      console.log(`  Removing color class: ${cls}`);
-                      return false;
-                    }
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-                      console.log(`  Removing special color: ${cls}`);
-                      return false;
-                    }
+                    if (parts.length === 3 && /^\d+$/.test(parts[2])) return false;
+                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) return false;
                     return true;
                   })
                   .join(' ')
                   .replace(/\s+/g, ' ')
                   .trim();
-                console.log('🟢 onInput - After color removal:', newClasses);
-                console.log('🎨 onInput - Setting inline color:', e.target.value);
                 
-                if (onClassChange) {
-                  console.log('✅ onInput - Calling onClassChange with:', { id, newClasses, color: e.target.value });
-                  onClassChange(id, newClasses, { color: e.target.value });
-                } else {
-                  console.error('❌ onInput - onClassChange is not available!');
-                }
+                console.log('✅ onInput calling onClassChange:', id, newClasses, { color: e.target.value });
+                onClassChange(id, newClasses, { color: e.target.value });
               }}
             />
           </div>
