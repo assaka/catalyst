@@ -1673,6 +1673,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               key={`text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
+                console.log('🚨 TEXT COLOR PICKER TRIGGERED for button:', id, 'value:', e.target.value);
                 console.log('🎨 Text Color change for', id, 'from', elementStyles[id]?.color, 'to', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 console.log('🔴 Before color removal (2nd picker):', currentClasses);
@@ -1732,6 +1733,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               key={`btn-bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#3b82f6'}
               onChange={(e) => {
+                console.log('🚨 BACKGROUND COLOR PICKER TRIGGERED for button:', id, 'value:', e.target.value);
                 console.log('🎨 Button BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
@@ -1748,6 +1750,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             <button
               onClick={() => {
+                console.log('🚨 BOLD BUTTON CLICKED for button:', id);
                 const currentClasses = elementClasses[id] || '';
                 const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
                 let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
