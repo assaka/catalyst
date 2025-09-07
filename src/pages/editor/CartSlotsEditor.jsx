@@ -1500,6 +1500,27 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               onFocus={() => console.log('🎯 Color picker focused (dialog opened)')}
               onBlur={() => console.log('😴 Color picker blurred (dialog closed)')}
+              onChangeCapture={(e) => {
+                e.stopPropagation();
+                console.log('🔄 Color picker onChangeCapture:', e.target.value, 'for', id);
+                
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .split(' ')
+                  .filter(cls => {
+                    if (!cls.startsWith('text-')) return true;
+                    const parts = cls.split('-');
+                    if (parts.length === 3 && /^\d+$/.test(parts[2])) return false;
+                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) return false;
+                    return true;
+                  })
+                  .join(' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                
+                console.log('✅ onChangeCapture calling onClassChange:', id, newClasses, { color: e.target.value });
+                onClassChange(id, newClasses, { color: e.target.value });
+              }}
             />
           </div>
 
