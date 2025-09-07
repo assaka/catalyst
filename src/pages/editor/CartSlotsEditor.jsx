@@ -1504,6 +1504,74 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               title="Background color"
             />
           </div>
+          
+          {/* Margin control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="2" y="2" width="16" height="16" strokeWidth="1" strokeDasharray="2,2"/>
+              <rect x="5" y="5" width="10" height="10" strokeWidth="1.5"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.margin || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Update both elementStyles and microSlotSpans
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  margin: value ? `${value}px` : undefined 
+                });
+                // Also trigger span change to save margin to microSlotSpans
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    margin: value ? `${value}px` : undefined 
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Margin (px)"
+            />
+          </div>
+
+          {/* Padding control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="3" y="3" width="14" height="14" strokeWidth="1.5"/>
+              <rect x="6" y="6" width="8" height="8" strokeWidth="1" strokeDasharray="1,1"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.padding || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Update both elementStyles and microSlotSpans
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  padding: value ? `${value}px` : undefined 
+                });
+                // Also trigger span change to save padding to microSlotSpans
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    padding: value ? `${value}px` : undefined 
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Padding (px)"
+            />
+          </div>
         </div>
       )}
       
@@ -1594,6 +1662,74 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Background color"
+            />
+          </div>
+          
+          {/* Margin control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="2" y="2" width="16" height="16" strokeWidth="1" strokeDasharray="2,2"/>
+              <rect x="5" y="5" width="10" height="10" strokeWidth="1.5"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.margin || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Update both elementStyles and microSlotSpans
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  margin: value ? `${value}px` : undefined 
+                });
+                // Also trigger span change to save margin to microSlotSpans
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    margin: value ? `${value}px` : undefined 
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Margin (px)"
+            />
+          </div>
+
+          {/* Padding control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
+            <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+              <rect x="3" y="3" width="14" height="14" strokeWidth="1.5"/>
+              <rect x="6" y="6" width="8" height="8" strokeWidth="1" strokeDasharray="1,1"/>
+            </svg>
+            <input
+              type="number"
+              value={parseInt(elementStyles[id]?.padding || '0')}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Update both elementStyles and microSlotSpans
+                onClassChange(id, elementClasses[id] || '', { 
+                  ...elementStyles[id], 
+                  padding: value ? `${value}px` : undefined 
+                });
+                // Also trigger span change to save padding to microSlotSpans
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    padding: value ? `${value}px` : undefined 
+                  });
+                }
+              }}
+              className="w-8 text-xs border-0 bg-transparent"
+              placeholder="0"
+              min="0"
+              max="100"
+              title="Padding (px)"
             />
           </div>
           
@@ -3120,26 +3256,24 @@ export default function CartSlotsEditorWithMicroSlots({
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
-                  <div className="flex justify-center items-center">
-                    <SimpleInlineEdit
-                      text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
-                      className={elementClasses[slotId] || 'text-gray-600'}
-                      onChange={(newText) => {
-                        handleTextChange(slotId, newText);
-                        // Also update the custom slot content
-                        setCustomSlots(prev => ({
-                          ...prev,
-                          [slotId]: {
-                            ...prev[slotId],
-                            content: newText
-                          }
-                        }));
-                      }}
-                      slotId={slotId}
-                      onClassChange={handleClassChange}
-                      mode={mode}
-                    />
-                  </div>
+                  <SimpleInlineEdit
+                    text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
+                    className={elementClasses[slotId] || 'text-gray-600'}
+                    onChange={(newText) => {
+                      handleTextChange(slotId, newText);
+                      // Also update the custom slot content
+                      setCustomSlots(prev => ({
+                        ...prev,
+                        [slotId]: {
+                          ...prev[slotId],
+                          content: newText
+                        }
+                      }));
+                    }}
+                    slotId={slotId}
+                    onClassChange={handleClassChange}
+                    mode={mode}
+                  />
                 </MicroSlot>
               );
             } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
@@ -4085,26 +4219,24 @@ export default function CartSlotsEditorWithMicroSlots({
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
-                  <div className="flex justify-center items-center">
-                    <SimpleInlineEdit
-                      text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
-                      className={elementClasses[slotId] || 'text-gray-600'}
-                      onChange={(newText) => {
-                        handleTextChange(slotId, newText);
-                        // Also update the custom slot content
-                        setCustomSlots(prev => ({
-                          ...prev,
-                          [slotId]: {
-                            ...prev[slotId],
-                            content: newText
-                          }
-                        }));
-                      }}
-                      slotId={slotId}
-                      onClassChange={handleClassChange}
-                      mode={mode}
-                    />
-                  </div>
+                  <SimpleInlineEdit
+                    text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
+                    className={elementClasses[slotId] || 'text-gray-600'}
+                    onChange={(newText) => {
+                      handleTextChange(slotId, newText);
+                      // Also update the custom slot content
+                      setCustomSlots(prev => ({
+                        ...prev,
+                        [slotId]: {
+                          ...prev[slotId],
+                          content: newText
+                        }
+                      }));
+                    }}
+                    slotId={slotId}
+                    onClassChange={handleClassChange}
+                    mode={mode}
+                  />
                 </MicroSlot>
               );
             } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
