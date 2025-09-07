@@ -1214,6 +1214,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
   // Handle mouse enter with a slight delay to prevent flickering - only in edit mode
   const handleMouseEnter = useCallback(() => {
     if (mode === 'preview') return; // Don't show hover states in preview mode
+    console.log('🐭 MicroSlot hover detected for:', id, 'onClassChange available:', !!onClassChange);
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
