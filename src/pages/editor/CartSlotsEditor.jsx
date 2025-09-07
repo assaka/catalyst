@@ -1683,36 +1683,21 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             }, 1000);
           }}
         >
-          {/* Text color control */}
-          <button
-            onClick={() => {
-              console.log('🎨 TEST button clicked for:', id);
-              if (onClassChange) {
-                console.log('✅ onClassChange exists, calling with red color');
-                onClassChange(id, elementClasses[id] || '', { color: '#ff0000' });
-              } else {
-                console.log('❌ onClassChange is null/undefined');
-              }
-            }}
-            className="bg-red-500 w-8 h-8 rounded cursor-pointer text-white text-xs"
-            title="Test red color"
-          >
-            R
-          </button>
-          <input
-            type="color"
-            defaultValue="#000000"
-            onInput={(e) => {
-              console.log('🎨 Color picker onInput for:', id, 'color:', e.target.value);
-              onClassChange(id, elementClasses[id] || '', { color: e.target.value });
-            }}
-            onChange={(e) => {
-              console.log('🎨 Color picker onChange for:', id, 'color:', e.target.value);
-              onClassChange(id, elementClasses[id] || '', { color: e.target.value });
-            }}
-            className="w-8 h-8 cursor-pointer border-0 rounded"
-            title="Text color"
-          />
+          {/* Text color control - Simple color palette */}
+          <div className="flex gap-1">
+            {['#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'].map(color => (
+              <button
+                key={color}
+                onClick={() => {
+                  console.log('🎨 Color palette clicked for:', id, 'color:', color);
+                  onClassChange(id, elementClasses[id] || '', { color });
+                }}
+                className="w-6 h-6 rounded cursor-pointer border border-gray-300"
+                style={{ backgroundColor: color }}
+                title={`Set color to ${color}`}
+              />
+            ))}
+          </div>
 
           {/* Background color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
