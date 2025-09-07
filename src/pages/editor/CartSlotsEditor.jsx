@@ -301,7 +301,22 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
       classes.push(newClass);
     }
     
-    setTempClass(classes.join(' '));
+    const newClassName = classes.join(' ');
+    console.log('🎨 Color class toggle:', { category, newClass, newClassName });
+    setTempClass(newClassName);
+    
+    // For color changes, trigger immediate save instead of waiting for debounce
+    if (category === 'text-color' || category === 'bg-color') {
+      console.log('🚀 Immediate save for color change');
+      // Clear existing timeout and save immediately
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      setTimeout(() => {
+        console.log('💾 Calling onChange for color change:', tempText, newClassName);
+        onChange(tempText, newClassName);
+      }, 100); // Very short delay to ensure state update
+    }
   };
   
   // Initialize selected colors from existing classes
@@ -1636,7 +1651,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     // Don't hide if user is interacting with color picker
     if (relatedTarget && (
       relatedTarget.type === 'color' || 
-      relatedTarget.closest('input[type="color"]') ||
+      (relatedTarget.closest && relatedTarget.closest('input[type="color"]')) ||
       relatedTarget.className?.includes('color-picker') ||
       relatedTarget.tagName === 'INPUT'
     )) {
@@ -1935,9 +1950,8 @@ export default function CartSlotsEditorWithMicroSlots({
       timestamp: new Date().toISOString()
     };
     
-    // Save to localStorage immediately
+    // Configuration ready for database save
     const configString = JSON.stringify(config);
-    localStorage.setItem('cart_slots_layout_config', configString);
     console.log('💾 Saved configuration:', config);
     console.log('📝 Saved slotContent specifically:', config.slotContent);
     console.log('🎨 Saved elementClasses:', config.elementClasses);
@@ -2340,8 +2354,7 @@ export default function CartSlotsEditorWithMicroSlots({
             });
           }
           
-          // Cache to localStorage for quick access
-          localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+          // Configuration loaded from database successfully
         } else {
           console.log('No configuration found in database, using defaults');
         }
@@ -3036,18 +3049,20 @@ export default function CartSlotsEditorWithMicroSlots({
                       </div>
                     )}
                     
-                    {/* Edit button overlay */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingComponent(slotId);
-                        setTempCode(slotContent[slotId] || customSlot.content);
-                      }}
-                      className="absolute top-1 right-1 px-2 py-1 bg-white/90 rounded shadow-sm border text-xs text-blue-600 hover:text-blue-700 hover:bg-white transition-colors"
-                    >
-                      <Edit className="w-3 h-3 inline mr-1" />
-                      Edit {customSlot.type === 'html' ? 'HTML' : 'JS'}
-                    </button>
+                    {/* Edit button overlay - only in edit mode */}
+                    {mode === 'edit' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingComponent(slotId);
+                          setTempCode(slotContent[slotId] || customSlot.content);
+                        }}
+                        className="absolute top-1 right-1 px-2 py-1 bg-white/90 rounded shadow-sm border text-xs text-blue-600 hover:text-blue-700 hover:bg-white transition-colors"
+                      >
+                        <Edit className="w-3 h-3 inline mr-1" />
+                        Edit {customSlot.type === 'html' ? 'HTML' : 'JS'}
+                      </button>
+                    )}
                   </div>
                 </MicroSlot>
               );
@@ -4366,8 +4381,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     console.log('✅ Deleted configuration from database');
                   }
                   
-                  // Clear local storage
-                  localStorage.removeItem('cart_slots_layout_config');
+                  // Configuration will be reset in database
                   
                   // Reset all state to defaults
                   setMicroSlotOrders({});

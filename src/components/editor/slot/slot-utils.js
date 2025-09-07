@@ -4,33 +4,22 @@
 
 // Storage utilities
 export const SlotStorage = {
-  // Save slot configuration to localStorage
+  // Save slot configuration to localStorage - DISABLED (database only)
   save: (pageType, config) => {
-    const key = `${pageType}_slot_config`;
-    localStorage.setItem(key, JSON.stringify({
-      ...config,
-      timestamp: new Date().toISOString()
-    }));
+    console.log('localStorage save disabled - using database only');
+    return;
   },
   
-  // Load slot configuration from localStorage
+  // Load slot configuration from localStorage - DISABLED (database only)
   load: (pageType) => {
-    const key = `${pageType}_slot_config`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {
-        console.error('Failed to parse stored config:', e);
-      }
-    }
+    console.log('localStorage load disabled - using database only');
     return null;
   },
   
-  // Clear slot configuration
+  // Clear slot configuration - DISABLED (database only)
   clear: (pageType) => {
-    const key = `${pageType}_slot_config`;
-    localStorage.removeItem(key);
+    console.log('localStorage clear disabled - using database only');
+    return;
   },
   
   // Save to database
