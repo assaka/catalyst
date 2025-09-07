@@ -1204,70 +1204,128 @@ export default function Cart() {
                 {/* Header Section with Grid Layout */}
                 <div className="header-section mb-8">
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        {/* Default header title slot */}
-                        {(() => {
-                            const headerTitleStyling = getMicroSlotStyling('header.title');
-                            const positioning = getSlotPositioning('header.title', 'header');
-                            const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                            const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
-                            return (
-                                <div className={positioning.gridClasses}>
-                                    <h1 className={finalClasses} style={positioning.elementStyles}>
-                                        My Cart
-                                    </h1>
-                                </div>
-                            );
-                        })()}
-                        
-                        {/* Custom slots */}
-                        {cartLayoutConfig?.microSlotOrders?.header?.map(slotId => 
-                            slotId.includes('.custom_') ? renderCustomSlot(slotId, 'header') : null
+                        {cartLayoutConfig?.microSlotOrders?.header ? (
+                            cartLayoutConfig.microSlotOrders.header.map(slotId => {
+                                const positioning = getSlotPositioning(slotId, 'header');
+                                
+                                if (slotId.includes('.custom_')) {
+                                    return renderCustomSlot(slotId, 'header');
+                                }
+                                
+                                // Render standard header micro-slots
+                                if (slotId === 'header.title') {
+                                    const headerTitleStyling = getMicroSlotStyling('header.title');
+                                    const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
+                                    const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
+                                    return (
+                                        <div key={slotId} className={positioning.gridClasses}>
+                                            <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                My Cart
+                                            </h1>
+                                        </div>
+                                    );
+                                }
+                                
+                                return null;
+                            })
+                        ) : (
+                            // Fallback to default layout if no microSlotOrders
+                            <div className="col-span-12">
+                                <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                            </div>
                         )}
                     </div>
                 </div>
                 
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
-                    // Empty cart state with custom slots
+                    // Empty cart state with micro-slots in custom order
                     <div className="emptyCart-section">
                         <div className="text-center py-12">
-                            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                            {(() => {
-                                const titleStyling = getMicroSlotStyling('emptyCart.title');
-                                const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
-                                const finalClasses = titleStyling.elementClasses || defaultClasses;
-                                return (
-                                    <h2 className={finalClasses} style={titleStyling.elementStyles}>
-                                        Your cart is empty
-                                    </h2>
-                                );
-                            })()}
-                            {(() => {
-                                const textStyling = getMicroSlotStyling('emptyCart.text');
-                                const defaultClasses = 'text-gray-600 mb-6';
-                                const finalClasses = textStyling.elementClasses || defaultClasses;
-                                return (
-                                    <p className={finalClasses} style={textStyling.elementStyles}>
-                                        Looks like you haven't added anything to your cart yet.
-                                    </p>
-                                );
-                            })()}
-                            <Button 
-                                onClick={() => navigate(getStoreBaseUrl(store))}
-                                className="bg-blue-600 hover:bg-blue-700"
-                            >
-                                Continue Shopping
-                            </Button>
-                        </div>
-                        
-                        {/* Custom slots for emptyCart section */}
-                        {cartLayoutConfig?.microSlotOrders?.emptyCart && (
-                            <div className="mt-6">
-                                {cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => 
-                                    slotId.includes('.custom_') ? renderCustomSlot(slotId, 'emptyCart') : null
+                            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                                {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
+                                    cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
+                                        const positioning = getSlotPositioning(slotId, 'emptyCart');
+                                        
+                                        if (slotId.includes('.custom_')) {
+                                            return renderCustomSlot(slotId, 'emptyCart');
+                                        }
+                                        
+                                        // Render standard emptyCart micro-slots
+                                        if (slotId === 'emptyCart.icon') {
+                                            return (
+                                                <div key={slotId} className={positioning.gridClasses}>
+                                                    <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" style={positioning.elementStyles} />
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        if (slotId === 'emptyCart.title') {
+                                            const titleStyling = getMicroSlotStyling('emptyCart.title');
+                                            const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
+                                            const finalClasses = titleStyling.elementClasses || defaultClasses;
+                                            return (
+                                                <div key={slotId} className={positioning.gridClasses}>
+                                                    <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                        Your cart is empty
+                                                    </h2>
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        if (slotId === 'emptyCart.text') {
+                                            const textStyling = getMicroSlotStyling('emptyCart.text');
+                                            const defaultClasses = 'text-gray-600 mb-6';
+                                            const finalClasses = textStyling.elementClasses || defaultClasses;
+                                            return (
+                                                <div key={slotId} className={positioning.gridClasses}>
+                                                    <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                                        Looks like you haven't added anything to your cart yet.
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        if (slotId === 'emptyCart.button') {
+                                            return (
+                                                <div key={slotId} className={positioning.gridClasses}>
+                                                    <Button 
+                                                        onClick={() => navigate(getStoreBaseUrl(store))}
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                        style={positioning.elementStyles}
+                                                    >
+                                                        Continue Shopping
+                                                    </Button>
+                                                </div>
+                                            );
+                                        }
+                                        
+                                        return null;
+                                    })
+                                ) : (
+                                    // Fallback to default layout if no microSlotOrders
+                                    <>
+                                        <div className="col-span-12">
+                                            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                        </div>
+                                        <div className="col-span-12">
+                                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                                        </div>
+                                        <div className="col-span-12">
+                                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                                        </div>
+                                        <div className="col-span-12">
+                                            <Button 
+                                                onClick={() => navigate(getStoreBaseUrl(store))}
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                Continue Shopping
+                                            </Button>
+                                        </div>
+                                    </>
                                 )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 ) : (
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">

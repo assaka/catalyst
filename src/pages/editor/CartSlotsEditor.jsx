@@ -1323,6 +1323,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             {(() => {
               const parentSlot = id.split('.')[0];
               const currentAlign = microSlotSpans[parentSlot]?.[id]?.align || 'left';
+              console.log('🎯 Alignment debug for', id, '- parentSlot:', parentSlot, 'currentAlign:', currentAlign, 'microSlotSpans:', microSlotSpans[parentSlot]?.[id]);
               return (
                 <>
                   <button
@@ -1483,8 +1484,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
+              key={`bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#000000'}
               onChange={(e) => {
+                console.log('🎨 BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 // Remove bg-{word}-{number} (colors) using smart detection
                 const newClasses = currentClasses
@@ -1684,9 +1687,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
+              key={`text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
-                console.log('🎨 Second color picker onChange triggered!', e.target.value);
+                console.log('🎨 Text Color change for', id, 'from', elementStyles[id]?.color, 'to', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 console.log('🔴 Before color removal (2nd picker):', currentClasses);
                 // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
@@ -1742,8 +1746,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
+              key={`btn-bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#3b82f6'}
               onChange={(e) => {
+                console.log('🎨 Button BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
