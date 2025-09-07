@@ -1681,10 +1681,20 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
+            console.log('🎛️ Button action bar mouseEnter - keeping hover active');
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
             }
             setIsHovered(true);
+          }}
+          onMouseLeave={(e) => {
+            if (mode === 'preview') return;
+            e.stopPropagation();
+            console.log('🎛️ Button action bar mouseLeave - starting timeout');
+            hoverTimeoutRef.current = setTimeout(() => {
+              setIsHovered(false);
+              console.log('❌ Button action bar timeout - setIsHovered(false)');
+            }, 300);
           }}
         >
           {/* Text color control */}
