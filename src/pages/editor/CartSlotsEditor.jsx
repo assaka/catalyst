@@ -33,6 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Palette, PaintBucket, Type as TypeIcon, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
+import { ColorPicker } from 'react-beautiful-color';
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -1683,21 +1684,26 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             }, 1000);
           }}
         >
-          {/* Text color control - Simple color palette */}
-          <div className="flex gap-1">
-            {['#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'].map(color => (
-              <button
-                key={color}
-                onClick={() => {
-                  console.log('🎨 Color palette clicked for:', id, 'color:', color);
-                  onClassChange(id, elementClasses[id] || '', { color });
-                }}
-                className="w-6 h-6 rounded cursor-pointer border border-gray-300"
-                style={{ backgroundColor: color }}
-                title={`Set color to ${color}`}
-              />
-            ))}
-          </div>
+          {/* Text color control */}
+          <button
+            onClick={() => {
+              console.log('🎨 Opening color picker for:', id);
+              setColorPickerModal({
+                show: true,
+                slotId: id,
+                currentColor: elementStyles[id]?.color || '#000000',
+                type: 'text'
+              });
+            }}
+            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
+            title="Choose text color"
+          >
+            <Palette className="w-3 h-3 text-gray-600" />
+            <div 
+              className="w-4 h-4 rounded border border-gray-400"
+              style={{ backgroundColor: elementStyles[id]?.color || '#000000' }}
+            />
+          </button>
 
           {/* Background color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
@@ -2327,6 +2333,13 @@ export default function CartSlotsEditorWithMicroSlots({
   // State for delete confirmation dialog
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, slotId: null, slotLabel: '' });
   
+  // State for color picker modal
+  const [colorPickerModal, setColorPickerModal] = useState({ 
+    show: false, 
+    slotId: null, 
+    currentColor: '#000000',
+    type: 'text' // 'text' or 'background'
+  });
   
   // State for Tailwind classes for each element
   const [elementClasses, setElementClasses] = useState({
@@ -5064,6 +5077,61 @@ export default function CartSlotsEditorWithMicroSlots({
               }}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Color Picker Modal */}
+      <Dialog open={colorPickerModal.show} onOpenChange={(open) => setColorPickerModal(prev => ({ ...prev, show: open }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Choose {colorPickerModal.type === 'text' ? 'Text' : 'Background'} Color
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center space-y-4 py-4">
+            <ColorPicker
+              color={colorPickerModal.currentColor}
+              onChange={(color) => {
+                console.log('🎨 Color picker changed:', color);
+                setColorPickerModal(prev => ({ ...prev, currentColor: color }));
+              }}
+            />
+            
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Current color:</span>
+              <div 
+                className="w-6 h-6 rounded border border-gray-300"
+                style={{ backgroundColor: colorPickerModal.currentColor }}
+              />
+              <span className="font-mono">{colorPickerModal.currentColor}</span>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setColorPickerModal({ show: false, slotId: null, currentColor: '#000000', type: 'text' })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (colorPickerModal.slotId && handleClassChange) {
+                  console.log('🎨 Applying color:', colorPickerModal.currentColor, 'to:', colorPickerModal.slotId);
+                  const styleKey = colorPickerModal.type === 'text' ? 'color' : 'backgroundColor';
+                  handleClassChange(
+                    colorPickerModal.slotId, 
+                    elementClasses[colorPickerModal.slotId] || '', 
+                    { [styleKey]: colorPickerModal.currentColor }
+                  );
+                }
+                setColorPickerModal({ show: false, slotId: null, currentColor: '#000000', type: 'text' });
+              }}
+            >
+              Apply Color
             </Button>
           </DialogFooter>
         </DialogContent>
