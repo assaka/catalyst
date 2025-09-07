@@ -1327,7 +1327,7 @@ export default function Cart() {
                                 </CardContent>
                                     </Card>
                                 );
-                            })()
+                            })();
                         </div>
                     </div>
                 )}
