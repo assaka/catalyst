@@ -1209,6 +1209,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           className="absolute right-10 top-1 p-2 bg-gray-500 rounded-md z-40 hover:bg-gray-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
           title="Edit micro-slot"
           onMouseEnter={(e) => {
+            if (mode === 'preview') return;
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
@@ -1237,6 +1238,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           className="absolute right-20 top-1 p-2 bg-red-500 rounded-md z-40 hover:bg-red-600 transition-colors shadow-md pointer-events-auto cursor-pointer"
           title="Delete custom slot"
           onMouseEnter={(e) => {
+            if (mode === 'preview') return;
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
@@ -1254,6 +1256,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
           style={{ maxWidth: '95%' }}
           onMouseEnter={(e) => {
+            if (mode === 'preview') return;
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
@@ -1415,6 +1418,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 translate-y-full flex flex-wrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200"
           style={{ maxWidth: '95%' }}
           onMouseEnter={(e) => {
+            if (mode === 'preview') return;
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
@@ -1526,6 +1530,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize group"
             onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
             onMouseEnter={(e) => {
+              if (mode === 'preview') return;
               e.stopPropagation();
               if (hoverTimeoutRef.current) {
                 clearTimeout(hoverTimeoutRef.current);
@@ -1616,16 +1621,28 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
 
   // Handle mouse enter with a slight delay to prevent flickering
   const handleMouseEnter = useCallback(() => {
+    if (mode === 'preview') return; // Don't show hover states in preview mode
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
     setIsHovered(true);
-  }, []);
+  }, [mode]);
   
   // Handle mouse leave with a small delay to prevent premature hiding
   const handleMouseLeave = useCallback((e) => {
     // Check if we're still within the component or its children
     const relatedTarget = e.relatedTarget;
+    
+    // Don't hide if user is interacting with color picker
+    if (relatedTarget && (
+      relatedTarget.type === 'color' || 
+      relatedTarget.closest('input[type="color"]') ||
+      relatedTarget.className?.includes('color-picker') ||
+      relatedTarget.tagName === 'INPUT'
+    )) {
+      return;
+    }
+    
     try {
       if (containerRef.current && relatedTarget && typeof relatedTarget.nodeType === 'number' && containerRef.current.contains(relatedTarget)) {
         return; // Don't hide if we're still inside the component
@@ -1638,7 +1655,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     // Add a small delay before hiding to prevent flickering
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 150);
+    }, 300); // Increased delay for color picker
   }, []);
   
   // Clean up timeout on unmount
@@ -1678,6 +1695,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
           className="absolute right-1 top-1 p-1.5 bg-blue-100/90 rounded transition-opacity z-30 hover:bg-blue-200"
           title="Edit section"
           onMouseEnter={(e) => {
+            if (mode === 'preview') return;
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
@@ -1727,6 +1745,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
           className="absolute left-1/2 transform -translate-x-1/2 -bottom-3 p-1.5 bg-green-100/90 rounded transition-opacity z-30 hover:bg-green-200 group"
           title="Add new slot"
           onMouseEnter={(e) => {
+            if (mode === 'preview') return;
             e.stopPropagation();
             if (hoverTimeoutRef.current) {
               clearTimeout(hoverTimeoutRef.current);
@@ -2019,7 +2038,7 @@ export default function CartSlotsEditorWithMicroSlots({
       
       return true;
     }
-  }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, componentSizes, slotContent, customSlots, onSave]);
+  }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, elementStyles, componentSizes, customSlots, onSave]);
   
   // Debounced save function
   const debouncedSave = useCallback(() => {
