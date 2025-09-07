@@ -1694,9 +1694,21 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               key={`text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
+              onFocus={(e) => {
+                // Keep hover state active when color picker is focused
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+              }}
               onChange={(e) => {
                 console.log('🚨 TEXT COLOR PICKER TRIGGERED for button:', id, 'value:', e.target.value);
                 console.log('🎨 Text Color change for', id, 'from', elementStyles[id]?.color, 'to', e.target.value);
+                // Keep hover state active during changes
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
                 const currentClasses = elementClasses[id] || '';
                 console.log('🔴 Before color removal (2nd picker):', currentClasses);
                 // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
@@ -1743,6 +1755,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               onClick={(e) => {
                 e.stopPropagation();
                 console.log('🖱️ Color picker #2 click');
+                // Keep hover state active when clicking color picker
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
               }}
             />
           </div>
@@ -1754,9 +1771,21 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               key={`btn-bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#3b82f6'}
+              onFocus={(e) => {
+                // Keep hover state active when color picker is focused
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+              }}
               onChange={(e) => {
                 console.log('🚨 BACKGROUND COLOR PICKER TRIGGERED for button:', id, 'value:', e.target.value);
                 console.log('🎨 Button BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', e.target.value);
+                // Keep hover state active during changes
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
