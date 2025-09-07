@@ -1322,39 +1322,51 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           <div className="flex items-center bg-gray-50 rounded border border-gray-200">
             <button
               onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(left|center|right|justify)/g, '')
-                  .trim() + ' text-left';
-                onClassChange(id, newClasses.trim());
+                // Store horizontal alignment in microSlotSpans for parent container
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    align: 'left'  // Store alignment preference
+                  });
+                }
               }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-left') ? 'bg-blue-100' : ''}`}
+              className={`p-1 hover:bg-gray-100 rounded`}
               title="Align left"
             >
               <AlignLeft className="w-4 h-4 text-gray-600" />
             </button>
             <button
               onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(left|center|right|justify)/g, '')
-                  .trim() + ' text-center';
-                onClassChange(id, newClasses.trim());
+                // Store horizontal alignment in microSlotSpans for parent container  
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    align: 'center'  // Store alignment preference
+                  });
+                }
               }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-center') ? 'bg-blue-100' : ''}`}
+              className={`p-1 hover:bg-gray-100 rounded`}
               title="Align center"
             >
               <AlignCenter className="w-4 h-4 text-gray-600" />
             </button>
             <button
               onClick={() => {
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(left|center|right|justify)/g, '')
-                  .trim() + ' text-right';
-                onClassChange(id, newClasses.trim());
+                // Store horizontal alignment in microSlotSpans for parent container
+                const parentSlot = id.split('.')[0];
+                if (onSpanChange) {
+                  onSpanChange(id, { 
+                    col: colSpan, 
+                    row: rowSpan, 
+                    align: 'right'  // Store alignment preference
+                  });
+                }
               }}
-              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('text-right') ? 'bg-blue-100' : ''}`}
+              className={`p-1 hover:bg-gray-100 rounded`}
               title="Align right"
             >
               <AlignRight className="w-4 h-4 text-gray-600" />
@@ -4107,7 +4119,44 @@ export default function CartSlotsEditorWithMicroSlots({
               }
               
               if (slotId === 'orderSummary.checkoutButton') {
-                const buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['orderSummary.checkoutButton'];
+                let buttonCode = slotContent[slotId] || MICRO_SLOT_TEMPLATES['orderSummary.checkoutButton'];
+                
+                // Apply styles and classes to the button
+                const styles = elementStyles[slotId] || {};
+                const classes = elementClasses[slotId] || '';
+                
+                // Remove existing color classes if we have custom styles
+                if (styles.backgroundColor || styles.color) {
+                  // Remove bg-* and text-* color classes
+                  buttonCode = buttonCode.replace(/\b(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+                  buttonCode = buttonCode.replace(/\bhover:(bg|text)-(blue|green|red|yellow|purple|pink|gray|black|white|indigo)-\d+\b/g, '');
+                }
+                
+                // Apply inline styles to the button
+                if (Object.keys(styles).length > 0) {
+                  const styleStr = Object.entries(styles)
+                    .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+                    .join('; ');
+                  buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
+                    if (attrs.includes('style=')) {
+                      return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
+                    } else {
+                      return `<button${attrs} style="${styleStr}">`;
+                    }
+                  });
+                }
+                
+                // Apply rounded classes to the button
+                if (classes) {
+                  // First remove all existing rounded classes
+                  buttonCode = buttonCode.replace(/\brounded(-\w+)?\b/g, '');
+                  // Then add the new rounded class
+                  buttonCode = buttonCode.replace(/class="([^"]*)"/, (match, existingClasses) => {
+                    const cleanedClasses = existingClasses.replace(/\s+/g, ' ').trim();
+                    return `class="${cleanedClasses} ${classes}"`;
+                  });
+                }
+                
                 return (
                   <MicroSlot
                     key={slotId}

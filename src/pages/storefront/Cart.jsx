@@ -168,22 +168,24 @@ export default function Cart() {
         
         loadCartLayoutConfig();
         
-        // Set up polling to refresh configuration every 10 seconds if in development
-        const isDev = import.meta.env.DEV;
-        let pollInterval;
+        // Listen for configuration updates from editor
+        const handleStorageChange = (e) => {
+            if (e.key === 'slot_config_updated' && e.newValue) {
+                console.log('🔔 Configuration update notification received');
+                const updateData = JSON.parse(e.newValue);
+                if (updateData.storeId === store?.id) {
+                    console.log('✅ Store matches, reloading configuration');
+                    loadCartLayoutConfig();
+                    // Clear the notification
+                    localStorage.removeItem('slot_config_updated');
+                }
+            }
+        };
         
-        if (isDev && store?.id) {
-            console.log('🔄 Setting up config polling for development');
-            pollInterval = setInterval(() => {
-                console.log('🔄 Polling for config updates...');
-                loadCartLayoutConfig();
-            }, 10000); // Poll every 10 seconds in development
-        }
+        window.addEventListener('storage', handleStorageChange);
         
         return () => {
-            if (pollInterval) {
-                clearInterval(pollInterval);
-            }
+            window.removeEventListener('storage', handleStorageChange);
         };
     }, [store?.id]);
     
@@ -1029,8 +1031,23 @@ export default function Cart() {
         const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
         const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
         
-        // Build grid positioning classes
-        const gridClasses = `col-span-${Math.min(12, Math.max(1, microSlotSpans.col || 12))} row-span-${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`;
+        // Build grid positioning classes with alignment support
+        let gridClasses = `col-span-${Math.min(12, Math.max(1, microSlotSpans.col || 12))} row-span-${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`;
+        
+        // Add horizontal alignment classes to parent container
+        if (microSlotSpans.align) {
+            switch (microSlotSpans.align) {
+                case 'left':
+                    gridClasses += ' justify-self-start';
+                    break;
+                case 'center':  
+                    gridClasses += ' justify-self-center';
+                    break;
+                case 'right':
+                    gridClasses += ' justify-self-end';
+                    break;
+            }
+        }
         
         // Add margin and padding support from configuration
         const spacingStyles = {
