@@ -1652,8 +1652,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      {/* Button formatting controls - only color and border radius */}
-      {(id.includes('.button') || id.includes('Button')) && isHovered && !isDragging && !isResizing && onClassChange && (
+      {/* Universal formatting controls - color and styles for any slot */}
+      {isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
           className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto mx-auto"
           style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}
