@@ -5136,14 +5136,26 @@ export default function CartSlotsEditorWithMicroSlots({
             </Button>
             <Button
               onClick={() => {
-                if (colorPickerModal.slotId && handleClassChange) {
+                console.log('🎨 Apply button clicked');
+                console.log('Modal state:', colorPickerModal);
+                console.log('handleClassChange exists?', typeof handleClassChange);
+                
+                if (colorPickerModal.slotId) {
                   console.log('🎨 Applying color:', colorPickerModal.currentColor, 'to:', colorPickerModal.slotId);
                   const styleKey = colorPickerModal.type === 'text' ? 'color' : 'backgroundColor';
-                  handleClassChange(
-                    colorPickerModal.slotId, 
-                    elementClasses[colorPickerModal.slotId] || '', 
-                    { [styleKey]: colorPickerModal.currentColor }
-                  );
+                  
+                  if (typeof handleClassChange === 'function') {
+                    handleClassChange(
+                      colorPickerModal.slotId, 
+                      elementClasses[colorPickerModal.slotId] || '', 
+                      { [styleKey]: colorPickerModal.currentColor }
+                    );
+                    console.log('✅ handleClassChange called successfully');
+                  } else {
+                    console.error('❌ handleClassChange is not a function!', typeof handleClassChange);
+                  }
+                } else {
+                  console.error('❌ No slotId in colorPickerModal');
                 }
                 setColorPickerModal({ show: false, slotId: null, currentColor: '#000000', type: 'text' });
               }}
