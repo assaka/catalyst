@@ -1324,6 +1324,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               const parentSlot = id.split('.')[0];
               const currentAlign = microSlotSpans[parentSlot]?.[id]?.align || 'left';
               console.log('🎯 Alignment debug for', id, '- parentSlot:', parentSlot, 'currentAlign:', currentAlign, 'microSlotSpans:', microSlotSpans[parentSlot]?.[id]);
+              console.log('🔍 Full microSlotSpans structure:', microSlotSpans);
+              console.log('🔍 Parent slot data:', microSlotSpans[parentSlot]);
               return (
                 <>
                   <button
@@ -1439,52 +1441,6 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             </select>
           </div>
 
-          {/* Text color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
-            <Palette className="w-3 h-3 text-gray-600 mr-1" />
-            <input
-              type="color"
-              key={`text-${id}-${elementStyles[id]?.color || 'default'}`}
-              value={elementStyles[id]?.color || '#000000'}
-              onChange={(e) => {
-                console.log('🎨 Text Color change for', id, 'from', elementStyles[id]?.color, 'to', e.target.value);
-                const currentClasses = elementClasses[id] || '';
-                console.log('🔴 Before color removal:', currentClasses);
-                // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
-                const newClasses = currentClasses
-                  .split(' ')
-                  .filter(cls => {
-                    // Check if it's a text class
-                    if (!cls.startsWith('text-')) return true;
-                    
-                    const parts = cls.split('-');
-                    // text-red-500 = ['text', 'red', '500'] - remove (color)
-                    // text-2xl = ['text', '2xl'] - keep (size)
-                    // text-black = ['text', 'black'] - remove (special color)
-                    
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-                      // It's text-{word}-{number} - this is a color
-                      console.log(`  Removing color class: ${cls}`);
-                      return false;
-                    }
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-                      // Special color cases without numbers
-                      console.log(`  Removing special color: ${cls}`);
-                      return false;
-                    }
-                    // Keep everything else (text-xl, text-2xl, text-center, etc.)
-                    return true;
-                  })
-                  .join(' ')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                console.log('🟢 After color removal:', newClasses);
-                onClassChange(id, newClasses, { color: e.target.value });
-              }}
-              className="w-5 h-5 cursor-pointer border-0"
-              title={`Text color: ${elementStyles[id]?.color || '#000000'}`}
-            />
-          </div>
 
           {/* Background color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">

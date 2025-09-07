@@ -1569,92 +1569,172 @@ export default function Cart() {
                                 const orderSummaryStyling = getSlotStyling('orderSummary');
                                 return (
                                     <Card className={orderSummaryStyling.elementClasses} style={orderSummaryStyling.elementStyles}>
-                                        <CardHeader>
-                                            {(() => {
-                                                const titleStyling = getMicroSlotStyling('orderSummary.title');
-                                                const finalClasses = titleStyling.elementClasses || '';
-                                                return (
-                                                    <CardTitle className={finalClasses} style={titleStyling.elementStyles}>
-                                                        Order Summary
-                                                    </CardTitle>
-                                                );
-                                            })()}
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                    {(() => {
-                                        const subtotalStyling = getMicroSlotStyling('orderSummary.subtotal');
-                                        const defaultClasses = 'flex justify-between';
-                                        const finalClasses = subtotalStyling.elementClasses || defaultClasses;
-                                        return (
-                                            <div className={finalClasses} style={subtotalStyling.elementStyles}>
-                                                <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
+                                        <CardContent className="p-4">
+                                            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                                                {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
+                                                    cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
+                                                        const positioning = getSlotPositioning(slotId, 'orderSummary');
+                                                        
+                                                        if (slotId.includes('.custom_')) {
+                                                            return renderCustomSlot(slotId, 'orderSummary');
+                                                        }
+                                                        
+                                                        // Render standard orderSummary micro-slots
+                                                        if (slotId === 'orderSummary.title') {
+                                                            const titleStyling = getMicroSlotStyling('orderSummary.title');
+                                                            const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                        Order Summary
+                                                                    </h3>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'orderSummary.subtotal') {
+                                                            const subtotalStyling = getMicroSlotStyling('orderSummary.subtotal');
+                                                            const defaultClasses = 'flex justify-between';
+                                                            const finalClasses = subtotalStyling.elementClasses || defaultClasses;
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                        <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'orderSummary.tax') {
+                                                            const taxStyling = getMicroSlotStyling('orderSummary.tax');
+                                                            const defaultClasses = 'flex justify-between';
+                                                            const finalClasses = taxStyling.elementClasses || defaultClasses;
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                        <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'orderSummary.shipping') {
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className="flex justify-between" style={positioning.elementStyles}>
+                                                                        <span>Shipping</span><span>Free</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'orderSummary.discount' && discount > 0) {
+                                                            const discountStyling = getMicroSlotStyling('orderSummary.discount');
+                                                            const defaultClasses = 'flex justify-between';
+                                                            const finalClasses = discountStyling.elementClasses || defaultClasses;
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className={finalClasses} style={{...discountStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                        <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'orderSummary.total') {
+                                                            const totalStyling = getMicroSlotStyling('orderSummary.total');
+                                                            const defaultClasses = 'flex justify-between text-lg font-semibold border-t pt-4';
+                                                            const finalClasses = totalStyling.elementClasses || defaultClasses;
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className={finalClasses} style={{...totalStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                        <span>Total</span>
+                                                                        <span>{currencySymbol}{safeToFixed(total)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        if (slotId === 'orderSummary.checkout') {
+                                                            const buttonStyling = getMicroSlotStyling('orderSummary.checkout');
+                                                            const defaultClasses = 'w-full';
+                                                            const finalClasses = buttonStyling.elementClasses || defaultClasses;
+                                                            return (
+                                                                <div key={slotId} className={positioning.gridClasses}>
+                                                                    <div className="border-t mt-6 pt-6">
+                                                                        <Button 
+                                                                            size="lg" 
+                                                                            className={finalClasses}
+                                                                            onClick={handleCheckout}
+                                                                            style={{
+                                                                                backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+                                                                                color: '#FFFFFF',
+                                                                                ...buttonStyling.elementStyles,
+                                                                                ...positioning.elementStyles
+                                                                            }}
+                                                                        >
+                                                                            Proceed to Checkout
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        
+                                                        return null;
+                                                    })
+                                                ) : (
+                                                    // Fallback to default layout if no microSlotOrders
+                                                    <>
+                                                        <div className="col-span-12">
+                                                            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+                                                        </div>
+                                                        <div className="col-span-12">
+                                                            <div className="flex justify-between">
+                                                                <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-span-12">
+                                                            <div className="flex justify-between">
+                                                                <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-span-12">
+                                                            <div className="flex justify-between">
+                                                                <span>Shipping</span><span>Free</span>
+                                                            </div>
+                                                        </div>
+                                                        {discount > 0 && (
+                                                            <div className="col-span-12">
+                                                                <div className="flex justify-between">
+                                                                    <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <div className="col-span-12">
+                                                            <div className="flex justify-between text-lg font-semibold border-t pt-4">
+                                                                <span>Total</span>
+                                                                <span>{currencySymbol}{safeToFixed(total)}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-span-12">
+                                                            <div className="border-t mt-6 pt-6">
+                                                                <Button 
+                                                                    size="lg" 
+                                                                    className="w-full"
+                                                                    onClick={handleCheckout}
+                                                                    style={{
+                                                                        backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+                                                                        color: '#FFFFFF'
+                                                                    }}
+                                                                >
+                                                                    Proceed to Checkout
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
-                                        );
-                                    })()}
-                                    {discount > 0 && (() => {
-                                        const discountStyling = getMicroSlotStyling('orderSummary.discount');
-                                        const defaultClasses = 'flex justify-between';
-                                        const finalClasses = discountStyling.elementClasses || defaultClasses;
-                                        return (
-                                            <div className={finalClasses} style={discountStyling.elementStyles}>
-                                                <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
-                                            </div>
-                                        );
-                                    })()}
-                                    {(() => {
-                                        const taxStyling = getMicroSlotStyling('orderSummary.tax');
-                                        const defaultClasses = 'flex justify-between';
-                                        const finalClasses = taxStyling.elementClasses || defaultClasses;
-                                        return (
-                                            <div className={finalClasses} style={taxStyling.elementStyles}>
-                                                <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
-                                            </div>
-                                        );
-                                    })()}
-                                    <CmsBlockRenderer position="cart_above_total" />
-                                    {(() => {
-                                        const totalStyling = getMicroSlotStyling('orderSummary.total');
-                                        const defaultClasses = 'flex justify-between text-lg font-semibold border-t pt-4';
-                                        const finalClasses = totalStyling.elementClasses || defaultClasses;
-                                        return (
-                                            <div className={finalClasses} style={totalStyling.elementStyles}>
-                                                <span>Total</span>
-                                                <span>{currencySymbol}{safeToFixed(total)}</span>
-                                            </div>
-                                        );
-                                    })()}
-                                    <CmsBlockRenderer position="cart_below_total" />
-                                    <div className="border-t mt-6 pt-6">
-                                        {(() => {
-                                            const buttonStyling = getMicroSlotStyling('orderSummary.checkoutButton');
-                                            const defaultClasses = 'w-full';
-                                            const finalClasses = buttonStyling.elementClasses || defaultClasses;
-                                            return (
-                                                <Button 
-                                                    size="lg" 
-                                                    className={finalClasses}
-                                                    onClick={handleCheckout}
-                                                    style={{
-                                                        backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-                                                        color: '#FFFFFF',
-                                                        ...buttonStyling.elementStyles
-                                                    }}
-                                                >
-                                                    Proceed to Checkout
-                                                </Button>
-                                            );
-                                        })()}
-                                    </div>
-                                    
-                                    {/* Custom slots for orderSummary section */}
-                                    {cartLayoutConfig?.microSlotOrders?.orderSummary && (
-                                        <div className="grid grid-cols-12 gap-2 auto-rows-min mt-4">
-                                            {cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => 
-                                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'orderSummary') : null
-                                            )}
-                                        </div>
-                                    )}
-                                </CardContent>
+                                        </CardContent>
                                     </Card>
                                 );
                             })()}
