@@ -1926,6 +1926,21 @@ export default function CartSlotsEditorWithMicroSlots({
         hasStoreId: !!storeId
       });
       
+      if (!storeId) {
+        console.warn('⚠️ No store ID available, cannot save to database. Will retry when store context loads.');
+        // Set up a retry mechanism
+        const retryWhenStoreLoads = () => {
+          if (selectedStore?.id) {
+            console.log('🔄 Store context now available, retrying save...');
+            saveConfiguration(); // Recursive call
+          } else {
+            setTimeout(retryWhenStoreLoads, 1000); // Try again in 1 second
+          }
+        };
+        setTimeout(retryWhenStoreLoads, 1000);
+        return;
+      }
+      
       if (storeId) {
         // Import SlotConfiguration entity and API client to check auth status
         const { SlotConfiguration } = await import('@/api/entities');
@@ -2111,6 +2126,11 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
+    if (!selectedStore?.id) {
+      console.log('⏳ Store context not yet loaded, waiting...');
+      return;
+    }
+    
     const loadConfiguration = async () => {
       try {
         // ONLY load from database, skip localStorage
@@ -2312,7 +2332,7 @@ export default function CartSlotsEditorWithMicroSlots({
     };
     
     loadConfiguration();
-  }, []); // Only run once on mount
+  }, [selectedStore?.id]); // Re-run when store ID becomes available
 
   // Drag sensors
   const sensors = useSensors(
