@@ -3448,6 +3448,13 @@ export default function CartSlotsEditorWithMicroSlots({
             const styles = elementStyles[slotId] || {};
             const classes = elementClasses[slotId] || '';
             
+            // Debug: Log what styles we're trying to apply
+            console.log('🔍 Current elementStyles for', slotId, ':', styles);
+            console.log('🔍 Current elementClasses for', slotId, ':', classes);
+            if (Object.keys(styles).length > 0) {
+              console.log('🎨 Button styles to apply:', slotId, styles);
+            }
+            
             // Remove existing color classes if we have custom styles
             if (styles.backgroundColor || styles.color) {
               // Remove bg-* and text-* color classes
@@ -3460,14 +3467,22 @@ export default function CartSlotsEditorWithMicroSlots({
               const styleStr = Object.entries(styles)
                 .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
                 .join('; ');
+              console.log('🎨 Style string generated:', styleStr);
               buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
                 if (attrs.includes('style=')) {
-                  return match.replace(/style="[^"]*"/, `style="${styleStr}"`);
+                  const newCode = match.replace(/style="[^"]*"/, `style="${styleStr}"`);
+                  console.log('🔄 Replaced existing style:', newCode);
+                  return newCode;
                 } else {
-                  return `<button${attrs} style="${styleStr}">`;
+                  const newCode = `<button${attrs} style="${styleStr}">`;
+                  console.log('➕ Added new style:', newCode);
+                  return newCode;
                 }
               });
             }
+            
+            // Debug: Show final button HTML
+            console.log('🔍 Final button HTML:', buttonCode);
             
             // Apply rounded classes to the button
             if (classes) {
