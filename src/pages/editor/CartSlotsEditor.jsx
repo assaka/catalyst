@@ -1427,33 +1427,40 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           {/* Text color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1">
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
-            {console.log('🔍 RENDERING color picker for:', id, 'current color:', elementStyles[id]?.color || '#000000', 'elementStyles:', elementStyles[id])}
-            <input
-              type="color"
-              defaultValue={elementStyles[id]?.color || '#000000'}
-              onClick={() => console.log('👆 BASIC CLICK on color picker for:', id)}
-              onFocus={() => console.log('🎯 Color dialog opened')}
-              onChange={() => console.log('⚠️ onChange fired (ignoring - using onBlur instead)')}
-              onBlur={(e) => {
-                console.log('😴 Color picker onBlur triggered:', e.target.value);
-                if (onClassChange) {
+            <button
+              onClick={() => {
+                console.log('🎨 Creating temporary color input for:', id);
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.value = elementStyles[id]?.color || '#000000';
+                input.style.visibility = 'hidden';
+                input.style.position = 'absolute';
+                document.body.appendChild(input);
+                
+                input.addEventListener('change', (e) => {
+                  console.log('🎨 Color selected:', e.target.value);
                   const classes = (elementClasses[id] || '').replace(/text-\w+-\d+/g, '').replace(/text-(black|white|transparent)/g, '').trim();
                   onClassChange(id, classes, { color: e.target.value });
-                  console.log('✅ onBlur called onClassChange');
-                } else {
-                  console.error('❌ onClassChange missing in onBlur');
-                }
+                  console.log('✅ Applied color:', e.target.value);
+                  document.body.removeChild(input);
+                });
+                
+                input.addEventListener('blur', () => {
+                  console.log('🚫 Color picker cancelled');
+                  if (document.body.contains(input)) {
+                    document.body.removeChild(input);
+                  }
+                });
+                
+                input.click();
               }}
-              onInput={(e) => {
-                console.log('📝 Color picker onInput triggered:', e.target.value);
-                if (onClassChange) {
-                  const classes = (elementClasses[id] || '').replace(/text-\w+-\d+/g, '').replace(/text-(black|white|transparent)/g, '').trim();
-                  onClassChange(id, classes, { color: e.target.value });
-                  console.log('✅ onInput called onClassChange');
-                }
+              className="w-5 h-5 cursor-pointer border-0 rounded"
+              style={{ 
+                backgroundColor: elementStyles[id]?.color || '#000000',
+                minWidth: '20px',
+                minHeight: '20px'
               }}
-              className="w-5 h-5 cursor-pointer"
-              style={{ border: 'none', padding: 0 }}
+              title="Click to change color"
             />
           </div>
 
@@ -3113,7 +3120,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
-                  <div className="flex justify-center items-center text-center">
+                  <div className="flex justify-center items-center">
                     <SimpleInlineEdit
                       text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
@@ -4078,7 +4085,7 @@ export default function CartSlotsEditorWithMicroSlots({
                     setDeleteConfirm({ show: true, slotId: slotId, slotLabel: customSlot.label });
                   }}
                 >
-                  <div className="flex justify-center items-center text-center">
+                  <div className="flex justify-center items-center">
                     <SimpleInlineEdit
                       text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
                       className={elementClasses[slotId] || 'text-gray-600'}
