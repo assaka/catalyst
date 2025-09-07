@@ -1400,12 +1400,35 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
+                console.log('🎨 Color picker onChange triggered!', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 console.log('🔴 Before color removal:', currentClasses);
-                // Remove any existing text color classes (dynamic pattern)
+                // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
                 const newClasses = currentClasses
-                  .replace(/text-[a-zA-Z]+-[0-9]+/g, '') // Matches text-{anyColor}-{number}
-                  .replace(/text-(black|white|transparent|current|inherit)/g, '') // Special cases without numbers
+                  .split(' ')
+                  .filter(cls => {
+                    // Check if it's a text class
+                    if (!cls.startsWith('text-')) return true;
+                    
+                    const parts = cls.split('-');
+                    // text-red-500 = ['text', 'red', '500'] - remove (color)
+                    // text-2xl = ['text', '2xl'] - keep (size)
+                    // text-black = ['text', 'black'] - remove (special color)
+                    
+                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                      // It's text-{word}-{number} - this is a color
+                      console.log(`  Removing color class: ${cls}`);
+                      return false;
+                    }
+                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                      // Special color cases without numbers
+                      console.log(`  Removing special color: ${cls}`);
+                      return false;
+                    }
+                    // Keep everything else (text-xl, text-2xl, text-center, etc.)
+                    return true;
+                  })
+                  .join(' ')
                   .replace(/\s+/g, ' ')
                   .trim();
                 console.log('🟢 After color removal:', newClasses);
@@ -1426,9 +1449,30 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               value={elementStyles[id]?.backgroundColor || '#ffffff'}
               onChange={(e) => {
                 const currentClasses = elementClasses[id] || '';
-                // Remove any existing bg color classes
+                // Remove bg-{word}-{number} (colors) using smart detection
                 const newClasses = currentClasses
-                  .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                  .split(' ')
+                  .filter(cls => {
+                    // Check if it's a bg class
+                    if (!cls.startsWith('bg-')) return true;
+                    
+                    const parts = cls.split('-');
+                    // bg-red-500 = ['bg', 'red', '500'] - remove (color)
+                    // bg-gradient-to-r = ['bg', 'gradient', 'to', 'r'] - keep (gradient)
+                    // bg-white = ['bg', 'white'] - remove (special color)
+                    
+                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                      // It's bg-{word}-{number} - this is a color
+                      return false;
+                    }
+                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                      // Special color cases without numbers
+                      return false;
+                    }
+                    // Keep everything else (bg-gradient-to-r, bg-cover, etc.)
+                    return true;
+                  })
+                  .join(' ')
                   .trim();
                 // Store the background color as an inline style
                 onClassChange(id, newClasses, { backgroundColor: e.target.value });
@@ -1461,10 +1505,38 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               value={elementStyles[id]?.color || '#ffffff'}
               onChange={(e) => {
+                console.log('🎨 Second color picker onChange triggered!', e.target.value);
                 const currentClasses = elementClasses[id] || '';
+                console.log('🔴 Before color removal (2nd picker):', currentClasses);
+                // Remove text-{word}-{number} (colors) but keep text-{number}{word} (sizes)
                 const newClasses = currentClasses
-                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|black|white)-([0-9]+)/g, '')
+                  .split(' ')
+                  .filter(cls => {
+                    // Check if it's a text class
+                    if (!cls.startsWith('text-')) return true;
+                    
+                    const parts = cls.split('-');
+                    // text-red-500 = ['text', 'red', '500'] - remove (color)
+                    // text-2xl = ['text', '2xl'] - keep (size)
+                    // text-black = ['text', 'black'] - remove (special color)
+                    
+                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                      // It's text-{word}-{number} - this is a color
+                      console.log(`  Removing color class: ${cls}`);
+                      return false;
+                    }
+                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                      // Special color cases without numbers
+                      console.log(`  Removing special color: ${cls}`);
+                      return false;
+                    }
+                    // Keep everything else (text-xl, text-2xl, text-center, etc.)
+                    return true;
+                  })
+                  .join(' ')
+                  .replace(/\s+/g, ' ')
                   .trim();
+                console.log('🟢 After color removal (2nd picker):', newClasses);
                 onClassChange(id, newClasses, { color: e.target.value });
               }}
               className="w-5 h-5 cursor-pointer border-0"
