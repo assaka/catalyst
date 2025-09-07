@@ -1653,7 +1653,18 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       )}
       
       {/* Button formatting controls - only color and border radius */}
-      {(id.includes('.button') || id.includes('Button')) && isHovered && !isDragging && !isResizing && onClassChange && (
+      {(() => {
+        const shouldShow = (id.includes('.button') || id.includes('Button')) && isHovered && !isDragging && !isResizing && onClassChange;
+        console.log('🎛️ Button controls condition for', id, ':', {
+          isButtonType: id.includes('.button') || id.includes('Button'),
+          isHovered,
+          isDragging,
+          isResizing,
+          hasOnClassChange: !!onClassChange,
+          shouldShow
+        });
+        return shouldShow;
+      })() && (
         <div 
           className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto mx-auto"
           style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}
