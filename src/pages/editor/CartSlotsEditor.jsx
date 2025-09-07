@@ -1468,9 +1468,15 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Text color"
-              onMouseDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Color picker clicked!');
+              }}
               onMouseUp={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('👆 Color picker click event');
+              }}
               onInput={(e) => {
                 e.stopPropagation();
                 console.log('📝 Color picker onInput:', e.target.value, 'for', id);
@@ -1492,6 +1498,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 console.log('✅ onInput calling onClassChange:', id, newClasses, { color: e.target.value });
                 onClassChange(id, newClasses, { color: e.target.value });
               }}
+              onFocus={() => console.log('🎯 Color picker focused (dialog opened)')}
+              onBlur={() => console.log('😴 Color picker blurred (dialog closed)')}
             />
           </div>
 
