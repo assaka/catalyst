@@ -1247,7 +1247,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
       console.log('❌ setIsHovered(false) called for:', id);
-    }, 500);
+    }, 800);
   }, []);
   
   // Clean up timeout on unmount
@@ -1694,7 +1694,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             hoverTimeoutRef.current = setTimeout(() => {
               setIsHovered(false);
               console.log('❌ Button action bar timeout - setIsHovered(false)');
-            }, 300);
+            }, 1000);
           }}
         >
           {/* Text color control */}
