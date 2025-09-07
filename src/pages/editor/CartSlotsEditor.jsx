@@ -1744,6 +1744,69 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             />
           </div>
           
+          {/* Font style controls for buttons */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
+                let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
+                if (!hasBold) {
+                  newClasses += ' font-bold';
+                }
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('font-bold') || (elementClasses[id] || '').includes('font-semibold') ? 'bg-blue-100' : ''}`}
+              title="Bold"
+            >
+              <Bold className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              onClick={() => {
+                const currentClasses = elementClasses[id] || '';
+                const hasItalic = currentClasses.includes('italic');
+                let newClasses = currentClasses;
+                if (hasItalic) {
+                  newClasses = newClasses.replace(/italic/g, '').trim();
+                } else {
+                  newClasses += ' italic';
+                }
+                onClassChange(id, newClasses.trim());
+              }}
+              className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('italic') ? 'bg-blue-100' : ''}`}
+              title="Italic"
+            >
+              <Italic className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Font size control for buttons */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
+            <select
+              value={
+                elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/)?.[1] || 'base'
+              }
+              onChange={(e) => {
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/g, '')
+                  .trim() + ` text-${e.target.value}`;
+                onClassChange(id, newClasses.trim());
+              }}
+              className="px-1 py-0.5 text-xs border-0 cursor-pointer focus:outline-none"
+              title="Font size"
+            >
+              <option value="xs">XS</option>
+              <option value="sm">SM</option>
+              <option value="base">Base</option>
+              <option value="lg">LG</option>
+              <option value="xl">XL</option>
+              <option value="2xl">2XL</option>
+              <option value="3xl">3XL</option>
+              <option value="4xl">4XL</option>
+            </select>
+          </div>
+          
           {/* Margin Horizontal control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <svg className="w-3 h-3 text-gray-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 20 20">
