@@ -207,9 +207,10 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     // Show auto-saving status immediately when user types
     setSaveStatus('auto-saving');
     
-    // Set new timeout for autosave (debounce for 800ms)
+    // Set new timeout for autosave (debounce for 500ms)
     saveTimeoutRef.current = setTimeout(() => {
       // Trigger the onChange callback
+      console.log('📤 TailwindStyleEditor calling onChange:', { tempText, tempClass });
       onChange(tempText, tempClass);
       
       // Show saved status
@@ -222,7 +223,7 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
       statusTimeoutRef.current = setTimeout(() => {
         setSaveStatus('');
       }, 2000);
-    }, 2000); // Increased from 800ms to 2 seconds
+    }, 500); // Fast save for better UX
     
     // Cleanup function
     return () => {
@@ -304,19 +305,6 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     const newClassName = classes.join(' ');
     console.log('🎨 Color class toggle:', { category, newClass, newClassName });
     setTempClass(newClassName);
-    
-    // For color changes, trigger immediate save instead of waiting for debounce
-    if (category === 'text-color' || category === 'bg-color') {
-      console.log('🚀 Immediate save for color change');
-      // Clear existing timeout and save immediately
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      setTimeout(() => {
-        console.log('💾 Calling onChange for color change:', tempText, newClassName);
-        onChange(tempText, newClassName);
-      }, 100); // Very short delay to ensure state update
-    }
   };
   
   // Initialize selected colors from existing classes
@@ -907,12 +895,9 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
   return (
     <>
       <div 
-        onClick={() => {
-          // Only allow editing in edit mode
-          if (mode === 'edit' && !hasHtml) {
-            setShowEditor(true);
-          }
-        }}
+        {...(mode === 'edit' && !hasHtml ? {
+          onClick: () => setShowEditor(true)
+        } : {})}
         className={`${mode === 'edit' ? 'cursor-pointer hover:ring-1 hover:ring-gray-300' : ''} px-1 rounded inline-block ${className}`}
         title={mode === 'edit' ? (hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style") : ""}
         style={hasHtml || mode === 'preview' ? { cursor: 'default', ...style } : style}
@@ -929,9 +914,13 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
           text={text}
           className={className}
           onChange={(newText, newClass) => {
+            console.log('📨 SimpleInlineEdit received onChange:', { slotId, newText, newClass });
             onChange(newText);
             if (onClassChange) {
+              console.log('🔄 Calling onClassChange for:', slotId, newClass);
               onClassChange(slotId, newClass);
+            } else {
+              console.log('⚠️ No onClassChange provided for:', slotId);
             }
           }}
           onClose={() => setShowEditor(false)}
@@ -942,7 +931,7 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
 }
 
 // Inline editable text component
-function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false, richText = false }) {
+function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false, richText = false, mode = 'edit' }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
   const inputRef = useRef(null);
@@ -1018,9 +1007,9 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
   if (richText && value && value.includes('<')) {
     return (
       <Tag
-        onClick={() => setIsEditing(true)}
-        className={`${className} cursor-text hover:bg-gray-100 px-1 rounded transition-colors`}
-        title="Click to edit"
+        {...(mode === 'edit' ? { onClick: () => setIsEditing(true) } : {})}
+        className={`${className} ${mode === 'edit' ? 'cursor-text hover:bg-gray-100' : ''} px-1 rounded transition-colors`}
+        title={mode === 'edit' ? "Click to edit" : ""}
         dangerouslySetInnerHTML={{ __html: value }}
       />
     );
@@ -1028,11 +1017,11 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 
   return (
     <Tag
-      onClick={() => setIsEditing(true)}
-      className={`${className} cursor-text hover:bg-gray-100 px-1 rounded transition-colors`}
-      title="Click to edit"
+      {...(mode === 'edit' ? { onClick: () => setIsEditing(true) } : {})}
+      className={`${className} ${mode === 'edit' ? 'cursor-text hover:bg-gray-100' : ''} px-1 rounded transition-colors`}
+      title={mode === 'edit' ? "Click to edit" : ""}
     >
-      {value || <span className="text-gray-400">Click to edit...</span>}
+      {value || (mode === 'edit' ? <span className="text-gray-400">Click to edit...</span> : '')}
     </Tag>
   );
 }
