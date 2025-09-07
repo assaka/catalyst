@@ -3446,6 +3446,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   <SimpleInlineEdit
                     text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
                     className={elementClasses[slotId] || 'text-gray-600'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => {
                       handleTextChange(slotId, newText);
                       // Also update the custom slot content
@@ -3721,6 +3722,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent[slotId] || 'Apply Coupon'}
                         className={elementClasses[slotId] || 'text-lg font-semibold'}
+                        style={elementStyles[slotId] || {}}
                         onChange={(newText) => handleTextChange(slotId, newText)}
                         slotId={slotId}
                         onClassChange={handleClassChange}
@@ -3836,6 +3838,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         <SimpleInlineEdit
                           text={slotContent['coupon.applied.title'] || 'Applied: '}
                           className={elementClasses['coupon.applied.title'] || 'text-sm font-medium text-green-800'}
+                          style={elementStyles['coupon.applied.title'] || {}}
                           onChange={(newText) => handleTextChange('coupon.applied.title', newText)}
                           slotId="coupon.applied.title"
                           onClassChange={handleClassChange}
@@ -3846,6 +3849,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent['coupon.applied.description'] || '20% off your order'}
                         className={elementClasses['coupon.applied.description'] || 'text-xs text-green-600'}
+                        style={elementStyles['coupon.applied.description'] || {}}
                         onChange={(newText) => handleTextChange('coupon.applied.description', newText)}
                         slotId="coupon.applied.description"
                         onClassChange={handleClassChange}
@@ -3942,6 +3946,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         <SimpleInlineEdit
                           text={slotContent[slotId] || customSlot.content}
                           className={elementClasses[slotId] || 'text-gray-600'}
+                          style={elementStyles[slotId] || {}}
                           onChange={(newText) => handleTextChange(slotId, newText)}
                           slotId={slotId}
                           onClassChange={handleClassChange}
@@ -4004,6 +4009,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent[slotId] || 'Order Summary'}
                         className={elementClasses[slotId] || 'text-lg font-semibold'}
+                        style={elementStyles[slotId] || {}}
                         onChange={(newText) => handleTextChange(slotId, newText)}
                         slotId={slotId}
                         onClassChange={handleClassChange}
@@ -4032,6 +4038,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent['orderSummary.subtotal.label'] || 'Subtotal'}
                         className={elementClasses['orderSummary.subtotal.label'] || ''}
+                        style={elementStyles['orderSummary.subtotal.label'] || {}}
                         onChange={(newText) => handleTextChange('orderSummary.subtotal.label', newText)}
                         slotId="orderSummary.subtotal.label"
                         onClassChange={handleClassChange}
@@ -4061,6 +4068,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent['orderSummary.discount.label'] || 'Discount'}
                         className={elementClasses['orderSummary.discount.label'] || ''}
+                        style={elementStyles['orderSummary.discount.label'] || {}}
                         onChange={(newText) => handleTextChange('orderSummary.discount.label', newText)}
                         slotId="orderSummary.discount.label"
                         onClassChange={handleClassChange}
@@ -4090,6 +4098,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent['orderSummary.tax.label'] || 'Tax'}
                         className={elementClasses['orderSummary.tax.label'] || ''}
+                        style={elementStyles['orderSummary.tax.label'] || {}}
                         onChange={(newText) => handleTextChange('orderSummary.tax.label', newText)}
                         slotId="orderSummary.tax.label"
                         onClassChange={handleClassChange}
@@ -4124,6 +4133,7 @@ export default function CartSlotsEditorWithMicroSlots({
                       <SimpleInlineEdit
                         text={slotContent['orderSummary.total.label'] || 'Total'}
                         className={elementClasses['orderSummary.total.label'] || 'text-lg font-semibold'}
+                        style={elementStyles['orderSummary.total.label'] || {}}
                         onChange={(newText) => handleTextChange('orderSummary.total.label', newText)}
                         slotId="orderSummary.total.label"
                         onClassChange={handleClassChange}
@@ -4223,6 +4233,7 @@ export default function CartSlotsEditorWithMicroSlots({
                         <SimpleInlineEdit
                           text={slotContent[slotId] || customSlot.content}
                           className={elementClasses[slotId] || 'text-gray-600'}
+                          style={elementStyles[slotId] || {}}
                           onChange={(newText) => handleTextChange(slotId, newText)}
                           slotId={slotId}
                           onClassChange={handleClassChange}
@@ -4425,6 +4436,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
                     className={elementClasses[slotId] || 'text-3xl font-bold text-gray-900'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
                     onClassChange={handleClassChange}
@@ -4463,6 +4475,7 @@ export default function CartSlotsEditorWithMicroSlots({
                   <SimpleInlineEdit
                     text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
                     className={elementClasses[slotId] || 'text-gray-600'}
+                    style={elementStyles[slotId] || {}}
                     onChange={(newText) => {
                       handleTextChange(slotId, newText);
                       // Also update the custom slot content
