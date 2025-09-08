@@ -192,16 +192,10 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
   const [tempText, setTempText] = useState(text);
   const [tempClass, setTempClass] = useState(className);
   const [saveStatus, setSaveStatus] = useState(''); // '', 'auto-saving', 'saved'
-  const saveTimeoutRef = useRef(null);
   const statusTimeoutRef = useRef(null);
   
-  // Autosave effect with debouncing
+  // Immediate save effect (debounce removed)
   useEffect(() => {
-    // Clear any existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
     // Don't autosave on initial mount
     if (tempText === text && tempClass === className) {
       return;
@@ -210,29 +204,23 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     // Show auto-saving status immediately when user types
     setSaveStatus('auto-saving');
     
-    // Set new timeout for autosave (debounce for 500ms)
-    saveTimeoutRef.current = setTimeout(() => {
-      // Trigger the onChange callback
-      console.log('📤 TailwindStyleEditor calling onChange:', { tempText, tempClass });
-      onChange(tempText, tempClass);
-      
-      // Show saved status
-      setSaveStatus('saved');
-      
-      // Clear saved status after 2 seconds
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
-      statusTimeoutRef.current = setTimeout(() => {
-        setSaveStatus('');
-      }, 2000);
-    }, 500); // Fast save for better UX
+    // Trigger onChange immediately (no debounce)
+    console.log('📤 TailwindStyleEditor calling onChange immediately:', { tempText, tempClass });
+    onChange(tempText, tempClass);
+    
+    // Show saved status
+    setSaveStatus('saved');
+    
+    // Clear saved status after 2 seconds
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+    }
+    statusTimeoutRef.current = setTimeout(() => {
+      setSaveStatus('');
+    }, 2000);
     
     // Cleanup function
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
       }
@@ -636,9 +624,6 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="outline" onClick={() => {
             // Clear timeouts when closing
-            if (saveTimeoutRef.current) {
-              clearTimeout(saveTimeoutRef.current);
-            }
             if (statusTimeoutRef.current) {
               clearTimeout(statusTimeoutRef.current);
             }
@@ -2461,9 +2446,9 @@ export default function CartSlotsEditorWithMicroSlots({
     if (justAddedCustomSlot) {
       console.log('🔧 CustomSlot was just added, triggering save with current customSlots:', customSlots);
       setJustAddedCustomSlot(false);
-      debouncedSave();
+      immediateSave();
     }
-  }, [customSlots, justAddedCustomSlot, debouncedSave]);
+  }, [customSlots, justAddedCustomSlot, immediateSave]);
 
   // Auto-save when microSlotOrders changes (for drag-and-drop persistence)
   useEffect(() => {
@@ -2475,8 +2460,8 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     
     console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders);
-    debouncedSave();
-  }, [microSlotOrders, debouncedSave]);
+    immediateSave();
+  }, [microSlotOrders, immediateSave]);
 
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
@@ -2743,13 +2728,13 @@ export default function CartSlotsEditorWithMicroSlots({
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(items, oldIndex, newIndex);
         // Auto-save after drag
-        debouncedSave();
+        immediateSave();
         return newOrder;
       }
       return items;
     });
     setActiveDragSlot(null);
-  }, [debouncedSave]);
+  }, [immediateSave]);
 
   const handleMajorDragStart = useCallback((event) => {
     setActiveDragSlot(event.active.id);
@@ -2786,8 +2771,8 @@ export default function CartSlotsEditorWithMicroSlots({
     });
     
     // Auto-save after resize
-    debouncedSave();
-  }, [debouncedSave]);
+    immediateSave();
+  }, [immediateSave]);
   
   // Handle text content change
   const handleTextChange = useCallback((slotId, newText) => {
@@ -2796,8 +2781,8 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newText
     }));
     // Auto-save after text change
-    debouncedSave();
-  }, [debouncedSave]);
+    immediateSave();
+  }, [immediateSave]);
   
   // Handle class change for elements (now also supports inline styles)
   const handleClassChange = useCallback((slotId, newClass, newStyles = null) => {
@@ -2839,7 +2824,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     
     // Auto-save after class change
-    debouncedSave();
+    immediateSave();
     
     // Notify storefront of configuration update
     if (selectedStore?.id) {
@@ -2852,7 +2837,7 @@ export default function CartSlotsEditorWithMicroSlots({
         }));
       }, 100); // Small delay to ensure save completes first
     }
-  }, [debouncedSave, selectedStore?.id]);
+  }, [immediateSave, selectedStore?.id]);
   
   // Handle component size change
   const handleSizeChange = useCallback((slotId, newSize) => {
@@ -2861,8 +2846,8 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newSize
     }));
     // Auto-save after size change
-    debouncedSave();
-  }, [debouncedSave]);
+    immediateSave();
+  }, [immediateSave]);
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((slotId) => {
@@ -2969,11 +2954,11 @@ export default function CartSlotsEditorWithMicroSlots({
       }
       
       // Auto-save configuration
-      debouncedSave();
+      immediateSave();
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, debouncedSave]);
+  }, [editingComponent, tempCode, immediateSave]);
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
@@ -3041,8 +3026,8 @@ export default function CartSlotsEditorWithMicroSlots({
     
     console.log('Slot deletion complete, triggering auto-save');
     // Auto-save after delete
-    debouncedSave();
-  }, [debouncedSave]);
+    immediateSave();
+  }, [immediateSave]);
   
   // Handle adding a new custom slot
   const handleAddCustomSlot = useCallback(() => {
