@@ -1357,7 +1357,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             if (relatedTarget && (
               relatedTarget.type === 'color' || 
               (relatedTarget.closest && relatedTarget.closest('input[type="color"]')) ||
-              relatedTarget.className?.includes('color-picker') ||
+              (typeof relatedTarget.className === 'string' && relatedTarget.className.includes('color-picker')) ||
+              (relatedTarget.classList && relatedTarget.classList.contains('color-picker')) ||
               relatedTarget.tagName === 'INPUT'
             )) {
               return;
@@ -1378,16 +1379,25 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               const hasTextCenter = currentParentClasses.includes('text-center');
               const hasTextRight = currentParentClasses.includes('text-right');
               
+              console.log('🎯 ALIGNMENT: Visual feedback check for', id);
+              console.log('🎯 ALIGNMENT: Parent ID:', parentId);
+              console.log('🎯 ALIGNMENT: Parent classes:', currentParentClasses);
+              console.log('🎯 ALIGNMENT: Has left:', hasTextLeft, 'center:', hasTextCenter, 'right:', hasTextRight);
+              
               return (
                 <>
                   <button
                     onClick={() => {
                       // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
                       const parentId = id.split('.')[0];
+                      console.log('🎯 ALIGNMENT: Aligning left for element:', id, 'targeting parent:', parentId);
                       const currentParentClasses = elementClasses[parentId] || '';
+                      console.log('🎯 ALIGNMENT: Current parent classes:', currentParentClasses);
                       const newParentClasses = currentParentClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-left';
+                      console.log('🎯 ALIGNMENT: New parent classes:', newParentClasses);
+                      console.log('🎯 ALIGNMENT: onClassChange function:', typeof onClassChange);
                       onClassChange(parentId, newParentClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextLeft ? 'bg-blue-100' : ''}`}
@@ -1399,10 +1409,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     onClick={() => {
                       // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
                       const parentId = id.split('.')[0];
+                      console.log('🎯 ALIGNMENT: Aligning center for element:', id, 'targeting parent:', parentId);
                       const currentParentClasses = elementClasses[parentId] || '';
                       const newParentClasses = currentParentClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-center';
+                      console.log('🎯 ALIGNMENT: New parent classes:', newParentClasses);
                       onClassChange(parentId, newParentClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextCenter ? 'bg-blue-100' : ''}`}
@@ -1414,10 +1426,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     onClick={() => {
                       // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
                       const parentId = id.split('.')[0];
+                      console.log('🎯 ALIGNMENT: Aligning right for element:', id, 'targeting parent:', parentId);
                       const currentParentClasses = elementClasses[parentId] || '';
                       const newParentClasses = currentParentClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-right';
+                      console.log('🎯 ALIGNMENT: New parent classes:', newParentClasses);
                       onClassChange(parentId, newParentClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextRight ? 'bg-blue-100' : ''}`}
