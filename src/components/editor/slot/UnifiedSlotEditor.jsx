@@ -195,15 +195,26 @@ export default function UnifiedSlotEditor({
     // Save to localStorage
     SlotStorage.save(pageType, config);
     
-    // Database save disabled - use CartSlotsEditor with versioning system instead
-    console.log('💾 UnifiedSlotEditor database save disabled - use CartSlotsEditor with versioning system');
+    // Save to database using slot configuration API
+    try {
+      if (selectedStore?.id) {
+        console.log('💾 Saving configuration to database via slot configuration API');
+        await slotConfigurationService.saveConfiguration(selectedStore.id, config, pageType);
+        console.log('✅ Configuration saved to database successfully');
+      } else {
+        console.warn('⚠️ No selected store - skipping database save');
+      }
+    } catch (error) {
+      console.error('❌ Failed to save configuration to database:', error);
+      // Continue with local save even if database save fails
+    }
     
     setSlotConfig(config);
     setHasUnsavedChanges(false);
     
     // Update code view
     setCodeContent(JSON.stringify(config, null, 2));
-  }, [pageType]);
+  }, [pageType, selectedStore?.id]);
   
   // Handle code save
   const handleCodeSave = useCallback(() => {
