@@ -2517,7 +2517,7 @@ export default function CartSlotsEditorWithMicroSlots({
   useEffect(() => {
     const handleForceSave = () => {
       // Save immediately (no debounce)
-      saveConfiguration();
+      saveConfigRef.current();
     };
     
     window.addEventListener('force-save-cart-layout', handleForceSave);
@@ -2525,7 +2525,7 @@ export default function CartSlotsEditorWithMicroSlots({
     return () => {
       window.removeEventListener('force-save-cart-layout', handleForceSave);
     };
-  }, [saveConfiguration]);
+  }, []); // Remove saveConfiguration dependency to prevent infinite loops
   
   // Set up window handler for adding new slots
   useEffect(() => {

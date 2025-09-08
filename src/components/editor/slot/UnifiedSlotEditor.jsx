@@ -172,9 +172,16 @@ export default function UnifiedSlotEditor({
           const draftResponse = await slotConfigurationService.getDraftConfiguration(selectedStore.id, pageType);
           if (draftResponse.success) {
             setDraftConfig(draftResponse.data);
+            
+            // Transform and apply draft configuration to editor
+            if (draftResponse.data?.configuration) {
+              const transformedConfig = slotConfigurationService.transformFromSlotConfigFormat(draftResponse.data.configuration);
+              console.log('📥 Loading draft configuration into editor:', transformedConfig);
+              setSlotConfig(transformedConfig);
+            }
           }
           
-          // Load published configuration
+          // Load published configuration for comparison
           const publishedResponse = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, pageType);
           if (publishedResponse.success) {
             setPublishedConfig(publishedResponse.data);
