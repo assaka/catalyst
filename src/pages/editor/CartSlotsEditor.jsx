@@ -1363,67 +1363,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             setIsHovered(true);
           }}
         >
-          {/* Alignment controls */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
-            {(() => {
-              const parentSlot = id.split('.')[0];
-              const currentAlign = microSlotSpans[parentSlot]?.[id]?.align || 'left';
-              console.log('🎯 Alignment debug for', id, '- parentSlot:', parentSlot, 'currentAlign:', currentAlign, 'microSlotSpans:', microSlotSpans[parentSlot]?.[id]);
-              console.log('🔍 Full microSlotSpans structure:', microSlotSpans);
-              console.log('🔍 Parent slot data:', microSlotSpans[parentSlot]);
-              return (
-                <>
-                  <button
-                    onClick={() => {
-                      if (onSpanChange) {
-                        onSpanChange(id, { 
-                          col: colSpan, 
-                          row: rowSpan, 
-                          align: 'left'
-                        });
-                      }
-                    }}
-                    className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'left' ? 'bg-blue-100' : ''}`}
-                    title="Align left"
-                  >
-                    <AlignLeft className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (onSpanChange) {
-                        onSpanChange(id, { 
-                          col: colSpan, 
-                          row: rowSpan, 
-                          align: 'center'
-                        });
-                      }
-                    }}
-                    className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'center' ? 'bg-blue-100' : ''}`}
-                    title="Align center"
-                  >
-                    <AlignCenter className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (onSpanChange) {
-                        onSpanChange(id, { 
-                          col: colSpan, 
-                          row: rowSpan, 
-                          align: 'right'
-                        });
-                      }
-                    }}
-                    className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'right' ? 'bg-blue-100' : ''}`}
-                    title="Align right"
-                  >
-                    <AlignRight className="w-4 h-4 text-gray-600" />
-                  </button>
-                </>
-              );
-            })()}
-          </div>
-          
-          {/* Text alignment controls for parent div */}
+          {/* Text alignment controls */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             {(() => {
               // Get current text alignment from element classes

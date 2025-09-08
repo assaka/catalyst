@@ -7,7 +7,6 @@ import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator'
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/editor/ai-context/DiffPreviewSystem';
-import VersionHistory from '@/components/editor/ai-context/VersionHistory';
 import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
@@ -137,9 +136,6 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState(null);
-  const [rollbackSuccess, setRollbackSuccess] = useState(null);
   
   // Slot configuration publishing state
   const [isPublishingConfig, setIsPublishingConfig] = useState(false);
@@ -187,10 +183,6 @@ const AIContextWindowPage = () => {
     };
   }, []);
 
-  // Publish functionality removed - will be reimplemented with customizations API
-  const publishDiffs = useCallback(async () => {
-    console.log('Publish functionality temporarily disabled - will be reimplemented');
-  }, []);
 
   // Get store ID from localStorage or API
   const getStoreId = useCallback(async () => {
@@ -252,16 +244,6 @@ const AIContextWindowPage = () => {
     }
   }, [getStoreId]);
 
-  // Handle successful rollback from version history
-  const handleRollback = useCallback((rollbackData) => {
-    setRollbackSuccess(rollbackData);
-    setPublishSuccess(null);
-    
-    // Auto-clear success message after 5 seconds
-    setTimeout(() => {
-      setRollbackSuccess(null);
-    }, 5000);
-  }, []);
 
   // Helper function to fetch baseline code from database
   // Helper function to normalize line endings for comparison
@@ -761,21 +743,6 @@ export default ExampleComponent;`;
         {/* Connection Status */}
         <div className="flex items-center space-x-4">
 
-          {/* Publish Success */}
-          {publishSuccess && (
-            <div className="p-2 rounded-md text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-              <div className="font-medium flex items-center">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Changes Published Successfully
-              </div>
-              <div className="text-xs mt-1">
-                Version {publishSuccess.versionName} at {new Date(publishSuccess.publishedAt).toLocaleTimeString()}
-                {publishSuccess.filesCount && publishSuccess.filesCount > 1 && (
-                  <span className="ml-1">• {publishSuccess.filesCount} files</span>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Slot Configuration Publish Success */}
           {configPublishSuccess && (
@@ -790,18 +757,6 @@ export default ExampleComponent;`;
             </div>
           )}
 
-          {/* Rollback Success */}
-          {rollbackSuccess && (
-            <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-              <div className="font-medium flex items-center">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Rollback Completed
-              </div>
-              <div className="text-xs mt-1">
-                Rolled back to {rollbackSuccess.versionName} at {new Date(rollbackSuccess.rolledBackAt).toLocaleTimeString()}
-              </div>
-            </div>
-          )}
 
           {/* Manual Edit Status */}
           {manualEditResult && manualEditResult.hasChanges && (
@@ -888,34 +843,6 @@ export default ExampleComponent;`;
             Version History
           </button>
           
-          <button
-            onClick={publishDiffs}
-            disabled={!isAuthenticated || isPublishing || (modifiedFiles.length === 0 && !publishSuccess)}
-            className={cn(
-              "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
-              "bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed",
-              "text-white disabled:text-gray-500"
-            )}
-            title={`Publish all changes (${modifiedFiles.length} modified file${modifiedFiles.length !== 1 ? 's' : ''}) to version history`}
-          >
-            {isPublishing ? (
-              <RefreshCw className="w-3 h-3 animate-spin" />
-            ) : (
-              <>
-                <Upload className="w-3 h-3" />
-                Publish
-              </>
-            )}
-          </button>
-          
-          {/* Version History in Header */}
-          {selectedFile?.path && (
-            <VersionHistory 
-              filePath={selectedFile.path}
-              onRollback={handleRollback}
-              className="inline-block"
-            />
-          )}
         </div>
         
         {selectedFile && (
