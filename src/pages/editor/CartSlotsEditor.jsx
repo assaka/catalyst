@@ -1695,6 +1695,17 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             }, 1000);
           }}
         >
+          {/* DEBUG: Test color button */}
+          <button 
+            onClick={() => {
+              console.log('🧪 TEST: Setting red color for', id);
+              onClassChange(id, '', { color: '#ff0000' });
+            }}
+            className="px-2 py-1 bg-red-500 text-white text-xs rounded mr-2"
+          >
+            TEST RED
+          </button>
+
           {/* Text color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
