@@ -1089,7 +1089,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, microSlotSpans = {}, mode = 'edit', onColorPicker }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, microSlotSpans = {}, mode = 'edit' }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1707,36 +1707,65 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </button>
 
           {/* Text color control */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('🎨 ✨ Opening popover text color picker for:', id);
-              
-              // Get button position for popover placement
-              const rect = e.currentTarget.getBoundingClientRect();
-              
-              if (onColorPicker) {
-                onColorPicker({
-                  show: true,
-                  slotId: id,
-                  currentColor: elementStyles[id]?.color || '#000000',
-                  type: 'text',
-                  position: { x: rect.x + rect.width, y: rect.y }
-                });
-              } else {
-                console.error('🎨 ❌ onColorPicker prop not provided!');
-              }
-            }}
-            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
-            title="Choose text color"
-          >
-            <Palette className="w-3 h-3 text-gray-600" />
-            <div 
-              className="w-4 h-4 rounded border border-gray-400"
-              style={{ backgroundColor: elementStyles[id]?.color || '#000000' }}
+          <div className="relative">
+            {/* Hidden color input that will be triggered programmatically */}
+            <input
+              type="color"
+              value={elementStyles[id]?.color || '#000000'}
+              onChange={(e) => {
+                const newColor = e.target.value;
+                console.log('🎨 🎯 DIRECT color changed:', newColor);
+                
+                // Apply directly using the working handleClassChange logic
+                if (typeof handleClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  console.log('🎨 🎯 DIRECT Applying:', { id, newClasses, newStyles: { color: newColor } });
+                  handleClassChange(id, newClasses, { color: newColor });
+                }
+              }}
+              ref={(input) => {
+                // Store reference for programmatic triggering
+                if (input && !input.hasClickHandler) {
+                  input.hasClickHandler = true;
+                  // Store the input reference on the parent for the button to access
+                  const parent = input.parentElement;
+                  if (parent) parent._colorInput = input;
+                }
+              }}
+              className="absolute opacity-0 pointer-events-none"
+              style={{ width: 0, height: 0 }}
             />
-          </button>
+            
+            {/* Visible button that triggers the hidden input */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎨 🎯 Triggering hidden color input for:', id);
+                
+                // Find and trigger the hidden color input
+                const hiddenInput = e.currentTarget.parentElement._colorInput;
+                if (hiddenInput) {
+                  hiddenInput.click();
+                  console.log('🎨 🎯 Hidden input clicked');
+                } else {
+                  console.error('🎨 ❌ Hidden input not found');
+                }
+              }}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
+              title="Choose text color"
+            >
+              <Palette className="w-3 h-3 text-gray-600" />
+              <div 
+                className="w-4 h-4 rounded border border-gray-400"
+                style={{ backgroundColor: elementStyles[id]?.color || '#000000' }}
+              />
+            </button>
+          </div>
 
           {/* Background color control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
@@ -2448,20 +2477,7 @@ export default function CartSlotsEditorWithMicroSlots({
   // State for delete confirmation dialog
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, slotId: null, slotLabel: '' });
   
-  // Popover-style color picker state
-  const [colorPicker, setColorPicker] = useState({ 
-    show: false, 
-    slotId: null, 
-    currentColor: '#000000',
-    type: 'text',
-    position: { x: 0, y: 0 }
-  });
-
-  // Color picker callback for MicroSlot components
-  const handleColorPicker = useCallback((pickerState) => {
-    console.log('🎨 ✨ handleColorPicker called with:', pickerState);
-    setColorPicker(pickerState);
-  }, []);
+  // Direct color picker - no popover needed
   
   // State for Tailwind classes for each element
   const [elementClasses, setElementClasses] = useState({
@@ -3402,7 +3418,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
-                onColorPicker={handleColorPicker}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="relative group">
@@ -3490,7 +3505,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
-                onColorPicker={handleColorPicker}
               >
                 <div className="w-full">
                   <SimpleInlineEdit
@@ -3520,7 +3534,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
-                onColorPicker={handleColorPicker}
               >
                 <div className="w-full">
                   <SimpleInlineEdit
@@ -4629,7 +4642,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
-                onColorPicker={handleColorPicker}
               >
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
               </MicroSlot>
@@ -4649,7 +4661,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
-                onColorPicker={handleColorPicker}
               >
                 <div className="relative">
                   <SimpleInlineEdit
@@ -5313,94 +5324,7 @@ export default function CartSlotsEditorWithMicroSlots({
         </DialogContent>
       </Dialog>
 
-      {/* Popover Color Picker - rendered in clean context like modal */}
-      <Dialog 
-        open={colorPicker.show} 
-        onOpenChange={(open) => setColorPicker(prev => ({ ...prev, show: open }))}
-      >
-        <DialogContent className="sm:max-w-xs p-4" style={{
-          position: 'fixed',
-          left: colorPicker.position.x,
-          top: colorPicker.position.y,
-          transform: 'none',
-          margin: 0
-        }}>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {colorPicker.type === 'text' ? 'Text' : 'Background'} Color
-              </span>
-            </div>
-            
-            <input
-              type="color"
-              value={colorPicker.currentColor}
-              onChange={(e) => {
-                const newColor = e.target.value;
-                console.log('🎨 ✨ POPOVER Color changed:', newColor);
-                
-                // Update popover state
-                setColorPicker(prev => ({ ...prev, currentColor: newColor }));
-                
-                // Apply color immediately (same logic that worked in modal)
-                if (colorPicker.slotId && typeof handleClassChange === 'function') {
-                  const styleKey = colorPicker.type === 'text' ? 'color' : 'backgroundColor';
-                  const currentClasses = elementClasses[colorPicker.slotId] || '';
-                  const newClasses = currentClasses
-                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                    .trim();
-                  
-                  console.log('🎨 ✨ POPOVER Applying:', styleKey, newColor);
-                  handleClassChange(
-                    colorPicker.slotId, 
-                    newClasses, 
-                    { [styleKey]: newColor }
-                  );
-                }
-              }}
-              className="w-full h-12 cursor-pointer border-2 border-gray-300 rounded"
-            />
-            
-            <div className="flex items-center justify-between">
-              <input
-                type="text"
-                value={colorPicker.currentColor}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                    setColorPicker(prev => ({ ...prev, currentColor: value }));
-                    
-                    // Also apply immediately for valid hex
-                    if (value.length === 7 && colorPicker.slotId && typeof handleClassChange === 'function') {
-                      const styleKey = colorPicker.type === 'text' ? 'color' : 'backgroundColor';
-                      const currentClasses = elementClasses[colorPicker.slotId] || '';
-                      const newClasses = currentClasses
-                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                        .trim();
-                      
-                      console.log('🎨 ✨ POPOVER Hex input:', styleKey, value);
-                      handleClassChange(
-                        colorPicker.slotId, 
-                        newClasses, 
-                        { [styleKey]: value }
-                      );
-                    }
-                  }
-                }}
-                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded font-mono"
-                placeholder="#000000"
-              />
-              <Button
-                size="sm"
-                onClick={() => setColorPicker({ show: false, slotId: null, currentColor: '#000000', type: 'text', position: { x: 0, y: 0 } })}
-              >
-                ✓
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Popover removed - using direct hidden color input approach */}
     </>
   );
 }
