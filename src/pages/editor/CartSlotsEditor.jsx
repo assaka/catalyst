@@ -1714,22 +1714,21 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               key={`btn-text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
               onFocus={(e) => {
+                console.log('🎨 Text color input focused for:', id);
                 // Keep hover state active when color picker is focused
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
               }}
-              onChange={(e) => {
+              onInput={(e) => {
+                console.log('🎨 Text color INPUT event for:', id, 'value:', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
                 const newColor = e.target.value;
-                console.log('🎨 Text color changed for:', id, 'to:', newColor);
-                console.log('🎨 Current elementStyles[' + id + ']:', elementStyles[id]);
-                console.log('🎨 onClassChange function:', typeof onClassChange);
                 
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
@@ -1737,11 +1736,30 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .trim();
                 
                 // Call onClassChange with the new color
+                console.log('🎨 About to call onClassChange with:', { id, newClasses, color: newColor });
                 onClassChange(id, newClasses, { color: newColor });
-                console.log('🎨 onClassChange called with color:', newColor);
               }}
-              className="w-5 h-5 cursor-pointer border-0"
+              onChange={(e) => {
+                console.log('🎨 Text color CHANGE event for:', id, 'value:', e.target.value);
+                // Keep hover state active during changes
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+                const newColor = e.target.value;
+                
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                  .trim();
+                
+                // Call onClassChange with the new color
+                console.log('🎨 About to call onClassChange with:', { id, newClasses, color: newColor });
+                onClassChange(id, newClasses, { color: newColor });
+              }}
+              className="w-6 h-6 cursor-pointer border-0 rounded"
               title="Choose text color"
+              style={{ minWidth: '24px', minHeight: '24px' }}
             />
           </div>
 
@@ -1753,13 +1771,15 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               key={`btn-bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#3b82f6'}
               onFocus={(e) => {
+                console.log('🎨 Background color input focused for:', id);
                 // Keep hover state active when color picker is focused
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
               }}
-              onChange={(e) => {
+              onInput={(e) => {
+                console.log('🎨 Background color INPUT event for:', id, 'value:', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1769,9 +1789,25 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const newClasses = currentClasses
                   .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
                   .trim();
+                console.log('🎨 About to call onClassChange for BG with:', { id, newClasses, backgroundColor: e.target.value });
                 onClassChange(id, newClasses, { backgroundColor: e.target.value });
               }}
-              className="w-5 h-5 cursor-pointer border-0"
+              onChange={(e) => {
+                console.log('🎨 Background color CHANGE event for:', id, 'value:', e.target.value);
+                // Keep hover state active during changes
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+                const currentClasses = elementClasses[id] || '';
+                const newClasses = currentClasses
+                  .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                  .trim();
+                console.log('🎨 About to call onClassChange for BG with:', { id, newClasses, backgroundColor: e.target.value });
+                onClassChange(id, newClasses, { backgroundColor: e.target.value });
+              }}
+              className="w-6 h-6 cursor-pointer border-0 rounded"
+              style={{ minWidth: '24px', minHeight: '24px' }}
               title="Background color"
             />
           </div>
