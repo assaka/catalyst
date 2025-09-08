@@ -927,11 +927,7 @@ function RichTextEditor({ content, onSave, onCancel }) {
 function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange, style = {}, mode = 'edit' }) {
   const [showEditor, setShowEditor] = useState(false);
   
-  // Debug: Log the style prop whenever it changes
-  console.log('🎯 SimpleInlineEdit for', slotId, 'received style:', style);
-  if (style.color) console.log('🎯 🎨 Text color applied:', style.color);
-  if (style.backgroundColor) console.log('🎯 🏠 Background color applied:', style.backgroundColor);
-  
+
   // Check if text contains HTML
   const hasHtml = text && (text.includes('<') || text.includes('&'));
   
@@ -963,13 +959,10 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
           text={text}
           className={className}
           onChange={(newText, newClass, stylesToClear) => {
-            console.log('📨 SimpleInlineEdit received onChange:', { slotId, newText, newClass, stylesToClear });
             onChange(newText);
             if (onClassChange) {
-              console.log('🔄 Calling onClassChange for:', slotId, newClass, stylesToClear);
               onClassChange(slotId, newClass, stylesToClear);
             } else {
-              console.log('⚠️ No onClassChange provided for:', slotId);
             }
           }}
           onClose={() => setShowEditor(false)}
@@ -1312,7 +1305,6 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log('Delete button clicked for slot:', id);
             if (onDelete) {
               onDelete();
             }
@@ -1378,26 +1370,17 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               const hasTextLeft = currentWrapperClasses.includes('text-left');
               const hasTextCenter = currentWrapperClasses.includes('text-center');
               const hasTextRight = currentWrapperClasses.includes('text-right');
-              
-              console.log('🎯 ALIGNMENT: Visual feedback check for', id);
-              console.log('🎯 ALIGNMENT: Wrapper ID:', wrapperId);
-              console.log('🎯 ALIGNMENT: Wrapper classes:', currentWrapperClasses);
-              console.log('🎯 ALIGNMENT: Has left:', hasTextLeft, 'center:', hasTextCenter, 'right:', hasTextRight);
-              
+
               return (
                 <>
                   <button
                     onClick={() => {
                       // Target the immediate wrapper (one level up)
                       const wrapperId = `${id}_wrapper`;
-                      console.log('🎯 ALIGNMENT: Aligning left for element:', id, 'targeting wrapper:', wrapperId);
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
-                      console.log('🎯 ALIGNMENT: Current wrapper classes:', currentWrapperClasses);
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-left';
-                      console.log('🎯 ALIGNMENT: New wrapper classes:', newWrapperClasses);
-                      console.log('🎯 ALIGNMENT: onClassChange function:', typeof onClassChange);
                       onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextLeft ? 'bg-blue-100' : ''}`}
@@ -1409,12 +1392,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     onClick={() => {
                       // Target the immediate wrapper (one level up)
                       const wrapperId = `${id}_wrapper`;
-                      console.log('🎯 ALIGNMENT: Aligning center for element:', id, 'targeting wrapper:', wrapperId);
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-center';
-                      console.log('🎯 ALIGNMENT: New wrapper classes:', newWrapperClasses);
                       onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextCenter ? 'bg-blue-100' : ''}`}
@@ -1426,12 +1407,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     onClick={() => {
                       // Target the immediate wrapper (one level up)
                       const wrapperId = `${id}_wrapper`;
-                      console.log('🎯 ALIGNMENT: Aligning right for element:', id, 'targeting wrapper:', wrapperId);
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-right';
-                      console.log('🎯 ALIGNMENT: New wrapper classes:', newWrapperClasses);
                       onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextRight ? 'bg-blue-100' : ''}`}
@@ -1525,7 +1504,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   // Add direct event listener to catch native events
                   input.addEventListener('change', (e) => {
                     const newColor = e.target.value;
-                    console.log('🎨 🎯 NATIVE change event:', newColor);
+                    // console.log('🎨 🎯 NATIVE change event:', newColor); // Disabled to prevent console spam
                     
                     if (typeof onClassChange === 'function') {
                       const currentClasses = elementClasses[id] || '';
@@ -1533,7 +1512,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                         .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                         .trim();
                       
-                      console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } });
+                      // console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } }); // Disabled to prevent console spam
                       onClassChange(id, newClasses, { color: newColor });
                     }
                   });
@@ -1679,7 +1658,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   // Add direct event listener to catch native events
                   input.addEventListener('change', (e) => {
                     const newColor = e.target.value;
-                    console.log('🎨 🏠 NATIVE background color change event:', newColor);
+                    // console.log('🎨 🏠 NATIVE background color change event:', newColor); // Disabled to prevent console spam
                     
                     if (typeof onClassChange === 'function') {
                       const currentClasses = elementClasses[id] || '';
@@ -1699,7 +1678,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                         .join(' ')
                         .trim();
                       
-                      console.log('🎨 🏠 NATIVE Applying background color:', { id, newClasses, newStyles: { backgroundColor: newColor } });
+                      // console.log('🎨 🏠 NATIVE Applying background color:', { id, newClasses, newStyles: { backgroundColor: newColor } }); // Disabled to prevent console spam
                       onClassChange(id, newClasses, { backgroundColor: newColor });
                     }
                   });
