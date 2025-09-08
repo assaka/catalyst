@@ -5319,8 +5319,6 @@ export default function CartSlotsEditorWithMicroSlots({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Color picker modal removed */}
       </div>
     </div>
   );
