@@ -1713,11 +1713,53 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               key={`btn-text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
+              ref={(el) => {
+                if (el && !el.hasEventListener) {
+                  console.log('🎨 Adding manual event listeners to text color input');
+                  // Add manual event listeners as fallback
+                  el.addEventListener('input', (e) => {
+                    console.log('🎨 🔥 MANUAL TEXT COLOR INPUT EVENT!', id, 'value:', e.target.value);
+                    const newColor = e.target.value;
+                    const currentClasses = elementClasses[id] || '';
+                    const newClasses = currentClasses
+                      .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                      .trim();
+                    console.log('🎨 🔥 MANUAL: Calling onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
+                    onClassChange(id, newClasses, { color: newColor });
+                  });
+                  el.addEventListener('change', (e) => {
+                    console.log('🎨 🔥 MANUAL TEXT COLOR CHANGE EVENT!', id, 'value:', e.target.value);
+                    const newColor = e.target.value;
+                    const currentClasses = elementClasses[id] || '';
+                    const newClasses = currentClasses
+                      .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                      .trim();
+                    console.log('🎨 🔥 MANUAL: Calling onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
+                    onClassChange(id, newClasses, { color: newColor });
+                  });
+                  el.hasEventListener = true;
+                }
+              }}
               onClick={(e) => {
                 console.log('🎨 Text color input CLICKED for:', id);
                 console.log('🎨 onClassChange available?', typeof onClassChange);
                 console.log('🎨 elementStyles:', elementStyles);
                 console.log('🎨 elementClasses:', elementClasses);
+              }}
+              onBlur={(e) => {
+                console.log('🎨 🔥 TEXT COLOR BLUR EVENT!', id, 'value:', e.target.value);
+                // Handle color change on blur (when color picker closes)
+                const newColor = e.target.value;
+                const currentValue = elementStyles[id]?.color || '#000000';
+                if (newColor !== currentValue) {
+                  console.log('🎨 🔥 Color changed on blur!', currentValue, '->', newColor);
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                    .trim();
+                  console.log('🎨 🔥 BLUR: Calling onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
+                  onClassChange(id, newClasses, { color: newColor });
+                }
               }}
               onFocus={(e) => {
                 console.log('🎨 Text color input focused for:', id);
