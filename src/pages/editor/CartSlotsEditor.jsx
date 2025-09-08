@@ -1361,6 +1361,25 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             }
             setIsHovered(true);
           }}
+          onMouseLeave={(e) => {
+            if (mode === 'preview') return;
+            e.stopPropagation();
+            
+            // Don't hide if user is interacting with color picker
+            const relatedTarget = e.relatedTarget;
+            if (relatedTarget && (
+              relatedTarget.type === 'color' || 
+              (relatedTarget.closest && relatedTarget.closest('input[type="color"]')) ||
+              relatedTarget.className?.includes('color-picker') ||
+              relatedTarget.tagName === 'INPUT'
+            )) {
+              return;
+            }
+            
+            hoverTimeoutRef.current = setTimeout(() => {
+              setIsHovered(false);
+            }, 300);
+          }}
         >
           {/* Text alignment controls */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
@@ -1451,6 +1470,84 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             >
               <Italic className="w-4 h-4 text-gray-600" />
             </button>
+          </div>
+
+          {/* Text color control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
+            <Palette className="w-3 h-3 text-gray-600 mr-1" />
+            <input
+              type="color"
+              value={elementStyles[id]?.color || '#000000'}
+              onChange={(e) => {
+                const newColor = e.target.value;
+                console.log('🎨 🎯 Text color changed:', newColor);
+                
+                if (typeof handleClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  handleClassChange(id, newClasses, { color: newColor });
+                } else if (typeof onClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  onClassChange(id, newClasses, { color: newColor });
+                }
+              }}
+              onFocus={(e) => {
+                // Keep hover state active when color picker is focused
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+              }}
+              className="w-6 h-6 cursor-pointer border-0 rounded"
+              style={{ minWidth: '24px', minHeight: '24px' }}
+              title="Text color"
+            />
+          </div>
+
+          {/* Background color control */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
+            <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
+            <input
+              type="color"
+              value={elementStyles[id]?.backgroundColor || '#3b82f6'}
+              onChange={(e) => {
+                const newColor = e.target.value;
+                console.log('🎨 Background color changed:', newColor);
+                
+                if (typeof handleClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  handleClassChange(id, newClasses, { backgroundColor: newColor });
+                } else if (typeof onClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  onClassChange(id, newClasses, { backgroundColor: newColor });
+                }
+              }}
+              onFocus={(e) => {
+                // Keep hover state active when color picker is focused
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+              }}
+              className="w-6 h-6 cursor-pointer border-0 rounded"
+              style={{ minWidth: '24px', minHeight: '24px' }}
+              title="Background color"
+            />
           </div>
 
           {/* Font size control */}
