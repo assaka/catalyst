@@ -940,6 +940,9 @@ function RichTextEditor({ content, onSave, onCancel }) {
 function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange, style = {}, mode = 'edit' }) {
   const [showEditor, setShowEditor] = useState(false);
   
+  // Debug: Log the style prop whenever it changes
+  console.log('🎯 SimpleInlineEdit for', slotId, 'received style:', style);
+  
   // Check if text contains HTML
   const hasHtml = text && (text.includes('<') || text.includes('&'));
   
@@ -1704,12 +1707,19 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
-                console.log('🎨 Text color changed for:', id, 'to:', e.target.value);
+                const newColor = e.target.value;
+                console.log('🎨 Text color changed for:', id, 'to:', newColor);
+                console.log('🎨 Current elementStyles[' + id + ']:', elementStyles[id]);
+                console.log('🎨 onClassChange function:', typeof onClassChange);
+                
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                   .trim();
-                onClassChange(id, newClasses, { color: e.target.value });
+                
+                // Call onClassChange with the new color
+                onClassChange(id, newClasses, { color: newColor });
+                console.log('🎨 onClassChange called with color:', newColor);
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Choose text color"
@@ -2937,15 +2947,22 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle class change for elements (now also supports inline styles)
   const handleClassChange = useCallback((slotId, newClass, newStyles = null) => {
-    setElementClasses(prev => ({
-      ...prev,
-      [slotId]: newClass
-    }));
+    console.log('🔧 handleClassChange called:', { slotId, newClass, newStyles });
+    
+    setElementClasses(prev => {
+      const updated = {
+        ...prev,
+        [slotId]: newClass
+      };
+      console.log('🔧 Updated elementClasses:', updated);
+      return updated;
+    });
     
     // If styles are provided, update them too
     if (newStyles) {
       setElementStyles(prev => {
         const currentStyles = { ...prev[slotId] };
+        console.log('🔧 Current styles for', slotId, ':', currentStyles);
         
         // Handle clearing styles (when value is null)
         Object.keys(newStyles).forEach(styleKey => {
@@ -2958,10 +2975,12 @@ export default function CartSlotsEditorWithMicroSlots({
           }
         });
         
-        return {
+        const updatedState = {
           ...prev,
           [slotId]: currentStyles
         };
+        console.log('🔧 Updated elementStyles state:', updatedState);
+        return updatedState;
       });
     }
     
