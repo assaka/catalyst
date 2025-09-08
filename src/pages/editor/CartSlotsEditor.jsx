@@ -1458,21 +1458,23 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           </div>
 
           {/* Text color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
-            <Palette className="w-3 h-3 text-gray-600 mr-1" />
+          <div className="relative">
+            {/* Hidden color input that will be triggered programmatically */}
             <input
               type="color"
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🎯 Text color changed:', newColor);
+                console.log('🎨 🎯 DIRECT color changed (onChange):', newColor);
                 
+                // Apply directly using the working handleClassChange logic
                 if (typeof handleClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
+                  console.log('🎨 🎯 DIRECT Applying:', { id, newClasses, newStyles: { color: newColor } });
                   handleClassChange(id, newClasses, { color: newColor });
                 } else if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
@@ -1480,60 +1482,89 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
+                  console.log('🎨 🎯 Applying via onClassChange:', { id, newClasses, newStyles: { color: newColor } });
                   onClassChange(id, newClasses, { color: newColor });
                 }
               }}
-              onFocus={(e) => {
-                // Keep hover state active when color picker is focused
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-              }}
-              className="w-6 h-6 cursor-pointer border-0 rounded"
-              style={{ minWidth: '24px', minHeight: '24px' }}
-              title="Text color"
-            />
-          </div>
-
-          {/* Background color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
-            <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
-            <input
-              type="color"
-              value={elementStyles[id]?.backgroundColor || '#3b82f6'}
-              onChange={(e) => {
+              onInput={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 Background color changed:', newColor);
+                console.log('🎨 🎯 DIRECT color changed (onInput):', newColor);
                 
+                // Apply directly using the working handleClassChange logic
                 if (typeof handleClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
-                    .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  handleClassChange(id, newClasses, { backgroundColor: newColor });
+                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
+                  handleClassChange(id, newClasses, { color: newColor });
                 } else if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
-                    .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  onClassChange(id, newClasses, { backgroundColor: newColor });
+                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
+                  onClassChange(id, newClasses, { color: newColor });
                 }
               }}
-              onFocus={(e) => {
-                // Keep hover state active when color picker is focused
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
+              ref={(input) => {
+                // Store reference for programmatic triggering
+                if (input && !input.hasClickHandler) {
+                  input.hasClickHandler = true;
+                  // Store the input reference on the parent for the button to access
+                  const parent = input.parentElement;
+                  if (parent) parent._colorInput = input;
+                  
+                  // Add direct event listener to catch native events
+                  input.addEventListener('change', (e) => {
+                    const newColor = e.target.value;
+                    console.log('🎨 🎯 NATIVE change event:', newColor);
+                    
+                    if (typeof onClassChange === 'function') {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                        .trim();
+                      
+                      console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } });
+                      onClassChange(id, newClasses, { color: newColor });
+                    }
+                  });
                 }
               }}
-              className="w-6 h-6 cursor-pointer border-0 rounded"
-              style={{ minWidth: '24px', minHeight: '24px' }}
-              title="Background color"
+              className="absolute opacity-0 pointer-events-none"
+              style={{ width: 0, height: 0 }}
             />
+            
+            {/* Visible button that triggers the hidden input */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎨 🎯 Triggering hidden color input for:', id);
+                
+                // Find and trigger the hidden color input
+                const hiddenInput = e.currentTarget.parentElement._colorInput;
+                if (hiddenInput) {
+                  hiddenInput.click();
+                  console.log('🎨 🎯 Hidden input clicked');
+                } else {
+                  console.error('🎨 ❌ Hidden input not found');
+                }
+              }}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
+              title="Choose text color"
+            >
+              <Palette className="w-3 h-3 text-gray-600" />
+              <div 
+                className="w-4 h-4 rounded border border-gray-400"
+                style={{ backgroundColor: elementStyles[id]?.color || '#000000' }}
+              />
+            </button>
           </div>
+
 
           {/* Font size control */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
