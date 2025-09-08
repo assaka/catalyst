@@ -1352,8 +1352,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && !id.includes('Button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-wrap gap-2 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 w-full"
-          style={{ minWidth: '100%' }}
+          className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 translate-y-full flex flex-wrap gap-2 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200"
+          style={{ minWidth: 'calc(100vw - 2rem)', maxWidth: 'calc(100vw - 2rem)', width: 'max-content' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -1415,6 +1415,61 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${currentAlign === 'right' ? 'bg-blue-100' : ''}`}
                     title="Align right"
+                  >
+                    <AlignRight className="w-4 h-4 text-gray-600" />
+                  </button>
+                </>
+              );
+            })()}
+          </div>
+          
+          {/* Text alignment controls for parent div */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
+            {(() => {
+              // Get current text alignment from element classes
+              const currentClasses = elementClasses[id] || '';
+              const hasTextLeft = currentClasses.includes('text-left');
+              const hasTextCenter = currentClasses.includes('text-center');
+              const hasTextRight = currentClasses.includes('text-right');
+              
+              return (
+                <>
+                  <button
+                    onClick={() => {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(left|center|right|justify)/g, '')
+                        .trim() + ' text-left';
+                      onClassChange(id, newClasses.trim());
+                    }}
+                    className={`p-1 hover:bg-gray-100 rounded ${hasTextLeft ? 'bg-blue-100' : ''}`}
+                    title="Align text left"
+                  >
+                    <AlignLeft className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(left|center|right|justify)/g, '')
+                        .trim() + ' text-center';
+                      onClassChange(id, newClasses.trim());
+                    }}
+                    className={`p-1 hover:bg-gray-100 rounded ${hasTextCenter ? 'bg-blue-100' : ''}`}
+                    title="Align text center"
+                  >
+                    <AlignCenter className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(left|center|right|justify)/g, '')
+                        .trim() + ' text-right';
+                      onClassChange(id, newClasses.trim());
+                    }}
+                    className={`p-1 hover:bg-gray-100 rounded ${hasTextRight ? 'bg-blue-100' : ''}`}
+                    title="Align text right"
                   >
                     <AlignRight className="w-4 h-4 text-gray-600" />
                   </button>
