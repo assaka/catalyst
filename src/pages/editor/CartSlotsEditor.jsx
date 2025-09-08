@@ -2853,8 +2853,8 @@ export default function CartSlotsEditorWithMicroSlots({
       const newIndex = items.indexOf(over.id);
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(items, oldIndex, newIndex);
-        // Save after drag - direct call
-        saveConfiguration();
+        // Save after drag - delayed to allow state updates to complete
+        setTimeout(() => saveConfiguration(), 0);
         return newOrder;
       }
       return items;
@@ -2896,8 +2896,8 @@ export default function CartSlotsEditorWithMicroSlots({
       return updated;
     });
     
-    // Save after resize - direct call
-    saveConfiguration();
+    // Save after resize - delayed to allow state updates to complete
+    setTimeout(() => saveConfiguration(), 0);
   }, []); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle text content change
@@ -2906,8 +2906,10 @@ export default function CartSlotsEditorWithMicroSlots({
       ...prev,
       [slotId]: newText
     }));
-    // Save after text change - direct call
-    saveConfiguration();
+    // Save after text change - delayed to allow state updates to complete
+    setTimeout(() => {
+      saveConfiguration();
+    }, 0);
   }, []); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle class change for elements (now also supports inline styles)
@@ -2956,8 +2958,11 @@ export default function CartSlotsEditorWithMicroSlots({
       });
     }
     
-    // Save after class change - direct call
-    saveConfiguration();
+    // Save after class change - delayed to allow state updates to complete
+    setTimeout(() => {
+      console.log('⏱️ Delayed save - state should be updated now');
+      saveConfiguration();
+    }, 0);
     
     // Notify storefront of configuration update
     if (selectedStore?.id) {
@@ -2978,8 +2983,8 @@ export default function CartSlotsEditorWithMicroSlots({
       ...prev,
       [slotId]: newSize
     }));
-    // Save after size change - direct call
-    saveConfiguration();
+    // Save after size change - delayed to allow state updates to complete
+    setTimeout(() => saveConfiguration(), 0);
   }, []); // Remove immediateSave dependency to prevent infinite loops
 
   // Edit micro-slot
@@ -3158,8 +3163,8 @@ export default function CartSlotsEditorWithMicroSlots({
     });
     
     console.log('Slot deletion complete, triggering auto-save');
-    // Save after delete - direct call
-    saveConfiguration();
+    // Save after delete - delayed to allow state updates to complete
+    setTimeout(() => saveConfiguration(), 0);
   }, []); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle adding a new custom slot
