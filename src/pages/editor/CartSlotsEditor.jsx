@@ -1711,107 +1711,39 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
             <Palette className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
-              key={`btn-text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
-              ref={(el) => {
-                if (el && !el.hasEventListener) {
-                  console.log('🎨 Adding manual event listeners to text color input');
-                  // Add manual event listeners as fallback
-                  el.addEventListener('input', (e) => {
-                    console.log('🎨 🔥 MANUAL TEXT COLOR INPUT EVENT!', id, 'value:', e.target.value);
-                    const newColor = e.target.value;
-                    const currentClasses = elementClasses[id] || '';
-                    const newClasses = currentClasses
-                      .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                      .trim();
-                    console.log('🎨 🔥 MANUAL: Calling onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
-                    onClassChange(id, newClasses, { color: newColor });
-                  });
-                  el.addEventListener('change', (e) => {
-                    console.log('🎨 🔥 MANUAL TEXT COLOR CHANGE EVENT!', id, 'value:', e.target.value);
-                    const newColor = e.target.value;
-                    const currentClasses = elementClasses[id] || '';
-                    const newClasses = currentClasses
-                      .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                      .trim();
-                    console.log('🎨 🔥 MANUAL: Calling onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
-                    onClassChange(id, newClasses, { color: newColor });
-                  });
-                  el.hasEventListener = true;
-                }
-              }}
-              onClick={(e) => {
-                console.log('🎨 Text color input CLICKED for:', id);
-                console.log('🎨 onClassChange available?', typeof onClassChange);
-                console.log('🎨 elementStyles:', elementStyles);
-                console.log('🎨 elementClasses:', elementClasses);
-              }}
-              onBlur={(e) => {
-                console.log('🎨 🔥 TEXT COLOR BLUR EVENT!', id, 'value:', e.target.value);
-                // Handle color change on blur (when color picker closes)
+              onChange={(e) => {
                 const newColor = e.target.value;
-                const currentValue = elementStyles[id]?.color || '#000000';
-                if (newColor !== currentValue) {
-                  console.log('🎨 🔥 Color changed on blur!', currentValue, '->', newColor);
+                console.log('🎨 ✅ DIRECT Text color changed:', newColor);
+                console.log('🎨 ✅ Applying directly with handleClassChange');
+                
+                // Apply directly using the same logic that worked in the modal
+                if (typeof handleClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
-                  console.log('🎨 🔥 BLUR: Calling onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
-                  onClassChange(id, newClasses, { color: newColor });
+                  
+                  console.log('🎨 ✅ Calling handleClassChange directly:', { id, newClasses, newStyles: { color: newColor } });
+                  handleClassChange(id, newClasses, { color: newColor });
+                }
+                
+                // Keep hover state active
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
                 }
               }}
               onFocus={(e) => {
-                console.log('🎨 Text color input focused for:', id);
+                console.log('🎨 Text color input focused');
                 // Keep hover state active when color picker is focused
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
               }}
-              onInput={(e) => {
-                console.log('🎨 🔥 TEXT COLOR INPUT EVENT FIRED!', id, 'value:', e.target.value);
-                console.log('🎨 🔥 onClassChange type:', typeof onClassChange);
-                
-                // Keep hover state active during changes
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-                const newColor = e.target.value;
-                
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                  .trim();
-                
-                // Call onClassChange with the new color
-                console.log('🎨 🔥 CALLING onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
-                onClassChange(id, newClasses, { color: newColor });
-                console.log('🎨 🔥 onClassChange call completed');
-              }}
-              onChange={(e) => {
-                console.log('🎨 🔥 TEXT COLOR CHANGE EVENT FIRED!', id, 'value:', e.target.value);
-                // Keep hover state active during changes
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                }
-                const newColor = e.target.value;
-                
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                  .trim();
-                
-                // Call onClassChange with the new color
-                console.log('🎨 🔥 CALLING onClassChange (onChange) with:', { id, newClasses, newStyles: { color: newColor } });
-                onClassChange(id, newClasses, { color: newColor });
-                console.log('🎨 🔥 onClassChange (onChange) call completed');
-              }}
               className="w-6 h-6 cursor-pointer border-0 rounded"
               title="Choose text color"
-              style={{ minWidth: '24px', minHeight: '24px' }}
             />
           </div>
 
@@ -1852,19 +1784,25 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 console.log('🎨 🔥 onClassChange (BG INPUT) call completed');
               }}
               onChange={(e) => {
-                console.log('🎨 🔥 BACKGROUND COLOR CHANGE EVENT FIRED!', id, 'value:', e.target.value);
-                // Keep hover state active during changes
+                const newColor = e.target.value;
+                console.log('🎨 ✅ DIRECT Background color changed:', newColor);
+                
+                // Apply directly using the same logic that worked in the modal
+                if (typeof handleClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  console.log('🎨 ✅ Calling handleClassChange directly for BG:', { id, newClasses, newStyles: { backgroundColor: newColor } });
+                  handleClassChange(id, newClasses, { backgroundColor: newColor });
+                }
+                
+                // Keep hover state active
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
                   clearTimeout(hoverTimeoutRef.current);
                 }
-                const currentClasses = elementClasses[id] || '';
-                const newClasses = currentClasses
-                  .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
-                  .trim();
-                console.log('🎨 🔥 CALLING onClassChange for BG (onChange) with:', { id, newClasses, newStyles: { backgroundColor: e.target.value } });
-                onClassChange(id, newClasses, { backgroundColor: e.target.value });
-                console.log('🎨 🔥 onClassChange (BG onChange) call completed');
               }}
               className="w-6 h-6 cursor-pointer border-0 rounded"
               style={{ minWidth: '24px', minHeight: '24px' }}
@@ -2519,7 +2457,7 @@ export default function CartSlotsEditorWithMicroSlots({
   // State for delete confirmation dialog
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, slotId: null, slotLabel: '' });
   
-  // Removed color picker modal - now using direct color inputs
+  // Modal removed - using direct color inputs
   
   // State for Tailwind classes for each element
   const [elementClasses, setElementClasses] = useState({
@@ -5366,7 +5304,7 @@ export default function CartSlotsEditorWithMicroSlots({
         </DialogContent>
       </Dialog>
 
-      {/* Color picker modal removed - now using direct color inputs */}
+      {/* Modal removed - using direct color inputs */}
     </>
   );
 }
