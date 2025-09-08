@@ -5320,7 +5320,7 @@ export default function CartSlotsEditorWithMicroSlots({
         </DialogContent>
       </Dialog>
 
-      {/* Color picker modal removed - now using direct color inputs */}
+      {/* Color picker modal removed */}
       </div>
     </>
   );
