@@ -2425,6 +2425,69 @@ export default function CartSlotsEditorWithMicroSlots({
       isDraftLoading
     });
   }, [selectedStore, draftConfig, hasUnsavedChanges, isDraftLoading]);
+
+  // Apply loaded draft configuration to component state
+  useEffect(() => {
+    if (!draftConfig?.configuration) return;
+    
+    const config = draftConfig.configuration;
+    console.log('🔄 Applying loaded draft configuration:', {
+      hasElementStyles: !!config.elementStyles,
+      hasElementClasses: !!config.elementClasses,
+      hasComponentSizes: !!config.componentSizes,
+      elementStylesKeys: Object.keys(config.elementStyles || {})
+    });
+    
+    // Apply elementStyles (colors and inline styles)
+    if (config.elementStyles) {
+      setElementStyles(prev => ({
+        ...prev,
+        ...config.elementStyles
+      }));
+      console.log('✅ Applied elementStyles from draft:', config.elementStyles);
+    }
+    
+    // Apply elementClasses (Tailwind classes)
+    if (config.elementClasses) {
+      setElementClasses(prev => ({
+        ...prev,
+        ...config.elementClasses
+      }));
+      console.log('✅ Applied elementClasses from draft:', config.elementClasses);
+    }
+    
+    // Apply componentSizes
+    if (config.componentSizes) {
+      setComponentSizes(prev => ({
+        ...prev,
+        ...config.componentSizes
+      }));
+      console.log('✅ Applied componentSizes from draft:', config.componentSizes);
+    }
+
+    // Apply other configuration properties as needed
+    if (config.slotContent) {
+      setSlotContent(prev => ({
+        ...prev,
+        ...config.slotContent
+      }));
+    }
+    
+    if (config.microSlotOrders) {
+      setMicroSlotOrders(prev => ({
+        ...prev,
+        ...config.microSlotOrders
+      }));
+    }
+    
+    if (config.microSlotSpans) {
+      setMicroSlotSpans(prev => ({
+        ...prev,
+        ...config.microSlotSpans
+      }));
+    }
+    
+  }, [draftConfig]);
   
   // State for view mode - 'empty' or 'withProducts'
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
