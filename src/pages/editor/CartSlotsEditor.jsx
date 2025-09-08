@@ -2283,14 +2283,31 @@ export default function CartSlotsEditorWithMicroSlots({
   const { selectedStore } = useStoreSelection();
   const currentStoreId = selectedStore?.id;
   
+  // Use draft configuration hook for versioning
+  const {
+    draftConfig,
+    isLoading: isDraftLoading,
+    isSaving,
+    error: draftError,
+    hasUnsavedChanges,
+    updateConfiguration,
+    saveImmediately,
+    reloadDraft,
+    getConfiguration,
+    getDraftId
+  } = useDraftConfiguration(currentStoreId, 'cart');
+  
   // Debug store context
   useEffect(() => {
     console.log('🏪 Store context debug:', {
       selectedStore,
       currentStoreId,
-      storeId: selectedStore?.id
+      storeId: selectedStore?.id,
+      draftConfig: draftConfig?.id,
+      hasUnsavedChanges,
+      isDraftLoading
     });
-  }, [selectedStore]);
+  }, [selectedStore, draftConfig, hasUnsavedChanges, isDraftLoading]);
   
   // State for view mode - 'empty' or 'withProducts'
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
