@@ -1749,6 +1749,37 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   // Store the input reference on the parent for the button to access
                   const parent = input.parentElement;
                   if (parent) parent._colorInput = input;
+                  
+                  // Add direct event listener to catch native events
+                  input.addEventListener('change', (e) => {
+                    const newColor = e.target.value;
+                    console.log('🎨 🎯 NATIVE change event:', newColor);
+                    
+                    if (typeof handleClassChange === 'function') {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                        .trim();
+                      
+                      console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } });
+                      handleClassChange(id, newClasses, { color: newColor });
+                    }
+                  });
+                  
+                  input.addEventListener('input', (e) => {
+                    const newColor = e.target.value;
+                    console.log('🎨 🎯 NATIVE input event:', newColor);
+                    
+                    if (typeof handleClassChange === 'function') {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                        .trim();
+                      
+                      console.log('🎨 🎯 NATIVE Applying (input):', { id, newClasses, newStyles: { color: newColor } });
+                      handleClassChange(id, newClasses, { color: newColor });
+                    }
+                  });
                 }
               }}
               className="absolute opacity-0 pointer-events-none"
