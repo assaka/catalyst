@@ -1882,7 +1882,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      <div className="relative z-1">
+      <div className={`relative z-1 ${(() => {
+        const parentId = id.split('.')[0];
+        const alignmentClasses = elementClasses[parentId] || '';
+        console.log('🎯 MicroSlot applying parent alignment classes:', { id, parentId, alignmentClasses });
+        return alignmentClasses;
+      })()}`}>
         {children}
         
         {/* Resize icon only - more visible - only in edit mode */}
@@ -1954,7 +1959,7 @@ function SortableParentSlot(props) {
 }
 
 // Parent slot container with micro-slots
-function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12, dragAttributes, dragListeners, isDragging: parentIsDragging, mode = 'edit' }) {
+function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12, dragAttributes, dragListeners, isDragging: parentIsDragging, mode = 'edit', elementClasses = {}, elementStyles = {} }) {
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef(null);
   const containerRef = useRef(null);
@@ -2082,13 +2087,13 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         {mode === 'edit' ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
             <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              <div className={`grid grid-cols-12 gap-2 auto-rows-min ${elementClasses[id] || ''}`} style={elementStyles[id] || {}}>
                 {children}
               </div>
             </SortableContext>
           </DndContext>
         ) : (
-          <div className="grid grid-cols-12 gap-2 auto-rows-min">
+          <div className={`grid grid-cols-12 gap-2 auto-rows-min ${elementClasses[id] || ''}`} style={elementStyles[id] || {}}>
             {children}
           </div>
         )}
@@ -2418,6 +2423,8 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('💾 Saved configuration:', config);
     console.log('📝 Saved slotContent specifically:', config.slotContent);
     console.log('🎨 Saved elementClasses:', config.elementClasses);
+    console.log('🎨 🏠 Saved elementStyles:', config.elementStyles);
+    console.log('🎨 🏠 ElementStyles keys:', Object.keys(config.elementStyles || {}));
     console.log('📏 Saved componentSizes:', config.componentSizes);
     console.log('📐 Saved microSlotSpans:', config.microSlotSpans);
     console.log('🔧 Saved customSlots:', config.customSlots);
@@ -2940,6 +2947,9 @@ export default function CartSlotsEditorWithMicroSlots({
             delete currentStyles[styleKey];
           } else {
             console.log('📝 Setting style:', styleKey, '=', newStyles[styleKey], 'for', slotId);
+            if (styleKey === 'backgroundColor') {
+              console.log('🎨 🏠 BACKGROUND COLOR being set:', { slotId, backgroundColor: newStyles[styleKey] });
+            }
             currentStyles[styleKey] = newStyles[styleKey];
           }
         });
@@ -3245,6 +3255,8 @@ export default function CartSlotsEditorWithMicroSlots({
         onEdit={() => handleEditMicroSlot('emptyCart')}
         mode={mode}
         gridCols={MICRO_SLOT_DEFINITIONS.emptyCart.gridCols}
+        elementClasses={elementClasses}
+        elementStyles={elementStyles}
       >
         {microSlots.map(slotId => {
           const slotSpan = spans[slotId] || { col: 12, row: 1 };
@@ -3643,6 +3655,8 @@ export default function CartSlotsEditorWithMicroSlots({
         onEdit={() => handleEditMicroSlot('cartItem')}
         mode={mode}
         gridCols={12}
+        elementClasses={elementClasses}
+        elementStyles={elementStyles}
       >
         {/* Match Cart.jsx Card structure */}
         <Card className="col-span-12">
