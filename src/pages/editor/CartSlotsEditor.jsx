@@ -1729,7 +1729,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
               }}
               onInput={(e) => {
-                console.log('🎨 Text color INPUT event for:', id, 'value:', e.target.value);
+                console.log('🎨 🔥 TEXT COLOR INPUT EVENT FIRED!', id, 'value:', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
