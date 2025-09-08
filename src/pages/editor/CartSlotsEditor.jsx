@@ -3085,7 +3085,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, immediateSave]);
+  }, [editingComponent, tempCode]); // Removed immediateSave reference
   
   // Handle deleting a custom slot
   const handleDeleteCustomSlot = useCallback((slotId) => {
