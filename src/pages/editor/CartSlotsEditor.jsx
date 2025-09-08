@@ -5322,4 +5322,4 @@ export default function CartSlotsEditorWithMicroSlots({
       </div>
     </div>
   );
-}
+};
