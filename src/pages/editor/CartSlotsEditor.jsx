@@ -1882,13 +1882,15 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      <div className={`relative z-1 ${(() => {
-        const parentId = id.split('.')[0];
-        const alignmentClasses = elementClasses[parentId] || '';
-        console.log('🎯 MicroSlot applying parent alignment classes:', { id, parentId, alignmentClasses });
-        return alignmentClasses;
-      })()}`}>
-        {children}
+      <div className="relative z-1">
+        <div className={(() => {
+          const wrapperId = `${id}_wrapper`;
+          const wrapperClasses = elementClasses[wrapperId] || '';
+          console.log('🎯 MicroSlot applying wrapper alignment classes:', { id, wrapperId, wrapperClasses });
+          return wrapperClasses;
+        })()} style={elementStyles[`${id}_wrapper`] || {}}>
+          {children}
+        </div>
         
         {/* Resize icon only - more visible - only in edit mode */}
         {mode === 'edit' && onSpanChange && !isDragging && isHovered && !isResizing && (

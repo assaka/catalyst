@@ -1224,10 +1224,12 @@ export default function Cart() {
                                     const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                                     return (
                                         <div key={slotId} className={positioning.gridClasses}>
-                                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
-                                                    My Cart
-                                                </h1>
+                                            <div>
+                                                <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                                    <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                        My Cart
+                                                    </h1>
+                                                </div>
                                             </div>
                                         </div>
                                     );
