@@ -415,19 +415,33 @@ export default function UnifiedSlotEditor({
         <div className="bg-gray-50 border-b px-4 py-2">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center">
-              {draftConfig && (
+              {draftConfig && draftConfig.updated_at && (
                 <>
                   <Clock className="w-4 h-4 mr-2" />
                   <span>
-                    <strong>Draft:</strong> Last modified {formatDistanceToNow(new Date(draftConfig.updated_at), { addSuffix: true })}
+                    <strong>Draft:</strong> Last modified {(() => {
+                      try {
+                        const date = new Date(draftConfig.updated_at);
+                        return isNaN(date.getTime()) ? 'Unknown' : formatDistanceToNow(date, { addSuffix: true });
+                      } catch (error) {
+                        return 'Unknown';
+                      }
+                    })()}
                   </span>
                 </>
               )}
             </div>
             <div className="flex items-center">
-              {publishedConfig && (
+              {publishedConfig && publishedConfig.published_at && (
                 <span>
-                  <strong>Published:</strong> Version {publishedConfig.version_number} • {formatDistanceToNow(new Date(publishedConfig.published_at), { addSuffix: true })}
+                  <strong>Published:</strong> Version {publishedConfig.version_number} • {(() => {
+                    try {
+                      const date = new Date(publishedConfig.published_at);
+                      return isNaN(date.getTime()) ? 'Unknown' : formatDistanceToNow(date, { addSuffix: true });
+                    } catch (error) {
+                      return 'Unknown';
+                    }
+                  })()}
                 </span>
               )}
             </div>
