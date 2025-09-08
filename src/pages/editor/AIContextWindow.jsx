@@ -11,6 +11,7 @@ import VersionHistory from '@/components/editor/ai-context/VersionHistory';
 import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
+import slotConfigurationService from '@/services/slotConfigurationService';
 // Store context no longer needed - backend resolves store automatically
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -138,6 +139,11 @@ const AIContextWindowPage = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(null);
   const [rollbackSuccess, setRollbackSuccess] = useState(null);
+  
+  // Slot configuration publishing state
+  const [isPublishingConfig, setIsPublishingConfig] = useState(false);
+  const [configPublishSuccess, setConfigPublishSuccess] = useState(null);
+  const [currentStoreId, setCurrentStoreId] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Auto-save debounce timer
@@ -183,6 +189,66 @@ const AIContextWindowPage = () => {
   const publishDiffs = useCallback(async () => {
     console.log('Publish functionality temporarily disabled - will be reimplemented');
   }, []);
+
+  // Get store ID from localStorage or API
+  const getStoreId = useCallback(async () => {
+    if (currentStoreId) return currentStoreId;
+    
+    try {
+      // Try to get from localStorage first
+      const storeId = localStorage.getItem('selected_store_id') || localStorage.getItem('store_id');
+      if (storeId) {
+        setCurrentStoreId(storeId);
+        return storeId;
+      }
+      
+      // Fallback: try to get from API or other source
+      console.warn('No store ID found in localStorage');
+      return null;
+    } catch (error) {
+      console.error('Error getting store ID:', error);
+      return null;
+    }
+  }, [currentStoreId]);
+
+  // Publish slot configuration
+  const publishSlotConfiguration = useCallback(async () => {
+    setIsPublishingConfig(true);
+    
+    try {
+      const storeId = await getStoreId();
+      if (!storeId) {
+        throw new Error('Store ID not found. Please select a store first.');
+      }
+      
+      // Get the current draft
+      const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+      
+      if (!draftResponse.success || !draftResponse.data) {
+        throw new Error('No draft configuration found to publish');
+      }
+      
+      // Publish the draft
+      const publishResponse = await slotConfigurationService.publishDraft(draftResponse.data.id);
+      
+      if (publishResponse.success) {
+        setConfigPublishSuccess({
+          versionName: \`v\${publishResponse.data.version_number}\`,
+          publishedAt: publishResponse.data.published_at
+        });
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => setConfigPublishSuccess(null), 5000);
+      } else {
+        throw new Error(publishResponse.error || 'Failed to publish configuration');
+      }
+    } catch (error) {
+      console.error('Error publishing slot configuration:', error);
+      alert(\`Failed to publish configuration: \${error.message}\`);
+    } finally {
+      setIsPublishingConfig(false);
+    }
+  }, [getStoreId]);
 
   // Handle successful rollback from version history
   const handleRollback = useCallback((rollbackData) => {
@@ -709,6 +775,19 @@ export default ExampleComponent;`;
             </div>
           )}
 
+          {/* Slot Configuration Publish Success */}
+          {configPublishSuccess && (
+            <div className="p-2 rounded-md text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              <div className="font-medium flex items-center">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Configuration Published Successfully
+              </div>
+              <div className="text-xs mt-1">
+                Version {configPublishSuccess.versionName} at {new Date(configPublishSuccess.publishedAt).toLocaleTimeString()}
+              </div>
+            </div>
+          )}
+
           {/* Rollback Success */}
           {rollbackSuccess && (
             <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
@@ -773,6 +852,26 @@ export default ExampleComponent;`;
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {connectionStatus?.status === 'testing' ? 'Testing...' : 'Test Connection'}
+          </button>
+          
+          <button
+            onClick={publishSlotConfiguration}
+            disabled={isPublishingConfig}
+            className={cn(
+              "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
+              "bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed",
+              "text-white disabled:text-gray-500"
+            )}
+            title="Publish current slot configuration to make changes live"
+          >
+            {isPublishingConfig ? (
+              <RefreshCw className="w-3 h-3 animate-spin" />
+            ) : (
+              <>
+                <Upload className="w-3 h-3" />
+                Publish Config
+              </>
+            )}
           </button>
           
           <button
