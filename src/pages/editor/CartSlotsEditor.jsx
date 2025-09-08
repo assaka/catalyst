@@ -205,7 +205,7 @@ function TailwindStyleEditor({ text, className = '', onChange, onClose }) {
     setSaveStatus('auto-saving');
     
     // Trigger onChange immediately (no debounce)
-    console.log('📤 TailwindStyleEditor calling onChange immediately:', { tempText, tempClass });
+    // console.log('📤 TailwindStyleEditor calling onChange immediately:', { tempText, tempClass }); // Disabled to prevent console spam
     onChange(tempText, tempClass);
     
     // Show saved status
@@ -1467,7 +1467,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🎯 Text color changed:', newColor);
+                // console.log('🎨 🎯 Text color changed:', newColor); // Disabled to prevent console spam
                 
                 if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
@@ -1475,13 +1475,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  console.log('🎨 🎯 Applying text color:', { id, newClasses, newStyles: { color: newColor } });
+                  // console.log('🎨 🎯 Applying text color:', { id, newClasses, newStyles: { color: newColor } }); // Disabled to prevent console spam
                   onClassChange(id, newClasses, { color: newColor });
                 }
               }}
               onInput={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🎯 Text color changed (onInput):', newColor);
+                // console.log('🎨 🎯 Text color changed (onInput):', newColor); // Disabled to prevent console spam
                 
                 if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
@@ -1489,7 +1489,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  console.log('🎨 🎯 Applying text color (onInput):', { id, newClasses, newStyles: { color: newColor } });
+                  // console.log('🎨 🎯 Applying text color (onInput):', { id, newClasses, newStyles: { color: newColor } }); // Disabled to prevent console spam
                   onClassChange(id, newClasses, { color: newColor });
                 }
               }}
@@ -1527,13 +1527,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('🎨 🎯 Triggering hidden color input for:', id);
+                // console.log('🎨 🎯 Triggering hidden color input for:', id); // Disabled to prevent console spam
                 
                 // Find and trigger the hidden color input
                 const hiddenInput = e.currentTarget.parentElement._colorInput;
                 if (hiddenInput) {
                   hiddenInput.click();
-                  console.log('🎨 🎯 Hidden input clicked');
+                  // console.log('🎨 🎯 Hidden input clicked'); // Disabled to prevent console spam
                 } else {
                   console.error('🎨 ❌ Hidden input not found');
                 }
@@ -1586,7 +1586,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               value={elementStyles[id]?.backgroundColor || '#ffffff'}
               onChange={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🏠 Background color changed:', newColor);
+                // console.log('🎨 🏠 Background color changed:', newColor); // Disabled to prevent console spam
                 
                 if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
@@ -1615,13 +1615,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     .join(' ')
                     .trim();
                   
-                  console.log('🎨 🏠 Applying background color:', { id, newClasses, newStyles: { backgroundColor: newColor } });
+                  // console.log('🎨 🏠 Applying background color:', { id, newClasses, newStyles: { backgroundColor: newColor } }); // Disabled to prevent console spam
                   onClassChange(id, newClasses, { backgroundColor: newColor });
                 }
               }}
               onInput={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🏠 Background color changed (onInput):', newColor);
+                // console.log('🎨 🏠 Background color changed (onInput):', newColor); // Disabled to prevent console spam
                 
                 if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
@@ -2134,40 +2134,40 @@ export default function CartSlotsEditorWithMicroSlots({
     getDraftId
   } = useDraftConfiguration(currentStoreId, 'cart');
   
-  // Debug store context
-  useEffect(() => {
-    console.log('🏪 Store context debug:', {
-      selectedStore,
-      currentStoreId,
-      storeId: selectedStore?.id,
-      draftConfig: draftConfig?.id,
-      hasUnsavedChanges,
-      isDraftLoading
-    });
-  }, [selectedStore, draftConfig, hasUnsavedChanges, isDraftLoading]);
+  // Debug store context (disabled to prevent console spam)
+  // useEffect(() => {
+  //   console.log('🏪 Store context debug:', {
+  //     selectedStore,
+  //     currentStoreId,
+  //     storeId: selectedStore?.id,
+  //     draftConfig: draftConfig?.id,
+  //     hasUnsavedChanges,
+  //     isDraftLoading
+  //   });
+  // }, [selectedStore, draftConfig, hasUnsavedChanges, isDraftLoading]);
 
   // Apply loaded draft configuration to component state
   useEffect(() => {
     if (!draftConfig?.configuration) return;
     
     const config = draftConfig.configuration;
-    console.log('🔄 Applying loaded draft configuration:', {
-      hasElementStyles: !!config.elementStyles,
-      hasElementClasses: !!config.elementClasses,
-      hasComponentSizes: !!config.componentSizes,
-      elementStylesKeys: Object.keys(config.elementStyles || {})
-    });
+    // console.log('🔄 Applying loaded draft configuration:', {
+    //   hasElementStyles: !!config.elementStyles,
+    //   hasElementClasses: !!config.elementClasses,
+    //   hasComponentSizes: !!config.componentSizes,
+    //   elementStylesKeys: Object.keys(config.elementStyles || {})
+    // }); // Disabled to prevent console spam
     
     // Apply elementStyles (colors and inline styles)
     if (config.elementStyles) {
       // Replace entirely to ensure loaded styles are applied
       setElementStyles(config.elementStyles);
-      console.log('✅ Applied elementStyles from draft:', config.elementStyles);
+      // console.log('✅ Applied elementStyles from draft:', config.elementStyles); // Disabled to prevent console spam
       
       // Debug: Check specific elements for colors
       Object.entries(config.elementStyles).forEach(([key, styles]) => {
-        if (styles.color) console.log('🎨 🎯 Loaded text color for', key, ':', styles.color);
-        if (styles.backgroundColor) console.log('🎨 🏠 Loaded background color for', key, ':', styles.backgroundColor);
+        // if (styles.color) console.log('🎨 🎯 Loaded text color for', key, ':', styles.color); // Disabled to prevent console spam
+        // if (styles.backgroundColor) console.log('🎨 🏠 Loaded background color for', key, ':', styles.backgroundColor); // Disabled to prevent console spam
       });
     }
     
@@ -2384,8 +2384,8 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
-    console.log('💾 saveConfiguration called');
-    console.log('📋 Current slotContent state:', slotContent);
+    // console.log('💾 saveConfiguration called'); // Disabled to prevent console spam
+    // console.log('📋 Current slotContent state:', slotContent); // Disabled to prevent console spam
     setSaveStatus('saving');
     
     const config = {
@@ -2405,16 +2405,16 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Configuration ready for database save
     const configString = JSON.stringify(config);
-    console.log('💾 Saved configuration:', config);
-    console.log('📝 Saved slotContent specifically:', config.slotContent);
-    console.log('🎨 Saved elementClasses:', config.elementClasses);
-    console.log('🎨 🏠 Saved elementStyles:', config.elementStyles);
-    console.log('🎨 🏠 ElementStyles keys:', Object.keys(config.elementStyles || {}));
-    console.log('🎨 🏠 ElementStyles stringified:', JSON.stringify(config.elementStyles, null, 2));
-    console.log('📏 Saved componentSizes:', config.componentSizes);
-    console.log('📐 Saved microSlotSpans:', config.microSlotSpans);
-    console.log('🔧 Saved customSlots:', config.customSlots);
-    console.log('📊 Configuration size:', (configString.length / 1024).toFixed(2) + ' KB');
+    // console.log('💾 Saved configuration:', config); // Disabled to prevent console spam
+    // console.log('📝 Saved slotContent specifically:', config.slotContent); // Disabled to prevent console spam
+    // console.log('🎨 Saved elementClasses:', config.elementClasses); // Disabled to prevent console spam
+    // console.log('🎨 🏠 Saved elementStyles:', config.elementStyles); // Disabled to prevent console spam
+    // console.log('🎨 🏠 ElementStyles keys:', Object.keys(config.elementStyles || {})); // Disabled to prevent console spam
+    // console.log('🎨 🏠 ElementStyles stringified:', JSON.stringify(config.elementStyles, null, 2)); // Disabled to prevent console spam
+    // console.log('📏 Saved componentSizes:', config.componentSizes); // Disabled to prevent console spam
+    // console.log('📐 Saved microSlotSpans:', config.microSlotSpans); // Disabled to prevent console spam
+    // console.log('🔧 Saved customSlots:', config.customSlots); // Disabled to prevent console spam
+    // console.log('📊 Configuration size:', (configString.length / 1024).toFixed(2) + ' KB'); // Disabled to prevent console spam
     
     // Save to database using the versioning system through useDraftConfiguration hook
     try {
@@ -2488,7 +2488,7 @@ export default function CartSlotsEditorWithMicroSlots({
   saveConfigRef.current = saveConfiguration;
   
   const immediateSave = useCallback(() => {
-    console.log('💾 Immediate save triggered');
+    // console.log('💾 Immediate save triggered'); // Disabled to prevent console spam
     saveConfigRef.current();
   }, []);
   
@@ -2570,7 +2570,7 @@ export default function CartSlotsEditorWithMicroSlots({
   // Auto-save when customSlots changes after adding a slot
   useEffect(() => {
     if (justAddedCustomSlot) {
-      console.log('🔧 CustomSlot was just added, triggering save with current customSlots:', customSlots);
+      // console.log('🔧 CustomSlot was just added, triggering save with current customSlots:', customSlots); // Disabled to prevent console spam
       setJustAddedCustomSlot(false);
       immediateSave();
     }
@@ -2581,18 +2581,18 @@ export default function CartSlotsEditorWithMicroSlots({
     // Skip initial load and only save after user interactions
     const isInitialLoad = Object.keys(microSlotOrders).length === 0;
     if (isInitialLoad) {
-      console.log('⏭️ Skipping microSlotOrders save - initial load');
+      // console.log('⏭️ Skipping microSlotOrders save - initial load'); // Disabled to prevent console spam
       return;
     }
     
-    console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders);
+    // console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders); // Disabled to prevent console spam
     immediateSave();
   }, [microSlotOrders]); // Removed immediateSave from dependencies
 
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
     if (!selectedStore?.id) {
-      console.log('⏳ Store context not yet loaded, waiting...');
+      // console.log('⏳ Store context not yet loaded, waiting...'); // Disabled to prevent console spam
       return;
     }
     
