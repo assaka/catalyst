@@ -1350,10 +1350,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       )}
       
       {/* Text formatting controls - full controls for text slots */}
-      {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && !id.includes('Button') && isHovered && !isDragging && !isResizing && onClassChange && (
+      {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('Button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 translate-y-full flex flex-wrap gap-2 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200"
-          style={{ minWidth: 'calc(100vw - 2rem)', maxWidth: 'calc(100vw - 2rem)', width: 'max-content' }}
+          className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-wrap gap-2 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 w-full"
+          style={{ minWidth: '100%' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();

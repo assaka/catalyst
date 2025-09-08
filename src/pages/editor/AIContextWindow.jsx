@@ -233,7 +233,7 @@ const AIContextWindowPage = () => {
       
       if (publishResponse.success) {
         setConfigPublishSuccess({
-          versionName: \`v\${publishResponse.data.version_number}\`,
+          versionName: `v${publishResponse.data.version_number}`,
           publishedAt: publishResponse.data.published_at
         });
         
@@ -244,7 +244,7 @@ const AIContextWindowPage = () => {
       }
     } catch (error) {
       console.error('Error publishing slot configuration:', error);
-      alert(\`Failed to publish configuration: \${error.message}\`);
+      alert(`Failed to publish configuration: ${error.message}`);
     } finally {
       setIsPublishingConfig(false);
     }
