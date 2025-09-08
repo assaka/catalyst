@@ -2504,11 +2504,14 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, elementStyles, componentSizes, customSlots, onSave]);
   
-  // Immediate save function (debounce removed)
+  // Immediate save function (debounce removed) - using ref to prevent recreations
+  const saveConfigRef = useRef();
+  saveConfigRef.current = saveConfiguration;
+  
   const immediateSave = useCallback(() => {
     console.log('💾 Immediate save triggered');
-    saveConfiguration();
-  }, [saveConfiguration]);
+    saveConfigRef.current();
+  }, []);
   
   // Listen for force save event from GenericSlotEditor
   useEffect(() => {
@@ -2579,11 +2582,11 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [viewMode]);
   
-  // Debug: Track customSlots changes
-  useEffect(() => {
-    console.log('🔍 customSlots state changed:', customSlots);
-    console.log('🔍 customSlots keys:', Object.keys(customSlots));
-  }, [customSlots]);
+  // Debug: Track customSlots changes (disabled to prevent console spam)
+  // useEffect(() => {
+  //   console.log('🔍 customSlots state changed:', customSlots);
+  //   console.log('🔍 customSlots keys:', Object.keys(customSlots));
+  // }, [customSlots]);
 
   // Auto-save when customSlots changes after adding a slot
   useEffect(() => {
@@ -2592,7 +2595,7 @@ export default function CartSlotsEditorWithMicroSlots({
       setJustAddedCustomSlot(false);
       immediateSave();
     }
-  }, [customSlots, justAddedCustomSlot, immediateSave]);
+  }, [customSlots, justAddedCustomSlot]); // Removed immediateSave from dependencies
 
   // Auto-save when microSlotOrders changes (for drag-and-drop persistence)
   useEffect(() => {
@@ -2605,7 +2608,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders);
     immediateSave();
-  }, [microSlotOrders, immediateSave]);
+  }, [microSlotOrders]); // Removed immediateSave from dependencies
 
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
@@ -2878,7 +2881,7 @@ export default function CartSlotsEditorWithMicroSlots({
       return items;
     });
     setActiveDragSlot(null);
-  }, [immediateSave]);
+  }, []); // Remove immediateSave dependency to prevent infinite loops
 
   const handleMajorDragStart = useCallback((event) => {
     setActiveDragSlot(event.active.id);
@@ -2916,7 +2919,7 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Auto-save after resize
     immediateSave();
-  }, [immediateSave]);
+  }, []); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle text content change
   const handleTextChange = useCallback((slotId, newText) => {
@@ -2926,7 +2929,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }));
     // Auto-save after text change
     immediateSave();
-  }, [immediateSave]);
+  }, []); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle class change for elements (now also supports inline styles)
   const handleClassChange = useCallback((slotId, newClass, newStyles = null) => {
@@ -2989,7 +2992,7 @@ export default function CartSlotsEditorWithMicroSlots({
         }));
       }, 100); // Small delay to ensure save completes first
     }
-  }, [immediateSave, selectedStore?.id]);
+  }, [selectedStore?.id]); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle component size change
   const handleSizeChange = useCallback((slotId, newSize) => {
@@ -2999,7 +3002,7 @@ export default function CartSlotsEditorWithMicroSlots({
     }));
     // Auto-save after size change
     immediateSave();
-  }, [immediateSave]);
+  }, []); // Remove immediateSave dependency to prevent infinite loops
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((slotId) => {
@@ -3179,7 +3182,7 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('Slot deletion complete, triggering auto-save');
     // Auto-save after delete
     immediateSave();
-  }, [immediateSave]);
+  }, []); // Remove immediateSave dependency to prevent infinite loops
   
   // Handle adding a new custom slot
   const handleAddCustomSlot = useCallback(() => {
