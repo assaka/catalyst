@@ -1219,13 +1219,16 @@ export default function Cart() {
                                 // Render standard header micro-slots
                                 if (slotId === 'header.title') {
                                     const headerTitleStyling = getMicroSlotStyling('header.title');
+                                    const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
                                     const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
                                     const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                                     return (
                                         <div key={slotId} className={positioning.gridClasses}>
-                                            <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
-                                                My Cart
-                                            </h1>
+                                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                                <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                    My Cart
+                                                </h1>
+                                            </div>
                                         </div>
                                     );
                                 }
@@ -1266,26 +1269,32 @@ export default function Cart() {
                                         
                                         if (slotId === 'emptyCart.title') {
                                             const titleStyling = getMicroSlotStyling('emptyCart.title');
+                                            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
                                             const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
                                             const finalClasses = titleStyling.elementClasses || defaultClasses;
                                             return (
                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                    <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
-                                                        Your cart is empty
-                                                    </h2>
+                                                    <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                                        <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                            Your cart is empty
+                                                        </h2>
+                                                    </div>
                                                 </div>
                                             );
                                         }
                                         
                                         if (slotId === 'emptyCart.text') {
                                             const textStyling = getMicroSlotStyling('emptyCart.text');
+                                            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
                                             const defaultClasses = 'text-gray-600 mb-6';
                                             const finalClasses = textStyling.elementClasses || defaultClasses;
                                             return (
                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                    <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
-                                                        Looks like you haven't added anything to your cart yet.
-                                                    </p>
+                                                    <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                                        <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                                            Looks like you haven't added anything to your cart yet.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             );
                                         }

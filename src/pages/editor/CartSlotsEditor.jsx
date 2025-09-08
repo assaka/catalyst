@@ -1372,33 +1372,33 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           {/* Text alignment controls */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             {(() => {
-              // Get current text alignment from parent container classes
-              const parentId = id.split('.')[0];
-              const currentParentClasses = elementClasses[parentId] || '';
-              const hasTextLeft = currentParentClasses.includes('text-left');
-              const hasTextCenter = currentParentClasses.includes('text-center');
-              const hasTextRight = currentParentClasses.includes('text-right');
+              // Create a wrapper ID for the immediate parent (one level up)
+              const wrapperId = `${id}_wrapper`;
+              const currentWrapperClasses = elementClasses[wrapperId] || '';
+              const hasTextLeft = currentWrapperClasses.includes('text-left');
+              const hasTextCenter = currentWrapperClasses.includes('text-center');
+              const hasTextRight = currentWrapperClasses.includes('text-right');
               
               console.log('🎯 ALIGNMENT: Visual feedback check for', id);
-              console.log('🎯 ALIGNMENT: Parent ID:', parentId);
-              console.log('🎯 ALIGNMENT: Parent classes:', currentParentClasses);
+              console.log('🎯 ALIGNMENT: Wrapper ID:', wrapperId);
+              console.log('🎯 ALIGNMENT: Wrapper classes:', currentWrapperClasses);
               console.log('🎯 ALIGNMENT: Has left:', hasTextLeft, 'center:', hasTextCenter, 'right:', hasTextRight);
               
               return (
                 <>
                   <button
                     onClick={() => {
-                      // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
-                      const parentId = id.split('.')[0];
-                      console.log('🎯 ALIGNMENT: Aligning left for element:', id, 'targeting parent:', parentId);
-                      const currentParentClasses = elementClasses[parentId] || '';
-                      console.log('🎯 ALIGNMENT: Current parent classes:', currentParentClasses);
-                      const newParentClasses = currentParentClasses
+                      // Target the immediate wrapper (one level up)
+                      const wrapperId = `${id}_wrapper`;
+                      console.log('🎯 ALIGNMENT: Aligning left for element:', id, 'targeting wrapper:', wrapperId);
+                      const currentWrapperClasses = elementClasses[wrapperId] || '';
+                      console.log('🎯 ALIGNMENT: Current wrapper classes:', currentWrapperClasses);
+                      const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-left';
-                      console.log('🎯 ALIGNMENT: New parent classes:', newParentClasses);
+                      console.log('🎯 ALIGNMENT: New wrapper classes:', newWrapperClasses);
                       console.log('🎯 ALIGNMENT: onClassChange function:', typeof onClassChange);
-                      onClassChange(parentId, newParentClasses.trim());
+                      onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextLeft ? 'bg-blue-100' : ''}`}
                     title="Align text left"
@@ -1407,15 +1407,15 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
-                      // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
-                      const parentId = id.split('.')[0];
-                      console.log('🎯 ALIGNMENT: Aligning center for element:', id, 'targeting parent:', parentId);
-                      const currentParentClasses = elementClasses[parentId] || '';
-                      const newParentClasses = currentParentClasses
+                      // Target the immediate wrapper (one level up)
+                      const wrapperId = `${id}_wrapper`;
+                      console.log('🎯 ALIGNMENT: Aligning center for element:', id, 'targeting wrapper:', wrapperId);
+                      const currentWrapperClasses = elementClasses[wrapperId] || '';
+                      const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-center';
-                      console.log('🎯 ALIGNMENT: New parent classes:', newParentClasses);
-                      onClassChange(parentId, newParentClasses.trim());
+                      console.log('🎯 ALIGNMENT: New wrapper classes:', newWrapperClasses);
+                      onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextCenter ? 'bg-blue-100' : ''}`}
                     title="Align text center"
@@ -1424,15 +1424,15 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
-                      // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
-                      const parentId = id.split('.')[0];
-                      console.log('🎯 ALIGNMENT: Aligning right for element:', id, 'targeting parent:', parentId);
-                      const currentParentClasses = elementClasses[parentId] || '';
-                      const newParentClasses = currentParentClasses
+                      // Target the immediate wrapper (one level up)
+                      const wrapperId = `${id}_wrapper`;
+                      console.log('🎯 ALIGNMENT: Aligning right for element:', id, 'targeting wrapper:', wrapperId);
+                      const currentWrapperClasses = elementClasses[wrapperId] || '';
+                      const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-right';
-                      console.log('🎯 ALIGNMENT: New parent classes:', newParentClasses);
-                      onClassChange(parentId, newParentClasses.trim());
+                      console.log('🎯 ALIGNMENT: New wrapper classes:', newWrapperClasses);
+                      onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextRight ? 'bg-blue-100' : ''}`}
                     title="Align text right"
@@ -2179,11 +2179,15 @@ export default function CartSlotsEditorWithMicroSlots({
     
     // Apply elementStyles (colors and inline styles)
     if (config.elementStyles) {
-      setElementStyles(prev => ({
-        ...prev,
-        ...config.elementStyles
-      }));
+      // Replace entirely to ensure loaded styles are applied
+      setElementStyles(config.elementStyles);
       console.log('✅ Applied elementStyles from draft:', config.elementStyles);
+      
+      // Debug: Check specific elements for colors
+      Object.entries(config.elementStyles).forEach(([key, styles]) => {
+        if (styles.color) console.log('🎨 🎯 Loaded text color for', key, ':', styles.color);
+        if (styles.backgroundColor) console.log('🎨 🏠 Loaded background color for', key, ':', styles.backgroundColor);
+      });
     }
     
     // Apply elementClasses (Tailwind classes)
