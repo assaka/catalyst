@@ -1351,8 +1351,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('Button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-wrap gap-2 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 w-full"
-          style={{ minWidth: '100%' }}
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex flex-wrap gap-1 sm:gap-2 transition-opacity z-50 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 sm:p-3 border border-gray-200 max-w-7xl w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] mx-auto"
+          style={{ minWidth: '320px' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -1670,53 +1670,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         </div>
       )}
       
-      {/* Universal formatting controls - color and styles for any slot */}
-      {(() => {
-        if (id === 'emptyCart.button') {
-          console.log('🔍 emptyCart.button hover check:', { isHovered, isDragging, isResizing, onClassChange: !!onClassChange });
-        }
-        return isHovered && !isDragging && !isResizing && onClassChange;
-      })() && (() => {
-        if (id === 'emptyCart.button') {
-          console.log('🎨 Rendering color controls for emptyCart.button!');
-        }
-        return true;
-      })() && (
-        <div 
-          className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto mx-auto"
-          style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}
-          onMouseEnter={(e) => {
-            if (mode === 'preview') return;
-            e.stopPropagation();
-            if (hoverTimeoutRef.current) {
-              clearTimeout(hoverTimeoutRef.current);
-            }
-            setIsHovered(true);
-          }}
-          onMouseLeave={(e) => {
-            if (mode === 'preview') return;
-            e.stopPropagation();
-            
-            // Don't hide if user is interacting with color picker
-            const relatedTarget = e.relatedTarget;
-            if (relatedTarget && (
-              relatedTarget.type === 'color' || 
-              (relatedTarget.closest && relatedTarget.closest('input[type="color"]')) ||
-              relatedTarget.className?.includes('color-picker') ||
-              relatedTarget.tagName === 'INPUT'
-            )) {
-              return;
-            }
-            
-            hoverTimeoutRef.current = setTimeout(() => {
-              setIsHovered(false);
-            }, 300);
-          }}
-        >
 
           {/* Text color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
-            <Palette className="w-3 h-3 text-gray-600 mr-1" />
+          <div className="relative">
+            {/* Hidden color input that will be triggered programmatically */}
             <input
               type="color"
               value={elementStyles[id]?.color || '#000000'}
@@ -1744,24 +1701,82 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
               }}
               onInput={(e) => {
-                // Keep hover state active during changes
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
+                const newColor = e.target.value;
+                console.log('🎨 🎯 DIRECT color changed (onInput):', newColor);
+                
+                // Apply directly using the working handleClassChange logic
+                if (typeof handleClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
+                  handleClassChange(id, newClasses, { color: newColor });
+                } else if (typeof onClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                    .trim();
+                  
+                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
+                  onClassChange(id, newClasses, { color: newColor });
                 }
               }}
-              onFocus={(e) => {
-                console.log('🎨 Text color input focused for:', id);
-                // Keep hover state active when color picker is focused
-                setIsHovered(true);
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
+              ref={(input) => {
+                // Store reference for programmatic triggering
+                if (input && !input.hasClickHandler) {
+                  input.hasClickHandler = true;
+                  // Store the input reference on the parent for the button to access
+                  const parent = input.parentElement;
+                  if (parent) parent._colorInput = input;
+                  
+                  // Add direct event listener to catch native events
+                  input.addEventListener('change', (e) => {
+                    const newColor = e.target.value;
+                    console.log('🎨 🎯 NATIVE change event:', newColor);
+                    
+                    if (typeof onClassChange === 'function') {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
+                        .trim();
+                      
+                      console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } });
+                      onClassChange(id, newClasses, { color: newColor });
+                    }
+                  });
                 }
               }}
-              className="w-6 h-6 cursor-pointer border-0 rounded"
-              style={{ minWidth: '24px', minHeight: '24px' }}
-              title="Text color"
+              className="absolute opacity-0 pointer-events-none"
+              style={{ width: 0, height: 0 }}
             />
+            
+            {/* Visible button that triggers the hidden input */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎨 🎯 Triggering hidden color input for:', id);
+                
+                // Find and trigger the hidden color input
+                const hiddenInput = e.currentTarget.parentElement._colorInput;
+                if (hiddenInput) {
+                  hiddenInput.click();
+                  console.log('🎨 🎯 Hidden input clicked');
+                } else {
+                  console.error('🎨 ❌ Hidden input not found');
+                }
+              }}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
+              title="Choose text color"
+            >
+              <Palette className="w-3 h-3 text-gray-600" />
+              <div 
+                className="w-4 h-4 rounded border border-gray-400"
+                style={{ backgroundColor: elementStyles[id]?.color || '#000000' }}
+              />
+            </button>
           </div>
 
           {/* Background color control */}
