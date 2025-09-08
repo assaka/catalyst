@@ -804,14 +804,6 @@ export default ExampleComponent;`;
           )}
           
           <button
-            onClick={testConnection}
-            disabled={connectionStatus?.status === 'testing'}
-            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {connectionStatus?.status === 'testing' ? 'Testing...' : 'Test Connection'}
-          </button>
-          
-          <button
             onClick={publishSlotConfiguration}
             disabled={isPublishingConfig}
             className={cn(
@@ -844,17 +836,6 @@ export default ExampleComponent;`;
           </button>
           
         </div>
-        
-        {selectedFile && (
-          <div className="text-right">
-            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {selectedFile.name}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Line {cursorPosition.line + 1}, Column {cursorPosition.column + 1}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Main Content */}
