@@ -1089,7 +1089,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 }
 
 // Micro-slot wrapper component  
-function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, microSlotSpans = {}, mode = 'edit' }) {
+function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange, onClassChange, elementClasses = {}, elementStyles = {}, componentSizes = {}, onSizeChange, microSlotSpans = {}, mode = 'edit', onColorPicker }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -1716,13 +1716,17 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               // Get button position for popover placement
               const rect = e.currentTarget.getBoundingClientRect();
               
-              setColorPicker({
-                show: true,
-                slotId: id,
-                currentColor: elementStyles[id]?.color || '#000000',
-                type: 'text',
-                position: { x: rect.x + rect.width, y: rect.y }
-              });
+              if (onColorPicker) {
+                onColorPicker({
+                  show: true,
+                  slotId: id,
+                  currentColor: elementStyles[id]?.color || '#000000',
+                  type: 'text',
+                  position: { x: rect.x + rect.width, y: rect.y }
+                });
+              } else {
+                console.error('🎨 ❌ onColorPicker prop not provided!');
+              }
             }}
             className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
             title="Choose text color"
@@ -2452,6 +2456,12 @@ export default function CartSlotsEditorWithMicroSlots({
     type: 'text',
     position: { x: 0, y: 0 }
   });
+
+  // Color picker callback for MicroSlot components
+  const handleColorPicker = useCallback((pickerState) => {
+    console.log('🎨 ✨ handleColorPicker called with:', pickerState);
+    setColorPicker(pickerState);
+  }, []);
   
   // State for Tailwind classes for each element
   const [elementClasses, setElementClasses] = useState({
@@ -3392,6 +3402,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
+                onColorPicker={handleColorPicker}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="relative group">
@@ -3479,6 +3490,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
+                onColorPicker={handleColorPicker}
               >
                 <div className="w-full">
                   <SimpleInlineEdit
@@ -3508,6 +3520,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
+                onColorPicker={handleColorPicker}
               >
                 <div className="w-full">
                   <SimpleInlineEdit
@@ -4616,6 +4629,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
+                onColorPicker={handleColorPicker}
               >
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
               </MicroSlot>
@@ -4635,6 +4649,7 @@ export default function CartSlotsEditorWithMicroSlots({
                 elementClasses={elementClasses}
                 elementStyles={elementStyles}
                 microSlotSpans={microSlotSpans}
+                onColorPicker={handleColorPicker}
               >
                 <div className="relative">
                   <SimpleInlineEdit
