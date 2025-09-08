@@ -48,8 +48,9 @@ import { FontFamily } from '@tiptap/extension-font-family';
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
-import PublishPanel from '@/components/editor/slot/PublishPanel';
+import VersionHistoryModal from '@/components/editor/slot/VersionHistoryModal';
 import useDraftConfiguration from '@/hooks/useDraftConfiguration';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Get cart-specific micro-slot definitions
 const MICRO_SLOT_DEFINITIONS = getMicroSlotDefinitions('cart') || {
@@ -4862,7 +4863,24 @@ export default function CartSlotsEditorWithMicroSlots({
         {(mode === 'edit' || mode === 'preview') && (
           <div className="bg-white border-b shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-              <div className="border-b p-3 flex justify-end gap-2">
+              <div className="border-b p-3 flex justify-between items-center">
+                {/* Left side - Global publish status */}
+                <div className="flex items-center space-x-4">
+                  {publishSuccess && (
+                    <div className="p-2 rounded-md text-xs bg-green-100 text-green-800">
+                      <div className="font-medium flex items-center">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Changes Published Successfully
+                      </div>
+                      <div className="text-xs mt-1">
+                        Version {publishSuccess.versionName} at {new Date(publishSuccess.publishedAt).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side - View mode and action buttons */}
+                <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode('empty')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
@@ -4885,8 +4903,53 @@ export default function CartSlotsEditorWithMicroSlots({
                 <Package className="w-4 h-4 inline mr-1.5" />
                 With Products
               </button>
-              {mode === 'edit' && (
+              {/* Global publish actions - positioned like in AIContextWindow */}
+              {mode === 'edit' && currentStoreId && (
                 <>
+                  <div className="border-l mx-2" />
+                  
+                  {/* Status indicators */}
+                  {hasUnsavedChanges && (
+                    <Badge variant="outline" className="text-yellow-600 border-yellow-300 mr-2">
+                      Draft Changes
+                    </Badge>
+                  )}
+                  
+                  {isSaving && (
+                    <Badge variant="outline" className="text-blue-600 border-blue-300 mr-2">
+                      Auto-saving...
+                    </Badge>
+                  )}
+                  
+                  {/* Global Publish Changes button */}
+                  <button
+                    onClick={handlePublishChanges}
+                    disabled={!hasUnsavedChanges || isPublishing}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+                      hasUnsavedChanges && !isPublishing
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                    title={`Publish all changes (${hasUnsavedChanges ? 'draft ready' : 'no changes'}) to make them live`}
+                  >
+                    {isPublishing ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Upload className="w-3 h-3" />
+                    )}
+                    Publish Changes
+                  </button>
+                  
+                  {/* Global Version History button */}
+                  <button
+                    onClick={() => setShowVersionHistory(true)}
+                    className="px-3 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:text-gray-900 hover:bg-gray-100 flex items-center gap-1.5 ml-2"
+                    title="View version history and revert to previous versions"
+                  >
+                    <History className="w-3 h-3" />
+                    Version History
+                  </button>
+                  
                   <div className="border-l mx-2" />
                   <button
                     onClick={() => setShowResetModal(true)}
@@ -4895,19 +4958,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     <RefreshCw className="w-4 h-4" />
                     Reset Layout
                   </button>
-                  
-                  {/* Status indicator for draft/published state */}
-                  {hasUnsavedChanges && (
-                    <Badge variant="outline" className="text-yellow-600 border-yellow-300">
-                      Draft Changes
-                    </Badge>
-                  )}
-                  
-                  {isSaving && (
-                    <Badge variant="outline" className="text-blue-600 border-blue-300">
-                      Auto-saving...
-                    </Badge>
-                  )}
                 </>
               )}
               </div>
@@ -4918,86 +4968,24 @@ export default function CartSlotsEditorWithMicroSlots({
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           {mode === 'edit' ? (
-            <div className="grid grid-cols-12 gap-6">
-              {/* Main editor content */}
-              <div className="col-span-8">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleMajorDragStart}
-                  onDragEnd={handleMajorDragEnd}
-                >
-                  <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
-                    {renderSlotContent()}
-                  </SortableContext>
-                  
-                  <DragOverlay>
-                    {activeDragSlot ? (
-                      <div className="bg-white border rounded-lg shadow-lg p-4 opacity-90">
-                        {activeDragSlot}
-                      </div>
-                    ) : null}
-                  </DragOverlay>
-                </DndContext>
-              </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleMajorDragStart}
+              onDragEnd={handleMajorDragEnd}
+            >
+              <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
+                {renderSlotContent()}
+              </SortableContext>
               
-              {/* Sidebar with PublishPanel */}
-              <div className="col-span-4 space-y-6">
-                {isDraftLoading ? (
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center text-gray-600">
-                        Loading draft configuration...
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : currentStoreId ? (
-                  <PublishPanel
-                    storeId={currentStoreId}
-                    pageType="cart"
-                    currentDraftId={getDraftId()}
-                    onConfigurationChange={(newConfig) => {
-                      console.log('🔄 Configuration published:', newConfig);
-                      // Trigger any necessary updates
-                      reloadDraft();
-                    }}
-                  />
-                ) : (
-                  <Card className="border-yellow-200">
-                    <CardContent className="p-4">
-                      <div className="text-yellow-600 text-sm">
-                        <strong>No store selected:</strong> Please select a store to enable publish functionality.
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {draftError && (
-                  <Card className="border-red-200">
-                    <CardContent className="p-4">
-                      <div className="text-red-600 text-sm">
-                        <strong>Error:</strong> {draftError}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {/* Instructions */}
-                <Card className="bg-blue-50 border-blue-200">
-                  <CardContent className="p-4">
-                    <div className="text-blue-800 text-sm">
-                      <h4 className="font-medium mb-2">💡 How it works:</h4>
-                      <ul className="space-y-1 text-xs">
-                        <li>• Changes are auto-saved as drafts</li>
-                        <li>• Click "Publish" to make changes live</li>
-                        <li>• View history to see all versions</li>
-                        <li>• Revert to any previous version</li>
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+              <DragOverlay>
+                {activeDragSlot ? (
+                  <div className="bg-white border rounded-lg shadow-lg p-4 opacity-90">
+                    {activeDragSlot}
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           ) : (
             // Preview mode - full width, no drag functionality
             <div className="w-full">
@@ -5007,6 +4995,21 @@ export default function CartSlotsEditorWithMicroSlots({
           </div>
         </div>
       </div>
+
+      {/* Version History Modal */}
+      {showVersionHistory && (
+        <VersionHistoryModal
+          storeId={currentStoreId}
+          pageType="cart"
+          isOpen={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+          onRevert={(newVersion) => {
+            console.log('🔄 Reverted to version:', newVersion);
+            reloadDraft();
+            setShowVersionHistory(false);
+          }}
+        />
+      )}
 
       {/* Monaco Editor Modal for micro-slots and parent slots */}
       <Dialog open={!!editingComponent} onOpenChange={(open) => !open && setEditingComponent(null)}>
