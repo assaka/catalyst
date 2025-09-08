@@ -38,7 +38,40 @@ class SlotConfigurationService {
     }
   }
 
-  // Publish a draft configuration
+  // Get acceptance configuration for preview
+  async getAcceptanceConfiguration(storeId, pageType = 'cart') {
+    try {
+      const response = await apiClient.get(`${API_BASE}/acceptance/${storeId}/${pageType}`);
+      return response;
+    } catch (error) {
+      console.error('Error getting acceptance configuration:', error);
+      throw error;
+    }
+  }
+
+  // Publish a draft to acceptance (preview environment)
+  async publishToAcceptance(configId) {
+    try {
+      const response = await apiClient.post(`${API_BASE}/publish-to-acceptance/${configId}`);
+      return response;
+    } catch (error) {
+      console.error('Error publishing to acceptance:', error);
+      throw error;
+    }
+  }
+
+  // Publish acceptance to production
+  async publishToProduction(configId) {
+    try {
+      const response = await apiClient.post(`${API_BASE}/publish-to-production/${configId}`);
+      return response;
+    } catch (error) {
+      console.error('Error publishing to production:', error);
+      throw error;
+    }
+  }
+
+  // Publish a draft configuration directly to production (legacy method)
   async publishDraft(configId) {
     try {
       const response = await apiClient.post(`${API_BASE}/publish/${configId}`);
@@ -78,6 +111,31 @@ class SlotConfigurationService {
       return response;
     } catch (error) {
       console.error('Error deleting draft:', error);
+      throw error;
+    }
+  }
+
+  // Set current editing configuration
+  async setCurrentEdit(configId, storeId, pageType = 'cart') {
+    try {
+      const response = await apiClient.post(`${API_BASE}/set-current-edit/${configId}`, {
+        storeId,
+        pageType
+      });
+      return response;
+    } catch (error) {
+      console.error('Error setting current edit:', error);
+      throw error;
+    }
+  }
+
+  // Get current editing configuration
+  async getCurrentEdit(storeId, pageType = 'cart') {
+    try {
+      const response = await apiClient.get(`${API_BASE}/current-edit/${storeId}/${pageType}`);
+      return response;
+    } catch (error) {
+      console.error('Error getting current edit:', error);
       throw error;
     }
   }

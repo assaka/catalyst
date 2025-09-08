@@ -45,10 +45,10 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
     comment: 'Whether this configuration is currently active'
   },
   status: {
-    type: DataTypes.ENUM('draft', 'published', 'reverted'),
+    type: DataTypes.ENUM('draft', 'acceptance', 'published', 'reverted'),
     allowNull: false,
-    defaultValue: 'published',
-    comment: 'Status of the configuration version'
+    defaultValue: 'draft',
+    comment: 'Status of the configuration version: draft -> acceptance -> published'
   },
   version_number: {
     type: DataTypes.INTEGER,
@@ -75,6 +75,29 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
       key: 'id'
     },
     comment: 'User who published this version'
+  },
+  acceptance_published_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Timestamp when this version was published to acceptance'
+  },
+  acceptance_published_by: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    comment: 'User who published this version to acceptance'
+  },
+  current_edit_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'slot_configurations',
+      key: 'id'
+    },
+    comment: 'ID of the configuration currently being edited (for revert tracking)'
   },
   parent_version_id: {
     type: DataTypes.UUID,
@@ -111,6 +134,10 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
     {
       fields: ['parent_version_id'],
       name: 'idx_parent_version'
+    },
+    {
+      fields: ['current_edit_id'],
+      name: 'idx_current_edit'
     },
     {
       fields: ['store_id']
@@ -171,6 +198,18 @@ SlotConfiguration.findLatestPublished = async function(storeId, pageType = 'cart
     where: {
       store_id: storeId,
       status: 'published',
+      page_type: pageType
+    },
+    order: [['version_number', 'DESC']]
+  });
+};
+
+// Find the latest acceptance version for preview
+SlotConfiguration.findLatestAcceptance = async function(storeId, pageType = 'cart') {
+  return this.findOne({
+    where: {
+      store_id: storeId,
+      status: 'acceptance',
       page_type: pageType
     },
     order: [['version_number', 'DESC']]
@@ -238,7 +277,39 @@ SlotConfiguration.createDraft = async function(userId, storeId, pageType = 'cart
   return this.upsertDraft(userId, storeId, pageType);
 };
 
-// Publish a draft
+// Publish a draft to acceptance (preview environment)
+SlotConfiguration.publishToAcceptance = async function(draftId, publishedByUserId) {
+  const draft = await this.findByPk(draftId);
+  if (!draft || draft.status !== 'draft') {
+    throw new Error('Draft not found or not in draft status');
+  }
+  
+  // Update the draft to acceptance
+  draft.status = 'acceptance';
+  draft.acceptance_published_at = new Date();
+  draft.acceptance_published_by = publishedByUserId;
+  await draft.save();
+  
+  return draft;
+};
+
+// Publish acceptance to production
+SlotConfiguration.publishToProduction = async function(acceptanceId, publishedByUserId) {
+  const acceptance = await this.findByPk(acceptanceId);
+  if (!acceptance || acceptance.status !== 'acceptance') {
+    throw new Error('Configuration not found or not in acceptance status');
+  }
+  
+  // Update to published status
+  acceptance.status = 'published';
+  acceptance.published_at = new Date();
+  acceptance.published_by = publishedByUserId;
+  await acceptance.save();
+  
+  return acceptance;
+};
+
+// Publish a draft directly to production (legacy method for backward compatibility)
 SlotConfiguration.publishDraft = async function(draftId, publishedByUserId) {
   const draft = await this.findByPk(draftId);
   if (!draft || draft.status !== 'draft') {
@@ -267,51 +338,107 @@ SlotConfiguration.getVersionHistory = async function(storeId, pageType = 'cart',
   });
 };
 
-// Revert to a specific version
+// Revert to a specific version with proper tracking
 SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
   const targetVersion = await this.findByPk(versionId);
-  if (!targetVersion || targetVersion.status !== 'published') {
-    throw new Error('Version not found or not published');
+  if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
+    throw new Error('Version not found or not in a revertible status');
   }
   
-  // Mark all versions after this one as reverted
-  await this.update(
-    { status: 'reverted' },
-    {
+  const transaction = await this.sequelize.transaction();
+  
+  try {
+    // Mark all versions after this one as reverted
+    await this.update(
+      { 
+        status: 'reverted',
+        current_edit_id: null // Clear current edit tracking for reverted versions
+      },
+      {
+        where: {
+          store_id: storeId,
+          page_type: targetVersion.page_type,
+          status: {
+            [require('sequelize').Op.in]: ['published', 'acceptance']
+          },
+          version_number: {
+            [require('sequelize').Op.gt]: targetVersion.version_number
+          }
+        },
+        transaction
+      }
+    );
+    
+    // Get the next version number
+    const maxVersion = await this.max('version_number', {
       where: {
         store_id: storeId,
-        page_type: targetVersion.page_type,
-        status: 'published',
-        version_number: {
-          [require('sequelize').Op.gt]: targetVersion.version_number
-        }
+        page_type: targetVersion.page_type
+      },
+      transaction
+    });
+    
+    // Create a new published version based on the target version
+    const newVersion = await this.create({
+      user_id: userId,
+      store_id: storeId,
+      configuration: targetVersion.configuration,
+      version: targetVersion.version,
+      is_active: true,
+      status: 'published',
+      version_number: (maxVersion || 0) + 1,
+      page_type: targetVersion.page_type,
+      parent_version_id: targetVersion.id,
+      current_edit_id: targetVersion.id, // Track that this is based on the reverted version
+      published_at: new Date(),
+      published_by: userId
+    }, { transaction });
+    
+    await transaction.commit();
+    return newVersion;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+
+// Set current editing configuration
+SlotConfiguration.setCurrentEdit = async function(configId, userId, storeId, pageType = 'cart') {
+  // Clear any existing current_edit_id for this user/store/page
+  await this.update(
+    { current_edit_id: null },
+    {
+      where: {
+        user_id: userId,
+        store_id: storeId,
+        page_type: pageType
       }
     }
   );
   
-  // Create a new published version based on the target version
-  const maxVersion = await this.max('version_number', {
+  // Set the new current_edit_id
+  const config = await this.findByPk(configId);
+  if (config) {
+    config.current_edit_id = configId;
+    await config.save();
+  }
+  
+  return config;
+};
+
+// Get current editing configuration
+SlotConfiguration.getCurrentEdit = async function(userId, storeId, pageType = 'cart') {
+  return this.findOne({
     where: {
+      user_id: userId,
       store_id: storeId,
-      page_type: targetVersion.page_type
-    }
+      page_type: pageType,
+      current_edit_id: {
+        [require('sequelize').Op.ne]: null
+      }
+    },
+    order: [['updated_at', 'DESC']]
   });
-  
-  const newVersion = await this.create({
-    user_id: userId,
-    store_id: storeId,
-    configuration: targetVersion.configuration,
-    version: targetVersion.version,
-    is_active: true,
-    status: 'published',
-    version_number: (maxVersion || 0) + 1,
-    page_type: targetVersion.page_type,
-    parent_version_id: targetVersion.id,
-    published_at: new Date(),
-    published_by: userId
-  });
-  
-  return newVersion;
 };
 
 SlotConfiguration.findByMigrationSource = async function(source, limit = 100) {

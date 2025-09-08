@@ -1351,8 +1351,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('.button') || id.includes('Button') || id.includes('custom_')) && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex flex-wrap gap-1 sm:gap-2 transition-opacity z-50 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 sm:p-3 border border-gray-200 max-w-7xl w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] mx-auto"
-          style={{ minWidth: '320px' }}
+          className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 translate-y-full flex flex-wrap gap-1 sm:gap-2 transition-opacity z-50 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 sm:p-3 border border-gray-200 max-w-md w-full"
+          style={{ minWidth: '300px', maxWidth: '600px' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -2275,8 +2275,7 @@ export default function CartSlotsEditorWithMicroSlots({
 
   const formatPrice = (value) => typeof value === "number" ? value : parseFloat(value) || 0;
 
-  // Debounce timer ref for auto-save
-  const saveTimerRef = useRef(null);
+  // Auto-save timer removed for immediate saves
   
   // Save configuration function
   const saveConfiguration = useCallback(async () => {

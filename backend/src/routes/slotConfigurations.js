@@ -62,6 +62,52 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
   }
 });
 
+// Get acceptance configuration for preview (used by preview environment)
+router.get('/acceptance/:storeId/:pageType?', async (req, res) => {
+  try {
+    const { storeId, pageType = 'cart' } = req.params;
+    
+    const acceptance = await SlotConfiguration.findLatestAcceptance(storeId, pageType);
+    
+    if (!acceptance) {
+      // Fall back to published configuration if no acceptance version exists
+      const published = await SlotConfiguration.findLatestPublished(storeId, pageType);
+      
+      if (!published) {
+        // Return default configuration if neither acceptance nor published exists
+        return res.json({
+          success: true,
+          data: {
+            configuration: {
+              slots: {},
+              metadata: {
+                created: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+              }
+            }
+          }
+        });
+      }
+      
+      return res.json({
+        success: true,
+        data: published
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: acceptance
+    });
+  } catch (error) {
+    console.error('Error getting acceptance configuration:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Update draft configuration
 router.put('/draft/:configId', authMiddleware, async (req, res) => {
   try {
@@ -108,7 +154,51 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
   }
 });
 
-// Publish a draft
+// Publish a draft to acceptance (preview environment)
+router.post('/publish-to-acceptance/:configId', authMiddleware, async (req, res) => {
+  try {
+    const { configId } = req.params;
+    const userId = req.user.id;
+    
+    const acceptance = await SlotConfiguration.publishToAcceptance(configId, userId);
+    
+    res.json({
+      success: true,
+      data: acceptance,
+      message: 'Configuration published to acceptance successfully'
+    });
+  } catch (error) {
+    console.error('Error publishing to acceptance:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Publish acceptance to production
+router.post('/publish-to-production/:configId', authMiddleware, async (req, res) => {
+  try {
+    const { configId } = req.params;
+    const userId = req.user.id;
+    
+    const published = await SlotConfiguration.publishToProduction(configId, userId);
+    
+    res.json({
+      success: true,
+      data: published,
+      message: 'Configuration published to production successfully'
+    });
+  } catch (error) {
+    console.error('Error publishing to production:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Publish a draft directly to production (legacy method for backward compatibility)
 router.post('/publish/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
@@ -184,6 +274,50 @@ router.post('/revert/:versionId', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error('Error reverting version:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Set current editing configuration
+router.post('/set-current-edit/:configId', authMiddleware, async (req, res) => {
+  try {
+    const { configId } = req.params;
+    const { storeId, pageType = 'cart' } = req.body;
+    const userId = req.user.id;
+    
+    const config = await SlotConfiguration.setCurrentEdit(configId, userId, storeId, pageType);
+    
+    res.json({
+      success: true,
+      data: config,
+      message: 'Current edit configuration set successfully'
+    });
+  } catch (error) {
+    console.error('Error setting current edit:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get current editing configuration
+router.get('/current-edit/:storeId/:pageType?', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType = 'cart' } = req.params;
+    const userId = req.user.id;
+    
+    const config = await SlotConfiguration.getCurrentEdit(userId, storeId, pageType);
+    
+    res.json({
+      success: true,
+      data: config
+    });
+  } catch (error) {
+    console.error('Error getting current edit:', error);
     res.status(500).json({
       success: false,
       error: error.message
