@@ -1586,55 +1586,140 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
 
 
           {/* Background color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
-            <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
+          <div className="relative">
+            {/* Hidden background color input that will be triggered programmatically */}
             <input
               type="color"
-              key={`bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
-              value={elementStyles[id]?.backgroundColor || '#000000'}
+              value={elementStyles[id]?.backgroundColor || '#ffffff'}
               onChange={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🏠 BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', newColor);
-                const currentClasses = elementClasses[id] || '';
-                console.log('🎨 🏠 Current classes:', currentClasses);
+                console.log('🎨 🏠 Background color changed:', newColor);
                 
-                // Remove bg-{word}-{number} (colors) using smart detection
-                const newClasses = currentClasses
-                  .split(' ')
-                  .filter(cls => {
-                    // Check if it's a bg class
-                    if (!cls.startsWith('bg-')) return true;
-                    
-                    const parts = cls.split('-');
-                    // bg-red-500 = ['bg', 'red', '500'] - remove (color)
-                    // bg-gradient-to-r = ['bg', 'gradient', 'to', 'r'] - keep (gradient)
-                    // bg-white = ['bg', 'white'] - remove (special color)
-                    
-                    if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-                      // It's bg-{word}-{number} - this is a color
-                      console.log('🎨 🏠 Removing bg color class:', cls);
-                      return false;
-                    }
-                    if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-                      // Special color cases without numbers
-                      console.log('🎨 🏠 Removing special bg color class:', cls);
-                      return false;
-                    }
-                    // Keep everything else (bg-gradient-to-r, bg-cover, etc.)
-                    return true;
-                  })
-                  .join(' ')
-                  .trim();
-                
-                console.log('🎨 🏠 New classes after filter:', newClasses);
-                console.log('🎨 🏠 Applying backgroundColor style:', newColor);
-                
-                // Store the background color as an inline style
-                onClassChange(id, newClasses, { backgroundColor: newColor });
+                if (typeof onClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .split(' ')
+                    .filter(cls => {
+                      // Check if it's a bg class
+                      if (!cls.startsWith('bg-')) return true;
+                      
+                      const parts = cls.split('-');
+                      // bg-red-500 = ['bg', 'red', '500'] - remove (color)
+                      // bg-gradient-to-r = ['bg', 'gradient', 'to', 'r'] - keep (gradient)
+                      // bg-white = ['bg', 'white'] - remove (special color)
+                      
+                      if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                        // It's bg-{word}-{number} - this is a color
+                        return false;
+                      }
+                      if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                        // Special color cases without numbers
+                        return false;
+                      }
+                      // Keep everything else (bg-gradient-to-r, bg-cover, etc.)
+                      return true;
+                    })
+                    .join(' ')
+                    .trim();
+                  
+                  console.log('🎨 🏠 Applying background color:', { id, newClasses, newStyles: { backgroundColor: newColor } });
+                  onClassChange(id, newClasses, { backgroundColor: newColor });
+                }
               }}
-              className="w-5 h-5 cursor-pointer border-0"
-              title="Background color"
+              onInput={(e) => {
+                const newColor = e.target.value;
+                console.log('🎨 🏠 Background color changed (onInput):', newColor);
+                
+                if (typeof onClassChange === 'function') {
+                  const currentClasses = elementClasses[id] || '';
+                  const newClasses = currentClasses
+                    .split(' ')
+                    .filter(cls => {
+                      // Check if it's a bg class
+                      if (!cls.startsWith('bg-')) return true;
+                      
+                      const parts = cls.split('-');
+                      if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                        return false;
+                      }
+                      if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .join(' ')
+                    .trim();
+                  
+                  console.log('🎨 🏠 Applying background color (onInput):', { id, newClasses, newStyles: { backgroundColor: newColor } });
+                  onClassChange(id, newClasses, { backgroundColor: newColor });
+                }
+              }}
+              ref={(input) => {
+                // Store reference for programmatic triggering
+                if (input && !input.hasBackgroundClickHandler) {
+                  input.hasBackgroundClickHandler = true;
+                  // Store the input reference on the parent for the button to access
+                  const parent = input.parentElement;
+                  if (parent) parent._backgroundColorInput = input;
+                  
+                  // Add direct event listener to catch native events
+                  input.addEventListener('change', (e) => {
+                    const newColor = e.target.value;
+                    console.log('🎨 🏠 NATIVE background color change event:', newColor);
+                    
+                    if (typeof onClassChange === 'function') {
+                      const currentClasses = elementClasses[id] || '';
+                      const newClasses = currentClasses
+                        .split(' ')
+                        .filter(cls => {
+                          if (!cls.startsWith('bg-')) return true;
+                          const parts = cls.split('-');
+                          if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+                            return false;
+                          }
+                          if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
+                            return false;
+                          }
+                          return true;
+                        })
+                        .join(' ')
+                        .trim();
+                      
+                      console.log('🎨 🏠 NATIVE Applying background color:', { id, newClasses, newStyles: { backgroundColor: newColor } });
+                      onClassChange(id, newClasses, { backgroundColor: newColor });
+                    }
+                  });
+                }
+              }}
+              className="absolute opacity-0 pointer-events-none"
+              style={{ width: 0, height: 0 }}
             />
+            
+            {/* Visible button that triggers the hidden input */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎨 🏠 Triggering hidden background color input for:', id);
+                
+                // Find and trigger the hidden color input
+                const hiddenInput = e.currentTarget.parentElement._backgroundColorInput;
+                if (hiddenInput) {
+                  hiddenInput.click();
+                  console.log('🎨 🏠 Hidden background input clicked');
+                } else {
+                  console.error('🎨 🏠 ❌ Hidden background input not found');
+                }
+              }}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
+              title="Choose background color"
+            >
+              <PaintBucket className="w-3 h-3 text-gray-600" />
+              <div 
+                className="w-4 h-4 rounded border border-gray-400"
+                style={{ backgroundColor: elementStyles[id]?.backgroundColor || '#ffffff' }}
+              />
+            </button>
           </div>
           
           {/* Margin Horizontal control */}
