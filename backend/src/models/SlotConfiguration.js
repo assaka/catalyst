@@ -177,62 +177,65 @@ SlotConfiguration.findLatestPublished = async function(storeId, pageType = 'cart
   });
 };
 
-// Create a new draft based on the latest published version
-SlotConfiguration.createDraft = async function(userId, storeId, pageType = 'cart') {
-  // First check if a draft already exists
-  const existingDraft = await this.findLatestDraft(userId, storeId, pageType);
+// Create or update a draft - proper upsert logic
+SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart', configuration = null) {
+  // Try to find existing draft
+  const existingDraft = await this.findOne({
+    where: {
+      user_id: userId,
+      store_id: storeId,
+      page_type: pageType,
+      status: 'draft'
+    }
+  });
+
   if (existingDraft) {
+    // Update existing draft
+    if (configuration) {
+      existingDraft.configuration = configuration;
+      existingDraft.updated_at = new Date();
+      await existingDraft.save();
+    }
     return existingDraft;
   }
 
-  // Find the latest published version to base the draft on
+  // No existing draft, create new one
   const latestPublished = await this.findLatestPublished(storeId, pageType);
   
-  let newConfig;
-  if (latestPublished) {
-    // Create draft based on published version
-    const maxVersion = await this.max('version_number', {
-      where: {
-        store_id: storeId,
-        page_type: pageType
-      }
-    });
-    
-    newConfig = await this.create({
-      user_id: userId,
+  // Determine version number
+  const maxVersion = await this.max('version_number', {
+    where: {
       store_id: storeId,
-      configuration: latestPublished.configuration,
-      version: latestPublished.version,
-      is_active: true,
-      status: 'draft',
-      version_number: (maxVersion || 0) + 1,
-      page_type: pageType,
-      parent_version_id: latestPublished.id
-    });
-  } else {
-    // Create a new draft with default configuration
-    const defaultConfig = {
-      slots: {},
-      metadata: {
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString()
-      }
-    };
-    
-    newConfig = await this.create({
-      user_id: userId,
-      store_id: storeId,
-      configuration: defaultConfig,
-      version: '1.0',
-      is_active: true,
-      status: 'draft',
-      version_number: 1,
-      page_type: pageType,
-      parent_version_id: null
-    });
-  }
-  
-  return newConfig;
+      page_type: pageType
+    }
+  });
+
+  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : {
+    slots: {},
+    metadata: {
+      created: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    }
+  });
+
+  const newDraft = await this.create({
+    user_id: userId,
+    store_id: storeId,
+    configuration: baseConfig,
+    version: latestPublished ? latestPublished.version : '1.0',
+    is_active: true,
+    status: 'draft',
+    version_number: (maxVersion || 0) + 1,
+    page_type: pageType,
+    parent_version_id: latestPublished ? latestPublished.id : null
+  });
+
+  return newDraft;
+};
+
+// Create draft - uses upsert logic
+SlotConfiguration.createDraft = async function(userId, storeId, pageType = 'cart') {
+  return this.upsertDraft(userId, storeId, pageType);
 };
 
 // Publish a draft

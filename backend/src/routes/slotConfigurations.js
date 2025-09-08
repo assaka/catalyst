@@ -10,12 +10,8 @@ router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
     const { storeId, pageType = 'cart' } = req.params;
     const userId = req.user.id;
     
-    // Get or create draft
-    let draft = await SlotConfiguration.findLatestDraft(userId, storeId, pageType);
-    
-    if (!draft) {
-      draft = await SlotConfiguration.createDraft(userId, storeId, pageType);
-    }
+    // Use upsert to get or create draft
+    const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType);
     
     res.json({
       success: true,
