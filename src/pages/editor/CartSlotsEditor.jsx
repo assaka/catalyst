@@ -5282,9 +5282,7 @@ export default function CartSlotsEditorWithMicroSlots({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Delete Confirmation Dialog - temporarily disabled */}
       </div>
     </div>
   );
-};
+}
