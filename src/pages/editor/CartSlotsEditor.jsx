@@ -1369,21 +1369,24 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           {/* Text alignment controls */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             {(() => {
-              // Get current text alignment from element classes
-              const currentClasses = elementClasses[id] || '';
-              const hasTextLeft = currentClasses.includes('text-left');
-              const hasTextCenter = currentClasses.includes('text-center');
-              const hasTextRight = currentClasses.includes('text-right');
+              // Get current text alignment from parent container classes
+              const parentId = id.split('.')[0];
+              const currentParentClasses = elementClasses[parentId] || '';
+              const hasTextLeft = currentParentClasses.includes('text-left');
+              const hasTextCenter = currentParentClasses.includes('text-center');
+              const hasTextRight = currentParentClasses.includes('text-right');
               
               return (
                 <>
                   <button
                     onClick={() => {
-                      const currentClasses = elementClasses[id] || '';
-                      const newClasses = currentClasses
+                      // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
+                      const parentId = id.split('.')[0];
+                      const currentParentClasses = elementClasses[parentId] || '';
+                      const newParentClasses = currentParentClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-left';
-                      onClassChange(id, newClasses.trim());
+                      onClassChange(parentId, newParentClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextLeft ? 'bg-blue-100' : ''}`}
                     title="Align text left"
@@ -1392,11 +1395,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
-                      const currentClasses = elementClasses[id] || '';
-                      const newClasses = currentClasses
+                      // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
+                      const parentId = id.split('.')[0];
+                      const currentParentClasses = elementClasses[parentId] || '';
+                      const newParentClasses = currentParentClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-center';
-                      onClassChange(id, newClasses.trim());
+                      onClassChange(parentId, newParentClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextCenter ? 'bg-blue-100' : ''}`}
                     title="Align text center"
@@ -1405,11 +1410,13 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
-                      const currentClasses = elementClasses[id] || '';
-                      const newClasses = currentClasses
+                      // Get the parent slot ID (e.g., 'cart1' from 'cart1.title')
+                      const parentId = id.split('.')[0];
+                      const currentParentClasses = elementClasses[parentId] || '';
+                      const newParentClasses = currentParentClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-right';
-                      onClassChange(id, newClasses.trim());
+                      onClassChange(parentId, newParentClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextRight ? 'bg-blue-100' : ''}`}
                     title="Align text right"
@@ -1584,8 +1591,11 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               key={`bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#000000'}
               onChange={(e) => {
-                console.log('🎨 BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', e.target.value);
+                const newColor = e.target.value;
+                console.log('🎨 🏠 BG Color change for', id, 'from', elementStyles[id]?.backgroundColor, 'to', newColor);
                 const currentClasses = elementClasses[id] || '';
+                console.log('🎨 🏠 Current classes:', currentClasses);
+                
                 // Remove bg-{word}-{number} (colors) using smart detection
                 const newClasses = currentClasses
                   .split(' ')
@@ -1600,10 +1610,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     
                     if (parts.length === 3 && /^\d+$/.test(parts[2])) {
                       // It's bg-{word}-{number} - this is a color
+                      console.log('🎨 🏠 Removing bg color class:', cls);
                       return false;
                     }
                     if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
                       // Special color cases without numbers
+                      console.log('🎨 🏠 Removing special bg color class:', cls);
                       return false;
                     }
                     // Keep everything else (bg-gradient-to-r, bg-cover, etc.)
@@ -1611,8 +1623,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   })
                   .join(' ')
                   .trim();
+                
+                console.log('🎨 🏠 New classes after filter:', newClasses);
+                console.log('🎨 🏠 Applying backgroundColor style:', newColor);
+                
                 // Store the background color as an inline style
-                onClassChange(id, newClasses, { backgroundColor: e.target.value });
+                onClassChange(id, newClasses, { backgroundColor: newColor });
               }}
               className="w-5 h-5 cursor-pointer border-0"
               title="Background color"
