@@ -4851,7 +4851,7 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Main render
   return (
-    <>
+    <div>
       <div className="bg-gray-50 cart-page min-h-screen flex flex-col" style={{ backgroundColor: '#f9fafb' }}>
         <SeoHeadManager
           title="Empty Cart Editor"
@@ -5322,6 +5322,6 @@ export default function CartSlotsEditorWithMicroSlots({
 
       {/* Color picker modal removed */}
       </div>
-    </>
+    </div>
   );
 }
