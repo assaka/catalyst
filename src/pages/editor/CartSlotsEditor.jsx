@@ -50,6 +50,7 @@ import { FontFamily } from '@tiptap/extension-font-family';
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
 import PublishPanel from '@/components/editor/slot/PublishPanel';
 import useDraftConfiguration from '@/hooks/useDraftConfiguration';
+import cartService from '@/services/cartService';
 
 // Get cart-specific micro-slot definitions
 const MICRO_SLOT_DEFINITIONS = getMicroSlotDefinitions('cart') || {
@@ -1237,6 +1238,17 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
   const handleMouseLeave = useCallback((e) => {
     // Check if we're still within the component or its children
     const relatedTarget = e.relatedTarget;
+    
+    // Don't hide if user is interacting with color picker
+    if (relatedTarget && (
+      relatedTarget.type === 'color' || 
+      (relatedTarget.closest && relatedTarget.closest('input[type="color"]')) ||
+      relatedTarget.className?.includes('color-picker') ||
+      relatedTarget.tagName === 'INPUT'
+    )) {
+      return;
+    }
+    
     try {
       if (slotRef.current && relatedTarget && typeof relatedTarget.nodeType === 'number' && slotRef.current.contains(relatedTarget)) {
         return; // Don't hide if we're still inside the component
@@ -1249,7 +1261,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
     // Add a small delay before hiding to prevent flickering
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 800);
+    }, 300); // Reduced delay for better UX
   }, []);
   
   // Clean up timeout on unmount
@@ -1340,8 +1352,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       {/* Text formatting controls - full controls for text slots */}
       {(id.includes('.title') || id.includes('.text') || id.includes('custom_')) && !id.includes('.button') && !id.includes('Button') && isHovered && !isDragging && !isResizing && onClassChange && (
         <div 
-          className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-nowrap gap-1 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border border-gray-200 overflow-x-auto mx-auto"
-          style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}
+          className="absolute -bottom-2 left-0 right-0 translate-y-full flex flex-wrap gap-2 transition-opacity z-40 pointer-events-auto justify-center bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-3 border border-gray-200 w-full"
+          style={{ minWidth: '100%' }}
           onMouseEnter={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
@@ -1690,25 +1702,27 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           onMouseLeave={(e) => {
             if (mode === 'preview') return;
             e.stopPropagation();
+            
+            // Don't hide if user is interacting with color picker
+            const relatedTarget = e.relatedTarget;
+            if (relatedTarget && (
+              relatedTarget.type === 'color' || 
+              (relatedTarget.closest && relatedTarget.closest('input[type="color"]')) ||
+              relatedTarget.className?.includes('color-picker') ||
+              relatedTarget.tagName === 'INPUT'
+            )) {
+              return;
+            }
+            
             hoverTimeoutRef.current = setTimeout(() => {
               setIsHovered(false);
-            }, 1000);
+            }, 300);
           }}
         >
-          {/* DEBUG: Test color button */}
-          <button 
-            onClick={() => {
-              console.log('🧪 TEST: Setting red color for', id);
-              onClassChange(id, '', { color: '#ff0000' });
-            }}
-            className="px-2 py-1 bg-red-500 text-white text-xs rounded mr-2"
-          >
-            TEST RED
-          </button>
 
           {/* Text color control */}
-          <div className="relative">
-            {/* Hidden color input that will be triggered programmatically */}
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
+            <Palette className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
               value={elementStyles[id]?.color || '#000000'}
@@ -1725,102 +1739,39 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   
                   console.log('🎨 🎯 DIRECT Applying:', { id, newClasses, newStyles: { color: newColor } });
                   handleClassChange(id, newClasses, { color: newColor });
-                }
-              }}
-              onInput={(e) => {
-                const newColor = e.target.value;
-                console.log('🎨 🎯 DIRECT color changed (onInput):', newColor);
-                
-                // Apply directly using the working handleClassChange logic
-                if (typeof handleClassChange === 'function') {
+                } else if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
-                  handleClassChange(id, newClasses, { color: newColor });
+                  console.log('🎨 🎯 Applying via onClassChange:', { id, newClasses, newStyles: { color: newColor } });
+                  onClassChange(id, newClasses, { color: newColor });
                 }
               }}
-              ref={(input) => {
-                // Store reference for programmatic triggering
-                if (input && !input.hasClickHandler) {
-                  input.hasClickHandler = true;
-                  // Store the input reference on the parent for the button to access
-                  const parent = input.parentElement;
-                  if (parent) parent._colorInput = input;
-                  
-                  // Add direct event listener to catch native events
-                  input.addEventListener('change', (e) => {
-                    const newColor = e.target.value;
-                    console.log('🎨 🎯 NATIVE change event:', newColor);
-                    console.log('🎨 🎯 handleClassChange type:', typeof handleClassChange);
-                    console.log('🎨 🎯 onClassChange type:', typeof onClassChange);
-                    
-                    if (typeof onClassChange === 'function') {
-                      const currentClasses = elementClasses[id] || '';
-                      const newClasses = currentClasses
-                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                        .trim();
-                      
-                      console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } });
-                      onClassChange(id, newClasses, { color: newColor });
-                    } else {
-                      console.error('🎨 ❌ onClassChange not available!');
-                    }
-                  });
-                  
-                  input.addEventListener('input', (e) => {
-                    const newColor = e.target.value;
-                    console.log('🎨 🎯 NATIVE input event:', newColor);
-                    
-                    if (typeof onClassChange === 'function') {
-                      const currentClasses = elementClasses[id] || '';
-                      const newClasses = currentClasses
-                        .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                        .trim();
-                      
-                      console.log('🎨 🎯 NATIVE Applying (input):', { id, newClasses, newStyles: { color: newColor } });
-                      onClassChange(id, newClasses, { color: newColor });
-                    } else {
-                      console.error('🎨 ❌ onClassChange not available for input event!');
-                    }
-                  });
+              onInput={(e) => {
+                // Keep hover state active during changes
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
                 }
               }}
-              className="absolute opacity-0 pointer-events-none"
-              style={{ width: 0, height: 0 }}
+              onFocus={(e) => {
+                console.log('🎨 Text color input focused for:', id);
+                // Keep hover state active when color picker is focused
+                setIsHovered(true);
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+              }}
+              className="w-6 h-6 cursor-pointer border-0 rounded"
+              style={{ minWidth: '24px', minHeight: '24px' }}
+              title="Text color"
             />
-            
-            {/* Visible button that triggers the hidden input */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎨 🎯 Triggering hidden color input for:', id);
-                
-                // Find and trigger the hidden color input
-                const hiddenInput = e.currentTarget.parentElement._colorInput;
-                if (hiddenInput) {
-                  hiddenInput.click();
-                  console.log('🎨 🎯 Hidden input clicked');
-                } else {
-                  console.error('🎨 ❌ Hidden input not found');
-                }
-              }}
-              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded border border-gray-300 hover:bg-gray-200"
-              title="Choose text color"
-            >
-              <Palette className="w-3 h-3 text-gray-600" />
-              <div 
-                className="w-4 h-4 rounded border border-gray-400"
-                style={{ backgroundColor: elementStyles[id]?.color || '#000000' }}
-              />
-            </button>
           </div>
 
           {/* Background color control */}
-          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1 flex-shrink-0">
+          <div className="flex items-center bg-gray-50 rounded border border-gray-200 p-1.5 flex-shrink-0">
             <PaintBucket className="w-3 h-3 text-gray-600 mr-1" />
             <input
               type="color"
@@ -2489,8 +2440,12 @@ export default function CartSlotsEditorWithMicroSlots({
     
   }, [draftConfig]);
   
-  // State for view mode - 'empty' or 'withProducts'
+  // State for view mode - 'empty' or 'withProducts'  
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
+  
+  // State for preview mode - stores published configuration data
+  const [previewConfig, setPreviewConfig] = useState(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   
   // State for version history modal and publishing
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -3081,6 +3036,40 @@ export default function CartSlotsEditorWithMicroSlots({
     
     loadConfiguration();
   }, [selectedStore?.id]); // Re-run when store ID becomes available
+
+  // Fetch latest draft configuration when entering preview mode
+  useEffect(() => {
+    if (mode === 'preview' && currentStoreId) {
+      const fetchLatestDraftConfiguration = async () => {
+        console.log('🔍 Preview mode activated - fetching latest draft configuration');
+        setIsLoadingPreview(true);
+        
+        try {
+          // Use slotConfigurationService to get the latest draft configuration
+          const response = await slotConfigurationService.getDraftConfiguration(currentStoreId, 'cart');
+          
+          if (response.success && response.data) {
+            console.log('✅ Latest draft configuration fetched:', response.data);
+            setPreviewConfig(response.data);
+          } else {
+            console.warn('⚠️ No draft configuration found');
+            setPreviewConfig(null);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching latest draft configuration:', error);
+          setPreviewConfig(null);
+        } finally {
+          setIsLoadingPreview(false);
+        }
+      };
+      
+      fetchLatestDraftConfiguration();
+    } else if (mode !== 'preview') {
+      // Reset preview config when not in preview mode
+      setPreviewConfig(null);
+      setIsLoadingPreview(false);
+    }
+  }, [mode, currentStoreId]);
 
   // Drag sensors
   const sensors = useSensors(
