@@ -2375,29 +2375,16 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, elementStyles, componentSizes, customSlots, onSave]);
   
-  // Debounced save function
-  const debouncedSave = useCallback(() => {
-    console.log('⏱️ Debounced save triggered, will save in 1 second');
-    // Clear any existing timer
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    
-    // Set a new timer for 1 second
-    saveTimerRef.current = setTimeout(() => {
-      console.log('⏱️ Debounce timer fired, calling saveConfiguration');
-      saveConfiguration();
-    }, 1000);
+  // Immediate save function (debounce removed)
+  const immediateSave = useCallback(() => {
+    console.log('💾 Immediate save triggered');
+    saveConfiguration();
   }, [saveConfiguration]);
   
   // Listen for force save event from GenericSlotEditor
   useEffect(() => {
     const handleForceSave = () => {
-      // Clear any pending debounced saves
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
-      // Save immediately
+      // Save immediately (no debounce)
       saveConfiguration();
     };
     
