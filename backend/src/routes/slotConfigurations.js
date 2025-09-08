@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const SlotConfiguration = require('../models/SlotConfiguration');
-const { authenticate } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { Op } = require('sequelize');
 
 // Get or create draft configuration for editing
-router.get('/draft/:storeId/:pageType?', authenticate, async (req, res) => {
+router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
   try {
     const { storeId, pageType = 'cart' } = req.params;
     const userId = req.user.id;
@@ -67,7 +67,7 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
 });
 
 // Update draft configuration
-router.put('/draft/:configId', authenticate, async (req, res) => {
+router.put('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
     const { configuration } = req.body;
@@ -113,7 +113,7 @@ router.put('/draft/:configId', authenticate, async (req, res) => {
 });
 
 // Publish a draft
-router.post('/publish/:configId', authenticate, async (req, res) => {
+router.post('/publish/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
     const userId = req.user.id;
@@ -135,7 +135,7 @@ router.post('/publish/:configId', authenticate, async (req, res) => {
 });
 
 // Get version history
-router.get('/history/:storeId/:pageType?', authenticate, async (req, res) => {
+router.get('/history/:storeId/:pageType?', authMiddleware, async (req, res) => {
   try {
     const { storeId, pageType = 'cart' } = req.params;
     const { limit = 20 } = req.query;
@@ -160,7 +160,7 @@ router.get('/history/:storeId/:pageType?', authenticate, async (req, res) => {
 });
 
 // Revert to a specific version
-router.post('/revert/:versionId', authenticate, async (req, res) => {
+router.post('/revert/:versionId', authMiddleware, async (req, res) => {
   try {
     const { versionId } = req.params;
     const userId = req.user.id;
@@ -196,7 +196,7 @@ router.post('/revert/:versionId', authenticate, async (req, res) => {
 });
 
 // Delete a draft
-router.delete('/draft/:configId', authenticate, async (req, res) => {
+router.delete('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
     

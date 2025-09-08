@@ -73,7 +73,6 @@ const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
 const addCustomOptionRulesTableRoutes = require('./routes/add-custom-option-rules-table');
 const addressRoutes = require('./routes/addresses');
-const slotConfigurationRoutes = require('./routes/slot-configurations');
 const createCmsBlocksTableRoutes = require('./routes/create-cms-blocks-table');
 const checkCmsBlocksSchemaRoutes = require('./routes/check-cms-blocks-schema');
 const addCmsBlocksColumnsRoutes = require('./routes/add-cms-blocks-columns');
