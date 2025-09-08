@@ -48,6 +48,8 @@ import { FontFamily } from '@tiptap/extension-font-family';
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
+import PublishPanel from '@/components/editor/slot/PublishPanel';
+import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 
 // Get cart-specific micro-slot definitions
 const MICRO_SLOT_DEFINITIONS = getMicroSlotDefinitions('cart') || {
@@ -954,7 +956,13 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
         } : {})}
         className={`${mode === 'edit' ? 'cursor-pointer hover:ring-1 hover:ring-gray-300' : ''} px-1 rounded inline-block ${className}`}
         title={mode === 'edit' ? (hasHtml ? "Use pencil icon to edit HTML content" : "Click to edit text and style") : ""}
-        style={hasHtml || mode === 'preview' ? { cursor: 'default', ...style } : style}
+        style={{
+          ...(hasHtml || mode === 'preview' ? { cursor: 'default' } : {}),
+          ...style,
+          // Ensure inline styles override any class-based colors with !important equivalent
+          ...(style.color && { color: style.color }),
+          ...(style.backgroundColor && { backgroundColor: style.backgroundColor })
+        }}
       >
         {hasHtml ? (
           <div dangerouslySetInnerHTML={{ __html: text }} />
@@ -3546,7 +3554,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <SimpleInlineEdit
                     text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
-                    className={elementClasses[slotId] || 'text-gray-600'}
+                    className={(() => {
+                      const hasCustomColor = elementStyles[slotId]?.color;
+                      const baseClass = elementClasses[slotId] || 'text-gray-600';
+                      return hasCustomColor 
+                        ? baseClass.replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '').trim() || ''
+                        : baseClass;
+                    })()}
                     style={elementStyles[slotId] || {}}
                     onChange={(newText) => {
                       handleTextChange(slotId, newText);
@@ -4536,7 +4550,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 <div className="relative">
                   <SimpleInlineEdit
                     text={slotContent[slotId]}
-                    className={elementClasses[slotId] || 'text-3xl font-bold text-gray-900'}
+                    className={(() => {
+                      const hasCustomColor = elementStyles[slotId]?.color;
+                      const baseClass = elementClasses[slotId] || 'text-3xl font-bold text-gray-900';
+                      return hasCustomColor 
+                        ? baseClass.replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '').trim() || 'text-3xl font-bold'
+                        : baseClass;
+                    })()}
                     style={elementStyles[slotId] || {}}
                     onChange={(newText) => handleTextChange(slotId, newText)}
                     slotId={slotId}
@@ -4575,7 +4595,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 >
                   <SimpleInlineEdit
                     text={slotContent[slotId] !== undefined ? slotContent[slotId] : customSlot.content}
-                    className={elementClasses[slotId] || 'text-gray-600'}
+                    className={(() => {
+                      const hasCustomColor = elementStyles[slotId]?.color;
+                      const baseClass = elementClasses[slotId] || 'text-gray-600';
+                      return hasCustomColor 
+                        ? baseClass.replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '').trim() || ''
+                        : baseClass;
+                    })()}
                     style={elementStyles[slotId] || {}}
                     onChange={(newText) => {
                       handleTextChange(slotId, newText);
@@ -4760,6 +4786,19 @@ export default function CartSlotsEditorWithMicroSlots({
                     <RefreshCw className="w-4 h-4" />
                     Reset Layout
                   </button>
+                  
+                  {/* Status indicator for draft/published state */}
+                  {hasUnsavedChanges && (
+                    <Badge variant="outline" className="text-yellow-600 border-yellow-300">
+                      Draft Changes
+                    </Badge>
+                  )}
+                  
+                  {isSaving && (
+                    <Badge variant="outline" className="text-blue-600 border-blue-300">
+                      Auto-saving...
+                    </Badge>
+                  )}
                 </>
               )}
               </div>
@@ -4769,28 +4808,92 @@ export default function CartSlotsEditorWithMicroSlots({
 
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-          
           {mode === 'edit' ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleMajorDragStart}
-              onDragEnd={handleMajorDragEnd}
-            >
-              <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
-                {renderSlotContent()}
-              </SortableContext>
+            <div className="grid grid-cols-12 gap-6">
+              {/* Main editor content */}
+              <div className="col-span-8">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleMajorDragStart}
+                  onDragEnd={handleMajorDragEnd}
+                >
+                  <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
+                    {renderSlotContent()}
+                  </SortableContext>
+                  
+                  <DragOverlay>
+                    {activeDragSlot ? (
+                      <div className="bg-white border rounded-lg shadow-lg p-4 opacity-90">
+                        {activeDragSlot}
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              </div>
               
-              <DragOverlay>
-                {activeDragSlot ? (
-                  <div className="bg-white border rounded-lg shadow-lg p-4 opacity-90">
-                    {activeDragSlot}
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+              {/* Sidebar with PublishPanel */}
+              <div className="col-span-4 space-y-6">
+                {isDraftLoading ? (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center text-gray-600">
+                        Loading draft configuration...
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : currentStoreId ? (
+                  <PublishPanel
+                    storeId={currentStoreId}
+                    pageType="cart"
+                    currentDraftId={getDraftId()}
+                    onConfigurationChange={(newConfig) => {
+                      console.log('🔄 Configuration published:', newConfig);
+                      // Trigger any necessary updates
+                      reloadDraft();
+                    }}
+                  />
+                ) : (
+                  <Card className="border-yellow-200">
+                    <CardContent className="p-4">
+                      <div className="text-yellow-600 text-sm">
+                        <strong>No store selected:</strong> Please select a store to enable publish functionality.
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {draftError && (
+                  <Card className="border-red-200">
+                    <CardContent className="p-4">
+                      <div className="text-red-600 text-sm">
+                        <strong>Error:</strong> {draftError}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Instructions */}
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="text-blue-800 text-sm">
+                      <h4 className="font-medium mb-2">💡 How it works:</h4>
+                      <ul className="space-y-1 text-xs">
+                        <li>• Changes are auto-saved as drafts</li>
+                        <li>• Click "Publish" to make changes live</li>
+                        <li>• View history to see all versions</li>
+                        <li>• Revert to any previous version</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           ) : (
-            renderSlotContent()
+            // Preview mode - full width, no drag functionality
+            <div className="w-full">
+              {renderSlotContent()}
+            </div>
           )}
           </div>
         </div>
