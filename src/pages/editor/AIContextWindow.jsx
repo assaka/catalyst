@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Code, Diff, Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2} from 'lucide-react';
+import {Code, Diff, Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
@@ -12,6 +12,7 @@ import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import VersionHistoryModal from '@/components/editor/slot/VersionHistoryModal';
 // Store context no longer needed - backend resolves store automatically
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -144,6 +145,7 @@ const AIContextWindowPage = () => {
   const [isPublishingConfig, setIsPublishingConfig] = useState(false);
   const [configPublishSuccess, setConfigPublishSuccess] = useState(null);
   const [currentStoreId, setCurrentStoreId] = useState(null);
+  const [showConfigVersionHistory, setShowConfigVersionHistory] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Auto-save debounce timer
@@ -875,6 +877,18 @@ export default ExampleComponent;`;
           </button>
           
           <button
+            onClick={() => setShowConfigVersionHistory(true)}
+            className={cn(
+              "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
+              "bg-gray-500 hover:bg-gray-600 text-white"
+            )}
+            title="View slot configuration version history"
+          >
+            <History className="w-3 h-3" />
+            Version History
+          </button>
+          
+          <button
             onClick={publishDiffs}
             disabled={!isAuthenticated || isPublishing || (modifiedFiles.length === 0 && !publishSuccess)}
             className={cn(
@@ -1424,6 +1438,16 @@ export default ExampleComponent;`;
           <span>Ready</span>
         </div>
       </div>
+
+      {/* Version History Modal */}
+      {showConfigVersionHistory && (
+        <VersionHistoryModal
+          storeId={currentStoreId}
+          pageType="cart"
+          isOpen={showConfigVersionHistory}
+          onClose={() => setShowConfigVersionHistory(false)}
+        />
+      )}
     </div>
   );
 };

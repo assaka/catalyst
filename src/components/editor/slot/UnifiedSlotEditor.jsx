@@ -22,7 +22,8 @@ import {
   Upload,
   GripVertical,
   Edit,
-  Plus
+  Plus,
+  Clock
 } from 'lucide-react';
 import {
   DndContext,
@@ -42,6 +43,8 @@ import { CSS } from "@dnd-kit/utilities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import slotConfigurationService from '@/services/slotConfigurationService';
+import { formatDistanceToNow } from 'date-fns';
 
 // Dynamically import CartSlotsEditor for cart pages
 const CartSlotsEditor = React.lazy(() => import('@/pages/editor/CartSlotsEditor'));
@@ -100,6 +103,11 @@ export default function UnifiedSlotEditor({
   const [slotContent, setSlotContent] = useState({});
   const [slotOrder, setSlotOrder] = useState([]);
   
+  // Draft configuration state
+  const [draftConfig, setDraftConfig] = useState(null);
+  
+  const { selectedStore } = useStoreSelection();
+  
   const pageType = pageName.toLowerCase();
   
   // Drag and drop sensors
@@ -153,6 +161,24 @@ export default function UnifiedSlotEditor({
     
     loadConfig();
   }, [pageType]);
+  
+  // Load draft configuration for status display
+  useEffect(() => {
+    const loadDraftConfig = async () => {
+      if (selectedStore?.id && pageType === 'cart') {
+        try {
+          const response = await slotConfigurationService.getDraftConfiguration(selectedStore.id, pageType);
+          if (response.success) {
+            setDraftConfig(response.data);
+          }
+        } catch (error) {
+          console.error('Error loading draft configuration:', error);
+        }
+      }
+    };
+    
+    loadDraftConfig();
+  }, [selectedStore?.id, pageType]);
   
   // Handle save from editor
   const handleSave = useCallback(async (config) => {
@@ -375,6 +401,18 @@ export default function UnifiedSlotEditor({
           </div>
         </div>
       </div>
+
+      {/* Draft Status - shown below Layout/Preview/Code buttons */}
+      {pageType === 'cart' && draftConfig && (
+        <div className="bg-gray-50 border-b px-4 py-2">
+          <div className="flex items-center text-sm text-gray-600">
+            <Clock className="w-4 h-4 mr-2" />
+            <span>
+              <strong>Draft:</strong> Last modified {formatDistanceToNow(new Date(draftConfig.updated_at), { addSuffix: true })}
+            </span>
+          </div>
+        </div>
+      )}
       
       {/* Content */}
       <div className="flex-1 overflow-auto">
