@@ -103,8 +103,9 @@ export default function UnifiedSlotEditor({
   const [slotContent, setSlotContent] = useState({});
   const [slotOrder, setSlotOrder] = useState([]);
   
-  // Draft configuration state
+  // Draft and published configuration state
   const [draftConfig, setDraftConfig] = useState(null);
+  const [publishedConfig, setPublishedConfig] = useState(null);
   
   const { selectedStore } = useStoreSelection();
   
@@ -162,22 +163,29 @@ export default function UnifiedSlotEditor({
     loadConfig();
   }, [pageType]);
   
-  // Load draft configuration for status display
+  // Load draft and published configurations for status display
   useEffect(() => {
-    const loadDraftConfig = async () => {
+    const loadConfigurations = async () => {
       if (selectedStore?.id && pageType === 'cart') {
         try {
-          const response = await slotConfigurationService.getDraftConfiguration(selectedStore.id, pageType);
-          if (response.success) {
-            setDraftConfig(response.data);
+          // Load draft configuration
+          const draftResponse = await slotConfigurationService.getDraftConfiguration(selectedStore.id, pageType);
+          if (draftResponse.success) {
+            setDraftConfig(draftResponse.data);
+          }
+          
+          // Load published configuration
+          const publishedResponse = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, pageType);
+          if (publishedResponse.success) {
+            setPublishedConfig(publishedResponse.data);
           }
         } catch (error) {
-          console.error('Error loading draft configuration:', error);
+          console.error('Error loading configurations:', error);
         }
       }
     };
     
-    loadDraftConfig();
+    loadConfigurations();
   }, [selectedStore?.id, pageType]);
   
   // Handle save from editor
@@ -402,14 +410,27 @@ export default function UnifiedSlotEditor({
         </div>
       </div>
 
-      {/* Draft Status - shown below Layout/Preview/Code buttons */}
-      {pageType === 'cart' && draftConfig && (
+      {/* Configuration Status - shown below Layout/Preview/Code buttons */}
+      {pageType === 'cart' && (draftConfig || publishedConfig) && (
         <div className="bg-gray-50 border-b px-4 py-2">
-          <div className="flex items-center text-sm text-gray-600">
-            <Clock className="w-4 h-4 mr-2" />
-            <span>
-              <strong>Draft:</strong> Last modified {formatDistanceToNow(new Date(draftConfig.updated_at), { addSuffix: true })}
-            </span>
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center">
+              {draftConfig && (
+                <>
+                  <Clock className="w-4 h-4 mr-2" />
+                  <span>
+                    <strong>Draft:</strong> Last modified {formatDistanceToNow(new Date(draftConfig.updated_at), { addSuffix: true })}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center">
+              {publishedConfig && (
+                <span>
+                  <strong>Published:</strong> Version {publishedConfig.version_number} • {formatDistanceToNow(new Date(publishedConfig.published_at), { addSuffix: true })}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}

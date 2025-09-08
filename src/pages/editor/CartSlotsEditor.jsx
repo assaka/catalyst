@@ -48,7 +48,6 @@ import { FontFamily } from '@tiptap/extension-font-family';
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
-import PublishPanel from '@/components/editor/slot/PublishPanel';
 import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import cartService from '@/services/cartService';
 
@@ -4996,9 +4995,9 @@ export default function CartSlotsEditorWithMicroSlots({
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           {mode === 'edit' ? (
-            <div className="grid grid-cols-12 gap-6">
-              {/* Main editor content */}
-              <div className="col-span-8">
+            <div className="w-full">
+              {/* Main editor content - full width */}
+              <div className="w-full">
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -5017,63 +5016,6 @@ export default function CartSlotsEditorWithMicroSlots({
                     ) : null}
                   </DragOverlay>
                 </DndContext>
-              </div>
-              
-              {/* Sidebar with PublishPanel */}
-              <div className="col-span-4 space-y-6">
-                {isDraftLoading ? (
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center text-gray-600">
-                        Loading draft configuration...
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : currentStoreId ? (
-                  <PublishPanel
-                    storeId={currentStoreId}
-                    pageType="cart"
-                    currentDraftId={getDraftId()}
-                    onConfigurationChange={(newConfig) => {
-                      console.log('🔄 Configuration published:', newConfig);
-                      // Trigger any necessary updates
-                      reloadDraft();
-                    }}
-                  />
-                ) : (
-                  <Card className="border-yellow-200">
-                    <CardContent className="p-4">
-                      <div className="text-yellow-600 text-sm">
-                        <strong>No store selected:</strong> Please select a store to enable publish functionality.
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {draftError && (
-                  <Card className="border-red-200">
-                    <CardContent className="p-4">
-                      <div className="text-red-600 text-sm">
-                        <strong>Error:</strong> {draftError}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {/* Instructions */}
-                <Card className="bg-blue-50 border-blue-200">
-                  <CardContent className="p-4">
-                    <div className="text-blue-800 text-sm">
-                      <h4 className="font-medium mb-2">💡 How it works:</h4>
-                      <ul className="space-y-1 text-xs">
-                        <li>• Changes are auto-saved as drafts</li>
-                        <li>• Click "Publish" to make changes live</li>
-                        <li>• View history to see all versions</li>
-                        <li>• Revert to any previous version</li>
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           ) : (
