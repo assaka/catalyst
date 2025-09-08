@@ -135,13 +135,13 @@ async function createVersionedSlotConfigurations() {
       id: '123e4567-e89b-12d3-a456-426614174000',
       user_id: '123e4567-e89b-12d3-a456-426614174001', 
       store_id: '123e4567-e89b-12d3-a456-426614174002',
-      configuration: {
+      configuration: JSON.stringify({
         slots: {},
         metadata: {
           created: new Date().toISOString(),
           lastModified: new Date().toISOString()
         }
-      },
+      }),
       version: '1.0',
       is_active: true,
       status: 'published',
