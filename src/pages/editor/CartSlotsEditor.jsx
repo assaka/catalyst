@@ -4967,7 +4967,7 @@ export default function CartSlotsEditorWithMicroSlots({
 
         <div className="flex-1 overflow-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-          {mode === 'edit' ? (
+            {mode === 'edit' ? (
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -4986,12 +4986,12 @@ export default function CartSlotsEditorWithMicroSlots({
                 ) : null}
               </DragOverlay>
             </DndContext>
-          ) : (
-            // Preview mode - full width, no drag functionality
-            <div className="w-full">
-              {renderSlotContent()}
-            </div>
-          )}
+            ) : (
+              // Preview mode - full width, no drag functionality
+              <div className="w-full">
+                {renderSlotContent()}
+              </div>
+            )}
           </div>
         </div>
       </div>
