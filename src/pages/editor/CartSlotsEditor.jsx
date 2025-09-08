@@ -4994,9 +4994,8 @@ export default function CartSlotsEditorWithMicroSlots({
             )}
           </div>
         </div>
-      </div>
 
-      {/* Version History Modal */}
+        {/* Version History Modal */}
       {showVersionHistory && (
         <VersionHistoryModal
           storeId={currentStoreId}
