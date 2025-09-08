@@ -118,10 +118,8 @@ export default function UnifiedSlotEditor({
       const storeId = localStorage.getItem('selectedStoreId');
       let config = null;
       
-      if (storeId) {
-        config = await SlotStorage.loadFromDatabase(pageType, storeId);
-        console.log('Loaded from database:', config);
-      }
+      // Database load disabled - use CartSlotsEditor with versioning system instead
+      console.log('💾 UnifiedSlotEditor database load disabled - use CartSlotsEditor with versioning system');
       
       // Fallback to localStorage
       if (!config) {

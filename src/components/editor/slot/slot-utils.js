@@ -29,26 +29,11 @@ export const SlotStorage = {
     return false;
   },
   
-  // Load from database
+  // Load from database - DISABLED (use versioning system instead)
   loadFromDatabase: async (pageType, storeId) => {
-    try {
-      const { default: apiClient } = await import('@/api/client');
-      
-      const queryParams = new URLSearchParams({
-        store_id: storeId,
-        page_type: pageType
-      }).toString();
-      
-      const response = await apiClient.get(`slot-configurations?${queryParams}`);
-      const config = response?.data?.find(cfg => 
-        cfg.page_name === pageType && cfg.store_id === storeId
-      );
-      
-      return config?.configuration || null;
-    } catch (error) {
-      console.error('Failed to load from database:', error);
-      return null;
-    }
+    console.warn('⚠️ SlotStorage.loadFromDatabase is deprecated - use useDraftConfiguration hook instead');
+    console.log('🔄 This legacy method is disabled to prevent conflicts with the versioning system');
+    return null;
   }
 };
 
