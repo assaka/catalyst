@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Palette, PaintBucket, Type as TypeIcon, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, LayoutGrid, AlignJustify, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Palette, PaintBucket, Type as TypeIcon, GripHorizontal, GripVertical as ResizeVertical, Move, HelpCircle, PlusCircle, Type, Code2, FileText, Package, Upload, History, CheckCircle } from "lucide-react";
 // Removed react-beautiful-color to avoid CSS conflicts
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1713,6 +1713,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               key={`btn-text-${id}-${elementStyles[id]?.color || 'default'}`}
               value={elementStyles[id]?.color || '#000000'}
+              onClick={(e) => {
+                console.log('🎨 Text color input CLICKED for:', id);
+                console.log('🎨 onClassChange available?', typeof onClassChange);
+                console.log('🎨 elementStyles:', elementStyles);
+                console.log('🎨 elementClasses:', elementClasses);
+              }}
               onFocus={(e) => {
                 console.log('🎨 Text color input focused for:', id);
                 // Keep hover state active when color picker is focused
@@ -1770,6 +1776,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               type="color"
               key={`btn-bg-${id}-${elementStyles[id]?.backgroundColor || 'default'}`}
               value={elementStyles[id]?.backgroundColor || '#3b82f6'}
+              onClick={(e) => {
+                console.log('🎨 Background color input CLICKED for:', id);
+                console.log('🎨 onClassChange available?', typeof onClassChange);
+                console.log('🎨 elementStyles:', elementStyles);
+                console.log('🎨 elementClasses:', elementClasses);
+              }}
               onFocus={(e) => {
                 console.log('🎨 Background color input focused for:', id);
                 // Keep hover state active when color picker is focused
@@ -2358,6 +2370,39 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // State for view mode - 'empty' or 'withProducts'
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
+  
+  // State for version history modal and publishing
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(null);
+  
+  // Publish functionality
+  const handlePublishChanges = useCallback(async () => {
+    if (!currentStoreId || !getDraftId()) return;
+    
+    setIsPublishing(true);
+    try {
+      const response = await slotConfigurationService.publishDraft(getDraftId());
+      
+      if (response.success) {
+        setPublishSuccess({
+          versionName: `v${response.data.version_number}`,
+          publishedAt: response.data.published_at
+        });
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => setPublishSuccess(null), 5000);
+        
+        // Reload draft status
+        await reloadDraft();
+      }
+    } catch (error) {
+      console.error('Error publishing changes:', error);
+      alert('Failed to publish changes: ' + error.message);
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [currentStoreId, getDraftId, reloadDraft]);
   
   // State for major slot order - changes based on view mode
   const [majorSlots, setMajorSlots] = useState(['flashMessage', 'header', 'emptyCart']);
