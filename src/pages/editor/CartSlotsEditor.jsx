@@ -929,6 +929,8 @@ function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChang
   
   // Debug: Log the style prop whenever it changes
   console.log('🎯 SimpleInlineEdit for', slotId, 'received style:', style);
+  if (style.color) console.log('🎯 🎨 Text color applied:', style.color);
+  if (style.backgroundColor) console.log('🎯 🏠 Background color applied:', style.backgroundColor);
   
   // Check if text contains HTML
   const hasHtml = text && (text.includes('<') || text.includes('&'));
