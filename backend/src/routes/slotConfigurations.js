@@ -26,6 +26,43 @@ router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
   }
 });
 
+// Public endpoint to get active slot configurations for storefront (matches old API)
+router.get('/public/slot-configurations', async (req, res) => {
+  try {
+    const { store_id, page_type = 'cart' } = req.query;
+    
+    if (!store_id) {
+      return res.status(400).json({ success: false, error: 'store_id is required' });
+    }
+    
+    const published = await SlotConfiguration.findLatestPublished(store_id, page_type);
+    
+    if (!published) {
+      // Return default configuration if no published version exists
+      return res.json({
+        success: true,
+        data: [{
+          id: null,
+          store_id,
+          configuration: {
+            slots: {},
+            metadata: {
+              created: new Date().toISOString(),
+              lastModified: new Date().toISOString()
+            }
+          },
+          is_active: true
+        }]
+      });
+    }
+    
+    res.json({ success: true, data: [published] });
+  } catch (error) {
+    console.error('Error fetching public slot configurations:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get published configuration for display (used by storefront)
 router.get('/published/:storeId/:pageType?', async (req, res) => {
   try {
