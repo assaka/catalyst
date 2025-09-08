@@ -1465,47 +1465,29 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
               value={elementStyles[id]?.color || '#000000'}
               onChange={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🎯 DIRECT color changed (onChange):', newColor);
+                console.log('🎨 🎯 Text color changed:', newColor);
                 
-                // Apply directly using the working handleClassChange logic
-                if (typeof handleClassChange === 'function') {
+                if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  console.log('🎨 🎯 DIRECT Applying:', { id, newClasses, newStyles: { color: newColor } });
-                  handleClassChange(id, newClasses, { color: newColor });
-                } else if (typeof onClassChange === 'function') {
-                  const currentClasses = elementClasses[id] || '';
-                  const newClasses = currentClasses
-                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                    .trim();
-                  
-                  console.log('🎨 🎯 Applying via onClassChange:', { id, newClasses, newStyles: { color: newColor } });
+                  console.log('🎨 🎯 Applying text color:', { id, newClasses, newStyles: { color: newColor } });
                   onClassChange(id, newClasses, { color: newColor });
                 }
               }}
               onInput={(e) => {
                 const newColor = e.target.value;
-                console.log('🎨 🎯 DIRECT color changed (onInput):', newColor);
+                console.log('🎨 🎯 Text color changed (onInput):', newColor);
                 
-                // Apply directly using the working handleClassChange logic
-                if (typeof handleClassChange === 'function') {
+                if (typeof onClassChange === 'function') {
                   const currentClasses = elementClasses[id] || '';
                   const newClasses = currentClasses
                     .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                     .trim();
                   
-                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
-                  handleClassChange(id, newClasses, { color: newColor });
-                } else if (typeof onClassChange === 'function') {
-                  const currentClasses = elementClasses[id] || '';
-                  const newClasses = currentClasses
-                    .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
-                    .trim();
-                  
-                  console.log('🎨 🎯 DIRECT Applying (onInput):', { id, newClasses, newStyles: { color: newColor } });
+                  console.log('🎨 🎯 Applying text color (onInput):', { id, newClasses, newStyles: { color: newColor } });
                   onClassChange(id, newClasses, { color: newColor });
                 }
               }}
