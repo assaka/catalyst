@@ -149,7 +149,7 @@ async function migrateProductionVersioning() {
       console.log('📋 Checking versioning columns:');
       for (const column of versioningColumns) {
         const exists = column in record;
-        console.log(\`\${exists ? '✅' : '❌'} \${column}: \${exists ? 'exists' : 'missing'}\`);
+        console.log(`${exists ? '✅' : '❌'} ${column}: ${exists ? 'exists' : 'missing'}`);
       }
     } else if (testError && testError.code !== 'PGRST116') {
       console.log('⚠️ Could not verify - table might be empty or inaccessible');

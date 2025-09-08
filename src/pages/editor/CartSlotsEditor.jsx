@@ -2623,7 +2623,7 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('🔧 Saved customSlots:', config.customSlots);
     console.log('📊 Configuration size:', (configString.length / 1024).toFixed(2) + ' KB');
     
-    // Try to save to database using SlotConfiguration entity directly (backend API is down)
+    // Save to database using the versioning system through useDraftConfiguration hook
     try {
       const storeId = selectedStore?.id;
       console.log('💾 Save attempt - Store ID check:', {
@@ -2637,42 +2637,15 @@ export default function CartSlotsEditorWithMicroSlots({
         return;
       }
       
-      if (storeId) {
-        // Import SlotConfiguration entity and API client to check auth status
-        const { SlotConfiguration } = await import('@/api/entities');
-        const { default: apiClient } = await import('@/api/client');
+      if (storeId && updateConfiguration) {
+        console.log('💾 Using versioning system to save draft');
+        console.log('📤 Saving configuration:', JSON.stringify(config, null, 2));
         
-        // Debug authentication
-        const token = apiClient.getToken();
-        console.log('🔐 Auth token available:', !!token);
-        console.log('🔐 Token preview:', token ? token.substring(0, 20) + '...' : 'none');
-        console.log('🔐 Store owner token in localStorage:', !!localStorage.getItem('store_owner_auth_token'));
+        // Use the updateConfiguration function from useDraftConfiguration hook
+        // This will handle the draft update via the versioning API
+        await updateConfiguration(config);
         
-        console.log('💾 Using UPSERT approach - backend will handle create vs update automatically');
-        
-        // Always use CREATE (POST) - backend handles upsert logic automatically
-        const upsertData = {
-          page_name: 'Cart',
-          page_type: 'cart', 
-          slot_type: 'cart_layout',
-          store_id: storeId,
-          configuration: config,
-          is_active: true
-        };
-        
-        console.log('📤 Sending UPSERT to database:', JSON.stringify(config, null, 2));
-        console.log('📤 UPSERT data payload:', upsertData);
-        
-        try {
-          const upsertResponse = await SlotConfiguration.create(upsertData);
-          console.log('✅ UPSERT successful:', upsertResponse);
-        } catch (upsertError) {
-          console.error('❌ UPSERT failed with error:', upsertError);
-          console.error('❌ UPSERT error response:', upsertError.response);
-          console.error('❌ UPSERT error status:', upsertError.response?.status);
-          console.error('❌ UPSERT error data:', upsertError.response?.data);
-          throw upsertError;
-        }
+        console.log('✅ Draft configuration saved successfully');
       }
       
       // Call the parent onSave callback
