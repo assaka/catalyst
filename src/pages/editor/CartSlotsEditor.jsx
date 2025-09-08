@@ -2490,6 +2490,57 @@ export default function CartSlotsEditorWithMicroSlots({
     }
   }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, elementStyles, componentSizes, customSlots, onSave]);
   
+  // Direct save function that accepts config as parameter
+  const saveDirectly = async (config) => {
+    console.log('💾 saveDirectly called with config elementStyles:', config.elementStyles);
+    setSaveStatus('saving');
+    
+    try {
+      const storeId = selectedStore?.id;
+      console.log('🔍 Save check:', { storeId: !!storeId, updateConfiguration: !!updateConfiguration });
+      
+      if (!storeId) {
+        console.warn('⚠️ No store ID available, cannot save to database');
+        return;
+      }
+      
+      if (storeId && updateConfiguration) {
+        console.log('💾 Using versioning system to save draft - DIRECT SAVE');
+        console.log('📤 Saving config with elementStyles:', config.elementStyles);
+        
+        try {
+          await updateConfiguration(config);
+          console.log('✅ Direct save - Draft configuration saved successfully');
+        } catch (error) {
+          console.error('❌ Failed to save configuration:', error);
+          throw error;
+        }
+      } else {
+        console.warn('⚠️ Cannot save - missing storeId or updateConfiguration function');
+      }
+      
+      // Call the parent onSave callback
+      onSave(config);
+      
+      // Show saved status
+      setSaveStatus('saved');
+      
+      // Clear saved status after delay
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('');
+      }, 2000);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Save error:', error);
+      setSaveStatus('error');
+      return false;
+    }
+  };
+  
   // Removed immediateSave wrapper - calling saveConfiguration directly
   
   // Listen for force save event from GenericSlotEditor
@@ -2958,10 +3009,37 @@ export default function CartSlotsEditorWithMicroSlots({
       });
     }
     
-    // Save after class change - delayed to allow state updates to complete
+    // Save after class change with the updated state
     setTimeout(() => {
-      console.log('⏱️ Delayed save - state should be updated now');
-      saveConfiguration();
+      console.log('⏱️ Saving with updated elementStyles');
+      
+      // Use functional setState to get the most current elementStyles
+      setElementStyles(currentElementStyles => {
+        // Now we have the current (updated) elementStyles
+        console.log('📦 Current elementStyles for save:', currentElementStyles);
+        
+        // Create config with updated elementStyles
+        const updatedConfig = {
+          page_name: 'Cart',
+          page_type: 'cart',
+          slot_type: 'cart_layout',
+          majorSlots,
+          microSlotOrders,
+          microSlotSpans,
+          slotContent,
+          elementClasses: newStyles ? { ...elementClasses, [slotId]: newClass } : elementClasses,
+          elementStyles: currentElementStyles, // Use the current state
+          componentSizes,
+          customSlots,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Save directly with the updated config
+        saveDirectly(updatedConfig);
+        
+        // Return unchanged to not affect the actual state
+        return currentElementStyles;
+      });
     }, 0);
     
     // Notify storefront of configuration update
