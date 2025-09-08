@@ -1728,7 +1728,9 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
               }}
               onInput={(e) => {
-                console.log('🎨 Text color INPUT event for:', id, 'value:', e.target.value);
+                console.log('🎨 🔥 TEXT COLOR INPUT EVENT FIRED!', id, 'value:', e.target.value);
+                console.log('🎨 🔥 onClassChange type:', typeof onClassChange);
+                
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1742,11 +1744,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .trim();
                 
                 // Call onClassChange with the new color
-                console.log('🎨 About to call onClassChange with:', { id, newClasses, color: newColor });
+                console.log('🎨 🔥 CALLING onClassChange with:', { id, newClasses, newStyles: { color: newColor } });
                 onClassChange(id, newClasses, { color: newColor });
+                console.log('🎨 🔥 onClassChange call completed');
               }}
               onChange={(e) => {
-                console.log('🎨 Text color CHANGE event for:', id, 'value:', e.target.value);
+                console.log('🎨 🔥 TEXT COLOR CHANGE EVENT FIRED!', id, 'value:', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1760,8 +1763,9 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   .trim();
                 
                 // Call onClassChange with the new color
-                console.log('🎨 About to call onClassChange with:', { id, newClasses, color: newColor });
+                console.log('🎨 🔥 CALLING onClassChange (onChange) with:', { id, newClasses, newStyles: { color: newColor } });
                 onClassChange(id, newClasses, { color: newColor });
+                console.log('🎨 🔥 onClassChange (onChange) call completed');
               }}
               className="w-6 h-6 cursor-pointer border-0 rounded"
               title="Choose text color"
@@ -1791,7 +1795,7 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 }
               }}
               onInput={(e) => {
-                console.log('🎨 Background color INPUT event for:', id, 'value:', e.target.value);
+                console.log('🎨 🔥 BACKGROUND COLOR INPUT EVENT FIRED!', id, 'value:', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1801,11 +1805,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const newClasses = currentClasses
                   .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
                   .trim();
-                console.log('🎨 About to call onClassChange for BG with:', { id, newClasses, backgroundColor: e.target.value });
+                console.log('🎨 🔥 CALLING onClassChange for BG with:', { id, newClasses, newStyles: { backgroundColor: e.target.value } });
                 onClassChange(id, newClasses, { backgroundColor: e.target.value });
+                console.log('🎨 🔥 onClassChange (BG INPUT) call completed');
               }}
               onChange={(e) => {
-                console.log('🎨 Background color CHANGE event for:', id, 'value:', e.target.value);
+                console.log('🎨 🔥 BACKGROUND COLOR CHANGE EVENT FIRED!', id, 'value:', e.target.value);
                 // Keep hover state active during changes
                 setIsHovered(true);
                 if (hoverTimeoutRef.current) {
@@ -1815,8 +1820,9 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 const newClasses = currentClasses
                   .replace(/bg-(gray|red|blue|green|yellow|purple|pink|indigo|white|black|transparent)-?([0-9]+)?/g, '')
                   .trim();
-                console.log('🎨 About to call onClassChange for BG with:', { id, newClasses, backgroundColor: e.target.value });
+                console.log('🎨 🔥 CALLING onClassChange for BG (onChange) with:', { id, newClasses, newStyles: { backgroundColor: e.target.value } });
                 onClassChange(id, newClasses, { backgroundColor: e.target.value });
+                console.log('🎨 🔥 onClassChange (BG onChange) call completed');
               }}
               className="w-6 h-6 cursor-pointer border-0 rounded"
               style={{ minWidth: '24px', minHeight: '24px' }}
