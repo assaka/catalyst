@@ -2431,6 +2431,7 @@ export default function CartSlotsEditorWithMicroSlots({
     console.log('🎨 Saved elementClasses:', config.elementClasses);
     console.log('🎨 🏠 Saved elementStyles:', config.elementStyles);
     console.log('🎨 🏠 ElementStyles keys:', Object.keys(config.elementStyles || {}));
+    console.log('🎨 🏠 ElementStyles stringified:', JSON.stringify(config.elementStyles, null, 2));
     console.log('📏 Saved componentSizes:', config.componentSizes);
     console.log('📐 Saved microSlotSpans:', config.microSlotSpans);
     console.log('🔧 Saved customSlots:', config.customSlots);
@@ -2965,6 +2966,11 @@ export default function CartSlotsEditorWithMicroSlots({
           [slotId]: currentStyles
         };
         console.log('🔧 Updated elementStyles state:', updatedState);
+        console.log('🔧 🎨 🏠 ELEMENT STYLES STATE UPDATE:', { 
+          slotId, 
+          newStyles: currentStyles,
+          allElementStyles: updatedState 
+        });
         return updatedState;
       });
     }

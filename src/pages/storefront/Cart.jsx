@@ -1112,6 +1112,9 @@ export default function Cart() {
         };
         
         const renderContent = () => {
+            // Get wrapper styling
+            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+            
             // Combine inline styles with container positioning
             const combinedStyles = {
                 ...elementStyles,
@@ -1120,23 +1123,32 @@ export default function Cart() {
             
             console.log(`🎨 Final styles for ${slotId}:`, combinedStyles);
             console.log(`🎨 Final classes for ${slotId}:`, elementClasses);
+            console.log(`🎯 Wrapper styling for ${slotId}_wrapper:`, wrapperStyling);
             
             if (customSlot.type === 'text') {
                 return (
-                    <div 
-                        className={`custom-slot-content ${elementClasses || 'text-gray-600'}`}
-                        style={combinedStyles}
-                    >
-                        {slotContent}
+                    <div>
+                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                            <div 
+                                className={`custom-slot-content ${elementClasses || 'text-gray-600'}`}
+                                style={combinedStyles}
+                            >
+                                {slotContent}
+                            </div>
+                        </div>
                     </div>
                 );
             } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
                 return (
-                    <div 
-                        className={`custom-slot-content ${elementClasses || ''}`}
-                        style={combinedStyles}
-                        dangerouslySetInnerHTML={{ __html: slotContent }} 
-                    />
+                    <div>
+                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                            <div 
+                                className={`custom-slot-content ${elementClasses || ''}`}
+                                style={combinedStyles}
+                                dangerouslySetInnerHTML={{ __html: slotContent }} 
+                            />
+                        </div>
+                    </div>
                 );
             }
             return null;
@@ -1276,10 +1288,12 @@ export default function Cart() {
                                             const finalClasses = titleStyling.elementClasses || defaultClasses;
                                             return (
                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                    <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                        <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
-                                                            Your cart is empty
-                                                        </h2>
+                                                    <div>
+                                                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                                            <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                Your cart is empty
+                                                            </h2>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
@@ -1292,10 +1306,12 @@ export default function Cart() {
                                             const finalClasses = textStyling.elementClasses || defaultClasses;
                                             return (
                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                    <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                        <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
-                                                            Looks like you haven't added anything to your cart yet.
-                                                        </p>
+                                                    <div>
+                                                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                                            <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                Looks like you haven't added anything to your cart yet.
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
