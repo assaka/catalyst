@@ -163,11 +163,8 @@ export default function UnifiedSlotEditor({
     // Save to localStorage
     SlotStorage.save(pageType, config);
     
-    // Save to database
-    const storeId = localStorage.getItem('selectedStoreId');
-    if (storeId) {
-      await SlotStorage.saveToDatabase(pageType, storeId, config);
-    }
+    // Database save disabled - use CartSlotsEditor with versioning system instead
+    console.log('💾 UnifiedSlotEditor database save disabled - use CartSlotsEditor with versioning system');
     
     setSlotConfig(config);
     setHasUnsavedChanges(false);

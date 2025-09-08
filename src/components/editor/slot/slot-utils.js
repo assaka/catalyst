@@ -22,60 +22,11 @@ export const SlotStorage = {
     return;
   },
   
-  // Save to database
+  // Save to database - DISABLED (use versioning system instead)
   saveToDatabase: async (pageType, storeId, config) => {
-    try {
-      const { default: apiClient } = await import('@/api/client');
-      
-      console.log('📤 Saving slot configuration to database:', {
-        pageType,
-        storeId,
-        configKeys: Object.keys(config),
-        configSize: JSON.stringify(config).length
-      });
-      
-      // Ensure page_name matches what's in database (capitalize first letter)
-      const pageName = pageType.charAt(0).toUpperCase() + pageType.slice(1);
-      
-      const payload = {
-        page_name: pageName,
-        page_type: pageType,
-        slot_type: `${pageType}_layout`,
-        store_id: storeId,
-        configuration: config,
-        is_active: true
-      };
-      
-      console.log('📦 Payload to send:', {
-        ...payload,
-        configuration: {
-          keys: Object.keys(payload.configuration),
-          majorSlotsCount: payload.configuration.majorSlots?.length,
-          slotContentKeys: Object.keys(payload.configuration.slotContent || {})
-        }
-      });
-      
-      // Always use POST - backend handles UPSERT automatically
-      console.log('📤 Using POST with backend UPSERT logic');
-      const result = await apiClient.post('slot-configurations', payload);
-      console.log('✅ Configuration saved successfully:', result);
-      
-      return true;
-    } catch (error) {
-      console.error('❌ Failed to save to database:', {
-        error: error.message,
-        response: error.response,
-        data: error.response?.data,
-        status: error.response?.status
-      });
-      
-      // Try to extract more details from the error
-      if (error.response?.data) {
-        console.error('🔍 Server error details:', error.response.data);
-      }
-      
-      return false;
-    }
+    console.warn('⚠️ SlotStorage.saveToDatabase is deprecated - use useDraftConfiguration hook instead');
+    console.log('🔄 This legacy method is disabled to prevent conflicts with the versioning system');
+    return false;
   },
   
   // Load from database
