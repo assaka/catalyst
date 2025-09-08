@@ -45,9 +45,12 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
     comment: 'Whether this configuration is currently active'
   },
   status: {
-    type: DataTypes.ENUM('draft', 'acceptance', 'published', 'reverted'),
+    type: DataTypes.STRING(20),
     allowNull: false,
     defaultValue: 'draft',
+    validate: {
+      isIn: [['draft', 'acceptance', 'published', 'reverted']]
+    },
     comment: 'Status of the configuration version: draft -> acceptance -> published'
   },
   version_number: {

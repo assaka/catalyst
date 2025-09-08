@@ -36,20 +36,45 @@ async function migrateEnhancedVersioning() {
         -- Enhanced versioning migration for slot_configurations
         BEGIN;
         
-        -- Add 'acceptance' to the status enum if it doesn't exist
+        -- Ensure status column supports 'acceptance' value
         DO $$
         BEGIN
-          -- Check if the enum value already exists
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_enum 
-            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'enum_slot_configurations_status') 
-            AND enumlabel = 'acceptance'
+          -- Check if status column is ENUM or VARCHAR
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'slot_configurations' 
+            AND column_name = 'status' 
+            AND data_type = 'USER-DEFINED'
           ) THEN
-            -- Add 'acceptance' after 'draft'
-            ALTER TYPE enum_slot_configurations_status ADD VALUE 'acceptance' AFTER 'draft';
-            RAISE NOTICE 'Added acceptance status to ENUM';
+            -- Column is ENUM, add 'acceptance' value if it doesn't exist
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_enum 
+              WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'enum_slot_configurations_status') 
+              AND enumlabel = 'acceptance'
+            ) THEN
+              ALTER TYPE enum_slot_configurations_status ADD VALUE 'acceptance' AFTER 'draft';
+              RAISE NOTICE 'Added acceptance status to ENUM';
+            ELSE
+              RAISE NOTICE 'Acceptance status already exists in ENUM';
+            END IF;
+          ELSIF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'slot_configurations' 
+            AND column_name = 'status' 
+            AND data_type = 'character varying'
+          ) THEN
+            -- Column is VARCHAR, update check constraint to include 'acceptance'
+            BEGIN
+              ALTER TABLE slot_configurations DROP CONSTRAINT IF EXISTS chk_status_values;
+              ALTER TABLE slot_configurations 
+              ADD CONSTRAINT chk_status_values 
+              CHECK (status IN ('draft', 'acceptance', 'published', 'reverted'));
+              RAISE NOTICE 'Updated VARCHAR status constraint to include acceptance';
+            EXCEPTION WHEN OTHERS THEN
+              RAISE NOTICE 'Could not update status constraint: %', SQLERRM;
+            END;
           ELSE
-            RAISE NOTICE 'Acceptance status already exists in ENUM';
+            RAISE NOTICE 'Status column not found or unknown type';
           END IF;
         END $$;
         
