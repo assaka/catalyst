@@ -2419,11 +2419,11 @@ export default function CartSlotsEditorWithMicroSlots({
     // Save to database using the versioning system through useDraftConfiguration hook
     try {
       const storeId = selectedStore?.id;
-      console.log('💾 Save attempt - Store ID check:', {
-        selectedStore,
-        storeId,
-        hasStoreId: !!storeId
-      });
+      // console.log('💾 Save attempt - Store ID check:', {
+      //   selectedStore,
+      //   storeId,
+      //   hasStoreId: !!storeId
+      // }); // Disabled to prevent console spam
       
       if (!storeId) {
         console.warn('⚠️ No store ID available, cannot save to database');
@@ -2431,14 +2431,14 @@ export default function CartSlotsEditorWithMicroSlots({
       }
       
       if (storeId && updateConfiguration) {
-        console.log('💾 Using versioning system to save draft');
-        console.log('📤 Saving configuration:', JSON.stringify(config, null, 2));
+        // console.log('💾 Using versioning system to save draft'); // Disabled to prevent console spam
+        // console.log('📤 Saving configuration:', JSON.stringify(config, null, 2)); // Disabled to prevent console spam
         
         // Use the updateConfiguration function from useDraftConfiguration hook
         // This will handle the draft update via the versioning API
         await updateConfiguration(config);
         
-        console.log('✅ Draft configuration saved successfully');
+        // console.log('✅ Draft configuration saved successfully'); // Disabled to prevent console spam
       }
       
       // Call the parent onSave callback
@@ -2567,27 +2567,27 @@ export default function CartSlotsEditorWithMicroSlots({
   //   console.log('🔍 customSlots keys:', Object.keys(customSlots));
   // }, [customSlots]);
 
-  // Auto-save when customSlots changes after adding a slot
-  useEffect(() => {
-    if (justAddedCustomSlot) {
-      // console.log('🔧 CustomSlot was just added, triggering save with current customSlots:', customSlots); // Disabled to prevent console spam
-      setJustAddedCustomSlot(false);
-      immediateSave();
-    }
-  }, [customSlots, justAddedCustomSlot]); // Removed immediateSave from dependencies
+  // Auto-save when customSlots changes after adding a slot (TEMPORARILY DISABLED)
+  // useEffect(() => {
+  //   if (justAddedCustomSlot) {
+  //     // console.log('🔧 CustomSlot was just added, triggering save with current customSlots:', customSlots); // Disabled to prevent console spam
+  //     setJustAddedCustomSlot(false);
+  //     immediateSave();
+  //   }
+  // }, [customSlots, justAddedCustomSlot]); // Removed immediateSave from dependencies
 
-  // Auto-save when microSlotOrders changes (for drag-and-drop persistence)
-  useEffect(() => {
-    // Skip initial load and only save after user interactions
-    const isInitialLoad = Object.keys(microSlotOrders).length === 0;
-    if (isInitialLoad) {
-      // console.log('⏭️ Skipping microSlotOrders save - initial load'); // Disabled to prevent console spam
-      return;
-    }
-    
-    // console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders); // Disabled to prevent console spam
-    immediateSave();
-  }, [microSlotOrders]); // Removed immediateSave from dependencies
+  // Auto-save when microSlotOrders changes (for drag-and-drop persistence) (TEMPORARILY DISABLED)
+  // useEffect(() => {
+  //   // Skip initial load and only save after user interactions
+  //   const isInitialLoad = Object.keys(microSlotOrders).length === 0;
+  //   if (isInitialLoad) {
+  //     // console.log('⏭️ Skipping microSlotOrders save - initial load'); // Disabled to prevent console spam
+  //     return;
+  //   }
+  //   
+  //   // console.log('💾 microSlotOrders changed, triggering save:', microSlotOrders); // Disabled to prevent console spam
+  //   immediateSave();
+  // }, [microSlotOrders]); // Removed immediateSave from dependencies
 
   // Load saved configuration on mount - ONLY FROM DATABASE
   useEffect(() => {
