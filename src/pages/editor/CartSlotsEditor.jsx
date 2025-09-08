@@ -1754,15 +1754,19 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   input.addEventListener('change', (e) => {
                     const newColor = e.target.value;
                     console.log('🎨 🎯 NATIVE change event:', newColor);
+                    console.log('🎨 🎯 handleClassChange type:', typeof handleClassChange);
+                    console.log('🎨 🎯 onClassChange type:', typeof onClassChange);
                     
-                    if (typeof handleClassChange === 'function') {
+                    if (typeof onClassChange === 'function') {
                       const currentClasses = elementClasses[id] || '';
                       const newClasses = currentClasses
                         .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                         .trim();
                       
                       console.log('🎨 🎯 NATIVE Applying:', { id, newClasses, newStyles: { color: newColor } });
-                      handleClassChange(id, newClasses, { color: newColor });
+                      onClassChange(id, newClasses, { color: newColor });
+                    } else {
+                      console.error('🎨 ❌ onClassChange not available!');
                     }
                   });
                   
@@ -1770,14 +1774,16 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                     const newColor = e.target.value;
                     console.log('🎨 🎯 NATIVE input event:', newColor);
                     
-                    if (typeof handleClassChange === 'function') {
+                    if (typeof onClassChange === 'function') {
                       const currentClasses = elementClasses[id] || '';
                       const newClasses = currentClasses
                         .replace(/text-(gray|red|blue|green|yellow|purple|pink|indigo|white|black)-?([0-9]+)?/g, '')
                         .trim();
                       
                       console.log('🎨 🎯 NATIVE Applying (input):', { id, newClasses, newStyles: { color: newColor } });
-                      handleClassChange(id, newClasses, { color: newColor });
+                      onClassChange(id, newClasses, { color: newColor });
+                    } else {
+                      console.error('🎨 ❌ onClassChange not available for input event!');
                     }
                   });
                 }
