@@ -1865,7 +1865,6 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
         <div className={(() => {
           const wrapperId = `${id}_wrapper`;
           const wrapperClasses = elementClasses[wrapperId] || '';
-          console.log('🎯 MicroSlot applying wrapper alignment classes:', { id, wrapperId, wrapperClasses });
           return wrapperClasses;
         })()} style={elementStyles[`${id}_wrapper`] || {}}>
           {children}
@@ -2430,15 +2429,23 @@ export default function CartSlotsEditorWithMicroSlots({
         return;
       }
       
+      console.log('🔍 Save check:', { storeId: !!storeId, updateConfiguration: !!updateConfiguration });
+      
       if (storeId && updateConfiguration) {
-        // console.log('💾 Using versioning system to save draft'); // Disabled to prevent console spam
-        // console.log('📤 Saving configuration:', JSON.stringify(config, null, 2)); // Disabled to prevent console spam
+        console.log('💾 Using versioning system to save draft - COLOR/ALIGNMENT SAVE');
+        console.log('📤 Saving configuration with elementStyles:', config.elementStyles);
         
         // Use the updateConfiguration function from useDraftConfiguration hook
         // This will handle the draft update via the versioning API
-        await updateConfiguration(config);
-        
-        console.log('✅ Draft configuration saved successfully - Color change persisted');
+        try {
+          await updateConfiguration(config);
+          console.log('✅ Draft configuration saved successfully - Color change persisted');
+        } catch (error) {
+          console.error('❌ Failed to save configuration:', error);
+          throw error;
+        }
+      } else {
+        console.warn('⚠️ Cannot save - missing storeId or updateConfiguration function');
       }
       
       // Call the parent onSave callback
@@ -2912,7 +2919,6 @@ export default function CartSlotsEditorWithMicroSlots({
         ...prev,
         [slotId]: newClass
       };
-      console.log('🔧 Updated elementClasses:', updated);
       return updated;
     });
     
