@@ -2425,8 +2425,8 @@ export default function CartSlotsEditorWithMicroSlots({
     ]);
     
     allSlotIds.forEach(id => {
-      // Check for parent wrapper classes (for alignment and other parent styles)
-      const wrapperId = `${id}_wrapper`;
+      // Check for parent wrapper classes (for alignment and other parent styles) - use hyphen format
+      const wrapperId = `${id}-wrapper`;
       const parentClassName = elementClasses[wrapperId] || '';
       
       slots[id] = {
@@ -3178,7 +3178,7 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Handle class change for elements (now also supports inline styles)
   const handleClassChange = useCallback((slotId, newClass, newStyles = null) => {
-    console.log('🔧 handleClassChange called - COLOR PICKER:', { slotId, newClass, newStyles });
+    console.log('🔧 handleClassChange called:', { slotId, newClass, newStyles, isWrapper: slotId.includes('-wrapper') });
     
     setElementClasses(prev => {
       const updated = {
