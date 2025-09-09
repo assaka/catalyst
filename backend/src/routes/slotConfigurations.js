@@ -51,22 +51,30 @@ router.get('/public/slot-configurations', async (req, res) => {
     }
     
     if (!configuration) {
-      // Return default configuration if nothing exists
-      return res.json({
-        success: true,
-        data: [{
-          id: null,
-          store_id,
-          configuration: {
-            slots: {},
-            metadata: {
-              created: new Date().toISOString(),
-              lastModified: new Date().toISOString()
-            }
-          },
-          is_active: true
-        }]
-      });
+      // Create a new draft configuration with default content
+      console.log('No configuration found, creating default draft for store:', store_id);
+      
+      try {
+        // Get the first user to assign the configuration to
+        const firstUser = await SlotConfiguration.sequelize.query(
+          'SELECT id FROM users LIMIT 1',
+          { type: SlotConfiguration.sequelize.QueryTypes.SELECT }
+        );
+        
+        if (firstUser.length === 0) {
+          return res.status(500).json({ success: false, error: 'No users found in database' });
+        }
+        
+        const userId = firstUser[0].id;
+        
+        // Create draft using the upsert method
+        configuration = await SlotConfiguration.upsertDraft(userId, store_id, page_type);
+        console.log('Created default draft configuration:', configuration.id);
+        
+      } catch (error) {
+        console.error('Error creating default draft configuration:', error);
+        return res.status(500).json({ success: false, error: error.message });
+      }
     }
     
     res.json({ success: true, data: [configuration] });

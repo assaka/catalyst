@@ -1863,10 +1863,10 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
       
       <div className="relative z-1">
         <div className={(() => {
-          const wrapperId = `${id}_wrapper`;
+          const wrapperId = `${id}-wrapper`;
           const wrapperClasses = elementClasses[wrapperId] || '';
           return wrapperClasses;
-        })()} style={elementStyles[`${id}_wrapper`] || {}}>
+        })()} style={elementStyles[`${id}-wrapper`] || {}}>
           {children}
         </div>
         
@@ -2185,7 +2185,7 @@ export default function CartSlotsEditorWithMicroSlots({
         }
         // Load parentClassName as wrapper classes
         if (slotData?.parentClassName) {
-          const wrapperId = `${slotId}_wrapper`;
+          const wrapperId = `${slotId}-wrapper`;
           extractedClasses[wrapperId] = slotData.parentClassName;
         }
       });
