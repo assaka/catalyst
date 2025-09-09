@@ -2853,23 +2853,72 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           // Load saved configuration, merging with current state to preserve defaults for unsaved items
           // But use saved values directly (including empty strings) when they exist
-          if (config.slotContent) {
+          
+          // Handle new structure with config.slots
+          if (config.slots) {
+            console.log('📥 Loading from new slots structure:', config.slots);
+            const loadedContent = {};
+            const loadedClasses = {};
+            const loadedStyles = {};
+            
+            Object.entries(config.slots).forEach(([slotId, slotData]) => {
+              if (slotData.content !== undefined) {
+                loadedContent[slotId] = slotData.content;
+              }
+              
+              // Load className for the slot itself
+              if (slotData.className !== undefined) {
+                loadedClasses[slotId] = slotData.className;
+              }
+              
+              // Load parentClassName for the wrapper div (used for alignment)
+              if (slotData.parentClassName !== undefined) {
+                const wrapperId = `${slotId}-wrapper`;
+                loadedClasses[wrapperId] = slotData.parentClassName;
+              }
+              
+              // Load styles - handle both inline styles and color values
+              if (slotData.styles !== undefined) {
+                loadedStyles[slotId] = slotData.styles;
+              }
+            });
+            
+            console.log('📥 Loaded content:', loadedContent);
+            console.log('📥 Loaded classes:', loadedClasses);
+            console.log('📥 Loaded styles:', loadedStyles);
+            
             setSlotContent(prev => ({
-              ...prev,  // Keep defaults for any keys not in saved config
-              ...config.slotContent  // Override with saved values (including empty strings)
+              ...prev,
+              ...loadedContent
             }));
-          }
-          if (config.elementClasses) {
             setElementClasses(prev => ({
               ...prev,
-              ...config.elementClasses
+              ...loadedClasses
             }));
-          }
-          if (config.elementStyles) {
             setElementStyles(prev => ({
               ...prev,
-              ...config.elementStyles
+              ...loadedStyles
             }));
+          } else {
+            // Fallback to old structure for backward compatibility
+            if (config.slotContent) {
+              setSlotContent(prev => ({
+                ...prev,  // Keep defaults for any keys not in saved config
+                ...config.slotContent  // Override with saved values (including empty strings)
+              }));
+            }
+            if (config.elementClasses) {
+              setElementClasses(prev => ({
+                ...prev,
+                ...config.elementClasses
+              }));
+            }
+            if (config.elementStyles) {
+              setElementStyles(prev => ({
+                ...prev,
+                ...config.elementStyles
+              }));
+            }
           }
           if (config.componentSizes) {
             setComponentSizes(prev => ({
