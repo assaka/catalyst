@@ -1364,8 +1364,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           {/* Text alignment controls */}
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             {(() => {
-              // Create a wrapper ID for the immediate parent (one level up)
-              const wrapperId = `${id}_wrapper`;
+              // Create a wrapper ID for the immediate parent (one level up) - use hyphen format
+              const wrapperId = `${id}-wrapper`;
               const currentWrapperClasses = elementClasses[wrapperId] || '';
               const hasTextLeft = currentWrapperClasses.includes('text-left');
               const hasTextCenter = currentWrapperClasses.includes('text-center');
@@ -1375,8 +1375,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 <>
                   <button
                     onClick={() => {
-                      // Target the immediate wrapper (one level up)
-                      const wrapperId = `${id}_wrapper`;
+                      // Target the immediate wrapper (one level up) - use hyphen format
+                      const wrapperId = `${id}-wrapper`;
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
@@ -1390,8 +1390,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
-                      // Target the immediate wrapper (one level up)
-                      const wrapperId = `${id}_wrapper`;
+                      // Target the immediate wrapper (one level up) - use hyphen format
+                      const wrapperId = `${id}-wrapper`;
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
@@ -1405,8 +1405,8 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
-                      // Target the immediate wrapper (one level up)
-                      const wrapperId = `${id}_wrapper`;
+                      // Target the immediate wrapper (one level up) - use hyphen format
+                      const wrapperId = `${id}-wrapper`;
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
@@ -3059,15 +3059,25 @@ export default function CartSlotsEditorWithMicroSlots({
       activationConstraint: { distance: 8 },
     })
   );
+  
+  // Debug log to confirm drag setup
+  useEffect(() => {
+    console.log('🎯 DRAG SETUP - Mode:', mode, 'Sensors:', sensors);
+  }, [mode]);
 
   // Handle major slot reordering
   const handleMajorDragEnd = useCallback(async (event) => {
+    console.log('🎯 MAJOR DRAG END:', event);
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      console.log('🎯 MAJOR DRAG END: No over or same ID');
+      return;
+    }
     
     setMajorSlots((items) => {
       const oldIndex = items.indexOf(active.id);
       const newIndex = items.indexOf(over.id);
+      console.log('🎯 MAJOR DRAG: Reordering', { oldIndex, newIndex, active: active.id, over: over.id });
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(items, oldIndex, newIndex);
         // Save after drag - delayed to allow state updates to complete
@@ -3080,6 +3090,7 @@ export default function CartSlotsEditorWithMicroSlots({
   }, []); // Remove immediateSave dependency to prevent infinite loops
 
   const handleMajorDragStart = useCallback((event) => {
+    console.log('🎯 MAJOR DRAG START:', event.active.id);
     setActiveDragSlot(event.active.id);
   }, []);
 
