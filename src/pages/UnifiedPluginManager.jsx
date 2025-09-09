@@ -91,10 +91,11 @@ const UnifiedPluginManager = () => {
   const [systemStats, setSystemStats] = useState({});
   
   // Code Editor states
+  const [selectedPlugin, setSelectedPlugin] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [sourceCode, setSourceCode] = useState('');
   const [originalCode, setOriginalCode] = useState('');
-  const [showCodeEditor, setShowCodeEditor] = useState(false);
+  const [pluginFiles, setPluginFiles] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -378,20 +379,39 @@ const UnifiedPluginManager = () => {
     });
   };
 
-  // Handle file selection from tree navigator
+  // Handle plugin selection for code editing
+  const handlePluginSelectForEdit = async (plugin) => {
+    try {
+      setSelectedPlugin(plugin);
+      setSelectedFile(null);
+      setSourceCode('');
+      setOriginalCode('');
+      
+      // Load plugin files from the plugin directory
+      const response = await apiClient.request('GET', `plugins/${plugin.id}/files`);
+      setPluginFiles(response.files || []);
+      
+    } catch (error) {
+      console.error('Error loading plugin files:', error);
+      alert(`Error loading plugin files: ${error.message}`);
+    }
+  };
+
+  // Handle file selection within selected plugin
   const handleFileSelect = async (file) => {
+    if (!selectedPlugin) return;
+    
     try {
       setSelectedFile(file);
       
-      // Load file content
-      const response = await apiClient.request('GET', `files/content`, {
+      // Load file content from plugin directory
+      const response = await apiClient.request('GET', `plugins/${selectedPlugin.id}/files/content`, {
         params: { filePath: file.path }
       });
       
       const content = response.content || '';
       setSourceCode(content);
       setOriginalCode(content);
-      setShowCodeEditor(true);
       
     } catch (error) {
       console.error('Error loading file:', error);
@@ -404,22 +424,22 @@ const UnifiedPluginManager = () => {
     setSourceCode(newCode);
   };
 
-  // Handle code save
+  // Handle code save within plugin
   const handleCodeSave = async () => {
-    if (!selectedFile) return;
+    if (!selectedPlugin || !selectedFile) return;
     
     try {
-      await apiClient.request('POST', 'files/save', {
+      await apiClient.request('POST', `plugins/${selectedPlugin.id}/files/save`, {
         filePath: selectedFile.path,
         content: sourceCode
       });
       
       setOriginalCode(sourceCode);
-      alert('File saved successfully!');
+      alert('Plugin file saved successfully!');
       
     } catch (error) {
-      console.error('Error saving file:', error);
-      alert(`Error saving file: ${error.message}`);
+      console.error('Error saving plugin file:', error);
+      alert(`Error saving plugin file: ${error.message}`);
     }
   };
 
@@ -774,6 +794,18 @@ const UnifiedPluginManager = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => {
+                                  handlePluginSelectForEdit(item);
+                                  setActiveTab('code-editor');
+                                }}
+                                className="border-green-200 text-green-700 hover:bg-green-50"
+                              >
+                                <Code className="w-3 h-3 mr-1" />
+                                Edit Code
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleUninstallPlugin(item)}
                               >
                                 <Pause className="w-3 h-3 mr-1" />
@@ -806,20 +838,54 @@ const UnifiedPluginManager = () => {
           <TabsContent value="code-editor">
             <div className="h-[800px] border rounded-lg overflow-hidden bg-white">
               <div className="h-full flex">
-                {/* File Explorer */}
+                {/* Plugin File Explorer */}
                 <div className="w-1/3 border-r">
                   <div className="p-4 border-b bg-gray-50">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <FolderOpen className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-medium">File Explorer</h3>
+                      <h3 className="font-medium">Plugin Files</h3>
                     </div>
+                    {selectedPlugin && (
+                      <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
+                        <Package className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-800">
+                          {selectedPlugin.name}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="h-full overflow-auto">
-                    <FileTreeNavigator
-                      onFileSelect={handleFileSelect}
-                      className="h-full"
-                      showSearch={true}
-                    />
+                    {selectedPlugin ? (
+                      <div className="p-2">
+                        {pluginFiles.length > 0 ? (
+                          pluginFiles.map((file, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleFileSelect(file)}
+                              className={`flex items-center gap-2 p-2 hover:bg-gray-100 cursor-pointer rounded ${
+                                selectedFile?.path === file.path ? 'bg-blue-100 text-blue-800' : ''
+                              }`}
+                            >
+                              <FileText className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm">{file.name}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-gray-500">
+                            <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm">No files found in this plugin</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        <Package className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm">Select a plugin to edit its code</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Use "Edit Code" button on any installed plugin
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -882,28 +948,54 @@ const UnifiedPluginManager = () => {
                     /* No File Selected */
                     <div className="flex-1 flex items-center justify-center">
                       <div className="text-center">
-                        <Code className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          Manual Code Editor
-                        </h3>
-                        <p className="text-gray-600 mb-4 max-w-md">
-                          Select a file from the explorer to start editing code manually.
-                          Perfect for plugin development and customizations.
-                        </p>
-                        <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
-                            Syntax Highlighting
+                        {selectedPlugin ? (
+                          <>
+                            <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                              Plugin Code Editor
+                            </h3>
+                            <p className="text-gray-600 mb-4 max-w-md">
+                              Select a file from <strong>{selectedPlugin.name}</strong> plugin to start editing.
+                              Modify controllers, models, components, and configuration files.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                              Plugin Code Editor
+                            </h3>
+                            <p className="text-gray-600 mb-4 max-w-md">
+                              Click "Edit Code" on any installed plugin to access its source files.
+                              Perfect for customizations and plugin development.
+                            </p>
+                            <Button
+                              onClick={() => setActiveTab('installed')}
+                              variant="outline"
+                              className="mt-2"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Installed Plugins
+                            </Button>
+                          </>
+                        )}
+                        
+                        {selectedPlugin && (
+                          <div className="flex items-center justify-center gap-4 text-sm text-gray-500 mt-4">
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              Syntax Highlighting
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              Plugin-specific
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              Diff View
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
-                            Auto-save
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
-                            Diff View
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -942,10 +1034,24 @@ const UnifiedPluginManager = () => {
                       </p>
                       
                       <div className="flex justify-between items-center">
-                        <Button variant="outline" size="sm">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Configure
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              handlePluginSelectForEdit(item);
+                              setActiveTab('code-editor');
+                            }}
+                            className="border-green-200 text-green-700 hover:bg-green-50"
+                          >
+                            <Code className="w-4 h-4 mr-2" />
+                            Edit Code
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Settings className="w-4 h-4 mr-2" />
+                            Configure
+                          </Button>
+                        </div>
                         <Button
                           onClick={() => handleUninstallPlugin(item)}
                           variant="outline"
