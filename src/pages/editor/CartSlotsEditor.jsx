@@ -2205,10 +2205,17 @@ export default function CartSlotsEditorWithMicroSlots({
     }
     
     if (config.microSlotOrders) {
-      setMicroSlotOrders(prev => ({
-        ...prev,
-        ...config.microSlotOrders
-      }));
+      console.log('🎯 LOAD DEBUG: Loading microSlotOrders from config:', config.microSlotOrders);
+      setMicroSlotOrders(prev => {
+        const updated = {
+          ...prev,
+          ...config.microSlotOrders
+        };
+        console.log('🎯 LOAD DEBUG: Updated microSlotOrders state:', updated);
+        return updated;
+      });
+    } else {
+      console.warn('🎯 LOAD DEBUG: No microSlotOrders found in config!');
     }
     
     if (config.microSlotSpans) {
