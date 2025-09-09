@@ -1957,11 +1957,19 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
 
   const handleMicroDragEnd = (event) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    console.log('🎯 MICRO DRAG END:', { active: active?.id, over: over?.id, parentId: id });
+    
+    if (!over || active.id === over.id) {
+      console.log('🎯 MICRO DRAG END: No over or same ID, returning');
+      return;
+    }
     
     // Only allow reordering within the same parent
     if (active.id.split('.')[0] === over.id.split('.')[0]) {
+      console.log('🎯 MICRO DRAG END: Calling onMicroSlotReorder with:', { id, activeId: active.id, overId: over.id });
       onMicroSlotReorder(id, active.id, over.id);
+    } else {
+      console.log('🎯 MICRO DRAG END: Different parents, not reordering');
     }
   };
 
@@ -3014,22 +3022,34 @@ export default function CartSlotsEditorWithMicroSlots({
   const handleMicroSlotReorder = useCallback((parentId, activeId, overId) => {
     console.log('🎯 DRAG DEBUG: ===== DRAG EVENT STARTED =====');
     console.log('🎯 DRAG DEBUG: handleMicroSlotReorder called:', { parentId, activeId, overId });
+    console.log('🎯 DRAG DEBUG: activeId parts:', activeId.split('.'));
+    console.log('🎯 DRAG DEBUG: overId parts:', overId.split('.'));
     console.log('🎯 DRAG DEBUG: Current microSlotOrders at drag start:', microSlotOrders);
+    console.log('🎯 DRAG DEBUG: microSlotOrders[parentId]:', microSlotOrders[parentId]);
     
     setMicroSlotOrders(prev => {
       console.log('🎯 DRAG DEBUG: Previous microSlotOrders:', prev);
       
       const newOrders = { ...prev };
       const parentOrder = [...(newOrders[parentId] || [])];
-      const oldIndex = parentOrder.indexOf(activeId);
-      const newIndex = parentOrder.indexOf(overId);
+      
+      // Extract just the slot ID part (after the last dot)
+      const activeSlotId = activeId.includes('.') ? activeId.split('.').pop() : activeId;
+      const overSlotId = overId.includes('.') ? overId.split('.').pop() : overId;
+      
+      console.log('🎯 DRAG DEBUG: Extracted slot IDs:', { activeSlotId, overSlotId });
+      
+      const oldIndex = parentOrder.indexOf(activeSlotId);
+      const newIndex = parentOrder.indexOf(overSlotId);
       
       console.log('🎯 DRAG DEBUG: Reorder details:', { 
         parentOrder, 
         oldIndex, 
         newIndex,
-        activeId,
-        overId
+        activeSlotId,
+        overSlotId,
+        originalActiveId: activeId,
+        originalOverId: overId
       });
       
       if (oldIndex !== -1 && newIndex !== -1) {
