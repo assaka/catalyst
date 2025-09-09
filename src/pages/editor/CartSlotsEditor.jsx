@@ -3105,7 +3105,7 @@ export default function CartSlotsEditorWithMicroSlots({
       
       return newOrders;
     });
-  }, []);
+  }, [saveConfiguration]);
   
   // Handle span change for a micro-slot
   const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {

@@ -33,15 +33,6 @@ function App() {
         // Load core extensions
         const extensionsToLoad = [
           {
-            module: '/src/extensions/custom-pricing.js',
-            enabled: true,
-            config: {
-              volumeDiscountEnabled: true,
-              loyaltyDiscountEnabled: true,
-              minimumOrderForDiscount: 100
-            }
-          },
-          {
             module: '/src/extensions/analytics-tracker.js', 
             enabled: true,
             config: {

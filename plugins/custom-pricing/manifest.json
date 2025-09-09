@@ -1,0 +1,42 @@
+{
+  "name": "Custom Pricing Plugin",
+  "version": "2.0.0",
+  "description": "Advanced pricing rules and discounts with database storage",
+  "type": "full",
+  "category": "commerce",
+  "author": "Store Admin",
+  "createdAt": "2025-01-20T00:00:00.000Z",
+  "security": {
+    "level": "trusted",
+    "permissions": [
+      "database.read",
+      "database.write",
+      "api.pricing",
+      "hooks.cart",
+      "hooks.pricing"
+    ]
+  },
+  "framework": "react",
+  "dependencies": [],
+  "tags": ["pricing", "discounts", "loyalty", "database"],
+  "hooks": [
+    "pricing.calculate",
+    "pricing.format",
+    "cart.beforeAddItem",
+    "cart.calculateItemPrice",
+    "cart.validateCoupon",
+    "cart.getCheckoutUrl"
+  ],
+  "events": [
+    "cart.itemsLoaded",
+    "cart.couponApplied",
+    "cart.checkoutStarted"
+  ],
+  "database": {
+    "tables": [
+      "plugin_custom_pricing_rules",
+      "plugin_custom_pricing_discounts",
+      "plugin_custom_pricing_logs"
+    ]
+  }
+}
