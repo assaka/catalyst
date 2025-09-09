@@ -2590,6 +2590,7 @@ export default function CartSlotsEditorWithMicroSlots({
       return false;
     }
   }, [microSlotOrders, microSlotSpans, majorSlots, slotContent, elementStyles, elementClasses, componentSizes, customSlots, selectedStore]);
+
   
   // Removed immediateSave wrapper - calling saveConfiguration directly
   
@@ -3058,11 +3059,11 @@ export default function CartSlotsEditorWithMicroSlots({
         console.log('🔄 Micro-slot reordered:', { parentId, from: oldIndex, to: newIndex, newOrder: newOrders[parentId] });
         console.log('🎯 DRAG DEBUG: New microSlotOrders state:', newOrders);
         
-        // Save after drag reorder - delayed to allow state updates to complete
+        // Save after drag reorder - simple approach
         setTimeout(() => {
           console.log('🎯 DRAG DEBUG: Calling saveConfiguration after drag...');
           saveConfiguration();
-        }, 0);
+        }, 100); // Small delay to ensure state update completes
       } else {
         console.warn('🎯 DRAG DEBUG: Invalid indexes - no reorder performed');
       }
