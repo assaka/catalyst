@@ -252,13 +252,73 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
     }
   });
 
-  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : {
-    slots: {},
-    metadata: {
-      created: new Date().toISOString(),
-      lastModified: new Date().toISOString()
-    }
-  });
+  // Create proper default configuration with micro-slot definitions
+  const getDefaultConfig = () => {
+    // Default micro-slot definitions for cart
+    const defaultMicroSlotOrders = {
+      flashMessage: ['flashMessage.message'],
+      emptyCart: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
+      header: ['header.title'],
+      cartItem: ['cartItem.productImage', 'cartItem.productTitle', 'cartItem.quantityControl', 'cartItem.productPrice', 'cartItem.removeButton'],
+      coupon: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.message', 'coupon.appliedCoupon'],
+      orderSummary: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.shipping', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
+      recommendations: ['recommendations.title', 'recommendations.products']
+    };
+    
+    const defaultMicroSlotSpans = {
+      flashMessage: { 'flashMessage.message': { col: 12, row: 1 } },
+      emptyCart: {
+        'emptyCart.icon': { col: 2, row: 1 },
+        'emptyCart.title': { col: 10, row: 1 },
+        'emptyCart.text': { col: 12, row: 1 },
+        'emptyCart.button': { col: 12, row: 1 }
+      },
+      header: { 'header.title': { col: 12, row: 1 } },
+      cartItem: {
+        'cartItem.productImage': { col: 2, row: 2 },
+        'cartItem.productTitle': { col: 6, row: 1 },
+        'cartItem.quantityControl': { col: 2, row: 1 },
+        'cartItem.productPrice': { col: 2, row: 1 },
+        'cartItem.removeButton': { col: 12, row: 1 }
+      },
+      coupon: {
+        'coupon.title': { col: 12, row: 1 },
+        'coupon.input': { col: 8, row: 1 },
+        'coupon.button': { col: 4, row: 1 },
+        'coupon.message': { col: 12, row: 1 },
+        'coupon.appliedCoupon': { col: 12, row: 1 }
+      },
+      orderSummary: {
+        'orderSummary.title': { col: 12, row: 1 },
+        'orderSummary.subtotal': { col: 12, row: 1 },
+        'orderSummary.discount': { col: 12, row: 1 },
+        'orderSummary.shipping': { col: 12, row: 1 },
+        'orderSummary.tax': { col: 12, row: 1 },
+        'orderSummary.total': { col: 12, row: 1 },
+        'orderSummary.checkoutButton': { col: 12, row: 1 }
+      },
+      recommendations: {
+        'recommendations.title': { col: 12, row: 1 },
+        'recommendations.products': { col: 12, row: 3 }
+      }
+    };
+    
+    return {
+      page_name: 'Cart',
+      slots: {},
+      majorSlots: ['header', 'emptyCart', 'cartItems'],
+      microSlotOrders: defaultMicroSlotOrders,
+      microSlotSpans: defaultMicroSlotSpans,
+      componentSizes: {},
+      customSlots: {},
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+    };
+  };
+
+  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : getDefaultConfig());
 
   const newDraft = await this.create({
     user_id: userId,
