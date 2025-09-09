@@ -2387,7 +2387,10 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
+    console.log('💾 ===== SAVE CONFIGURATION STARTED =====');
     console.log('💾 saveConfiguration called - checking microSlotOrders:', microSlotOrders);
+    console.log('💾 microSlotOrders keys:', Object.keys(microSlotOrders || {}));
+    console.log('💾 microSlotOrders empty check:', Object.keys(microSlotOrders || {}).length === 0);
     // console.log('📋 Current slotContent state:', slotContent); // Disabled to prevent console spam
     setSaveStatus('saving');
     
@@ -2430,6 +2433,11 @@ export default function CartSlotsEditorWithMicroSlots({
         lastModified: new Date().toISOString()
       }
     };
+    
+    console.log('💾 CONFIG OBJECT CREATED:');
+    console.log('💾 config.microSlotOrders:', config.microSlotOrders);
+    console.log('💾 config.microSlotSpans:', config.microSlotSpans);
+    console.log('💾 microSlotOrders is empty:', Object.keys(config.microSlotOrders || {}).length === 0);
     
     // Configuration ready for database save
     const configString = JSON.stringify(config);
@@ -3004,7 +3012,9 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Handle micro-slot reordering within a parent
   const handleMicroSlotReorder = useCallback((parentId, activeId, overId) => {
+    console.log('🎯 DRAG DEBUG: ===== DRAG EVENT STARTED =====');
     console.log('🎯 DRAG DEBUG: handleMicroSlotReorder called:', { parentId, activeId, overId });
+    console.log('🎯 DRAG DEBUG: Current microSlotOrders at drag start:', microSlotOrders);
     
     setMicroSlotOrders(prev => {
       console.log('🎯 DRAG DEBUG: Previous microSlotOrders:', prev);
