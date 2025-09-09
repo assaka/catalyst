@@ -1,6 +1,6 @@
 /**
- * Modern Preview System - Replaces Old Diff System
- * Uses the new hook-based extension architecture
+ * Modern Preview System - Replaces Old Diff System  
+ * Uses the modern hook-based architecture for stable code changes
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -176,24 +176,15 @@ const DiffPreviewSystem = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Migration Notice */}
-      <Alert className="border-blue-200 bg-blue-50">
-        <Zap className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
-          <strong>New Extension System Active!</strong> This preview now uses the modern hook-based architecture 
-          instead of fragile diff patching. Changes are processed through extension points for stability and flexibility.
-        </AlertDescription>
-      </Alert>
-
-      {/* System Status */}
+      {/* System Status - Unified Plugin System */}
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Package className="w-5 h-5 text-green-600" />
             <div>
-              <h3 className="font-medium">Extension System Status</h3>
+              <h3 className="font-medium">Modern Preview System</h3>
               <p className="text-sm text-muted-foreground">
-                Hook-based architecture active with {Object.keys(hookSystem.getStats()).length} hooks registered
+                Hook-based architecture with {Object.keys(hookSystem.getStats()).length} hooks registered
               </p>
             </div>
           </div>
@@ -277,7 +268,7 @@ const DiffPreviewSystem = ({
             <Eye className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-medium mb-2">No Changes Detected</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Make changes to your code to see them previewed here with the new extension system.
+              Make changes to your code to see them previewed here with the modern hook-based system.
             </p>
             <div className="flex items-center justify-center space-x-4 text-xs text-muted-foreground">
               <div className="flex items-center">
@@ -290,7 +281,7 @@ const DiffPreviewSystem = ({
               </div>
               <div className="flex items-center">
                 <Package className="w-3 h-3 mr-1" />
-                Extension Ready
+                Plugin Ready
               </div>
             </div>
           </div>
