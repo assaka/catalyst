@@ -2391,7 +2391,7 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
-    console.log('💾 saveConfiguration called - Color change save');
+    console.log('💾 saveConfiguration called - checking microSlotOrders:', microSlotOrders);
     // console.log('📋 Current slotContent state:', slotContent); // Disabled to prevent console spam
     setSaveStatus('saving');
     
@@ -2957,18 +2957,36 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Handle micro-slot reordering within a parent
   const handleMicroSlotReorder = useCallback((parentId, activeId, overId) => {
+    console.log('🎯 DRAG DEBUG: handleMicroSlotReorder called:', { parentId, activeId, overId });
+    
     setMicroSlotOrders(prev => {
+      console.log('🎯 DRAG DEBUG: Previous microSlotOrders:', prev);
+      
       const newOrders = { ...prev };
       const parentOrder = [...(newOrders[parentId] || [])];
       const oldIndex = parentOrder.indexOf(activeId);
       const newIndex = parentOrder.indexOf(overId);
       
+      console.log('🎯 DRAG DEBUG: Reorder details:', { 
+        parentOrder, 
+        oldIndex, 
+        newIndex,
+        activeId,
+        overId
+      });
+      
       if (oldIndex !== -1 && newIndex !== -1) {
         newOrders[parentId] = arrayMove(parentOrder, oldIndex, newIndex);
         console.log('🔄 Micro-slot reordered:', { parentId, from: oldIndex, to: newIndex, newOrder: newOrders[parentId] });
+        console.log('🎯 DRAG DEBUG: New microSlotOrders state:', newOrders);
         
         // Save after drag reorder - delayed to allow state updates to complete
-        setTimeout(() => saveConfiguration(), 0);
+        setTimeout(() => {
+          console.log('🎯 DRAG DEBUG: Calling saveConfiguration after drag...');
+          saveConfiguration();
+        }, 0);
+      } else {
+        console.warn('🎯 DRAG DEBUG: Invalid indexes - no reorder performed');
       }
       
       return newOrders;
