@@ -54,7 +54,9 @@ import {
   RefreshCw,
   Shield,
   Database,
-  Globe
+  Globe,
+  FileText,
+  FolderOpen
 } from 'lucide-react';
 
 // Import both plugin systems
@@ -62,6 +64,10 @@ import apiClient from '@/api/client';
 import extensionSystem from '@/core/ExtensionSystem.js';
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
+
+// Import editor components for manual code editing
+import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator';
+import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 
 const UnifiedPluginManager = () => {
   const [activeTab, setActiveTab] = useState('marketplace');
@@ -83,6 +89,12 @@ const UnifiedPluginManager = () => {
   const [hookStats, setHookStats] = useState({});
   const [eventStats, setEventStats] = useState({});
   const [systemStats, setSystemStats] = useState({});
+  
+  // Code Editor states
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [sourceCode, setSourceCode] = useState('');
+  const [originalCode, setOriginalCode] = useState('');
+  const [showCodeEditor, setShowCodeEditor] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -366,6 +378,51 @@ const UnifiedPluginManager = () => {
     });
   };
 
+  // Handle file selection from tree navigator
+  const handleFileSelect = async (file) => {
+    try {
+      setSelectedFile(file);
+      
+      // Load file content
+      const response = await apiClient.request('GET', `files/content`, {
+        params: { filePath: file.path }
+      });
+      
+      const content = response.content || '';
+      setSourceCode(content);
+      setOriginalCode(content);
+      setShowCodeEditor(true);
+      
+    } catch (error) {
+      console.error('Error loading file:', error);
+      alert(`Error loading file: ${error.message}`);
+    }
+  };
+
+  // Handle code changes
+  const handleCodeChange = (newCode) => {
+    setSourceCode(newCode);
+  };
+
+  // Handle code save
+  const handleCodeSave = async () => {
+    if (!selectedFile) return;
+    
+    try {
+      await apiClient.request('POST', 'files/save', {
+        filePath: selectedFile.path,
+        content: sourceCode
+      });
+      
+      setOriginalCode(sourceCode);
+      alert('File saved successfully!');
+      
+    } catch (error) {
+      console.error('Error saving file:', error);
+      alert(`Error saving file: ${error.message}`);
+    }
+  };
+
   const showScaffoldDialog = async () => {
     return new Promise((resolve) => {
       const dialog = document.createElement('div');
@@ -561,7 +618,7 @@ const UnifiedPluginManager = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="marketplace" className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" />
               Marketplace ({getAllItems().length})
@@ -569,6 +626,10 @@ const UnifiedPluginManager = () => {
             <TabsTrigger value="installed" className="flex items-center gap-2">
               <Download className="w-4 h-4" />
               Active ({getAllItems().filter(item => item.isInstalled || item.isLoaded).length})
+            </TabsTrigger>
+            <TabsTrigger value="code-editor" className="flex items-center gap-2">
+              <Code className="w-4 h-4" />
+              Code Editor
             </TabsTrigger>
             <TabsTrigger value="hooks" className="flex items-center gap-2">
               <Zap className="w-4 h-4" />
@@ -738,6 +799,116 @@ const UnifiedPluginManager = () => {
                   </Card>
                 );
               })}
+            </div>
+          </TabsContent>
+
+          {/* Code Editor Tab */}
+          <TabsContent value="code-editor">
+            <div className="h-[800px] border rounded-lg overflow-hidden bg-white">
+              <div className="h-full flex">
+                {/* File Explorer */}
+                <div className="w-1/3 border-r">
+                  <div className="p-4 border-b bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-medium">File Explorer</h3>
+                    </div>
+                  </div>
+                  <div className="h-full overflow-auto">
+                    <FileTreeNavigator
+                      onFileSelect={handleFileSelect}
+                      className="h-full"
+                      showSearch={true}
+                    />
+                  </div>
+                </div>
+
+                {/* Code Editor */}
+                <div className="flex-1 flex flex-col">
+                  {selectedFile ? (
+                    <>
+                      {/* Editor Header */}
+                      <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-600" />
+                          <span className="font-medium">{selectedFile.name}</span>
+                          <span className="text-sm text-gray-500">
+                            {selectedFile.path}
+                          </span>
+                          {sourceCode !== originalCode && (
+                            <Badge className="bg-orange-100 text-orange-700 text-xs">
+                              Modified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleCodeSave}
+                            disabled={sourceCode === originalCode}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSourceCode(originalCode);
+                            }}
+                            disabled={sourceCode === originalCode}
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Reset
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Code Editor */}
+                      <div className="flex-1 overflow-hidden">
+                        <CodeEditor
+                          value={sourceCode}
+                          onChange={handleCodeChange}
+                          fileName={selectedFile.name}
+                          originalCode={originalCode}
+                          enableDiffDetection={true}
+                          enableTabs={false}
+                          className="h-full"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* No File Selected */
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <Code className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Manual Code Editor
+                        </h3>
+                        <p className="text-gray-600 mb-4 max-w-md">
+                          Select a file from the explorer to start editing code manually.
+                          Perfect for plugin development and customizations.
+                        </p>
+                        <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                            Syntax Highlighting
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                            Auto-save
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                            Diff View
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </TabsContent>
 
