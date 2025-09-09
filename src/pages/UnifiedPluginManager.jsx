@@ -920,11 +920,11 @@ const UnifiedPluginManager = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm">Hook Execution</span>
-                      <span className="text-sm text-gray-600">< 1ms avg</span>
+                      <span className="text-sm text-gray-600">&lt; 1ms avg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Event Processing</span>
-                      <span className="text-sm text-gray-600">< 0.5ms avg</span>
+                      <span className="text-sm text-gray-600">&lt; 0.5ms avg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Memory Usage</span>
