@@ -260,19 +260,21 @@ export default function Layout({ children, currentPageName }) {
   const publicPages = ['Landing', 'Auth', 'CustomerAuth', 'Pricing', 'Onboarding'];
   const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
+  const pluginPages = ['Plugins']; // Pages that use the plugins mode
   const isPublicPage = publicPages.includes(currentPageName);
   const isStorefrontPage = storefrontPages.includes(currentPageName);
   const isCustomerDashboard = currentPageName === 'CustomerDashboard';
   const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
-  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage;
+  const isPluginPage = pluginPages.includes(currentPageName) || location.pathname.startsWith('/plugins');
+  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage;
   
   // Determine current mode for ModeHeader
-  const currentMode = isEditorPage ? 'editor' : 'admin';
+  const currentMode = isEditorPage ? 'editor' : isPluginPage ? 'plugins' : 'admin';
   
-  // Apply role-based access control for admin and editor pages
-  useRoleProtection(isAdminPage || isEditorPage);
+  // Apply role-based access control for admin, editor, and plugin pages
+  useRoleProtection(isAdminPage || isEditorPage || isPluginPage);
 
-  if (isLoading && (isAdminPage || isEditorPage)) {
+  if (isLoading && (isAdminPage || isEditorPage || isPluginPage)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -290,8 +292,8 @@ export default function Layout({ children, currentPageName }) {
   
   // Role-based access control is now handled by RoleProtectedRoute at the route level
 
-  // Handle admin and editor pages
-  if (isAdminPage || isEditorPage) {
+  // Handle admin, editor, and plugin pages
+  if (isAdminPage || isEditorPage || isPluginPage) {
       
       // Use token-only validation for admin/editor access like RoleProtectedRoute
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
@@ -432,14 +434,6 @@ export default function Layout({ children, currentPageName }) {
       ]
     },
     {
-      name: "Plugins",
-      items: [
-        { name: "Installation", path: "PLUGINS", icon: Puzzle },
-        { name: "Create Plugin", path: "plugin-builder", icon: Plus },
-        { name: "How-To Guide", path: "plugin-how-to", icon: Book },
-      ]
-    },
-    {
       name: "Import & Export",
       items: [
         { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
@@ -474,8 +468,8 @@ export default function Layout({ children, currentPageName }) {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
-  // Don't show sidebar for editor mode
-  const showSidebar = !isEditorPage;
+  // Don't show sidebar for editor and plugin modes
+  const showSidebar = !isEditorPage && !isPluginPage;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

@@ -123,10 +123,6 @@ function App() {
           <Route path="/admin/robots-txt" element={<PageWrapper Component={Pages.RobotsTxt} pageName="RobotsTxt" />} />
           <Route path="/admin/html-sitemap" element={<PageWrapper Component={Pages.HtmlSitemap} pageName="HtmlSitemap" />} />
           <Route path="/admin/google-tag-manager" element={<PageWrapper Component={Pages.GoogleTagManager} pageName="GoogleTagManager" />} />
-          <Route path="/admin/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="PLUGINS" />} />
-          <Route path="/admin/plugin-builder" element={<PageWrapper Component={Pages.PluginBuilder} pageName="plugin-builder" />} />
-          <Route path="/admin/plugin-builder-complete" element={<PageWrapper Component={Pages.PluginBuilderComplete} pageName="PluginBuilderComplete" />} />
-          <Route path="/admin/plugin-how-to" element={<PageWrapper Component={Pages.PluginHowToFixed} pageName="plugin-how-to" />} />
           <Route path="/admin/akeneo-integration" element={<PageWrapper Component={Pages.AkeneoIntegration} pageName="akeneo-integration" />} />
           <Route path="/admin/marketplace-export" element={<PageWrapper Component={Pages.MarketplaceExport} pageName="MARKETPLACE_EXPORT" />} />
           <Route path="/admin/ecommerce-integrations" element={<PageWrapper Component={Pages.EcommerceIntegrations} pageName="ecommerce-integrations" />} />
@@ -147,6 +143,10 @@ function App() {
           <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.Onboarding} pageName="Onboarding" />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
+          
+          {/* Unified Plugins Section - Independent from Admin */}
+          <Route path="/plugins" element={<PageWrapper Component={Pages.UnifiedPluginManager} pageName="Plugins" />} />
+          <Route path="/plugins/*" element={<PageWrapper Component={Pages.UnifiedPluginManager} pageName="Plugins" />} />
           
           {/* Editor routes */}
           <Route path="/editor" element={<Navigate to="/editor/ai-context-window" replace />} />

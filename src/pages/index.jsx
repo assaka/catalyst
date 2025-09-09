@@ -30,10 +30,8 @@ export { default as ShopifyIntegration } from './admin/ShopifyIntegration';
 export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
 export { default as RenderIntegration } from './admin/RenderIntegration';
 export { default as SupabasePage } from './admin/SupabasePage';
-export { default as Plugins } from './admin/Plugins';
-export { default as PluginBuilder } from './admin/PluginBuilder';
-export { default as PluginBuilderComplete } from './admin/PluginBuilderComplete';
-export { default as PluginHowToFixed } from './admin/PluginHowToFixed';
+// Unified Plugin System
+export { default as UnifiedPluginManager } from './UnifiedPluginManager';
 export { default as ProductTabs } from './admin/ProductTabs';
 export { default as ProductLabels } from './admin/ProductLabels';
 export { default as CustomOptionRules } from './admin/CustomOptionRules';
