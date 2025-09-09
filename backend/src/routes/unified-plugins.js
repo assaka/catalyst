@@ -1154,4 +1154,167 @@ function generateCreateTableSQL(tableName, fields) {
 );`;
 }
 
+// Custom Pricing Database-Driven API Routes
+router.get('/custom-pricing/rules', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { type } = req.query;
+    const storeId = req.storeId;
+    
+    let query = `
+      SELECT r.*, 
+             JSON_AGG(
+               CASE WHEN d.id IS NOT NULL 
+               THEN JSON_BUILD_OBJECT(
+                 'id', d.id,
+                 'discount_type', d.discount_type,
+                 'discount_value', d.discount_value,
+                 'minimum_amount', d.minimum_amount,
+                 'minimum_quantity', d.minimum_quantity,
+                 'applies_to', d.applies_to,
+                 'conditions', d.conditions,
+                 'stackable', d.stackable
+               ) END
+             ) FILTER (WHERE d.id IS NOT NULL) as discounts
+      FROM custom_pricing_rules r
+      LEFT JOIN custom_pricing_discounts d ON r.id = d.rule_id
+      WHERE r.enabled = true
+    `;
+    
+    const params = [];
+    
+    if (storeId) {
+      query += ' AND (r.store_id = $1 OR r.store_id IS NULL)';
+      params.push(storeId);
+    }
+    
+    if (type) {
+      query += ` AND r.type = $${params.length + 1}`;
+      params.push(type);
+    }
+    
+    query += ' GROUP BY r.id ORDER BY r.priority ASC';
+    
+    // Note: This would need to be adapted to your actual database connection
+    // const result = await db.query(query, params);
+    
+    // For now, return mock data
+    const mockRules = [
+      {
+        id: 1,
+        name: 'Volume Discount',
+        type: 'volume',
+        enabled: true,
+        priority: 5,
+        conditions: { minimum_quantity: 5 },
+        actions: { description: '10% off for 5+ items' },
+        discounts: [
+          {
+            id: 1,
+            discount_type: 'percentage',
+            discount_value: 10,
+            applies_to: 'item',
+            stackable: false
+          }
+        ]
+      }
+    ];
+    
+    res.json({
+      success: true,
+      data: mockRules,
+      count: mockRules.length
+    });
+  } catch (error) {
+    console.error('Error getting pricing rules:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/custom-pricing/calculate', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { basePrice, context } = req.body;
+    
+    // Get applicable rules (would query database in real implementation)
+    // const rules = await getPricingRules(req.storeId);
+    
+    let finalPrice = parseFloat(basePrice);
+    const appliedDiscounts = [];
+    
+    // Mock rule application logic
+    if (context.quantity >= 5) {
+      const discount = finalPrice * 0.1; // 10% volume discount
+      finalPrice -= discount;
+      appliedDiscounts.push({
+        rule_name: 'Volume Discount',
+        discount_type: 'percentage',
+        discount_amount: discount
+      });
+    }
+    
+    if (context.user?.isLoyaltyMember) {
+      const discount = finalPrice * 0.05; // 5% loyalty discount
+      finalPrice -= discount;
+      appliedDiscounts.push({
+        rule_name: 'Loyalty Discount',
+        discount_type: 'percentage',
+        discount_amount: discount
+      });
+    }
+    
+    finalPrice = Math.max(0, finalPrice);
+    
+    res.json({
+      success: true,
+      data: {
+        original_price: parseFloat(basePrice),
+        final_price: finalPrice,
+        total_discount: parseFloat(basePrice) - finalPrice,
+        applied_discounts: appliedDiscounts
+      }
+    });
+  } catch (error) {
+    console.error('Error calculating price:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/custom-pricing/analytics', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    // Mock analytics data
+    const analytics = [
+      {
+        rule_name: 'Volume Discount',
+        rule_type: 'volume',
+        usage_count: 142,
+        total_discount: 1250.50,
+        avg_discount: 8.80
+      },
+      {
+        rule_name: 'Loyalty Discount',
+        rule_type: 'loyalty',
+        usage_count: 89,
+        total_discount: 445.75,
+        avg_discount: 5.01
+      }
+    ];
+    
+    res.json({
+      success: true,
+      data: analytics
+    });
+  } catch (error) {
+    console.error('Error getting analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
