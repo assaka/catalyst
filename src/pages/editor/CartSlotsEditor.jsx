@@ -3753,7 +3753,6 @@ export default function CartSlotsEditorWithMicroSlots({
               const styleStr = Object.entries(styles)
                 .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
                 .join('; ');
-              console.log('🎨 Style string generated:', styleStr);
               buttonCode = buttonCode.replace(/<button([^>]*)>/, (match, attrs) => {
                 if (attrs.includes('style=')) {
                   const newCode = match.replace(/style="[^"]*"/, `style="${styleStr}"`);
@@ -3761,7 +3760,6 @@ export default function CartSlotsEditorWithMicroSlots({
                   return newCode;
                 } else {
                   const newCode = `<button${attrs} style="${styleStr}">`;
-                  console.log('➕ Added new style:', newCode);
                   return newCode;
                 }
               });
