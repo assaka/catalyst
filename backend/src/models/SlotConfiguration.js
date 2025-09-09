@@ -303,9 +303,141 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
       }
     };
     
+    // Create complete slot content with Tailwind classes
+    const defaultSlots = {
+      // Header content
+      'header.title': {
+        content: 'My Cart',
+        styles: {},
+        className: 'text-2xl font-bold text-gray-800',
+        parentClassName: 'text-center',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      
+      // Empty cart content
+      'emptyCart.icon': {
+        content: '🛒',
+        styles: {},
+        className: 'text-6xl text-gray-400',
+        parentClassName: 'text-center',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'emptyCart.title': {
+        content: 'Your cart is empty',
+        styles: {},
+        className: 'text-xl font-bold text-gray-600',
+        parentClassName: 'text-center',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'emptyCart.text': {
+        content: "Looks like you haven't added anything to your cart yet.",
+        styles: {},
+        className: 'text-gray-500 mb-4',
+        parentClassName: 'text-center',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'emptyCart.button': {
+        content: 'Continue Shopping',
+        styles: {},
+        className: 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
+        parentClassName: 'text-center',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+
+      // Cart item content templates
+      'cartItem.productImage': {
+        content: 'Product Image',
+        styles: {},
+        className: 'w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'cartItem.productTitle': {
+        content: 'Product Name',
+        styles: {},
+        className: 'font-semibold text-gray-900',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'cartItem.quantityControl': {
+        content: '1',
+        styles: {},
+        className: 'flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded',
+        parentClassName: 'text-center',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'cartItem.productPrice': {
+        content: '$29.99',
+        styles: {},
+        className: 'font-bold text-gray-900',
+        parentClassName: 'text-right',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'cartItem.removeButton': {
+        content: 'Remove',
+        styles: {},
+        className: 'text-red-500 hover:text-red-700 text-sm',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+
+      // Coupon content
+      'coupon.title': {
+        content: 'Apply Coupon',
+        styles: {},
+        className: 'text-lg font-bold text-gray-800',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'coupon.input': {
+        content: 'Enter coupon code',
+        styles: {},
+        className: 'flex-1 px-3 py-2 border rounded bg-white text-gray-700',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'coupon.button': {
+        content: 'Apply',
+        styles: {},
+        className: 'px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+
+      // Order summary content
+      'orderSummary.title': {
+        content: 'Order Summary',
+        styles: {},
+        className: 'text-lg font-bold text-gray-800 mb-4',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'orderSummary.subtotal': {
+        content: 'Subtotal: $59.98',
+        styles: {},
+        className: 'flex justify-between text-gray-600 mb-2',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'orderSummary.total': {
+        content: 'Total: $59.98',
+        styles: {},
+        className: 'flex justify-between font-bold text-lg text-gray-900 border-t pt-4',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      },
+      'orderSummary.checkoutButton': {
+        content: 'Proceed to Checkout',
+        styles: {},
+        className: 'w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
+        parentClassName: '',
+        metadata: { lastModified: new Date().toISOString() }
+      }
+    };
+
     return {
       page_name: 'Cart',
-      slots: {},
+      slots: defaultSlots,
       majorSlots: ['header', 'emptyCart', 'cartItems'],
       microSlotOrders: defaultMicroSlotOrders,
       microSlotSpans: defaultMicroSlotSpans,
