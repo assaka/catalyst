@@ -2966,6 +2966,9 @@ export default function CartSlotsEditorWithMicroSlots({
       if (oldIndex !== -1 && newIndex !== -1) {
         newOrders[parentId] = arrayMove(parentOrder, oldIndex, newIndex);
         console.log('🔄 Micro-slot reordered:', { parentId, from: oldIndex, to: newIndex, newOrder: newOrders[parentId] });
+        
+        // Save after drag reorder - delayed to allow state updates to complete
+        setTimeout(() => saveConfiguration(), 0);
       }
       
       return newOrders;
