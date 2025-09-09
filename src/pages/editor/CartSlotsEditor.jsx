@@ -3730,13 +3730,6 @@ export default function CartSlotsEditorWithMicroSlots({
             const styles = elementStyles[slotId] || {};
             const classes = elementClasses[slotId] || '';
             
-            // Debug: Log what styles we're trying to apply
-            console.log('🔍 Current elementStyles for', slotId, ':', styles);
-            console.log('🔍 Current elementClasses for', slotId, ':', classes);
-            if (Object.keys(styles).length > 0) {
-              console.log('🎨 Button styles to apply:', slotId, styles);
-            }
-            
             // Remove existing color classes if we have custom styles
             if (styles.backgroundColor || styles.color) {
               // Remove bg-* and text-* color classes
@@ -3762,9 +3755,6 @@ export default function CartSlotsEditorWithMicroSlots({
                 }
               });
             }
-            
-            // Debug: Show final button HTML
-            console.log('🔍 Final button HTML:', buttonCode);
             
             // Apply rounded classes to the button
             if (classes) {
