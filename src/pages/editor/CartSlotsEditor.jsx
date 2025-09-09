@@ -2275,22 +2275,10 @@ export default function CartSlotsEditorWithMicroSlots({
   const [isResizingButton, setIsResizingButton] = useState(null);
   
   // State for micro-slot orders within each parent
-  const [microSlotOrders, setMicroSlotOrders] = useState(() => {
-    const orders = {};
-    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-      orders[key] = [...def.microSlots];
-    });
-    return orders;
-  });
+  const [microSlotOrders, setMicroSlotOrders] = useState({});
   
   // State for micro-slot spans
-  const [microSlotSpans, setMicroSlotSpans] = useState(() => {
-    const spans = {};
-    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-      spans[key] = { ...def.defaultSpans };
-    });
-    return spans;
-  });
+  const [microSlotSpans, setMicroSlotSpans] = useState({});
   
   // State for component code
   // Unified content storage - can be plain text, HTML, or component code
@@ -2703,7 +2691,21 @@ export default function CartSlotsEditorWithMicroSlots({
         });
         
         if (!storeId) {
-          console.log('No store ID found, using default configuration');
+          console.log('No store ID found, initializing with default configuration');
+          
+          // Initialize defaults when no store ID
+          const defaultOrders = {};
+          Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+            defaultOrders[key] = [...def.microSlots];
+          });
+          setMicroSlotOrders(defaultOrders);
+          
+          const defaultSpans = {};
+          Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+            defaultSpans[key] = { ...def.defaultSpans };
+          });
+          setMicroSlotSpans(defaultSpans);
+          console.log('🎯 LOAD DEBUG: Initialized defaults (no store ID)');
           return;
         }
         
@@ -2888,10 +2890,40 @@ export default function CartSlotsEditorWithMicroSlots({
           
           // Configuration loaded from database successfully
         } else {
-          console.log('No configuration found in database, using defaults');
+          console.log('No configuration found in database, initializing with defaults');
+          
+          // Initialize default microSlotOrders
+          const defaultOrders = {};
+          Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+            defaultOrders[key] = [...def.microSlots];
+          });
+          setMicroSlotOrders(defaultOrders);
+          console.log('🎯 LOAD DEBUG: Initialized default microSlotOrders:', defaultOrders);
+          
+          // Initialize default microSlotSpans
+          const defaultSpans = {};
+          Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+            defaultSpans[key] = { ...def.defaultSpans };
+          });
+          setMicroSlotSpans(defaultSpans);
+          console.log('📐 Initialized default microSlotSpans:', defaultSpans);
         }
       } catch (error) {
         console.error('Failed to load configuration from database:', error);
+        
+        // Initialize defaults on error too
+        const defaultOrders = {};
+        Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+          defaultOrders[key] = [...def.microSlots];
+        });
+        setMicroSlotOrders(defaultOrders);
+        
+        const defaultSpans = {};
+        Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+          defaultSpans[key] = { ...def.defaultSpans };
+        });
+        setMicroSlotSpans(defaultSpans);
+        console.log('🎯 LOAD ERROR: Initialized defaults after error');
       }
     };
     
