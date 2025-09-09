@@ -2536,7 +2536,7 @@ export default function CartSlotsEditorWithMicroSlots({
   }, [majorSlots, microSlotOrders, microSlotSpans, slotContent, elementClasses, elementStyles, componentSizes, customSlots, onSave]);
   
   // Direct save function that accepts config as parameter
-  const saveDirectly = async (config) => {
+  const saveDirectly = useCallback(async (config) => {
     console.log('💾 SAVING CONFIG STRUCTURE CHECK:', {
       configKeys: Object.keys(config),
       hasElementStyles: !!config.elementStyles,
