@@ -28,75 +28,75 @@ async function populateCompleteConfiguration() {
           // Header content
           'header.title': {
             content: 'My Cart',
-            styles: { fontSize: '24px', fontWeight: 'bold', color: '#333' },
-            className: '',
-            parentClassName: '',
+            styles: {},
+            className: 'text-2xl font-bold text-gray-800',
+            parentClassName: 'text-center',
             metadata: { lastModified: new Date().toISOString() }
           },
           
           // Empty cart content
           'emptyCart.icon': {
-            content: '<div class="text-6xl text-gray-400 mb-4">🛒</div>',
-            styles: { textAlign: 'center' },
-            className: '',
-            parentClassName: '',
+            content: '🛒',
+            styles: {},
+            className: 'text-6xl text-gray-400',
+            parentClassName: 'text-center',
             metadata: { lastModified: new Date().toISOString() }
           },
           'emptyCart.title': {
             content: 'Your cart is empty',
-            styles: { fontSize: '20px', fontWeight: 'bold', color: '#666' },
-            className: '',
-            parentClassName: '',
+            styles: {},
+            className: 'text-xl font-bold text-gray-600',
+            parentClassName: 'text-center',
             metadata: { lastModified: new Date().toISOString() }
           },
           'emptyCart.text': {
             content: "Looks like you haven't added anything to your cart yet.",
-            styles: { color: '#888', marginBottom: '16px' },
-            className: '',
-            parentClassName: '',
+            styles: {},
+            className: 'text-gray-500 mb-4',
+            parentClassName: 'text-center',
             metadata: { lastModified: new Date().toISOString() }
           },
           'emptyCart.button': {
-            content: '<button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Continue Shopping</button>',
+            content: 'Continue Shopping',
             styles: {},
-            className: '',
-            parentClassName: '',
+            className: 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
+            parentClassName: 'text-center',
             metadata: { lastModified: new Date().toISOString() }
           },
 
           // Cart item content templates
           'cartItem.productImage': {
-            content: '<img src="{product.image}" alt="{product.name}" class="w-16 h-16 object-cover rounded" />',
+            content: 'Product Image',
             styles: {},
-            className: '',
+            className: 'w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'cartItem.productTitle': {
-            content: '<h3 class="font-semibold">{product.name}</h3>',
+            content: 'Product Name',
             styles: {},
-            className: '',
+            className: 'font-semibold text-gray-900',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'cartItem.quantityControl': {
-            content: '<div class="flex items-center space-x-2"><button class="px-2 py-1 bg-gray-200 rounded">-</button><span>{quantity}</span><button class="px-2 py-1 bg-gray-200 rounded">+</button></div>',
+            content: '1',
             styles: {},
-            className: '',
-            parentClassName: '',
+            className: 'flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded',
+            parentClassName: 'text-center',
             metadata: { lastModified: new Date().toISOString() }
           },
           'cartItem.productPrice': {
-            content: '<span class="font-bold">${price}</span>',
+            content: '$29.99',
             styles: {},
-            className: '',
-            parentClassName: '',
+            className: 'font-bold text-gray-900',
+            parentClassName: 'text-right',
             metadata: { lastModified: new Date().toISOString() }
           },
           'cartItem.removeButton': {
-            content: '<button class="text-red-500 hover:text-red-700">Remove</button>',
+            content: 'Remove',
             styles: {},
-            className: '',
+            className: 'text-red-500 hover:text-red-700 text-sm',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
@@ -104,22 +104,22 @@ async function populateCompleteConfiguration() {
           // Coupon content
           'coupon.title': {
             content: 'Apply Coupon',
-            styles: { fontSize: '18px', fontWeight: 'bold' },
-            className: '',
+            styles: {},
+            className: 'text-lg font-bold text-gray-800',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'coupon.input': {
-            content: '<input type="text" placeholder="Enter coupon code" class="flex-1 px-3 py-2 border rounded" />',
+            content: 'Enter coupon code',
             styles: {},
-            className: '',
+            className: 'flex-1 px-3 py-2 border rounded bg-white text-gray-700',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'coupon.button': {
-            content: '<button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Apply</button>',
+            content: 'Apply',
             styles: {},
-            className: '',
+            className: 'px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
@@ -127,29 +127,29 @@ async function populateCompleteConfiguration() {
           // Order summary content
           'orderSummary.title': {
             content: 'Order Summary',
-            styles: { fontSize: '18px', fontWeight: 'bold' },
-            className: '',
+            styles: {},
+            className: 'text-lg font-bold text-gray-800 mb-4',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'orderSummary.subtotal': {
-            content: '<div class="flex justify-between"><span>Subtotal:</span><span>${subtotal}</span></div>',
+            content: 'Subtotal: $59.98',
             styles: {},
-            className: '',
+            className: 'flex justify-between text-gray-600 mb-2',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'orderSummary.total': {
-            content: '<div class="flex justify-between font-bold text-lg"><span>Total:</span><span>${total}</span></div>',
+            content: 'Total: $59.98',
             styles: {},
-            className: '',
+            className: 'flex justify-between font-bold text-lg text-gray-900 border-t pt-4',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           },
           'orderSummary.checkoutButton': {
-            content: '<button class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">Proceed to Checkout</button>',
+            content: 'Proceed to Checkout',
             styles: {},
-            className: '',
+            className: 'w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
             parentClassName: '',
             metadata: { lastModified: new Date().toISOString() }
           }
