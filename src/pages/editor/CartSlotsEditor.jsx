@@ -2589,7 +2589,7 @@ export default function CartSlotsEditorWithMicroSlots({
       setSaveStatus('error');
       return false;
     }
-  };
+  }, [microSlotOrders, microSlotSpans, majorSlots, slotContent, elementStyles, elementClasses, componentSizes, customSlots, selectedStore?.id]);
   
   // Removed immediateSave wrapper - calling saveConfiguration directly
   
