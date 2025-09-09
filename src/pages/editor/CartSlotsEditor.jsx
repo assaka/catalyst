@@ -3033,11 +3033,12 @@ export default function CartSlotsEditorWithMicroSlots({
       const newOrders = { ...prev };
       const parentOrder = [...(newOrders[parentId] || [])];
       
-      // Extract just the slot ID part (after the last dot)
-      const activeSlotId = activeId.includes('.') ? activeId.split('.').pop() : activeId;
-      const overSlotId = overId.includes('.') ? overId.split('.').pop() : overId;
+      // Use the full slot IDs directly (they should match the microSlots array)
+      const activeSlotId = activeId;
+      const overSlotId = overId;
       
-      console.log('🎯 DRAG DEBUG: Extracted slot IDs:', { activeSlotId, overSlotId });
+      console.log('🎯 DRAG DEBUG: Using full slot IDs:', { activeSlotId, overSlotId });
+      console.log('🎯 DRAG DEBUG: parentOrder contents:', parentOrder);
       
       const oldIndex = parentOrder.indexOf(activeSlotId);
       const newIndex = parentOrder.indexOf(overSlotId);
