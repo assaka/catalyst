@@ -1,12 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Code, Diff, Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History} from 'lucide-react';
+import {Code, Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
-import DiffPreviewSystem from '@/components/editor/ai-context/DiffPreviewSystem';
 import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
@@ -867,21 +866,6 @@ export default ExampleComponent;`;
                         </button>
                         <button
                           onClick={() => {
-                            setPreviewMode('patch');
-                            handlePreviewModeChange('patch');
-                          }}
-                          className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                            previewMode === 'patch' 
-                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                          )}
-                        >
-                          <Diff className="w-4 h-4 mr-2" />
-                          Diff
-                        </button>
-                        <button
-                          onClick={() => {
                             console.log('🖱️ Customize tab clicked!', {
                               currentFile: selectedFile ? {
                                 name: selectedFile.name,
@@ -922,7 +906,6 @@ export default ExampleComponent;`;
                         type: selectedFile.type
                       } : null,
                       isCodeMode: previewMode === 'code',
-                      isDiffMode: previewMode === 'diff',
                       isHybridMode: previewMode === 'hybrid'
                     })}
                     {previewMode === 'code' ? (
@@ -939,18 +922,6 @@ export default ExampleComponent;`;
                         enableDiffDetection={true}
                         enableTabs={true}
                         className="h-full"
-                      />
-                    ) : previewMode === 'patch' ? (
-                      // Diff View - Enhanced with AST diff functionality
-                      <DiffPreviewSystem
-                        originalCode={manualEditResult?.originalCode || originalCode}
-                        modifiedCode={manualEditResult?.newCode || sourceCode}
-                        fileName={selectedFile?.path || ''}
-                        filePath={selectedFile?.path}
-                        useAstDiff={true}
-                        className="h-full"
-                        onCodeChange={handleCodeChange}
-                        onDiffStatsChange={handleDiffStatsChange}
                       />
                     ) : (
                       // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
@@ -1137,21 +1108,6 @@ export default ExampleComponent;`;
                           </button>
                           <button
                             onClick={() => {
-                              setPreviewMode('patch');
-                              handlePreviewModeChange('patch');
-                            }}
-                            className={cn(
-                              "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                              previewMode === 'patch' 
-                                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                            )}
-                          >
-                            <Diff className="w-4 h-4 mr-2" />
-                            Diff
-                          </button>
-                          <button
-                            onClick={() => {
                               console.log('🖱️ Customize tab clicked (mobile)!', {
                                 currentFile: selectedFile ? {
                                   name: selectedFile.name,
@@ -1198,18 +1154,6 @@ export default ExampleComponent;`;
                           enableDiffDetection={true}
                           enableTabs={true}
                           className="h-full"
-                        />
-                      ) : previewMode === 'patch' ? (
-                        // Diff View - Enhanced with AST diff functionality
-                        <DiffPreviewSystem
-                          originalCode={manualEditResult?.originalCode || originalCode}
-                          modifiedCode={manualEditResult?.newCode || sourceCode}
-                          fileName={selectedFile?.path || ''}
-                          filePath={selectedFile?.path}
-                          useAstDiff={true}
-                          className="h-full"
-                          onCodeChange={handleCodeChange}
-                          onDiffStatsChange={handleDiffStatsChange}
                         />
                       ) : (
                         // Smart Editor Selection - UnifiedSlotEditor for slots files, CodeEditor for others
