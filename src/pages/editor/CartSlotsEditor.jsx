@@ -2284,10 +2284,22 @@ export default function CartSlotsEditorWithMicroSlots({
   const [isResizingButton, setIsResizingButton] = useState(null);
   
   // State for micro-slot orders within each parent
-  const [microSlotOrders, setMicroSlotOrders] = useState({});
+  const [microSlotOrders, setMicroSlotOrders] = useState(() => {
+    const orders = {};
+    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+      orders[key] = [...def.microSlots];
+    });
+    return orders;
+  });
   
   // State for micro-slot spans
-  const [microSlotSpans, setMicroSlotSpans] = useState({});
+  const [microSlotSpans, setMicroSlotSpans] = useState(() => {
+    const spans = {};
+    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+      spans[key] = { ...def.defaultSpans };
+    });
+    return spans;
+  });
   
   // State for component code
   // Unified content storage - can be plain text, HTML, or component code
@@ -2428,13 +2440,36 @@ export default function CartSlotsEditorWithMicroSlots({
       };
     });
     
+    // Ensure microSlotOrders and microSlotSpans have defaults if empty
+    const finalMicroSlotOrders = Object.keys(microSlotOrders || {}).length > 0 
+      ? microSlotOrders 
+      : (() => {
+          console.log('💾 Initializing default microSlotOrders for save');
+          const defaultOrders = {};
+          Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+            defaultOrders[key] = [...def.microSlots];
+          });
+          return defaultOrders;
+        })();
+    
+    const finalMicroSlotSpans = Object.keys(microSlotSpans || {}).length > 0 
+      ? microSlotSpans 
+      : (() => {
+          console.log('💾 Initializing default microSlotSpans for save');
+          const defaultSpans = {};
+          Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+            defaultSpans[key] = { ...def.defaultSpans };
+          });
+          return defaultSpans;
+        })();
+
     const config = {
       page_name: 'Cart',
       // Note: page_type removed as it's redundant with page_name
       slots,
       majorSlots,
-      microSlotOrders,
-      microSlotSpans,
+      microSlotOrders: finalMicroSlotOrders,
+      microSlotSpans: finalMicroSlotSpans,
       componentSizes,
       customSlots,
       metadata: {
