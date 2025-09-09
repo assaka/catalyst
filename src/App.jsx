@@ -23,6 +23,146 @@ function PageWrapper({ Component, pageName }) {
   );
 }
 
+// Initialize database-driven plugins
+async function initializeDatabasePlugins() {
+  try {
+    console.log('📦 Loading plugins from database registry...');
+    
+    // Fetch active plugins from database
+    const response = await fetch('/api/plugins/registry?status=active');
+    const result = await response.json();
+    
+    if (!result.success) {
+      console.error('Failed to load plugins from database');
+      return;
+    }
+    
+    const activePlugins = result.data || [];
+    console.log(`🔌 Found ${activePlugins.length} active plugins in database`);
+    
+    // Load hooks and events for each plugin
+    for (const plugin of activePlugins) {
+      await loadPluginHooksAndEvents(plugin.id);
+    }
+    
+    // Set up pricing notifications globally
+    setupGlobalPricingNotifications();
+    
+    console.log('✅ Database-driven plugins initialized');
+    
+  } catch (error) {
+    console.error('❌ Error initializing database plugins:', error);
+  }
+}
+
+// Load hooks and events for a specific plugin
+async function loadPluginHooksAndEvents(pluginId) {
+  try {
+    const response = await fetch(`/api/plugins/registry/${pluginId}`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const plugin = result.data;
+      
+      // Register hooks from database
+      if (plugin.hooks) {
+        for (const hook of plugin.hooks) {
+          if (hook.enabled) {
+            const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
+            hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
+            console.log(`🎣 Registered database hook: ${hook.hook_name}`);
+          }
+        }
+      }
+      
+      // Register events from database
+      if (plugin.events) {
+        for (const event of plugin.events) {
+          if (event.enabled) {
+            const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
+            eventSystem.on(event.event_name, listenerFunction);
+            console.log(`📡 Registered database event: ${event.event_name}`);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error loading plugin ${pluginId}:`, error);
+  }
+}
+
+// Create executable function from database-stored code
+function createHandlerFromDatabaseCode(code) {
+  try {
+    // Create function from database code string
+    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+    return new AsyncFunction('return ' + code)();
+  } catch (error) {
+    console.error('Error creating handler from database code:', error);
+    return async () => {};
+  }
+}
+
+// Set up global pricing notification system (100% database-driven)
+function setupGlobalPricingNotifications() {
+  // Only set up if not already exists
+  if (window.showPricingNotification) return;
+  
+  // Create notification container
+  if (!document.getElementById('pricing-notifications')) {
+    const container = document.createElement('div');
+    container.id = 'pricing-notifications';
+    container.style.cssText = `
+      position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px;
+    `;
+    document.body.appendChild(container);
+  }
+
+  // Global notification function (called by database-driven plugin code)
+  window.showPricingNotification = (options) => {
+    const { message, type = 'info', discounts = [] } = options;
+    
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3B82F6'};
+      color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer;
+      animation: slideIn 0.3s ease-out;
+    `;
+    
+    let content = `<div style="font-weight: 500; margin-bottom: 4px;">${message}</div>`;
+    if (discounts.length > 0) {
+      content += '<div style="font-size: 12px; opacity: 0.9;">';
+      discounts.forEach(discount => {
+        content += `• ${discount.description || discount.rule_name}<br>`;
+      });
+      content += '</div>';
+    }
+    
+    notification.innerHTML = content;
+    notification.onclick = () => notification.remove();
+    
+    document.getElementById('pricing-notifications').appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) notification.remove();
+    }, 5000);
+  };
+
+  // Add CSS
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  console.log('✅ Global pricing notifications initialized');
+}
+
 function App() {
   // Initialize the new hook-based architecture
   useEffect(() => {
@@ -49,11 +189,16 @@ function App() {
         
         console.log('✅ Extension System initialized successfully')
         
+        // Initialize database-driven plugins by loading hooks from database
+        console.log('💰 Loading database-driven plugins...')
+        await initializeDatabasePlugins();
+        
         // Emit system ready event
         eventSystem.emit('system.ready', {
           timestamp: Date.now(),
           extensionsLoaded: extensionSystem.getLoadedExtensions().length,
-          hooksRegistered: Object.keys(hookSystem.getStats()).length
+          hooksRegistered: Object.keys(hookSystem.getStats()).length,
+          databasePluginsLoaded: true
         })
 
       } catch (error) {

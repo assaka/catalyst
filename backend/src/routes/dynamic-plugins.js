@@ -98,6 +98,22 @@ router.all('/dynamic/:pluginId/*', authMiddleware, storeResolver(), async (req, 
   }
 });
 
+// Test endpoint for debugging - no auth required
+router.get('/test', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Plugin registry is working',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Plugin management endpoints
 router.get('/registry', authMiddleware, async (req, res) => {
   try {

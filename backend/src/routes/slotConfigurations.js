@@ -35,10 +35,23 @@ router.get('/public/slot-configurations', async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
     
-    const published = await SlotConfiguration.findLatestPublished(store_id, page_type);
+    // First try to find published version
+    let configuration = await SlotConfiguration.findLatestPublished(store_id, page_type);
     
-    if (!published) {
-      // Return default configuration if no published version exists
+    // If no published version, try to find draft
+    if (!configuration) {
+      configuration = await SlotConfiguration.findOne({
+        where: {
+          store_id,
+          status: 'draft',
+          page_type
+        },
+        order: [['version_number', 'DESC']]
+      });
+    }
+    
+    if (!configuration) {
+      // Return default configuration if nothing exists
       return res.json({
         success: true,
         data: [{
@@ -56,7 +69,7 @@ router.get('/public/slot-configurations', async (req, res) => {
       });
     }
     
-    res.json({ success: true, data: [published] });
+    res.json({ success: true, data: [configuration] });
   } catch (error) {
     console.error('Error fetching public slot configurations:', error);
     res.status(500).json({ success: false, error: error.message });

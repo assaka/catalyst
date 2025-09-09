@@ -4,7 +4,7 @@ const { SlotConfiguration } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
 
 // Public endpoint to get active slot configurations for storefront
-router.get('/public/slot-configurations', async (req, res) => {
+router.get('/public', async (req, res) => {
   try {
     const { store_id, page_name, slot_type } = req.query;
     

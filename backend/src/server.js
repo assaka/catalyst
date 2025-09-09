@@ -112,6 +112,7 @@ const extensionsRoutes = require('./routes/extensions');
 const debugStoreRoutes = require('./routes/debug-store');
 const previewRoutes = require('./routes/preview');
 const slotConfigurationRoutes = require('./routes/slotConfigurations');
+const dynamicPluginRoutes = require('./routes/dynamic-plugins');
 
 const app = express();
 
@@ -1586,6 +1587,7 @@ app.use('/api/render/oauth', renderOAuthRoutes);
 app.use('/api/plugins', pluginRoutes);
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
+app.use('/api/plugins', dynamicPluginRoutes.router);
 app.use('/api/storage', storageRoutes); // Main storage routes for File Library
 app.use('/api/stores/:store_id/storage', storageRoutes); // Store-specific storage routes (kept for backwards compatibility)
 app.use('/api/stores/:store_id/products', productImageRoutes);
@@ -1811,6 +1813,17 @@ const startServer = async () => {
         } catch (error) {
           console.warn('⚠️ Plugin Manager initialization failed:', error.message);
           // Don't fail server startup if plugin manager fails
+        }
+
+        // Initialize Database-Driven Plugin Registry
+        console.log('🔧 Initializing Database-Driven Plugin Registry...');
+        try {
+          const { initializePluginRegistry } = require('./routes/dynamic-plugins');
+          await initializePluginRegistry(sequelize);
+          console.log('✅ Database-Driven Plugin Registry initialized successfully');
+        } catch (error) {
+          console.warn('⚠️ Plugin Registry initialization failed:', error.message);
+          // Don't fail server startup if plugin registry fails
         }
 
         // Initialize Background Job Manager
