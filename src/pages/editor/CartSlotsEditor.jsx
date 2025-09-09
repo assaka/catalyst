@@ -2204,18 +2204,19 @@ export default function CartSlotsEditorWithMicroSlots({
       console.log('✅ Applied componentSizes from draft:', config.componentSizes);
     }
     
-    if (config.microSlotOrders) {
+    if (config.microSlotOrders && Object.keys(config.microSlotOrders).length > 0) {
       console.log('🎯 LOAD DEBUG: Loading microSlotOrders from config:', config.microSlotOrders);
-      setMicroSlotOrders(prev => {
-        const updated = {
-          ...prev,
-          ...config.microSlotOrders
-        };
-        console.log('🎯 LOAD DEBUG: Updated microSlotOrders state:', updated);
-        return updated;
-      });
+      setMicroSlotOrders(config.microSlotOrders); // Replace entirely, don't merge
+      console.log('🎯 LOAD DEBUG: Set microSlotOrders directly from config');
     } else {
-      console.warn('🎯 LOAD DEBUG: No microSlotOrders found in config!');
+      console.log('🎯 LOAD DEBUG: microSlotOrders empty or missing, initializing defaults');
+      // Initialize defaults when microSlotOrders is empty or missing
+      const defaultOrders = {};
+      Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+        defaultOrders[key] = [...def.microSlots];
+      });
+      setMicroSlotOrders(defaultOrders);
+      console.log('🎯 LOAD DEBUG: Initialized default microSlotOrders for existing config:', defaultOrders);
     }
     
     if (config.microSlotSpans) {
@@ -2771,9 +2772,16 @@ export default function CartSlotsEditorWithMicroSlots({
           if (config.majorSlots) {
             setMajorSlots(config.majorSlots);
           }
-          if (config.microSlotOrders) {
+          if (config.microSlotOrders && Object.keys(config.microSlotOrders).length > 0) {
             console.log('📥 Setting microSlotOrders from database:', config.microSlotOrders);
             setMicroSlotOrders(config.microSlotOrders);
+          } else {
+            console.log('📥 microSlotOrders empty, initializing defaults for existing config');
+            const defaultOrders = {};
+            Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+              defaultOrders[key] = [...def.microSlots];
+            });
+            setMicroSlotOrders(defaultOrders);
           }
           if (config.microSlotSpans) {
             // Validate and fix any corrupted span values
