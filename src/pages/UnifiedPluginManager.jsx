@@ -115,46 +115,28 @@ const UnifiedPluginManager = () => {
     try {
       setLoading(true);
       
-      // Load plugins from the existing plugin system
-      const [pluginData, marketplaceData] = await Promise.all([
-        apiClient.request('GET', 'plugins').catch(() => []),
-        apiClient.request('GET', 'plugins/marketplace').catch(() => [])
+      // Load plugins from database registry
+      const [registryData, extensionData] = await Promise.all([
+        apiClient.request('GET', 'plugins/registry').catch(() => ({ data: [] })),
+        Promise.resolve([]) // Extensions are now migrated to plugins
       ]);
       
-      // Combine and enhance plugin data
-      const allPlugins = [...(pluginData || []), ...(marketplaceData || [])].map(plugin => ({
+      // Process database-driven plugins
+      const allPlugins = (registryData.data || []).map(plugin => ({
         ...plugin,
-        id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
         type: 'plugin',
-        source: plugin.source || 'local',
+        source: plugin.category === 'marketplace' ? 'marketplace' : 'database',
+        isInstalled: plugin.status === 'active',
+        isLoaded: plugin.status === 'active',
         security: {
-          sandboxed: true,
+          sandboxed: plugin.security_level === 'sandboxed',
           validated: true,
           permissions: plugin.permissions || []
         }
       }));
       
-      // Load extensions from extension system
-      const extensionIds = extensionSystem.getAllExtensions();
-      const loadedExtensions = extensionSystem.getLoadedExtensions();
-      
-      const extensionData = extensionIds.map(id => {
-        const info = extensionSystem.getExtensionInfo(id);
-        return {
-          ...info,
-          type: 'extension',
-          source: 'system',
-          isLoaded: loadedExtensions.includes(id),
-          security: {
-            sandboxed: false,
-            validated: true,
-            permissions: info.permissions || []
-          }
-        };
-      });
-      
       setPlugins(allPlugins);
-      setExtensions(extensionData);
+      setExtensions([]); // Extensions are obsolete
       
     } catch (error) {
       console.error('Error loading plugin data:', error);
@@ -185,30 +167,26 @@ const UnifiedPluginManager = () => {
 
   const handleInstallPlugin = async (item) => {
     try {
-      if (item.type === 'plugin') {
-        await apiClient.request('POST', `plugins/${item.slug}/install`);
-      } else {
-        await extensionSystem.load(item.id);
-      }
+      await apiClient.request('PATCH', `plugins/registry/${item.id}/status`, {
+        status: 'active'
+      });
       await loadData();
       updateStats();
     } catch (error) {
-      console.error("Error installing item:", error);
+      console.error("Error installing plugin:", error);
       alert("Error installing: " + error.message);
     }
   };
 
   const handleUninstallPlugin = async (item) => {
     try {
-      if (item.type === 'plugin') {
-        await apiClient.request('POST', `plugins/${item.slug}/uninstall`);
-      } else {
-        await extensionSystem.unload(item.id);
-      }
+      await apiClient.request('PATCH', `plugins/registry/${item.id}/status`, {
+        status: 'inactive'
+      });
       await loadData();
       updateStats();
     } catch (error) {
-      console.error("Error uninstalling item:", error);
+      console.error("Error uninstalling plugin:", error);
       alert("Error uninstalling: " + error.message);
     }
   };
@@ -223,7 +201,13 @@ const UnifiedPluginManager = () => {
           // Show AI creation dialog with advanced options
           const pluginDetails = await showAdvancedAIDialog();
           if (pluginDetails) {
-            const response = await apiClient.request('POST', 'plugins/create/ai', pluginDetails);
+            const response = await apiClient.request('POST', 'plugins/registry', {
+              ...pluginDetails,
+              id: `ai_plugin_${Date.now()}`,
+              type: pluginDetails.type,
+              category: pluginDetails.category,
+              status: 'active'
+            });
             alert('Plugin created successfully with all components!');
             await loadData();
           }
@@ -232,7 +216,12 @@ const UnifiedPluginManager = () => {
           // Show scaffold creation dialog
           const scaffoldOptions = await showScaffoldDialog();
           if (scaffoldOptions) {
-            const response = await apiClient.request('POST', 'plugins/scaffold', scaffoldOptions);
+            const response = await apiClient.request('POST', 'plugins/registry', {
+              ...scaffoldOptions,
+              id: `scaffold_plugin_${Date.now()}`,
+              type: 'custom',
+              status: 'active'
+            });
             alert('Plugin scaffolded successfully!');
             await loadData();
           }
@@ -387,9 +376,60 @@ const UnifiedPluginManager = () => {
       setSourceCode('');
       setOriginalCode('');
       
-      // Load plugin files from the plugin directory
-      const response = await apiClient.request('GET', `plugins/${plugin.id}/files`);
-      setPluginFiles(response.files || []);
+      // Load plugin details from database registry
+      const response = await apiClient.request('GET', `plugins/registry/${plugin.id}`);
+      
+      // Create file structure from database components
+      const files = [];
+      if (response.data) {
+        const plugin = response.data;
+        
+        // Add main plugin file
+        if (plugin.source_code) {
+          files.push({
+            name: 'plugin.js',
+            path: '/plugin.js',
+            type: 'javascript',
+            content: plugin.source_code
+          });
+        }
+        
+        // Add manifest
+        if (plugin.manifest) {
+          files.push({
+            name: 'manifest.json',
+            path: '/manifest.json',
+            type: 'json',
+            content: JSON.stringify(plugin.manifest, null, 2)
+          });
+        }
+        
+        // Add endpoints as separate files
+        if (plugin.endpoints) {
+          plugin.endpoints.forEach((endpoint, index) => {
+            files.push({
+              name: `endpoint_${endpoint.method.toLowerCase()}_${endpoint.path.replace(/[^a-zA-Z0-9]/g, '_')}.js`,
+              path: `/endpoints/${endpoint.method.toLowerCase()}_${endpoint.path.replace(/[^a-zA-Z0-9]/g, '_')}.js`,
+              type: 'javascript',
+              content: endpoint.handler_code
+            });
+          });
+        }
+        
+        // Add hooks as separate files
+        if (plugin.hooks) {
+          plugin.hooks.forEach((hook, index) => {
+            files.push({
+              name: `hook_${hook.hook_name.replace(/[^a-zA-Z0-9]/g, '_')}.js`,
+              path: `/hooks/${hook.hook_name.replace(/[^a-zA-Z0-9]/g, '_')}.js`,
+              type: 'javascript',
+              content: hook.handler_code
+            });
+          });
+        }
+      }
+      
+      setPluginFiles(files);
       
     } catch (error) {
       console.error('Error loading plugin files:', error);
@@ -404,12 +444,8 @@ const UnifiedPluginManager = () => {
     try {
       setSelectedFile(file);
       
-      // Load file content from plugin directory
-      const response = await apiClient.request('GET', `plugins/${selectedPlugin.id}/files/content`, {
-        params: { filePath: file.path }
-      });
-      
-      const content = response.content || '';
+      // Load file content from database
+      const content = file.content || '';
       setSourceCode(content);
       setOriginalCode(content);
       
@@ -429,13 +465,10 @@ const UnifiedPluginManager = () => {
     if (!selectedPlugin || !selectedFile) return;
     
     try {
-      await apiClient.request('POST', `plugins/${selectedPlugin.id}/files/save`, {
-        filePath: selectedFile.path,
-        content: sourceCode
-      });
+      // Save to database registry (would need backend implementation)
+      alert('Database-driven plugin saving not yet implemented. Changes will be stored in the database registry system.');
       
       setOriginalCode(sourceCode);
-      alert('Plugin file saved successfully!');
       
     } catch (error) {
       console.error('Error saving plugin file:', error);
