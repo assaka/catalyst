@@ -2150,50 +2150,58 @@ export default function CartSlotsEditorWithMicroSlots({
     if (!draftConfig?.configuration) return;
     
     const config = draftConfig.configuration;
-    // console.log('🔄 Applying loaded draft configuration:', {
-    //   hasElementStyles: !!config.elementStyles,
-    //   hasElementClasses: !!config.elementClasses,
-    //   hasComponentSizes: !!config.componentSizes,
-    //   elementStylesKeys: Object.keys(config.elementStyles || {})
-    // }); // Disabled to prevent console spam
+    console.log('🔄 LOADING CONFIG STRUCTURE CHECK:', {
+      configKeys: Object.keys(config),
+      hasOldStructure: !!(config.elementStyles || config.slotContent || config.elementClasses),
+      hasNewStructure: !!config.slots,
+      elementStyles: config.elementStyles,
+      slots: config.slots,
+      fullConfig: config
+    });
     
-    // Apply elementStyles (colors and inline styles)
-    if (config.elementStyles) {
-      // Replace entirely to ensure loaded styles are applied
-      setElementStyles(config.elementStyles);
-      // console.log('✅ Applied elementStyles from draft:', config.elementStyles); // Disabled to prevent console spam
+    // Load from the slots structure (the only structure we should use)
+    if (config.slots) {
+      const extractedStyles = {};
+      const extractedContent = {};
+      const extractedClasses = {};
       
-      // Debug: Check specific elements for colors
-      Object.entries(config.elementStyles).forEach(([key, styles]) => {
-        // if (styles.color) console.log('🎨 🎯 Loaded text color for', key, ':', styles.color); // Disabled to prevent console spam
-        // if (styles.backgroundColor) console.log('🎨 🏠 Loaded background color for', key, ':', styles.backgroundColor); // Disabled to prevent console spam
+      Object.entries(config.slots).forEach(([slotId, slotData]) => {
+        if (slotData?.styles) {
+          extractedStyles[slotId] = slotData.styles;
+        }
+        if (slotData?.content !== undefined) {
+          extractedContent[slotId] = slotData.content;
+        }
+        if (slotData?.className) {
+          extractedClasses[slotId] = slotData.className;
+        }
+        // Load parentClassName as wrapper classes
+        if (slotData?.parentClassName) {
+          const wrapperId = `${slotId}_wrapper`;
+          extractedClasses[wrapperId] = slotData.parentClassName;
+        }
       });
+      
+      console.log('📦 Loading from slots structure:', {
+        styles: extractedStyles,
+        content: extractedContent,
+        classes: extractedClasses
+      });
+      
+      setElementStyles(extractedStyles);
+      setSlotContent(extractedContent);
+      setElementClasses(extractedClasses);
+    } else {
+      console.warn('⚠️ No slots structure found in configuration');
     }
     
-    // Apply elementClasses (Tailwind classes)
-    if (config.elementClasses) {
-      setElementClasses(prev => ({
-        ...prev,
-        ...config.elementClasses
-      }));
-      console.log('✅ Applied elementClasses from draft:', config.elementClasses);
-    }
-    
-    // Apply componentSizes
+    // Apply componentSizes (still in old structure - needs migration)
     if (config.componentSizes) {
       setComponentSizes(prev => ({
         ...prev,
         ...config.componentSizes
       }));
       console.log('✅ Applied componentSizes from draft:', config.componentSizes);
-    }
-
-    // Apply other configuration properties as needed
-    if (config.slotContent) {
-      setSlotContent(prev => ({
-        ...prev,
-        ...config.slotContent
-      }));
     }
     
     if (config.microSlotOrders) {
@@ -2387,19 +2395,44 @@ export default function CartSlotsEditorWithMicroSlots({
     // console.log('📋 Current slotContent state:', slotContent); // Disabled to prevent console spam
     setSaveStatus('saving');
     
+    // Create config in new slots structure
+    const slots = {};
+    
+    // Combine all slot data into the slots structure
+    const allSlotIds = new Set([
+      ...Object.keys(slotContent || {}),
+      ...Object.keys(elementStyles || {}),
+      ...Object.keys(elementClasses || {})
+    ]);
+    
+    allSlotIds.forEach(id => {
+      // Check for parent wrapper classes (for alignment and other parent styles)
+      const wrapperId = `${id}_wrapper`;
+      const parentClassName = elementClasses[wrapperId] || '';
+      
+      slots[id] = {
+        content: slotContent[id] || '',
+        styles: elementStyles[id] || {},
+        className: elementClasses[id] || '',
+        parentClassName: parentClassName, // For alignment and parent container styles
+        metadata: {
+          lastModified: new Date().toISOString()
+        }
+      };
+    });
+    
     const config = {
       page_name: 'Cart',
-      page_type: 'cart',
-      slot_type: 'cart_layout',
+      // Note: page_type removed as it's redundant with page_name
+      slots,
       majorSlots,
       microSlotOrders,
       microSlotSpans,
-      slotContent,
-      elementClasses,
-      elementStyles,
       componentSizes,
       customSlots,
-      timestamp: new Date().toISOString()
+      metadata: {
+        lastModified: new Date().toISOString()
+      }
     };
     
     // Configuration ready for database save
@@ -2492,7 +2525,12 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Direct save function that accepts config as parameter
   const saveDirectly = async (config) => {
-    console.log('💾 saveDirectly called with config elementStyles:', config.elementStyles);
+    console.log('💾 SAVING CONFIG STRUCTURE CHECK:', {
+      configKeys: Object.keys(config),
+      hasElementStyles: !!config.elementStyles,
+      elementStyles: config.elementStyles,
+      configStructure: config
+    });
     setSaveStatus('saving');
     
     try {
@@ -3018,20 +3056,44 @@ export default function CartSlotsEditorWithMicroSlots({
         // Now we have the current (updated) elementStyles
         console.log('📦 Current elementStyles for save:', currentElementStyles);
         
-        // Create config with updated elementStyles
+        // Create config in new slots structure
+        const slots = {};
+        
+        // Combine all slot data into the slots structure
+        const allSlotIds = new Set([
+          ...Object.keys(slotContent || {}),
+          ...Object.keys(currentElementStyles || {}),
+          ...Object.keys(elementClasses || {})
+        ]);
+        
+        allSlotIds.forEach(id => {
+          // Check for parent wrapper classes (for alignment and other parent styles)
+          const wrapperId = `${id}_wrapper`;
+          const parentClassName = (slotId === wrapperId) ? newClass : (elementClasses[wrapperId] || '');
+          
+          slots[id] = {
+            content: slotContent[id] || '',
+            styles: currentElementStyles[id] || {},
+            className: (newStyles && id === slotId) ? newClass : (elementClasses[id] || ''),
+            parentClassName: parentClassName, // For alignment and parent container styles
+            metadata: {
+              lastModified: new Date().toISOString()
+            }
+          };
+        });
+        
         const updatedConfig = {
           page_name: 'Cart',
-          page_type: 'cart',
-          slot_type: 'cart_layout',
+          // Note: page_type removed as it's redundant with page_name
+          slots,
           majorSlots,
           microSlotOrders,
           microSlotSpans,
-          slotContent,
-          elementClasses: newStyles ? { ...elementClasses, [slotId]: newClass } : elementClasses,
-          elementStyles: currentElementStyles, // Use the current state
           componentSizes,
           customSlots,
-          timestamp: new Date().toISOString()
+          metadata: {
+            lastModified: new Date().toISOString()
+          }
         };
         
         // Save directly with the updated config
