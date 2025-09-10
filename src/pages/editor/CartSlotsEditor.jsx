@@ -98,25 +98,27 @@ export default function CartSlotsEditor({
 
   // Save configuration to database
   const saveConfiguration = useCallback(async () => {
-    if (!currentStoreId) {
-      console.error('No store ID available for saving');
+    if (!currentStoreId || !cartLayoutConfig) {
+      console.error('No store ID or configuration available for saving');
       return;
     }
 
     setSaveStatus('saving');
     
     try {
-      // Create configuration object in slot_configurations format
+      // Create configuration object in slot_configurations format using current cartLayoutConfig
       const configuration = {
         page_name: PAGE_NAME,
-        slots: slotContent,
-        majorSlots,
-        microSlotOrders,
-        microSlotSpans,
-        customSlots: {},
-        componentSizes: {},
+        slots: cartLayoutConfig.slots || {},
+        majorSlots: majorSlots,
+        microSlotOrders: cartLayoutConfig.microSlotOrders || {},
+        microSlotSpans: cartLayoutConfig.microSlotSpans || {},
+        customSlots: cartLayoutConfig.customSlots || {},
+        elementClasses: cartLayoutConfig.elementClasses || {},
+        elementStyles: cartLayoutConfig.elementStyles || {},
+        componentSizes: cartLayoutConfig.componentSizes || {},
         metadata: {
-          created: new Date().toISOString(),
+          ...cartLayoutConfig.metadata,
           lastModified: new Date().toISOString(),
           version: '1.0'
         }
@@ -143,7 +145,7 @@ export default function CartSlotsEditor({
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(''), 5000);
     }
-  }, [currentStoreId, slotContent, majorSlots, microSlotOrders, microSlotSpans, onSave]);
+  }, [currentStoreId, cartLayoutConfig, majorSlots, onSave]);
 
   // Load cart layout configuration directly (matching Cart.jsx)
   useEffect(() => {
@@ -290,24 +292,31 @@ export default function CartSlotsEditor({
   }, []);
 
   const handleSaveEdit = useCallback(() => {
-    if (editingComponent) {
-      setSlotContent(prev => ({
-        ...prev,
-        [editingComponent]: {
-          ...prev[editingComponent],
-          content: tempCode,
-          metadata: {
-            ...prev[editingComponent]?.metadata,
-            lastModified: new Date().toISOString()
+    if (editingComponent && cartLayoutConfig) {
+      // Update the cartLayoutConfig with the new content
+      const updatedConfig = {
+        ...cartLayoutConfig,
+        slots: {
+          ...cartLayoutConfig.slots,
+          [editingComponent]: {
+            ...cartLayoutConfig.slots?.[editingComponent],
+            content: tempCode,
+            metadata: {
+              ...cartLayoutConfig.slots?.[editingComponent]?.metadata,
+              lastModified: new Date().toISOString()
+            }
           }
         }
-      }));
+      };
       
+      setCartLayoutConfig(updatedConfig);
       setEditingComponent(null);
       setTempCode('');
-      saveConfiguration();
+      
+      // Save the updated configuration
+      setTimeout(() => saveConfiguration(), 100);
     }
-  }, [editingComponent, tempCode, saveConfiguration]);
+  }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
 
   // Helper function to get styling for a specific micro-slot (from Cart.jsx)
   const getMicroSlotStyling = useCallback((microSlotId) => {
@@ -1170,23 +1179,34 @@ export default function CartSlotsEditor({
                   variant="destructive"
                   onClick={() => {
                     // Reset to cartConfig defaults
-                    setSlotContent(cartConfig.slots);
-                    setMicroSlotOrders(
-                      Object.fromEntries(
+                    const defaultConfig = {
+                      slots: cartConfig.slots,
+                      microSlotOrders: Object.fromEntries(
                         Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
                           key, def.microSlots
                         ])
-                      )
-                    );
-                    setMicroSlotSpans(
-                      Object.fromEntries(
+                      ),
+                      microSlotSpans: Object.fromEntries(
                         Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
                           key, def.defaultSpans
                         ])
-                      )
-                    );
+                      ),
+                      customSlots: {},
+                      elementClasses: {},
+                      elementStyles: {},
+                      componentSizes: {},
+                      metadata: {
+                        created: new Date().toISOString(),
+                        lastModified: new Date().toISOString(),
+                        version: '1.0'
+                      }
+                    };
+                    
+                    setCartLayoutConfig(defaultConfig);
                     setShowResetModal(false);
-                    saveConfiguration();
+                    
+                    // Save the reset configuration
+                    setTimeout(() => saveConfiguration(), 100);
                   }}
                 >
                   Reset Layout
