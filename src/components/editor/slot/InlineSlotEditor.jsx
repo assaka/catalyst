@@ -45,6 +45,7 @@ export default function InlineSlotEditor({
   const [localText, setLocalText] = useState(text);
   const [localClass, setLocalClass] = useState(className);
   const [showStyleEditor, setShowStyleEditor] = useState(false);
+  const [showHtmlEditor, setShowHtmlEditor] = useState(false);
   const inputRef = useRef(null);
 
   // Focus input when editing starts
@@ -130,6 +131,75 @@ export default function InlineSlotEditor({
       });
       onClassChange(slotId, newClassName);
     }
+  };
+
+  // Handle color changes (text and background)
+  const handleColorChange = (colorType, colorValue) => {
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing ${colorType} for ${slotId}:`, { 
+        colorType,
+        colorValue,
+        old: localClass
+      });
+      // For colors, we use inline styles instead of classes for direct color values
+      const newStyles = {
+        ...style,
+        [colorType]: colorValue
+      };
+      onClassChange(slotId, localClass, newStyles);
+    }
+  };
+
+  // Get current text color from class or style
+  const getCurrentTextColor = (className, styles) => {
+    // Check inline styles first
+    if (styles?.color) {
+      return styles.color;
+    }
+    
+    // Try to extract from Tailwind classes
+    const textColorMatch = className.match(/text-(\w+)-(\d+)/);
+    if (textColorMatch) {
+      // Return a basic color mapping for common Tailwind colors
+      const colorMap = {
+        'gray-900': '#111827',
+        'gray-800': '#1f2937',
+        'gray-700': '#374151',
+        'gray-600': '#4b5563',
+        'gray-500': '#6b7280',
+        'blue-600': '#2563eb',
+        'red-600': '#dc2626',
+        'green-600': '#16a34a'
+      };
+      return colorMap[`${textColorMatch[1]}-${textColorMatch[2]}`] || '#000000';
+    }
+    
+    return '#000000';
+  };
+
+  // Get current background color from class or style  
+  const getCurrentBackgroundColor = (className, styles) => {
+    // Check inline styles first
+    if (styles?.backgroundColor) {
+      return styles.backgroundColor;
+    }
+    
+    // Try to extract from Tailwind classes
+    const bgColorMatch = className.match(/bg-(\w+)-(\d+)/);
+    if (bgColorMatch) {
+      const colorMap = {
+        'white': '#ffffff',
+        'gray-50': '#f9fafb',
+        'gray-100': '#f3f4f6',
+        'blue-600': '#2563eb',
+        'blue-700': '#1d4ed8',
+        'green-600': '#16a34a',
+        'green-700': '#15803d'
+      };
+      return colorMap[`${bgColorMatch[1]}-${bgColorMatch[2]}`] || '#ffffff';
+    }
+    
+    return '#ffffff';
   };
 
   // Handle save
@@ -250,6 +320,45 @@ export default function InlineSlotEditor({
 
             <div className="w-px h-6 bg-gray-300 mx-1" />
 
+            {/* Text Color */}
+            <div className="relative group">
+              <input
+                type="color"
+                className="w-8 h-6 rounded border border-gray-200 cursor-pointer"
+                title="Text Color"
+                onChange={(e) => handleColorChange('color', e.target.value)}
+                value={getCurrentTextColor(localClass, style)}
+              />
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                Text
+              </div>
+            </div>
+
+            {/* Background Color */}
+            <div className="relative group">
+              <input
+                type="color"
+                className="w-8 h-6 rounded border border-gray-200 cursor-pointer"
+                title="Background Color"
+                onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
+                value={getCurrentBackgroundColor(localClass, style)}
+              />
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                BG
+              </div>
+            </div>
+
+            <div className="w-px h-6 bg-gray-300 mx-1" />
+
+            {/* HTML Editor */}
+            <button
+              onClick={() => setShowHtmlEditor(true)}
+              className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+              title="Edit HTML"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+
             {/* Advanced Style Editor */}
             <button
               onClick={() => setShowStyleEditor(true)}
@@ -291,6 +400,48 @@ export default function InlineSlotEditor({
             className={`${localClass} w-full outline-2 outline-blue-500 outline outline-offset-2`}
             style={style}
           />
+        </div>
+      )}
+
+      {/* HTML Editor Modal */}
+      {showHtmlEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-96 max-h-96">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Edit HTML</h3>
+              <button 
+                onClick={() => setShowHtmlEditor(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <textarea
+                value={localText}
+                onChange={(e) => setLocalText(e.target.value)}
+                className="w-full h-32 p-2 border border-gray-200 rounded resize-none font-mono text-sm"
+                placeholder="Enter HTML content..."
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => setShowHtmlEditor(false)}
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (onChange) onChange(localText);
+                    setShowHtmlEditor(false);
+                  }}
+                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
