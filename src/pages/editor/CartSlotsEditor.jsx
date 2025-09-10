@@ -2161,9 +2161,19 @@ export default function CartSlotsEditorWithMicroSlots({
   //   });
   // }, [selectedStore, draftConfig, hasUnsavedChanges, isDraftLoading]);
 
+  // Flag to prevent reloading after we just saved
+  const justSavedRef = useRef(false);
+
   // Apply loaded draft configuration to component state
   useEffect(() => {
     if (!draftConfig?.configuration) return;
+    
+    // Skip reload if we just saved to prevent overriding user changes
+    if (justSavedRef.current) {
+      console.log('🚫 Skipping config reload - just saved');
+      justSavedRef.current = false;
+      return;
+    }
     
     const config = draftConfig.configuration;
     console.log('🔄 LOADING CONFIG STRUCTURE CHECK:', {
@@ -2543,6 +2553,8 @@ export default function CartSlotsEditorWithMicroSlots({
         // Use the updateConfiguration function from useDraftConfiguration hook
         // This will handle the draft update via the versioning API
         try {
+          // Set flag to prevent reload after save
+          justSavedRef.current = true;
           await updateConfiguration(config);
           console.log('✅ Draft configuration saved successfully - Color change persisted');
         } catch (error) {
@@ -2619,6 +2631,8 @@ export default function CartSlotsEditorWithMicroSlots({
         console.log('📤 Saving config with elementStyles:', config.elementStyles);
         
         try {
+          // Set flag to prevent reload after save
+          justSavedRef.current = true;
           await updateConfiguration(config);
           console.log('✅ Direct save - Draft configuration saved successfully');
         } catch (error) {
