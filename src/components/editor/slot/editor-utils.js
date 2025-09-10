@@ -447,7 +447,7 @@ export function removeClass(element, className) {
  * @param {string} className - Class to toggle
  * @returns {boolean} True if class was added, false if removed
  */
-export function toggleClass(element, className) {
+export function toggleDomClass(element, className) {
   if (element && element.classList && className) {
     return element.classList.toggle(className);
   }
