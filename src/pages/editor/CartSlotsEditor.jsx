@@ -5,17 +5,12 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
-  DndContext,
-  closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { Button } from "@/components/ui/button";
@@ -33,8 +28,6 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 // Clean imports - using cartConfig as single source
 import cartConfig from '@/components/editor/slot/configs/cart-config';
-import ParentSlot from "@/components/editor/slot/ParentSlot";
-import MicroSlot from "@/components/editor/slot/MicroSlot";
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 
 // Services for loading slot configuration data
@@ -322,6 +315,39 @@ export default function CartSlotsEditor({
       saveConfiguration();
       console.log('🔄 Auto-saved inline text change for:', slotId);
     }, 500);
+  }, [cartLayoutConfig, saveConfiguration]);
+
+  // Auto-save handler for class changes (toolbar actions)
+  const handleInlineClassChange = useCallback((slotId, newClassName, newStyles = {}) => {
+    if (!cartLayoutConfig) return;
+    
+    // Update the cartLayoutConfig with the new styling
+    const updatedConfig = {
+      ...cartLayoutConfig,
+      elementClasses: {
+        ...cartLayoutConfig.elementClasses,
+        [slotId]: newClassName
+      },
+      elementStyles: {
+        ...cartLayoutConfig.elementStyles,
+        [slotId]: {
+          ...cartLayoutConfig.elementStyles?.[slotId],
+          ...newStyles
+        }
+      }
+    };
+    
+    // Update state immediately for responsive UI
+    setCartLayoutConfig(updatedConfig);
+    
+    // Auto-save with debouncing (save 300ms after user stops clicking toolbar)
+    if (window.classChangeTimeout) {
+      clearTimeout(window.classChangeTimeout);
+    }
+    window.classChangeTimeout = setTimeout(() => {
+      saveConfiguration();
+      console.log('🎨 Auto-saved style change for:', slotId, { className: newClassName, styles: newStyles });
+    }, 300);
   }, [cartLayoutConfig, saveConfiguration]);
 
   const handleSaveEdit = useCallback(() => {
@@ -726,7 +752,12 @@ export default function CartSlotsEditor({
         </div>
         
         {/* Header Section with Grid Layout */}
-        <div className="header-section mb-8">
+        <div className="header-section mb-8 border-2 border-dashed border-gray-300 p-4 relative">
+          {mode === 'edit' && (
+            <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
+              header
+            </div>
+          )}
           <div className="grid grid-cols-12 gap-2 auto-rows-min">
             {cartLayoutConfig?.microSlotOrders?.header ? (
               cartLayoutConfig.microSlotOrders.header.map(slotId => {
@@ -752,6 +783,7 @@ export default function CartSlotsEditor({
                             className={finalClasses}
                             style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
                             onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                            onClassChange={handleInlineClassChange}
                             mode={mode}
                           />
                         ) : (
@@ -779,7 +811,12 @@ export default function CartSlotsEditor({
         
         {cartItems.length === 0 || viewMode === 'empty' ? (
           // Empty cart state with micro-slots in custom order
-          <div className="emptyCart-section">
+          <div className="emptyCart-section border-2 border-dashed border-gray-300 p-4 relative">
+            {mode === 'edit' && (
+              <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
+                emptyCart
+              </div>
+            )}
             <div className="text-center py-12">
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
@@ -792,9 +829,28 @@ export default function CartSlotsEditor({
                     
                     // Render standard emptyCart micro-slots
                     if (slotId === 'emptyCart.icon') {
+                      const iconStyling = getMicroSlotStyling('emptyCart.icon');
+                      const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                      const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
+                      const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
                         <div key={slotId} className={positioning.gridClasses}>
-                          <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" style={positioning.elementStyles} />
+                          <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                            {mode === 'edit' ? (
+                              <InlineSlotEditor
+                                slotId={slotId}
+                                text="<ShoppingCart />"
+                                className={finalClasses}
+                                style={{...iconStyling.elementStyles, ...positioning.elementStyles}}
+                                onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                onClassChange={handleInlineClassChange}
+                                mode={mode}
+                                elementType="icon"
+                              />
+                            ) : (
+                              <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
+                            )}
+                          </div>
                         </div>
                       );
                     }
@@ -814,6 +870,7 @@ export default function CartSlotsEditor({
                                 className={finalClasses}
                                 style={{...titleStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                onClassChange={handleInlineClassChange}
                                 mode={mode}
                               />
                             ) : (
@@ -841,6 +898,7 @@ export default function CartSlotsEditor({
                                 className={finalClasses}
                                 style={{...textStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                onClassChange={handleInlineClassChange}
                                 mode={mode}
                               />
                             ) : (
@@ -854,14 +912,33 @@ export default function CartSlotsEditor({
                     }
                     
                     if (slotId === 'emptyCart.button') {
+                      const buttonStyling = getMicroSlotStyling('emptyCart.button');
+                      const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                      const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
+                      const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       return (
                         <div key={slotId} className={positioning.gridClasses}>
-                          <Button 
-                            className="bg-blue-600 hover:bg-blue-700"
-                            style={positioning.elementStyles}
-                          >
-                            Continue Shopping
-                          </Button>
+                          <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                            {mode === 'edit' ? (
+                              <InlineSlotEditor
+                                slotId={slotId}
+                                text="Continue Shopping"
+                                className={finalClasses}
+                                style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                onClassChange={handleInlineClassChange}
+                                mode={mode}
+                                elementType="button"
+                              />
+                            ) : (
+                              <Button 
+                                className={finalClasses}
+                                style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                              >
+                                Continue Shopping
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       );
                     }
@@ -893,7 +970,12 @@ export default function CartSlotsEditor({
         ) : (
           // Cart with products layout
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 border-2 border-dashed border-gray-300 p-4 relative">
+              {mode === 'edit' && (
+                <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
+                  cartItem
+                </div>
+              )}
               <Card>
                 <CardContent className="px-4 divide-y divide-gray-200">
                   {cartItems.map(item => {
@@ -937,7 +1019,13 @@ export default function CartSlotsEditor({
             
             <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
               {/* Coupon Section */}
-              <Card>
+              <div className="border-2 border-dashed border-gray-300 p-4 relative">
+                {mode === 'edit' && (
+                  <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
+                    coupon
+                  </div>
+                )}
+                <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.coupon ? (
@@ -975,14 +1063,34 @@ export default function CartSlotsEditor({
                         }
                         
                         if (slotId === 'coupon.button' && !appliedCoupon) {
+                          const buttonStyling = getMicroSlotStyling('coupon.button');
+                          const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                          const defaultClasses = '';
+                          const finalClasses = buttonStyling.elementClasses || defaultClasses;
                           return (
                             <div key={slotId} className={positioning.gridClasses}>
-                              <Button 
-                                disabled={!couponCode.trim()}
-                                style={positioning.elementStyles}
-                              >
-                                <Tag className="w-4 h-4 mr-2" /> Apply
-                              </Button>
+                              <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                {mode === 'edit' ? (
+                                  <InlineSlotEditor
+                                    slotId={slotId}
+                                    text="<Tag className=&quot;w-4 h-4 mr-2&quot; /> Apply"
+                                    className={finalClasses}
+                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                    onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                    onClassChange={handleInlineClassChange}
+                                    mode={mode}
+                                    elementType="button"
+                                  />
+                                ) : (
+                                  <Button 
+                                    disabled={!couponCode.trim()}
+                                    className={finalClasses}
+                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                  >
+                                    <Tag className="w-4 h-4 mr-2" /> Apply
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           );
                         }
@@ -1011,10 +1119,17 @@ export default function CartSlotsEditor({
                     )}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
               
               {/* Order Summary Section */}
-              <Card>
+              <div className="border-2 border-dashed border-gray-300 p-4 relative">
+                {mode === 'edit' && (
+                  <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
+                    orderSummary
+                  </div>
+                )}
+                <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
@@ -1080,23 +1195,44 @@ export default function CartSlotsEditor({
                         
                         if (slotId === 'orderSummary.checkoutButton') {
                           const buttonStyling = getMicroSlotStyling('orderSummary.checkoutButton');
+                          const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
                           const defaultClasses = 'w-full';
                           const finalClasses = buttonStyling.elementClasses || defaultClasses;
                           return (
                             <div key={slotId} className={positioning.gridClasses}>
                               <div className="border-t mt-6 pt-6">
-                                <Button 
-                                  size="lg" 
-                                  className={finalClasses}
-                                  style={{
-                                    backgroundColor: '#007bff',
-                                    color: '#FFFFFF',
-                                    ...buttonStyling.elementStyles,
-                                    ...positioning.elementStyles
-                                  }}
-                                >
-                                  Proceed to Checkout
-                                </Button>
+                                <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                  {mode === 'edit' ? (
+                                    <InlineSlotEditor
+                                      slotId={slotId}
+                                      text="Proceed to Checkout"
+                                      className={finalClasses}
+                                      style={{
+                                        backgroundColor: '#007bff',
+                                        color: '#FFFFFF',
+                                        ...buttonStyling.elementStyles,
+                                        ...positioning.elementStyles
+                                      }}
+                                      onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                      onClassChange={handleInlineClassChange}
+                                      mode={mode}
+                                      elementType="button"
+                                    />
+                                  ) : (
+                                    <Button 
+                                      size="lg" 
+                                      className={finalClasses}
+                                      style={{
+                                        backgroundColor: '#007bff',
+                                        color: '#FFFFFF',
+                                        ...buttonStyling.elementStyles,
+                                        ...positioning.elementStyles
+                                      }}
+                                    >
+                                      Proceed to Checkout
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
@@ -1144,7 +1280,8 @@ export default function CartSlotsEditor({
                     )}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
             </div>
           </div>
         )}

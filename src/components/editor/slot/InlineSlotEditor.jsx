@@ -9,7 +9,9 @@ import {
   Palette,
   Edit,
   X,
-  Check
+  Check,
+  Maximize2,
+  Square
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TailwindStyleEditor from './TailwindStyleEditor';
@@ -23,7 +25,16 @@ import {
   handleAlignmentChange,
   handleFontSizeChange,
   triggerSave,
-  FONT_SIZES
+  FONT_SIZES,
+  SIZE_OPTIONS,
+  PADDING_OPTIONS,
+  getCurrentWidth,
+  getCurrentHeight,
+  getCurrentPadding,
+  handleWidthChange,
+  handleHeightChange,
+  handlePaddingChange,
+  isResizableElement
 } from './editor-utils';
 
 /**
@@ -39,7 +50,8 @@ export default function InlineSlotEditor({
   onChange,
   onClassChange,
   mode = 'view',
-  isWrapperSlot = false
+  isWrapperSlot = false,
+  elementType = 'div'
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [localText, setLocalText] = useState(text);
@@ -160,6 +172,51 @@ export default function InlineSlotEditor({
     // No save needed - changes are applied directly via onClassChange
   };
 
+  // Handle width change
+  const handleWidth = (width) => {
+    const newClassName = handleWidthChange(localClass, width);
+    setLocalClass(newClassName);
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing width for ${slotId}:`, { 
+        width,
+        old: localClass, 
+        new: newClassName 
+      });
+      onClassChange(slotId, newClassName);
+    }
+  };
+
+  // Handle height change
+  const handleHeight = (height) => {
+    const newClassName = handleHeightChange(localClass, height);
+    setLocalClass(newClassName);
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing height for ${slotId}:`, { 
+        height,
+        old: localClass, 
+        new: newClassName 
+      });
+      onClassChange(slotId, newClassName);
+    }
+  };
+
+  // Handle padding change
+  const handlePadding = (padding) => {
+    const newClassName = handlePaddingChange(localClass, padding);
+    setLocalClass(newClassName);
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing padding for ${slotId}:`, { 
+        padding,
+        old: localClass, 
+        new: newClassName 
+      });
+      onClassChange(slotId, newClassName);
+    }
+  };
+
   // Get current text color from class or style
   const getCurrentTextColor = (className, styles) => {
     // Check inline styles first
@@ -231,6 +288,10 @@ export default function InlineSlotEditor({
   const italic = isItalic(localClass);
   const currentAlign = getCurrentAlign(localClass, isWrapperSlot);
   const currentFontSize = getCurrentFontSize(localClass);
+  const currentWidth = getCurrentWidth(localClass);
+  const currentHeight = getCurrentHeight(localClass);
+  const currentPadding = getCurrentPadding(localClass);
+  const isResizable = isResizableElement(localClass, elementType);
 
   // Don't render editor in view mode
   if (mode === 'view') {
@@ -357,6 +418,64 @@ export default function InlineSlotEditor({
                 BG
               </div>
             </div>
+
+            {/* Resize Controls - only show for resizable elements */}
+            {isResizable && (
+              <>
+                <div className="w-px h-6 bg-gray-300 mx-1" />
+
+                {/* Width */}
+                <div className="flex items-center gap-1">
+                  <Maximize2 className="w-3 h-3 text-gray-500" />
+                  <select
+                    value={currentWidth}
+                    onChange={(e) => handleWidth(e.target.value)}
+                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-14"
+                    title="Width"
+                  >
+                    {SIZE_OPTIONS.map(size => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Height */}
+                <div className="flex items-center gap-1">
+                  <Square className="w-3 h-3 text-gray-500 rotate-90" />
+                  <select
+                    value={currentHeight}
+                    onChange={(e) => handleHeight(e.target.value)}
+                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-14"
+                    title="Height"
+                  >
+                    {SIZE_OPTIONS.map(size => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Padding */}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 font-mono">P</span>
+                  <select
+                    value={currentPadding}
+                    onChange={(e) => handlePadding(e.target.value)}
+                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
+                    title="Padding"
+                  >
+                    {PADDING_OPTIONS.map(padding => (
+                      <option key={padding.value} value={padding.value}>
+                        {padding.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
 
             <div className="w-px h-6 bg-gray-300 mx-1" />
 

@@ -72,6 +72,26 @@ export function toggleClass(currentClasses, classToToggle, classCategory, isWrap
         return true; // Keep utilities like bg-cover, bg-gradient-to-r
       });
       break;
+      
+    case 'width':
+      // Remove all width classes
+      classes = classes.filter(c => !c.match(/^w-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto|full|screen|min|max|fit)/));
+      break;
+      
+    case 'height':
+      // Remove all height classes
+      classes = classes.filter(c => !c.match(/^h-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto|full|screen|min|max|fit)/));
+      break;
+      
+    case 'padding':
+      // Remove all padding classes
+      classes = classes.filter(c => !c.match(/^p[tblrxy]?-(\d+|px|0\.5|1\.5|2\.5|3\.5)/));
+      break;
+      
+    case 'margin':
+      // Remove all margin classes
+      classes = classes.filter(c => !c.match(/^-?m[tblrxy]?-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto)/));
+      break;
   }
   
   // Add the new class if provided
@@ -222,6 +242,101 @@ export const FONT_WEIGHTS = [
   { label: 'Semibold', value: 'font-semibold' },
   { label: 'Bold', value: 'font-bold' },
 ];
+
+/**
+ * Size options for elements
+ */
+export const SIZE_OPTIONS = [
+  { label: '4', value: '4' },
+  { label: '5', value: '5' },
+  { label: '6', value: '6' },
+  { label: '8', value: '8' },
+  { label: '10', value: '10' },
+  { label: '12', value: '12' },
+  { label: '14', value: '14' },
+  { label: '16', value: '16' },
+  { label: '20', value: '20' },
+  { label: '24', value: '24' },
+  { label: '32', value: '32' },
+  { label: '40', value: '40' },
+  { label: '48', value: '48' },
+  { label: '56', value: '56' },
+  { label: '64', value: '64' }
+];
+
+/**
+ * Padding options
+ */
+export const PADDING_OPTIONS = [
+  { label: '0', value: '0' },
+  { label: '1', value: '1' },
+  { label: '2', value: '2' },
+  { label: '3', value: '3' },
+  { label: '4', value: '4' },
+  { label: '6', value: '6' },
+  { label: '8', value: '8' },
+  { label: '12', value: '12' },
+  { label: '16', value: '16' },
+  { label: '20', value: '20' },
+  { label: '24', value: '24' }
+];
+
+/**
+ * Get current width from class string
+ */
+export function getCurrentWidth(className) {
+  const widthMatch = className.match(/w-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto|full|screen|min|max|fit)/);
+  return widthMatch ? widthMatch[1] : '16';
+}
+
+/**
+ * Get current height from class string
+ */
+export function getCurrentHeight(className) {
+  const heightMatch = className.match(/h-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto|full|screen|min|max|fit)/);
+  return heightMatch ? heightMatch[1] : '16';
+}
+
+/**
+ * Get current padding from class string
+ */
+export function getCurrentPadding(className) {
+  const paddingMatch = className.match(/p-(\d+|px|0\.5|1\.5|2\.5|3\.5)/);
+  return paddingMatch ? paddingMatch[1] : '4';
+}
+
+/**
+ * Handle width change
+ */
+export function handleWidthChange(className, width) {
+  return toggleClass(className, `w-${width}`, 'width');
+}
+
+/**
+ * Handle height change
+ */
+export function handleHeightChange(className, height) {
+  return toggleClass(className, `h-${height}`, 'height');
+}
+
+/**
+ * Handle padding change
+ */
+export function handlePaddingChange(className, padding) {
+  return toggleClass(className, `p-${padding}`, 'padding');
+}
+
+/**
+ * Check if element is likely an icon, image, or button based on className or element type
+ */
+export function isResizableElement(className = '', elementType = 'div') {
+  const isIcon = className.includes('lucide') || className.includes('icon') || className.includes('w-4') || className.includes('h-4');
+  const isImage = elementType === 'img' || className.includes('image');
+  const isButton = elementType === 'button' || className.includes('btn') || className.includes('Button');
+  const hasSize = className.match(/[wh]-(\d+)/);
+  
+  return isIcon || isImage || isButton || hasSize;
+}
 
 /**
  * Trigger a custom save event for any page type
