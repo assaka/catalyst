@@ -393,16 +393,33 @@ export default function CartSlotsEditor({
     }, 300);
   }, [cartLayoutConfig, saveConfiguration]);
 
-  const handleSaveEdit = useMemo(() => {
-    const saveHandler = createSaveEditHandler({
-      setLayoutConfig: setCartLayoutConfig,
-      setEditingComponent,
-      setTempCode,
-      saveConfiguration,
-      slotContentKey: 'slots'
-    });
-    
-    return () => saveHandler(editingComponent, tempCode, cartLayoutConfig);
+  const handleSaveEdit = useCallback(() => {
+    if (editingComponent && cartLayoutConfig) {
+      // Update the cartLayoutConfig with the new HTML content
+      const updatedConfig = {
+        ...cartLayoutConfig,
+        slots: {
+          ...cartLayoutConfig.slots,
+          [editingComponent]: {
+            ...cartLayoutConfig.slots?.[editingComponent],
+            content: tempCode,
+            metadata: {
+              ...cartLayoutConfig.slots?.[editingComponent]?.metadata,
+              lastModified: new Date().toISOString()
+            }
+          }
+        }
+      };
+      
+      setCartLayoutConfig(updatedConfig);
+      setEditingComponent(null);
+      setTempCode('');
+      
+      // Save the updated configuration to database
+      setTimeout(() => saveConfiguration(), 100);
+      
+      console.log('💾 Saved HTML content for slot:', editingComponent);
+    }
   }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
 
   // Custom micro slot styling that reads from slots.{slotId}.className and parentClassName
@@ -602,15 +619,14 @@ export default function CartSlotsEditor({
         
         {/* Header Section with Grid Layout */}
         <div className="header-section mb-8">
-          {mode === 'edit' ? (
+          {mode === 'edit' && (
             <div className="border-2 border-dashed border-gray-300 p-4 relative">
               <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                 header
               </div>
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-          ) : (
-            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+            </div>
           )}
+          <div className="grid grid-cols-12 gap-2 auto-rows-min">
             {cartLayoutConfig?.microSlotOrders?.header ? (
               cartLayoutConfig.microSlotOrders.header.map(slotId => {
                 const positioning = getSlotPositioning(slotId, 'header');
@@ -636,6 +652,7 @@ export default function CartSlotsEditor({
                             style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
                             onChange={(newText) => handleInlineTextChange(slotId, newText)}
                             onClassChange={handleInlineClassChange}
+                            onEditSlot={handleEditSlot}
                             mode={mode}
                           />
                         ) : (
@@ -656,10 +673,7 @@ export default function CartSlotsEditor({
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
               </div>
             )}
-            </div>
-          {mode === 'edit' && (
-            </div>
-          )}
+          </div>
         </div>
         
         <CmsBlockRenderer position="cart_above_items" />
@@ -668,15 +682,14 @@ export default function CartSlotsEditor({
           // Empty cart state with micro-slots in custom order
           <div className="emptyCart-section">
             <div className="text-center py-12">
-              {mode === 'edit' ? (
+              {mode === 'edit' && (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     emptyCart
                   </div>
-                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              ) : (
-                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                </div>
               )}
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
                   cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
                     const positioning = getSlotPositioning(slotId, 'emptyCart');
@@ -702,6 +715,7 @@ export default function CartSlotsEditor({
                                 style={{...iconStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                 onClassChange={handleInlineClassChange}
+                                onEditSlot={handleEditSlot}
                                 mode={mode}
                                 elementType="icon"
                               />
@@ -729,6 +743,7 @@ export default function CartSlotsEditor({
                                 style={{...titleStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                 onClassChange={handleInlineClassChange}
+                                onEditSlot={handleEditSlot}
                                 mode={mode}
                               />
                             ) : (
@@ -757,6 +772,7 @@ export default function CartSlotsEditor({
                                 style={{...textStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                 onClassChange={handleInlineClassChange}
+                                onEditSlot={handleEditSlot}
                                 mode={mode}
                               />
                             ) : (
@@ -785,6 +801,7 @@ export default function CartSlotsEditor({
                                 style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                 onClassChange={handleInlineClassChange}
+                                onEditSlot={handleEditSlot}
                                 mode={mode}
                                 elementType="button"
                               />
@@ -822,25 +839,21 @@ export default function CartSlotsEditor({
                     </div>
                   </>
                 )}
-                </div>
-              {mode === 'edit' && (
-                </div>
-              )}
+              </div>
             </div>
           </div>
         ) : (
           // Cart with products layout
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
             <div className="lg:col-span-2">
-              {mode === 'edit' ? (
+              {mode === 'edit' && (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     cartItem
                   </div>
-                  <Card>
-              ) : (
-                <Card>
+                </div>
               )}
+              <Card>
                 <CardContent className="px-4 divide-y divide-gray-200">
                   {cartItems.map(item => {
                     const product = item.product;
@@ -877,24 +890,20 @@ export default function CartSlotsEditor({
                     );
                   })}
                 </CardContent>
-                </Card>
-              {mode === 'edit' && (
-                </div>
-              )}
+              </Card>
               <CmsBlockRenderer position="cart_below_items" />
             </div>
             
             <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
               {/* Coupon Section */}
-              {mode === 'edit' ? (
+              {mode === 'edit' && (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     coupon
                   </div>
-                  <Card>
-              ) : (
-                <Card>
+                </div>
               )}
+              <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.coupon ? (
@@ -947,6 +956,7 @@ export default function CartSlotsEditor({
                                     style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                     onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                     onClassChange={handleInlineClassChange}
+                                    onEditSlot={handleEditSlot}
                                     mode={mode}
                                     elementType="button"
                                   />
@@ -988,21 +998,17 @@ export default function CartSlotsEditor({
                     )}
                   </div>
                 </CardContent>
-                </Card>
-              {mode === 'edit' && (
-                </div>
-              )}
+              </Card>
               
               {/* Order Summary Section */}
-              {mode === 'edit' ? (
+              {mode === 'edit' && (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     orderSummary
                   </div>
-                  <Card>
-              ) : (
-                <Card>
+                </div>
               )}
+              <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
@@ -1153,10 +1159,7 @@ export default function CartSlotsEditor({
                     )}
                   </div>
                 </CardContent>
-                </Card>
-              {mode === 'edit' && (
-                </div>
-              )}
+              </Card>
             </div>
           </div>
         )}

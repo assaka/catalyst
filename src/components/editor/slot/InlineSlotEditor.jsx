@@ -49,6 +49,7 @@ export default function InlineSlotEditor({
   style = {},
   onChange,
   onClassChange,
+  onEditSlot,
   mode = 'view',
   isWrapperSlot = false,
   elementType = 'div'
@@ -482,7 +483,13 @@ export default function InlineSlotEditor({
 
             {/* HTML Editor */}
             <button
-              onClick={() => setShowHtmlEditor(true)}
+              onClick={() => {
+                if (onEditSlot) {
+                  onEditSlot(slotId, localText);
+                } else {
+                  setShowHtmlEditor(true);
+                }
+              }}
               className="p-1.5 rounded hover:bg-gray-100 transition-colors"
               title="Edit HTML"
             >
