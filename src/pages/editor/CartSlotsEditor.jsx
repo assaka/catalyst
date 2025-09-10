@@ -356,6 +356,8 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Handle micro-slot class/style changes (without opening editor)
   const handleMicroSlotClassChange = useCallback((microSlotKey, newClassName, newStyles) => {
+    console.log('🎨 handleMicroSlotClassChange called:', { microSlotKey, newClassName, newStyles });
+    
     if (newClassName !== undefined) {
       // Check if this is an alignment change by looking for alignment classes
       const isAlignmentChange = newClassName.includes('text-left') || 
@@ -395,7 +397,8 @@ export default function CartSlotsEditorWithMicroSlots({
       }));
     }
     
-    // Auto-save the configuration
+    // Auto-save the configuration (this will prevent reload in useSlotConfiguration)
+    console.log('🎨 About to save configuration after class change');
     saveConfiguration();
   }, [saveConfiguration]);
 
