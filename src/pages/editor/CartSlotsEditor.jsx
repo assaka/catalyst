@@ -45,6 +45,8 @@ import {
 } from "@/components/editor/slot/slot-management-utils";
 import ParentSlot from "@/components/editor/slot/ParentSlot";
 import MicroSlot from "@/components/editor/slot/MicroSlot";
+import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
+import SimpleInlineEdit from "@/components/editor/slot/SimpleInlineEdit";
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
@@ -513,9 +515,15 @@ export default function CartSlotsEditorWithMicroSlots({
                                           elementClasses={elementClasses}
                                           elementStyles={elementStyles}
                                         >
-                                          <h1 className={styling || "text-3xl font-bold text-gray-900"} style={styles}>
-                                            {slotContent[microSlotId] || "My Cart"}
-                                          </h1>
+                                          <InlineSlotEditor
+                                            slotId={microSlotId}
+                                            text={slotContent[microSlotId] || "My Cart"}
+                                            className={styling || "text-3xl font-bold text-gray-900"}
+                                            style={styles}
+                                            onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
+                                            onClassChange={handleEditMicroSlot}
+                                            mode="edit"
+                                          />
                                         </MicroSlot>
                                       );
                                     }
@@ -561,9 +569,15 @@ export default function CartSlotsEditorWithMicroSlots({
                                           elementClasses={elementClasses}
                                           elementStyles={elementStyles}
                                         >
-                                          <h2 className={styling || "text-xl font-semibold text-gray-900"} style={styles}>
-                                            {slotContent[microSlotId] || "Your cart is empty"}
-                                          </h2>
+                                          <InlineSlotEditor
+                                            slotId={microSlotId}
+                                            text={slotContent[microSlotId] || "Your cart is empty"}
+                                            className={styling || "text-xl font-semibold text-gray-900"}
+                                            style={styles}
+                                            onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
+                                            onClassChange={handleEditMicroSlot}
+                                            mode="edit"
+                                          />
                                         </MicroSlot>
                                       );
                                     }
@@ -580,9 +594,15 @@ export default function CartSlotsEditorWithMicroSlots({
                                           elementClasses={elementClasses}
                                           elementStyles={elementStyles}
                                         >
-                                          <p className={styling || "text-gray-600"} style={styles}>
-                                            {slotContent[microSlotId] || "Looks like you haven't added anything to your cart yet."}
-                                          </p>
+                                          <InlineSlotEditor
+                                            slotId={microSlotId}
+                                            text={slotContent[microSlotId] || "Looks like you haven't added anything to your cart yet."}
+                                            className={styling || "text-gray-600"}
+                                            style={styles}
+                                            onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
+                                            onClassChange={handleEditMicroSlot}
+                                            mode="edit"
+                                          />
                                         </MicroSlot>
                                       );
                                     }
@@ -705,9 +725,16 @@ export default function CartSlotsEditorWithMicroSlots({
                               const styling = elementClasses[microSlotId] || '';
                               const styles = elementStyles[microSlotId] || {};
                               return (
-                                <h1 key={microSlotId} className={styling || "text-3xl font-bold text-gray-900"} style={styles}>
-                                  {slotContent[microSlotId] || "My Cart"}
-                                </h1>
+                                <SimpleInlineEdit
+                                  key={microSlotId}
+                                  slotId={microSlotId}
+                                  text={slotContent[microSlotId] || "My Cart"}
+                                  className={styling || "text-3xl font-bold text-gray-900"}
+                                  style={styles}
+                                  onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
+                                  onClassChange={handleEditMicroSlot}
+                                  mode="preview"
+                                />
                               );
                             }
                             return null;
@@ -735,9 +762,15 @@ export default function CartSlotsEditorWithMicroSlots({
                               if (microSlotId === 'emptyCart.title') {
                                 return (
                                   <div key={microSlotId} className="col-span-12">
-                                    <h2 className={styling || "text-xl font-semibold text-gray-900 mb-2"} style={styles}>
-                                      {slotContent[microSlotId] || "Your cart is empty"}
-                                    </h2>
+                                    <SimpleInlineEdit
+                                      slotId={microSlotId}
+                                      text={slotContent[microSlotId] || "Your cart is empty"}
+                                      className={styling || "text-xl font-semibold text-gray-900 mb-2"}
+                                      style={styles}
+                                      onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
+                                      onClassChange={handleEditMicroSlot}
+                                      mode="preview"
+                                    />
                                   </div>
                                 );
                               }
@@ -745,9 +778,15 @@ export default function CartSlotsEditorWithMicroSlots({
                               if (microSlotId === 'emptyCart.text') {
                                 return (
                                   <div key={microSlotId} className="col-span-12">
-                                    <p className={styling || "text-gray-600 mb-6"} style={styles}>
-                                      {slotContent[microSlotId] || "Looks like you haven't added anything to your cart yet."}
-                                    </p>
+                                    <SimpleInlineEdit
+                                      slotId={microSlotId}
+                                      text={slotContent[microSlotId] || "Looks like you haven't added anything to your cart yet."}
+                                      className={styling || "text-gray-600 mb-6"}
+                                      style={styles}
+                                      onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
+                                      onClassChange={handleEditMicroSlot}
+                                      mode="preview"
+                                    />
                                   </div>
                                 );
                               }
