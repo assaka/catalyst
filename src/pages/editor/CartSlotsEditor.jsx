@@ -43,7 +43,8 @@ import {
   handleDeleteCustomSlot,
   handleAddCustomSlot
 } from "@/components/editor/slot/slot-management-utils";
-import SlotPreview from "@/components/editor/slot/SlotPreview";
+import ParentSlot from "@/components/editor/slot/ParentSlot";
+import MicroSlot from "@/components/editor/slot/MicroSlot";
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
@@ -474,22 +475,204 @@ export default function CartSlotsEditorWithMicroSlots({
                   onDragEnd={handleMajorDragEnd}
                 >
                   <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
-                    <SlotPreview
-                      majorSlots={majorSlots}
-                      microSlotDefinitions={MICRO_SLOT_DEFINITIONS}
-                      microSlotOrders={microSlotOrders}
-                      microSlotSpans={microSlotSpans}
-                      slotContent={slotContent}
-                      elementClasses={elementClasses}
-                      elementStyles={elementStyles}
-                      mode={mode}
-                      onEditSlot={handleEditSlot}
-                      onEditMicroSlot={handleEditMicroSlot}
-                      onMajorDragStart={handleMajorDragStart}
-                      onMajorDragEnd={handleMajorDragEnd}
-                      activeDragSlot={activeDragSlot}
-                      pageType="cart"
-                    />
+                    <div className="bg-gray-50 min-h-screen">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        {majorSlots.map(slotId => {
+                          const slotDefinition = MICRO_SLOT_DEFINITIONS[slotId];
+                          if (!slotDefinition) return null;
+                          
+                          const microSlotOrder = microSlotOrders[slotId] || slotDefinition.microSlots || [];
+                          
+                          return (
+                            <ParentSlot
+                              key={slotId}
+                              id={slotId}
+                              name={slotDefinition.name}
+                              microSlotOrder={microSlotOrder}
+                              onMicroSlotReorder={() => {}}
+                              onEdit={handleEditSlot}
+                              mode={mode}
+                              elementClasses={elementClasses}
+                              elementStyles={elementStyles}
+                            >
+                              {/* Render actual cart content based on slot type */}
+                              {slotId === 'header' && (
+                                <div className="mb-8">
+                                  {microSlotOrder.map(microSlotId => {
+                                    if (microSlotId === 'header.title') {
+                                      const styling = elementClasses[microSlotId] || '';
+                                      const styles = elementStyles[microSlotId] || {};
+                                      return (
+                                        <MicroSlot
+                                          key={microSlotId}
+                                          id={microSlotId}
+                                          colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 12}
+                                          rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                          onEdit={handleEditMicroSlot}
+                                          mode={mode}
+                                          elementClasses={elementClasses}
+                                          elementStyles={elementStyles}
+                                        >
+                                          <h1 className={styling || "text-3xl font-bold text-gray-900"} style={styles}>
+                                            {slotContent[microSlotId] || "My Cart"}
+                                          </h1>
+                                        </MicroSlot>
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                                </div>
+                              )}
+                              
+                              {slotId === 'emptyCart' && viewMode === 'empty' && (
+                                <div className="text-center py-12">
+                                  {microSlotOrder.map(microSlotId => {
+                                    const styling = elementClasses[microSlotId] || '';
+                                    const styles = elementStyles[microSlotId] || {};
+                                    
+                                    if (microSlotId === 'emptyCart.icon') {
+                                      return (
+                                        <MicroSlot
+                                          key={microSlotId}
+                                          id={microSlotId}
+                                          colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 12}
+                                          rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                          onEdit={handleEditMicroSlot}
+                                          mode={mode}
+                                          elementClasses={elementClasses}
+                                          elementStyles={elementStyles}
+                                        >
+                                          <div className="flex justify-center">
+                                            <ShoppingCart className="w-16 h-16 text-gray-400" />
+                                          </div>
+                                        </MicroSlot>
+                                      );
+                                    }
+                                    
+                                    if (microSlotId === 'emptyCart.title') {
+                                      return (
+                                        <MicroSlot
+                                          key={microSlotId}
+                                          id={microSlotId}
+                                          colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 12}
+                                          rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                          onEdit={handleEditMicroSlot}
+                                          mode={mode}
+                                          elementClasses={elementClasses}
+                                          elementStyles={elementStyles}
+                                        >
+                                          <h2 className={styling || "text-xl font-semibold text-gray-900"} style={styles}>
+                                            {slotContent[microSlotId] || "Your cart is empty"}
+                                          </h2>
+                                        </MicroSlot>
+                                      );
+                                    }
+                                    
+                                    if (microSlotId === 'emptyCart.text') {
+                                      return (
+                                        <MicroSlot
+                                          key={microSlotId}
+                                          id={microSlotId}
+                                          colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 12}
+                                          rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                          onEdit={handleEditMicroSlot}
+                                          mode={mode}
+                                          elementClasses={elementClasses}
+                                          elementStyles={elementStyles}
+                                        >
+                                          <p className={styling || "text-gray-600"} style={styles}>
+                                            {slotContent[microSlotId] || "Looks like you haven't added anything to your cart yet."}
+                                          </p>
+                                        </MicroSlot>
+                                      );
+                                    }
+                                    
+                                    if (microSlotId === 'emptyCart.button') {
+                                      return (
+                                        <MicroSlot
+                                          key={microSlotId}
+                                          id={microSlotId}
+                                          colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 12}
+                                          rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                          onEdit={handleEditMicroSlot}
+                                          mode={mode}
+                                          elementClasses={elementClasses}
+                                          elementStyles={elementStyles}
+                                        >
+                                          <Button className="bg-blue-600 hover:bg-blue-700">
+                                            Continue Shopping
+                                          </Button>
+                                        </MicroSlot>
+                                      );
+                                    }
+                                    
+                                    return null;
+                                  })}
+                                </div>
+                              )}
+                              
+                              {slotId === 'cartItem' && viewMode === 'withProducts' && (
+                                <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+                                  <div className="lg:col-span-2">
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        {/* Sample cart item */}
+                                        <div className="flex items-center space-x-4 py-6 border-b">
+                                          {microSlotOrder.map(microSlotId => {
+                                            if (microSlotId === 'cartItem.image') {
+                                              return (
+                                                <MicroSlot
+                                                  key={microSlotId}
+                                                  id={microSlotId}
+                                                  colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 2}
+                                                  rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                                  onEdit={handleEditMicroSlot}
+                                                  mode={mode}
+                                                  elementClasses={elementClasses}
+                                                  elementStyles={elementStyles}
+                                                >
+                                                  <img 
+                                                    src="https://placehold.co/100x100?text=Product"
+                                                    alt="Sample Product"
+                                                    className="w-20 h-20 object-cover rounded-lg"
+                                                  />
+                                                </MicroSlot>
+                                              );
+                                            }
+                                            
+                                            if (microSlotId === 'cartItem.details') {
+                                              return (
+                                                <MicroSlot
+                                                  key={microSlotId}
+                                                  id={microSlotId}
+                                                  colSpan={microSlotSpans[slotId]?.[microSlotId]?.col || 4}
+                                                  rowSpan={microSlotSpans[slotId]?.[microSlotId]?.row || 1}
+                                                  onEdit={handleEditMicroSlot}
+                                                  mode={mode}
+                                                  elementClasses={elementClasses}
+                                                  elementStyles={elementStyles}
+                                                >
+                                                  <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold">Wireless Headphones</h3>
+                                                    <p className="text-gray-600">$29.99 each</p>
+                                                  </div>
+                                                </MicroSlot>
+                                              );
+                                            }
+                                            
+                                            return null;
+                                          })}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  </div>
+                                </div>
+                              )}
+                            </ParentSlot>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </SortableContext>
                   
                   <DragOverlay>
@@ -505,19 +688,91 @@ export default function CartSlotsEditorWithMicroSlots({
           ) : (
             // Preview mode - full width, no drag functionality
             <div className="w-full">
-              <SlotPreview
-                majorSlots={majorSlots}
-                microSlotDefinitions={MICRO_SLOT_DEFINITIONS}
-                microSlotOrders={microSlotOrders}
-                microSlotSpans={microSlotSpans}
-                slotContent={slotContent}
-                elementClasses={elementClasses}
-                elementStyles={elementStyles}
-                mode={mode}
-                onEditSlot={handleEditSlot}
-                onEditMicroSlot={handleEditMicroSlot}
-                pageType="cart"
-              />
+              <div className="bg-gray-50 min-h-screen">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                  {majorSlots.map(slotId => {
+                    const slotDefinition = MICRO_SLOT_DEFINITIONS[slotId];
+                    if (!slotDefinition) return null;
+                    
+                    const microSlotOrder = microSlotOrders[slotId] || slotDefinition.microSlots || [];
+                    
+                    // Just render the content without editing capabilities
+                    if (slotId === 'header') {
+                      return (
+                        <div key={slotId} className="mb-8">
+                          {microSlotOrder.map(microSlotId => {
+                            if (microSlotId === 'header.title') {
+                              const styling = elementClasses[microSlotId] || '';
+                              const styles = elementStyles[microSlotId] || {};
+                              return (
+                                <h1 key={microSlotId} className={styling || "text-3xl font-bold text-gray-900"} style={styles}>
+                                  {slotContent[microSlotId] || "My Cart"}
+                                </h1>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      );
+                    }
+                    
+                    if (slotId === 'emptyCart' && viewMode === 'empty') {
+                      return (
+                        <div key={slotId} className="text-center py-12">
+                          <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                            {microSlotOrder.map(microSlotId => {
+                              const styling = elementClasses[microSlotId] || '';
+                              const styles = elementStyles[microSlotId] || {};
+                              
+                              if (microSlotId === 'emptyCart.icon') {
+                                return (
+                                  <div key={microSlotId} className="col-span-12">
+                                    <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                  </div>
+                                );
+                              }
+                              
+                              if (microSlotId === 'emptyCart.title') {
+                                return (
+                                  <div key={microSlotId} className="col-span-12">
+                                    <h2 className={styling || "text-xl font-semibold text-gray-900 mb-2"} style={styles}>
+                                      {slotContent[microSlotId] || "Your cart is empty"}
+                                    </h2>
+                                  </div>
+                                );
+                              }
+                              
+                              if (microSlotId === 'emptyCart.text') {
+                                return (
+                                  <div key={microSlotId} className="col-span-12">
+                                    <p className={styling || "text-gray-600 mb-6"} style={styles}>
+                                      {slotContent[microSlotId] || "Looks like you haven't added anything to your cart yet."}
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              
+                              if (microSlotId === 'emptyCart.button') {
+                                return (
+                                  <div key={microSlotId} className="col-span-12">
+                                    <Button className="bg-blue-600 hover:bg-blue-700">
+                                      Continue Shopping
+                                    </Button>
+                                  </div>
+                                );
+                              }
+                              
+                              return null;
+                            })}
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                </div>
+              </div>
             </div>
           )}
           </div>
