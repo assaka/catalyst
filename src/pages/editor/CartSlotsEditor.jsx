@@ -354,15 +354,46 @@ export default function CartSlotsEditor({
     [cartLayoutConfig, saveConfiguration]
   );
 
-  const handleInlineClassChange = useMemo(() =>
-    createInlineClassChangeHandler({
-      setLayoutConfig: setCartLayoutConfig,
-      saveConfiguration,
-      layoutConfig: cartLayoutConfig,
-      debounceMs: 300
-    }),
-    [cartLayoutConfig, saveConfiguration]
-  );
+  // Custom class change handler that stores classes in slots.{slotId}.className and parentClassName
+  const handleInlineClassChange = useCallback((slotId, newClassName, newStyles = {}, isWrapperSlot = false) => {
+    if (!cartLayoutConfig) return;
+    
+    // Determine if this is for parent/wrapper styling
+    const classKey = isWrapperSlot ? 'parentClassName' : 'className';
+    const styleKey = isWrapperSlot ? 'parentStyles' : 'styles';
+    
+    // Update the cartLayoutConfig with the new styling in the correct structure
+    const updatedConfig = {
+      ...cartLayoutConfig,
+      slots: {
+        ...cartLayoutConfig.slots,
+        [slotId]: {
+          ...cartLayoutConfig.slots?.[slotId],
+          [classKey]: newClassName,
+          [styleKey]: {
+            ...cartLayoutConfig.slots?.[slotId]?.[styleKey],
+            ...newStyles
+          }
+        }
+      }
+    };
+    
+    // Update state immediately for responsive UI
+    setCartLayoutConfig(updatedConfig);
+    
+    // Auto-save with debouncing (save 300ms after user stops clicking toolbar)
+    if (window.classChangeTimeout) {
+      clearTimeout(window.classChangeTimeout);
+    }
+    window.classChangeTimeout = setTimeout(() => {
+      saveConfiguration();
+      console.log('🎨 Auto-saved style change for:', slotId, { 
+        [classKey]: newClassName, 
+        [styleKey]: newStyles,
+        isWrapper: isWrapperSlot 
+      });
+    }, 300);
+  }, [cartLayoutConfig, saveConfiguration]);
 
   const handleSaveEdit = useMemo(() => {
     const saveHandler = createSaveEditHandler({
@@ -376,16 +407,70 @@ export default function CartSlotsEditor({
     return () => saveHandler(editingComponent, tempCode, cartLayoutConfig);
   }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
 
-  // Generic helper functions using editor-utils
-  const getMicroSlotStyling = useMemo(() =>
-    createMicroSlotStyling(cartLayoutConfig),
-    [cartLayoutConfig]
-  );
+  // Custom micro slot styling that reads from slots.{slotId}.className and parentClassName
+  const getMicroSlotStyling = useCallback((microSlotId) => {
+    // Handle wrapper slots (ending with _wrapper)
+    if (microSlotId.endsWith('_wrapper')) {
+      const baseSlotId = microSlotId.replace('_wrapper', '');
+      return {
+        elementClasses: cartLayoutConfig?.slots?.[baseSlotId]?.parentClassName || '',
+        elementStyles: cartLayoutConfig?.slots?.[baseSlotId]?.parentStyles || {}
+      };
+    }
+    
+    // Handle regular slots
+    return {
+      elementClasses: cartLayoutConfig?.slots?.[microSlotId]?.className || '',
+      elementStyles: cartLayoutConfig?.slots?.[microSlotId]?.styles || {}
+    };
+  }, [cartLayoutConfig]);
 
-  const getSlotPositioning = useMemo(() =>
-    createSlotPositioning(cartLayoutConfig),
-    [cartLayoutConfig]
-  );
+  // Custom slot positioning that reads from slots.{slotId}.className and slots.{slotId}.styles
+  const getSlotPositioning = useCallback((slotId, parentSlot) => {
+    const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
+    const elementClasses = cartLayoutConfig?.slots?.[slotId]?.className || '';
+    const elementStyles = cartLayoutConfig?.slots?.[slotId]?.styles || {};
+    
+    // Build grid positioning classes with alignment support
+    let gridClasses = `col-span-${Math.min(12, Math.max(1, microSlotSpans.col || 12))} row-span-${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`;
+    
+    // Add horizontal alignment classes to parent container
+    if (microSlotSpans.align) {
+      switch (microSlotSpans.align) {
+        case 'left':
+          gridClasses += ' justify-self-start';
+          break;
+        case 'center':  
+          gridClasses += ' justify-self-center';
+          break;
+        case 'right':
+          gridClasses += ' justify-self-end';
+          break;
+      }
+    }
+    
+    // Add margin and padding support from configuration
+    const spacingStyles = {
+      ...(microSlotSpans.margin ? { margin: microSlotSpans.margin } : {}),
+      ...(microSlotSpans.padding ? { padding: microSlotSpans.padding } : {}),
+      ...(microSlotSpans.marginTop ? { marginTop: microSlotSpans.marginTop } : {}),
+      ...(microSlotSpans.marginRight ? { marginRight: microSlotSpans.marginRight } : {}),
+      ...(microSlotSpans.marginBottom ? { marginBottom: microSlotSpans.marginBottom } : {}),
+      ...(microSlotSpans.marginLeft ? { marginLeft: microSlotSpans.marginLeft } : {}),
+      ...(microSlotSpans.paddingTop ? { paddingTop: microSlotSpans.paddingTop } : {}),
+      ...(microSlotSpans.paddingRight ? { paddingRight: microSlotSpans.paddingRight } : {}),
+      ...(microSlotSpans.paddingBottom ? { paddingBottom: microSlotSpans.paddingBottom } : {}),
+      ...(microSlotSpans.paddingLeft ? { paddingLeft: microSlotSpans.paddingLeft } : {}),
+      ...elementStyles
+    };
+    
+    return {
+      gridClasses,
+      elementClasses,
+      elementStyles: spacingStyles,
+      microSlotSpans
+    };
+  }, [cartLayoutConfig]);
 
   const renderCustomSlot = useMemo(() =>
     createCustomSlotRenderer({
