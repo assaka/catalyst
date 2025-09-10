@@ -55,7 +55,6 @@ import {
 
 // Services for loading slot configuration data
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { SlotConfiguration } from '@/api/entities';
 
 // Clean configuration constants
 const PAGE_TYPE = 'cart';
