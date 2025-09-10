@@ -619,15 +619,13 @@ export default function CartSlotsEditor({
         
         {/* Header Section with Grid Layout */}
         <div className="header-section mb-8">
-          {mode === 'edit' && (
+          {mode === 'edit' ? (
             <div className="border-2 border-dashed border-gray-300 p-4 relative">
               <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                 header
               </div>
-            </div>
-          )}
-          <div className="grid grid-cols-12 gap-2 auto-rows-min">
-            {cartLayoutConfig?.microSlotOrders?.header ? (
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                {cartLayoutConfig?.microSlotOrders?.header ? (
               cartLayoutConfig.microSlotOrders.header.map(slotId => {
                 const positioning = getSlotPositioning(slotId, 'header');
                 
@@ -673,7 +671,45 @@ export default function CartSlotsEditor({
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
               </div>
             )}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              {cartLayoutConfig?.microSlotOrders?.header ? (
+                cartLayoutConfig.microSlotOrders.header.map(slotId => {
+                  const positioning = getSlotPositioning(slotId, 'header');
+                  
+                  if (slotId.includes('.custom_')) {
+                    return renderCustomSlot(slotId, 'header');
+                  }
+                  
+                  // Render standard header micro-slots
+                  if (slotId === 'header.title') {
+                    const headerTitleStyling = getMicroSlotStyling('header.title');
+                    const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                    const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
+                    const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
+                    return (
+                      <div key={slotId} className={positioning.gridClasses}>
+                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                          <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
+                            {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
+                          </h1>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  return null;
+                })
+              ) : (
+                // Fallback to default layout if no microSlotOrders
+                <div className="col-span-12">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         <CmsBlockRenderer position="cart_above_items" />
@@ -682,15 +718,13 @@ export default function CartSlotsEditor({
           // Empty cart state with micro-slots in custom order
           <div className="emptyCart-section">
             <div className="text-center py-12">
-              {mode === 'edit' && (
+              {mode === 'edit' ? (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     emptyCart
                   </div>
-                </div>
-              )}
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
+                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                    {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
                   cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
                     const positioning = getSlotPositioning(slotId, 'emptyCart');
                     
@@ -839,72 +873,209 @@ export default function CartSlotsEditor({
                     </div>
                   </>
                 )}
-              </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                  {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
+                    cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
+                      const positioning = getSlotPositioning(slotId, 'emptyCart');
+                      
+                      if (slotId.includes('.custom_')) {
+                        return renderCustomSlot(slotId, 'emptyCart');
+                      }
+                      
+                      // Render standard emptyCart micro-slots
+                      if (slotId === 'emptyCart.icon') {
+                        const iconStyling = getMicroSlotStyling('emptyCart.icon');
+                        const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                        const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
+                        const finalClasses = iconStyling.elementClasses || defaultClasses;
+                        return (
+                          <div key={slotId} className={positioning.gridClasses}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (slotId === 'emptyCart.title') {
+                        const titleStyling = getMicroSlotStyling('emptyCart.title');
+                        const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                        const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
+                        const finalClasses = titleStyling.elementClasses || defaultClasses;
+                        return (
+                          <div key={slotId} className={positioning.gridClasses}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
+                              </h2>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (slotId === 'emptyCart.text') {
+                        const textStyling = getMicroSlotStyling('emptyCart.text');
+                        const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                        const defaultClasses = 'text-gray-600 mb-6';
+                        const finalClasses = textStyling.elementClasses || defaultClasses;
+                        return (
+                          <div key={slotId} className={positioning.gridClasses}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (slotId === 'emptyCart.button') {
+                        const buttonStyling = getMicroSlotStyling('emptyCart.button');
+                        const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                        const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
+                        const finalClasses = buttonStyling.elementClasses || defaultClasses;
+                        return (
+                          <div key={slotId} className={positioning.gridClasses}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              <Button 
+                                className={finalClasses}
+                                style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                              >
+                                Continue Shopping
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return null;
+                    })
+                  ) : (
+                    // Fallback to default layout if no microSlotOrders
+                    <>
+                      <div className="col-span-12">
+                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      </div>
+                      <div className="col-span-12">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                      </div>
+                      <div className="col-span-12">
+                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                      </div>
+                      <div className="col-span-12">
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                          Continue Shopping
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (
           // Cart with products layout
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
             <div className="lg:col-span-2">
-              {mode === 'edit' && (
+              {mode === 'edit' ? (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     cartItem
                   </div>
-                </div>
-              )}
-              <Card>
-                <CardContent className="px-4 divide-y divide-gray-200">
-                  {cartItems.map(item => {
-                    const product = item.product;
-                    if (!product) return null;
+                  <Card>
+                    <CardContent className="px-4 divide-y divide-gray-200">
+                      {cartItems.map(item => {
+                        const product = item.product;
+                        if (!product) return null;
 
-                    return (
-                      <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                        <img 
-                          src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
-                          alt={product.name}
-                          className="w-20 h-20 object-cover rounded-lg"
-                        />
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold">{product.name}</h3>
-                          <p className="text-gray-600">{currencySymbol}{item.price} each</p>
-                          
-                          <div className="flex items-center space-x-3 mt-3">
-                            <Button size="sm" variant="outline">
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <span className="text-lg font-semibold">{item.quantity}</span>
-                            <Button size="sm" variant="outline">
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="destructive" className="ml-auto">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                        return (
+                          <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
+                            <img 
+                              src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
+                              alt={product.name}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold">{product.name}</h3>
+                              <p className="text-gray-600">{currencySymbol}{item.price} each</p>
+                              
+                              <div className="flex items-center space-x-3 mt-3">
+                                <Button size="sm" variant="outline">
+                                  <Minus className="w-4 h-4" />
+                                </Button>
+                                <span className="text-lg font-semibold">{item.quantity}</span>
+                                <Button size="sm" variant="outline">
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive" className="ml-auto">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="px-4 divide-y divide-gray-200">
+                    {cartItems.map(item => {
+                      const product = item.product;
+                      if (!product) return null;
+
+                      return (
+                        <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
+                          <img 
+                            src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
+                            alt={product.name}
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold">{product.name}</h3>
+                            <p className="text-gray-600">{currencySymbol}{item.price} each</p>
+                            
+                            <div className="flex items-center space-x-3 mt-3">
+                              <Button size="sm" variant="outline">
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <span className="text-lg font-semibold">{item.quantity}</span>
+                              <Button size="sm" variant="outline">
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="destructive" className="ml-auto">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold">{currencySymbol}{(item.price * item.quantity).toFixed(2)}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
               <CmsBlockRenderer position="cart_below_items" />
             </div>
             
             <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
               {/* Coupon Section */}
-              {mode === 'edit' && (
+              {mode === 'edit' ? (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     coupon
                   </div>
-                </div>
-              )}
-              <Card>
-                <CardContent className="p-4">
+                  <Card>
+                    <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.coupon ? (
                       cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
@@ -997,19 +1168,102 @@ export default function CartSlotsEditor({
                       </>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                      {cartLayoutConfig?.microSlotOrders?.coupon ? (
+                        cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
+                          const positioning = getSlotPositioning(slotId, 'coupon');
+                          
+                          if (slotId.includes('.custom_')) {
+                            return renderCustomSlot(slotId, 'coupon');
+                          }
+                          
+                          // Render standard coupon micro-slots
+                          if (slotId === 'coupon.title') {
+                            const titleStyling = getMicroSlotStyling('coupon.title');
+                            const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                  Apply Coupon
+                                </h3>
+                              </div>
+                            );
+                          }
+                          
+                          if (slotId === 'coupon.input' && !appliedCoupon) {
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <Input 
+                                  placeholder="Enter coupon code" 
+                                  value={couponCode}
+                                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                  style={positioning.elementStyles}
+                                />
+                              </div>
+                            );
+                          }
+                          
+                          if (slotId === 'coupon.button' && !appliedCoupon) {
+                            const buttonStyling = getMicroSlotStyling('coupon.button');
+                            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                            const defaultClasses = '';
+                            const finalClasses = buttonStyling.elementClasses || defaultClasses;
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                  <Button 
+                                    disabled={!couponCode.trim()}
+                                    className={finalClasses}
+                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                  >
+                                    <Tag className="w-4 h-4 mr-2" /> Apply
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return null;
+                        })
+                      ) : (
+                        // Default coupon layout
+                        <>
+                          <div className="col-span-12">
+                            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+                          </div>
+                          <div className="col-span-8">
+                            <Input 
+                              placeholder="Enter coupon code" 
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <Button disabled={!couponCode.trim()}>
+                              <Tag className="w-4 h-4 mr-2" /> Apply
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               {/* Order Summary Section */}
-              {mode === 'edit' && (
+              {mode === 'edit' ? (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     orderSummary
                   </div>
-                </div>
-              )}
-              <Card>
-                <CardContent className="p-4">
+                  <Card>
+                    <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
                       cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
@@ -1158,8 +1412,145 @@ export default function CartSlotsEditor({
                       </>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                      {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
+                        cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
+                          const positioning = getSlotPositioning(slotId, 'orderSummary');
+                          
+                          if (slotId.includes('.custom_')) {
+                            return renderCustomSlot(slotId, 'orderSummary');
+                          }
+                          
+                          // Render standard orderSummary micro-slots
+                          if (slotId === 'orderSummary.title') {
+                            const titleStyling = getMicroSlotStyling('orderSummary.title');
+                            const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                  Order Summary
+                                </h3>
+                              </div>
+                            );
+                          }
+                          
+                          if (slotId === 'orderSummary.subtotal') {
+                            const subtotalStyling = getMicroSlotStyling('orderSummary.subtotal');
+                            const defaultClasses = 'flex justify-between';
+                            const finalClasses = subtotalStyling.elementClasses || defaultClasses;
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
+                                  <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          if (slotId === 'orderSummary.tax') {
+                            const taxStyling = getMicroSlotStyling('orderSummary.tax');
+                            const defaultClasses = 'flex justify-between';
+                            const finalClasses = taxStyling.elementClasses || defaultClasses;
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
+                                  <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          if (slotId === 'orderSummary.total') {
+                            const totalStyling = getMicroSlotStyling('orderSummary.total');
+                            const defaultClasses = 'flex justify-between text-lg font-semibold border-t pt-4';
+                            const finalClasses = totalStyling.elementClasses || defaultClasses;
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <div className={finalClasses} style={{...totalStyling.elementStyles, ...positioning.elementStyles}}>
+                                  <span>Total</span>
+                                  <span>{currencySymbol}{total.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          if (slotId === 'orderSummary.checkoutButton') {
+                            const buttonStyling = getMicroSlotStyling('orderSummary.checkoutButton');
+                            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                            const defaultClasses = 'w-full';
+                            const finalClasses = buttonStyling.elementClasses || defaultClasses;
+                            return (
+                              <div key={slotId} className={positioning.gridClasses}>
+                                <div className="border-t mt-6 pt-6">
+                                  <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                    <Button 
+                                      size="lg" 
+                                      className={finalClasses}
+                                      style={{
+                                        backgroundColor: '#007bff',
+                                        color: '#FFFFFF',
+                                        ...buttonStyling.elementStyles,
+                                        ...positioning.elementStyles
+                                      }}
+                                    >
+                                      Proceed to Checkout
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return null;
+                        })
+                      ) : (
+                        // Default order summary layout
+                        <>
+                          <div className="col-span-12">
+                            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+                          </div>
+                          <div className="col-span-12">
+                            <div className="flex justify-between">
+                              <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <div className="col-span-12">
+                            <div className="flex justify-between">
+                              <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <div className="col-span-12">
+                            <div className="flex justify-between text-lg font-semibold border-t pt-4">
+                              <span>Total</span>
+                              <span>{currencySymbol}{total.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <div className="col-span-12">
+                            <div className="border-t mt-6 pt-6">
+                              <Button 
+                                size="lg" 
+                                className="w-full"
+                                style={{
+                                  backgroundColor: '#007bff',
+                                  color: '#FFFFFF'
+                                }}
+                              >
+                                Proceed to Checkout
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
