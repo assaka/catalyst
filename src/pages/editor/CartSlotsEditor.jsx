@@ -1,6 +1,7 @@
 /**
- * Modern CartSlotsEditor - Clean implementation with cartConfig
+ * Modern CartSlotsEditor - Clean implementation using generic editor utilities
  * Features: drag-and-drop, action bar, slot editing, database persistence
+ * Requires proper slot configuration - no fallbacks
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
@@ -36,8 +37,7 @@ import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
-// Clean imports - using cartConfig as single source
-import cartConfig from '@/components/editor/slot/configs/cart-config';
+// Clean imports - no longer using cartConfig fallbacks
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 
 // Import generic editor utilities
@@ -286,52 +286,12 @@ export default function CartSlotsEditor({
         if (configToLoad) {
           setCartLayoutConfig(configToLoad);
         } else {
-          console.warn('⚠️ No configuration found, using cartConfig defaults');
-          // Set default configuration from cartConfig
-          setCartLayoutConfig({
-            slots: cartConfig.slots,
-            microSlotOrders: Object.fromEntries(
-              Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
-                key, def.microSlots
-              ])
-            ),
-            microSlotSpans: Object.fromEntries(
-              Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
-                key, def.defaultSpans
-              ])
-            ),
-            customSlots: {},
-            elementClasses: {},
-            elementStyles: {},
-            metadata: {
-              created: new Date().toISOString(),
-              lastModified: new Date().toISOString()
-            }
-          });
+          console.error('❌ No configuration found and no cartConfig fallback available');
+          // Don't set a fallback - require proper configuration
         }
       } catch (error) {
-        console.warn('⚠️ Could not load slot configuration:', error);
-        // Fallback to cartConfig defaults
-        setCartLayoutConfig({
-          slots: cartConfig.slots,
-          microSlotOrders: Object.fromEntries(
-            Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
-              key, def.microSlots
-            ])
-          ),
-          microSlotSpans: Object.fromEntries(
-            Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
-              key, def.defaultSpans
-            ])
-          ),
-          customSlots: {},
-          elementClasses: {},
-          elementStyles: {},
-          metadata: {
-            created: new Date().toISOString(),
-            lastModified: new Date().toISOString()
-          }
-        });
+        console.error('❌ Failed to load slot configuration:', error);
+        // Don't set a fallback configuration - let the error bubble up
       }
     };
     
@@ -438,109 +398,6 @@ export default function CartSlotsEditor({
     [cartLayoutConfig, getMicroSlotStyling, getSlotPositioning, handleEditSlot, mode]
   );
 
-  // Render slot content based on slot type
-  const renderSlotContent = useCallback((slotId) => {
-    const slotDef = cartConfig.microSlotDefinitions[slotId];
-    if (!slotDef) return null;
-
-    switch (slotId) {
-      case 'header':
-        return (
-          <div className="text-center py-4">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {cartLayoutConfig?.slots?.['header.title']?.content || 'My Cart'}
-            </h1>
-          </div>
-        );
-
-      case 'emptyCart':
-        if (viewMode !== 'empty') return null;
-        return (
-          <div className="text-center py-12">
-            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              {cartLayoutConfig?.slots?.['emptyCart.title']?.content || 'Your cart is empty'}
-            </h2>
-            <p className="text-gray-600 mb-6">
-              {cartLayoutConfig?.slots?.['emptyCart.text']?.content || "Looks like you haven't added anything to your cart yet."}
-            </p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              {cartLayoutConfig?.slots?.['emptyCart.button']?.content || 'Continue Shopping'}
-            </Button>
-          </div>
-        );
-
-      case 'cartItem':
-        if (viewMode !== 'withProducts') return null;
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                <Package className="w-8 h-8 text-gray-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold">Sample Product</h3>
-                <p className="text-gray-600">$29.99</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">-</Button>
-                <span className="px-2">1</span>
-                <Button variant="outline" size="sm">+</Button>
-              </div>
-              <Button variant="destructive" size="sm">Remove</Button>
-            </div>
-          </div>
-        );
-
-      case 'coupon':
-        if (viewMode !== 'withProducts') return null;
-        return (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">Apply Coupon</h3>
-            <div className="flex space-x-2">
-              <input 
-                type="text" 
-                placeholder="Enter coupon code" 
-                className="flex-1 px-3 py-2 border rounded"
-              />
-              <Button className="bg-green-600 hover:bg-green-700">Apply</Button>
-            </div>
-          </div>
-        );
-
-      case 'orderSummary':
-        if (viewMode !== 'withProducts') return null;
-        return (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>$29.99</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>$2.40</span>
-              </div>
-              <div className="border-t pt-2 flex justify-between font-semibold">
-                <span>Total</span>
-                <span>$32.39</span>
-              </div>
-              <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700">
-                Proceed to Checkout
-              </Button>
-            </div>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="p-4 text-gray-500 text-center">
-            Slot content for {slotId}
-          </div>
-        );
-    }
-  }, [viewMode, cartLayoutConfig]);
 
   // Render using exact Cart.jsx layout structure with slot_configurations
   return (
