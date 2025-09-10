@@ -927,6 +927,8 @@ function RichTextEditor({ content, onSave, onCancel }) {
 function SimpleInlineEdit({ text, className = '', onChange, slotId, onClassChange, style = {}, mode = 'edit' }) {
   const [showEditor, setShowEditor] = useState(false);
   
+  // Debug: Log what classes this element is receiving
+  console.log('🎨 SimpleInlineEdit render:', { slotId, className, style });
 
   // Check if text contains HTML
   const hasHtml = text && (text.includes('<') || text.includes('&'));
@@ -1390,12 +1392,14 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                   </button>
                   <button
                     onClick={() => {
+                      console.log('🔧 ALIGN CENTER BUTTON CLICKED for:', id);
                       // Target the immediate wrapper (one level up) - use hyphen format
                       const wrapperId = `${id}-wrapper`;
                       const currentWrapperClasses = elementClasses[wrapperId] || '';
                       const newWrapperClasses = currentWrapperClasses
                         .replace(/text-(left|center|right|justify)/g, '')
                         .trim() + ' text-center';
+                      console.log('🔧 ALIGN CENTER: calling onClassChange with:', { wrapperId, currentWrapperClasses, newWrapperClasses: newWrapperClasses.trim() });
                       onClassChange(wrapperId, newWrapperClasses.trim());
                     }}
                     className={`p-1 hover:bg-gray-100 rounded ${hasTextCenter ? 'bg-blue-100' : ''}`}
@@ -1427,12 +1431,14 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
           <div className="flex items-center bg-gray-50 rounded border border-gray-200 flex-shrink-0">
             <button
               onClick={() => {
+                console.log('🔧 BOLD BUTTON CLICKED for:', id);
                 const currentClasses = elementClasses[id] || '';
                 const hasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
                 let newClasses = currentClasses.replace(/font-(bold|semibold|normal)/g, '').trim();
                 if (!hasBold) {
                   newClasses += ' font-bold';
                 }
+                console.log('🔧 BOLD: calling onClassChange with:', { id, currentClasses, newClasses: newClasses.trim() });
                 onClassChange(id, newClasses.trim());
               }}
               className={`p-1 hover:bg-gray-100 rounded ${(elementClasses[id] || '').includes('font-bold') || (elementClasses[id] || '').includes('font-semibold') ? 'bg-blue-100' : ''}`}
@@ -1557,10 +1563,12 @@ function MicroSlot({ id, children, onEdit, onDelete, isDraggable = true, colSpan
                 elementClasses[id]?.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/)?.[1] || 'base'
               }
               onChange={(e) => {
+                console.log('🔧 FONT SIZE CHANGED for:', id, 'to:', e.target.value);
                 const currentClasses = elementClasses[id] || '';
                 const newClasses = currentClasses
                   .replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl)/g, '')
                   .trim() + ` text-${e.target.value}`;
+                console.log('🔧 FONT SIZE: calling onClassChange with:', { id, currentClasses, newClasses: newClasses.trim() });
                 onClassChange(id, newClasses.trim());
               }}
               className="px-1 py-0.5 text-xs border-0 cursor-pointer focus:outline-none"
@@ -2424,10 +2432,27 @@ export default function CartSlotsEditorWithMicroSlots({
       ...Object.keys(elementClasses || {})
     ]);
     
+    // Add base slot IDs from wrapper IDs (remove -wrapper suffix)
+    Object.keys(elementClasses || {}).forEach(key => {
+      if (key.endsWith('-wrapper')) {
+        const baseSlotId = key.replace('-wrapper', '');
+        allSlotIds.add(baseSlotId);
+      }
+    });
+    
+    console.log('💾 All slot IDs for save (including wrapper bases):', Array.from(allSlotIds));
+    
     allSlotIds.forEach(id => {
+      // Skip processing wrapper IDs themselves
+      if (id.endsWith('-wrapper')) {
+        return;
+      }
+      
       // Check for parent wrapper classes (for alignment and other parent styles) - use hyphen format
       const wrapperId = `${id}-wrapper`;
       const parentClassName = elementClasses[wrapperId] || '';
+      
+      console.log('💾 Processing slot:', id, 'wrapper:', wrapperId, 'parentClassName:', parentClassName);
       
       slots[id] = {
         content: slotContent[id] || '',
@@ -3222,75 +3247,12 @@ export default function CartSlotsEditorWithMicroSlots({
       });
     }
     
-    // Save after class change with the updated state
+    // Auto-save after class change
     setTimeout(() => {
-      console.log('⏱️ Saving with updated elementStyles');
-      
-      // Use functional setState to get the most current elementStyles
-      setElementStyles(currentElementStyles => {
-        // Now we have the current (updated) elementStyles
-        console.log('📦 Current elementStyles for save:', currentElementStyles);
-        
-        // Create config in new slots structure
-        const slots = {};
-        
-        // Combine all slot data into the slots structure
-        const allSlotIds = new Set([
-          ...Object.keys(slotContent || {}),
-          ...Object.keys(currentElementStyles || {}),
-          ...Object.keys(elementClasses || {})
-        ]);
-        
-        allSlotIds.forEach(id => {
-          // Check for parent wrapper classes (for alignment and other parent styles)
-          const wrapperId = `${id}_wrapper`;
-          const parentClassName = (slotId === wrapperId) ? newClass : (elementClasses[wrapperId] || '');
-          
-          slots[id] = {
-            content: slotContent[id] || '',
-            styles: currentElementStyles[id] || {},
-            className: (newStyles && id === slotId) ? newClass : (elementClasses[id] || ''),
-            parentClassName: parentClassName, // For alignment and parent container styles
-            metadata: {
-              lastModified: new Date().toISOString()
-            }
-          };
-        });
-        
-        const updatedConfig = {
-          page_name: 'Cart',
-          // Note: page_type removed as it's redundant with page_name
-          slots,
-          majorSlots,
-          microSlotOrders,
-          microSlotSpans,
-          componentSizes,
-          customSlots,
-          metadata: {
-            lastModified: new Date().toISOString()
-          }
-        };
-        
-        // Save directly with the updated config
-        saveDirectly(updatedConfig);
-        
-        // Return unchanged to not affect the actual state
-        return currentElementStyles;
-      });
+      console.log('💾 Auto-saving after class/style change for:', slotId);
+      saveConfiguration();
     }, 0);
-    
-    // Notify storefront of configuration update
-    if (selectedStore?.id) {
-      setTimeout(() => {
-        console.log('🔔 Notifying storefront of configuration update');
-        localStorage.setItem('slot_config_updated', JSON.stringify({
-          storeId: selectedStore.id,
-          timestamp: Date.now(),
-          type: 'style_change'
-        }));
-      }, 100); // Small delay to ensure save completes first
-    }
-  }, [selectedStore?.id]); // Remove immediateSave dependency to prevent infinite loops
+  }, [saveConfiguration]); // Include saveConfiguration dependency
   
   // Handle component size change
   const handleSizeChange = useCallback((slotId, newSize) => {
