@@ -47,7 +47,7 @@ import ParentSlot from "@/components/editor/slot/ParentSlot";
 import MicroSlot from "@/components/editor/slot/MicroSlot";
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 import SimpleInlineEdit from "@/components/editor/slot/SimpleInlineEdit";
-import { transformDatabaseConfigToEditor, getDefaultEditorConfig } from "@/components/editor/slot/configuration-loader";
+import { transformDatabaseConfigToEditor, getDefaultEditorConfig, transformEditorConfigToDatabase } from "@/components/editor/slot/configuration-loader";
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';

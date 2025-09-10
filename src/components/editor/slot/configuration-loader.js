@@ -102,8 +102,18 @@ export function getDefaultEditorConfig() {
 export function transformEditorConfigToDatabase(editorConfig) {
   const slots = {};
   
+  // Get all slot IDs from content, classes, and styles
+  const allSlotIds = new Set([
+    ...Object.keys(editorConfig.slotContent || {}),
+    ...Object.keys(editorConfig.elementClasses || {}),
+    ...Object.keys(editorConfig.elementStyles || {})
+  ]);
+
   // Transform editor format back to database format
-  Object.keys(editorConfig.slotContent || {}).forEach(slotId => {
+  allSlotIds.forEach(slotId => {
+    // Skip wrapper keys (they're handled as parentClassName)
+    if (slotId.includes('_wrapper')) return;
+    
     slots[slotId] = {
       content: editorConfig.slotContent[slotId] || '',
       className: editorConfig.elementClasses[slotId] || '',
