@@ -159,22 +159,6 @@ export default function CartSlotsEditorWithMicroSlots({
     microSlotDefinitions: MICRO_SLOT_DEFINITIONS
   });
 
-  // Wrapper function that uses current component state
-  const saveConfiguration = useCallback(async () => {
-    return await saveConfigurationHook({
-      majorSlots,
-      slotContent,
-      elementStyles,
-      elementClasses,
-      microSlotOrders,
-      microSlotSpans,
-      customSlots,
-      componentSizes
-    });
-  }, [saveConfigurationHook, majorSlots, slotContent, elementStyles, elementClasses, microSlotOrders, microSlotSpans, customSlots, componentSizes]);
-
-
-
   // Apply loaded draft configuration to component state
   useEffect(() => {
     const setters = {
@@ -291,6 +275,19 @@ export default function CartSlotsEditorWithMicroSlots({
     currencySymbol = '$',
   } = safeData;
 
+  // Wrapper function that uses current component state
+  const saveConfiguration = useCallback(async () => {
+    return await saveConfigurationHook({
+      majorSlots,
+      slotContent,
+      elementStyles,
+      elementClasses,
+      microSlotOrders,
+      microSlotSpans,
+      customSlots,
+      componentSizes
+    });
+  }, [saveConfigurationHook, majorSlots, slotContent, elementStyles, elementClasses, microSlotOrders, microSlotSpans, customSlots, componentSizes]);
 
   
   // Listen for force save event from GenericSlotEditor
