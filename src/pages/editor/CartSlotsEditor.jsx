@@ -210,8 +210,6 @@ export default function CartSlotsEditor({
         microSlotOrders: cartLayoutConfig.microSlotOrders || {},
         microSlotSpans: cartLayoutConfig.microSlotSpans || {},
         customSlots: cartLayoutConfig.customSlots || {},
-        elementClasses: cartLayoutConfig.elementClasses || {},
-        elementStyles: cartLayoutConfig.elementStyles || {},
         componentSizes: cartLayoutConfig.componentSizes || {},
         metadata: {
           ...cartLayoutConfig.metadata,
@@ -1219,8 +1217,6 @@ export default function CartSlotsEditor({
                         ])
                       ),
                       customSlots: {},
-                      elementClasses: {},
-                      elementStyles: {},
                       componentSizes: {},
                       metadata: {
                         created: new Date().toISOString(),
