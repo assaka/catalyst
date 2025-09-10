@@ -169,18 +169,18 @@ export default function CartSlotsEditorWithMicroSlots({
     microSlotDefinitions: MICRO_SLOT_DEFINITIONS
   });
 
-  // Apply loaded draft configuration to component state
-  useEffect(() => {
-    const setters = {
-      setElementStyles,
-      setSlotContent,
-      setElementClasses,
-      setComponentSizes,
-      setMicroSlotOrders,
-      setMicroSlotSpans
-    };
-    applyDraftConfiguration(draftConfig, setters);
-  }, [draftConfig, applyDraftConfiguration]);
+  // Apply loaded draft configuration to component state - DISABLED to prevent reverting changes
+  // useEffect(() => {
+  //   const setters = {
+  //     setElementStyles,
+  //     setSlotContent,
+  //     setElementClasses,
+  //     setComponentSizes,
+  //     setMicroSlotOrders,
+  //     setMicroSlotSpans
+  //   };
+  //   applyDraftConfiguration(draftConfig, setters);
+  // }, [draftConfig, applyDraftConfiguration]);
   
   // State for view mode - 'empty' or 'withProducts'  
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
@@ -356,8 +356,6 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Handle micro-slot class/style changes (without opening editor)
   const handleMicroSlotClassChange = useCallback((microSlotKey, newClassName, newStyles) => {
-    console.log('🎨 handleMicroSlotClassChange called:', { microSlotKey, newClassName, newStyles });
-    
     if (newClassName !== undefined) {
       // Check if this is an alignment change by looking for alignment classes
       const isAlignmentChange = newClassName.includes('text-left') || 
@@ -397,8 +395,7 @@ export default function CartSlotsEditorWithMicroSlots({
       }));
     }
     
-    // Auto-save the configuration (this will prevent reload in useSlotConfiguration)
-    console.log('🎨 About to save configuration after class change');
+    // Auto-save the configuration
     saveConfiguration();
   }, [saveConfiguration]);
 
