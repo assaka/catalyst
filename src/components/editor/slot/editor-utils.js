@@ -168,195 +168,10 @@ export function handleFontSizeChange(className, size) {
 }
 
 /**
- * Transform slot configuration from database format to editor format
- */
-export function transformFromDatabaseFormat(config) {
-  if (!config) return null;
-  
-  // Extract styles, content, and classes from slots structure
-  const elementStyles = {};
-  const slotContent = {};
-  const elementClasses = {};
-  
-  if (config.slots) {
-    Object.entries(config.slots).forEach(([slotId, slotData]) => {
-      if (slotData?.styles) {
-        elementStyles[slotId] = slotData.styles;
-      }
-      if (slotData?.content !== undefined) {
-        slotContent[slotId] = slotData.content;
-      }
-      if (slotData?.className) {
-        elementClasses[slotId] = slotData.className;
-      }
-      // Load parentClassName as wrapper classes
-      if (slotData?.parentClassName) {
-        const wrapperId = `${slotId}-wrapper`;
-        elementClasses[wrapperId] = slotData.parentClassName;
-      }
-    });
-  }
-  
-  return {
-    ...config,
-    elementStyles,
-    slotContent,
-    elementClasses
-  };
-}
-
-/**
- * Transform slot configuration from editor format to database format
- */
-export function transformToDatabaseFormat(slotContent, elementStyles, elementClasses, otherConfig = {}) {
-  const slots = {};
-  
-  // Combine all slot IDs
-  const allSlotIds = new Set([
-    ...Object.keys(slotContent || {}),
-    ...Object.keys(elementStyles || {}),
-    ...Object.keys(elementClasses || {})
-  ]);
-  
-  // Add base slot IDs from wrapper IDs
-  Object.keys(elementClasses || {}).forEach(key => {
-    if (key.endsWith('-wrapper')) {
-      const baseSlotId = key.replace('-wrapper', '');
-      allSlotIds.add(baseSlotId);
-    }
-  });
-  
-  // Build slots structure
-  allSlotIds.forEach(id => {
-    // Skip processing wrapper IDs themselves
-    if (id.endsWith('-wrapper')) {
-      return;
-    }
-    
-    // Check for parent wrapper classes (for alignment and other parent styles)
-    const wrapperId = `${id}-wrapper`;
-    const parentClassName = elementClasses[wrapperId] || '';
-    
-    slots[id] = {
-      content: slotContent[id] || '',
-      styles: elementStyles[id] || {},
-      className: elementClasses[id] || '',
-      parentClassName: parentClassName,
-      metadata: {
-        lastModified: new Date().toISOString()
-      }
-    };
-  });
-  
-  return {
-    ...otherConfig,
-    slots,
-    metadata: {
-      lastModified: new Date().toISOString()
-    }
-  };
-}
-
-/**
- * Debounce function for auto-save
- */
-export function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-/**
  * Format price for display
  */
 export function formatPrice(value) {
   return typeof value === "number" ? value : parseFloat(value) || 0;
-}
-
-/**
- * Generate a unique slot ID
- */
-export function generateSlotId(prefix = 'slot') {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Check if a slot ID is a micro-slot (contains a dot)
- */
-export function isMicroSlot(slotId) {
-  return slotId && slotId.includes('.');
-}
-
-/**
- * Get parent slot ID from a micro-slot ID
- */
-export function getParentSlotId(microSlotId) {
-  if (!isMicroSlot(microSlotId)) return null;
-  return microSlotId.split('.')[0];
-}
-
-/**
- * Get micro-slot name from a micro-slot ID
- */
-export function getMicroSlotName(microSlotId) {
-  if (!isMicroSlot(microSlotId)) return null;
-  return microSlotId.split('.').slice(1).join('.');
-}
-
-/**
- * Validate slot configuration
- */
-export function validateSlotConfig(config) {
-  const errors = [];
-  
-  if (!config) {
-    errors.push('Configuration is empty');
-    return errors;
-  }
-  
-  // Check required fields
-  if (!config.slots && !config.slotContent) {
-    errors.push('No slot content found');
-  }
-  
-  // Validate slot structure
-  if (config.slots) {
-    Object.entries(config.slots).forEach(([slotId, slotData]) => {
-      if (typeof slotData !== 'object') {
-        errors.push(`Invalid slot data for ${slotId}`);
-      }
-    });
-  }
-  
-  return errors;
-}
-
-/**
- * Merge slot configurations (useful for applying templates)
- */
-export function mergeSlotConfigs(baseConfig, overrideConfig) {
-  return {
-    ...baseConfig,
-    ...overrideConfig,
-    slots: {
-      ...(baseConfig?.slots || {}),
-      ...(overrideConfig?.slots || {})
-    },
-    microSlotOrders: {
-      ...(baseConfig?.microSlotOrders || {}),
-      ...(overrideConfig?.microSlotOrders || {})
-    },
-    microSlotSpans: {
-      ...(baseConfig?.microSlotSpans || {}),
-      ...(overrideConfig?.microSlotSpans || {})
-    }
-  };
 }
 
 /**
@@ -409,26 +224,73 @@ export const FONT_WEIGHTS = [
 ];
 
 /**
- * Default slot configurations for different page types
+ * Trigger a custom save event for any page type
  */
-export const DEFAULT_PAGE_CONFIGS = {
-  cart: {
-    majorSlots: ['flashMessage', 'header', 'emptyCart'],
-    pageType: 'cart'
-  },
-  category: {
-    majorSlots: ['header', 'filters', 'products', 'pagination'],
-    pageType: 'category'
-  },
-  product: {
-    majorSlots: ['breadcrumbs', 'gallery', 'info', 'description', 'reviews'],
-    pageType: 'product'
-  }
-};
+export function triggerSave(pageType = 'cart') {
+  window.dispatchEvent(new CustomEvent(`force-save-${pageType}-layout`));
+}
 
 /**
- * Trigger a custom save event
+ * Handle major slot drag end (for reordering top-level slots)
  */
-export function triggerSave() {
-  window.dispatchEvent(new CustomEvent('force-save-cart-layout'));
+export function handleMajorSlotDragEnd(event, items, setItems, onSave) {
+  const { active, over } = event;
+  
+  if (!over || active.id === over.id) return;
+
+  const oldIndex = items.indexOf(active.id);
+  const newIndex = items.indexOf(over.id);
+  
+  if (oldIndex !== -1 && newIndex !== -1) {
+    // This would need arrayMove import from @dnd-kit/sortable
+    const newOrder = [...items];
+    const [removed] = newOrder.splice(oldIndex, 1);
+    newOrder.splice(newIndex, 0, removed);
+    
+    setItems(newOrder);
+    
+    // Auto-save after reorder
+    if (onSave) {
+      setTimeout(onSave, 100);
+    }
+  }
+}
+
+/**
+ * Get Tailwind grid span classes
+ */
+export function getGridSpanClasses(colSpan = 1, rowSpan = 1) {
+  const colClasses = {
+    1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
+    5: 'col-span-5', 6: 'col-span-6', 7: 'col-span-7', 8: 'col-span-8',
+    9: 'col-span-9', 10: 'col-span-10', 11: 'col-span-11', 12: 'col-span-12'
+  };
+  
+  const rowClasses = {
+    1: '', 2: 'row-span-2', 3: 'row-span-3', 4: 'row-span-4'
+  };
+  
+  const safeColSpan = Math.min(12, Math.max(1, colSpan));
+  const safeRowSpan = Math.min(4, Math.max(1, rowSpan));
+  
+  const colClass = colClasses[safeColSpan] || 'col-span-12';
+  const rowClass = rowClasses[safeRowSpan] || '';
+  
+  return `${colClass} ${rowClass}`.trim();
+}
+
+/**
+ * Get alignment classes for grid items
+ */
+export function getAlignmentClasses(alignment) {
+  switch (alignment) {
+    case 'left':
+      return 'justify-self-start';
+    case 'center':
+      return 'justify-self-center';
+    case 'right':
+      return 'justify-self-end';
+    default:
+      return '';
+  }
 }

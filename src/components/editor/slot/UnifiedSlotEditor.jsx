@@ -7,7 +7,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getPageConfig, getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
-import { SlotStorage } from '@/components/editor/slot/slot-utils';
 import Editor from "@monaco-editor/react";
 import {
   Eye,
@@ -132,7 +131,7 @@ export default function UnifiedSlotEditor({
       
       // Fallback to localStorage
       if (!config) {
-        config = SlotStorage.load(pageType);
+        // SlotStorage.load is disabled - using database only
         console.log('Loaded from localStorage:', config);
       }
       
@@ -200,7 +199,7 @@ export default function UnifiedSlotEditor({
     console.log(`Saving ${pageType} configuration:`, config);
     
     // Save to localStorage
-    SlotStorage.save(pageType, config);
+    // SlotStorage.save is disabled - using database only
     
     // Save to database using slot configuration API
     try {
