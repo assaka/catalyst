@@ -291,6 +291,39 @@ export default function CartSlotsEditor({
     setTempCode(content || '');
   }, []);
 
+  // Auto-save handler for inline text changes
+  const handleInlineTextChange = useCallback((slotId, newText) => {
+    if (!cartLayoutConfig) return;
+    
+    // Update the cartLayoutConfig with the new text content
+    const updatedConfig = {
+      ...cartLayoutConfig,
+      slots: {
+        ...cartLayoutConfig.slots,
+        [slotId]: {
+          ...cartLayoutConfig.slots?.[slotId],
+          content: newText,
+          metadata: {
+            ...cartLayoutConfig.slots?.[slotId]?.metadata,
+            lastModified: new Date().toISOString()
+          }
+        }
+      }
+    };
+    
+    // Update state immediately for responsive UI
+    setCartLayoutConfig(updatedConfig);
+    
+    // Auto-save with debouncing (save 500ms after user stops typing)
+    if (window.inlineEditTimeout) {
+      clearTimeout(window.inlineEditTimeout);
+    }
+    window.inlineEditTimeout = setTimeout(() => {
+      saveConfiguration();
+      console.log('🔄 Auto-saved inline text change for:', slotId);
+    }, 500);
+  }, [cartLayoutConfig, saveConfiguration]);
+
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {
       // Update the cartLayoutConfig with the new content
@@ -718,7 +751,7 @@ export default function CartSlotsEditor({
                             text={cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
                             className={finalClasses}
                             style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
-                            onChange={(newText) => handleEditSlot(slotId, newText)}
+                            onChange={(newText) => handleInlineTextChange(slotId, newText)}
                             mode={mode}
                           />
                         ) : (
@@ -780,7 +813,7 @@ export default function CartSlotsEditor({
                                 text={cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                                 className={finalClasses}
                                 style={{...titleStyling.elementStyles, ...positioning.elementStyles}}
-                                onChange={(newText) => handleEditSlot(slotId, newText)}
+                                onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                 mode={mode}
                               />
                             ) : (
@@ -807,7 +840,7 @@ export default function CartSlotsEditor({
                                 text={cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                                 className={finalClasses}
                                 style={{...textStyling.elementStyles, ...positioning.elementStyles}}
-                                onChange={(newText) => handleEditSlot(slotId, newText)}
+                                onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                 mode={mode}
                               />
                             ) : (
