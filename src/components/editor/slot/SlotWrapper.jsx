@@ -84,16 +84,18 @@ const SlotWrapper = ({
     );
 
     const handleDragStart = (event) => {
-        setActiveId(event.active.id);
+        if (event?.active?.id) {
+            setActiveId(event.active.id);
+        }
     };
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
         setActiveId(null);
 
-        if (active.id !== over?.id) {
+        if (active?.id && over?.id && active.id !== over.id) {
             const oldIndex = slotOrder.indexOf(active.id);
-            const newIndex = slotOrder.indexOf(over?.id);
+            const newIndex = slotOrder.indexOf(over.id);
             const newOrder = arrayMove(slotOrder, oldIndex, newIndex);
 
             // Inform parent

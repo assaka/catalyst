@@ -50,7 +50,7 @@ function ParentSlot({
     const { active, over } = event;
     console.log('🎯 MICRO DRAG END:', { active: active?.id, over: over?.id, parentId: id });
     
-    if (!over || active.id === over.id) {
+    if (!active?.id || !over?.id || active.id === over.id) {
       console.log('🎯 MICRO DRAG END: No over or same ID, returning');
       return;
     }

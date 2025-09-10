@@ -368,12 +368,16 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Simplified handler wrappers using imported utilities
   const handleMajorDragEnd = useCallback((event) => {
-    handleMajorSlotDragEnd(event, majorSlots, setMajorSlots, saveConfiguration);
+    if (event) {
+      handleMajorSlotDragEnd(event, majorSlots, setMajorSlots, saveConfiguration);
+    }
     setActiveDragSlot(null);
   }, [majorSlots, saveConfiguration]);
 
   const handleMajorDragStart = useCallback((event) => {
-    setActiveDragSlot(event.active.id);
+    if (event?.active?.id) {
+      setActiveDragSlot(event.active.id);
+    }
   }, []);
 
 

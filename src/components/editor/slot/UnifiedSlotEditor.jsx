@@ -235,14 +235,16 @@ export default function UnifiedSlotEditor({
   // Handle drag start
   const handleDragStart = (event) => {
     const { active } = event;
-    setDraggedSlot(active.id);
+    if (active?.id) {
+      setDraggedSlot(active.id);
+    }
   };
 
   // Handle drag end
   const handleDragEnd = (event) => {
     const { active, over } = event;
     
-    if (over && active.id !== over.id) {
+    if (active?.id && over?.id && active.id !== over.id) {
       setSlotOrder((items) => {
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);

@@ -236,7 +236,7 @@ export function triggerSave(pageType = 'cart') {
 export function handleMajorSlotDragEnd(event, items, setItems, onSave) {
   const { active, over } = event;
   
-  if (!over || active.id === over.id) return;
+  if (!active || !over || active.id === over.id) return;
 
   const oldIndex = items.indexOf(active.id);
   const newIndex = items.indexOf(over.id);
