@@ -602,14 +602,15 @@ export default function CartSlotsEditor({
         
         {/* Header Section with Grid Layout */}
         <div className="header-section mb-8">
-          {mode === 'edit' && (
+          {mode === 'edit' ? (
             <div className="border-2 border-dashed border-gray-300 p-4 relative">
               <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                 header
               </div>
-            </div>
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+          ) : (
+            <div className="grid grid-cols-12 gap-2 auto-rows-min">
           )}
-          <div className="grid grid-cols-12 gap-2 auto-rows-min">
             {cartLayoutConfig?.microSlotOrders?.header ? (
               cartLayoutConfig.microSlotOrders.header.map(slotId => {
                 const positioning = getSlotPositioning(slotId, 'header');
@@ -655,7 +656,10 @@ export default function CartSlotsEditor({
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
               </div>
             )}
-          </div>
+            </div>
+          {mode === 'edit' && (
+            </div>
+          )}
         </div>
         
         <CmsBlockRenderer position="cart_above_items" />
@@ -663,15 +667,16 @@ export default function CartSlotsEditor({
         {cartItems.length === 0 || viewMode === 'empty' ? (
           // Empty cart state with micro-slots in custom order
           <div className="emptyCart-section">
-            {mode === 'edit' && (
-              <div className="border-2 border-dashed border-gray-300 p-4 relative mb-4">
-                <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
-                  emptyCart
-                </div>
-              </div>
-            )}
             <div className="text-center py-12">
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              {mode === 'edit' ? (
+                <div className="border-2 border-dashed border-gray-300 p-4 relative">
+                  <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
+                    emptyCart
+                  </div>
+                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              ) : (
+                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              )}
                 {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
                   cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
                     const positioning = getSlotPositioning(slotId, 'emptyCart');
@@ -817,21 +822,25 @@ export default function CartSlotsEditor({
                     </div>
                   </>
                 )}
-              </div>
+                </div>
+              {mode === 'edit' && (
+                </div>
+              )}
             </div>
           </div>
         ) : (
           // Cart with products layout
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
             <div className="lg:col-span-2">
-              {mode === 'edit' && (
-                <div className="border-2 border-dashed border-gray-300 p-4 relative mb-4">
+              {mode === 'edit' ? (
+                <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     cartItem
                   </div>
-                </div>
+                  <Card>
+              ) : (
+                <Card>
               )}
-              <Card>
                 <CardContent className="px-4 divide-y divide-gray-200">
                   {cartItems.map(item => {
                     const product = item.product;
@@ -868,20 +877,24 @@ export default function CartSlotsEditor({
                     );
                   })}
                 </CardContent>
-              </Card>
+                </Card>
+              {mode === 'edit' && (
+                </div>
+              )}
               <CmsBlockRenderer position="cart_below_items" />
             </div>
             
             <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
               {/* Coupon Section */}
-              {mode === 'edit' && (
+              {mode === 'edit' ? (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     coupon
                   </div>
-                </div>
+                  <Card>
+              ) : (
+                <Card>
               )}
-              <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.coupon ? (
@@ -975,17 +988,21 @@ export default function CartSlotsEditor({
                     )}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              {mode === 'edit' && (
+                </div>
+              )}
               
               {/* Order Summary Section */}
-              {mode === 'edit' && (
+              {mode === 'edit' ? (
                 <div className="border-2 border-dashed border-gray-300 p-4 relative">
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     orderSummary
                   </div>
-                </div>
+                  <Card>
+              ) : (
+                <Card>
               )}
-              <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
                     {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
@@ -1136,7 +1153,10 @@ export default function CartSlotsEditor({
                     )}
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              {mode === 'edit' && (
+                </div>
+              )}
             </div>
           </div>
         )}
