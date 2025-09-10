@@ -10,7 +10,7 @@ import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
-import VersionHistoryModal from '@/components/editor/slot/VersionHistoryModal';
+// VersionHistoryModal removed - functionality integrated into unified editor
 // Store context no longer needed - backend resolves store automatically
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -140,7 +140,7 @@ const AIContextWindowPage = () => {
   const [isPublishingConfig, setIsPublishingConfig] = useState(false);
   const [configPublishSuccess, setConfigPublishSuccess] = useState(null);
   const [currentStoreId, setCurrentStoreId] = useState(null);
-  const [showConfigVersionHistory, setShowConfigVersionHistory] = useState(false);
+  // Version history functionality integrated into UnifiedSlotEditor
   const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Auto-save debounce timer
@@ -822,17 +822,7 @@ export default ExampleComponent;`;
             )}
           </button>
           
-          <button
-            onClick={() => setShowConfigVersionHistory(true)}
-            className={cn(
-              "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
-              "bg-gray-500 hover:bg-gray-600 text-white"
-            )}
-            title="View slot configuration version history"
-          >
-            <History className="w-3 h-3" />
-            Version History
-          </button>
+          {/* Version history integrated into UnifiedSlotEditor */}
           
         </div>
       </div>
@@ -1299,15 +1289,7 @@ export default ExampleComponent;`;
         </div>
       </div>
 
-      {/* Version History Modal */}
-      {showConfigVersionHistory && (
-        <VersionHistoryModal
-          storeId={currentStoreId}
-          pageType="cart"
-          isOpen={showConfigVersionHistory}
-          onClose={() => setShowConfigVersionHistory(false)}
-        />
-      )}
+      {/* Version history functionality available in UnifiedSlotEditor */}
     </div>
   );
 };
