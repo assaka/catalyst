@@ -130,7 +130,8 @@ export default function InlineSlotEditor({
         new: newClassName,
         isWrapper: isWrapperSlot 
       });
-      onClassChange(slotId, newClassName);
+      // Pass isWrapperSlot as the 4th parameter to indicate this should be stored as parentClassName
+      onClassChange(slotId, newClassName, {}, isWrapperSlot);
     }
     
     // No save needed - changes are applied directly via onClassChange
