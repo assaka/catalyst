@@ -47,6 +47,7 @@ import ParentSlot from "@/components/editor/slot/ParentSlot";
 import MicroSlot from "@/components/editor/slot/MicroSlot";
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 import SimpleInlineEdit from "@/components/editor/slot/SimpleInlineEdit";
+import { transformDatabaseConfigToEditor, getDefaultEditorConfig } from "@/components/editor/slot/configuration-loader";
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
@@ -59,6 +60,11 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 const PAGE_TYPE = 'cart';
 const PAGE_NAME = 'Cart';
 const SLOT_TYPE = 'cart_layout';
+
+// Saved configuration from database
+const SAVED_CART_CONFIG = {
+  "configuration": "{\"slots\": {\"coupon.input\": {\"styles\": {}, \"content\": \"Enter coupon code\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"flex-1 px-3 py-2 border rounded bg-white text-gray-700\", \"parentClassName\": \"\"}, \"coupon.title\": {\"styles\": {}, \"content\": \"Apply Coupon\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"text-lg font-bold text-gray-800\", \"parentClassName\": \"\"}, \"header.title\": {\"styles\": {}, \"content\": \"My Cart\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.668Z\"}, \"className\": \"text-2xl font-bold text-gray-800\", \"parentClassName\": \"text-center\"}, \"coupon.button\": {\"styles\": {}, \"content\": \"Apply\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium\", \"parentClassName\": \"\"}, \"emptyCart.icon\": {\"styles\": {}, \"content\": \"🛒\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"text-6xl text-gray-400\", \"parentClassName\": \"text-center\"}, \"emptyCart.text\": {\"styles\": {}, \"content\": \"Looks like you haven't added anything to your cart yet.\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"text-gray-500 mb-4\", \"parentClassName\": \"text-center\"}, \"emptyCart.title\": {\"styles\": {}, \"content\": \"Your cart is empty\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"text-xl font-bold text-gray-600\", \"parentClassName\": \"text-center\"}, \"emptyCart.button\": {\"styles\": {}, \"content\": \"Continue Shopping\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold\", \"parentClassName\": \"text-center\"}, \"orderSummary.title\": {\"styles\": {}, \"content\": \"Order Summary\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"text-lg font-bold text-gray-800 mb-4\", \"parentClassName\": \"\"}, \"orderSummary.total\": {\"styles\": {}, \"content\": \"Total: $59.98\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"flex justify-between font-bold text-lg text-gray-900 border-t pt-4\", \"parentClassName\": \"\"}, \"cartItem.productImage\": {\"styles\": {}, \"content\": \"Product Image\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500\", \"parentClassName\": \"\"}, \"cartItem.productPrice\": {\"styles\": {}, \"content\": \"$29.99\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"font-bold text-gray-900\", \"parentClassName\": \"text-right\"}, \"cartItem.productTitle\": {\"styles\": {}, \"content\": \"Product Name\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"font-semibold text-gray-900\", \"parentClassName\": \"\"}, \"cartItem.removeButton\": {\"styles\": {}, \"content\": \"Remove\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"text-red-500 hover:text-red-700 text-sm\", \"parentClassName\": \"\"}, \"orderSummary.subtotal\": {\"styles\": {}, \"content\": \"Subtotal: $59.98\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"flex justify-between text-gray-600 mb-2\", \"parentClassName\": \"\"}, \"cartItem.quantityControl\": {\"styles\": {}, \"content\": \"1\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded\", \"parentClassName\": \"text-center\"}, \"orderSummary.checkoutButton\": {\"styles\": {}, \"content\": \"Proceed to Checkout\", \"metadata\": {\"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"className\": \"w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold\", \"parentClassName\": \"\"}}, \"metadata\": {\"created\": \"2025-09-10T04:29:27.669Z\", \"lastModified\": \"2025-09-10T04:29:27.669Z\"}, \"page_name\": \"Cart\", \"majorSlots\": [\"header\", \"emptyCart\", \"cartItems\"], \"customSlots\": {}, \"componentSizes\": {}, \"microSlotSpans\": {\"coupon\": {\"coupon.input\": {\"col\": 8, \"row\": 1}, \"coupon.title\": {\"col\": 12, \"row\": 1}, \"coupon.button\": {\"col\": 4, \"row\": 1}, \"coupon.message\": {\"col\": 12, \"row\": 1}, \"coupon.appliedCoupon\": {\"col\": 12, \"row\": 1}}, \"header\": {\"header.title\": {\"col\": 12, \"row\": 1}}, \"cartItem\": {\"cartItem.productImage\": {\"col\": 2, \"row\": 2}, \"cartItem.productPrice\": {\"col\": 2, \"row\": 1}, \"cartItem.productTitle\": {\"col\": 6, \"row\": 1}, \"cartItem.removeButton\": {\"col\": 12, \"row\": 1}, \"cartItem.quantityControl\": {\"col\": 2, \"row\": 1}}, \"emptyCart\": {\"emptyCart.icon\": {\"col\": 2, \"row\": 1}, \"emptyCart.text\": {\"col\": 12, \"row\": 1}, \"emptyCart.title\": {\"col\": 10, \"row\": 1}, \"emptyCart.button\": {\"col\": 12, \"row\": 1}}, \"flashMessage\": {\"flashMessage.message\": {\"col\": 12, \"row\": 1}}, \"orderSummary\": {\"orderSummary.tax\": {\"col\": 12, \"row\": 1}, \"orderSummary.title\": {\"col\": 12, \"row\": 1}, \"orderSummary.total\": {\"col\": 12, \"row\": 1}, \"orderSummary.discount\": {\"col\": 12, \"row\": 1}, \"orderSummary.shipping\": {\"col\": 12, \"row\": 1}, \"orderSummary.subtotal\": {\"col\": 12, \"row\": 1}, \"orderSummary.checkoutButton\": {\"col\": 12, \"row\": 1}}, \"recommendations\": {\"recommendations.title\": {\"col\": 12, \"row\": 1}, \"recommendations.products\": {\"col\": 12, \"row\": 3}}}, \"microSlotOrders\": {\"coupon\": [\"coupon.title\", \"coupon.input\", \"coupon.button\", \"coupon.message\", \"coupon.appliedCoupon\"], \"header\": [\"header.title\"], \"cartItem\": [\"cartItem.productImage\", \"cartItem.productTitle\", \"cartItem.quantityControl\", \"cartItem.productPrice\", \"cartItem.removeButton\"], \"emptyCart\": [\"emptyCart.icon\", \"emptyCart.title\", \"emptyCart.text\", \"emptyCart.button\"], \"flashMessage\": [\"flashMessage.message\"], \"orderSummary\": [\"orderSummary.title\", \"orderSummary.subtotal\", \"orderSummary.discount\", \"orderSummary.shipping\", \"orderSummary.tax\", \"orderSummary.total\", \"orderSummary.checkoutButton\"], \"recommendations\": [\"recommendations.title\", \"recommendations.products\"]}}"
+};
 
 // Get cart-specific micro-slot definitions from config
 const MICRO_SLOT_DEFINITIONS = getMicroSlotDefinitions(PAGE_TYPE) || cartConfig.microSlotDefinitions;
@@ -185,49 +191,21 @@ export default function CartSlotsEditorWithMicroSlots({
   
   
   
+  // Initialize with saved configuration
+  const savedEditorConfig = transformDatabaseConfigToEditor(SAVED_CART_CONFIG);
+  
   // State for major slot order - changes based on view mode
-  const [majorSlots, setMajorSlots] = useState(['flashMessage', 'header', 'emptyCart']);
+  const [majorSlots, setMajorSlots] = useState(savedEditorConfig.majorSlots);
   
   
   // State for micro-slot orders within each parent
-  const [microSlotOrders, setMicroSlotOrders] = useState(() => {
-    const orders = {};
-    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-      orders[key] = [...def.microSlots];
-    });
-    return orders;
-  });
+  const [microSlotOrders, setMicroSlotOrders] = useState(savedEditorConfig.microSlotOrders);
   
   // State for micro-slot spans
-  const [microSlotSpans, setMicroSlotSpans] = useState(() => {
-    const spans = {};
-    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-      spans[key] = { ...def.defaultSpans };
-    });
-    return spans;
-  });
+  const [microSlotSpans, setMicroSlotSpans] = useState(savedEditorConfig.microSlotSpans);
   
-  // State for component code
-  // Unified content storage - can be plain text, HTML, or component code
-  const [slotContent, setSlotContent] = useState({
-    // Initialize with templates and text content merged
-    ...MICRO_SLOT_TEMPLATES,
-    // Text content overrides (these will be plain text initially)
-    'emptyCart.title': 'Your cart is empty',
-    'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
-    'header.title': 'My Cart',
-    'coupon.title': 'Apply Coupon',
-    'coupon.input.placeholder': 'Enter coupon code',
-    'coupon.applied.title': 'Applied: ',
-    'coupon.applied.description': '20% off your order',
-    'orderSummary.title': 'Order Summary',
-    'orderSummary.subtotal.label': 'Subtotal',
-    'orderSummary.discount.label': 'Discount',
-    'orderSummary.tax.label': 'Tax',
-    'orderSummary.total.label': 'Total',
-    // Initialize FlashMessage with the empty cart template by default
-    'flashMessage.content': MICRO_SLOT_TEMPLATES['flashMessage.content'],
-  });
+  // State for component code - use saved content from configuration
+  const [slotContent, setSlotContent] = useState(savedEditorConfig.slotContent);
   const [editingComponent, setEditingComponent] = useState(null);
   const [tempCode, setTempCode] = useState('');
   const [activeDragSlot, setActiveDragSlot] = useState(null);
@@ -248,31 +226,10 @@ export default function CartSlotsEditorWithMicroSlots({
   
   // Direct color picker - no popover needed
   
-  // State for Tailwind classes for each element
-  const [elementClasses, setElementClasses] = useState({
-    'header.title': 'text-3xl font-bold text-gray-900',
-    'coupon.title': 'text-lg font-semibold',
-    'coupon.applied.title': 'text-sm font-medium text-green-800',
-    'coupon.applied.description': 'text-xs text-green-600',
-    'orderSummary.title': 'text-lg font-semibold',
-    'orderSummary.subtotal.label': '',
-    'orderSummary.discount.label': '',
-    'orderSummary.tax.label': '',
-    'orderSummary.total.label': 'text-lg font-semibold',
-    'emptyCart.title': 'text-xl font-semibold',
-    'emptyCart.text': 'text-gray-600',
-    'emptyCart.button': '',
-  });
-
-  // State for inline styles for each element (colors, etc)
-  const [elementStyles, setElementStyles] = useState({});
-  
-  // State for component sizes
-  const [componentSizes, setComponentSizes] = useState({
-    'emptyCart.icon': 64, // pixels
-    'emptyCart.button': 'default', // 'sm' | 'default' | 'lg'
-    'cartItem.image': 80,
-  });
+  // State for Tailwind classes and styles - use saved configuration
+  const [elementClasses, setElementClasses] = useState(savedEditorConfig.elementClasses);
+  const [elementStyles, setElementStyles] = useState(savedEditorConfig.elementStyles);
+  const [componentSizes, setComponentSizes] = useState(savedEditorConfig.componentSizes);
   
   // Props from data (minimal set for editor)
   const {
