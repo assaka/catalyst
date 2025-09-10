@@ -231,23 +231,69 @@ export default function CartSlotsEditorWithMicroSlots({
   const [elementStyles, setElementStyles] = useState(savedEditorConfig.elementStyles);
   const [componentSizes, setComponentSizes] = useState(savedEditorConfig.componentSizes);
   
+  // State for save status indicator
+  const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved', 'error'
+  
   // Props from data (minimal set for editor)
   const {
     currencySymbol = '$',
   } = safeData;
 
-  // Wrapper function that uses current component state
-  const saveConfiguration = useCallback(async () => {
-    return await saveConfigurationHook({
-      majorSlots,
-      slotContent,
-      elementStyles,
-      elementClasses,
-      microSlotOrders,
-      microSlotSpans,
-      customSlots,
-      componentSizes
-    });
+  // Robust save function with retry logic
+  const saveConfiguration = useCallback(async (retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    // Show saving status on first attempt
+    if (retryCount === 0) {
+      setSaveStatus('saving');
+    }
+    
+    try {
+      console.log(`💾 Save attempt ${retryCount + 1}/${maxRetries + 1}`);
+      
+      const result = await saveConfigurationHook({
+        majorSlots,
+        slotContent,
+        elementStyles,
+        elementClasses,
+        microSlotOrders,
+        microSlotSpans,
+        customSlots,
+        componentSizes
+      });
+      
+      console.log('✅ Save successful on attempt', retryCount + 1);
+      
+      // Show success status
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(''), 2000); // Clear after 2 seconds
+      
+      return result;
+      
+    } catch (error) {
+      console.error(`❌ Save failed on attempt ${retryCount + 1}:`, error);
+      
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Retrying in ${retryDelay}ms... (attempt ${retryCount + 2}/${maxRetries + 1})`);
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        
+        // Retry with incremented count
+        return saveConfiguration(retryCount + 1);
+      } else {
+        console.error(`💥 All ${maxRetries + 1} save attempts failed`);
+        
+        // Show error status
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus(''), 5000); // Clear after 5 seconds
+        
+        // Show user-friendly error
+        alert(`Failed to save changes after ${maxRetries + 1} attempts. Please check your internet connection and try again.`);
+        throw error;
+      }
+    }
   }, [saveConfigurationHook, majorSlots, slotContent, elementStyles, elementClasses, microSlotOrders, microSlotSpans, customSlots, componentSizes]);
 
   
@@ -354,8 +400,33 @@ export default function CartSlotsEditorWithMicroSlots({
     setTempCode(content);
   }, []);
 
+  // Debounced save to prevent multiple rapid saves
+  const debouncedSave = useCallback(() => {
+    const timeoutId = setTimeout(async () => {
+      try {
+        console.log('💾 Debounced save starting...');
+        const success = await saveConfiguration();
+        if (success) {
+          console.log('✅ Debounced save successful');
+        } else {
+          console.warn('⚠️ Debounced save failed');
+        }
+      } catch (error) {
+        console.error('❌ Debounced save error:', error);
+      }
+    }, 300); // 300ms debounce
+
+    // Store timeout ID to clear previous ones
+    if (window.cartSaveTimeout) {
+      clearTimeout(window.cartSaveTimeout);
+    }
+    window.cartSaveTimeout = timeoutId;
+  }, [saveConfiguration]);
+
   // Handle micro-slot class/style changes (without opening editor)
   const handleMicroSlotClassChange = useCallback((microSlotKey, newClassName, newStyles) => {
+    console.log('🎨 Class change:', { microSlotKey, newClassName, newStyles });
+    
     if (newClassName !== undefined) {
       // Check if this is an alignment change by looking for alignment classes
       const isAlignmentChange = newClassName.includes('text-left') || 
@@ -395,13 +466,41 @@ export default function CartSlotsEditorWithMicroSlots({
       }));
     }
     
-    // Auto-save the configuration
-    saveConfiguration();
-  }, [saveConfiguration]);
+    // Use debounced save instead of immediate save
+    debouncedSave();
+  }, [debouncedSave]);
 
   // Main render
   return (
     <>
+      {/* Save Status Indicator */}
+      {saveStatus && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-white font-medium ${
+          saveStatus === 'saving' ? 'bg-blue-500' : 
+          saveStatus === 'saved' ? 'bg-green-500' : 
+          saveStatus === 'error' ? 'bg-red-500' : ''
+        }`}>
+          {saveStatus === 'saving' && (
+            <>
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+              Saving...
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              Saved!
+            </>
+          )}
+          {saveStatus === 'error' && (
+            <>
+              <X className="w-4 h-4" />
+              Save Failed
+            </>
+          )}
+        </div>
+      )}
+      
       <div className="bg-gray-50 cart-page min-h-screen flex flex-col" style={{ backgroundColor: '#f9fafb' }}>
         <SeoHeadManager
           title="Empty Cart Editor"
