@@ -1079,9 +1079,11 @@ export function createDragEndHandler({
  * @returns {Function} Edit slot handler
  */
 export function createEditSlotHandler(setEditingComponent, setTempCode) {
-  return (slotId, content) => {
+  return (slotId, content, layoutConfig) => {
     setEditingComponent(slotId);
-    setTempCode(content || '');
+    // Load the stored HTML content from the database, fallback to display content
+    const storedContent = layoutConfig?.slots?.[slotId]?.content || content || '';
+    setTempCode(storedContent);
   };
 }
 

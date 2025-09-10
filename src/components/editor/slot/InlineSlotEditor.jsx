@@ -321,8 +321,13 @@ export default function InlineSlotEditor({
             className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-500 text-white p-1 rounded-full shadow-lg"
             onClick={(e) => {
               e.stopPropagation();
-              setIsEditing(true);
+              if (onEditSlot) {
+                onEditSlot(slotId, localText);
+              } else {
+                setIsEditing(true);
+              }
             }}
+            title="Edit HTML"
           >
             <Edit className="w-3 h-3" />
           </button>

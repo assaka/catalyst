@@ -335,10 +335,10 @@ export default function CartSlotsEditor({
   );
 
   // Generic edit handlers using editor-utils
-  const handleEditSlot = useMemo(() =>
-    createEditSlotHandler(setEditingComponent, setTempCode),
-    []
-  );
+  const handleEditSlot = useMemo(() => {
+    const baseHandler = createEditSlotHandler(setEditingComponent, setTempCode);
+    return (slotId, content) => baseHandler(slotId, content, cartLayoutConfig);
+  }, [cartLayoutConfig]);
 
   // Generic auto-save handlers using editor-utils
   const handleInlineTextChange = useMemo(() =>
