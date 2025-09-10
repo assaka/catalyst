@@ -51,8 +51,7 @@ import { transformDatabaseConfigToEditor, getDefaultEditorConfig, transformEdito
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
-import { 
-  cartConfig, 
+import cartConfig, { 
   MICRO_SLOT_DEFINITIONS as CART_MICRO_SLOT_DEFINITIONS,
   MICRO_SLOT_TEMPLATES as CART_MICRO_SLOT_TEMPLATES,
   SAVED_CART_CONFIG as CART_SAVED_CONFIG

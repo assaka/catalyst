@@ -221,8 +221,7 @@ export const cartConfig = {
 export {
   MICRO_SLOT_DEFINITIONS,
   MICRO_SLOT_TEMPLATES,
-  SAVED_CART_CONFIG,
-  cartConfig
+  SAVED_CART_CONFIG
 };
 
 export default cartConfig;
