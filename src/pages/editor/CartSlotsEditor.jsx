@@ -51,7 +51,12 @@ import { transformDatabaseConfigToEditor, getDefaultEditorConfig, transformEdito
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
-import { cartConfig } from '@/components/editor/slot/configs/cart-config';
+import { 
+  cartConfig, 
+  MICRO_SLOT_DEFINITIONS as CART_MICRO_SLOT_DEFINITIONS,
+  MICRO_SLOT_TEMPLATES as CART_MICRO_SLOT_TEMPLATES,
+  SAVED_CART_CONFIG as CART_SAVED_CONFIG
+} from '@/components/editor/slot/configs/cart-config';
 import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
 import slotConfigurationService from '@/services/slotConfigurationService';
