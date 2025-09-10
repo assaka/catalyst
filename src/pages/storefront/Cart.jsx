@@ -1319,10 +1319,10 @@ export default function Cart() {
                                         
                                         if (slotId === 'emptyCart.button') {
                                             return (
-                                                <div key={slotId} className={positioning.gridClasses}>
+                                                <div key={slotId} className={`${positioning.gridClasses} flex justify-center`}>
                                                     <Button 
                                                         onClick={() => navigate(getStoreBaseUrl(store))}
-                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                        className="bg-blue-600 hover:bg-blue-700 w-auto"
                                                         style={positioning.elementStyles}
                                                     >
                                                         Continue Shopping
@@ -1345,10 +1345,10 @@ export default function Cart() {
                                         <div className="col-span-12">
                                             <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                                         </div>
-                                        <div className="col-span-12">
+                                        <div className="col-span-12 flex justify-center">
                                             <Button 
                                                 onClick={() => navigate(getStoreBaseUrl(store))}
-                                                className="bg-blue-600 hover:bg-blue-700"
+                                                className="bg-blue-600 hover:bg-blue-700 w-auto"
                                             >
                                                 Continue Shopping
                                             </Button>

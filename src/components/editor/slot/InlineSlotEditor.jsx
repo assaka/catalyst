@@ -322,7 +322,7 @@ export default function InlineSlotEditor({
             onClick={(e) => {
               e.stopPropagation();
               if (onEditSlot) {
-                onEditSlot(slotId, localText);
+                onEditSlot(slotId, localText, elementType);
               } else {
                 setIsEditing(true);
               }
@@ -490,7 +490,7 @@ export default function InlineSlotEditor({
             <button
               onClick={() => {
                 if (onEditSlot) {
-                  onEditSlot(slotId, localText);
+                  onEditSlot(slotId, localText, elementType);
                 } else {
                   setShowHtmlEditor(true);
                 }

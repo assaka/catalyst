@@ -39,6 +39,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 // Clean imports - no longer using cartConfig fallbacks
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
+import ResizeHandle from "@/components/editor/slot/ResizeHandle";
 
 // Import generic editor utilities
 import {
@@ -337,7 +338,7 @@ export default function CartSlotsEditor({
   // Generic edit handlers using editor-utils
   const handleEditSlot = useMemo(() => {
     const baseHandler = createEditSlotHandler(setEditingComponent, setTempCode);
-    return (slotId, content) => baseHandler(slotId, content, cartLayoutConfig);
+    return (slotId, content, elementType) => baseHandler(slotId, content, cartLayoutConfig, elementType);
   }, [cartLayoutConfig]);
 
   // Generic auto-save handlers using editor-utils
@@ -421,6 +422,40 @@ export default function CartSlotsEditor({
       console.log('💾 Saved HTML content for slot:', editingComponent);
     }
   }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
+
+  // Handle resize for microslots with auto-save
+  const handleMicroSlotResize = useCallback((slotId, parentSlot, newSpans) => {
+    if (!cartLayoutConfig) return;
+
+    console.log('🔄 Resizing microslot:', slotId, 'to spans:', newSpans);
+
+    // Update the cartLayoutConfig with the new spans
+    const updatedConfig = {
+      ...cartLayoutConfig,
+      microSlotSpans: {
+        ...cartLayoutConfig.microSlotSpans,
+        [parentSlot]: {
+          ...cartLayoutConfig.microSlotSpans?.[parentSlot],
+          [slotId]: {
+            ...cartLayoutConfig.microSlotSpans?.[parentSlot]?.[slotId],
+            ...newSpans
+          }
+        }
+      }
+    };
+
+    // Update state immediately for responsive UI
+    setCartLayoutConfig(updatedConfig);
+
+    // Auto-save with debouncing (save 500ms after user stops resizing)
+    if (window.resizeTimeout) {
+      clearTimeout(window.resizeTimeout);
+    }
+    window.resizeTimeout = setTimeout(() => {
+      saveConfiguration();
+      console.log('💾 Auto-saved resize for:', slotId, newSpans);
+    }, 500);
+  }, [cartLayoutConfig, saveConfiguration]);
 
   // Custom micro slot styling that reads from slots.{slotId}.className and parentClassName
   const getMicroSlotStyling = useCallback((microSlotId) => {
@@ -640,7 +675,7 @@ export default function CartSlotsEditor({
                   const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
                   const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                   return (
-                    <div key={slotId} className={positioning.gridClasses}>
+                    <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                       <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                         {mode === 'edit' ? (
                           <InlineSlotEditor
@@ -659,6 +694,16 @@ export default function CartSlotsEditor({
                           </h1>
                         )}
                       </div>
+                      {/* Resize Handle for Edit Mode */}
+                      {mode === 'edit' && (
+                        <ResizeHandle
+                          slotId={slotId}
+                          parentSlot="header"
+                          microSlotSpans={positioning.microSlotSpans}
+                          onResize={handleMicroSlotResize}
+                          position="bottom-right"
+                        />
+                      )}
                     </div>
                   );
                 }
@@ -825,12 +870,12 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={positioning.gridClasses}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
                               <InlineSlotEditor
                                 slotId={slotId}
-                                text="Continue Shopping"
+                                text={cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                                 className={finalClasses}
                                 style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                 onChange={(newText) => handleInlineTextChange(slotId, newText)}
@@ -844,10 +889,20 @@ export default function CartSlotsEditor({
                                 className={finalClasses}
                                 style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                               >
-                                Continue Shopping
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                               </Button>
                             )}
                           </div>
+                          {/* Resize Handle for Edit Mode */}
+                          {mode === 'edit' && (
+                            <ResizeHandle
+                              slotId={slotId}
+                              parentSlot="emptyCart"
+                              microSlotSpans={positioning.microSlotSpans}
+                              onResize={handleMicroSlotResize}
+                              position="bottom-right"
+                            />
+                          )}
                         </div>
                       );
                     }
@@ -1117,12 +1172,12 @@ export default function CartSlotsEditor({
                           const defaultClasses = '';
                           const finalClasses = buttonStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                                 {mode === 'edit' ? (
                                   <InlineSlotEditor
                                     slotId={slotId}
-                                    text="<Tag className=&quot;w-4 h-4 mr-2&quot; /> Apply"
+                                    text={cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
                                     className={finalClasses}
                                     style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                     onChange={(newText) => handleInlineTextChange(slotId, newText)}
@@ -1137,10 +1192,23 @@ export default function CartSlotsEditor({
                                     className={finalClasses}
                                     style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                   >
-                                    <Tag className="w-4 h-4 mr-2" /> Apply
+                                    {cartLayoutConfig?.slots?.[slotId]?.content ? 
+                                      <span dangerouslySetInnerHTML={{ __html: cartLayoutConfig.slots[slotId].content }} />
+                                      : <><Tag className="w-4 h-4 mr-2" /> Apply</>
+                                    }
                                   </Button>
                                 )}
                               </div>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="coupon"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }
@@ -1332,13 +1400,13 @@ export default function CartSlotsEditor({
                           const defaultClasses = 'w-full';
                           const finalClasses = buttonStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <div className="border-t mt-6 pt-6">
                                 <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                                   {mode === 'edit' ? (
                                     <InlineSlotEditor
                                       slotId={slotId}
-                                      text="Proceed to Checkout"
+                                      text={cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
                                       className={finalClasses}
                                       style={{
                                         backgroundColor: '#007bff',
@@ -1348,6 +1416,7 @@ export default function CartSlotsEditor({
                                       }}
                                       onChange={(newText) => handleInlineTextChange(slotId, newText)}
                                       onClassChange={handleInlineClassChange}
+                                      onEditSlot={handleEditSlot}
                                       mode={mode}
                                       elementType="button"
                                     />
@@ -1362,11 +1431,21 @@ export default function CartSlotsEditor({
                                         ...positioning.elementStyles
                                       }}
                                     >
-                                      Proceed to Checkout
+                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
                                     </Button>
                                   )}
                                 </div>
                               </div>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="orderSummary"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }

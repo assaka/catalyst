@@ -1079,11 +1079,25 @@ export function createDragEndHandler({
  * @returns {Function} Edit slot handler
  */
 export function createEditSlotHandler(setEditingComponent, setTempCode) {
-  return (slotId, content, layoutConfig) => {
+  return (slotId, content, layoutConfig, elementType) => {
     setEditingComponent(slotId);
-    // Load the stored HTML content from the database, fallback to display content
-    const storedContent = layoutConfig?.slots?.[slotId]?.content || content || '';
-    setTempCode(storedContent);
+    
+    let htmlContent = layoutConfig?.slots?.[slotId]?.content || content || '';
+    
+    // For button elements, generate full HTML structure if not already stored
+    if (elementType === 'button' && htmlContent && !htmlContent.includes('<')) {
+      // If it's just text, wrap it in a proper button HTML structure
+      const buttonClasses = layoutConfig?.slots?.[slotId]?.className || 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded';
+      const buttonStyles = layoutConfig?.slots?.[slotId]?.styles || {};
+      
+      const styleString = Object.entries(buttonStyles)
+        .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+        .join('; ');
+      
+      htmlContent = `<button class="${buttonClasses}"${styleString ? ` style="${styleString}"` : ''}>${htmlContent}</button>`;
+    }
+    
+    setTempCode(htmlContent);
   };
 }
 
