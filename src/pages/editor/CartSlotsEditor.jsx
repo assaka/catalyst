@@ -43,6 +43,7 @@ import {
   handleDeleteCustomSlot,
   handleAddCustomSlot
 } from "@/components/editor/slot/slot-management-utils";
+import SlotPreview from "@/components/editor/slot/SlotPreview";
 
 // Import micro-slot definitions from new config structure
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';
@@ -377,17 +378,17 @@ export default function CartSlotsEditorWithMicroSlots({
 
 
 
-  // Create the cart-specific render function
-  const renderSlotContent = () => {
-    // This would use the generic rendering utilities but with cart-specific logic
-    // For now, keeping the existing implementation
-    return (
-      <div className="cart-slots">
-        {/* Cart-specific rendering logic here */}
-        {/* This would be refactored to use renderParentSlot from utilities */}
-      </div>
-    );
-  };
+  // Handle major slot editing
+  const handleEditSlot = useCallback((slotId, slotData) => {
+    setEditingComponent(slotId);
+    setTempCode(JSON.stringify(slotData, null, 2));
+  }, []);
+
+  // Handle micro-slot editing
+  const handleEditMicroSlot = useCallback((microSlotKey, content) => {
+    setEditingComponent(microSlotKey);
+    setTempCode(content);
+  }, []);
 
   // Main render
   return (
@@ -469,7 +470,22 @@ export default function CartSlotsEditorWithMicroSlots({
                   onDragEnd={handleMajorDragEnd}
                 >
                   <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
-                    {renderSlotContent()}
+                    <SlotPreview
+                      majorSlots={majorSlots}
+                      microSlotDefinitions={MICRO_SLOT_DEFINITIONS}
+                      microSlotOrders={microSlotOrders}
+                      microSlotSpans={microSlotSpans}
+                      slotContent={slotContent}
+                      elementClasses={elementClasses}
+                      elementStyles={elementStyles}
+                      mode={mode}
+                      onEditSlot={handleEditSlot}
+                      onEditMicroSlot={handleEditMicroSlot}
+                      onMajorDragStart={handleMajorDragStart}
+                      onMajorDragEnd={handleMajorDragEnd}
+                      activeDragSlot={activeDragSlot}
+                      pageType="cart"
+                    />
                   </SortableContext>
                   
                   <DragOverlay>
@@ -485,7 +501,19 @@ export default function CartSlotsEditorWithMicroSlots({
           ) : (
             // Preview mode - full width, no drag functionality
             <div className="w-full">
-              {renderSlotContent()}
+              <SlotPreview
+                majorSlots={majorSlots}
+                microSlotDefinitions={MICRO_SLOT_DEFINITIONS}
+                microSlotOrders={microSlotOrders}
+                microSlotSpans={microSlotSpans}
+                slotContent={slotContent}
+                elementClasses={elementClasses}
+                elementStyles={elementStyles}
+                mode={mode}
+                onEditSlot={handleEditSlot}
+                onEditMicroSlot={handleEditMicroSlot}
+                pageType="cart"
+              />
             </div>
           )}
           </div>

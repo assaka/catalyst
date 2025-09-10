@@ -16,8 +16,8 @@ import {
   handleAddCustomSlot as genericAddCustomSlot
 } from "@/components/editor/slot/slot-management-utils";
 import { createViewModeRenderer } from "@/components/editor/slot/slot-rendering-utils";
-import MicroSlot from "@/components/editor/MicroSlot";
-import ParentSlot from "@/components/editor/ParentSlot";
+import MicroSlot from "@/components/editor/slot/MicroSlot";
+import ParentSlot from "@/components/editor/slot/ParentSlot";
 
 // Cart-specific imports
 import { getMicroSlotDefinitions } from '@/components/editor/slot/configs/index';

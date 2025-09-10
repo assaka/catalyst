@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import SimpleInlineEdit from '@/components/editor/SimpleInlineEdit';
+import SimpleInlineEdit from '@/components/editor/slot/SimpleInlineEdit';
 
 /**
  * Generic function to render parent slots with their micro-slots

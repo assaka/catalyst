@@ -968,36 +968,40 @@ export default ExampleComponent;`;
                           
                           console.log('🎯 Is slot file?', isSlotFile);
                           
-                          return isSlotFile;
-                        })() ? (
-                          // This is a slots/editor file - use UnifiedSlotEditor
-                          <UnifiedSlotEditor
-                            pageName={selectedFile.name
-                              .replace('SlotsEditor.jsx', '')
-                              .replace('SlotEditor.jsx', '')
-                              .replace('Slots.jsx', '')
-                              .replace('.jsx', '')}
-                            onClose={() => {}}
-                            slotType="layout"
-                            pageId={null}
-                          />
-                        ) : (
-                          // Regular file - use CodeEditor
-                          <CodeEditor
-                            value={sourceCode}
-                            onChange={handleCodeChange}
-                            fileName={selectedFile.name}
-                            language={getLanguageFromFileName(selectedFile.name)}
-                            onCursorPositionChange={setCursorPosition}
-                            onSelectionChange={setSelection}
-                            onManualEdit={handleManualEdit}
-                            originalCode={originalCode}
-                            initialContent={originalCode}
-                            enableDiffDetection={true}
-                            enableTabs={true}
-                            className="h-full"
-                          />
-                        )}
+                          if (isSlotFile) {
+                            // This is a slots/editor file - use UnifiedSlotEditor
+                            return (
+                              <UnifiedSlotEditor
+                                pageName={selectedFile.name
+                                  .replace('SlotsEditor.jsx', '')
+                                  .replace('SlotEditor.jsx', '')
+                                  .replace('Slots.jsx', '')
+                                  .replace('.jsx', '')}
+                                onClose={() => {}}
+                                slotType="layout"
+                                pageId={null}
+                              />
+                            );
+                          } else {
+                            // Regular file - use CodeEditor
+                            return (
+                              <CodeEditor
+                                value={sourceCode}
+                                onChange={handleCodeChange}
+                                fileName={selectedFile.name}
+                                language={getLanguageFromFileName(selectedFile.name)}
+                                onCursorPositionChange={setCursorPosition}
+                                onSelectionChange={setSelection}
+                                onManualEdit={handleManualEdit}
+                                originalCode={originalCode}
+                                initialContent={originalCode}
+                                enableDiffDetection={true}
+                                enableTabs={true}
+                                className="h-full"
+                              />
+                            );
+                          }
+                        })()}
                       </div>
                     )}
                   </div>
@@ -1192,36 +1196,40 @@ export default ExampleComponent;`;
                             
                             console.log('🎯 Mobile: Is slot file?', isSlotFile, { fileName, filePath });
                             
-                            return isSlotFile;
-                          })() ? (
-                            // This is a slots/editor file - use UnifiedSlotEditor
-                            <UnifiedSlotEditor
-                              pageName={selectedFile.name
-                                .replace('SlotsEditor.jsx', '')
-                                .replace('SlotEditor.jsx', '')
-                                .replace('Slots.jsx', '')
-                                .replace('.jsx', '')}
-                              onClose={() => {}}
-                              slotType="layout"
-                              pageId={null}
-                            />
-                          ) : (
-                            // Regular file - use CodeEditor
-                            <CodeEditor
-                              value={sourceCode}
-                              onChange={handleCodeChange}
-                              fileName={selectedFile.name}
-                              language={getLanguageFromFileName(selectedFile.name)}
-                              onCursorPositionChange={setCursorPosition}
-                              onSelectionChange={setSelection}
-                              onManualEdit={handleManualEdit}
-                              originalCode={originalCode}
-                              initialContent={originalCode}
-                              enableDiffDetection={true}
-                              enableTabs={true}
-                              className="h-full"
-                            />
-                          )}
+                            if (isSlotFile) {
+                              // This is a slots/editor file - use UnifiedSlotEditor
+                              return (
+                                <UnifiedSlotEditor
+                                  pageName={selectedFile.name
+                                    .replace('SlotsEditor.jsx', '')
+                                    .replace('SlotEditor.jsx', '')
+                                    .replace('Slots.jsx', '')
+                                    .replace('.jsx', '')}
+                                  onClose={() => {}}
+                                  slotType="layout"
+                                  pageId={null}
+                                />
+                              );
+                            } else {
+                              // Regular file - use CodeEditor
+                              return (
+                                <CodeEditor
+                                  value={sourceCode}
+                                  onChange={handleCodeChange}
+                                  fileName={selectedFile.name}
+                                  language={getLanguageFromFileName(selectedFile.name)}
+                                  onCursorPositionChange={setCursorPosition}
+                                  onSelectionChange={setSelection}
+                                  onManualEdit={handleManualEdit}
+                                  originalCode={originalCode}
+                                  initialContent={originalCode}
+                                  enableDiffDetection={true}
+                                  enableTabs={true}
+                                  className="h-full"
+                                />
+                              );
+                            }
+                          })()}
                         </div>
                       )}
                     </div>
