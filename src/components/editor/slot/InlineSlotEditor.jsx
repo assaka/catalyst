@@ -74,7 +74,7 @@ export default function InlineSlotEditor({
     }
   };
 
-  // Handle Bold toggle - apply immediately
+  // Handle Bold toggle
   const handleBold = () => {
     const newClassName = handleBoldToggle(localClass);
     setLocalClass(newClassName);
@@ -87,11 +87,10 @@ export default function InlineSlotEditor({
       onClassChange(slotId, newClassName);
     }
     
-    // Apply immediately by saving
-    triggerSave();
+    // No save needed - changes are applied directly via onClassChange
   };
 
-  // Handle Italic toggle - apply immediately
+  // Handle Italic toggle
   const handleItalic = () => {
     const newClassName = handleItalicToggle(localClass);
     setLocalClass(newClassName);
@@ -104,11 +103,10 @@ export default function InlineSlotEditor({
       onClassChange(slotId, newClassName);
     }
     
-    // Apply immediately by saving
-    triggerSave();
+    // No save needed - changes are applied directly via onClassChange
   };
 
-  // Handle alignment - apply immediately
+  // Handle alignment
   const handleAlign = (alignment) => {
     const newClassName = handleAlignmentChange(localClass, alignment, isWrapperSlot);
     setLocalClass(newClassName);
@@ -123,11 +121,10 @@ export default function InlineSlotEditor({
       onClassChange(slotId, newClassName);
     }
     
-    // Apply immediately by saving
-    triggerSave();
+    // No save needed - changes are applied directly via onClassChange
   };
 
-  // Handle font size change - apply immediately
+  // Handle font size change
   const handleFontSize = (size) => {
     const newClassName = handleFontSizeChange(localClass, size);
     setLocalClass(newClassName);
@@ -141,11 +138,10 @@ export default function InlineSlotEditor({
       onClassChange(slotId, newClassName);
     }
     
-    // Apply immediately by saving
-    triggerSave();
+    // No save needed - changes are applied directly via onClassChange
   };
 
-  // Handle color changes (text and background) - apply immediately
+  // Handle color changes (text and background)
   const handleColorChange = (colorType, colorValue) => {
     if (onClassChange) {
       console.log(`🎨 InlineSlotEditor: Changing ${colorType} for ${slotId}:`, { 
@@ -161,8 +157,7 @@ export default function InlineSlotEditor({
       onClassChange(slotId, localClass, newStyles);
     }
     
-    // Apply immediately by saving
-    triggerSave();
+    // No save needed - changes are applied directly via onClassChange
   };
 
   // Get current text color from class or style
@@ -448,7 +443,6 @@ export default function InlineSlotEditor({
                 <button
                   onClick={() => {
                     if (onChange) onChange(localText);
-                    triggerSave(); // Apply immediately
                     setShowHtmlEditor(false);
                   }}
                   className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
