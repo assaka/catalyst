@@ -487,7 +487,7 @@ export default function CartSlotsEditor({
         return (
           <div className="text-center py-4">
             <h1 className="text-3xl font-bold text-gray-900">
-              {slotContent['header.title']?.content || 'My Cart'}
+              {cartLayoutConfig?.slots?.['header.title']?.content || 'My Cart'}
             </h1>
           </div>
         );
@@ -498,13 +498,13 @@ export default function CartSlotsEditor({
           <div className="text-center py-12">
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              {slotContent['emptyCart.title']?.content || 'Your cart is empty'}
+              {cartLayoutConfig?.slots?.['emptyCart.title']?.content || 'Your cart is empty'}
             </h2>
             <p className="text-gray-600 mb-6">
-              {slotContent['emptyCart.text']?.content || "Looks like you haven't added anything to your cart yet."}
+              {cartLayoutConfig?.slots?.['emptyCart.text']?.content || "Looks like you haven't added anything to your cart yet."}
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700">
-              {slotContent['emptyCart.button']?.content || 'Continue Shopping'}
+              {cartLayoutConfig?.slots?.['emptyCart.button']?.content || 'Continue Shopping'}
             </Button>
           </div>
         );
@@ -579,7 +579,7 @@ export default function CartSlotsEditor({
           </div>
         );
     }
-  }, [viewMode, slotContent]);
+  }, [viewMode, cartLayoutConfig]);
 
   // Render using exact Cart.jsx layout structure with slot_configurations
   return (
