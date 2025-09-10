@@ -354,6 +354,51 @@ export default function CartSlotsEditorWithMicroSlots({
     setTempCode(content);
   }, []);
 
+  // Handle micro-slot class/style changes (without opening editor)
+  const handleMicroSlotClassChange = useCallback((microSlotKey, newClassName, newStyles) => {
+    if (newClassName !== undefined) {
+      // Check if this is an alignment change by looking for alignment classes
+      const isAlignmentChange = newClassName.includes('text-left') || 
+                               newClassName.includes('text-center') || 
+                               newClassName.includes('text-right') ||
+                               newClassName.includes('justify-start') ||
+                               newClassName.includes('justify-center') ||
+                               newClassName.includes('justify-end');
+      
+      if (isAlignmentChange) {
+        // For alignment, update the parent classes (wrapper)
+        const wrapperKey = `${microSlotKey}_wrapper`;
+        setElementClasses(prev => ({
+          ...prev,
+          [wrapperKey]: newClassName.match(/(text-left|text-center|text-right|justify-start|justify-center|justify-end)/g)?.join(' ') || ''
+        }));
+        
+        // Remove alignment classes from the main element
+        const nonAlignmentClasses = newClassName.replace(/(text-left|text-center|text-right|justify-start|justify-center|justify-end)/g, '').replace(/\s+/g, ' ').trim();
+        setElementClasses(prev => ({
+          ...prev,
+          [microSlotKey]: nonAlignmentClasses
+        }));
+      } else {
+        // For non-alignment changes, update element classes normally
+        setElementClasses(prev => ({
+          ...prev,
+          [microSlotKey]: newClassName
+        }));
+      }
+    }
+    
+    if (newStyles !== undefined) {
+      setElementStyles(prev => ({
+        ...prev,
+        [microSlotKey]: newStyles
+      }));
+    }
+    
+    // Auto-save the configuration
+    saveConfiguration();
+  }, [saveConfiguration]);
+
   // Main render
   return (
     <>
@@ -478,7 +523,7 @@ export default function CartSlotsEditorWithMicroSlots({
                                             className={styling || "text-3xl font-bold text-gray-900"}
                                             style={styles}
                                             onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
-                                            onClassChange={handleEditMicroSlot}
+                                            onClassChange={handleMicroSlotClassChange}
                                             mode="edit"
                                           />
                                         </MicroSlot>
@@ -532,7 +577,7 @@ export default function CartSlotsEditorWithMicroSlots({
                                             className={styling || "text-xl font-semibold text-gray-900"}
                                             style={styles}
                                             onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
-                                            onClassChange={handleEditMicroSlot}
+                                            onClassChange={handleMicroSlotClassChange}
                                             mode="edit"
                                           />
                                         </MicroSlot>
@@ -557,7 +602,7 @@ export default function CartSlotsEditorWithMicroSlots({
                                             className={styling || "text-gray-600"}
                                             style={styles}
                                             onChange={(newText) => handleEditMicroSlot(microSlotId, newText)}
-                                            onClassChange={handleEditMicroSlot}
+                                            onClassChange={handleMicroSlotClassChange}
                                             mode="edit"
                                           />
                                         </MicroSlot>
