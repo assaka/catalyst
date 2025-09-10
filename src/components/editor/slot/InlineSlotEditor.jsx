@@ -74,7 +74,7 @@ export default function InlineSlotEditor({
     }
   };
 
-  // Handle Bold toggle
+  // Handle Bold toggle - apply immediately
   const handleBold = () => {
     const newClassName = handleBoldToggle(localClass);
     setLocalClass(newClassName);
@@ -86,9 +86,12 @@ export default function InlineSlotEditor({
       });
       onClassChange(slotId, newClassName);
     }
+    
+    // Apply immediately by saving
+    triggerSave();
   };
 
-  // Handle Italic toggle
+  // Handle Italic toggle - apply immediately
   const handleItalic = () => {
     const newClassName = handleItalicToggle(localClass);
     setLocalClass(newClassName);
@@ -100,9 +103,12 @@ export default function InlineSlotEditor({
       });
       onClassChange(slotId, newClassName);
     }
+    
+    // Apply immediately by saving
+    triggerSave();
   };
 
-  // Handle alignment
+  // Handle alignment - apply immediately
   const handleAlign = (alignment) => {
     const newClassName = handleAlignmentChange(localClass, alignment, isWrapperSlot);
     setLocalClass(newClassName);
@@ -116,9 +122,12 @@ export default function InlineSlotEditor({
       });
       onClassChange(slotId, newClassName);
     }
+    
+    // Apply immediately by saving
+    triggerSave();
   };
 
-  // Handle font size change
+  // Handle font size change - apply immediately
   const handleFontSize = (size) => {
     const newClassName = handleFontSizeChange(localClass, size);
     setLocalClass(newClassName);
@@ -131,9 +140,12 @@ export default function InlineSlotEditor({
       });
       onClassChange(slotId, newClassName);
     }
+    
+    // Apply immediately by saving
+    triggerSave();
   };
 
-  // Handle color changes (text and background)
+  // Handle color changes (text and background) - apply immediately
   const handleColorChange = (colorType, colorValue) => {
     if (onClassChange) {
       console.log(`🎨 InlineSlotEditor: Changing ${colorType} for ${slotId}:`, { 
@@ -148,6 +160,9 @@ export default function InlineSlotEditor({
       };
       onClassChange(slotId, localClass, newStyles);
     }
+    
+    // Apply immediately by saving
+    triggerSave();
   };
 
   // Get current text color from class or style
@@ -433,6 +448,7 @@ export default function InlineSlotEditor({
                 <button
                   onClick={() => {
                     if (onChange) onChange(localText);
+                    triggerSave(); // Apply immediately
                     setShowHtmlEditor(false);
                   }}
                   className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
