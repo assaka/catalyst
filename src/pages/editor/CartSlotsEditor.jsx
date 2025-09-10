@@ -221,12 +221,11 @@ export default function CartSlotsEditor({
         }
       };
 
-      // Save to database using SlotConfiguration model
-      await SlotConfiguration.upsertDraft(
-        'current-user-id', // TODO: Get from auth context
+      // Save to database using slotConfigurationService
+      await slotConfigurationService.saveConfiguration(
         currentStoreId,
-        PAGE_TYPE,
-        configuration
+        configuration,
+        PAGE_TYPE
       );
 
       setSaveStatus('saved');
