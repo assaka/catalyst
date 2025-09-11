@@ -256,7 +256,8 @@ export default function InlineSlotEditor({
   const handleHorizontalMargin = (marginClass) => {
     // Remove existing horizontal margin classes and add new one
     const newClassName = localClass
-      .replace(/mx-\d+/g, '') // Remove existing mx classes
+      .replace(/mx-(?:\d+(?:\.\d+)?|auto|px)/g, '') // Remove existing mx classes (including decimals, auto, px)
+      .replace(/\s+/g, ' ') // Clean up multiple spaces
       .trim() + ' ' + marginClass;
     
     setLocalClass(newClassName.trim());
@@ -275,7 +276,8 @@ export default function InlineSlotEditor({
   const handleVerticalMargin = (marginClass) => {
     // Remove existing vertical margin classes and add new one
     const newClassName = localClass
-      .replace(/my-\d+/g, '') // Remove existing my classes
+      .replace(/my-(?:\d+(?:\.\d+)?|auto|px)/g, '') // Remove existing my classes (including decimals, auto, px)
+      .replace(/\s+/g, ' ') // Clean up multiple spaces
       .trim() + ' ' + marginClass;
     
     setLocalClass(newClassName.trim());
@@ -292,13 +294,13 @@ export default function InlineSlotEditor({
 
   // Get current horizontal margin
   const getCurrentHorizontalMargin = () => {
-    const mxMatch = localClass.match(/mx-\d+/);
+    const mxMatch = localClass.match(/mx-(?:\d+(?:\.\d+)?|auto|px)/);
     return mxMatch ? mxMatch[0] : 'mx-0';
   };
 
   // Get current vertical margin
   const getCurrentVerticalMargin = () => {
-    const myMatch = localClass.match(/my-\d+/);
+    const myMatch = localClass.match(/my-(?:\d+(?:\.\d+)?|auto|px)/);
     return myMatch ? myMatch[0] : 'my-0';
   };
 
@@ -307,45 +309,65 @@ export default function InlineSlotEditor({
     let newClassName = localClass;
 
     if (elementType === 'icon' || elementType === 'image') {
-      // Convert pixel size to Tailwind classes for icons/images
-      const sizeMap = {
-        16: 'w-4 h-4', 20: 'w-5 h-5', 24: 'w-6 h-6', 32: 'w-8 h-8',
-        40: 'w-10 h-10', 48: 'w-12 h-12', 64: 'w-16 h-16', 80: 'w-20 h-20',
-        96: 'w-24 h-24', 128: 'w-32 h-32'
-      };
-      
-      // Find closest size
-      const closestSize = Object.keys(sizeMap)
-        .map(Number)
-        .reduce((prev, curr) => 
-          Math.abs(curr - newSize.width) < Math.abs(prev - newSize.width) ? curr : prev
-        );
-      
-      newClassName = localClass
-        .replace(/w-\d+\s*h-\d+/g, '') // Remove existing size classes
-        .trim() + ' ' + sizeMap[closestSize];
+      if (newSize.widthPercentage) {
+        // Use percentage-based width for precise control
+        newClassName = localClass
+          .replace(/w-\[?\d+%?\]?|w-\d+/g, '') // Remove existing width classes
+          .replace(/h-\[?\d+%?\]?|h-\d+/g, '') // Remove existing height classes
+          .replace(/\s+/g, ' ')
+          .trim() + ` w-[${newSize.widthPercentage}%] h-auto`;
+      } else {
+        // Fallback to Tailwind size classes
+        const sizeMap = {
+          16: 'w-4 h-4', 20: 'w-5 h-5', 24: 'w-6 h-6', 32: 'w-8 h-8',
+          40: 'w-10 h-10', 48: 'w-12 h-12', 64: 'w-16 h-16', 80: 'w-20 h-20',
+          96: 'w-24 h-24', 128: 'w-32 h-32'
+        };
+        
+        const closestSize = Object.keys(sizeMap)
+          .map(Number)
+          .reduce((prev, curr) => 
+            Math.abs(curr - newSize.width) < Math.abs(prev - newSize.width) ? curr : prev
+          );
+        
+        newClassName = localClass
+          .replace(/w-\[?\d+%?\]?|w-\d+/g, '')
+          .replace(/h-\[?\d+%?\]?|h-\d+/g, '')
+          .replace(/\s+/g, ' ')
+          .trim() + ' ' + sizeMap[closestSize];
+      }
         
     } else if (elementType === 'button') {
-      // For buttons, adjust text size and padding based on dimensions
-      const textSizeMap = {
-        small: 'text-xs px-2 py-1',
-        medium: 'text-sm px-3 py-1.5', 
-        large: 'text-base px-4 py-2',
-        xlarge: 'text-lg px-6 py-3',
-        xxlarge: 'text-xl px-8 py-4'
-      };
-      
-      let sizeCategory = 'medium';
-      if (newSize.width < 80) sizeCategory = 'small';
-      else if (newSize.width > 200) sizeCategory = 'xxlarge';
-      else if (newSize.width > 160) sizeCategory = 'xlarge';
-      else if (newSize.width > 120) sizeCategory = 'large';
-      
-      newClassName = localClass
-        .replace(/text-(xs|sm|base|lg|xl)/g, '') // Remove text size
-        .replace(/px-\d+/g, '') // Remove padding x
-        .replace(/py-\d+(\.\d+)?/g, '') // Remove padding y
-        .trim() + ' ' + textSizeMap[sizeCategory];
+      if (newSize.widthPercentage) {
+        // Use percentage-based width for buttons
+        newClassName = localClass
+          .replace(/w-\[?\d+%?\]?|w-\d+|w-auto/g, '') // Remove existing width classes
+          .replace(/\s+/g, ' ')
+          .trim() + ` w-[${newSize.widthPercentage}%]`;
+      } else {
+        // For buttons, adjust text size and padding based on dimensions
+        const textSizeMap = {
+          small: 'text-xs px-2 py-1',
+          medium: 'text-sm px-3 py-1.5', 
+          large: 'text-base px-4 py-2',
+          xlarge: 'text-lg px-6 py-3',
+          xxlarge: 'text-xl px-8 py-4'
+        };
+        
+        let sizeCategory = 'medium';
+        if (newSize.width < 80) sizeCategory = 'small';
+        else if (newSize.width > 200) sizeCategory = 'xxlarge';
+        else if (newSize.width > 160) sizeCategory = 'xlarge';
+        else if (newSize.width > 120) sizeCategory = 'large';
+        
+        newClassName = localClass
+          .replace(/text-(xs|sm|base|lg|xl)/g, '') // Remove text size
+          .replace(/px-\d+/g, '') // Remove padding x
+          .replace(/py-\d+(\.\d+)?/g, '') // Remove padding y
+          .replace(/w-\[?\d+%?\]?|w-\d+|w-auto/g, '') // Remove width classes
+          .replace(/\s+/g, ' ')
+          .trim() + ' ' + textSizeMap[sizeCategory] + ' w-auto';
+      }
     }
 
     setLocalClass(newClassName.trim());
@@ -482,7 +504,7 @@ export default function InlineSlotEditor({
   };
 
   return (
-    <div className="relative group w-full">
+    <div className="relative group w-full" data-slot-id={slotId}>
       {!isEditing ? (
         // Display mode with edit button
         <div 

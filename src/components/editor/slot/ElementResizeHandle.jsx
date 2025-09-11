@@ -18,6 +18,10 @@ const ElementResizeHandle = ({
     
     const initialPos = { x: e.clientX, y: e.clientY };
     const initialSize = getCurrentSize();
+    
+    // Get parent container width for percentage calculations
+    const parentElement = e.target.closest('.relative');
+    const parentWidth = parentElement ? parentElement.offsetWidth : 300;
 
     setIsResizing(true);
     setStartPos(initialPos);
@@ -29,14 +33,21 @@ const ElementResizeHandle = ({
 
       let newSize;
       if (elementType === 'icon' || elementType === 'image') {
-        // For icons/images, maintain aspect ratio and use average delta
-        const delta = (deltaX + deltaY) / 2;
-        const newDimension = Math.max(16, Math.min(256, initialSize.width + delta));
-        newSize = { width: newDimension, height: newDimension };
+        // For icons/images, calculate percentage-based width
+        const newPixelWidth = Math.max(16, Math.min(parentWidth * 0.8, initialSize.width + deltaX));
+        const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
+        newSize = { 
+          widthPercentage: Math.max(5, Math.min(80, widthPercentage)),
+          width: newPixelWidth, 
+          height: newPixelWidth // Maintain aspect ratio
+        };
       } else if (elementType === 'button') {
-        // For buttons, allow independent width/height with better constraints
+        // For buttons, calculate percentage-based width but allow height adjustment
+        const newPixelWidth = Math.max(60, Math.min(parentWidth * 0.9, initialSize.width + deltaX));
+        const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
         newSize = {
-          width: Math.max(60, Math.min(400, initialSize.width + deltaX)),
+          widthPercentage: Math.max(10, Math.min(90, widthPercentage)),
+          width: newPixelWidth,
           height: Math.max(24, Math.min(120, initialSize.height + deltaY))
         };
       }
@@ -59,7 +70,18 @@ const ElementResizeHandle = ({
   // Get current size from className or default values
   const getCurrentSize = () => {
     if (elementType === 'icon' || elementType === 'image') {
-      // Enhanced size detection for icons/images
+      // Check for percentage-based width first
+      const widthPercentMatch = className.match(/w-\[(\d+)%\]/);
+      if (widthPercentMatch) {
+        const percentage = parseInt(widthPercentMatch[1]);
+        // Get parent width for pixel calculation
+        const parentElement = document.querySelector(`[data-slot-id="${slotId}"]`);
+        const parentWidth = parentElement ? parentElement.offsetWidth : 300;
+        const pixelWidth = Math.round((percentage / 100) * parentWidth);
+        return { width: pixelWidth, height: pixelWidth, widthPercentage: percentage };
+      }
+      
+      // Enhanced size detection for icons/images with Tailwind classes
       const wMatch = className.match(/w-(\d+)/);
       const hMatch = className.match(/h-(\d+)/);
       
@@ -73,6 +95,17 @@ const ElementResizeHandle = ({
       }
       return { width: 64, height: 64 }; // Default w-16 h-16
     } else if (elementType === 'button') {
+      // Check for percentage-based width first
+      const widthPercentMatch = className.match(/w-\[(\d+)%\]/);
+      if (widthPercentMatch) {
+        const percentage = parseInt(widthPercentMatch[1]);
+        // Get parent width for pixel calculation
+        const parentElement = document.querySelector(`[data-slot-id="${slotId}"]`);
+        const parentWidth = parentElement ? parentElement.offsetWidth : 300;
+        const pixelWidth = Math.round((percentage / 100) * parentWidth);
+        return { width: pixelWidth, height: 36, widthPercentage: percentage };
+      }
+      
       // For buttons, estimate size based on text size and padding
       const textSizeMatch = className.match(/text-(xs|sm|base|lg|xl|2xl)/);
       const pxMatch = className.match(/px-(\d+)/);
@@ -147,7 +180,7 @@ const ElementResizeHandle = ({
       ref={resizeRef}
       style={getHandleStyle()}
       onMouseDown={handleMouseDown}
-      title={`Resize ${elementType} (${getCurrentSize().width}×${getCurrentSize().height}px)`}
+      title={`Resize ${elementType} (${getCurrentSize().widthPercentage ? getCurrentSize().widthPercentage + '%' : getCurrentSize().width + '×' + getCurrentSize().height + 'px'})`}
       className="opacity-60 group-hover:opacity-100 hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
     />
   );
