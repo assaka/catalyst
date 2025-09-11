@@ -148,7 +148,7 @@ export default function CartPeerReview({
 
   // Update major slots based on view mode and configuration
   useEffect(() => {
-    if (cartLayoutConfig?.majorSlots) {
+    if (cartLayoutConfig?.majorSlots && Array.isArray(cartLayoutConfig.majorSlots)) {
       setMajorSlots(cartLayoutConfig.majorSlots);
     } else {
       const emptySlots = ['header', 'emptyCart'];
