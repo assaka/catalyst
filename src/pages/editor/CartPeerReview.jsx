@@ -73,37 +73,65 @@ export default function CartPeerReview({
   useEffect(() => {
     const loadCartLayoutConfig = async () => {
       if (!selectedStore?.id) {
-        console.log('❌ No store.id found, skipping slot config loading');
+        console.log('❌ CartPeerReview: No store.id found, skipping slot config loading');
+        setConfigStatus('none');
         return;
       }
       
+      console.log('🔄 CartPeerReview: Starting configuration load for store:', selectedStore.id, 'pageType:', PAGE_TYPE);
+      setConfigStatus('loading');
+      
       try {
         // Load DRAFT configuration for testing environment
-        console.log('📖 Test Environment: Loading draft configuration');
+        console.log('📖 CartPeerReview: Attempting to load draft configuration...');
         const draftResponse = await slotConfigurationService.getDraftConfiguration(selectedStore.id, PAGE_TYPE);
+        
+        console.log('📋 CartPeerReview: Draft response received:', {
+          success: draftResponse?.success,
+          hasData: !!draftResponse?.data,
+          hasConfiguration: !!draftResponse?.data?.configuration,
+          draftId: draftResponse?.data?.id,
+          responseKeys: draftResponse ? Object.keys(draftResponse) : [],
+          dataKeys: draftResponse?.data ? Object.keys(draftResponse.data) : []
+        });
         
         if (draftResponse.success && draftResponse.data && draftResponse.data.configuration) {
           const configToLoad = draftResponse.data.configuration;
           setCartLayoutConfig(configToLoad);
           setConfigStatus('draft');
-          console.log('✅ Loaded draft cart layout configuration for testing:', configToLoad);
+          console.log('✅ CartPeerReview: Successfully loaded DRAFT configuration:', {
+            slots: configToLoad.slots ? Object.keys(configToLoad.slots) : 'none',
+            microSlotOrders: configToLoad.microSlotOrders ? Object.keys(configToLoad.microSlotOrders) : 'none',
+            microSlotSpans: configToLoad.microSlotSpans ? Object.keys(configToLoad.microSlotSpans) : 'none',
+            customSlots: configToLoad.customSlots ? Object.keys(configToLoad.customSlots) : 'none'
+          });
         } else {
           // Fallback to published configuration if no draft exists
-          console.log('⚠️ No draft found, falling back to published configuration');
+          console.log('⚠️ CartPeerReview: No valid draft found, falling back to published configuration');
           const response = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, PAGE_TYPE);
+          
+          console.log('📋 CartPeerReview: Published response received:', {
+            success: response?.success,
+            hasData: !!response?.data,
+            hasConfiguration: !!response?.data?.configuration
+          });
           
           if (response.success && response.data && response.data.configuration) {
             const configToLoad = response.data.configuration;
             setCartLayoutConfig(configToLoad);
             setConfigStatus('published');
-            console.log('✅ Loaded published cart layout configuration as fallback:', configToLoad);
+            console.log('✅ CartPeerReview: Successfully loaded PUBLISHED configuration as fallback:', {
+              slots: configToLoad.slots ? Object.keys(configToLoad.slots) : 'none',
+              microSlotOrders: configToLoad.microSlotOrders ? Object.keys(configToLoad.microSlotOrders) : 'none'
+            });
           } else {
             setConfigStatus('none');
-            console.error('❌ No configuration found (neither draft nor published)');
+            console.error('❌ CartPeerReview: No configuration found (neither draft nor published)');
           }
         }
       } catch (error) {
-        console.error('❌ Failed to load slot configuration:', error);
+        setConfigStatus('none');
+        console.error('❌ CartPeerReview: Failed to load slot configuration:', error);
       }
     };
     
@@ -305,6 +333,11 @@ export default function CartPeerReview({
           <div className="grid grid-cols-12 gap-2 auto-rows-min">
             {cartLayoutConfig?.microSlotOrders?.header ? (
               cartLayoutConfig.microSlotOrders.header.map(slotId => {
+                console.log('🎯 CartPeerReview: Rendering header slot:', slotId, {
+                  slotContent: cartLayoutConfig?.slots?.[slotId]?.content,
+                  slotClasses: cartLayoutConfig?.slots?.[slotId]?.className,
+                  hasCustomSlots: !!cartLayoutConfig?.customSlots
+                });
                 const positioning = getSlotPositioning(slotId, 'header');
                 
                 if (slotId.includes('.custom_')) {
