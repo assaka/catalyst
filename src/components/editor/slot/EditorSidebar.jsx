@@ -86,8 +86,21 @@ const EditorSidebar = ({
       // For button slots, check the outer grid container
       targetElement = selectedElement.closest('.button-slot-container');
     } else {
-      // For other slots, use the direct parent
-      targetElement = selectedElement.parentElement;
+      // For text slots, traverse up through ResizeWrapper to find grid cell
+      // Structure: text -> ResizeWrapper -> wrapper div -> grid cell
+      targetElement = selectedElement.parentElement; // ResizeWrapper
+      if (targetElement && targetElement.classList.contains('resize-wrapper')) {
+        targetElement = targetElement.parentElement; // wrapper div
+        if (targetElement) {
+          targetElement = targetElement.parentElement; // grid cell
+        }
+      } else if (targetElement) {
+        // If no ResizeWrapper, check for wrapper div then grid cell
+        const possibleGridCell = targetElement.parentElement;
+        if (possibleGridCell && (possibleGridCell.className.includes('col-span') || possibleGridCell.className.includes('grid'))) {
+          targetElement = possibleGridCell;
+        }
+      }
     }
     
     if (!targetElement) return 'left';
@@ -142,9 +155,9 @@ const EditorSidebar = ({
       // Initialize local text content with slot content
       setLocalTextContent(slotConfig.content || '');
       
-      // Initialize local HTML content with element's innerHTML
+      // Initialize local HTML content with element's outerHTML
       if (isHtmlElement && selectedElement) {
-        setLocalHtmlContent(selectedElement.innerHTML || '');
+        setLocalHtmlContent(selectedElement.outerHTML || '');
       }
       
       // Clear initialization flag after a short delay
@@ -235,24 +248,19 @@ const EditorSidebar = ({
     }
   }, [slotId, isInitializing]);
 
-  // Handle HTML content changes with immediate DOM update and debounced save
+  // Handle HTML content changes with debounced DOM updates
   const handleHtmlContentChange = useCallback((e) => {
     const newHtml = e.target.value;
     
     // Update local state immediately for UI responsiveness
     setLocalHtmlContent(newHtml);
     
-    // Apply HTML immediately to the DOM element
-    if (selectedElement && isHtmlElement) {
-      selectedElement.innerHTML = newHtml;
-    }
-    
-    // Record change in save manager for text content (HTML will be rendered as text) - but not during initialization
+    // Record change in save manager for text content - but not during initialization
     if (slotId && !isInitializing) {
-      // For HTML elements, we save the HTML as content but also preserve it in the DOM
+      // For HTML content, save the HTML as content
       saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newHtml });
     }
-  }, [slotId, selectedElement, isHtmlElement, isInitializing]);
+  }, [slotId, isInitializing]);
 
   // Simplified alignment change handler using save manager
   const handleAlignmentChange = useCallback((property, value) => {
@@ -261,15 +269,27 @@ const EditorSidebar = ({
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
     if (!elementSlotId) return;
     
-    // For button slots, apply alignment to the outer grid container
+    // Find the correct target element for alignment classes
     let targetElement;
     if (elementSlotId.includes('.button')) {
       // Find the button-slot-container (the outer div with col-span-12)
       targetElement = selectedElement.closest('.button-slot-container');
-      console.log('🎯 Button slot - found container:', targetElement?.className);
     } else {
-      // For other slots, use the direct parent
-      targetElement = selectedElement.parentElement;
+      // For text slots, traverse up through ResizeWrapper to find grid cell
+      // Structure: text -> ResizeWrapper -> wrapper div -> grid cell
+      targetElement = selectedElement.parentElement; // ResizeWrapper
+      if (targetElement && targetElement.classList.contains('resize-wrapper')) {
+        targetElement = targetElement.parentElement; // wrapper div
+        if (targetElement) {
+          targetElement = targetElement.parentElement; // grid cell
+        }
+      } else if (targetElement) {
+        // If no ResizeWrapper, check for wrapper div then grid cell
+        const possibleGridCell = targetElement.parentElement;
+        if (possibleGridCell && (possibleGridCell.className.includes('col-span') || possibleGridCell.className.includes('grid'))) {
+          targetElement = possibleGridCell;
+        }
+      }
     }
     
     if (targetElement) {
@@ -441,15 +461,18 @@ const EditorSidebar = ({
             {/* HTML Content Editor - only show for HTML elements */}
             {isHtmlElement && (
               <div>
-                <Label htmlFor="htmlContent" className="text-xs font-medium">HTML Content</Label>
-                <p className="text-xs text-gray-500 mt-1 mb-2">Edit the raw HTML content of this {selectedElement?.tagName?.toLowerCase()} element</p>
+                <Label htmlFor="htmlContent" className="text-xs font-medium">Complete HTML Element</Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">Edit the complete HTML element including tag, attributes, and content</p>
                 <textarea
                   id="htmlContent"
                   value={localHtmlContent}
                   onChange={handleHtmlContentChange}
-                  className="w-full mt-1 text-xs font-mono border border-gray-300 rounded-md p-2 h-24 resize-none"
-                  placeholder="Enter HTML content..."
+                  className="w-full mt-1 text-xs font-mono border border-gray-300 rounded-md p-2 h-32 resize-none"
+                  placeholder="<button class='...'>Content</button>"
                 />
+                <p className="text-xs text-orange-600 mt-1">
+                  ⚠️ Advanced: This replaces the entire element. Keep data-slot-id and data-editable attributes.
+                </p>
               </div>
             )}
           </div>
