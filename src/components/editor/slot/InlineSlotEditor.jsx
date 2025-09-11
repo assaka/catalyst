@@ -79,6 +79,15 @@ export default function InlineSlotEditor({
     setLocalClass(className);
   }, [className]);
 
+  // Initialize wrapper background color storage on component mount
+  useEffect(() => {
+    // This is a temporary solution - in production we'd pass wrapper styles as props
+    // For now, we'll rely on the color picker to set the initial value
+    if (!window.tempWrapperStyles) {
+      window.tempWrapperStyles = {};
+    }
+  }, [slotId]);
+
   // Handle text change
   const handleTextChange = (e) => {
     const newText = e.target.value;
@@ -164,12 +173,27 @@ export default function InlineSlotEditor({
         colorValue,
         old: localClass
       });
-      // For colors, we use inline styles instead of classes for direct color values
-      const newStyles = {
-        ...style,
-        [colorType]: colorValue
-      };
-      onClassChange(slotId, localClass, newStyles);
+      
+      if (colorType === 'backgroundColor') {
+        // For background color, apply to the wrapper/container to fill the entire slot
+        const newStyles = {
+          [colorType]: colorValue
+        };
+        
+        // Store the background color temporarily for the color picker to display
+        if (!window.tempWrapperStyles) window.tempWrapperStyles = {};
+        window.tempWrapperStyles[slotId] = { backgroundColor: colorValue };
+        
+        // Pass true as 4th parameter to indicate this should be applied to the wrapper
+        onClassChange(slotId, localClass, newStyles, true);
+      } else {
+        // For text color, apply to the text element itself
+        const newStyles = {
+          ...style,
+          [colorType]: colorValue
+        };
+        onClassChange(slotId, localClass, newStyles, false);
+      }
     }
     
     // No save needed - changes are applied directly via onClassChange
@@ -249,6 +273,12 @@ export default function InlineSlotEditor({
 
   // Get current background color from class or style  
   const getCurrentBackgroundColor = (className, styles) => {
+    // Check if we have a stored background color from previous wrapper styling
+    const storedWrapperBg = window.tempWrapperStyles?.[slotId]?.backgroundColor;
+    if (storedWrapperBg) {
+      return storedWrapperBg;
+    }
+    
     // Check inline styles first
     if (styles?.backgroundColor) {
       return styles.backgroundColor;
