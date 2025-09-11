@@ -87,43 +87,12 @@ const EditorSidebar = ({
     if (!targetElement) return 'left';
     
     const parentClassName = targetElement.className || '';
-    return getCurrentAlign(parentClassName, true);
+    const alignment = getCurrentAlign(parentClassName, true);
+    return alignment;
   }, [selectedElement, alignmentUpdate]);
   
-  // Set up save manager callback
-  useEffect(() => {
-    saveManager.setSaveCallback(async (changes) => {
-      // Process all changes in the batch
-      for (const [slotId, change] of changes) {
-        switch (change.type) {
-          case CHANGE_TYPES.TEXT_CONTENT:
-            if (onTextChange) {
-              onTextChange(slotId, change.data.content);
-            }
-            break;
-          case CHANGE_TYPES.ELEMENT_CLASSES:
-          case CHANGE_TYPES.PARENT_CLASSES:
-            if (onInlineClassChange) {
-              onInlineClassChange(
-                slotId, 
-                change.data.className, 
-                change.data.styles || {}, 
-                change.type === CHANGE_TYPES.PARENT_CLASSES
-              );
-            }
-            break;
-          case CHANGE_TYPES.ELEMENT_STYLES:
-            // For inline styles, we use the style manager to persist
-            if (selectedElement) {
-              styleManager.applyStyle(selectedElement, change.data.property, change.data.value);
-            }
-            break;
-          default:
-            console.warn('Unknown change type:', change.type);
-        }
-      }
-    });
-  }, [onTextChange, onInlineClassChange, selectedElement]);
+  // Note: Save manager callback is handled by the parent CartSlotsEditor
+  // EditorSidebar just records changes, parent handles the actual saving
 
   // Check if selected element is a slot element
   const isSlotElement = selectedElement && (
@@ -253,6 +222,7 @@ const EditorSidebar = ({
     if (elementSlotId.includes('.button')) {
       // Find the button-slot-container (the outer div with col-span-12)
       targetElement = selectedElement.closest('.button-slot-container');
+      console.log('🎯 Button slot - found container:', targetElement?.className);
     } else {
       // For other slots, use the direct parent
       targetElement = selectedElement.parentElement;
@@ -501,15 +471,7 @@ const EditorSidebar = ({
 
                 <div className="flex gap-1">
                   <Button
-                    variant={(() => {
-                      const isCurrentlyBold = isBold(elementProperties.className);
-                      console.log('🎯 Bold button state check:', {
-                        className: elementProperties.className,
-                        isBold: isCurrentlyBold,
-                        variant: isCurrentlyBold ? 'default' : 'outline'
-                      });
-                      return isCurrentlyBold ? 'default' : 'outline';
-                    })()}
+                    variant={isBold(elementProperties.className) ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('fontWeight', 'bold')}
                     className="h-7 px-2"
