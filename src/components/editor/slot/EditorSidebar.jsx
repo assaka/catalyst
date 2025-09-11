@@ -21,6 +21,7 @@ import {
   debounce
 } from './editor-utils';
 import { styleManager } from './SimpleStyleManager';
+import { saveManager, CHANGE_TYPES } from './SaveManager';
 
 const EditorSidebar = ({ 
   selectedElement, 
@@ -75,29 +76,40 @@ const EditorSidebar = ({
     return getCurrentAlign(parentClassName, true);
   }, [selectedElement, alignmentUpdate]);
   
-  // Refs for debounced text input and property changes
-  const textChangeTimeoutRef = useRef(null);
-  const propertyChangeTimeoutRef = useRef(null);
-  const onTextChangeRef = useRef(onTextChange);
-  const slotIdRef = useRef(slotId);
-
-  // Keep the refs updated
+  // Set up save manager callback
   useEffect(() => {
-    onTextChangeRef.current = onTextChange;
-    slotIdRef.current = slotId;
-  }, [onTextChange, slotId]);
-
-  // Cleanup timeout on unmount or when selection changes
-  useEffect(() => {
-    return () => {
-      if (textChangeTimeoutRef.current) {
-        clearTimeout(textChangeTimeoutRef.current);
+    saveManager.setSaveCallback(async (changes) => {
+      // Process all changes in the batch
+      for (const [slotId, change] of changes) {
+        switch (change.type) {
+          case CHANGE_TYPES.TEXT_CONTENT:
+            if (onTextChange) {
+              onTextChange(slotId, change.data.content);
+            }
+            break;
+          case CHANGE_TYPES.ELEMENT_CLASSES:
+          case CHANGE_TYPES.PARENT_CLASSES:
+            if (onInlineClassChange) {
+              onInlineClassChange(
+                slotId, 
+                change.data.className, 
+                change.data.styles || {}, 
+                change.type === CHANGE_TYPES.PARENT_CLASSES
+              );
+            }
+            break;
+          case CHANGE_TYPES.ELEMENT_STYLES:
+            // For inline styles, we use the style manager to persist
+            if (selectedElement) {
+              styleManager.applyStyle(selectedElement, change.data.property, change.data.value);
+            }
+            break;
+          default:
+            console.warn('Unknown change type:', change.type);
+        }
       }
-      if (propertyChangeTimeoutRef.current) {
-        clearTimeout(propertyChangeTimeoutRef.current);
-      }
-    };
-  }, [selectedElement, slotId]);
+    });
+  }, [onTextChange, onInlineClassChange, selectedElement]);
 
   // Check if selected element is a slot element
   const isSlotElement = selectedElement && (
@@ -202,47 +214,25 @@ const EditorSidebar = ({
     }));
   }, []);
 
-  // Handle immediate text change (for UI responsiveness) + debounced save
+  // Simplified text change handler using save manager
   const handleTextContentChange = useCallback((e) => {
     const newText = e.target.value;
-    
-    console.log('🎯 handleTextContentChange called:', { 
-      newText, 
-      slotId: slotIdRef.current, 
-      timestamp: Date.now(),
-      hasExistingTimeout: !!textChangeTimeoutRef.current 
-    });
     
     // Update local state immediately for UI responsiveness
     setLocalTextContent(newText);
     
-    // Clear existing timeout to reset the debounce
-    if (textChangeTimeoutRef.current) {
-      console.log('🔄 Clearing existing timeout:', textChangeTimeoutRef.current);
-      clearTimeout(textChangeTimeoutRef.current);
+    // Record change in save manager (will be debounced automatically)
+    if (slotId) {
+      saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
     }
-    
-    // Set new timeout for debounced save
-    textChangeTimeoutRef.current = setTimeout(() => {
-      if (onTextChangeRef.current) {
-        console.log('🎨 Debounced text save triggered for:', slotIdRef.current, { content: newText });
-        onTextChangeRef.current(slotIdRef.current, newText);
-      } else {
-        console.log('❌ onTextChangeRef.current is null/undefined');
-      }
-    }, 1000); // 1000ms debounce delay
-    
-    console.log('⏰ Set new timeout:', textChangeTimeoutRef.current, 'for slotId:', slotIdRef.current);
-  }, []); // Remove slotId dependency to prevent function recreation
+  }, [slotId]);
 
-  // Handle alignment changes - always apply to parent and store in parentClassName
+  // Simplified alignment change handler using save manager
   const handleAlignmentChange = useCallback((property, value) => {
     if (!selectedElement || property !== 'textAlign') return;
     
-    const slotId = selectedElement.getAttribute('data-slot-id');
-    if (!slotId) return;
-    
-    console.log(`🎯 Setting alignment ${value} for slot ${slotId} on parent`);
+    const elementSlotId = selectedElement.getAttribute('data-slot-id');
+    if (!elementSlotId) return;
     
     // Apply alignment to parent element immediately for visual feedback
     const parentElement = selectedElement.parentElement;
@@ -256,71 +246,72 @@ const EditorSidebar = ({
       );
       newClasses.push(`text-${value}`);
       parentElement.className = newClasses.join(' ');
-    }
-    
-    // Save to database via the inline class change handler with parent's className
-    if (onInlineClassChange && parentElement) {
-      onInlineClassChange(slotId, parentElement.className, {}, true); // isWrapperSlot = true for parent
+      
+      // Record change in save manager
+      saveManager.recordChange(elementSlotId, CHANGE_TYPES.PARENT_CLASSES, {
+        className: parentElement.className,
+        styles: {}
+      });
     }
     
     // Trigger alignment update for button state
     setAlignmentUpdate(prev => prev + 1);
-  }, [selectedElement, onInlineClassChange]);
+  }, [selectedElement]);
 
-  // Ultra-simple style management with debouncing for property changes
+  // Simplified property change handler using save manager
   const handlePropertyChange = useCallback((property, value) => {
     if (!selectedElement) return;
 
-    // Apply changes immediately to DOM for UI responsiveness
-    const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle'];
-    const actualProperty = classBasedProperties.includes(property) ? `class_${property}` : property;
-    
-    // Handle textAlign specially - always apply to parent and store in parentClassName
+    const elementSlotId = selectedElement.getAttribute('data-slot-id');
+    if (!elementSlotId) return;
+
+    // Handle textAlign specially - always apply to parent
     if (property === 'textAlign') {
       handleAlignmentChange(property, value);
       return;
     }
+
+    const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle'];
     
-    // Apply the style immediately to the DOM for visual feedback
     if (classBasedProperties.includes(property)) {
-      // Handle class-based properties (Tailwind) - these don't need debouncing as much
-      const success = styleManager.applyStyle(selectedElement, actualProperty, value);
+      // Handle class-based properties (Tailwind) - apply immediately
+      const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
-        console.log(`✅ Applied class-based ${property}: ${value}`);
+        // Update local state for UI responsiveness
         setTimeout(() => {
           setElementProperties(prev => ({
             ...prev,
             className: selectedElement.className
           }));
         }, 10);
+        
+        // Record change in save manager
+        saveManager.recordChange(elementSlotId, CHANGE_TYPES.ELEMENT_CLASSES, {
+          className: selectedElement.className,
+          styles: {}
+        });
       }
     } else {
-      // Handle inline style properties (padding, margin, border, etc.) - these need debouncing
-      console.log(`🎯 Setting immediate style ${property}: ${value}`);
-      selectedElement.style[property] = value + (typeof value === 'number' || /^\d+$/.test(value) ? 'px' : '');
+      // Handle inline style properties - apply immediately and record change
+      const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
+      selectedElement.style[property] = formattedValue;
       
-      // Update local state immediately for UI responsiveness
+      // Update local state for UI responsiveness
       setElementProperties(prev => ({
         ...prev,
         styles: {
           ...prev.styles,
-          [property]: value
+          [property]: formattedValue
         }
       }));
-
-      // Clear existing timeout to reset debounce
-      if (propertyChangeTimeoutRef.current) {
-        clearTimeout(propertyChangeTimeoutRef.current);
-      }
       
-      // Set new timeout for debounced save
-      propertyChangeTimeoutRef.current = setTimeout(() => {
-        console.log(`💾 Debounced save triggered for ${property}: ${value}`);
-        // Apply via style manager for database persistence
-        styleManager.applyStyle(selectedElement, actualProperty, value);
-      }, 1000); // 1000ms debounce delay for property changes
+      // Record change in save manager  
+      saveManager.recordChange(elementSlotId, CHANGE_TYPES.ELEMENT_STYLES, {
+        property,
+        value: formattedValue
+      });
     }
-  }, [selectedElement]);
+  }, [selectedElement, handleAlignmentChange]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">

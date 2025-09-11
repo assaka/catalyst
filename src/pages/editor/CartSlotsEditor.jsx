@@ -52,6 +52,9 @@ import {
   createCustomSlotRenderer
 } from '@/components/editor/slot/editor-utils';
 
+// Import save manager
+import { saveManager, CHANGE_TYPES } from '@/components/editor/slot/SaveManager';
+
 // Services for loading slot configuration data
 import slotConfigurationService from '@/services/slotConfigurationService';
 
@@ -155,13 +158,101 @@ export default function CartSlotsEditor({
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
   const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
   
-  // Ref to avoid stale closures in debounced functions
-  const cartLayoutConfigRef = useRef(cartLayoutConfig);
-  
-  // Keep ref updated
+  // Set up save manager for this editor
   useEffect(() => {
-    cartLayoutConfigRef.current = cartLayoutConfig;
-  }, [cartLayoutConfig]);
+    saveManager.setSaveCallback(async (changes) => {
+      console.log('💾 CartSlotsEditor processing batch save:', changes.size, 'changes');
+      
+      // Create a single updated config with all changes
+      let updatedConfig = { ...cartLayoutConfig };
+      
+      for (const [slotId, change] of changes) {
+        try {
+          switch (change.type) {
+            case CHANGE_TYPES.TEXT_CONTENT:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    content: change.data.content
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.ELEMENT_CLASSES:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    className: change.data.className,
+                    styles: {
+                      ...updatedConfig.slots?.[slotId]?.styles,
+                      ...change.data.styles
+                    }
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.PARENT_CLASSES:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    parentClassName: change.data.className,
+                    parentStyles: {
+                      ...updatedConfig.slots?.[slotId]?.parentStyles,
+                      ...change.data.styles
+                    }
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.SLOT_RESIZE:
+              updatedConfig = {
+                ...updatedConfig,
+                microSlotSpans: {
+                  ...updatedConfig.microSlotSpans,
+                  [change.data.parentSlot]: {
+                    ...updatedConfig.microSlotSpans?.[change.data.parentSlot],
+                    [slotId]: {
+                      ...updatedConfig.microSlotSpans?.[change.data.parentSlot]?.[slotId],
+                      ...change.data.spans
+                    }
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.ELEMENT_RESIZE:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    className: change.data.className
+                  }
+                }
+              };
+              break;
+            default:
+              console.warn('Unknown change type in CartSlotsEditor:', change.type);
+          }
+        } catch (error) {
+          console.error('Error processing change:', change, error);
+        }
+      }
+      
+      // Update state and save to database
+      setCartLayoutConfig(updatedConfig);
+      await saveConfiguration();
+    });
+  }, [cartLayoutConfig, saveConfiguration]);
   
   // Sample cart data for editor preview
   const [cartItems] = useState([
@@ -410,111 +501,21 @@ export default function CartSlotsEditor({
     return (slotId, content, elementType) => baseHandler(slotId, content, cartLayoutConfig, elementType);
   }, [cartLayoutConfig]);
 
-  // Custom class change handler that stores classes in slots.{slotId}.className and parentClassName
+  // Simplified inline class change handler using save manager
   const handleInlineClassChange = useCallback((slotId, newClassName, newStyles = {}, isWrapperSlot = false) => {
-    if (!cartLayoutConfig) return;
-    
-    // Determine if this is for parent/wrapper styling
-    const classKey = isWrapperSlot ? 'parentClassName' : 'className';
-    const styleKey = isWrapperSlot ? 'parentStyles' : 'styles';
-    
-    try {
-      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
-      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
-      
-      // Safely merge existing styles with new styles
-      const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
-      const existingStyles = existingSlot[styleKey] || {};
-      
-      // Create deep copies to avoid read-only object issues
-      const safeExistingStyles = JSON.parse(JSON.stringify(existingStyles));
-      const safeNewStyles = JSON.parse(JSON.stringify(newStyles));
-      
-      // Update the cartLayoutConfig with the new styling in the correct structure
-      const updatedConfig = {
-        ...safeCartLayoutConfig,
-        slots: {
-          ...safeCartLayoutConfig.slots,
-          [slotId]: {
-            ...existingSlot,
-            [classKey]: newClassName,
-            [styleKey]: {
-              ...safeExistingStyles,
-              ...safeNewStyles
-            }
-          }
-        }
-      };
-      
-      // Update state immediately for responsive UI
-      setCartLayoutConfig(updatedConfig);
-    } catch (error) {
-      console.warn('Error updating cart layout config:', error);
-      return; // Exit early if update fails
-    }
-    
-    // Auto-save with debouncing (save 300ms after user stops clicking toolbar)
-    if (window.classChangeTimeout) {
-      clearTimeout(window.classChangeTimeout);
-    }
-    window.classChangeTimeout = setTimeout(() => {
-      saveConfiguration();
-      console.log('🎨 Auto-saved style change for:', slotId, { 
-        [classKey]: newClassName, 
-        [styleKey]: newStyles,
-        isWrapper: isWrapperSlot 
-      });
-    }, 1000);
-  }, [cartLayoutConfig, saveConfiguration]);
+    // Record the change - save manager handles the rest
+    const changeType = isWrapperSlot ? CHANGE_TYPES.PARENT_CLASSES : CHANGE_TYPES.ELEMENT_CLASSES;
+    saveManager.recordChange(slotId, changeType, {
+      className: newClassName,
+      styles: newStyles
+    });
+  }, []);
 
-  // Handle text content changes for sidebar with debounced state updates
+  // Simplified text change handler using save manager
   const handleSidebarTextChange = useCallback((slotId, newText) => {
-    if (!cartLayoutConfigRef.current) return;
-    
-    console.log('🎯 handleSidebarTextChange called for:', slotId, 'with text:', newText);
-    
-    // Skip any immediate DOM manipulation - let React handle the UI updates
-    // The EditorSidebar already handles immediate local state updates
-    
-    // Debounce both state update and save operations
-    if (window.textChangeTimeout) {
-      console.log('🔄 Clearing existing textChangeTimeout');
-      clearTimeout(window.textChangeTimeout);
-    }
-    
-    window.textChangeTimeout = setTimeout(() => {
-      try {
-        console.log('💾 Starting debounced save for:', slotId);
-        // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
-        const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfigRef.current));
-        
-        // Safely get existing slot data
-        const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
-        const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
-        
-        // Update the cartLayoutConfig with the new text content
-        const updatedConfig = {
-          ...safeCartLayoutConfig,
-          slots: {
-            ...safeCartLayoutConfig.slots,
-            [slotId]: {
-              ...safeExistingSlot,
-              content: newText
-            }
-          }
-        };
-        
-        // Update state after debounce delay
-        setCartLayoutConfig(updatedConfig);
-        
-        // Save to database
-        saveConfiguration();
-        console.log('🎨 Auto-saved text change for:', slotId, { content: newText });
-      } catch (error) {
-        console.warn('Error updating text content:', error);
-      }
-    }, 1000); // 1000ms debounce delay
-  }, [saveConfiguration]); // Using refs to avoid stale closures and function recreation
+    // Just record the change - save manager handles the rest
+    saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
+  }, []);
 
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {
@@ -560,107 +561,22 @@ export default function CartSlotsEditor({
     }
   }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
 
-  // Handle resize for microslots with auto-save
+  // Simplified microslot resize handler using save manager
   const handleMicroSlotResize = useCallback((slotId, parentSlot, newSpans) => {
-    if (!cartLayoutConfig) return;
+    // Just record the change - save manager handles the rest
+    saveManager.recordChange(slotId, CHANGE_TYPES.SLOT_RESIZE, { 
+      parentSlot, 
+      spans: newSpans 
+    });
+  }, []);
 
-    console.log('🔄 Resizing microslot:', slotId, 'to spans:', newSpans);
-
-    try {
-      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
-      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
-      
-      // Safely get existing spans data
-      const existingMicroSlotSpans = safeCartLayoutConfig.microSlotSpans || {};
-      const existingParentSpans = existingMicroSlotSpans[parentSlot] || {};
-      const existingSlotSpans = existingParentSpans[slotId] || {};
-      
-      const safeMicroSlotSpans = JSON.parse(JSON.stringify(existingMicroSlotSpans));
-      const safeParentSpans = JSON.parse(JSON.stringify(existingParentSpans));
-      const safeSlotSpans = JSON.parse(JSON.stringify(existingSlotSpans));
-      const safeNewSpans = JSON.parse(JSON.stringify(newSpans));
-
-      // Update the cartLayoutConfig with the new spans
-      const updatedConfig = {
-        ...safeCartLayoutConfig,
-        microSlotSpans: {
-          ...safeMicroSlotSpans,
-          [parentSlot]: {
-            ...safeParentSpans,
-            [slotId]: {
-              ...safeSlotSpans,
-              ...safeNewSpans
-            }
-          }
-        }
-      };
-
-      // Update state immediately for responsive UI
-      setCartLayoutConfig(updatedConfig);
-    } catch (error) {
-      console.warn('Error resizing microslot:', error);
-      return; // Exit early if update fails
-    }
-
-    // Auto-save with debouncing (save 500ms after user stops resizing)
-    if (window.resizeTimeout) {
-      clearTimeout(window.resizeTimeout);
-    }
-    window.resizeTimeout = setTimeout(() => {
-      saveConfiguration();
-      console.log('💾 Auto-saved resize for:', slotId, newSpans);
-    }, 1000);
-  }, [cartLayoutConfig, saveConfiguration]);
-
-  // Handle element resize for individual elements (icons, buttons, images)
+  // Simplified element resize handler using save manager
   const handleElementResize = useCallback((slotId, newClasses) => {
-    if (!cartLayoutConfig) return;
-
-    console.log('🔄 Resizing element:', slotId, 'to classes:', newClasses);
-
-    try {
-      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
-      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
-      
-      // Safely get existing slot and metadata
-      const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
-      const existingMetadata = existingSlot.metadata || {};
-      
-      const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
-      const safeExistingMetadata = JSON.parse(JSON.stringify(existingMetadata));
-
-      // Update the cartLayoutConfig with the new element classes
-      const updatedConfig = {
-        ...safeCartLayoutConfig,
-        slots: {
-          ...safeCartLayoutConfig.slots,
-          [slotId]: {
-            ...safeExistingSlot,
-            className: newClasses,
-            metadata: {
-              ...safeExistingMetadata,
-              lastModified: new Date().toISOString()
-            }
-          }
-        }
-      };
-
-      // Update state immediately for responsive UI
-      setCartLayoutConfig(updatedConfig);
-    } catch (error) {
-      console.warn('Error resizing element:', error);
-      return; // Exit early if update fails
-    }
-
-    // Auto-save with debouncing (save 500ms after user stops resizing)
-    if (window.elementResizeTimeout) {
-      clearTimeout(window.elementResizeTimeout);
-    }
-    window.elementResizeTimeout = setTimeout(() => {
-      saveConfiguration();
-      console.log('💾 Auto-saved element resize for:', slotId, newClasses);
-    }, 1000);
-  }, [cartLayoutConfig, saveConfiguration]);
+    // Just record the change - save manager handles the rest
+    saveManager.recordChange(slotId, CHANGE_TYPES.ELEMENT_RESIZE, { 
+      className: newClasses 
+    });
+  }, []);
 
   // Custom micro slot styling that reads from slots.{slotId}.className and parentClassName
   const getMicroSlotStyling = useCallback((microSlotId) => {
