@@ -32,7 +32,6 @@ import { ShoppingCart, Package, Save, RefreshCw, CheckCircle, X, Plus, Minus, Tr
 import Editor from '@monaco-editor/react';
 
 // Import Cart.jsx's exact dependencies
-import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
@@ -654,7 +653,29 @@ export default function CartSlotsEditor({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* FlashMessage Section with Custom Slots */}
         <div className="flashMessage-section mb-6">
-          <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} inline={true} />
+          {/* Inline Flash Message for Editor Demo */}
+          {flashMessage && (
+            <div className="w-full mb-4">
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 border-l-4 p-4 rounded-lg shadow-lg transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                    </svg>
+                    <p className="text-sm font-medium">{flashMessage.message}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFlashMessage(null)}
+                    className="p-1 h-auto hover:bg-transparent"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {cartLayoutConfig?.microSlotOrders?.flashMessage && (
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig.microSlotOrders.flashMessage.map(slotId => 
