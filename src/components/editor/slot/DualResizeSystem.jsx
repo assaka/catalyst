@@ -250,4 +250,11 @@ function generateSizeClasses(width, height, elementType) {
   }
 }
 
-export default DualResizeSystem;
+// Named exports are already available above
+// Optional: export as default object for convenience
+export default {
+  MicroslotResizeHandle,
+  ElementResizeHandle,
+  ElementWithResize,
+  MicroslotContainer
+};
