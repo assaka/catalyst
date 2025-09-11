@@ -54,6 +54,9 @@ const EditorSidebar = ({
   // State for persistent button selection
   const [lastSelectedButton, setLastSelectedButton] = useState(null);
   
+  // Local text content state for immediate UI updates
+  const [localTextContent, setLocalTextContent] = useState('');
+  
   // Refs for debounced text input
   const textChangeTimeoutRef = useRef(null);
 
@@ -84,6 +87,9 @@ const EditorSidebar = ({
       // Get stored configuration values, fallback to current element values
       const storedClassName = slotConfig.className || '';
       const storedStyles = slotConfig.styles || {};
+      
+      // Initialize local text content with slot content
+      setLocalTextContent(slotConfig.content || '');
       
       setElementProperties({
         width: selectedElement.offsetWidth || '',
@@ -123,6 +129,9 @@ const EditorSidebar = ({
   const handleTextContentChange = useCallback((e) => {
     const newText = e.target.value;
     
+    // Update local state immediately for UI responsiveness
+    setLocalTextContent(newText);
+    
     // Clear existing timeout
     if (textChangeTimeoutRef.current) {
       clearTimeout(textChangeTimeoutRef.current);
@@ -138,6 +147,9 @@ const EditorSidebar = ({
     const currentClassName = elementProperties.className;
     let newClassName = currentClassName;
     let newStyles = { ...elementProperties.styles };
+    
+    // Track if this is a class-based change (Tailwind) vs style-based change (inline CSS)
+    let isClassBasedChange = false;
 
     switch (property) {
       case 'width':
@@ -152,19 +164,23 @@ const EditorSidebar = ({
         break;
       case 'fontSize':
         newClassName = handleFontSizeChange(currentClassName, value);
+        isClassBasedChange = true;
         break;
       case 'fontWeight':
         if (value === 'bold') {
           newClassName = handleBoldToggle(currentClassName);
+          isClassBasedChange = true;
         }
         break;
       case 'fontStyle':
         if (value === 'italic') {
           newClassName = handleItalicToggle(currentClassName);
+          isClassBasedChange = true;
         }
         break;
       case 'textAlign':
         newClassName = handleAlignmentChange(currentClassName, value, false);
+        isClassBasedChange = true;
         break;
       case 'color':
         newStyles.color = value;
@@ -243,7 +259,19 @@ const EditorSidebar = ({
     if (newClassName !== currentClassName) {
       selectedElement.className = newClassName;
     }
-    Object.assign(selectedElement.style, newStyles);
+    
+    // Apply styles safely, but only for non-class-based changes
+    if (!isClassBasedChange && selectedElement && selectedElement.style) {
+      Object.entries(newStyles).forEach(([property, value]) => {
+        try {
+          if (value !== undefined && value !== null) {
+            selectedElement.style[property] = value;
+          }
+        } catch (error) {
+          console.warn(`Could not set style property "${property}" to "${value}":`, error);
+        }
+      });
+    }
     
     // Save to database via CartSlotsEditor
     onClassChange(slotId, newClassName, newStyles);
@@ -325,7 +353,7 @@ const EditorSidebar = ({
               <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
               <textarea
                 id="textContent"
-                value={slotConfig?.content || ''}
+                value={localTextContent}
                 onChange={handleTextContentChange}
                 className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
                 placeholder="Enter text content..."
