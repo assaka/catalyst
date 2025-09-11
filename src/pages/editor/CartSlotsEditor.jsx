@@ -160,7 +160,7 @@ export default function CartSlotsEditor({
   
   // Refs to avoid circular dependencies in save manager
   const cartLayoutConfigRef = useRef(cartLayoutConfig);
-  const saveConfigurationRef = useRef(saveConfiguration);
+  const saveConfigurationRef = useRef(null);
   
   // Keep refs updated
   useEffect(() => {
@@ -267,7 +267,9 @@ export default function CartSlotsEditor({
       
       // Update state and save to database
       setCartLayoutConfig(updatedConfig);
-      await saveConfigurationRef.current();
+      if (saveConfigurationRef.current) {
+        await saveConfigurationRef.current();
+      }
     });
   }, []); // Empty dependency array to avoid circular dependencies
   
