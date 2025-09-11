@@ -174,13 +174,16 @@ const EditorSidebar = ({
     if (success) {
       console.log(`✅ Applied ${property}: ${value}`);
       
-      // Update local UI state simply (no complex objects)
-      setElementProperties(prev => ({
-        width: selectedElement.offsetWidth || prev.width,
-        height: selectedElement.offsetHeight || prev.height,
-        className: selectedElement.className,
-        styles: {} // DOM is source of truth
-      }));
+      // Force a small delay to ensure DOM is updated, then update state
+      setTimeout(() => {
+        setElementProperties(prev => ({
+          width: selectedElement.offsetWidth || prev.width,
+          height: selectedElement.offsetHeight || prev.height,
+          className: selectedElement.className, // This should now reflect the updated classes
+          styles: {} // DOM is source of truth
+        }));
+        console.log('🔄 Updated elementProperties.className to:', selectedElement.className);
+      }, 10); // Small delay to ensure DOM update is complete
     }
   }, [selectedElement]);
 
@@ -344,7 +347,15 @@ const EditorSidebar = ({
 
                 <div className="flex gap-1">
                   <Button
-                    variant={isBold(elementProperties.className) ? 'default' : 'outline'}
+                    variant={(() => {
+                      const isCurrentlyBold = isBold(elementProperties.className);
+                      console.log('🎯 Bold button state check:', {
+                        className: elementProperties.className,
+                        isBold: isCurrentlyBold,
+                        variant: isCurrentlyBold ? 'default' : 'outline'
+                      });
+                      return isCurrentlyBold ? 'default' : 'outline';
+                    })()}
                     size="sm"
                     onClick={() => handlePropertyChange('fontWeight', 'bold')}
                     className="h-7 px-2"
