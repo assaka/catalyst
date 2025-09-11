@@ -11,7 +11,8 @@ import {
   X,
   Check,
   Maximize2,
-  Square
+  Square,
+  ShoppingCart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TailwindStyleEditor from './TailwindStyleEditor';
@@ -306,19 +307,40 @@ export default function InlineSlotEditor({
     );
   }
 
+  // Render element based on type
+  const renderElement = () => {
+    if (elementType === 'icon') {
+      // For icons, render the actual icon component
+      return <ShoppingCart className={localClass} style={style} />;
+    } else if (elementType === 'button') {
+      // For buttons, render as a Button component with proper styling
+      return (
+        <Button 
+          className={`${localClass} w-auto`}
+          style={style}
+        >
+          <span dangerouslySetInnerHTML={{ __html: localText || 'Button' }} />
+        </Button>
+      );
+    } else {
+      // For other elements, render as HTML
+      return <span dangerouslySetInnerHTML={{ __html: localText || 'Click to edit' }} />;
+    }
+  };
+
   return (
-    <div className="relative group">
+    <div className="relative group inline-block">
       {!isEditing ? (
         // Display mode with edit button
         <div 
-          className={`${localClass} cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 transition-all`}
-          style={style}
+          className={`${elementType === 'button' ? '' : localClass} cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 transition-all inline-block`}
+          style={elementType === 'button' ? {} : style}
           onClick={() => setIsEditing(true)}
           title="Click to edit"
         >
-          <span dangerouslySetInnerHTML={{ __html: localText || 'Click to edit' }} />
+          {renderElement()}
           <button
-            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-500 text-white p-1 rounded-full shadow-lg"
+            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-500 text-white p-1 rounded-full shadow-lg z-50"
             onClick={(e) => {
               e.stopPropagation();
               if (onEditSlot) {
@@ -334,9 +356,9 @@ export default function InlineSlotEditor({
         </div>
       ) : (
         // Edit mode with action toolbar
-        <div className="relative">
+        <div className="relative inline-block">
           {/* Action Toolbar */}
-          <div className="absolute -top-12 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1 z-50">
+          <div className="absolute -top-14 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1 z-[100] whitespace-nowrap">
             {/* Bold */}
             <button
               onClick={handleBold}
@@ -529,19 +551,44 @@ export default function InlineSlotEditor({
             </button>
           </div>
 
-          {/* Text Input */}
-          <input
-            ref={inputRef}
-            type="text"
-            value={localText}
-            onChange={handleTextChange}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') handleCancel();
-            }}
-            className={`${localClass} w-full outline-2 outline-blue-500 outline outline-offset-2`}
-            style={style}
-          />
+          {/* Text Input or Button in edit mode */}
+          {elementType === 'button' ? (
+            <Button 
+              className={`${localClass} w-auto outline-2 outline-blue-500 outline outline-offset-2`}
+              style={style}
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                value={localText}
+                onChange={handleTextChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSave();
+                  if (e.key === 'Escape') handleCancel();
+                }}
+                className="bg-transparent border-none outline-none min-w-[100px]"
+                style={{ color: 'inherit' }}
+              />
+            </Button>
+          ) : elementType === 'icon' ? (
+            <div className="flex items-center gap-2">
+              <ShoppingCart className={`${localClass} outline-2 outline-blue-500 outline outline-offset-2`} style={style} />
+              <span className="text-sm text-gray-500">(Icon - edit styles only)</span>
+            </div>
+          ) : (
+            <input
+              ref={inputRef}
+              type="text"
+              value={localText}
+              onChange={handleTextChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') handleCancel();
+              }}
+              className={`${localClass} w-auto min-w-[100px] outline-2 outline-blue-500 outline outline-offset-2`}
+              style={style}
+            />
+          )}
         </div>
       )}
 
