@@ -69,24 +69,6 @@ const ElementResizeHandle = ({
           height: Math.max(24, Math.min(120, initialSize.height + deltaY)),
           fontSize
         };
-      } else {
-        // For text elements, scale font size based on width
-        const newPixelWidth = Math.max(50, Math.min(parentWidth * 0.95, initialSize.width + deltaX));
-        const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
-        
-        let fontSize = 'text-base';
-        if (widthPercentage < 20) fontSize = 'text-sm';
-        else if (widthPercentage < 40) fontSize = 'text-base';
-        else if (widthPercentage < 60) fontSize = 'text-lg';
-        else if (widthPercentage < 80) fontSize = 'text-xl';
-        else fontSize = 'text-2xl';
-        
-        newSize = {
-          widthPercentage: Math.max(15, Math.min(95, widthPercentage)),
-          width: newPixelWidth,
-          fontSize
-        };
-      }
 
       if (newSize && onResize) {
         console.log(`🔄 Resizing ${elementType} to:`, newSize);
@@ -202,18 +184,18 @@ const ElementResizeHandle = ({
       justifyContent: 'center'
     };
 
-    // Position the handle at the exact corner of the element
+    // Position the handle at the corner of the element, slightly outside
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '0px', right: '0px', transform: 'translate(50%, 50%)' };
+        return { ...baseStyle, bottom: '-2px', right: '-2px', cursor: 'se-resize' };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '0px', left: '0px', cursor: 'sw-resize', transform: 'translate(-50%, 50%)' };
+        return { ...baseStyle, bottom: '-2px', left: '-2px', cursor: 'sw-resize' };
       case 'top-right':
-        return { ...baseStyle, top: '0px', right: '0px', cursor: 'ne-resize', transform: 'translate(50%, -50%)' };
+        return { ...baseStyle, top: '-2px', right: '-2px', cursor: 'ne-resize' };
       case 'top-left':
-        return { ...baseStyle, top: '0px', left: '0px', cursor: 'nw-resize', transform: 'translate(-50%, -50%)' };
+        return { ...baseStyle, top: '-2px', left: '-2px', cursor: 'nw-resize' };
       default:
-        return { ...baseStyle, bottom: '0px', right: '0px', transform: 'translate(50%, 50%)' };
+        return { ...baseStyle, bottom: '-2px', right: '-2px', cursor: 'se-resize' };
     }
   };
 

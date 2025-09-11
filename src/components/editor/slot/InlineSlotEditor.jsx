@@ -378,15 +378,6 @@ export default function InlineSlotEditor({
           .replace(/\s+/g, ' ')
           .trim() + ' ' + textSizeMap[sizeCategory] + ' w-auto';
       }
-    } else {
-      // Handle text elements with font size scaling
-      if (newSize.widthPercentage && newSize.fontSize) {
-        newClassName = localClass
-          .replace(/text-(xs|sm|base|lg|xl|2xl|3xl)/g, '') // Remove existing font size classes
-          .replace(/whitespace-nowrap/g, '') // Remove no-wrap constraints
-          .replace(/\s+/g, ' ')
-          .trim() + ` ${newSize.fontSize}`;
-      }
     }
 
     console.log(`✅ Class change for ${elementType}: ${localClass} → ${newClassName.trim()}`);
@@ -566,14 +557,16 @@ export default function InlineSlotEditor({
             <Edit className="w-3 h-3" />
           </button>
           
-          {/* Element-level resize handle for all elements */}
-          <ElementResizeHandle
-            elementType={elementType || 'text'}
-            slotId={slotId}
-            className={localClass}
-            onResize={handleElementResize}
-            position="bottom-right"
-          />
+          {/* Element-level resize handle for images and buttons only */}
+          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
+            <ElementResizeHandle
+              elementType={elementType}
+              slotId={slotId}
+              className={localClass}
+              onResize={handleElementResize}
+              position="bottom-right"
+            />
+          )}
         </div>
       ) : (
         // Edit mode with action toolbar
@@ -870,14 +863,16 @@ export default function InlineSlotEditor({
             )
           )}
           
-          {/* Element-level resize handle for all elements in edit mode */}
-          <ElementResizeHandle
-            elementType={elementType || 'text'}
-            slotId={slotId}
-            className={localClass}
-            onResize={handleElementResize}
-            position="bottom-right"
-          />
+          {/* Element-level resize handle for images and buttons only in edit mode */}
+          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
+            <ElementResizeHandle
+              elementType={elementType}
+              slotId={slotId}
+              className={localClass}
+              onResize={handleElementResize}
+              position="bottom-right"
+            />
+          )}
         </div>
       )}
 
