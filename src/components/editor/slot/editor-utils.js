@@ -5,104 +5,6 @@
 
 import React from 'react';
 
-/**
- * Toggle a Tailwind class on a className string
- * @param {string} currentClasses - Current className string
- * @param {string} classToToggle - Class to add/remove
- * @param {string} classCategory - Category to handle mutual exclusivity
- * @param {boolean} isWrapperSlot - Whether this is a wrapper element
- * @returns {string} Updated className string
- */
-export function toggleClass(currentClasses, classToToggle, classCategory, isWrapperSlot = false) {
-  let classes = currentClasses.split(' ').filter(c => c);
-  
-  switch(classCategory) {
-    case 'font-weight':
-      classes = classes.filter(c => !['font-normal', 'font-medium', 'font-semibold', 'font-bold'].includes(c));
-      break;
-      
-    case 'font-style':
-      classes = classes.filter(c => !['italic', 'not-italic'].includes(c));
-      break;
-      
-    case 'text-align':
-      if (isWrapperSlot) {
-        // For wrapper slots, use flexbox justify classes
-        classes = classes.filter(c => !['justify-start', 'justify-center', 'justify-end'].includes(c));
-      } else {
-        // For text elements, use text alignment classes
-        classes = classes.filter(c => !['text-left', 'text-center', 'text-right'].includes(c));
-      }
-      break;
-      
-    case 'font-size':
-      classes = classes.filter(c => !['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl'].includes(c));
-      break;
-      
-    case 'text-color':
-      // Only remove text COLOR classes, keep text sizes and utilities
-      classes = classes.filter(cls => {
-        if (!cls.startsWith('text-')) return true;
-        
-        const parts = cls.split('-');
-        // text-red-500 = ['text', 'red', '500'] - remove (color)
-        // text-2xl = ['text', '2xl'] - keep (size)
-        // text-center = ['text', 'center'] - keep (utility)
-        
-        if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-          return false; // Remove color classes
-        }
-        if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-          return false; // Remove special colors
-        }
-        return true; // Keep everything else
-      });
-      break;
-      
-    case 'bg-color':
-      // Only remove background COLOR classes, keep bg utilities
-      classes = classes.filter(cls => {
-        if (!cls.startsWith('bg-')) return true;
-        
-        const parts = cls.split('-');
-        if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-          return false; // Remove color classes
-        }
-        if (parts.length === 2 && ['black', 'white', 'transparent', 'current', 'inherit'].includes(parts[1])) {
-          return false; // Remove special colors
-        }
-        return true; // Keep utilities like bg-cover, bg-gradient-to-r
-      });
-      break;
-      
-    case 'width':
-      // Remove all width classes
-      classes = classes.filter(c => !c.match(/^w-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto|full|screen|min|max|fit)/));
-      break;
-      
-    case 'height':
-      // Remove all height classes
-      classes = classes.filter(c => !c.match(/^h-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto|full|screen|min|max|fit)/));
-      break;
-      
-    case 'padding':
-      // Remove all padding classes
-      classes = classes.filter(c => !c.match(/^p[tblrxy]?-(\d+|px|0\.5|1\.5|2\.5|3\.5)/));
-      break;
-      
-    case 'margin':
-      // Remove all margin classes
-      classes = classes.filter(c => !c.match(/^-?m[tblrxy]?-(\d+|px|0\.5|1\.5|2\.5|3\.5|auto)/));
-      break;
-  }
-  
-  // Add the new class if provided
-  if (classToToggle) {
-    classes.push(classToToggle);
-  }
-  
-  return classes.join(' ');
-}
 
 /**
  * Check if a class string contains bold styling
@@ -141,53 +43,6 @@ export function getCurrentFontSize(className) {
   return sizes.find(size => className.includes(size)) || 'text-base';
 }
 
-/**
- * Handle bold toggle
- */
-export function handleBoldToggle(className) {
-  const bold = isBold(className);
-  return toggleClass(className, bold ? 'font-normal' : 'font-bold', 'font-weight');
-}
-
-/**
- * Handle italic toggle
- */
-export function handleItalicToggle(className) {
-  const italic = isItalic(className);
-  return toggleClass(className, italic ? 'not-italic' : 'italic', 'font-style');
-}
-
-/**
- * Handle alignment change
- */
-export function handleAlignmentChange(className, alignment, isWrapperSlot = false) {
-  let alignClass;
-  
-  if (isWrapperSlot) {
-    const alignMap = {
-      'left': 'justify-start',
-      'center': 'justify-center',
-      'right': 'justify-end'
-    };
-    alignClass = alignMap[alignment];
-  } else {
-    const alignMap = {
-      'left': 'text-left',
-      'center': 'text-center',
-      'right': 'text-right'
-    };
-    alignClass = alignMap[alignment];
-  }
-  
-  return toggleClass(className, alignClass, 'text-align', isWrapperSlot);
-}
-
-/**
- * Handle font size change
- */
-export function handleFontSizeChange(className, size) {
-  return toggleClass(className, size, 'font-size');
-}
 
 /**
  * Format price for display
@@ -307,26 +162,6 @@ export function getCurrentPadding(className) {
   return paddingMatch ? paddingMatch[1] : '4';
 }
 
-/**
- * Handle width change
- */
-export function handleWidthChange(className, width) {
-  return toggleClass(className, `w-${width}`, 'width');
-}
-
-/**
- * Handle height change
- */
-export function handleHeightChange(className, height) {
-  return toggleClass(className, `h-${height}`, 'height');
-}
-
-/**
- * Handle padding change
- */
-export function handlePaddingChange(className, padding) {
-  return toggleClass(className, `p-${padding}`, 'padding');
-}
 
 /**
  * Check if element is likely an icon, image, or button based on className or element type
