@@ -4,6 +4,7 @@
   z-index: 10 !important;
 }
 
+/* Removed border on click - now only shows on hover
 .editor-selected::after {
   content: '';
   position: absolute;
@@ -16,6 +17,7 @@
   pointer-events: none;
   z-index: -1;
 }
+*/
 
 /* Hover styles for selectable elements in edit mode */
 .cart-page [data-selectable]:hover {
@@ -24,7 +26,7 @@
   cursor: pointer;
 }
 
-/* Selection highlight animation */
+/* Selection highlight animation - disabled since no border on click
 .editor-selected {
   animation: selection-pulse 0.3s ease-out;
 }
@@ -40,6 +42,7 @@
     transform: scale(1);
   }
 }
+*/
 
 /* Sidebar specific styles */
 .editor-sidebar * {

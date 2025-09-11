@@ -12,8 +12,8 @@ export const useElementSelection = () => {
   const addSelectionStyles = useCallback((element) => {
     if (!element) return;
     
-    element.style.outline = '2px solid #0066ff';
-    element.style.outlineOffset = '2px';
+    // Remove outline styles - only keep the editor-selected class for tracking
+    // Outline will be shown on hover only via EditableElement component
     element.classList.add('editor-selected');
   }, []);
 
@@ -21,8 +21,7 @@ export const useElementSelection = () => {
   const removeSelectionStyles = useCallback((element) => {
     if (!element) return;
     
-    element.style.outline = '';
-    element.style.outlineOffset = '';
+    // Remove the editor-selected class (outline is handled by hover)
     element.classList.remove('editor-selected');
   }, []);
 
