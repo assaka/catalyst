@@ -1283,13 +1283,41 @@ export default function CartSlotsEditor({
                         const product = item.product;
                         if (!product) return null;
 
+                        // Get styling for product image slot
+                        const imageStyling = getMicroSlotStyling('cartItem.productImage');
+                        const imageWrapperStyling = getMicroSlotStyling('cartItem.productImage_wrapper');
+                        const imageClasses = imageStyling.elementClasses || 'w-20 h-20 object-cover rounded-lg';
+
                         return (
                           <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                            <img 
-                              src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
-                              alt={product.name}
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
+                            {/* Product Image with wrapper div for alignment */}
+                            <div className={imageWrapperStyling.elementClasses} style={imageWrapperStyling.elementStyles}>
+                              {mode === 'edit' ? (
+                                <ResizeElementWrapper
+                                  initialWidth={80}
+                                  initialHeight={80}
+                                  minWidth={40}
+                                  maxWidth={120}
+                                >
+                                  <EditableElement slotId="cartItem.productImage" editable={mode === 'edit'}>
+                                    <img 
+                                      src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
+                                      alt={product.name}
+                                      className={imageClasses}
+                                      style={imageStyling.elementStyles}
+                                      data-slot-id="cartItem.productImage"
+                                    />
+                                  </EditableElement>
+                                </ResizeElementWrapper>
+                              ) : (
+                                <img 
+                                  src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
+                                  alt={product.name}
+                                  className={imageClasses}
+                                  style={imageStyling.elementStyles}
+                                />
+                              )}
+                            </div>
                             <div className="flex-1">
                               <h3 className="text-lg font-semibold">{product.name}</h3>
                               <p className="text-gray-600">{currencySymbol}{item.price} each</p>
@@ -1323,13 +1351,22 @@ export default function CartSlotsEditor({
                       const product = item.product;
                       if (!product) return null;
 
+                      // Get styling for product image slot
+                      const imageStyling = getMicroSlotStyling('cartItem.productImage');
+                      const imageWrapperStyling = getMicroSlotStyling('cartItem.productImage_wrapper');
+                      const imageClasses = imageStyling.elementClasses || 'w-20 h-20 object-cover rounded-lg';
+
                       return (
                         <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                          <img 
-                            src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
-                            alt={product.name}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
+                          {/* Product Image with wrapper div for alignment */}
+                          <div className={imageWrapperStyling.elementClasses} style={imageWrapperStyling.elementStyles}>
+                            <img 
+                              src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
+                              alt={product.name}
+                              className={imageClasses}
+                              style={imageStyling.elementStyles}
+                            />
+                          </div>
                           <div className="flex-1">
                             <h3 className="text-lg font-semibold">{product.name}</h3>
                             <p className="text-gray-600">{currencySymbol}{item.price} each</p>
