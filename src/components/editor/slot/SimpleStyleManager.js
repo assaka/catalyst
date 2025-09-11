@@ -29,8 +29,10 @@ class SimpleStyleManager {
         this.updateClassName(element, actualProperty, value);
       } else {
         // Handle inline style changes
-        console.log('💄 Setting inline style:', property, '=', value);
+        console.log('💄 Setting inline style:', property, '=', value, 'on element:', element);
         element.style[property] = value;
+        console.log('💄 After setting, element.style[' + property + '] =', element.style[property]);
+        console.log('💄 Element style length:', element.style.length);
       }
       
       // Track the change for persistence
@@ -145,16 +147,22 @@ class SimpleStyleManager {
         if (element) {
           // Collect inline styles from the element
           const styles = {};
-          const computedStyle = element.style;
+          const elementStyle = element.style;
           
-          // Get all inline styles that were set
-          for (let i = 0; i < computedStyle.length; i++) {
-            const property = computedStyle[i];
-            const value = computedStyle.getPropertyValue(property);
-            if (value) {
+          // Get all inline styles using getPropertyValue for reliability
+          const styleProperties = [];
+          for (let i = 0; i < elementStyle.length; i++) {
+            styleProperties.push(elementStyle[i]);
+          }
+          
+          styleProperties.forEach(property => {
+            const value = elementStyle.getPropertyValue(property);
+            if (value && value.trim() !== '') {
               styles[property] = value;
             }
-          }
+          });
+          
+          console.log('💾 Collected styles for', elementId, ':', styles, 'from element style length:', elementStyle.length);
           
           // Save both className and actual inline styles
           databaseUpdates[elementId] = {

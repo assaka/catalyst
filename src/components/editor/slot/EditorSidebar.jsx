@@ -64,8 +64,21 @@ const EditorSidebar = ({
   // Local text content state for immediate UI updates
   const [localTextContent, setLocalTextContent] = useState('');
   
-  // Refs for debounced text input
+  // Refs for debounced text input and property changes
   const textChangeTimeoutRef = useRef(null);
+  const propertyChangeTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount or when selection changes
+  useEffect(() => {
+    return () => {
+      if (textChangeTimeoutRef.current) {
+        clearTimeout(textChangeTimeoutRef.current);
+      }
+      if (propertyChangeTimeoutRef.current) {
+        clearTimeout(propertyChangeTimeoutRef.current);
+      }
+    };
+  }, [selectedElement, slotId]);
 
   // Check if selected element is a slot element
   const isSlotElement = selectedElement && (
@@ -144,16 +157,6 @@ const EditorSidebar = ({
     }));
   }, []);
 
-  // Create debounced text change handler
-  const debouncedTextChange = useCallback(
-    debounce((slotId, newText) => {
-      if (onTextChange) {
-        onTextChange(slotId, newText);
-      }
-    }, 500), // 500ms debounce delay
-    [onTextChange]
-  );
-
   // Handle immediate text change (for UI responsiveness) + debounced save
   const handleTextContentChange = useCallback((e) => {
     const newText = e.target.value;
@@ -161,39 +164,66 @@ const EditorSidebar = ({
     // Update local state immediately for UI responsiveness
     setLocalTextContent(newText);
     
-    // Clear existing timeout
+    // Clear existing timeout to reset the debounce
     if (textChangeTimeoutRef.current) {
       clearTimeout(textChangeTimeoutRef.current);
     }
     
-    // Call debounced save function
-    debouncedTextChange(slotId, newText);
-  }, [slotId, debouncedTextChange]);
+    // Set new timeout for debounced save
+    textChangeTimeoutRef.current = setTimeout(() => {
+      if (onTextChange) {
+        console.log('🎨 Debounced text save triggered for:', slotId, { content: newText });
+        onTextChange(slotId, newText);
+      }
+    }, 500); // 500ms debounce delay
+  }, [slotId, onTextChange]);
 
-  // Ultra-simple style management - no React state issues!
+  // Ultra-simple style management with debouncing for property changes
   const handlePropertyChange = useCallback((property, value) => {
     if (!selectedElement) return;
 
-    // Map class-based properties (Tailwind)
+    // Apply changes immediately to DOM for UI responsiveness
     const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle', 'textAlign'];
     const actualProperty = classBasedProperties.includes(property) ? `class_${property}` : property;
     
-    // Apply via simple style manager (avoids all React state issues)
-    const success = styleManager.applyStyle(selectedElement, actualProperty, value);
-    
-    if (success) {
-      console.log(`✅ Applied ${property}: ${value}`);
+    // Apply the style immediately to the DOM for visual feedback
+    if (classBasedProperties.includes(property)) {
+      // Handle class-based properties (Tailwind) - these don't need debouncing as much
+      const success = styleManager.applyStyle(selectedElement, actualProperty, value);
+      if (success) {
+        console.log(`✅ Applied class-based ${property}: ${value}`);
+        setTimeout(() => {
+          setElementProperties(prev => ({
+            ...prev,
+            className: selectedElement.className
+          }));
+        }, 10);
+      }
+    } else {
+      // Handle inline style properties (padding, margin, border, etc.) - these need debouncing
+      console.log(`🎯 Setting immediate style ${property}: ${value}`);
+      selectedElement.style[property] = value + (typeof value === 'number' || /^\d+$/.test(value) ? 'px' : '');
       
-      // Force a small delay to ensure DOM is updated, then update state
-      setTimeout(() => {
-        setElementProperties(prev => ({
-          width: selectedElement.offsetWidth || prev.width,
-          height: selectedElement.offsetHeight || prev.height,
-          className: selectedElement.className, // This should now reflect the updated classes
-          styles: {} // DOM is source of truth
-        }));
-        console.log('🔄 Updated elementProperties.className to:', selectedElement.className);
-      }, 10); // Small delay to ensure DOM update is complete
+      // Update local state immediately for UI responsiveness
+      setElementProperties(prev => ({
+        ...prev,
+        styles: {
+          ...prev.styles,
+          [property]: value
+        }
+      }));
+
+      // Clear existing timeout to reset debounce
+      if (propertyChangeTimeoutRef.current) {
+        clearTimeout(propertyChangeTimeoutRef.current);
+      }
+      
+      // Set new timeout for debounced save
+      propertyChangeTimeoutRef.current = setTimeout(() => {
+        console.log(`💾 Debounced save triggered for ${property}: ${value}`);
+        // Apply via style manager for database persistence
+        styleManager.applyStyle(selectedElement, actualProperty, value);
+      }, 300); // 300ms debounce delay for property changes
     }
   }, [selectedElement]);
 
