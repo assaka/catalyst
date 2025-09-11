@@ -36,7 +36,8 @@ const EditorSidebar = ({
   onUpdateElement, 
   onClearSelection,
   onClassChange,  // New prop for class changes
-  slotId,        // Current slot ID  
+  slotId,        // Current slot ID
+  slotConfig,    // Current slot configuration from database
   isVisible = true 
 }) => {
   const [expandedSections, setExpandedSections] = useState({
@@ -53,21 +54,37 @@ const EditorSidebar = ({
     styles: {}
   });
 
+  // Check if selected element is a slot element
+  const isSlotElement = selectedElement && (
+    selectedElement.hasAttribute('data-slot-id') ||
+    selectedElement.hasAttribute('data-editable') ||
+    selectedElement.closest('[data-slot-id]') ||
+    selectedElement.closest('[data-editable]')
+  );
+
   // Update properties when selected element changes
   useEffect(() => {
-    if (selectedElement) {
+    if (selectedElement && isSlotElement && slotConfig) {
+      // Get stored configuration values, fallback to current element values
+      const storedClassName = slotConfig.className || '';
+      const storedStyles = slotConfig.styles || {};
+      
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        className: selectedElement.className || '',
-        styles: selectedElement.style ? Object.fromEntries(
-          Object.entries(selectedElement.style).filter(([key, value]) => 
-            value && !key.startsWith('webkit') && !key.startsWith('moz')
+        className: storedClassName || selectedElement.className || '',
+        styles: {
+          ...storedStyles,
+          // Merge with any inline styles that might exist
+          ...Object.fromEntries(
+            Object.entries(selectedElement.style || {}).filter(([key, value]) => 
+              value && !key.startsWith('webkit') && !key.startsWith('moz')
+            )
           )
-        ) : {}
+        }
       });
     }
-  }, [selectedElement]);
+  }, [selectedElement, isSlotElement, slotConfig]);
 
   const toggleSection = useCallback((section) => {
     setExpandedSections(prev => ({
@@ -120,15 +137,16 @@ const EditorSidebar = ({
         return;
     }
 
-    // Update element classes and styles
+    // Update element visually
     if (newClassName !== currentClassName) {
       selectedElement.className = newClassName;
-      onClassChange(slotId, newClassName);
     }
-
-    // Update element styles
     Object.assign(selectedElement.style, newStyles);
     
+    // Save to database via CartSlotsEditor
+    onClassChange(slotId, newClassName, newStyles);
+    
+    // Update local state for UI
     setElementProperties(prev => ({
       ...prev,
       className: newClassName,
@@ -156,40 +174,37 @@ const EditorSidebar = ({
     </div>
   );
 
-  if (!isVisible) return null;
+  // Only show sidebar when a slot element is selected
+  if (!isVisible || !isSlotElement) return null;
 
   return (
     <div className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-lg z-50 flex flex-col editor-sidebar">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">
-          {selectedElement ? 'Element Properties' : 'Design Panel'}
+          Element Properties
         </h2>
-        {selectedElement && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClearSelection}
-            className="h-6 w-6 p-0"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClearSelection}
+          className="h-6 w-6 p-0"
+        >
+          <X className="w-4 h-4" />
+        </Button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {selectedElement ? (
-          <>
-            {/* Element Info */}
-            <div className="p-4 bg-blue-50 border-b border-gray-200">
-              <p className="text-sm text-blue-800 font-medium">
-                {selectedElement.tagName?.toLowerCase() || 'element'}
-              </p>
-              <p className="text-xs text-blue-600">
-                {selectedElement.className || 'No classes'}
-              </p>
-            </div>
+        {/* Element Info */}
+        <div className="p-4 bg-blue-50 border-b border-gray-200">
+          <p className="text-sm text-blue-800 font-medium">
+            {selectedElement.tagName?.toLowerCase() || 'element'}
+          </p>
+          <p className="text-xs text-blue-600">
+            {selectedElement.className || 'No classes'}
+          </p>
+        </div>
 
             {/* Size Section */}
             <SectionHeader title="Size" section="size">
@@ -370,14 +385,6 @@ const EditorSidebar = ({
                 </div>
               </div>
             </SectionHeader>
-          </>
-        ) : (
-          <div className="p-8 text-center text-gray-500">
-            <Layout className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p className="text-sm">Select an element to edit its properties</p>
-            <p className="text-xs mt-2">Click on any text, button, or image to get started</p>
-          </div>
-        )}
       </div>
     </div>
   );

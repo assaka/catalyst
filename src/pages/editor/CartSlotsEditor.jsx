@@ -1885,6 +1885,7 @@ export default function CartSlotsEditor({
           onClearSelection={clearSelection}
           onClassChange={handleInlineClassChange}
           slotId={selectedSlotId}
+          slotConfig={selectedSlotId ? cartLayoutConfig?.slots?.[selectedSlotId] : null}
           isVisible={mode === 'edit'}
         />
       )}
