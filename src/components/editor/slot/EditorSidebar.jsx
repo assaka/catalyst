@@ -95,15 +95,37 @@ const EditorSidebar = ({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
         className: storedClassName || selectedElement.className || '',
-        styles: {
-          ...storedStyles,
-          // Merge with any inline styles that might exist
-          ...Object.fromEntries(
-            Object.entries(selectedElement.style || {}).filter(([key, value]) => 
-              value && !key.startsWith('webkit') && !key.startsWith('moz')
-            )
-          )
-        }
+        styles: (() => {
+          try {
+            // Safely merge stored styles with element styles
+            const elementStyles = {};
+            
+            // Copy element styles safely
+            if (selectedElement.style) {
+              for (const property in selectedElement.style) {
+                if (selectedElement.style.hasOwnProperty(property)) {
+                  const value = selectedElement.style[property];
+                  if (value && !property.startsWith('webkit') && !property.startsWith('moz')) {
+                    try {
+                      elementStyles[property] = value;
+                    } catch (e) {
+                      // Skip read-only properties
+                      console.debug(`Skipping read-only style property: ${property}`);
+                    }
+                  }
+                }
+              }
+            }
+            
+            return {
+              ...storedStyles,
+              ...elementStyles
+            };
+          } catch (error) {
+            console.warn('Error merging styles:', error);
+            return { ...storedStyles };
+          }
+        })()
       });
     }
   }, [selectedElement, isSlotElement, slotConfig, slotId]);
@@ -146,7 +168,15 @@ const EditorSidebar = ({
 
     const currentClassName = elementProperties.className;
     let newClassName = currentClassName;
-    let newStyles = { ...elementProperties.styles };
+    
+    // Create a deep copy of styles to avoid read-only object issues
+    let newStyles = {};
+    try {
+      newStyles = JSON.parse(JSON.stringify(elementProperties.styles || {}));
+    } catch (error) {
+      console.warn('Error copying elementProperties.styles:', error);
+      newStyles = {};
+    }
     
     // Track if this is a class-based change (Tailwind) vs style-based change (inline CSS)
     let isClassBasedChange = false;
@@ -265,7 +295,15 @@ const EditorSidebar = ({
       Object.entries(newStyles).forEach(([property, value]) => {
         try {
           if (value !== undefined && value !== null) {
-            selectedElement.style[property] = value;
+            // Check if the property is writable before setting it
+            const descriptor = Object.getOwnPropertyDescriptor(selectedElement.style, property);
+            const canWrite = !descriptor || descriptor.writable !== false;
+            
+            if (canWrite) {
+              selectedElement.style[property] = value;
+            } else {
+              console.warn(`Style property "${property}" is read-only, skipping assignment`);
+            }
           }
         } catch (error) {
           console.warn(`Could not set style property "${property}" to "${value}":`, error);
@@ -277,11 +315,18 @@ const EditorSidebar = ({
     onClassChange(slotId, newClassName, newStyles);
     
     // Update local state for UI
-    setElementProperties(prev => ({
-      ...prev,
-      className: newClassName,
-      styles: newStyles
-    }));
+    setElementProperties(prev => {
+      try {
+        return {
+          ...prev,
+          className: newClassName,
+          styles: { ...newStyles } // Ensure we don't pass any read-only references
+        };
+      } catch (error) {
+        console.warn('Error updating elementProperties state:', error);
+        return prev; // Return previous state if update fails
+      }
+    });
   }, [selectedElement, onClassChange, slotId, elementProperties.className, elementProperties.styles]);
 
   const SectionHeader = ({ title, section, children }) => (
