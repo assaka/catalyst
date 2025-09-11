@@ -36,7 +36,8 @@ import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
-// Clean imports - no longer using cartConfig fallbacks
+// Clean imports - importing cartConfig for reset functionality
+import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import { SimpleResizeWrapper } from "@/components/editor/slot/SlotResizeWrapper";
 import { ResizeWrapper as ResizeElementWrapper } from "@/components/ui/resize-element-wrapper";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
@@ -971,11 +972,26 @@ export default function CartSlotsEditor({
                       return (
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                              <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
-                                {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
-                              </h2>
-                            </EditableElement>
+                            {mode === 'edit' ? (
+                              <ResizeElementWrapper
+                                initialWidth={300}
+                                initialHeight={32}
+                                minWidth={150}
+                                maxWidth={600}
+                              >
+                                <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                  <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                    {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
+                                  </h2>
+                                </EditableElement>
+                              </ResizeElementWrapper>
+                            ) : (
+                              <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
+                                </h2>
+                              </EditableElement>
+                            )}
                           </div>
                         </div>
                       );
@@ -989,11 +1005,26 @@ export default function CartSlotsEditor({
                       return (
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                              <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
-                                {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                              </p>
-                            </EditableElement>
+                            {mode === 'edit' ? (
+                              <ResizeElementWrapper
+                                initialWidth={400}
+                                initialHeight={24}
+                                minWidth={200}
+                                maxWidth={800}
+                              >
+                                <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                  <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                    {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
+                                  </p>
+                                </EditableElement>
+                              </ResizeElementWrapper>
+                            ) : (
+                              <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
+                                </p>
+                              </EditableElement>
+                            )}
                           </div>
                         </div>
                       );
@@ -1002,55 +1033,28 @@ export default function CartSlotsEditor({
                     if (slotId === 'emptyCart.button') {
                       const buttonStyling = getMicroSlotStyling('emptyCart.button');
                       const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-                      const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
+                      const defaultClasses = 'bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold px-6 py-3';
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
+                      
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group button-slot-container' : ''}`}>
-                          <SimpleResizeWrapper
-                            slotId={slotId}
-                            parentSlot="emptyCart"
-                            spans={positioning.microSlotSpans}
-                            onSlotResize={handleMicroSlotResize}
-                            elementType="button"
-                            currentClasses={finalClasses}
-                            onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                            mode={mode}
-                          >
-                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              {mode === 'edit' ? (
-                                <ResizeElementWrapper
-                                  initialWidth={200}
-                                  initialHeight={44}
-                                  minWidth={100}
-                                  maxWidth={400}
-                                >
-                                  <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                    <Button 
-                                      className={finalClasses}
-                                      style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                    >
-                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                                    </Button>
-                                  </EditableElement>
-                                </ResizeElementWrapper>
-                              ) : (
-                                <ResizeElementWrapper
-                                  initialWidth={200}
-                                  initialHeight={44}
-                                  minWidth={100}
-                                  maxWidth={400}
-                                  disabled={true}
-                                >
-                                  <Button 
-                                    className={finalClasses}
-                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                  >
-                                    {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                                  </Button>
-                                </ResizeElementWrapper>
-                              )}
-                            </div>
-                          </SimpleResizeWrapper>
+                        <div key={slotId} className={`${positioning.gridClasses} button-slot-container ${wrapperStyling.elementClasses}`} style={wrapperStyling.elementStyles}>
+                          {mode === 'edit' ? (
+                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                              <Button 
+                                className={finalClasses}
+                                style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                              >
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                              </Button>
+                            </EditableElement>
+                          ) : (
+                            <Button 
+                              className={finalClasses}
+                              style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                            >
+                              {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                            </Button>
+                          )}
                         </div>
                       );
                     }
@@ -1071,10 +1075,24 @@ export default function CartSlotsEditor({
                       </ResizeElementWrapper>
                     </div>
                     <div className="col-span-12">
-                      <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                      <ResizeElementWrapper
+                        initialWidth={300}
+                        initialHeight={32}
+                        minWidth={150}
+                        maxWidth={600}
+                      >
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                      </ResizeElementWrapper>
                     </div>
                     <div className="col-span-12">
-                      <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                      <ResizeElementWrapper
+                        initialWidth={400}
+                        initialHeight={24}
+                        minWidth={200}
+                        maxWidth={800}
+                      >
+                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                      </ResizeElementWrapper>
                     </div>
                     <div className="col-span-12">
                       <ResizeElementWrapper
@@ -1133,9 +1151,17 @@ export default function CartSlotsEditor({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
-                                {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
-                              </h2>
+                              <ResizeElementWrapper
+                                initialWidth={300}
+                                initialHeight={32}
+                                minWidth={150}
+                                maxWidth={600}
+                                disabled={true}
+                              >
+                                <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
+                                </h2>
+                              </ResizeElementWrapper>
                             </div>
                           </div>
                         );
@@ -1149,9 +1175,17 @@ export default function CartSlotsEditor({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
-                                {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                              </p>
+                              <ResizeElementWrapper
+                                initialWidth={400}
+                                initialHeight={24}
+                                minWidth={200}
+                                maxWidth={800}
+                                disabled={true}
+                              >
+                                <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
+                                </p>
+                              </ResizeElementWrapper>
                             </div>
                           </div>
                         );
@@ -1160,26 +1194,17 @@ export default function CartSlotsEditor({
                       if (slotId === 'emptyCart.button') {
                         const buttonStyling = getMicroSlotStyling('emptyCart.button');
                         const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-                        const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
+                        const defaultClasses = 'bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold px-6 py-3';
                         const finalClasses = buttonStyling.elementClasses || defaultClasses;
+                        
                         return (
-                          <div key={slotId} className={`${positioning.gridClasses} button-slot-container`}>
-                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ResizeElementWrapper
-                                initialWidth={200}
-                                initialHeight={44}
-                                minWidth={100}
-                                maxWidth={400}
-                                disabled={true}
-                              >
-                                <Button 
-                                  className={finalClasses}
-                                  style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                >
-                                  Continue Shopping
-                                </Button>
-                              </ResizeElementWrapper>
-                            </div>
+                          <div key={slotId} className={`${positioning.gridClasses} button-slot-container ${wrapperStyling.elementClasses}`} style={wrapperStyling.elementStyles}>
+                            <Button 
+                              className={finalClasses}
+                              style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                            >
+                              {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                            </Button>
                           </div>
                         );
                       }
@@ -1201,10 +1226,26 @@ export default function CartSlotsEditor({
                         </ResizeElementWrapper>
                       </div>
                       <div className="col-span-12">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                        <ResizeElementWrapper
+                          initialWidth={300}
+                          initialHeight={32}
+                          minWidth={150}
+                          maxWidth={600}
+                          disabled={true}
+                        >
+                          <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                        </ResizeElementWrapper>
                       </div>
                       <div className="col-span-12">
-                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                        <ResizeElementWrapper
+                          initialWidth={400}
+                          initialHeight={24}
+                          minWidth={200}
+                          maxWidth={800}
+                          disabled={true}
+                        >
+                          <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                        </ResizeElementWrapper>
                       </div>
                       <div className="col-span-12">
                         <ResizeElementWrapper
