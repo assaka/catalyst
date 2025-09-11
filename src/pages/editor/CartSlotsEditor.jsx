@@ -784,7 +784,7 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
                       const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={positioning.gridClasses}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
                               <InlineSlotEditor
@@ -802,6 +802,16 @@ export default function CartSlotsEditor({
                               <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
                             )}
                           </div>
+                          {/* Resize Handle for Edit Mode */}
+                          {mode === 'edit' && (
+                            <ResizeHandle
+                              slotId={slotId}
+                              parentSlot="emptyCart"
+                              microSlotSpans={positioning.microSlotSpans}
+                              onResize={handleMicroSlotResize}
+                              position="bottom-right"
+                            />
+                          )}
                         </div>
                       );
                     }
@@ -812,7 +822,7 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
                       const finalClasses = titleStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={positioning.gridClasses}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
                               <InlineSlotEditor
@@ -831,6 +841,16 @@ export default function CartSlotsEditor({
                               </h2>
                             )}
                           </div>
+                          {/* Resize Handle for Edit Mode */}
+                          {mode === 'edit' && (
+                            <ResizeHandle
+                              slotId={slotId}
+                              parentSlot="emptyCart"
+                              microSlotSpans={positioning.microSlotSpans}
+                              onResize={handleMicroSlotResize}
+                              position="bottom-right"
+                            />
+                          )}
                         </div>
                       );
                     }
@@ -841,7 +861,7 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'text-gray-600 mb-6';
                       const finalClasses = textStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={positioning.gridClasses}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
                               <InlineSlotEditor
@@ -860,6 +880,16 @@ export default function CartSlotsEditor({
                               </p>
                             )}
                           </div>
+                          {/* Resize Handle for Edit Mode */}
+                          {mode === 'edit' && (
+                            <ResizeHandle
+                              slotId={slotId}
+                              parentSlot="emptyCart"
+                              microSlotSpans={positioning.microSlotSpans}
+                              onResize={handleMicroSlotResize}
+                              position="bottom-right"
+                            />
+                          )}
                         </div>
                       );
                     }
@@ -1145,23 +1175,43 @@ export default function CartSlotsEditor({
                           const titleStyling = getMicroSlotStyling('coupon.title');
                           const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                 Apply Coupon
                               </h3>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="coupon"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }
                         
                         if (slotId === 'coupon.input' && !appliedCoupon) {
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <Input 
                                 placeholder="Enter coupon code" 
                                 value={couponCode}
                                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                                 style={positioning.elementStyles}
                               />
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="coupon"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }
@@ -1346,10 +1396,20 @@ export default function CartSlotsEditor({
                           const titleStyling = getMicroSlotStyling('orderSummary.title');
                           const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                 Order Summary
                               </h3>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="orderSummary"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }
@@ -1359,10 +1419,20 @@ export default function CartSlotsEditor({
                           const defaultClasses = 'flex justify-between';
                           const finalClasses = subtotalStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
                                 <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
                               </div>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="orderSummary"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }
@@ -1372,10 +1442,20 @@ export default function CartSlotsEditor({
                           const defaultClasses = 'flex justify-between';
                           const finalClasses = taxStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
                                 <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
                               </div>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="orderSummary"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }
@@ -1385,11 +1465,21 @@ export default function CartSlotsEditor({
                           const defaultClasses = 'flex justify-between text-lg font-semibold border-t pt-4';
                           const finalClasses = totalStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={positioning.gridClasses}>
+                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <div className={finalClasses} style={{...totalStyling.elementStyles, ...positioning.elementStyles}}>
                                 <span>Total</span>
                                 <span>{currencySymbol}{total.toFixed(2)}</span>
                               </div>
+                              {/* Resize Handle for Edit Mode */}
+                              {mode === 'edit' && (
+                                <ResizeHandle
+                                  slotId={slotId}
+                                  parentSlot="orderSummary"
+                                  microSlotSpans={positioning.microSlotSpans}
+                                  onResize={handleMicroSlotResize}
+                                  position="bottom-right"
+                                />
+                              )}
                             </div>
                           );
                         }

@@ -25,35 +25,34 @@ const ResizeHandle = ({
     e.preventDefault();
     e.stopPropagation();
     
-    setIsResizing(true);
-    setStartPos({ x: e.clientX, y: e.clientY });
-    setStartSpans({ 
+    const initialPos = { x: e.clientX, y: e.clientY };
+    const initialSpans = { 
       col: microSlotSpans?.col || 12, 
       row: microSlotSpans?.row || 1 
-    });
+    };
+
+    setIsResizing(true);
+    setStartPos(initialPos);
+    setStartSpans(initialSpans);
 
     // Add global mouse event listeners
     const handleMouseMove = (moveEvent) => {
-      if (!isResizing) return;
-
-      const deltaX = moveEvent.clientX - startPos.x;
-      const deltaY = moveEvent.clientY - startPos.y;
+      const deltaX = moveEvent.clientX - initialPos.x;
+      const deltaY = moveEvent.clientY - initialPos.y;
 
       // Calculate new spans based on movement
       // Each grid cell is approximately 50px wide and 25px tall
       const colDelta = Math.round(deltaX / 50);
       const rowDelta = Math.round(deltaY / 25);
 
-      const newCol = Math.min(12, Math.max(1, startSpans.col + colDelta));
-      const newRow = Math.min(4, Math.max(1, startSpans.row + rowDelta));
+      const newCol = Math.min(12, Math.max(1, initialSpans.col + colDelta));
+      const newRow = Math.min(4, Math.max(1, initialSpans.row + rowDelta));
 
       // Update current spans for visual feedback
       setCurrentSpans({ col: newCol, row: newRow });
 
-      // Only update if the spans actually changed
-      if (newCol !== microSlotSpans?.col || newRow !== microSlotSpans?.row) {
-        onResize(slotId, parentSlot, { col: newCol, row: newRow });
-      }
+      // Always call onResize to update the spans
+      onResize(slotId, parentSlot, { col: newCol, row: newRow });
     };
 
     const handleMouseUp = () => {
@@ -65,7 +64,7 @@ const ResizeHandle = ({
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [slotId, parentSlot, microSlotSpans, onResize, startPos, startSpans, isResizing]);
+  }, [slotId, parentSlot, microSlotSpans, onResize]);
 
   const getHandleStyle = () => {
     const baseStyle = {
