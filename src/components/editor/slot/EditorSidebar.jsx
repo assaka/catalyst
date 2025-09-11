@@ -1,15 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
-  Type, 
   Bold, 
   Italic, 
   AlignLeft, 
   AlignCenter, 
   AlignRight,
-  Palette,
   Maximize2,
-  Move3D,
-  Layout,
   X,
   ChevronDown,
   ChevronRight
@@ -18,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  toggleClass,
   isBold,
   isItalic,
   getCurrentAlign,
@@ -27,13 +22,11 @@ import {
   handleItalicToggle,
   handleAlignmentChange,
   handleFontSizeChange,
-  FONT_SIZES,
-  COLOR_PALETTE
+  FONT_SIZES
 } from './editor-utils';
 
 const EditorSidebar = ({ 
   selectedElement, 
-  onUpdateElement, 
   onClearSelection,
   onClassChange,  // New prop for class changes
   onTextChange,   // New prop for text content changes
@@ -46,6 +39,7 @@ const EditorSidebar = ({
     text: true,
     layout: true,
     appearance: true,
+    advanced: false,
     size: true
   });
 
@@ -134,6 +128,69 @@ const EditorSidebar = ({
         break;
       case 'backgroundColor':
         newStyles.backgroundColor = value;
+        break;
+      case 'padding':
+        newStyles.padding = `${value}px`;
+        break;
+      case 'paddingTop':
+        newStyles.paddingTop = `${value}px`;
+        break;
+      case 'paddingRight':
+        newStyles.paddingRight = `${value}px`;
+        break;
+      case 'paddingBottom':
+        newStyles.paddingBottom = `${value}px`;
+        break;
+      case 'paddingLeft':
+        newStyles.paddingLeft = `${value}px`;
+        break;
+      case 'margin':
+        newStyles.margin = `${value}px`;
+        break;
+      case 'marginTop':
+        newStyles.marginTop = `${value}px`;
+        break;
+      case 'marginRight':
+        newStyles.marginRight = `${value}px`;
+        break;
+      case 'marginBottom':
+        newStyles.marginBottom = `${value}px`;
+        break;
+      case 'marginLeft':
+        newStyles.marginLeft = `${value}px`;
+        break;
+      case 'borderWidth':
+        newStyles.borderWidth = `${value}px`;
+        break;
+      case 'borderRadius':
+        newStyles.borderRadius = `${value}px`;
+        break;
+      case 'borderColor':
+        newStyles.borderColor = value;
+        break;
+      case 'boxShadow':
+        newStyles.boxShadow = value;
+        break;
+      case 'opacity':
+        newStyles.opacity = value;
+        break;
+      case 'zIndex':
+        newStyles.zIndex = value;
+        break;
+      case 'display':
+        newStyles.display = value;
+        break;
+      case 'position':
+        newStyles.position = value;
+        break;
+      case 'flexDirection':
+        newStyles.flexDirection = value;
+        break;
+      case 'justifyContent':
+        newStyles.justifyContent = value;
+        break;
+      case 'alignItems':
+        newStyles.alignItems = value;
         break;
       default:
         return;
@@ -399,11 +456,327 @@ const EditorSidebar = ({
               </div>
             </SectionHeader>
 
-            {/* Layout Section */}
-            <SectionHeader title="Layout" section="layout">
+            {/* Advanced Section */}
+            <SectionHeader title="Advanced" section="advanced">
               <div className="space-y-3">
-                <div className="text-xs text-gray-500">
-                  Layout controls coming soon. Use resize handles for now.
+                {/* Border Controls */}
+                <div>
+                  <Label className="text-xs font-medium mb-2 block">Border</Label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <Label htmlFor="borderWidth" className="text-xs">Width</Label>
+                      <Input
+                        id="borderWidth"
+                        type="number"
+                        value={parseInt(elementProperties.styles.borderWidth) || 0}
+                        onChange={(e) => handlePropertyChange('borderWidth', e.target.value)}
+                        className="text-xs h-6"
+                        placeholder="0"
+                        min="0"
+                        max="10"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="borderRadius" className="text-xs">Radius</Label>
+                      <Input
+                        id="borderRadius"
+                        type="number"
+                        value={parseInt(elementProperties.styles.borderRadius) || 0}
+                        onChange={(e) => handlePropertyChange('borderRadius', e.target.value)}
+                        className="text-xs h-6"
+                        placeholder="0"
+                        min="0"
+                        max="50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="borderColor" className="text-xs">Color</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        id="borderColor"
+                        type="color"
+                        value={elementProperties.styles.borderColor || '#e5e7eb'}
+                        onChange={(e) => handlePropertyChange('borderColor', e.target.value)}
+                        className="w-8 h-6 rounded border border-gray-300"
+                      />
+                      <Input
+                        value={elementProperties.styles.borderColor || '#e5e7eb'}
+                        onChange={(e) => handlePropertyChange('borderColor', e.target.value)}
+                        className="text-xs h-6"
+                        placeholder="#e5e7eb"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shadow & Effects */}
+                <div>
+                  <Label className="text-xs font-medium mb-2 block">Effects</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="opacity" className="text-xs">Opacity</Label>
+                      <Input
+                        id="opacity"
+                        type="number"
+                        value={elementProperties.styles.opacity || 1}
+                        onChange={(e) => handlePropertyChange('opacity', e.target.value)}
+                        className="text-xs h-6"
+                        placeholder="1"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="zIndex" className="text-xs">Z-Index</Label>
+                      <Input
+                        id="zIndex"
+                        type="number"
+                        value={elementProperties.styles.zIndex || 0}
+                        onChange={(e) => handlePropertyChange('zIndex', e.target.value)}
+                        className="text-xs h-6"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <Label htmlFor="boxShadow" className="text-xs">Shadow</Label>
+                    <select
+                      id="boxShadow"
+                      value={elementProperties.styles.boxShadow || 'none'}
+                      onChange={(e) => handlePropertyChange('boxShadow', e.target.value)}
+                      className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                    >
+                      <option value="none">None</option>
+                      <option value="0 1px 3px rgba(0,0,0,0.12)">Small</option>
+                      <option value="0 4px 6px rgba(0,0,0,0.1)">Medium</option>
+                      <option value="0 10px 25px rgba(0,0,0,0.15)">Large</option>
+                      <option value="0 20px 40px rgba(0,0,0,0.1)">X-Large</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Layout & Position */}
+                <div>
+                  <Label className="text-xs font-medium mb-2 block">Layout</Label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <Label htmlFor="display" className="text-xs">Display</Label>
+                      <select
+                        id="display"
+                        value={elementProperties.styles.display || 'block'}
+                        onChange={(e) => handlePropertyChange('display', e.target.value)}
+                        className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                      >
+                        <option value="block">Block</option>
+                        <option value="inline">Inline</option>
+                        <option value="inline-block">Inline Block</option>
+                        <option value="flex">Flex</option>
+                        <option value="grid">Grid</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="position" className="text-xs">Position</Label>
+                      <select
+                        id="position"
+                        value={elementProperties.styles.position || 'static'}
+                        onChange={(e) => handlePropertyChange('position', e.target.value)}
+                        className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                      >
+                        <option value="static">Static</option>
+                        <option value="relative">Relative</option>
+                        <option value="absolute">Absolute</option>
+                        <option value="fixed">Fixed</option>
+                        <option value="sticky">Sticky</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Flex Controls - only show when display is flex */}
+                  {elementProperties.styles.display === 'flex' && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded">
+                      <Label className="text-xs font-medium mb-1 block">Flex Properties</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div>
+                          <Label htmlFor="flexDirection" className="text-xs">Direction</Label>
+                          <select
+                            id="flexDirection"
+                            value={elementProperties.styles.flexDirection || 'row'}
+                            onChange={(e) => handlePropertyChange('flexDirection', e.target.value)}
+                            className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                          >
+                            <option value="row">Row</option>
+                            <option value="column">Column</option>
+                            <option value="row-reverse">Row Reverse</option>
+                            <option value="column-reverse">Column Reverse</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label htmlFor="justifyContent" className="text-xs">Justify</Label>
+                          <select
+                            id="justifyContent"
+                            value={elementProperties.styles.justifyContent || 'flex-start'}
+                            onChange={(e) => handlePropertyChange('justifyContent', e.target.value)}
+                            className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                          >
+                            <option value="flex-start">Start</option>
+                            <option value="center">Center</option>
+                            <option value="flex-end">End</option>
+                            <option value="space-between">Space Between</option>
+                            <option value="space-around">Space Around</option>
+                            <option value="space-evenly">Space Evenly</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label htmlFor="alignItems" className="text-xs">Align</Label>
+                          <select
+                            id="alignItems"
+                            value={elementProperties.styles.alignItems || 'stretch'}
+                            onChange={(e) => handlePropertyChange('alignItems', e.target.value)}
+                            className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                          >
+                            <option value="stretch">Stretch</option>
+                            <option value="flex-start">Start</option>
+                            <option value="center">Center</option>
+                            <option value="flex-end">End</option>
+                            <option value="baseline">Baseline</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </SectionHeader>
+
+            {/* Layout Section */}
+            <SectionHeader title="Spacing" section="layout">
+              <div className="space-y-4">
+                {/* Padding Controls */}
+                <div>
+                  <Label className="text-xs font-medium mb-2 block">Padding</Label>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div></div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.paddingTop) || 0}
+                        onChange={(e) => handlePropertyChange('paddingTop', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.paddingLeft) || 0}
+                        onChange={(e) => handlePropertyChange('paddingLeft', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.padding) || 0}
+                        onChange={(e) => handlePropertyChange('padding', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="All"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.paddingRight) || 0}
+                        onChange={(e) => handlePropertyChange('paddingRight', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div></div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.paddingBottom) || 0}
+                        onChange={(e) => handlePropertyChange('paddingBottom', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                        min="0"
+                      />
+                    </div>
+                    <div></div>
+                  </div>
+                </div>
+
+                {/* Margin Controls */}
+                <div>
+                  <Label className="text-xs font-medium mb-2 block">Margin</Label>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div></div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.marginTop) || 0}
+                        onChange={(e) => handlePropertyChange('marginTop', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.marginLeft) || 0}
+                        onChange={(e) => handlePropertyChange('marginLeft', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.margin) || 0}
+                        onChange={(e) => handlePropertyChange('margin', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="All"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.marginRight) || 0}
+                        onChange={(e) => handlePropertyChange('marginRight', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div></div>
+                    <div>
+                      <Input
+                        type="number"
+                        value={parseInt(elementProperties.styles.marginBottom) || 0}
+                        onChange={(e) => handlePropertyChange('marginBottom', e.target.value)}
+                        className="text-xs h-6 text-center"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div></div>
+                  </div>
                 </div>
               </div>
             </SectionHeader>
