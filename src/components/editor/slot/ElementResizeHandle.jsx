@@ -185,18 +185,18 @@ const ElementResizeHandle = ({
       justifyContent: 'center'
     };
 
-    // Position the handle at the corner of the element, slightly outside
+    // Position the handle at the specified offset
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '-2px', right: '-2px', cursor: 'se-resize' };
+        return { ...baseStyle, bottom: '-15px', right: '-15px', cursor: 'se-resize' };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '-2px', left: '-2px', cursor: 'sw-resize' };
+        return { ...baseStyle, bottom: '-15px', left: '-15px', cursor: 'sw-resize' };
       case 'top-right':
-        return { ...baseStyle, top: '-2px', right: '-2px', cursor: 'ne-resize' };
+        return { ...baseStyle, top: '-15px', right: '-15px', cursor: 'ne-resize' };
       case 'top-left':
-        return { ...baseStyle, top: '-2px', left: '-2px', cursor: 'nw-resize' };
+        return { ...baseStyle, top: '-15px', left: '-15px', cursor: 'nw-resize' };
       default:
-        return { ...baseStyle, bottom: '-2px', right: '-2px', cursor: 'se-resize' };
+        return { ...baseStyle, bottom: '-15px', right: '-15px', cursor: 'se-resize' };
     }
   };
 
