@@ -1,0 +1,157 @@
+import { useState, useCallback, useEffect } from 'react';
+
+/**
+ * Custom hook for managing element selection in the editor
+ * Handles click events, selection highlighting, and property updates
+ */
+export const useElementSelection = () => {
+  const [selectedElement, setSelectedElement] = useState(null);
+  const [selectionBox, setSelectionBox] = useState(null);
+
+  // Add selection highlight styles
+  const addSelectionStyles = useCallback((element) => {
+    if (!element) return;
+    
+    element.style.outline = '2px solid #0066ff';
+    element.style.outlineOffset = '2px';
+    element.classList.add('editor-selected');
+  }, []);
+
+  // Remove selection highlight styles
+  const removeSelectionStyles = useCallback((element) => {
+    if (!element) return;
+    
+    element.style.outline = '';
+    element.style.outlineOffset = '';
+    element.classList.remove('editor-selected');
+  }, []);
+
+  // Select an element
+  const selectElement = useCallback((element, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    // Clear previous selection
+    if (selectedElement) {
+      removeSelectionStyles(selectedElement);
+    }
+
+    if (element && element !== selectedElement) {
+      setSelectedElement(element);
+      addSelectionStyles(element);
+      
+      // Update selection box position
+      const rect = element.getBoundingClientRect();
+      setSelectionBox({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        height: rect.height
+      });
+    } else {
+      setSelectedElement(null);
+      setSelectionBox(null);
+    }
+  }, [selectedElement, addSelectionStyles, removeSelectionStyles]);
+
+  // Clear selection
+  const clearSelection = useCallback(() => {
+    if (selectedElement) {
+      removeSelectionStyles(selectedElement);
+      setSelectedElement(null);
+      setSelectionBox(null);
+    }
+  }, [selectedElement, removeSelectionStyles]);
+
+  // Update element properties
+  const updateElementProperty = useCallback((element, property, value) => {
+    if (!element) return;
+
+    switch (property) {
+      case 'width':
+        element.style.width = value ? `${value}px` : '';
+        break;
+      case 'height':
+        element.style.height = value ? `${value}px` : '';
+        break;
+      case 'fontSize':
+        element.style.fontSize = value;
+        break;
+      case 'fontWeight':
+        element.style.fontWeight = value;
+        break;
+      case 'fontStyle':
+        element.style.fontStyle = value;
+        break;
+      case 'textAlign':
+        element.style.textAlign = value;
+        break;
+      case 'color':
+        element.style.color = value;
+        break;
+      case 'backgroundColor':
+        element.style.backgroundColor = value;
+        break;
+      case 'padding':
+        element.style.padding = value;
+        break;
+      case 'margin':
+        element.style.margin = value;
+        break;
+      default:
+        element.style[property] = value;
+    }
+
+    // Update selection box position if element size changed
+    if (property === 'width' || property === 'height' || property === 'padding' || property === 'margin') {
+      const rect = element.getBoundingClientRect();
+      setSelectionBox({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        height: rect.height
+      });
+    }
+  }, []);
+
+  // Handle click events on selectable elements
+  const handleElementClick = useCallback((event) => {
+    const target = event.target;
+    
+    // Check if the clicked element is selectable
+    const selectableElements = ['BUTTON', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'IMG'];
+    
+    if (selectableElements.includes(target.tagName) && !target.classList.contains('editor-sidebar')) {
+      selectElement(target, event);
+    } else if (!target.closest('.editor-sidebar')) {
+      clearSelection();
+    }
+  }, [selectElement, clearSelection]);
+
+  // Set up global click listeners
+  useEffect(() => {
+    document.addEventListener('click', handleElementClick);
+    
+    return () => {
+      document.removeEventListener('click', handleElementClick);
+    };
+  }, [handleElementClick]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (selectedElement) {
+        removeSelectionStyles(selectedElement);
+      }
+    };
+  }, [selectedElement, removeSelectionStyles]);
+
+  return {
+    selectedElement,
+    selectionBox,
+    selectElement,
+    clearSelection,
+    updateElementProperty
+  };
+};

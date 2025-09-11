@@ -64,8 +64,9 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const wrapperStyle = {
-    ...(size.width !== 'auto' && { width: size.width }),
-    ...(size.height !== 'auto' && { height: size.height }),
+    // Remove fixed dimensions from wrapper to let child handle its own sizing
+    width: 'fit-content',
+    height: 'fit-content',
   };
 
   return (
@@ -80,11 +81,17 @@ const ResizeWrapper = ({
       {React.cloneElement(children, {
         className: cn(
           children.props.className,
-          size.width !== 'auto' && "w-full",
-          size.height !== 'auto' && "h-full",
           "resize-none select-none",
           isResizing && "cursor-se-resize"
-        )
+        ),
+        style: {
+          ...children.props.style,
+          ...(size.width !== 'auto' && { width: `${size.width}px` }),
+          ...(size.height !== 'auto' && { height: `${size.height}px` }),
+          minWidth: size.width !== 'auto' ? `${size.width}px` : undefined,
+          minHeight: size.height !== 'auto' ? `${size.height}px` : undefined,
+          boxSizing: 'border-box'
+        }
       })}
       
       {/* Resize handle - diagonal resize icon in bottom right */}

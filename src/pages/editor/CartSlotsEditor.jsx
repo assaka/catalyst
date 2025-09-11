@@ -40,6 +40,9 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 import { SimpleResizeWrapper } from "@/components/editor/slot/SimpleResizeSystem";
 import { ResizeWrapper } from "@/components/ui/resize-wrapper";
+import EditorSidebar from "@/components/editor/EditorSidebar";
+import { useElementSelection } from "@/components/editor/useElementSelection";
+import "@/components/editor/editor-styles.css";
 
 // Import generic editor utilities
 import {
@@ -196,6 +199,14 @@ export default function CartSlotsEditor({
   const [saveStatus, setSaveStatus] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
+
+  // Element selection for sidebar
+  const { 
+    selectedElement, 
+    selectionBox, 
+    clearSelection, 
+    updateElementProperty 
+  } = useElementSelection();
 
   // Save configuration to database
   const saveConfiguration = useCallback(async () => {
@@ -585,14 +596,17 @@ export default function CartSlotsEditor({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={majorSlots || []} strategy={verticalListSortingStrategy}>
-        <div className="bg-gray-50 cart-page min-h-screen flex flex-col">
+        <div className="bg-gray-50 cart-page min-h-screen flex flex-col" style={{ marginRight: mode === 'edit' ? '320px' : '0' }}>
       {/* Save Status Indicator */}
       {saveStatus && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-white font-medium ${
+        <div 
+          className={`fixed top-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-white font-medium ${
           saveStatus === 'saving' ? 'bg-blue-500' : 
           saveStatus === 'saved' ? 'bg-green-500' : 
           'bg-red-500'
-        }`}>
+        }`}
+          style={{ right: mode === 'edit' ? '340px' : '16px' }}
+        >
           {saveStatus === 'saving' && (
             <>
               <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
@@ -1865,6 +1879,16 @@ export default function CartSlotsEditor({
       )}
     </div>
       </SortableContext>
+
+      {/* Framer-style Editor Sidebar */}
+      {mode === 'edit' && (
+        <EditorSidebar
+          selectedElement={selectedElement}
+          onUpdateElement={updateElementProperty}
+          onClearSelection={clearSelection}
+          isVisible={mode === 'edit'}
+        />
+      )}
     </DndContext>
   );
 }
