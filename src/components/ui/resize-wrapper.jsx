@@ -1,0 +1,136 @@
+"use client"
+
+import React, { useState, useCallback, useRef } from 'react';
+import { cn } from "@/lib/utils";
+
+const ResizeWrapper = ({ 
+  children,
+  className,
+  minWidth = 100,
+  minHeight = 36,
+  maxWidth = 400,
+  maxHeight = 200,
+  onResize,
+  initialWidth,
+  initialHeight,
+  disabled = false,
+  ...props 
+}) => {
+  const [size, setSize] = useState({ 
+    width: initialWidth || 'auto', 
+    height: initialHeight || 'auto' 
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const wrapperRef = useRef(null);
+
+  const handleMouseDown = useCallback((e) => {
+    if (disabled) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = rect.width;
+    const startHeight = rect.height;
+
+    setIsResizing(true);
+
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + deltaX));
+      const newHeight = Math.min(maxHeight, Math.max(minHeight, startHeight + deltaY));
+
+      const newSize = { width: newWidth, height: newHeight };
+      setSize(newSize);
+      
+      if (onResize) {
+        onResize(newSize);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
+
+  const wrapperStyle = {
+    ...(size.width !== 'auto' && { width: size.width }),
+    ...(size.height !== 'auto' && { height: size.height }),
+  };
+
+  return (
+    <div 
+      ref={wrapperRef}
+      className={cn("relative inline-block group", className)}
+      onMouseEnter={() => !disabled && setIsHovered(true)}
+      onMouseLeave={() => !disabled && setIsHovered(false)}
+      style={wrapperStyle}
+      {...props}
+    >
+      {React.cloneElement(children, {
+        className: cn(
+          children.props.className,
+          size.width !== 'auto' && "w-full",
+          size.height !== 'auto' && "h-full",
+          "resize-none select-none",
+          isResizing && "cursor-se-resize"
+        )
+      })}
+      
+      {/* Resize handle - diagonal resize icon in bottom right */}
+      {!disabled && (
+        <div
+          className={cn(
+            "absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-10",
+            "transition-opacity duration-200",
+            "flex items-end justify-end",
+            isHovered || isResizing ? "opacity-100" : "opacity-0"
+          )}
+          onMouseDown={handleMouseDown}
+          style={{
+            transform: 'translate(50%, 50%)'
+          }}
+        >
+          {/* Diagonal lines icon */}
+          <div className="w-3 h-3 relative">
+            <svg 
+              width="12" 
+              height="12" 
+              viewBox="0 0 12 12" 
+              className="absolute bottom-0 right-0 text-gray-500 hover:text-gray-700"
+            >
+              <path 
+                d="M2,10 L10,2 M5,10 L10,5 M8,10 L10,8" 
+                stroke="currentColor" 
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Size feedback tooltip during resize */}
+      {isResizing && !disabled && (
+        <div
+          className="fixed top-4 right-4 bg-black/80 text-white text-xs font-medium px-3 py-1.5 rounded shadow-lg z-50 pointer-events-none"
+        >
+          {Math.round(size.width)} × {Math.round(size.height)}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export { ResizeWrapper };

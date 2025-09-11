@@ -39,6 +39,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 // Clean imports - no longer using cartConfig fallbacks
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 import { SimpleResizeWrapper } from "@/components/editor/slot/SimpleResizeSystem";
+import { ResizeWrapper } from "@/components/ui/resize-wrapper";
 
 // Import generic editor utilities
 import {
@@ -305,7 +306,7 @@ export default function CartSlotsEditor({
 
   // Update major slots based on view mode and configuration
   useEffect(() => {
-    if (cartLayoutConfig?.majorSlots) {
+    if (cartLayoutConfig?.majorSlots && Array.isArray(cartLayoutConfig.majorSlots)) {
       setMajorSlots(cartLayoutConfig.majorSlots);
     } else {
       const emptySlots = ['header', 'emptyCart'];
@@ -583,7 +584,7 @@ export default function CartSlotsEditor({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={majorSlots} strategy={verticalListSortingStrategy}>
+      <SortableContext items={majorSlots || []} strategy={verticalListSortingStrategy}>
         <div className="bg-gray-50 cart-page min-h-screen flex flex-col">
       {/* Save Status Indicator */}
       {saveStatus && (
@@ -957,24 +958,39 @@ export default function CartSlotsEditor({
                           <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                               {mode === 'edit' ? (
-                                <InlineSlotEditor
-                                  slotId={slotId}
-                                  text={cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                                  className={finalClasses}
-                                  style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                  onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                  onClassChange={handleInlineClassChange}
-                                  onEditSlot={handleEditSlot}
-                                  mode={mode}
-                                  elementType="button"
-                                />
-                              ) : (
-                                <Button 
-                                  className={finalClasses}
-                                  style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                <ResizeWrapper
+                                  initialWidth={200}
+                                  initialHeight={44}
+                                  minWidth={100}
+                                  maxWidth={400}
                                 >
-                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                                </Button>
+                                  <InlineSlotEditor
+                                    slotId={slotId}
+                                    text={cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                                    className={finalClasses}
+                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                    onChange={(newText) => handleInlineTextChange(slotId, newText)}
+                                    onClassChange={handleInlineClassChange}
+                                    onEditSlot={handleEditSlot}
+                                    mode={mode}
+                                    elementType="button"
+                                  />
+                                </ResizeWrapper>
+                              ) : (
+                                <ResizeWrapper
+                                  initialWidth={200}
+                                  initialHeight={44}
+                                  minWidth={100}
+                                  maxWidth={400}
+                                  disabled={true}
+                                >
+                                  <Button 
+                                    className={finalClasses}
+                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                  >
+                                    {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                                  </Button>
+                                </ResizeWrapper>
                               )}
                             </div>
                           </div>
@@ -997,9 +1013,16 @@ export default function CartSlotsEditor({
                       <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                     </div>
                     <div className="col-span-12">
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        Continue Shopping
-                      </Button>
+                      <ResizeWrapper
+                        initialWidth={200}
+                        initialHeight={44}
+                        minWidth={100}
+                        maxWidth={400}
+                      >
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                          Continue Shopping
+                        </Button>
+                      </ResizeWrapper>
                     </div>
                   </>
                 )}
@@ -1070,12 +1093,20 @@ export default function CartSlotsEditor({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <Button 
-                                className={finalClasses}
-                                style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                              <ResizeWrapper
+                                initialWidth={200}
+                                initialHeight={44}
+                                minWidth={100}
+                                maxWidth={400}
+                                disabled={true}
                               >
-                                Continue Shopping
-                              </Button>
+                                <Button 
+                                  className={finalClasses}
+                                  style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                >
+                                  Continue Shopping
+                                </Button>
+                              </ResizeWrapper>
                             </div>
                           </div>
                         );
@@ -1096,9 +1127,17 @@ export default function CartSlotsEditor({
                         <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                       </div>
                       <div className="col-span-12">
-                        <Button className="bg-blue-600 hover:bg-blue-700">
-                          Continue Shopping
-                        </Button>
+                        <ResizeWrapper
+                          initialWidth={200}
+                          initialHeight={44}
+                          minWidth={100}
+                          maxWidth={400}
+                          disabled={true}
+                        >
+                          <Button className="bg-blue-600 hover:bg-blue-700">
+                            Continue Shopping
+                          </Button>
+                        </ResizeWrapper>
                       </div>
                     </>
                   )}
