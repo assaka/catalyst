@@ -211,6 +211,14 @@ export default function CartSlotsEditor({
   // Track currently selected slot ID
   const [selectedSlotId, setSelectedSlotId] = useState(null);
 
+  // Check if sidebar should be visible
+  const isSidebarVisible = mode === 'edit' && selectedElement && (
+    selectedElement?.hasAttribute('data-slot-id') || 
+    selectedElement?.hasAttribute('data-editable') ||
+    selectedElement?.closest('[data-slot-id]') ||
+    selectedElement?.closest('[data-editable]')
+  );
+
   // Update slot ID when element is selected
   useEffect(() => {
     if (selectedElement) {
@@ -629,23 +637,25 @@ export default function CartSlotsEditor({
 
   // Render using exact Cart.jsx layout structure with slot_configurations
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext items={majorSlots || []} strategy={verticalListSortingStrategy}>
-        <div className="bg-gray-50 cart-page min-h-screen flex flex-col" style={{ marginRight: mode === 'edit' ? '320px' : '0' }}>
+    <div className={`min-h-screen bg-gray-50 ${
+      isSidebarVisible ? 'grid grid-cols-[1fr_320px]' : 'block'
+    }`}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={majorSlots || []} strategy={verticalListSortingStrategy}>
+          <div className="cart-page flex flex-col min-h-full">
       {/* Save Status Indicator */}
       {saveStatus && (
         <div 
-          className={`fixed top-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-white font-medium ${
+          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-white font-medium ${
           saveStatus === 'saving' ? 'bg-blue-500' : 
           saveStatus === 'saved' ? 'bg-green-500' : 
           'bg-red-500'
         }`}
-          style={{ right: mode === 'edit' ? '340px' : '16px' }}
         >
           {saveStatus === 'saving' && (
             <>
@@ -1874,8 +1884,9 @@ export default function CartSlotsEditor({
           </Dialog>
         </>
       )}
-    </div>
-      </SortableContext>
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Framer-style Editor Sidebar */}
       {mode === 'edit' && (
@@ -1889,6 +1900,6 @@ export default function CartSlotsEditor({
           isVisible={mode === 'edit'}
         />
       )}
-    </DndContext>
+    </div>
   );
 }
