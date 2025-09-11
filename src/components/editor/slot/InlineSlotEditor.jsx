@@ -251,6 +251,67 @@ export default function InlineSlotEditor({
     }
   };
 
+  // Handle icon/image size change
+  const handleIconSize = (sizeClasses) => {
+    // Remove existing size classes and add new ones
+    const newClassName = localClass
+      .replace(/w-\d+\s*h-\d+/g, '') // Remove existing size classes
+      .trim() + ' ' + sizeClasses;
+    
+    setLocalClass(newClassName.trim());
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing ${elementType} size for ${slotId}:`, { 
+        sizeClasses,
+        old: localClass, 
+        new: newClassName.trim() 
+      });
+      onClassChange(slotId, newClassName.trim());
+    }
+  };
+
+  // Handle button size change
+  const handleButtonSize = (sizeClasses) => {
+    // Remove existing button size classes and add new ones
+    const newClassName = localClass
+      .replace(/text-(xs|sm|base|lg|xl)/g, '') // Remove text size
+      .replace(/px-\d+/g, '') // Remove padding x
+      .replace(/py-\d+(\.\d+)?/g, '') // Remove padding y
+      .trim() + ' ' + sizeClasses;
+    
+    setLocalClass(newClassName.trim());
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing button size for ${slotId}:`, { 
+        sizeClasses,
+        old: localClass, 
+        new: newClassName.trim() 
+      });
+      onClassChange(slotId, newClassName.trim());
+    }
+  };
+
+  // Get current icon size
+  const getCurrentIconSize = () => {
+    const sizeMatch = localClass.match(/(w-\d+\s*h-\d+)/);
+    if (sizeMatch) {
+      return sizeMatch[1].replace(/\s+/g, ' ');
+    }
+    return 'w-16 h-16'; // Default size
+  };
+
+  // Get current button size
+  const getCurrentButtonSize = () => {
+    const textSizeMatch = localClass.match(/text-(xs|sm|base|lg|xl)/);
+    const pxMatch = localClass.match(/px-\d+/);
+    const pyMatch = localClass.match(/py-\d+(\.\d+)?/);
+    
+    if (textSizeMatch && pxMatch && pyMatch) {
+      return `${textSizeMatch[0]} ${pxMatch[0]} ${pyMatch[0]}`;
+    }
+    return 'text-base px-4 py-2'; // Default size
+  };
+
   // Get current text color from class or style
   const getCurrentTextColor = (className, styles) => {
     // Check inline styles first
@@ -502,27 +563,72 @@ export default function InlineSlotEditor({
               </div>
             </div>
 
-            {/* Content Controls - padding only (slot resizing handled by ResizeHandle) */}
-            {isResizable && (
+            {/* Content Controls - element-specific resize controls */}
+            {(isResizable || elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
               <>
-                <div className="w-px h-6 bg-gray-300 mx-1" />
+                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+
+                {/* Icon/Image Size Controls */}
+                {(elementType === 'icon' || elementType === 'image') && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500 font-mono">Size</span>
+                    <select
+                      value={getCurrentIconSize()}
+                      onChange={(e) => handleIconSize(e.target.value)}
+                      className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-16"
+                      title={`${elementType === 'icon' ? 'Icon' : 'Image'} Size`}
+                    >
+                      <option value="w-4 h-4">16px</option>
+                      <option value="w-5 h-5">20px</option>
+                      <option value="w-6 h-6">24px</option>
+                      <option value="w-8 h-8">32px</option>
+                      <option value="w-10 h-10">40px</option>
+                      <option value="w-12 h-12">48px</option>
+                      <option value="w-16 h-16">64px</option>
+                      <option value="w-20 h-20">80px</option>
+                      <option value="w-24 h-24">96px</option>
+                      <option value="w-32 h-32">128px</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Button Size Controls */}
+                {elementType === 'button' && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500 font-mono">Size</span>
+                    <select
+                      value={getCurrentButtonSize()}
+                      onChange={(e) => handleButtonSize(e.target.value)}
+                      className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-16"
+                      title="Button Size"
+                    >
+                      <option value="text-xs px-2 py-1">XS</option>
+                      <option value="text-sm px-3 py-1.5">SM</option>
+                      <option value="text-base px-4 py-2">MD</option>
+                      <option value="text-lg px-6 py-3">LG</option>
+                      <option value="text-xl px-8 py-4">XL</option>
+                    </select>
+                  </div>
+                )}
 
                 {/* Padding - Content spacing control */}
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500 font-mono">P</span>
-                  <select
-                    value={currentPadding}
-                    onChange={(e) => handlePadding(e.target.value)}
-                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
-                    title="Padding"
-                  >
-                    {PADDING_OPTIONS.map(padding => (
-                      <option key={padding.value} value={padding.value}>
-                        {padding.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {isResizable && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500 font-mono">P</span>
+                    <select
+                      value={currentPadding}
+                      onChange={(e) => handlePadding(e.target.value)}
+                      className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
+                      title="Padding"
+                    >
+                      {PADDING_OPTIONS.map(padding => (
+                        <option key={padding.value} value={padding.value}>
+                          {padding.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </>
             )}
 
