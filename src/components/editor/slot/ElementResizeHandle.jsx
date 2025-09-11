@@ -50,13 +50,41 @@ const ElementResizeHandle = ({
           height: newPixelWidth // Maintain aspect ratio
         };
       } else if (elementType === 'button') {
-        // For buttons, calculate percentage-based width but allow height adjustment
+        // For buttons, calculate percentage-based width and scale font size proportionally
         const newPixelWidth = Math.max(60, Math.min(parentWidth * 0.9, initialSize.width + deltaX));
         const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
+        
+        // Calculate font size based on width percentage (scale between text-xs and text-2xl)
+        let fontSize = 'text-base';
+        if (widthPercentage < 15) fontSize = 'text-xs';
+        else if (widthPercentage < 25) fontSize = 'text-sm';
+        else if (widthPercentage < 35) fontSize = 'text-base';
+        else if (widthPercentage < 50) fontSize = 'text-lg';
+        else if (widthPercentage < 70) fontSize = 'text-xl';
+        else fontSize = 'text-2xl';
+        
         newSize = {
           widthPercentage: Math.max(10, Math.min(90, widthPercentage)),
           width: newPixelWidth,
-          height: Math.max(24, Math.min(120, initialSize.height + deltaY))
+          height: Math.max(24, Math.min(120, initialSize.height + deltaY)),
+          fontSize
+        };
+      } else {
+        // For text elements, scale font size based on width
+        const newPixelWidth = Math.max(50, Math.min(parentWidth * 0.95, initialSize.width + deltaX));
+        const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
+        
+        let fontSize = 'text-base';
+        if (widthPercentage < 20) fontSize = 'text-sm';
+        else if (widthPercentage < 40) fontSize = 'text-base';
+        else if (widthPercentage < 60) fontSize = 'text-lg';
+        else if (widthPercentage < 80) fontSize = 'text-xl';
+        else fontSize = 'text-2xl';
+        
+        newSize = {
+          widthPercentage: Math.max(15, Math.min(95, widthPercentage)),
+          width: newPixelWidth,
+          fontSize
         };
       }
 
@@ -157,33 +185,35 @@ const ElementResizeHandle = ({
   const getHandleStyle = () => {
     const baseStyle = {
       position: 'absolute',
-      width: '12px',
-      height: '12px',
-      background: '#10b981', // Green color for better UX
-      border: '1px solid #ffffff',
-      borderRadius: '50%',
-      cursor: 'se-resize',
+      width: '16px',
+      height: '16px',
+      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+      border: '2px solid #ffffff',
+      borderRadius: '3px',
+      cursor: 'nw-resize',
       zIndex: 1000,
-      transition: isResizing ? 'none' : 'all 0.15s ease',
-      transform: isResizing ? 'scale(1.2)' : 'scale(1)',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+      transition: isResizing ? 'none' : 'all 0.2s ease',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
       pointerEvents: 'auto',
       userSelect: 'none',
-      opacity: 0.9
+      opacity: 0.8,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     };
 
-    // Position the handle based on the position prop - closer to elements
+    // Position the handle at the exact corner of the element
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '-4px', right: '-4px' };
+        return { ...baseStyle, bottom: '0px', right: '0px', transform: 'translate(50%, 50%)' };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '-4px', left: '-4px', cursor: 'sw-resize' };
+        return { ...baseStyle, bottom: '0px', left: '0px', cursor: 'sw-resize', transform: 'translate(-50%, 50%)' };
       case 'top-right':
-        return { ...baseStyle, top: '-4px', right: '-4px', cursor: 'ne-resize' };
+        return { ...baseStyle, top: '0px', right: '0px', cursor: 'ne-resize', transform: 'translate(50%, -50%)' };
       case 'top-left':
-        return { ...baseStyle, top: '-4px', left: '-4px', cursor: 'nw-resize' };
+        return { ...baseStyle, top: '0px', left: '0px', cursor: 'nw-resize', transform: 'translate(-50%, -50%)' };
       default:
-        return { ...baseStyle, bottom: '-4px', right: '-4px' };
+        return { ...baseStyle, bottom: '0px', right: '0px', transform: 'translate(50%, 50%)' };
     }
   };
 
@@ -194,9 +224,6 @@ const ElementResizeHandle = ({
       ref={resizeRef}
       style={getHandleStyle()}
       onMouseDown={handleMouseDown}
-      onMouseEnter={() => {
-        // Optional: could add subtle visual feedback here
-      }}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -205,8 +232,18 @@ const ElementResizeHandle = ({
         }
       }}
       title={`Drag to resize ${elementType} ${getCurrentSize().widthPercentage ? '(' + getCurrentSize().widthPercentage + '% width)' : ''}`}
-      className="opacity-70 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-emerald-600 hover:scale-110 shadow-sm"
-    />
+      className="group-hover:opacity-100 hover:opacity-100 hover:scale-110 transition-all duration-200"
+    >
+      {/* Resize icon - diagonal lines */}
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+        <path 
+          d="M8 0L0 8M6 0H8V2M0 6V8H2" 
+          stroke="white" 
+          strokeWidth="1" 
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
   );
 };
 

@@ -340,15 +340,20 @@ export default function InlineSlotEditor({
         
     } else if (elementType === 'button') {
       if (newSize.widthPercentage) {
-        // Use inline style for percentage-based width for better reliability
+        // Use inline style for percentage-based width and update font size
         newClassName = localClass
           .replace(/w-\[?\d+%?\]?|w-\d+|w-auto|w-full|w-fit|w-max|w-min|w-screen/g, '') // Remove all width classes
           .replace(/min-w-\[?\w+\]?/g, '') // Remove min-width classes too  
           .replace(/max-w-\[?\w+\]?/g, '') // Remove max-width classes too
+          .replace(/text-(xs|sm|base|lg|xl|2xl|3xl)/g, '') // Remove existing font size classes
+          .replace(/whitespace-nowrap/g, '') // Remove no-wrap constraints
           .replace(/\s+/g, ' ')
           .trim();
         
-        // We'll apply the inline style after setting the class
+        // Add the new font size if provided
+        if (newSize.fontSize) {
+          newClassName += ` ${newSize.fontSize}`;
+        }
       } else {
         // For buttons, adjust text size and padding based on dimensions
         const textSizeMap = {
@@ -372,6 +377,15 @@ export default function InlineSlotEditor({
           .replace(/w-\[?\d+%?\]?|w-\d+|w-auto/g, '') // Remove width classes
           .replace(/\s+/g, ' ')
           .trim() + ' ' + textSizeMap[sizeCategory] + ' w-auto';
+      }
+    } else {
+      // Handle text elements with font size scaling
+      if (newSize.widthPercentage && newSize.fontSize) {
+        newClassName = localClass
+          .replace(/text-(xs|sm|base|lg|xl|2xl|3xl)/g, '') // Remove existing font size classes
+          .replace(/whitespace-nowrap/g, '') // Remove no-wrap constraints
+          .replace(/\s+/g, ' ')
+          .trim() + ` ${newSize.fontSize}`;
       }
     }
 
@@ -552,16 +566,14 @@ export default function InlineSlotEditor({
             <Edit className="w-3 h-3" />
           </button>
           
-          {/* Element-level resize handle for icons, images, and buttons */}
-          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
-            <ElementResizeHandle
-              elementType={elementType}
-              slotId={slotId}
-              className={localClass}
-              onResize={handleElementResize}
-              position="bottom-left"
-            />
-          )}
+          {/* Element-level resize handle for all elements */}
+          <ElementResizeHandle
+            elementType={elementType || 'text'}
+            slotId={slotId}
+            className={localClass}
+            onResize={handleElementResize}
+            position="bottom-right"
+          />
         </div>
       ) : (
         // Edit mode with action toolbar
@@ -858,16 +870,14 @@ export default function InlineSlotEditor({
             )
           )}
           
-          {/* Element-level resize handle for icons, images, and buttons in edit mode */}
-          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
-            <ElementResizeHandle
-              elementType={elementType}
-              slotId={slotId}
-              className={localClass}
-              onResize={handleElementResize}
-              position="bottom-right"
-            />
-          )}
+          {/* Element-level resize handle for all elements in edit mode */}
+          <ElementResizeHandle
+            elementType={elementType || 'text'}
+            slotId={slotId}
+            className={localClass}
+            onResize={handleElementResize}
+            position="bottom-right"
+          />
         </div>
       )}
 
