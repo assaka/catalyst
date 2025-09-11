@@ -13,15 +13,21 @@ const ElementResizeHandle = ({
   const resizeRef = useRef(null);
 
   const handleMouseDown = useCallback((e) => {
+    // Aggressively prevent all default behaviors and event bubbling
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    console.log(`🖱️ ElementResizeHandle: Mouse down on ${elementType} for slot ${slotId}`);
     
     const initialPos = { x: e.clientX, y: e.clientY };
     const initialSize = getCurrentSize();
     
     // Get parent container width for percentage calculations
-    const parentElement = e.target.closest('.relative');
+    const parentElement = e.target.closest('[data-slot-id]');
     const parentWidth = parentElement ? parentElement.offsetWidth : 300;
+
+    console.log(`📏 Initial size:`, initialSize, `Parent width: ${parentWidth}px`);
 
     setIsResizing(true);
     setStartPos(initialPos);
@@ -53,6 +59,7 @@ const ElementResizeHandle = ({
       }
 
       if (newSize && onResize) {
+        console.log(`🔄 Resizing ${elementType} to:`, newSize);
         onResize(slotId, elementType, newSize);
       }
     };
@@ -148,40 +155,51 @@ const ElementResizeHandle = ({
   const getHandleStyle = () => {
     const baseStyle = {
       position: 'absolute',
-      width: '12px',
-      height: '12px',
+      width: '16px',
+      height: '16px',
       background: '#3b82f6',
       border: '2px solid #ffffff',
       borderRadius: '50%',
       cursor: 'se-resize',
-      zIndex: 40,
+      zIndex: 1000,
       transition: isResizing ? 'none' : 'all 0.2s ease',
       transform: isResizing ? 'scale(1.3)' : 'scale(1)',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+      boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+      pointerEvents: 'auto',
+      userSelect: 'none'
     };
 
     // Position the handle based on the position prop
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '-6px', right: '-6px' };
+        return { ...baseStyle, bottom: '-8px', right: '-8px' };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '-6px', left: '-6px', cursor: 'sw-resize' };
+        return { ...baseStyle, bottom: '-8px', left: '-8px', cursor: 'sw-resize' };
       case 'top-right':
-        return { ...baseStyle, top: '-6px', right: '-6px', cursor: 'ne-resize' };
+        return { ...baseStyle, top: '-8px', right: '-8px', cursor: 'ne-resize' };
       case 'top-left':
-        return { ...baseStyle, top: '-6px', left: '-6px', cursor: 'nw-resize' };
+        return { ...baseStyle, top: '-8px', left: '-8px', cursor: 'nw-resize' };
       default:
-        return { ...baseStyle, bottom: '-6px', right: '-6px' };
+        return { ...baseStyle, bottom: '-8px', right: '-8px' };
     }
   };
 
+  console.log(`🔵 ElementResizeHandle rendering for ${elementType} in slot ${slotId}`);
+  
   return (
     <div
       ref={resizeRef}
       style={getHandleStyle()}
       onMouseDown={handleMouseDown}
+      onMouseEnter={() => console.log(`🔵 Mouse enter resize handle for ${elementType}`)}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        console.log(`🔵 Resize handle clicked for ${elementType}`);
+      }}
       title={`Resize ${elementType} (${getCurrentSize().widthPercentage ? getCurrentSize().widthPercentage + '%' : getCurrentSize().width + '×' + getCurrentSize().height + 'px'})`}
-      className="opacity-80 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-blue-600 hover:scale-125 border-2 border-white shadow-lg"
+      className="opacity-100 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-red-500 hover:scale-125 border-2 border-white shadow-lg"
     />
   );
 };

@@ -306,6 +306,7 @@ export default function InlineSlotEditor({
 
   // Handle element resize
   const handleElementResize = useCallback((slotId, elementType, newSize) => {
+    console.log(`🎯 InlineSlotEditor: Handling resize for ${elementType} in slot ${slotId}:`, newSize);
     let newClassName = localClass;
 
     if (elementType === 'icon' || elementType === 'image') {
@@ -370,6 +371,7 @@ export default function InlineSlotEditor({
       }
     }
 
+    console.log(`✅ Class change for ${elementType}: ${localClass} → ${newClassName.trim()}`);
     setLocalClass(newClassName.trim());
     
     if (onClassChange) {
@@ -481,17 +483,18 @@ export default function InlineSlotEditor({
     if (elementType === 'icon') {
       // For icons, render the actual icon component with relative positioning for resize handle
       return (
-        <div className="relative inline-block">
+        <div className="relative inline-block" onMouseDown={(e) => e.stopPropagation()}>
           <ShoppingCart className={localClass} style={style} />
         </div>
       );
     } else if (elementType === 'button') {
       // For buttons, render as a Button component with proper styling and relative positioning
       return (
-        <div className="relative inline-block">
+        <div className="relative inline-block" onMouseDown={(e) => e.stopPropagation()}>
           <Button 
             className={`${localClass} w-auto`}
             style={style}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <span dangerouslySetInnerHTML={{ __html: localText || 'Button' }} />
           </Button>
@@ -773,10 +776,11 @@ export default function InlineSlotEditor({
 
           {/* Text Input or Button in edit mode */}
           {elementType === 'button' ? (
-            <div className="relative inline-block">
+            <div className="relative inline-block" onMouseDown={(e) => e.stopPropagation()}>
               <Button 
                 className={`${localClass} w-auto outline-2 outline-blue-500 outline outline-offset-2`}
                 style={style}
+                onMouseDown={(e) => e.stopPropagation()}
               >
                 <input
                   ref={inputRef}
@@ -789,12 +793,13 @@ export default function InlineSlotEditor({
                   }}
                   className="bg-transparent border-none outline-none min-w-[100px]"
                   style={{ color: 'inherit' }}
+                  onMouseDown={(e) => e.stopPropagation()}
                 />
               </Button>
             </div>
           ) : elementType === 'icon' ? (
             <div className="flex items-center gap-2">
-              <div className="relative inline-block">
+              <div className="relative inline-block" onMouseDown={(e) => e.stopPropagation()}>
                 <ShoppingCart className={`${localClass} outline-2 outline-blue-500 outline outline-offset-2`} style={style} />
               </div>
               <span className="text-sm text-gray-500">(Icon - edit styles only)</span>
