@@ -765,16 +765,6 @@ export default function CartSlotsEditor({
                           </h1>
                         )}
                       </div>
-                      {/* Resize Handle for Edit Mode */}
-                      {mode === 'edit' && (
-                        <ResizeHandle
-                          slotId={slotId}
-                          parentSlot="header"
-                          microSlotSpans={positioning.microSlotSpans}
-                          onResize={handleMicroSlotResize}
-                          position="bottom-right"
-                        />
-                      )}
                     </div>
                   );
                 }
@@ -914,16 +904,6 @@ export default function CartSlotsEditor({
                               </h2>
                             )}
                           </div>
-                          {/* Resize Handle for Edit Mode */}
-                          {mode === 'edit' && (
-                            <ResizeHandle
-                              slotId={slotId}
-                              parentSlot="emptyCart"
-                              microSlotSpans={positioning.microSlotSpans}
-                              onResize={handleMicroSlotResize}
-                              position="bottom-right"
-                            />
-                          )}
                         </div>
                       );
                     }
@@ -953,16 +933,6 @@ export default function CartSlotsEditor({
                               </p>
                             )}
                           </div>
-                          {/* Resize Handle for Edit Mode */}
-                          {mode === 'edit' && (
-                            <ResizeHandle
-                              slotId={slotId}
-                              parentSlot="emptyCart"
-                              microSlotSpans={positioning.microSlotSpans}
-                              onResize={handleMicroSlotResize}
-                              position="bottom-right"
-                            />
-                          )}
                         </div>
                       );
                     }
@@ -1254,16 +1224,6 @@ export default function CartSlotsEditor({
                               <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                 Apply Coupon
                               </h3>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="coupon"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1277,16 +1237,6 @@ export default function CartSlotsEditor({
                                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                                 style={positioning.elementStyles}
                               />
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="coupon"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1324,16 +1274,6 @@ export default function CartSlotsEditor({
                                   </Button>
                                 )}
                               </div>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="coupon"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1475,16 +1415,6 @@ export default function CartSlotsEditor({
                               <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                 Order Summary
                               </h3>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="orderSummary"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1498,16 +1428,6 @@ export default function CartSlotsEditor({
                               <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
                                 <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
                               </div>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="orderSummary"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1521,16 +1441,6 @@ export default function CartSlotsEditor({
                               <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
                                 <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
                               </div>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="orderSummary"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1545,16 +1455,6 @@ export default function CartSlotsEditor({
                                 <span>Total</span>
                                 <span>{currencySymbol}{total.toFixed(2)}</span>
                               </div>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="orderSummary"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
@@ -1601,16 +1501,6 @@ export default function CartSlotsEditor({
                                   )}
                                 </div>
                               </div>
-                              {/* Resize Handle for Edit Mode */}
-                              {mode === 'edit' && (
-                                <ResizeHandle
-                                  slotId={slotId}
-                                  parentSlot="orderSummary"
-                                  microSlotSpans={positioning.microSlotSpans}
-                                  onResize={handleMicroSlotResize}
-                                  position="bottom-right"
-                                />
-                              )}
                             </div>
                           );
                         }
