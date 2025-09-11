@@ -125,6 +125,49 @@ const EditorSidebar = ({
     return htmlSupportedTags.includes(tagName);
   }, [selectedElement]);
 
+  // Generate clean HTML without editor-specific classes and attributes
+  const getCleanHtml = useCallback((element) => {
+    if (!element) return '';
+    
+    // Clone the element to avoid modifying the original
+    const clonedElement = element.cloneNode(true);
+    
+    // Remove editor-specific attributes
+    const editorAttributes = ['data-editable', 'data-slot-id'];
+    editorAttributes.forEach(attr => {
+      clonedElement.removeAttribute(attr);
+    });
+    
+    // Remove editor-specific classes
+    const editorClasses = [
+      'cursor-pointer',
+      'transition-all',
+      'duration-200',
+      'editor-selected',
+      'resize-none',
+      'select-none'
+    ];
+    
+    const hoverClasses = ['hover:!outline-1', 'hover:!outline-blue-400', 'hover:!outline-offset-2', 'hover:outline'];
+    const allEditorClasses = [...editorClasses, ...hoverClasses];
+    
+    // Clean classes from the element
+    if (clonedElement.className) {
+      const cleanClasses = clonedElement.className
+        .split(' ')
+        .filter(cls => !allEditorClasses.some(editorCls => cls.includes(editorCls.replace('!', ''))))
+        .join(' ');
+      
+      if (cleanClasses.trim()) {
+        clonedElement.className = cleanClasses;
+      } else {
+        clonedElement.removeAttribute('class');
+      }
+    }
+    
+    return clonedElement.outerHTML;
+  }, []);
+
   // Update properties when selected element changes
   useEffect(() => {
     if (selectedElement && isSlotElement && slotConfig) {
@@ -231,34 +274,37 @@ const EditorSidebar = ({
     }));
   }, []);
 
-  // Simplified text change handler using save manager
+  // Simple text change handler - only update local state
   const handleTextContentChange = useCallback((e) => {
     const newText = e.target.value;
     
-    // Update local state immediately for UI responsiveness
+    // Only update local state - no save manager calls
     setLocalTextContent(newText);
-    
-    // Record change in save manager (will be debounced automatically) - but not during initialization
-    if (slotId && !isInitializing) {
-      saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
-    }
-  }, [slotId, isInitializing]);
+  }, []);
 
-  // Handle HTML content changes with debounced DOM updates
+  // Simple HTML content change handler - only update local state
   const handleHtmlContentChange = useCallback((e) => {
     const newHtml = e.target.value;
     
-    // Update local state immediately for UI responsiveness
+    // Only update local state - no save manager calls
     setLocalHtmlContent(newHtml);
-    
-    // Record change in save manager for text content - but not during initialization
-    if (slotId && !isInitializing) {
-      // For HTML content, save the HTML as content
-      saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newHtml });
-    }
-  }, [slotId, isInitializing]);
+  }, []);
 
-  // Simplified alignment change handler using save manager
+  // Save text content when user stops typing (onBlur)
+  const handleTextContentSave = useCallback(() => {
+    if (slotId && onTextChange && !isInitializing) {
+      onTextChange(slotId, localTextContent);
+    }
+  }, [slotId, onTextChange, localTextContent, isInitializing]);
+
+  // Save HTML content when user stops typing (onBlur)
+  const handleHtmlContentSave = useCallback(() => {
+    if (slotId && onTextChange && !isInitializing) {
+      onTextChange(slotId, localHtmlContent);
+    }
+  }, [slotId, onTextChange, localHtmlContent, isInitializing]);
+
+  // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
     if (!selectedElement || property !== 'textAlign') return;
     
@@ -272,11 +318,9 @@ const EditorSidebar = ({
       targetElement = selectedElement.closest('.button-slot-container');
     } else {
       // For text slots, traverse up to find grid cell with col-span
-      // Structure: text -> wrapper div -> grid cell (cleaner without ResizeWrapper)
       targetElement = selectedElement.parentElement;
       while (targetElement && !targetElement.className.includes('col-span')) {
         targetElement = targetElement.parentElement;
-        // Safety check to avoid infinite loop
         if (targetElement === document.body) {
           targetElement = null;
           break;
@@ -295,18 +339,17 @@ const EditorSidebar = ({
       newClasses.push(`text-${value}`);
       targetElement.className = newClasses.join(' ');
       
-      // Record change in save manager
-      saveManager.recordChange(elementSlotId, CHANGE_TYPES.PARENT_CLASSES, {
-        className: targetElement.className,
-        styles: {}
-      });
+      // Save immediately using parent callback
+      if (onInlineClassChange) {
+        onInlineClassChange(elementSlotId, targetElement.className, {}, true);
+      }
     }
     
     // Trigger alignment update for button state
     setAlignmentUpdate(prev => prev + 1);
-  }, [selectedElement]);
+  }, [selectedElement, onInlineClassChange]);
 
-  // Simplified property change handler using save manager
+  // Simple property change handler - direct DOM updates and immediate saves
   const handlePropertyChange = useCallback((property, value) => {
     if (!selectedElement) return;
 
@@ -333,14 +376,13 @@ const EditorSidebar = ({
           }));
         }, 10);
         
-        // Record change in save manager
-        saveManager.recordChange(elementSlotId, CHANGE_TYPES.ELEMENT_CLASSES, {
-          className: selectedElement.className,
-          styles: {}
-        });
+        // Save immediately using parent callback
+        if (onInlineClassChange) {
+          onInlineClassChange(elementSlotId, selectedElement.className, {});
+        }
       }
     } else {
-      // Handle inline style properties - apply immediately and record change
+      // Handle inline style properties - apply immediately
       const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
       selectedElement.style[property] = formattedValue;
       
@@ -353,13 +395,12 @@ const EditorSidebar = ({
         }
       }));
       
-      // Record change in save manager  
-      saveManager.recordChange(elementSlotId, CHANGE_TYPES.ELEMENT_STYLES, {
-        property,
-        value: formattedValue
-      });
+      // Save immediately using parent callback (for inline styles, we update classes to persist)
+      if (onInlineClassChange) {
+        onInlineClassChange(elementSlotId, selectedElement.className, { [property]: formattedValue });
+      }
     }
-  }, [selectedElement, handleAlignmentChange]);
+  }, [selectedElement, handleAlignmentChange, onInlineClassChange]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">
@@ -445,6 +486,7 @@ const EditorSidebar = ({
                 id="textContent"
                 value={localTextContent}
                 onChange={handleTextContentChange}
+                onBlur={handleTextContentSave}
                 className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
                 placeholder="Enter text content..."
               />
@@ -459,6 +501,7 @@ const EditorSidebar = ({
                   id="htmlContent"
                   value={localHtmlContent}
                   onChange={handleHtmlContentChange}
+                  onBlur={handleHtmlContentSave}
                   className="w-full mt-1 text-xs font-mono border border-gray-300 rounded-md p-2 h-32 resize-none"
                   placeholder="<button class='...'>Content</button>"
                 />
