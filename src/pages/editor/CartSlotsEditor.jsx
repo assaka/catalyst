@@ -316,102 +316,11 @@ export default function CartSlotsEditor({
   // Set up save manager for this editor (no dependencies to avoid circular issues)
   useEffect(() => {
     saveManager.setSaveCallback(async (changes) => {
-      console.log('💾 CartSlotsEditor processing batch save:', changes.size, 'changes');
+      console.log('💾 CartSlotsEditor processing batch save to database:', changes.size, 'changes');
       
-      // Get current config from ref to avoid stale closures
-      const currentConfig = cartLayoutConfigRef.current;
-      if (!currentConfig) {
-        console.warn('No cartLayoutConfig available for save');
-        return;
-      }
-      
-      // Create a single updated config with all changes
-      let updatedConfig = { ...currentConfig };
-      
-      for (const [slotId, change] of changes) {
-        try {
-          switch (change.type) {
-            case CHANGE_TYPES.TEXT_CONTENT:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    content: change.data.content
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.ELEMENT_CLASSES:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    className: change.data.className,
-                    styles: {
-                      ...updatedConfig.slots?.[slotId]?.styles,
-                      ...change.data.styles
-                    }
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.PARENT_CLASSES:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    parentClassName: change.data.className,
-                    parentStyles: {
-                      ...updatedConfig.slots?.[slotId]?.parentStyles,
-                      ...change.data.styles
-                    }
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.SLOT_RESIZE:
-              updatedConfig = {
-                ...updatedConfig,
-                microSlotSpans: {
-                  ...updatedConfig.microSlotSpans,
-                  [change.data.parentSlot]: {
-                    ...updatedConfig.microSlotSpans?.[change.data.parentSlot],
-                    [slotId]: {
-                      ...updatedConfig.microSlotSpans?.[change.data.parentSlot]?.[slotId],
-                      ...change.data.spans
-                    }
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.ELEMENT_RESIZE:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    className: change.data.className
-                  }
-                }
-              };
-              break;
-            default:
-              console.warn('Unknown change type in CartSlotsEditor:', change.type);
-          }
-        } catch (error) {
-          console.error('Error processing change:', change, error);
-        }
-      }
-      
-      // Update state and save to database
-      setCartLayoutConfig(updatedConfig);
+      // Since we're updating state immediately in the handlers,
+      // the save manager only needs to save to the database
+      // This prevents the infinite loop caused by double state updates
       if (saveConfigurationRef.current) {
         await saveConfigurationRef.current();
       }
@@ -521,9 +430,40 @@ export default function CartSlotsEditor({
     return (slotId, content, elementType) => baseHandler(slotId, content, cartLayoutConfig, elementType);
   }, [cartLayoutConfig]);
 
-  // Simplified inline class change handler using save manager
+  // Simplified inline class change handler using save manager with immediate state update
   const handleInlineClassChange = useCallback((slotId, newClassName, newStyles = {}, isWrapperSlot = false) => {
-    // Record the change - save manager handles the rest
+    // Immediately update the local state to prevent visual lag
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = { ...prevConfig };
+      if (isWrapperSlot) {
+        updatedConfig.slots = {
+          ...updatedConfig.slots,
+          [slotId]: {
+            ...updatedConfig.slots?.[slotId],
+            parentClassName: newClassName,
+            parentStyles: {
+              ...updatedConfig.slots?.[slotId]?.parentStyles,
+              ...newStyles
+            }
+          }
+        };
+      } else {
+        updatedConfig.slots = {
+          ...updatedConfig.slots,
+          [slotId]: {
+            ...updatedConfig.slots?.[slotId],
+            className: newClassName,
+            styles: {
+              ...updatedConfig.slots?.[slotId]?.styles,
+              ...newStyles
+            }
+          }
+        };
+      }
+      return updatedConfig;
+    });
+    
+    // Record the change for debounced save - save manager handles the rest
     const changeType = isWrapperSlot ? CHANGE_TYPES.PARENT_CLASSES : CHANGE_TYPES.ELEMENT_CLASSES;
     saveManager.recordChange(slotId, changeType, {
       className: newClassName,
@@ -531,9 +471,21 @@ export default function CartSlotsEditor({
     });
   }, []);
 
-  // Simplified text change handler using save manager
+  // Simplified text change handler using save manager with debouncing
   const handleSidebarTextChange = useCallback((slotId, newText) => {
-    // Just record the change - save manager handles the rest
+    // Immediately update the local state to prevent input lag
+    setCartLayoutConfig(prevConfig => ({
+      ...prevConfig,
+      slots: {
+        ...prevConfig.slots,
+        [slotId]: {
+          ...prevConfig.slots?.[slotId],
+          content: newText
+        }
+      }
+    }));
+    
+    // Record the change for debounced save - save manager handles the rest
     saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
   }, []);
 
@@ -581,18 +533,45 @@ export default function CartSlotsEditor({
     }
   }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
 
-  // Simplified microslot resize handler using save manager
+  // Simplified microslot resize handler using save manager with immediate state update
   const handleMicroSlotResize = useCallback((slotId, parentSlot, newSpans) => {
-    // Just record the change - save manager handles the rest
+    // Immediately update the local state to prevent visual lag
+    setCartLayoutConfig(prevConfig => ({
+      ...prevConfig,
+      microSlotSpans: {
+        ...prevConfig.microSlotSpans,
+        [parentSlot]: {
+          ...prevConfig.microSlotSpans?.[parentSlot],
+          [slotId]: {
+            ...prevConfig.microSlotSpans?.[parentSlot]?.[slotId],
+            ...newSpans
+          }
+        }
+      }
+    }));
+    
+    // Record the change for debounced save - save manager handles the rest
     saveManager.recordChange(slotId, CHANGE_TYPES.SLOT_RESIZE, { 
       parentSlot, 
       spans: newSpans 
     });
   }, []);
 
-  // Simplified element resize handler using save manager
+  // Simplified element resize handler using save manager with immediate state update
   const handleElementResize = useCallback((slotId, newClasses) => {
-    // Just record the change - save manager handles the rest
+    // Immediately update the local state to prevent visual lag
+    setCartLayoutConfig(prevConfig => ({
+      ...prevConfig,
+      slots: {
+        ...prevConfig.slots,
+        [slotId]: {
+          ...prevConfig.slots?.[slotId],
+          className: newClasses
+        }
+      }
+    }));
+    
+    // Record the change for debounced save - save manager handles the rest
     saveManager.recordChange(slotId, CHANGE_TYPES.ELEMENT_RESIZE, { 
       className: newClasses 
     });
