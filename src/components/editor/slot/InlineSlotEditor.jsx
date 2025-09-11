@@ -252,6 +252,56 @@ export default function InlineSlotEditor({
     }
   };
 
+  // Handle horizontal padding change
+  const handleHorizontalPadding = (paddingClass) => {
+    // Remove existing horizontal padding classes and add new one
+    const newClassName = localClass
+      .replace(/px-\d+/g, '') // Remove existing px classes
+      .trim() + ' ' + paddingClass;
+    
+    setLocalClass(newClassName.trim());
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing horizontal padding for ${slotId}:`, { 
+        paddingClass,
+        old: localClass, 
+        new: newClassName.trim() 
+      });
+      onClassChange(slotId, newClassName.trim());
+    }
+  };
+
+  // Handle vertical padding change
+  const handleVerticalPadding = (paddingClass) => {
+    // Remove existing vertical padding classes and add new one
+    const newClassName = localClass
+      .replace(/py-\d+/g, '') // Remove existing py classes
+      .trim() + ' ' + paddingClass;
+    
+    setLocalClass(newClassName.trim());
+    
+    if (onClassChange) {
+      console.log(`🎨 InlineSlotEditor: Changing vertical padding for ${slotId}:`, { 
+        paddingClass,
+        old: localClass, 
+        new: newClassName.trim() 
+      });
+      onClassChange(slotId, newClassName.trim());
+    }
+  };
+
+  // Get current horizontal padding
+  const getCurrentHorizontalPadding = () => {
+    const pxMatch = localClass.match(/px-\d+/);
+    return pxMatch ? pxMatch[0] : 'px-0';
+  };
+
+  // Get current vertical padding
+  const getCurrentVerticalPadding = () => {
+    const pyMatch = localClass.match(/py-\d+/);
+    return pyMatch ? pyMatch[0] : 'py-0';
+  };
+
   // Handle element resize
   const handleElementResize = useCallback((slotId, elementType, newSize) => {
     let newClassName = localClass;
@@ -575,28 +625,68 @@ export default function InlineSlotEditor({
               </div>
             </div>
 
-            {/* Content Controls - padding only (resize handled by visual handles) */}
-            {isResizable && (
-              <>
-                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+            {/* Spacing Controls - horizontal and vertical padding */}
+            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
-                {/* Padding - Content spacing control */}
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500 font-mono">P</span>
-                  <select
-                    value={currentPadding}
-                    onChange={(e) => handlePadding(e.target.value)}
-                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
-                    title="Padding"
-                  >
-                    {PADDING_OPTIONS.map(padding => (
-                      <option key={padding.value} value={padding.value}>
-                        {padding.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </>
+            {/* Horizontal Padding */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500 font-mono">PX</span>
+              <select
+                value={getCurrentHorizontalPadding()}
+                onChange={(e) => handleHorizontalPadding(e.target.value)}
+                className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
+                title="Horizontal Padding"
+              >
+                <option value="px-0">0</option>
+                <option value="px-1">1</option>
+                <option value="px-2">2</option>
+                <option value="px-3">3</option>
+                <option value="px-4">4</option>
+                <option value="px-6">6</option>
+                <option value="px-8">8</option>
+                <option value="px-12">12</option>
+                <option value="px-16">16</option>
+              </select>
+            </div>
+
+            {/* Vertical Padding */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500 font-mono">PY</span>
+              <select
+                value={getCurrentVerticalPadding()}
+                onChange={(e) => handleVerticalPadding(e.target.value)}
+                className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
+                title="Vertical Padding"
+              >
+                <option value="py-0">0</option>
+                <option value="py-1">1</option>
+                <option value="py-2">2</option>
+                <option value="py-3">3</option>
+                <option value="py-4">4</option>
+                <option value="py-6">6</option>
+                <option value="py-8">8</option>
+                <option value="py-12">12</option>
+                <option value="py-16">16</option>
+              </select>
+            </div>
+
+            {/* General Padding - only show if isResizable */}
+            {isResizable && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500 font-mono">P</span>
+                <select
+                  value={currentPadding}
+                  onChange={(e) => handlePadding(e.target.value)}
+                  className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
+                  title="All Padding"
+                >
+                  {PADDING_OPTIONS.map(padding => (
+                    <option key={padding.value} value={padding.value}>
+                      {padding.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
             <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
