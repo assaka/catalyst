@@ -66,6 +66,12 @@ const EditorSidebar = ({
   // Local text content state for immediate UI updates
   const [localTextContent, setLocalTextContent] = useState('');
   
+  // Local HTML content state for HTML editing
+  const [localHtmlContent, setLocalHtmlContent] = useState('');
+  
+  // Flag to prevent change recording during initialization
+  const [isInitializing, setIsInitializing] = useState(false);
+  
   // State to trigger alignment updates
   const [alignmentUpdate, setAlignmentUpdate] = useState(0);
   
@@ -102,9 +108,20 @@ const EditorSidebar = ({
     selectedElement.closest('[data-editable]')
   );
 
+  // Check if selected element supports HTML content editing
+  const isHtmlElement = useMemo(() => {
+    if (!selectedElement) return false;
+    const tagName = selectedElement.tagName?.toLowerCase();
+    const htmlSupportedTags = ['button', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'section', 'article'];
+    return htmlSupportedTags.includes(tagName);
+  }, [selectedElement]);
+
   // Update properties when selected element changes
   useEffect(() => {
     if (selectedElement && isSlotElement && slotConfig) {
+      // Set initialization flag to prevent change recording
+      setIsInitializing(true);
+      
       // Check if this is a button element for persistent selection
       const isButton = selectedElement.tagName?.toLowerCase() === 'button' || 
                       selectedElement.className?.includes('btn') ||
@@ -124,6 +141,14 @@ const EditorSidebar = ({
       
       // Initialize local text content with slot content
       setLocalTextContent(slotConfig.content || '');
+      
+      // Initialize local HTML content with element's innerHTML
+      if (isHtmlElement && selectedElement) {
+        setLocalHtmlContent(selectedElement.innerHTML || '');
+      }
+      
+      // Clear initialization flag after a short delay
+      setTimeout(() => setIsInitializing(false), 100);
       
       setElementProperties({
         width: selectedElement.offsetWidth || '',
@@ -209,6 +234,25 @@ const EditorSidebar = ({
       saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
     }
   }, [slotId]);
+
+  // Handle HTML content changes with immediate DOM update and debounced save
+  const handleHtmlContentChange = useCallback((e) => {
+    const newHtml = e.target.value;
+    
+    // Update local state immediately for UI responsiveness
+    setLocalHtmlContent(newHtml);
+    
+    // Apply HTML immediately to the DOM element
+    if (selectedElement && isHtmlElement) {
+      selectedElement.innerHTML = newHtml;
+    }
+    
+    // Record change in save manager for text content (HTML will be rendered as text)
+    if (slotId) {
+      // For HTML elements, we save the HTML as content but also preserve it in the DOM
+      saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newHtml });
+    }
+  }, [slotId, selectedElement, isHtmlElement]);
 
   // Simplified alignment change handler using save manager
   const handleAlignmentChange = useCallback((property, value) => {
@@ -359,6 +403,11 @@ const EditorSidebar = ({
                 Button Selected
               </span>
             )}
+            {isHtmlElement && (
+              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                HTML Editable
+              </span>
+            )}
           </p>
           <p className="text-xs text-blue-600">
             {selectedElement.className || 'No classes'}
@@ -366,6 +415,11 @@ const EditorSidebar = ({
           {lastSelectedButton && lastSelectedButton.slotId === slotId && (
             <p className="text-xs text-green-600 mt-1">
               ✓ Button styling will persist until new selection
+            </p>
+          )}
+          {isHtmlElement && (
+            <p className="text-xs text-orange-600 mt-1">
+              ✓ HTML content can be edited directly
             </p>
           )}
         </div>
@@ -383,6 +437,21 @@ const EditorSidebar = ({
                 placeholder="Enter text content..."
               />
             </div>
+            
+            {/* HTML Content Editor - only show for HTML elements */}
+            {isHtmlElement && (
+              <div>
+                <Label htmlFor="htmlContent" className="text-xs font-medium">HTML Content</Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">Edit the raw HTML content of this {selectedElement?.tagName?.toLowerCase()} element</p>
+                <textarea
+                  id="htmlContent"
+                  value={localHtmlContent}
+                  onChange={handleHtmlContentChange}
+                  className="w-full mt-1 text-xs font-mono border border-gray-300 rounded-md p-2 h-24 resize-none"
+                  placeholder="Enter HTML content..."
+                />
+              </div>
+            )}
           </div>
         </SectionHeader>
 
