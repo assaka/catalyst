@@ -162,116 +162,6 @@ export default function CartSlotsEditor({
   const cartLayoutConfigRef = useRef(cartLayoutConfig);
   const saveConfigurationRef = useRef(null);
   
-  // Keep refs updated
-  useEffect(() => {
-    cartLayoutConfigRef.current = cartLayoutConfig;
-    saveConfigurationRef.current = saveConfiguration;
-  }, [cartLayoutConfig, saveConfiguration]);
-  
-  // Set up save manager for this editor (no dependencies to avoid circular issues)
-  useEffect(() => {
-    saveManager.setSaveCallback(async (changes) => {
-      console.log('💾 CartSlotsEditor processing batch save:', changes.size, 'changes');
-      
-      // Get current config from ref to avoid stale closures
-      const currentConfig = cartLayoutConfigRef.current;
-      if (!currentConfig) {
-        console.warn('No cartLayoutConfig available for save');
-        return;
-      }
-      
-      // Create a single updated config with all changes
-      let updatedConfig = { ...currentConfig };
-      
-      for (const [slotId, change] of changes) {
-        try {
-          switch (change.type) {
-            case CHANGE_TYPES.TEXT_CONTENT:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    content: change.data.content
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.ELEMENT_CLASSES:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    className: change.data.className,
-                    styles: {
-                      ...updatedConfig.slots?.[slotId]?.styles,
-                      ...change.data.styles
-                    }
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.PARENT_CLASSES:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    parentClassName: change.data.className,
-                    parentStyles: {
-                      ...updatedConfig.slots?.[slotId]?.parentStyles,
-                      ...change.data.styles
-                    }
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.SLOT_RESIZE:
-              updatedConfig = {
-                ...updatedConfig,
-                microSlotSpans: {
-                  ...updatedConfig.microSlotSpans,
-                  [change.data.parentSlot]: {
-                    ...updatedConfig.microSlotSpans?.[change.data.parentSlot],
-                    [slotId]: {
-                      ...updatedConfig.microSlotSpans?.[change.data.parentSlot]?.[slotId],
-                      ...change.data.spans
-                    }
-                  }
-                }
-              };
-              break;
-            case CHANGE_TYPES.ELEMENT_RESIZE:
-              updatedConfig = {
-                ...updatedConfig,
-                slots: {
-                  ...updatedConfig.slots,
-                  [slotId]: {
-                    ...updatedConfig.slots?.[slotId],
-                    className: change.data.className
-                  }
-                }
-              };
-              break;
-            default:
-              console.warn('Unknown change type in CartSlotsEditor:', change.type);
-          }
-        } catch (error) {
-          console.error('Error processing change:', change, error);
-        }
-      }
-      
-      // Update state and save to database
-      setCartLayoutConfig(updatedConfig);
-      if (saveConfigurationRef.current) {
-        await saveConfigurationRef.current();
-      }
-    });
-  }, []); // Empty dependency array to avoid circular dependencies
   
   // Sample cart data for editor preview
   const [cartItems] = useState([
@@ -416,6 +306,117 @@ export default function CartSlotsEditor({
       setTimeout(() => setSaveStatus(''), 5000);
     }
   }, [currentStoreId, cartLayoutConfig, majorSlots, onSave]);
+
+  // Keep refs updated - placed after saveConfiguration declaration
+  useEffect(() => {
+    cartLayoutConfigRef.current = cartLayoutConfig;
+    saveConfigurationRef.current = saveConfiguration;
+  }, [cartLayoutConfig, saveConfiguration]);
+  
+  // Set up save manager for this editor (no dependencies to avoid circular issues)
+  useEffect(() => {
+    saveManager.setSaveCallback(async (changes) => {
+      console.log('💾 CartSlotsEditor processing batch save:', changes.size, 'changes');
+      
+      // Get current config from ref to avoid stale closures
+      const currentConfig = cartLayoutConfigRef.current;
+      if (!currentConfig) {
+        console.warn('No cartLayoutConfig available for save');
+        return;
+      }
+      
+      // Create a single updated config with all changes
+      let updatedConfig = { ...currentConfig };
+      
+      for (const [slotId, change] of changes) {
+        try {
+          switch (change.type) {
+            case CHANGE_TYPES.TEXT_CONTENT:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    content: change.data.content
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.ELEMENT_CLASSES:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    className: change.data.className,
+                    styles: {
+                      ...updatedConfig.slots?.[slotId]?.styles,
+                      ...change.data.styles
+                    }
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.PARENT_CLASSES:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    parentClassName: change.data.className,
+                    parentStyles: {
+                      ...updatedConfig.slots?.[slotId]?.parentStyles,
+                      ...change.data.styles
+                    }
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.SLOT_RESIZE:
+              updatedConfig = {
+                ...updatedConfig,
+                microSlotSpans: {
+                  ...updatedConfig.microSlotSpans,
+                  [change.data.parentSlot]: {
+                    ...updatedConfig.microSlotSpans?.[change.data.parentSlot],
+                    [slotId]: {
+                      ...updatedConfig.microSlotSpans?.[change.data.parentSlot]?.[slotId],
+                      ...change.data.spans
+                    }
+                  }
+                }
+              };
+              break;
+            case CHANGE_TYPES.ELEMENT_RESIZE:
+              updatedConfig = {
+                ...updatedConfig,
+                slots: {
+                  ...updatedConfig.slots,
+                  [slotId]: {
+                    ...updatedConfig.slots?.[slotId],
+                    className: change.data.className
+                  }
+                }
+              };
+              break;
+            default:
+              console.warn('Unknown change type in CartSlotsEditor:', change.type);
+          }
+        } catch (error) {
+          console.error('Error processing change:', change, error);
+        }
+      }
+      
+      // Update state and save to database
+      setCartLayoutConfig(updatedConfig);
+      if (saveConfigurationRef.current) {
+        await saveConfigurationRef.current();
+      }
+    });
+  }, []); // Empty dependency array to avoid circular dependencies
 
   // Load cart layout configuration directly (matching Cart.jsx)
   useEffect(() => {
