@@ -24,15 +24,11 @@ export function isItalic(className) {
  * Get current alignment from class string
  */
 export function getCurrentAlign(className, isWrapperSlot = false) {
-  if (isWrapperSlot) {
-    if (className.includes('justify-center')) return 'center';
-    if (className.includes('justify-end')) return 'right';
-    return 'left';
-  } else {
-    if (className.includes('text-center')) return 'center';
-    if (className.includes('text-right')) return 'right';
-    return 'left';
-  }
+  // For parent elements (isWrapperSlot = true), we still use text-alignment classes
+  // because our alignment handler applies text-center, text-right to the parent
+  if (className.includes('text-center')) return 'center';
+  if (className.includes('text-right')) return 'right';
+  return 'left';
 }
 
 /**

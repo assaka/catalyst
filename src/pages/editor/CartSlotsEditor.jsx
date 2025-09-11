@@ -158,13 +158,30 @@ export default function CartSlotsEditor({
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
   const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
   
-  // Set up save manager for this editor
+  // Refs to avoid circular dependencies in save manager
+  const cartLayoutConfigRef = useRef(cartLayoutConfig);
+  const saveConfigurationRef = useRef(saveConfiguration);
+  
+  // Keep refs updated
+  useEffect(() => {
+    cartLayoutConfigRef.current = cartLayoutConfig;
+    saveConfigurationRef.current = saveConfiguration;
+  }, [cartLayoutConfig, saveConfiguration]);
+  
+  // Set up save manager for this editor (no dependencies to avoid circular issues)
   useEffect(() => {
     saveManager.setSaveCallback(async (changes) => {
       console.log('💾 CartSlotsEditor processing batch save:', changes.size, 'changes');
       
+      // Get current config from ref to avoid stale closures
+      const currentConfig = cartLayoutConfigRef.current;
+      if (!currentConfig) {
+        console.warn('No cartLayoutConfig available for save');
+        return;
+      }
+      
       // Create a single updated config with all changes
-      let updatedConfig = { ...cartLayoutConfig };
+      let updatedConfig = { ...currentConfig };
       
       for (const [slotId, change] of changes) {
         try {
@@ -250,9 +267,9 @@ export default function CartSlotsEditor({
       
       // Update state and save to database
       setCartLayoutConfig(updatedConfig);
-      await saveConfiguration();
+      await saveConfigurationRef.current();
     });
-  }, [cartLayoutConfig, saveConfiguration]);
+  }, []); // Empty dependency array to avoid circular dependencies
   
   // Sample cart data for editor preview
   const [cartItems] = useState([
@@ -938,11 +955,26 @@ export default function CartSlotsEditor({
                             mode={mode}
                           >
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ShoppingCart 
-                                className={finalClasses} 
-                                style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
-                                data-slot-id={slotId}
-                              />
+                              {mode === 'edit' ? (
+                                <ResizeElementWrapper
+                                  initialWidth={64}
+                                  initialHeight={64}
+                                  minWidth={32}
+                                  maxWidth={128}
+                                >
+                                  <ShoppingCart 
+                                    className={finalClasses} 
+                                    style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                    data-slot-id={slotId}
+                                  />
+                                </ResizeElementWrapper>
+                              ) : (
+                                <ShoppingCart 
+                                  className={finalClasses} 
+                                  style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                  data-slot-id={slotId}
+                                />
+                              )}
                             </div>
                           </SimpleResizeWrapper>
                         </div>
@@ -1097,7 +1129,15 @@ export default function CartSlotsEditor({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
+                              <ResizeElementWrapper
+                                initialWidth={64}
+                                initialHeight={64}
+                                minWidth={32}
+                                maxWidth={128}
+                                disabled={true}
+                              >
+                                <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
+                              </ResizeElementWrapper>
                             </div>
                           </div>
                         );
