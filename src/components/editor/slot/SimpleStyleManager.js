@@ -52,17 +52,22 @@ class SimpleStyleManager {
         newClasses.push(`text-${value}`);
         break;
       case 'fontWeight':
+        // Remove existing font-weight classes to avoid conflicts
+        const fontWeightClasses = ['font-thin', 'font-extralight', 'font-light', 'font-normal', 'font-medium', 'font-semibold', 'font-bold', 'font-extrabold', 'font-black'];
+        newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
+        
         if (value === 'bold') {
-          // Toggle behavior: if already bold, remove it; if not bold, add it
-          if (newClasses.includes('font-bold')) {
-            newClasses = newClasses.filter(cls => cls !== 'font-bold');
-            console.log('🔄 Toggled OFF font-bold');
+          // Check if bold was already present (simple toggle check)
+          const wasBold = currentClasses.includes('font-bold');
+          if (wasBold) {
+            console.log('🔄 Toggled OFF font-bold (setting font-normal)');
+            newClasses.push('font-normal'); // Explicitly set normal weight
           } else {
-            newClasses.push('font-bold');
             console.log('🔄 Toggled ON font-bold');
+            newClasses.push('font-bold');
           }
         } else {
-          newClasses = newClasses.filter(cls => cls !== 'font-bold');
+          newClasses.push('font-normal');
         }
         break;
       case 'fontStyle':
