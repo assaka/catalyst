@@ -456,7 +456,7 @@ export default function CartSlotsEditor({
         [styleKey]: newStyles,
         isWrapper: isWrapperSlot 
       });
-    }, 300);
+    }, 1000);
   }, [cartLayoutConfig, saveConfiguration]);
 
   // Handle text content changes for sidebar with debounced state updates
@@ -508,7 +508,7 @@ export default function CartSlotsEditor({
       } catch (error) {
         console.warn('Error updating text content:', error);
       }
-    }, 500); // 500ms debounce delay
+    }, 1000); // 1000ms debounce delay
   }, [cartLayoutConfig, saveConfiguration]);
 
   const handleSaveEdit = useCallback(() => {
@@ -604,7 +604,7 @@ export default function CartSlotsEditor({
     window.resizeTimeout = setTimeout(() => {
       saveConfiguration();
       console.log('💾 Auto-saved resize for:', slotId, newSpans);
-    }, 500);
+    }, 1000);
   }, [cartLayoutConfig, saveConfiguration]);
 
   // Handle element resize for individual elements (icons, buttons, images)
@@ -654,7 +654,7 @@ export default function CartSlotsEditor({
     window.elementResizeTimeout = setTimeout(() => {
       saveConfiguration();
       console.log('💾 Auto-saved element resize for:', slotId, newClasses);
-    }, 500);
+    }, 1000);
   }, [cartLayoutConfig, saveConfiguration]);
 
   // Custom micro slot styling that reads from slots.{slotId}.className and parentClassName

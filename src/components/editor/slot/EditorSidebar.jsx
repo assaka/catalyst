@@ -67,6 +67,12 @@ const EditorSidebar = ({
   // Refs for debounced text input and property changes
   const textChangeTimeoutRef = useRef(null);
   const propertyChangeTimeoutRef = useRef(null);
+  const onTextChangeRef = useRef(onTextChange);
+
+  // Keep the ref updated
+  useEffect(() => {
+    onTextChangeRef.current = onTextChange;
+  }, [onTextChange]);
 
   // Cleanup timeout on unmount or when selection changes
   useEffect(() => {
@@ -120,7 +126,33 @@ const EditorSidebar = ({
             // Safely merge stored styles with element styles
             const elementStyles = {};
             
-            // Copy element styles safely
+            // Get computed styles for color properties
+            const computedStyle = window.getComputedStyle(selectedElement);
+            const colorProperties = ['color', 'backgroundColor', 'borderColor'];
+            
+            colorProperties.forEach(prop => {
+              const computedValue = computedStyle[prop];
+              if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
+                // Convert rgb/rgba to hex if possible
+                if (computedValue.startsWith('rgb')) {
+                  try {
+                    const rgbMatch = computedValue.match(/\d+/g);
+                    if (rgbMatch && rgbMatch.length >= 3) {
+                      const hex = '#' + rgbMatch.slice(0, 3)
+                        .map(x => parseInt(x).toString(16).padStart(2, '0'))
+                        .join('');
+                      elementStyles[prop] = hex;
+                    }
+                  } catch (e) {
+                    elementStyles[prop] = computedValue;
+                  }
+                } else {
+                  elementStyles[prop] = computedValue;
+                }
+              }
+            });
+            
+            // Copy element inline styles safely
             if (selectedElement.style) {
               for (const property in selectedElement.style) {
                 if (selectedElement.style.hasOwnProperty(property)) {
@@ -161,22 +193,29 @@ const EditorSidebar = ({
   const handleTextContentChange = useCallback((e) => {
     const newText = e.target.value;
     
+    console.log('🎯 handleTextContentChange called:', { newText, slotId });
+    
     // Update local state immediately for UI responsiveness
     setLocalTextContent(newText);
     
     // Clear existing timeout to reset the debounce
     if (textChangeTimeoutRef.current) {
+      console.log('🔄 Clearing existing timeout:', textChangeTimeoutRef.current);
       clearTimeout(textChangeTimeoutRef.current);
     }
     
     // Set new timeout for debounced save
     textChangeTimeoutRef.current = setTimeout(() => {
-      if (onTextChange) {
+      if (onTextChangeRef.current) {
         console.log('🎨 Debounced text save triggered for:', slotId, { content: newText });
-        onTextChange(slotId, newText);
+        onTextChangeRef.current(slotId, newText);
+      } else {
+        console.log('❌ onTextChangeRef.current is null/undefined');
       }
-    }, 500); // 500ms debounce delay
-  }, [slotId, onTextChange]);
+    }, 1000); // 1000ms debounce delay
+    
+    console.log('⏰ Set new timeout:', textChangeTimeoutRef.current);
+  }, [slotId]); // Removed onTextChange dependency
 
   // Ultra-simple style management with debouncing for property changes
   const handlePropertyChange = useCallback((property, value) => {
@@ -223,7 +262,7 @@ const EditorSidebar = ({
         console.log(`💾 Debounced save triggered for ${property}: ${value}`);
         // Apply via style manager for database persistence
         styleManager.applyStyle(selectedElement, actualProperty, value);
-      }, 300); // 300ms debounce delay for property changes
+      }, 1000); // 1000ms debounce delay for property changes
     }
   }, [selectedElement]);
 
@@ -461,10 +500,10 @@ const EditorSidebar = ({
                       className="w-8 h-7 rounded border border-gray-300"
                     />
                     <Input
-                      value={elementProperties.styles.color || '#000000'}
+                      value={elementProperties.styles.color || ''}
                       onChange={(e) => handlePropertyChange('color', e.target.value)}
                       className="text-xs h-7"
-                      placeholder="#000000"
+                      placeholder="Current color"
                     />
                   </div>
                 </div>
@@ -480,10 +519,10 @@ const EditorSidebar = ({
                       className="w-8 h-7 rounded border border-gray-300"
                     />
                     <Input
-                      value={elementProperties.styles.backgroundColor || '#ffffff'}
+                      value={elementProperties.styles.backgroundColor || ''}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="text-xs h-7"
-                      placeholder="transparent"
+                      placeholder="Current background"
                     />
                   </div>
                 </div>
@@ -535,10 +574,10 @@ const EditorSidebar = ({
                         className="w-8 h-6 rounded border border-gray-300"
                       />
                       <Input
-                        value={elementProperties.styles.borderColor || '#e5e7eb'}
+                        value={elementProperties.styles.borderColor || ''}
                         onChange={(e) => handlePropertyChange('borderColor', e.target.value)}
                         className="text-xs h-6"
-                        placeholder="#e5e7eb"
+                        placeholder="Current border"
                       />
                     </div>
                   </div>

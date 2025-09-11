@@ -130,7 +130,7 @@ class SimpleStyleManager {
     
     this.saveTimeout = setTimeout(() => {
       this.persistChanges();
-    }, 500);
+    }, 1000);
   }
 
   // Persist changes to both localStorage and database
