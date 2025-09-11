@@ -119,10 +119,25 @@ export const useElementSelection = () => {
   const handleElementClick = useCallback((event) => {
     const target = event.target;
     
-    // Check if the clicked element is selectable
-    const selectableElements = ['BUTTON', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'DIV', 'IMG'];
+    // Check if element has data-editable attribute or is within an editable context
+    const isEditable = (element) => {
+      // Direct editable attribute
+      if (element.hasAttribute('data-editable')) return true;
+      
+      // Has a slot ID
+      if (element.hasAttribute('data-slot-id')) return true;
+      
+      // Parent has editable marker
+      const parent = element.closest('[data-editable], [data-slot-id]');
+      if (parent) return true;
+      
+      // Is within an editable section
+      if (element.closest('.editable-section')) return true;
+      
+      return false;
+    };
     
-    if (selectableElements.includes(target.tagName) && !target.classList.contains('editor-sidebar')) {
+    if (isEditable(target) && !target.closest('.editor-sidebar')) {
       selectElement(target, event);
     } else if (!target.closest('.editor-sidebar')) {
       clearSelection();

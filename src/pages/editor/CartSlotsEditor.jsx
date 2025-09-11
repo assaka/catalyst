@@ -37,12 +37,12 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 // Clean imports - no longer using cartConfig fallbacks
-import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
-import { SimpleResizeWrapper } from "@/components/editor/slot/SimpleResizeSystem";
-import { ResizeWrapper } from "@/components/ui/resize-wrapper";
-import EditorSidebar from "@/components/editor/EditorSidebar";
-import { useElementSelection } from "@/components/editor/useElementSelection";
-import "@/components/editor/editor-styles.css";
+import { SimpleResizeWrapper } from "@/components/editor/slot/SlotResizeWrapper";
+import { ResizeWrapper as ResizeElementWrapper } from "@/components/ui/resize-element-wrapper";
+import EditorSidebar from "@/components/editor/slot/EditorSidebar";
+import EditableElement from "@/components/editor/slot/EditableElement";
+import { useElementSelection } from "@/components/editor/slot/useElementSelection";
+import "@/components/editor/slot/editor-styles.css";
 
 // Import generic editor utilities
 import {
@@ -207,6 +207,46 @@ export default function CartSlotsEditor({
     clearSelection, 
     updateElementProperty 
   } = useElementSelection();
+
+  // Track currently selected slot ID
+  const [selectedSlotId, setSelectedSlotId] = useState(null);
+
+  // Update slot ID when element is selected
+  useEffect(() => {
+    if (selectedElement) {
+      // Try to find the slot ID from the element or its parents
+      const findSlotId = (element) => {
+        if (!element) return null;
+        
+        // Check data attributes
+        const slotId = element.getAttribute('data-slot-id');
+        if (slotId) return slotId;
+        
+        // Check if element is within a specific slot section
+        const parent = element.closest('[data-slot-id]');
+        if (parent) return parent.getAttribute('data-slot-id');
+        
+        // Try to infer from context
+        if (element.closest('.emptyCart-section')) {
+          if (element.tagName === 'BUTTON') return 'emptyCart.button';
+          if (element.classList.contains('w-16')) return 'emptyCart.icon';
+          if (element.tagName === 'H1' || element.tagName === 'H2') return 'emptyCart.title';
+          if (element.tagName === 'P') return 'emptyCart.text';
+        }
+        
+        if (element.closest('.header-section')) {
+          return 'header.title';
+        }
+        
+        return null;
+      };
+      
+      const slotId = findSlotId(selectedElement);
+      setSelectedSlotId(slotId);
+    } else {
+      setSelectedSlotId(null);
+    }
+  }, [selectedElement]);
 
   // Save configuration to database
   const saveConfiguration = useCallback(async () => {
@@ -763,22 +803,14 @@ export default function CartSlotsEditor({
                   return (
                     <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                       <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                        {mode === 'edit' ? (
-                          <InlineSlotEditor
-                            slotId={slotId}
-                            text={cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
-                            className={finalClasses}
+                        <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                          <h1 
+                            className={finalClasses} 
                             style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
-                            onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                            onClassChange={handleInlineClassChange}
-                            onEditSlot={handleEditSlot}
-                            mode={mode}
-                          />
-                        ) : (
-                          <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
+                          >
                             {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
                           </h1>
-                        )}
+                        </EditableElement>
                       </div>
                     </div>
                   );
@@ -813,7 +845,11 @@ export default function CartSlotsEditor({
                     return (
                       <div key={slotId} className={positioning.gridClasses}>
                         <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                          <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
+                          <h1 
+                            className={finalClasses} 
+                            style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                            data-slot-id={slotId}
+                          >
                             {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
                           </h1>
                         </div>
@@ -873,21 +909,11 @@ export default function CartSlotsEditor({
                         >
                           <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              {mode === 'edit' ? (
-                                <InlineSlotEditor
-                                  slotId={slotId}
-                                  text="<ShoppingCart />"
-                                  className={finalClasses}
-                                  style={{...iconStyling.elementStyles, ...positioning.elementStyles}}
-                                  onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                  onClassChange={handleInlineClassChange}
-                                  onEditSlot={handleEditSlot}
-                                  mode={mode}
-                                  elementType="icon"
-                                />
-                              ) : (
-                                <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
-                              )}
+                              <ShoppingCart 
+                                className={finalClasses} 
+                                style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                data-slot-id={slotId}
+                              />
                             </div>
                           </div>
                         </SimpleResizeWrapper>
@@ -902,22 +928,11 @@ export default function CartSlotsEditor({
                       return (
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            {mode === 'edit' ? (
-                              <InlineSlotEditor
-                                slotId={slotId}
-                                text={cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
-                                className={finalClasses}
-                                style={{...titleStyling.elementStyles, ...positioning.elementStyles}}
-                                onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                onClassChange={handleInlineClassChange}
-                                onEditSlot={handleEditSlot}
-                                mode={mode}
-                              />
-                            ) : (
+                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
                               <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                 {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                               </h2>
-                            )}
+                            </EditableElement>
                           </div>
                         </div>
                       );
@@ -931,22 +946,11 @@ export default function CartSlotsEditor({
                       return (
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            {mode === 'edit' ? (
-                              <InlineSlotEditor
-                                slotId={slotId}
-                                text={cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                                className={finalClasses}
-                                style={{...textStyling.elementStyles, ...positioning.elementStyles}}
-                                onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                onClassChange={handleInlineClassChange}
-                                onEditSlot={handleEditSlot}
-                                mode={mode}
-                              />
-                            ) : (
+                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
                               <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
                                 {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                               </p>
-                            )}
+                            </EditableElement>
                           </div>
                         </div>
                       );
@@ -972,26 +976,23 @@ export default function CartSlotsEditor({
                           <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                               {mode === 'edit' ? (
-                                <ResizeWrapper
+                                <ResizeElementWrapper
                                   initialWidth={200}
                                   initialHeight={44}
                                   minWidth={100}
                                   maxWidth={400}
                                 >
-                                  <InlineSlotEditor
-                                    slotId={slotId}
-                                    text={cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                                    className={finalClasses}
-                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                    onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                    onClassChange={handleInlineClassChange}
-                                    onEditSlot={handleEditSlot}
-                                    mode={mode}
-                                    elementType="button"
-                                  />
-                                </ResizeWrapper>
+                                  <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                    <Button 
+                                      className={finalClasses}
+                                      style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                    >
+                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                                    </Button>
+                                  </EditableElement>
+                                </ResizeElementWrapper>
                               ) : (
-                                <ResizeWrapper
+                                <ResizeElementWrapper
                                   initialWidth={200}
                                   initialHeight={44}
                                   minWidth={100}
@@ -1004,7 +1005,7 @@ export default function CartSlotsEditor({
                                   >
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                                   </Button>
-                                </ResizeWrapper>
+                                </ResizeElementWrapper>
                               )}
                             </div>
                           </div>
@@ -1303,17 +1304,15 @@ export default function CartSlotsEditor({
                             <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                               <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                                 {mode === 'edit' ? (
-                                  <InlineSlotEditor
-                                    slotId={slotId}
-                                    text={cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
-                                    className={finalClasses}
-                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                    onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                    onClassChange={handleInlineClassChange}
-                                    onEditSlot={handleEditSlot}
-                                    mode={mode}
-                                    elementType="button"
-                                  />
+                                  <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                    <Button 
+                                      disabled={!couponCode.trim()}
+                                      className={finalClasses}
+                                      style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                    >
+                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
+                                    </Button>
+                                  </EditableElement>
                                 ) : (
                                   <Button 
                                     disabled={!couponCode.trim()}
@@ -1522,22 +1521,20 @@ export default function CartSlotsEditor({
                               <div className="border-t mt-6 pt-6">
                                 <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                                   {mode === 'edit' ? (
-                                    <InlineSlotEditor
-                                      slotId={slotId}
-                                      text={cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
-                                      className={finalClasses}
-                                      style={{
-                                        backgroundColor: '#007bff',
-                                        color: '#FFFFFF',
-                                        ...buttonStyling.elementStyles,
-                                        ...positioning.elementStyles
-                                      }}
-                                      onChange={(newText) => handleInlineTextChange(slotId, newText)}
-                                      onClassChange={handleInlineClassChange}
-                                      onEditSlot={handleEditSlot}
-                                      mode={mode}
-                                      elementType="button"
-                                    />
+                                    <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                      <Button 
+                                        size="lg" 
+                                        className={finalClasses}
+                                        style={{
+                                          backgroundColor: '#007bff',
+                                          color: '#FFFFFF',
+                                          ...buttonStyling.elementStyles,
+                                          ...positioning.elementStyles
+                                        }}
+                                      >
+                                        {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
+                                      </Button>
+                                    </EditableElement>
                                   ) : (
                                     <Button 
                                       size="lg" 
@@ -1886,6 +1883,8 @@ export default function CartSlotsEditor({
           selectedElement={selectedElement}
           onUpdateElement={updateElementProperty}
           onClearSelection={clearSelection}
+          onClassChange={handleInlineClassChange}
+          slotId={selectedSlotId}
           isVisible={mode === 'edit'}
         />
       )}

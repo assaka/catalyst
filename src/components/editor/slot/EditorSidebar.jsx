@@ -17,11 +17,26 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  toggleClass,
+  isBold,
+  isItalic,
+  getCurrentAlign,
+  getCurrentFontSize,
+  handleBoldToggle,
+  handleItalicToggle,
+  handleAlignmentChange,
+  handleFontSizeChange,
+  FONT_SIZES,
+  COLOR_PALETTE
+} from './editor-utils';
 
 const EditorSidebar = ({ 
   selectedElement, 
   onUpdateElement, 
   onClearSelection,
+  onClassChange,  // New prop for class changes
+  slotId,        // Current slot ID  
   isVisible = true 
 }) => {
   const [expandedSections, setExpandedSections] = useState({
@@ -34,31 +49,22 @@ const EditorSidebar = ({
   const [elementProperties, setElementProperties] = useState({
     width: '',
     height: '',
-    fontSize: '',
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    textAlign: 'left',
-    color: '#000000',
-    backgroundColor: '#ffffff',
-    padding: '',
-    margin: ''
+    className: '',
+    styles: {}
   });
 
   // Update properties when selected element changes
   useEffect(() => {
     if (selectedElement) {
-      const computedStyle = window.getComputedStyle(selectedElement);
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        fontSize: computedStyle.fontSize,
-        fontWeight: computedStyle.fontWeight,
-        fontStyle: computedStyle.fontStyle,
-        textAlign: computedStyle.textAlign,
-        color: computedStyle.color,
-        backgroundColor: computedStyle.backgroundColor,
-        padding: computedStyle.padding,
-        margin: computedStyle.margin
+        className: selectedElement.className || '',
+        styles: selectedElement.style ? Object.fromEntries(
+          Object.entries(selectedElement.style).filter(([key, value]) => 
+            value && !key.startsWith('webkit') && !key.startsWith('moz')
+          )
+        ) : {}
       });
     }
   }, [selectedElement]);
@@ -71,15 +77,64 @@ const EditorSidebar = ({
   }, []);
 
   const handlePropertyChange = useCallback((property, value) => {
+    if (!selectedElement || !onClassChange || !slotId) return;
+
+    const currentClassName = elementProperties.className;
+    let newClassName = currentClassName;
+    let newStyles = { ...elementProperties.styles };
+
+    switch (property) {
+      case 'width':
+        if (value) {
+          selectedElement.style.width = `${value}px`;
+        }
+        break;
+      case 'height':
+        if (value) {
+          selectedElement.style.height = `${value}px`;
+        }
+        break;
+      case 'fontSize':
+        newClassName = handleFontSizeChange(currentClassName, value);
+        break;
+      case 'fontWeight':
+        if (value === 'bold') {
+          newClassName = handleBoldToggle(currentClassName);
+        }
+        break;
+      case 'fontStyle':
+        if (value === 'italic') {
+          newClassName = handleItalicToggle(currentClassName);
+        }
+        break;
+      case 'textAlign':
+        newClassName = handleAlignmentChange(currentClassName, value, false);
+        break;
+      case 'color':
+        newStyles.color = value;
+        break;
+      case 'backgroundColor':
+        newStyles.backgroundColor = value;
+        break;
+      default:
+        return;
+    }
+
+    // Update element classes and styles
+    if (newClassName !== currentClassName) {
+      selectedElement.className = newClassName;
+      onClassChange(slotId, newClassName);
+    }
+
+    // Update element styles
+    Object.assign(selectedElement.style, newStyles);
+    
     setElementProperties(prev => ({
       ...prev,
-      [property]: value
+      className: newClassName,
+      styles: newStyles
     }));
-
-    if (selectedElement && onUpdateElement) {
-      onUpdateElement(selectedElement, property, value);
-    }
-  }, [selectedElement, onUpdateElement]);
+  }, [selectedElement, onClassChange, slotId, elementProperties.className, elementProperties.styles]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">
@@ -204,37 +259,31 @@ const EditorSidebar = ({
                   <Label htmlFor="fontSize" className="text-xs font-medium">Font Size</Label>
                   <select
                     id="fontSize"
-                    value={elementProperties.fontSize}
+                    value={getCurrentFontSize(elementProperties.className)}
                     onChange={(e) => handlePropertyChange('fontSize', e.target.value)}
                     className="w-full mt-1 h-7 text-xs border border-gray-300 rounded-md"
                   >
-                    <option value="12px">12px</option>
-                    <option value="14px">14px</option>
-                    <option value="16px">16px</option>
-                    <option value="18px">18px</option>
-                    <option value="20px">20px</option>
-                    <option value="24px">24px</option>
-                    <option value="32px">32px</option>
+                    {FONT_SIZES.map(size => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="flex gap-1">
                   <Button
-                    variant={elementProperties.fontWeight === 'bold' ? 'default' : 'outline'}
+                    variant={isBold(elementProperties.className) ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('fontWeight', 
-                      elementProperties.fontWeight === 'bold' ? 'normal' : 'bold'
-                    )}
+                    onClick={() => handlePropertyChange('fontWeight', 'bold')}
                     className="h-7 px-2"
                   >
                     <Bold className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={elementProperties.fontStyle === 'italic' ? 'default' : 'outline'}
+                    variant={isItalic(elementProperties.className) ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('fontStyle', 
-                      elementProperties.fontStyle === 'italic' ? 'normal' : 'italic'
-                    )}
+                    onClick={() => handlePropertyChange('fontStyle', 'italic')}
                     className="h-7 px-2"
                   >
                     <Italic className="w-3 h-3" />
@@ -243,7 +292,7 @@ const EditorSidebar = ({
 
                 <div className="flex gap-1">
                   <Button
-                    variant={elementProperties.textAlign === 'left' ? 'default' : 'outline'}
+                    variant={getCurrentAlign(elementProperties.className) === 'left' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'left')}
                     className="h-7 px-2"
@@ -251,7 +300,7 @@ const EditorSidebar = ({
                     <AlignLeft className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={elementProperties.textAlign === 'center' ? 'default' : 'outline'}
+                    variant={getCurrentAlign(elementProperties.className) === 'center' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'center')}
                     className="h-7 px-2"
@@ -259,7 +308,7 @@ const EditorSidebar = ({
                     <AlignCenter className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={elementProperties.textAlign === 'right' ? 'default' : 'outline'}
+                    variant={getCurrentAlign(elementProperties.className) === 'right' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'right')}
                     className="h-7 px-2"
@@ -279,12 +328,12 @@ const EditorSidebar = ({
                     <input
                       id="textColor"
                       type="color"
-                      value={elementProperties.color}
+                      value={elementProperties.styles.color || '#000000'}
                       onChange={(e) => handlePropertyChange('color', e.target.value)}
                       className="w-8 h-7 rounded border border-gray-300"
                     />
                     <Input
-                      value={elementProperties.color}
+                      value={elementProperties.styles.color || '#000000'}
                       onChange={(e) => handlePropertyChange('color', e.target.value)}
                       className="text-xs h-7"
                       placeholder="#000000"
@@ -298,12 +347,12 @@ const EditorSidebar = ({
                     <input
                       id="bgColor"
                       type="color"
-                      value={elementProperties.backgroundColor}
+                      value={elementProperties.styles.backgroundColor || '#ffffff'}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="w-8 h-7 rounded border border-gray-300"
                     />
                     <Input
-                      value={elementProperties.backgroundColor}
+                      value={elementProperties.styles.backgroundColor || '#ffffff'}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="text-xs h-7"
                       placeholder="transparent"
@@ -316,27 +365,8 @@ const EditorSidebar = ({
             {/* Layout Section */}
             <SectionHeader title="Layout" section="layout">
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="padding" className="text-xs font-medium">Padding</Label>
-                    <Input
-                      id="padding"
-                      value={elementProperties.padding}
-                      onChange={(e) => handlePropertyChange('padding', e.target.value)}
-                      className="text-xs h-7 mt-1"
-                      placeholder="0px"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="margin" className="text-xs font-medium">Margin</Label>
-                    <Input
-                      id="margin"
-                      value={elementProperties.margin}
-                      onChange={(e) => handlePropertyChange('margin', e.target.value)}
-                      className="text-xs h-7 mt-1"
-                      placeholder="0px"
-                    />
-                  </div>
+                <div className="text-xs text-gray-500">
+                  Layout controls coming soon. Use resize handles for now.
                 </div>
               </div>
             </SectionHeader>
