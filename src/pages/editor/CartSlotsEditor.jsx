@@ -845,12 +845,12 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
                       const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
-                        <SmartResizeWrapper
+                        <SimpleResizeWrapper
                           key={slotId}
                           slotId={slotId}
                           parentSlot="emptyCart"
-                          microSlotSpans={positioning.microSlotSpans}
-                          onMicroslotResize={handleMicroSlotResize}
+                          spans={positioning.microSlotSpans}
+                          onSlotResize={handleMicroSlotResize}
                           elementType="icon"
                           currentClasses={finalClasses}
                           onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
@@ -875,7 +875,7 @@ export default function CartSlotsEditor({
                               )}
                             </div>
                           </div>
-                        </SmartResizeWrapper>
+                        </SimpleResizeWrapper>
                       );
                     }
                     
@@ -943,12 +943,12 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       return (
-                        <SmartResizeWrapper
+                        <SimpleResizeWrapper
                           key={slotId}
                           slotId={slotId}
                           parentSlot="emptyCart"
-                          microSlotSpans={positioning.microSlotSpans}
-                          onMicroslotResize={handleMicroSlotResize}
+                          spans={positioning.microSlotSpans}
+                          onSlotResize={handleMicroSlotResize}
                           elementType="button"
                           currentClasses={finalClasses}
                           onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
@@ -978,7 +978,7 @@ export default function CartSlotsEditor({
                               )}
                             </div>
                           </div>
-                        </SmartResizeWrapper>
+                        </SimpleResizeWrapper>
                       );
                     }
                     
