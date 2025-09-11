@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -22,7 +22,8 @@ import {
   handleItalicToggle,
   handleAlignmentChange,
   handleFontSizeChange,
-  FONT_SIZES
+  FONT_SIZES,
+  debounce
 } from './editor-utils';
 
 const EditorSidebar = ({ 
@@ -50,6 +51,12 @@ const EditorSidebar = ({
     styles: {}
   });
 
+  // State for persistent button selection
+  const [lastSelectedButton, setLastSelectedButton] = useState(null);
+  
+  // Refs for debounced text input
+  const textChangeTimeoutRef = useRef(null);
+
   // Check if selected element is a slot element
   const isSlotElement = selectedElement && (
     selectedElement.hasAttribute('data-slot-id') ||
@@ -61,6 +68,19 @@ const EditorSidebar = ({
   // Update properties when selected element changes
   useEffect(() => {
     if (selectedElement && isSlotElement && slotConfig) {
+      // Check if this is a button element for persistent selection
+      const isButton = selectedElement.tagName?.toLowerCase() === 'button' || 
+                      selectedElement.className?.includes('btn') ||
+                      selectedElement.getAttribute('role') === 'button';
+      
+      if (isButton) {
+        setLastSelectedButton({
+          element: selectedElement,
+          slotId: slotId,
+          timestamp: Date.now()
+        });
+      }
+      
       // Get stored configuration values, fallback to current element values
       const storedClassName = slotConfig.className || '';
       const storedStyles = slotConfig.styles || {};
@@ -80,7 +100,7 @@ const EditorSidebar = ({
         }
       });
     }
-  }, [selectedElement, isSlotElement, slotConfig]);
+  }, [selectedElement, isSlotElement, slotConfig, slotId]);
 
   const toggleSection = useCallback((section) => {
     setExpandedSections(prev => ({
@@ -88,6 +108,29 @@ const EditorSidebar = ({
       [section]: !prev[section]
     }));
   }, []);
+
+  // Create debounced text change handler
+  const debouncedTextChange = useCallback(
+    debounce((slotId, newText) => {
+      if (onTextChange) {
+        onTextChange(slotId, newText);
+      }
+    }, 500), // 500ms debounce delay
+    [onTextChange]
+  );
+
+  // Handle immediate text change (for UI responsiveness) + debounced save
+  const handleTextContentChange = useCallback((e) => {
+    const newText = e.target.value;
+    
+    // Clear existing timeout
+    if (textChangeTimeoutRef.current) {
+      clearTimeout(textChangeTimeoutRef.current);
+    }
+    
+    // Call debounced save function
+    debouncedTextChange(slotId, newText);
+  }, [slotId, debouncedTextChange]);
 
   const handlePropertyChange = useCallback((property, value) => {
     if (!selectedElement || !onClassChange || !slotId) return;
@@ -259,10 +302,20 @@ const EditorSidebar = ({
         <div className="p-4 bg-blue-50 border-b border-gray-200">
           <p className="text-sm text-blue-800 font-medium">
             {selectedElement.tagName?.toLowerCase() || 'element'}
+            {lastSelectedButton && lastSelectedButton.slotId === slotId && (
+              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                Button Selected
+              </span>
+            )}
           </p>
           <p className="text-xs text-blue-600">
             {selectedElement.className || 'No classes'}
           </p>
+          {lastSelectedButton && lastSelectedButton.slotId === slotId && (
+            <p className="text-xs text-green-600 mt-1">
+              ✓ Button styling will persist until new selection
+            </p>
+          )}
         </div>
 
         {/* Content Section */}
@@ -273,11 +326,7 @@ const EditorSidebar = ({
               <textarea
                 id="textContent"
                 value={slotConfig?.content || ''}
-                onChange={(e) => {
-                  if (onTextChange) {
-                    onTextChange(slotId, e.target.value);
-                  }
-                }}
+                onChange={handleTextContentChange}
                 className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
                 placeholder="Enter text content..."
               />
