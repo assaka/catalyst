@@ -1010,18 +1010,17 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
                       const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
-                        <SimpleResizeWrapper
-                          key={slotId}
-                          slotId={slotId}
-                          parentSlot="emptyCart"
-                          spans={positioning.microSlotSpans}
-                          onSlotResize={handleMicroSlotResize}
-                          elementType="icon"
-                          currentClasses={finalClasses}
-                          onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                          mode={mode}
-                        >
-                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                          <SimpleResizeWrapper
+                            slotId={slotId}
+                            parentSlot="emptyCart"
+                            spans={positioning.microSlotSpans}
+                            onSlotResize={handleMicroSlotResize}
+                            elementType="icon"
+                            currentClasses={finalClasses}
+                            onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
+                            mode={mode}
+                          >
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                               <ShoppingCart 
                                 className={finalClasses} 
@@ -1029,8 +1028,8 @@ export default function CartSlotsEditor({
                                 data-slot-id={slotId}
                               />
                             </div>
-                          </div>
-                        </SimpleResizeWrapper>
+                          </SimpleResizeWrapper>
+                        </div>
                       );
                     }
                     
@@ -1076,18 +1075,17 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       return (
-                        <SimpleResizeWrapper
-                          key={slotId}
-                          slotId={slotId}
-                          parentSlot="emptyCart"
-                          spans={positioning.microSlotSpans}
-                          onSlotResize={handleMicroSlotResize}
-                          elementType="button"
-                          currentClasses={finalClasses}
-                          onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                          mode={mode}
-                        >
-                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                          <SimpleResizeWrapper
+                            slotId={slotId}
+                            parentSlot="emptyCart"
+                            spans={positioning.microSlotSpans}
+                            onSlotResize={handleMicroSlotResize}
+                            elementType="button"
+                            currentClasses={finalClasses}
+                            onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
+                            mode={mode}
+                          >
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                               {mode === 'edit' ? (
                                 <ResizeElementWrapper
@@ -1122,8 +1120,8 @@ export default function CartSlotsEditor({
                                 </ResizeElementWrapper>
                               )}
                             </div>
-                          </div>
-                        </SimpleResizeWrapper>
+                          </SimpleResizeWrapper>
+                        </div>
                       );
                     }
                     

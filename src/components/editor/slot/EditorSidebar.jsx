@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -65,15 +65,27 @@ const EditorSidebar = ({
   // Local text content state for immediate UI updates
   const [localTextContent, setLocalTextContent] = useState('');
   
+  // State to trigger alignment updates
+  const [alignmentUpdate, setAlignmentUpdate] = useState(0);
+  
+  // Get current alignment from parent element
+  const currentAlignment = useMemo(() => {
+    if (!selectedElement?.parentElement) return 'left';
+    const parentClassName = selectedElement.parentElement.className || '';
+    return getCurrentAlign(parentClassName, true);
+  }, [selectedElement, alignmentUpdate]);
+  
   // Refs for debounced text input and property changes
   const textChangeTimeoutRef = useRef(null);
   const propertyChangeTimeoutRef = useRef(null);
   const onTextChangeRef = useRef(onTextChange);
+  const slotIdRef = useRef(slotId);
 
-  // Keep the ref updated
+  // Keep the refs updated
   useEffect(() => {
     onTextChangeRef.current = onTextChange;
-  }, [onTextChange]);
+    slotIdRef.current = slotId;
+  }, [onTextChange, slotId]);
 
   // Cleanup timeout on unmount or when selection changes
   useEffect(() => {
@@ -194,7 +206,12 @@ const EditorSidebar = ({
   const handleTextContentChange = useCallback((e) => {
     const newText = e.target.value;
     
-    console.log('🎯 handleTextContentChange called:', { newText, slotId });
+    console.log('🎯 handleTextContentChange called:', { 
+      newText, 
+      slotId: slotIdRef.current, 
+      timestamp: Date.now(),
+      hasExistingTimeout: !!textChangeTimeoutRef.current 
+    });
     
     // Update local state immediately for UI responsiveness
     setLocalTextContent(newText);
@@ -208,15 +225,15 @@ const EditorSidebar = ({
     // Set new timeout for debounced save
     textChangeTimeoutRef.current = setTimeout(() => {
       if (onTextChangeRef.current) {
-        console.log('🎨 Debounced text save triggered for:', slotId, { content: newText });
-        onTextChangeRef.current(slotId, newText);
+        console.log('🎨 Debounced text save triggered for:', slotIdRef.current, { content: newText });
+        onTextChangeRef.current(slotIdRef.current, newText);
       } else {
         console.log('❌ onTextChangeRef.current is null/undefined');
       }
     }, 1000); // 1000ms debounce delay
     
-    console.log('⏰ Set new timeout:', textChangeTimeoutRef.current);
-  }, [slotId]); // Removed onTextChange dependency
+    console.log('⏰ Set new timeout:', textChangeTimeoutRef.current, 'for slotId:', slotIdRef.current);
+  }, []); // Remove slotId dependency to prevent function recreation
 
   // Handle alignment changes - always apply to parent and store in parentClassName
   const handleAlignmentChange = useCallback((property, value) => {
@@ -245,6 +262,9 @@ const EditorSidebar = ({
     if (onInlineClassChange && parentElement) {
       onInlineClassChange(slotId, parentElement.className, {}, true); // isWrapperSlot = true for parent
     }
+    
+    // Trigger alignment update for button state
+    setAlignmentUpdate(prev => prev + 1);
   }, [selectedElement, onInlineClassChange]);
 
   // Ultra-simple style management with debouncing for property changes
@@ -495,10 +515,7 @@ const EditorSidebar = ({
 
                 <div className="flex gap-1">
                   <Button
-                    variant={(() => {
-                      const parentClassName = selectedElement?.parentElement?.className || '';
-                      return getCurrentAlign(parentClassName, true) === 'left' ? 'default' : 'outline';
-                    })()}
+                    variant={currentAlignment === 'left' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'left')}
                     className="h-7 px-2"
@@ -506,10 +523,7 @@ const EditorSidebar = ({
                     <AlignLeft className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={(() => {
-                      const parentClassName = selectedElement?.parentElement?.className || '';
-                      return getCurrentAlign(parentClassName, true) === 'center' ? 'default' : 'outline';
-                    })()}
+                    variant={currentAlignment === 'center' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'center')}
                     className="h-7 px-2"
@@ -517,10 +531,7 @@ const EditorSidebar = ({
                     <AlignCenter className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={(() => {
-                      const parentClassName = selectedElement?.parentElement?.className || '';
-                      return getCurrentAlign(parentClassName, true) === 'right' ? 'default' : 'outline';
-                    })()}
+                    variant={currentAlignment === 'right' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'right')}
                     className="h-7 px-2"
