@@ -357,67 +357,69 @@ export default function InlineSlotEditor({
       ) : (
         // Edit mode with action toolbar
         <div className="relative inline-block">
-          {/* Action Toolbar - Centered and Responsive */}
+          {/* Action Toolbar - Truly Responsive */}
           <div 
-            className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1 z-[100] whitespace-nowrap overflow-x-auto"
+            className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 sm:p-2 z-[100]"
             style={{
               top: '-60px',
               left: '50%',
               transform: 'translateX(-50%)',
-              maxWidth: 'min(90vw, 600px)',
-              minWidth: 'min-content'
+              width: 'max-content',
+              maxWidth: '95vw'
             }}
           >
+            <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              <div className="flex items-center gap-0.5 sm:gap-1 min-w-max">
             {/* Bold */}
             <button
               onClick={handleBold}
-              className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${bold ? 'bg-blue-100 text-blue-600' : ''}`}
+              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${bold ? 'bg-blue-100 text-blue-600' : ''}`}
               title="Bold"
             >
-              <Bold className="w-4 h-4" />
+              <Bold className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
 
             {/* Italic */}
             <button
               onClick={handleItalic}
-              className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${italic ? 'bg-blue-100 text-blue-600' : ''}`}
+              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${italic ? 'bg-blue-100 text-blue-600' : ''}`}
               title="Italic"
             >
-              <Italic className="w-4 h-4" />
+              <Italic className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
 
-            <div className="w-px h-6 bg-gray-300 mx-1" />
+            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
             {/* Alignment */}
             <button
               onClick={() => handleAlign('left')}
-              className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'left' ? 'bg-blue-100 text-blue-600' : ''}`}
+              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'left' ? 'bg-blue-100 text-blue-600' : ''}`}
               title="Align Left"
             >
-              <AlignLeft className="w-4 h-4" />
+              <AlignLeft className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => handleAlign('center')}
-              className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'center' ? 'bg-blue-100 text-blue-600' : ''}`}
+              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'center' ? 'bg-blue-100 text-blue-600' : ''}`}
               title="Align Center"
             >
-              <AlignCenter className="w-4 h-4" />
+              <AlignCenter className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => handleAlign('right')}
-              className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'right' ? 'bg-blue-100 text-blue-600' : ''}`}
+              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'right' ? 'bg-blue-100 text-blue-600' : ''}`}
               title="Align Right"
             >
-              <AlignRight className="w-4 h-4" />
+              <AlignRight className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
 
-            <div className="w-px h-6 bg-gray-300 mx-1" />
+            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
             {/* Font Size */}
             <select
               value={currentFontSize}
               onChange={(e) => handleFontSize(e.target.value)}
-              className="px-2 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50"
+              className="px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-gray-200 rounded hover:bg-gray-50 min-w-0"
               title="Font Size"
             >
               {FONT_SIZES.map(size => (
@@ -427,18 +429,18 @@ export default function InlineSlotEditor({
               ))}
             </select>
 
-            <div className="w-px h-6 bg-gray-300 mx-1" />
+            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
             {/* Text Color */}
             <div className="relative group">
               <input
                 type="color"
-                className="w-8 h-6 rounded border border-gray-200 cursor-pointer"
+                className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
                 title="Text Color"
                 onChange={(e) => handleColorChange('color', e.target.value)}
                 value={getCurrentTextColor(localClass, style)}
               />
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
                 Text
               </div>
             </div>
@@ -447,12 +449,12 @@ export default function InlineSlotEditor({
             <div className="relative group">
               <input
                 type="color"
-                className="w-8 h-6 rounded border border-gray-200 cursor-pointer"
+                className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
                 title="Background Color"
                 onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
                 value={getCurrentBackgroundColor(localClass, style)}
               />
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
                 BG
               </div>
             </div>
@@ -515,7 +517,7 @@ export default function InlineSlotEditor({
               </>
             )}
 
-            <div className="w-px h-6 bg-gray-300 mx-1" />
+            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
             {/* HTML Editor */}
             <button
@@ -526,38 +528,40 @@ export default function InlineSlotEditor({
                   setShowHtmlEditor(true);
                 }
               }}
-              className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+              className="p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors"
               title="Edit HTML"
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
 
             {/* Advanced Style Editor */}
             <button
               onClick={() => setShowStyleEditor(true)}
-              className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+              className="p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors"
               title="Advanced Styles"
             >
-              <Palette className="w-4 h-4" />
+              <Palette className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
 
-            <div className="w-px h-6 bg-gray-300 mx-1" />
+            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
             {/* Save/Cancel */}
             <button
               onClick={handleSave}
-              className="p-1.5 rounded hover:bg-green-100 text-green-600 transition-colors"
+              className="p-1 sm:p-1.5 rounded hover:bg-green-100 text-green-600 transition-colors"
               title="Save"
             >
-              <Check className="w-4 h-4" />
+              <Check className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={handleCancel}
-              className="p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
+              className="p-1 sm:p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
               title="Cancel"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3 sm:w-4 sm:h-4" />
             </button>
+              </div>
+            </div>
           </div>
 
           {/* Text Input or Button in edit mode */}
