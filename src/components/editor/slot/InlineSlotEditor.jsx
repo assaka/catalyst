@@ -55,6 +55,40 @@ export default function InlineSlotEditor({
   isWrapperSlot = false,
   elementType = 'div'
 }) {
+  // TEMPORARILY DISABLED - Just render static content
+  const renderStaticContent = () => {
+    if (elementType === 'button') {
+      return (
+        <Button 
+          className={className}
+          style={style}
+        >
+          {text || "Button"}
+        </Button>
+      );
+    }
+    
+    if (elementType === 'icon') {
+      return <ShoppingCart className={className} style={style} />;
+    }
+    
+    // Default text rendering
+    const Tag = slotId?.includes('title') ? 'h1' : 
+                slotId?.includes('heading') ? 'h2' : 'span';
+    
+    return (
+      <Tag 
+        className={className}
+        style={style}
+        dangerouslySetInnerHTML={{ __html: text || "Text" }}
+      />
+    );
+  };
+  
+  return renderStaticContent();
+  
+  // ORIGINAL CODE DISABLED BELOW
+  /*
   const [isEditing, setIsEditing] = useState(false);
   const [localText, setLocalText] = useState(text);
   const [localClass, setLocalClass] = useState(className);
@@ -817,4 +851,5 @@ export default function InlineSlotEditor({
       )}
     </div>
   );
+  */
 }
