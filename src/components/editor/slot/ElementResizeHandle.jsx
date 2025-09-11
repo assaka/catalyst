@@ -1,35 +1,62 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 const ElementResizeHandle = ({ 
-  elementType, 
   slotId, 
-  className,
+  elementType,
+  currentSize,
   onResize, 
-  position = 'bottom-right' 
+  position = 'bottom-right',
+  maintainAspectRatio = true 
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const [startSize, setStartSize] = useState({ width: 0, height: 0 });
+  const [startSize, setStartSize] = useState({ width: 32, height: 32 });
+  const [currentDimensions, setCurrentDimensions] = useState({ width: 32, height: 32 });
   const resizeRef = useRef(null);
 
-  const handleMouseDown = useCallback((e) => {
-    // Aggressively prevent all default behaviors and event bubbling
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.stopImmediatePropagation) {
-      e.stopImmediatePropagation();
+  // Initialize current dimensions when currentSize changes
+  useEffect(() => {
+    const dimensions = extractDimensions(currentSize, elementType);
+    setCurrentDimensions(dimensions);
+  }, [currentSize, elementType]);
+
+  // Extract dimensions from className or styles
+  const extractDimensions = (size, type) => {
+    if (!size) return getDefaultSize(type);
+    
+    // Extract from Tailwind classes like w-16 h-16
+    const widthMatch = size.match(/w-(\d+)/);
+    const heightMatch = size.match(/h-(\d+)/);
+    
+    if (widthMatch && heightMatch) {
+      // Convert Tailwind size to pixels (4px per unit)
+      return {
+        width: parseInt(widthMatch[1]) * 4,
+        height: parseInt(heightMatch[1]) * 4
+      };
     }
     
-    console.log(`🖱️ ElementResizeHandle: Mouse down on ${elementType} for slot ${slotId}`);
+    return getDefaultSize(type);
+  };
+
+  // Get default size based on element type
+  const getDefaultSize = (type) => {
+    switch (type) {
+      case 'icon':
+        return { width: 64, height: 64 }; // w-16 h-16
+      case 'button':
+        return { width: 120, height: 40 }; // auto width, h-10
+      default:
+        return { width: 200, height: 24 }; // text default
+    }
+  };
+
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
     
     const initialPos = { x: e.clientX, y: e.clientY };
-    const initialSize = getCurrentSize();
-    
-    // Get parent container width for percentage calculations
-    const parentElement = e.target.closest('[data-slot-id]');
-    const parentWidth = parentElement ? parentElement.offsetWidth : 300;
-
-    console.log(`📏 Initial size:`, initialSize, `Parent width: ${parentWidth}px`);
+    const initialSize = extractDimensions(currentSize, elementType);
 
     setIsResizing(true);
     setStartPos(initialPos);
@@ -39,42 +66,33 @@ const ElementResizeHandle = ({
       const deltaX = moveEvent.clientX - initialPos.x;
       const deltaY = moveEvent.clientY - initialPos.y;
 
-      let newSize;
-      if (elementType === 'icon' || elementType === 'image') {
-        // For icons/images, calculate percentage-based width
-        const newPixelWidth = Math.max(16, Math.min(parentWidth * 0.8, initialSize.width + deltaX));
-        const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
-        newSize = { 
-          widthPercentage: Math.max(5, Math.min(80, widthPercentage)),
-          width: newPixelWidth, 
-          height: newPixelWidth // Maintain aspect ratio
-        };
-      } else if (elementType === 'button') {
-        // For buttons, calculate percentage-based width and scale font size proportionally
-        const newPixelWidth = Math.max(60, Math.min(parentWidth * 0.9, initialSize.width + deltaX));
-        const widthPercentage = Math.round((newPixelWidth / parentWidth) * 100);
-        
-        // Calculate font size based on width percentage (scale between text-xs and text-2xl)
-        let fontSize = 'text-base';
-        if (widthPercentage < 15) fontSize = 'text-xs';
-        else if (widthPercentage < 25) fontSize = 'text-sm';
-        else if (widthPercentage < 35) fontSize = 'text-base';
-        else if (widthPercentage < 50) fontSize = 'text-lg';
-        else if (widthPercentage < 70) fontSize = 'text-xl';
-        else fontSize = 'text-2xl';
-        
-        newSize = {
-          widthPercentage: Math.max(10, Math.min(90, widthPercentage)),
-          width: newPixelWidth,
-          height: Math.max(24, Math.min(120, initialSize.height + deltaY)),
-          fontSize
-        };
+      let newWidth = initialSize.width + deltaX;
+      let newHeight = initialSize.height + deltaY;
+
+      // Maintain aspect ratio for icons and images
+      if (maintainAspectRatio && elementType === 'icon') {
+        const aspectRatio = initialSize.width / initialSize.height;
+        // Use the larger delta to maintain proportions
+        const scaleFactor = Math.max(deltaX / initialSize.width, deltaY / initialSize.height);
+        newWidth = initialSize.width * (1 + scaleFactor);
+        newHeight = initialSize.height * (1 + scaleFactor);
       }
 
-      if (newSize && onResize) {
-        console.log(`🔄 Resizing ${elementType} to:`, newSize);
-        onResize(slotId, elementType, newSize);
+      // Apply constraints
+      newWidth = Math.max(16, Math.min(400, newWidth));
+      newHeight = Math.max(16, Math.min(300, newHeight));
+
+      // For buttons, maintain minimum readable height
+      if (elementType === 'button') {
+        newHeight = Math.max(32, newHeight);
       }
+
+      const dimensions = { width: newWidth, height: newHeight };
+      setCurrentDimensions(dimensions);
+
+      // Convert to Tailwind classes
+      const newSize = convertToTailwindSize(dimensions, elementType);
+      onResize(slotId, newSize);
     };
 
     const handleMouseUp = () => {
@@ -85,148 +103,155 @@ const ElementResizeHandle = ({
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [slotId, elementType, onResize]);
+  }, [slotId, elementType, currentSize, maintainAspectRatio, onResize]);
 
-  // Get current size from className or default values
-  const getCurrentSize = () => {
-    if (elementType === 'icon' || elementType === 'image') {
-      // Check for percentage-based width first
-      const widthPercentMatch = className.match(/w-\[(\d+)%\]/);
-      if (widthPercentMatch) {
-        const percentage = parseInt(widthPercentMatch[1]);
-        // Get parent width for pixel calculation
-        const parentElement = document.querySelector(`[data-slot-id="${slotId}"]`);
-        const parentWidth = parentElement ? parentElement.offsetWidth : 300;
-        const pixelWidth = Math.round((percentage / 100) * parentWidth);
-        return { width: pixelWidth, height: pixelWidth, widthPercentage: percentage };
-      }
-      
-      // Enhanced size detection for icons/images with Tailwind classes
-      const wMatch = className.match(/w-(\d+)/);
-      const hMatch = className.match(/h-(\d+)/);
-      
-      if (wMatch && hMatch) {
-        const width = parseInt(wMatch[1]) * 4; // Convert Tailwind units to pixels
-        const height = parseInt(hMatch[1]) * 4;
-        return { width, height };
-      } else if (wMatch) {
-        const size = parseInt(wMatch[1]) * 4;
-        return { width: size, height: size };
-      }
-      return { width: 64, height: 64 }; // Default w-16 h-16
-    } else if (elementType === 'button') {
-      // Check for percentage-based width first
-      const widthPercentMatch = className.match(/w-\[(\d+)%\]/);
-      if (widthPercentMatch) {
-        const percentage = parseInt(widthPercentMatch[1]);
-        // Get parent width for pixel calculation
-        const parentElement = document.querySelector(`[data-slot-id="${slotId}"]`);
-        const parentWidth = parentElement ? parentElement.offsetWidth : 300;
-        const pixelWidth = Math.round((percentage / 100) * parentWidth);
-        return { width: pixelWidth, height: 36, widthPercentage: percentage };
-      }
-      
-      // For buttons, estimate size based on text size and padding
-      const textSizeMatch = className.match(/text-(xs|sm|base|lg|xl|2xl)/);
-      const pxMatch = className.match(/px-(\d+)/);
-      const pyMatch = className.match(/py-(\d+(?:\.\d+)?)/);
-      
-      let width = 120; // base width
-      let height = 36; // base height
-      
-      // Adjust based on text size
-      if (textSizeMatch) {
-        const sizeMap = { 
-          xs: { w: 0.7, h: 0.8 }, 
-          sm: { w: 0.85, h: 0.9 }, 
-          base: { w: 1, h: 1 }, 
-          lg: { w: 1.2, h: 1.1 }, 
-          xl: { w: 1.4, h: 1.2 },
-          '2xl': { w: 1.6, h: 1.3 }
-        };
-        const multiplier = sizeMap[textSizeMatch[1]] || { w: 1, h: 1 };
-        width *= multiplier.w;
-        height *= multiplier.h;
-      }
-      
-      // Adjust based on padding
-      if (pxMatch) {
-        const px = parseInt(pxMatch[1]) * 4; // Convert to pixels
-        width += px * 2; // Padding on both sides
-      }
-      
-      if (pyMatch) {
-        const py = parseFloat(pyMatch[1]) * 4; // Convert to pixels
-        height += py * 2; // Padding on top and bottom
-      }
-      
-      return { width: Math.max(60, width), height: Math.max(24, height) };
+  // Convert pixel dimensions to Tailwind size classes
+  const convertToTailwindSize = (dimensions, type) => {
+    const widthClass = getTailwindSizeClass('w', dimensions.width);
+    const heightClass = getTailwindSizeClass('h', dimensions.height);
+
+    if (type === 'icon') {
+      // Icons typically use the same width and height
+      return `${widthClass} ${heightClass}`;
+    } else if (type === 'button') {
+      // Buttons often have auto width or specific padding
+      return `${heightClass} px-4`; // Use padding for width control
+    } else {
+      // Text elements might use different sizing
+      return `${widthClass} ${heightClass}`;
     }
-    return { width: 64, height: 64 };
+  };
+
+  // Convert pixel value to closest Tailwind size class
+  const getTailwindSizeClass = (prefix, pixels) => {
+    const sizes = [
+      { px: 16, class: '4' },
+      { px: 20, class: '5' },
+      { px: 24, class: '6' },
+      { px: 28, class: '7' },
+      { px: 32, class: '8' },
+      { px: 36, class: '9' },
+      { px: 40, class: '10' },
+      { px: 44, class: '11' },
+      { px: 48, class: '12' },
+      { px: 56, class: '14' },
+      { px: 64, class: '16' },
+      { px: 80, class: '20' },
+      { px: 96, class: '24' },
+      { px: 112, class: '28' },
+      { px: 128, class: '32' }
+    ];
+
+    // Find closest size
+    const closest = sizes.reduce((prev, curr) => 
+      Math.abs(curr.px - pixels) < Math.abs(prev.px - pixels) ? curr : prev
+    );
+
+    return `${prefix}-${closest.class}`;
   };
 
   const getHandleStyle = () => {
     const baseStyle = {
       position: 'absolute',
-      width: '16px',
-      height: '16px',
-      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+      width: '8px',
+      height: '8px',
+      background: '#10b981', // Green color for element resize
       border: '2px solid #ffffff',
-      borderRadius: '3px',
-      cursor: 'nw-resize',
-      zIndex: 1000,
+      borderRadius: '50%',
+      cursor: 'se-resize',
+      zIndex: 40,
       transition: isResizing ? 'none' : 'all 0.2s ease',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-      pointerEvents: 'auto',
-      userSelect: 'none',
-      opacity: 0.8,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
+      transform: isResizing ? 'scale(1.3)' : 'scale(1)',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
     };
 
-    // Position the handle at the specified offset
+    // Position based on element type and position prop
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '-15px', right: '-15px', cursor: 'se-resize' };
+        return { 
+          ...baseStyle, 
+          bottom: '-4px', 
+          right: '-4px', 
+          cursor: 'se-resize' 
+        };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '-15px', left: '-15px', cursor: 'sw-resize' };
+        return { 
+          ...baseStyle, 
+          bottom: '-4px', 
+          left: '-4px', 
+          cursor: 'sw-resize' 
+        };
       case 'top-right':
-        return { ...baseStyle, top: '-15px', right: '-15px', cursor: 'ne-resize' };
+        return { 
+          ...baseStyle, 
+          top: '-4px', 
+          right: '-4px', 
+          cursor: 'ne-resize' 
+        };
       case 'top-left':
-        return { ...baseStyle, top: '-15px', left: '-15px', cursor: 'nw-resize' };
+        return { 
+          ...baseStyle, 
+          top: '-4px', 
+          left: '-4px', 
+          cursor: 'nw-resize' 
+        };
       default:
-        return { ...baseStyle, bottom: '-15px', right: '-15px', cursor: 'se-resize' };
+        return { 
+          ...baseStyle, 
+          bottom: '-4px', 
+          right: '-4px', 
+          cursor: 'se-resize' 
+        };
     }
   };
 
-  console.log(`🔵 ElementResizeHandle rendering for ${elementType} in slot ${slotId}`);
-  
   return (
-    <div
-      ref={resizeRef}
-      style={getHandleStyle()}
-      onMouseDown={handleMouseDown}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.stopImmediatePropagation) {
-          e.stopImmediatePropagation();
-        }
-      }}
-      title={`Drag to resize ${elementType} ${getCurrentSize().widthPercentage ? '(' + getCurrentSize().widthPercentage + '% width)' : ''}`}
-      className="group-hover:opacity-100 hover:opacity-100 hover:scale-110 transition-all duration-200"
-    >
-      {/* Resize icon - diagonal lines */}
-      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-        <path 
-          d="M8 0L0 8M6 0H8V2M0 6V8H2" 
-          stroke="white" 
-          strokeWidth="1" 
-          strokeLinecap="round"
+    <>
+      <div
+        ref={resizeRef}
+        style={getHandleStyle()}
+        onMouseDown={handleMouseDown}
+        title={`Resize ${elementType} (${Math.round(currentDimensions.width)}×${Math.round(currentDimensions.height)}px)`}
+        className="hover:bg-green-600 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        {/* Resize icon for visual feedback */}
+        <div 
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '4px',
+            height: '4px',
+            background: 'white',
+            borderRadius: '1px'
+          }}
         />
-      </svg>
-    </div>
+      </div>
+      
+      {/* Visual feedback tooltip during resize */}
+      {isResizing && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '60px',
+            right: '10px',
+            background: 'rgba(16, 185, 129, 0.9)', // Green background
+            color: 'white',
+            padding: '6px 10px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            zIndex: 1001,
+            pointerEvents: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+          }}
+        >
+          {elementType}: {Math.round(currentDimensions.width)}×{Math.round(currentDimensions.height)}px
+          {maintainAspectRatio && <div style={{ fontSize: '10px', opacity: 0.8 }}>Proportional</div>}
+        </div>
+      )}
+    </>
   );
 };
 
