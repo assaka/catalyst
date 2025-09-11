@@ -460,8 +460,8 @@ export default function CartSlotsEditor({
     }, 300);
   }, [cartLayoutConfig, saveConfiguration]);
 
-  // Handle text content changes
-  const handleInlineTextChange = useCallback((slotId, newText) => {
+  // Handle text content changes for sidebar
+  const handleSidebarTextChange = useCallback((slotId, newText) => {
     if (!cartLayoutConfig) return;
     
     // Update the cartLayoutConfig with the new text content
@@ -1934,7 +1934,7 @@ export default function CartSlotsEditor({
           onUpdateElement={updateElementProperty}
           onClearSelection={clearSelection}
           onClassChange={handleInlineClassChange}
-          onTextChange={handleInlineTextChange}
+          onTextChange={handleSidebarTextChange}
           slotId={selectedSlotId}
           slotConfig={selectedSlotId ? cartLayoutConfig?.slots?.[selectedSlotId] : null}
           isVisible={mode === 'edit'}
