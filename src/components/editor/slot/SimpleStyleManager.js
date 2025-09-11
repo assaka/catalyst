@@ -3,6 +3,13 @@ class SimpleStyleManager {
   constructor() {
     this.changes = new Map();
     this.saveTimeout = null;
+    this.databaseSaveCallback = null; // Will be set by the parent component
+  }
+
+  // Set the database save callback from parent component
+  setDatabaseSaveCallback(callback) {
+    this.databaseSaveCallback = callback;
+    console.log('💾 Database save callback registered');
   }
 
   // Apply style directly to DOM element
@@ -124,16 +131,39 @@ class SimpleStyleManager {
     }, 500);
   }
 
-  // Simple persistence to localStorage
+  // Persist changes to both localStorage and database
   persistChanges() {
     try {
-      const serializedChanges = {};
+      // Convert changes to database format
+      const databaseUpdates = {};
+      
       this.changes.forEach((changes, elementId) => {
-        serializedChanges[elementId] = changes;
+        // Get the current element to read its latest className
+        const element = document.querySelector(`[data-slot-id="${elementId}"]`) || 
+                       document.getElementById(elementId);
+        
+        if (element) {
+          databaseUpdates[elementId] = {
+            className: element.className,
+            styles: {}, // Keep styles empty since we're using classes
+            metadata: {
+              lastModified: new Date().toISOString()
+            }
+          };
+        }
       });
       
-      localStorage.setItem('editor_style_changes', JSON.stringify(serializedChanges));
-      console.log('💾 Persisted style changes:', serializedChanges);
+      // Save to localStorage for backup
+      localStorage.setItem('editor_style_changes', JSON.stringify(databaseUpdates));
+      
+      // Save to database if callback is available
+      if (this.databaseSaveCallback && Object.keys(databaseUpdates).length > 0) {
+        console.log('💾 Saving to database:', databaseUpdates);
+        this.databaseSaveCallback(databaseUpdates);
+      } else {
+        console.log('💾 Persisted to localStorage only:', databaseUpdates);
+      }
+      
     } catch (error) {
       console.warn('Failed to persist changes:', error);
     }

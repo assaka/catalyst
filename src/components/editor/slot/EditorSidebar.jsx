@@ -32,6 +32,17 @@ const EditorSidebar = ({
   slotConfig,    // Current slot configuration from database
   isVisible = true 
 }) => {
+  // Set up database save callback for SimpleStyleManager
+  useEffect(() => {
+    if (onClassChange) {
+      styleManager.setDatabaseSaveCallback((updates) => {
+        // Convert our updates to the format expected by onClassChange
+        Object.entries(updates).forEach(([elementId, data]) => {
+          onClassChange(elementId, data.className, data.styles || {});
+        });
+      });
+    }
+  }, [onClassChange]);
   const [expandedSections, setExpandedSections] = useState({
     content: true,
     text: true,
