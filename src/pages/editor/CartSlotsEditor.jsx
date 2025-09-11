@@ -427,24 +427,37 @@ export default function CartSlotsEditor({
     const classKey = isWrapperSlot ? 'parentClassName' : 'className';
     const styleKey = isWrapperSlot ? 'parentStyles' : 'styles';
     
-    // Update the cartLayoutConfig with the new styling in the correct structure
-    const updatedConfig = {
-      ...cartLayoutConfig,
-      slots: {
-        ...cartLayoutConfig.slots,
-        [slotId]: {
-          ...cartLayoutConfig.slots?.[slotId],
-          [classKey]: newClassName,
-          [styleKey]: {
-            ...cartLayoutConfig.slots?.[slotId]?.[styleKey],
-            ...newStyles
+    try {
+      // Safely merge existing styles with new styles
+      const existingSlot = cartLayoutConfig.slots?.[slotId] || {};
+      const existingStyles = existingSlot[styleKey] || {};
+      
+      // Create deep copies to avoid read-only object issues
+      const safeExistingStyles = JSON.parse(JSON.stringify(existingStyles));
+      const safeNewStyles = JSON.parse(JSON.stringify(newStyles));
+      
+      // Update the cartLayoutConfig with the new styling in the correct structure
+      const updatedConfig = {
+        ...cartLayoutConfig,
+        slots: {
+          ...cartLayoutConfig.slots,
+          [slotId]: {
+            ...existingSlot,
+            [classKey]: newClassName,
+            [styleKey]: {
+              ...safeExistingStyles,
+              ...safeNewStyles
+            }
           }
         }
-      }
-    };
-    
-    // Update state immediately for responsive UI
-    setCartLayoutConfig(updatedConfig);
+      };
+      
+      // Update state immediately for responsive UI
+      setCartLayoutConfig(updatedConfig);
+    } catch (error) {
+      console.warn('Error updating cart layout config:', error);
+      return; // Exit early if update fails
+    }
     
     // Auto-save with debouncing (save 300ms after user stops clicking toolbar)
     if (window.classChangeTimeout) {
@@ -464,20 +477,29 @@ export default function CartSlotsEditor({
   const handleSidebarTextChange = useCallback((slotId, newText) => {
     if (!cartLayoutConfig) return;
     
-    // Update the cartLayoutConfig with the new text content
-    const updatedConfig = {
-      ...cartLayoutConfig,
-      slots: {
-        ...cartLayoutConfig.slots,
-        [slotId]: {
-          ...cartLayoutConfig.slots?.[slotId],
-          content: newText
+    try {
+      // Safely get existing slot data
+      const existingSlot = cartLayoutConfig.slots?.[slotId] || {};
+      const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
+      
+      // Update the cartLayoutConfig with the new text content
+      const updatedConfig = {
+        ...cartLayoutConfig,
+        slots: {
+          ...cartLayoutConfig.slots,
+          [slotId]: {
+            ...safeExistingSlot,
+            content: newText
+          }
         }
-      }
-    };
-    
-    // Update state immediately for responsive UI
-    setCartLayoutConfig(updatedConfig);
+      };
+      
+      // Update state immediately for responsive UI
+      setCartLayoutConfig(updatedConfig);
+    } catch (error) {
+      console.warn('Error updating text content:', error);
+      return; // Exit early if update fails
+    }
     
     // Update the element content visually
     const element = document.querySelector(`[data-slot-id="${slotId}"]`);
@@ -501,23 +523,35 @@ export default function CartSlotsEditor({
 
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {
-      // Update the cartLayoutConfig with the new HTML content
-      const updatedConfig = {
-        ...cartLayoutConfig,
-        slots: {
-          ...cartLayoutConfig.slots,
-          [editingComponent]: {
-            ...cartLayoutConfig.slots?.[editingComponent],
-            content: tempCode,
-            metadata: {
-              ...cartLayoutConfig.slots?.[editingComponent]?.metadata,
-              lastModified: new Date().toISOString()
+      try {
+        // Safely get existing slot and metadata
+        const existingSlot = cartLayoutConfig.slots?.[editingComponent] || {};
+        const existingMetadata = existingSlot.metadata || {};
+        
+        const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
+        const safeExistingMetadata = JSON.parse(JSON.stringify(existingMetadata));
+        
+        // Update the cartLayoutConfig with the new HTML content
+        const updatedConfig = {
+          ...cartLayoutConfig,
+          slots: {
+            ...cartLayoutConfig.slots,
+            [editingComponent]: {
+              ...safeExistingSlot,
+              content: tempCode,
+              metadata: {
+                ...safeExistingMetadata,
+                lastModified: new Date().toISOString()
+              }
             }
           }
-        }
-      };
-      
-      setCartLayoutConfig(updatedConfig);
+        };
+        
+        setCartLayoutConfig(updatedConfig);
+      } catch (error) {
+        console.warn('Error saving edit:', error);
+        return; // Exit early if update fails
+      }
       setEditingComponent(null);
       setTempCode('');
       
@@ -534,23 +568,38 @@ export default function CartSlotsEditor({
 
     console.log('🔄 Resizing microslot:', slotId, 'to spans:', newSpans);
 
-    // Update the cartLayoutConfig with the new spans
-    const updatedConfig = {
-      ...cartLayoutConfig,
-      microSlotSpans: {
-        ...cartLayoutConfig.microSlotSpans,
-        [parentSlot]: {
-          ...cartLayoutConfig.microSlotSpans?.[parentSlot],
-          [slotId]: {
-            ...cartLayoutConfig.microSlotSpans?.[parentSlot]?.[slotId],
-            ...newSpans
+    try {
+      // Safely get existing spans data
+      const existingMicroSlotSpans = cartLayoutConfig.microSlotSpans || {};
+      const existingParentSpans = existingMicroSlotSpans[parentSlot] || {};
+      const existingSlotSpans = existingParentSpans[slotId] || {};
+      
+      const safeMicroSlotSpans = JSON.parse(JSON.stringify(existingMicroSlotSpans));
+      const safeParentSpans = JSON.parse(JSON.stringify(existingParentSpans));
+      const safeSlotSpans = JSON.parse(JSON.stringify(existingSlotSpans));
+      const safeNewSpans = JSON.parse(JSON.stringify(newSpans));
+
+      // Update the cartLayoutConfig with the new spans
+      const updatedConfig = {
+        ...cartLayoutConfig,
+        microSlotSpans: {
+          ...safeMicroSlotSpans,
+          [parentSlot]: {
+            ...safeParentSpans,
+            [slotId]: {
+              ...safeSlotSpans,
+              ...safeNewSpans
+            }
           }
         }
-      }
-    };
+      };
 
-    // Update state immediately for responsive UI
-    setCartLayoutConfig(updatedConfig);
+      // Update state immediately for responsive UI
+      setCartLayoutConfig(updatedConfig);
+    } catch (error) {
+      console.warn('Error resizing microslot:', error);
+      return; // Exit early if update fails
+    }
 
     // Auto-save with debouncing (save 500ms after user stops resizing)
     if (window.resizeTimeout) {
@@ -568,24 +617,36 @@ export default function CartSlotsEditor({
 
     console.log('🔄 Resizing element:', slotId, 'to classes:', newClasses);
 
-    // Update the cartLayoutConfig with the new element classes
-    const updatedConfig = {
-      ...cartLayoutConfig,
-      slots: {
-        ...cartLayoutConfig.slots,
-        [slotId]: {
-          ...cartLayoutConfig.slots?.[slotId],
-          className: newClasses,
-          metadata: {
-            ...cartLayoutConfig.slots?.[slotId]?.metadata,
-            lastModified: new Date().toISOString()
+    try {
+      // Safely get existing slot and metadata
+      const existingSlot = cartLayoutConfig.slots?.[slotId] || {};
+      const existingMetadata = existingSlot.metadata || {};
+      
+      const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
+      const safeExistingMetadata = JSON.parse(JSON.stringify(existingMetadata));
+
+      // Update the cartLayoutConfig with the new element classes
+      const updatedConfig = {
+        ...cartLayoutConfig,
+        slots: {
+          ...cartLayoutConfig.slots,
+          [slotId]: {
+            ...safeExistingSlot,
+            className: newClasses,
+            metadata: {
+              ...safeExistingMetadata,
+              lastModified: new Date().toISOString()
+            }
           }
         }
-      }
-    };
+      };
 
-    // Update state immediately for responsive UI
-    setCartLayoutConfig(updatedConfig);
+      // Update state immediately for responsive UI
+      setCartLayoutConfig(updatedConfig);
+    } catch (error) {
+      console.warn('Error resizing element:', error);
+      return; // Exit early if update fails
+    }
 
     // Auto-save with debouncing (save 500ms after user stops resizing)
     if (window.elementResizeTimeout) {
