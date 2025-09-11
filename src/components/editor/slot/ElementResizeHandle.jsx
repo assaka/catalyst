@@ -148,30 +148,30 @@ const ElementResizeHandle = ({
   const getHandleStyle = () => {
     const baseStyle = {
       position: 'absolute',
-      width: '8px',
-      height: '8px',
+      width: '12px',
+      height: '12px',
       background: '#3b82f6',
-      border: '1px solid #ffffff',
+      border: '2px solid #ffffff',
       borderRadius: '50%',
       cursor: 'se-resize',
       zIndex: 40,
       transition: isResizing ? 'none' : 'all 0.2s ease',
       transform: isResizing ? 'scale(1.3)' : 'scale(1)',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+      boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
     };
 
     // Position the handle based on the position prop
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '-4px', right: '-4px' };
+        return { ...baseStyle, bottom: '-6px', right: '-6px' };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '-4px', left: '-4px', cursor: 'sw-resize' };
+        return { ...baseStyle, bottom: '-6px', left: '-6px', cursor: 'sw-resize' };
       case 'top-right':
-        return { ...baseStyle, top: '-4px', right: '-4px', cursor: 'ne-resize' };
+        return { ...baseStyle, top: '-6px', right: '-6px', cursor: 'ne-resize' };
       case 'top-left':
-        return { ...baseStyle, top: '-4px', left: '-4px', cursor: 'nw-resize' };
+        return { ...baseStyle, top: '-6px', left: '-6px', cursor: 'nw-resize' };
       default:
-        return { ...baseStyle, bottom: '-4px', right: '-4px' };
+        return { ...baseStyle, bottom: '-6px', right: '-6px' };
     }
   };
 
@@ -181,7 +181,7 @@ const ElementResizeHandle = ({
       style={getHandleStyle()}
       onMouseDown={handleMouseDown}
       title={`Resize ${elementType} (${getCurrentSize().widthPercentage ? getCurrentSize().widthPercentage + '%' : getCurrentSize().width + '×' + getCurrentSize().height + 'px'})`}
-      className="opacity-60 group-hover:opacity-100 hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
+      className="opacity-80 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-blue-600 hover:scale-125 border-2 border-white shadow-lg"
     />
   );
 };

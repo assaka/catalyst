@@ -479,17 +479,23 @@ export default function InlineSlotEditor({
   // Render element based on type
   const renderElement = () => {
     if (elementType === 'icon') {
-      // For icons, render the actual icon component
-      return <ShoppingCart className={localClass} style={style} />;
-    } else if (elementType === 'button') {
-      // For buttons, render as a Button component with proper styling
+      // For icons, render the actual icon component with relative positioning for resize handle
       return (
-        <Button 
-          className={`${localClass} w-auto`}
-          style={style}
-        >
-          <span dangerouslySetInnerHTML={{ __html: localText || 'Button' }} />
-        </Button>
+        <div className="relative inline-block">
+          <ShoppingCart className={localClass} style={style} />
+        </div>
+      );
+    } else if (elementType === 'button') {
+      // For buttons, render as a Button component with proper styling and relative positioning
+      return (
+        <div className="relative inline-block">
+          <Button 
+            className={`${localClass} w-auto`}
+            style={style}
+          >
+            <span dangerouslySetInnerHTML={{ __html: localText || 'Button' }} />
+          </Button>
+        </div>
       );
     } else {
       // For text elements, render with proper text alignment support
@@ -659,7 +665,7 @@ export default function InlineSlotEditor({
                   <select
                     value={getCurrentHorizontalMargin()}
                     onChange={(e) => handleHorizontalMargin(e.target.value)}
-                    className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-8"
+                    className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10"
                     title="Horizontal Margin"
                   >
                     <option value="mx-0">0</option>
@@ -680,7 +686,7 @@ export default function InlineSlotEditor({
                   <select
                     value={getCurrentVerticalMargin()}
                     onChange={(e) => handleVerticalMargin(e.target.value)}
-                    className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-8"
+                    className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10"
                     title="Vertical Margin"
                   >
                     <option value="my-0">0</option>
@@ -703,7 +709,7 @@ export default function InlineSlotEditor({
                       <select
                         value={currentPadding}
                         onChange={(e) => handlePadding(e.target.value)}
-                        className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-8"
+                        className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10"
                         title="All Padding"
                       >
                         {PADDING_OPTIONS.map(padding => (
@@ -767,26 +773,30 @@ export default function InlineSlotEditor({
 
           {/* Text Input or Button in edit mode */}
           {elementType === 'button' ? (
-            <Button 
-              className={`${localClass} w-auto outline-2 outline-blue-500 outline outline-offset-2`}
-              style={style}
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={localText}
-                onChange={handleTextChange}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSave();
-                  if (e.key === 'Escape') handleCancel();
-                }}
-                className="bg-transparent border-none outline-none min-w-[100px]"
-                style={{ color: 'inherit' }}
-              />
-            </Button>
+            <div className="relative inline-block">
+              <Button 
+                className={`${localClass} w-auto outline-2 outline-blue-500 outline outline-offset-2`}
+                style={style}
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={localText}
+                  onChange={handleTextChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSave();
+                    if (e.key === 'Escape') handleCancel();
+                  }}
+                  className="bg-transparent border-none outline-none min-w-[100px]"
+                  style={{ color: 'inherit' }}
+                />
+              </Button>
+            </div>
           ) : elementType === 'icon' ? (
             <div className="flex items-center gap-2">
-              <ShoppingCart className={`${localClass} outline-2 outline-blue-500 outline outline-offset-2`} style={style} />
+              <div className="relative inline-block">
+                <ShoppingCart className={`${localClass} outline-2 outline-blue-500 outline outline-offset-2`} style={style} />
+              </div>
               <span className="text-sm text-gray-500">(Icon - edit styles only)</span>
             </div>
           ) : (
@@ -829,6 +839,17 @@ export default function InlineSlotEditor({
                 }}
               />
             )
+          )}
+          
+          {/* Element-level resize handle for icons, images, and buttons in edit mode */}
+          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
+            <ElementResizeHandle
+              elementType={elementType}
+              slotId={slotId}
+              className={localClass}
+              onResize={handleElementResize}
+              position="bottom-right"
+            />
           )}
         </div>
       )}
