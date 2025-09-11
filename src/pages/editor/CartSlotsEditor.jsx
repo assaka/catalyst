@@ -402,18 +402,6 @@ export default function CartSlotsEditor({
     return (slotId, content, elementType) => baseHandler(slotId, content, cartLayoutConfig, elementType);
   }, [cartLayoutConfig]);
 
-  // Generic auto-save handlers using editor-utils
-  const handleInlineTextChange = useMemo(() =>
-    createInlineTextChangeHandler({
-      setLayoutConfig: setCartLayoutConfig,
-      saveConfiguration,
-      layoutConfig: cartLayoutConfig,
-      slotContentKey: 'slots',
-      debounceMs: 500
-    }),
-    [cartLayoutConfig, saveConfiguration]
-  );
-
   // Custom class change handler that stores classes in slots.{slotId}.className and parentClassName
   const handleInlineClassChange = useCallback((slotId, newClassName, newStyles = {}, isWrapperSlot = false) => {
     if (!cartLayoutConfig) return;
