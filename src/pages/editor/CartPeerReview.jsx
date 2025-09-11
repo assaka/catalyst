@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShoppingCart, Package, Plus, Minus, Trash2, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ResizeWrapper as ResizeElementWrapper } from "@/components/ui/resize-element-wrapper";
 
 // Import Cart.jsx's exact dependencies
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
@@ -467,7 +468,15 @@ export default function CartPeerReview({
                   // Fallback to default layout if no microSlotOrders
                   <>
                     <div className="col-span-12">
-                      <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <ResizeElementWrapper
+                        initialWidth={64}
+                        initialHeight={64}
+                        minWidth={32}
+                        maxWidth={128}
+                        disabled={true}
+                      >
+                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      </ResizeElementWrapper>
                     </div>
                     <div className="col-span-12">
                       <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>

@@ -93,11 +93,7 @@ class SimpleStyleManager {
           newClasses = newClasses.filter(cls => cls !== 'italic');
         }
         break;
-      case 'textAlign':
-        // Remove existing text align classes
-        newClasses = newClasses.filter(cls => !cls.startsWith('text-left') && !cls.startsWith('text-center') && !cls.startsWith('text-right'));
-        newClasses.push(`text-${value}`);
-        break;
+      // textAlign is now handled by EditorSidebar and applied to parent element
     }
 
     const oldClassName = element.className;

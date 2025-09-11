@@ -155,6 +155,14 @@ export default function CartSlotsEditor({
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
   const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
   
+  // Ref to avoid stale closures in debounced functions
+  const cartLayoutConfigRef = useRef(cartLayoutConfig);
+  
+  // Keep ref updated
+  useEffect(() => {
+    cartLayoutConfigRef.current = cartLayoutConfig;
+  }, [cartLayoutConfig]);
+  
   // Sample cart data for editor preview
   const [cartItems] = useState([
     {
@@ -461,27 +469,24 @@ export default function CartSlotsEditor({
 
   // Handle text content changes for sidebar with debounced state updates
   const handleSidebarTextChange = useCallback((slotId, newText) => {
-    if (!cartLayoutConfig) return;
+    if (!cartLayoutConfigRef.current) return;
     
-    // Update the element content visually immediately for UI responsiveness
-    const element = document.querySelector(`[data-slot-id="${slotId}"]`);
-    if (element) {
-      if (element.tagName === 'BUTTON') {
-        element.textContent = newText;
-      } else {
-        element.innerHTML = newText;
-      }
-    }
+    console.log('🎯 handleSidebarTextChange called for:', slotId, 'with text:', newText);
+    
+    // Skip any immediate DOM manipulation - let React handle the UI updates
+    // The EditorSidebar already handles immediate local state updates
     
     // Debounce both state update and save operations
     if (window.textChangeTimeout) {
+      console.log('🔄 Clearing existing textChangeTimeout');
       clearTimeout(window.textChangeTimeout);
     }
     
     window.textChangeTimeout = setTimeout(() => {
       try {
+        console.log('💾 Starting debounced save for:', slotId);
         // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
-        const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+        const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfigRef.current));
         
         // Safely get existing slot data
         const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
@@ -509,7 +514,7 @@ export default function CartSlotsEditor({
         console.warn('Error updating text content:', error);
       }
     }, 1000); // 1000ms debounce delay
-  }, [cartLayoutConfig, saveConfiguration]);
+  }, [saveConfiguration]); // Using refs to avoid stale closures and function recreation
 
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {
@@ -1128,7 +1133,14 @@ export default function CartSlotsEditor({
                   // Fallback to default layout if no microSlotOrders
                   <>
                     <div className="col-span-12">
-                      <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <ResizeElementWrapper
+                        initialWidth={64}
+                        initialHeight={64}
+                        minWidth={32}
+                        maxWidth={128}
+                      >
+                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      </ResizeElementWrapper>
                     </div>
                     <div className="col-span-12">
                       <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
@@ -1242,7 +1254,15 @@ export default function CartSlotsEditor({
                     // Fallback to default layout if no microSlotOrders
                     <>
                       <div className="col-span-12">
-                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                        <ResizeElementWrapper
+                          initialWidth={64}
+                          initialHeight={64}
+                          minWidth={32}
+                          maxWidth={128}
+                          disabled={true}
+                        >
+                          <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                        </ResizeElementWrapper>
                       </div>
                       <div className="col-span-12">
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>

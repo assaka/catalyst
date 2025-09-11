@@ -217,13 +217,48 @@ const EditorSidebar = ({
     console.log('⏰ Set new timeout:', textChangeTimeoutRef.current);
   }, [slotId]); // Removed onTextChange dependency
 
+  // Handle alignment changes - always apply to parent and store in parentClassName
+  const handleAlignmentChange = useCallback((property, value) => {
+    if (!selectedElement || property !== 'textAlign') return;
+    
+    const slotId = selectedElement.getAttribute('data-slot-id');
+    if (!slotId) return;
+    
+    console.log(`🎯 Setting alignment ${value} for slot ${slotId} on parent`);
+    
+    // Apply alignment to parent element immediately for visual feedback
+    const parentElement = selectedElement.parentElement;
+    if (parentElement) {
+      // Remove existing text alignment classes from parent
+      const currentClasses = parentElement.className.split(' ').filter(Boolean);
+      const newClasses = currentClasses.filter(cls => 
+        !cls.startsWith('text-left') && 
+        !cls.startsWith('text-center') && 
+        !cls.startsWith('text-right')
+      );
+      newClasses.push(`text-${value}`);
+      parentElement.className = newClasses.join(' ');
+    }
+    
+    // Save to database via the inline class change handler with parent's className
+    if (onInlineClassChange && parentElement) {
+      onInlineClassChange(slotId, parentElement.className, {}, true); // isWrapperSlot = true for parent
+    }
+  }, [selectedElement, onInlineClassChange]);
+
   // Ultra-simple style management with debouncing for property changes
   const handlePropertyChange = useCallback((property, value) => {
     if (!selectedElement) return;
 
     // Apply changes immediately to DOM for UI responsiveness
-    const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle', 'textAlign'];
+    const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle'];
     const actualProperty = classBasedProperties.includes(property) ? `class_${property}` : property;
+    
+    // Handle textAlign specially - always apply to parent and store in parentClassName
+    if (property === 'textAlign') {
+      handleAlignmentChange(property, value);
+      return;
+    }
     
     // Apply the style immediately to the DOM for visual feedback
     if (classBasedProperties.includes(property)) {
@@ -459,7 +494,10 @@ const EditorSidebar = ({
 
                 <div className="flex gap-1">
                   <Button
-                    variant={getCurrentAlign(elementProperties.className) === 'left' ? 'default' : 'outline'}
+                    variant={(() => {
+                      const parentClassName = selectedElement?.parentElement?.className || '';
+                      return getCurrentAlign(parentClassName, true) === 'left' ? 'default' : 'outline';
+                    })()}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'left')}
                     className="h-7 px-2"
@@ -467,7 +505,10 @@ const EditorSidebar = ({
                     <AlignLeft className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={getCurrentAlign(elementProperties.className) === 'center' ? 'default' : 'outline'}
+                    variant={(() => {
+                      const parentClassName = selectedElement?.parentElement?.className || '';
+                      return getCurrentAlign(parentClassName, true) === 'center' ? 'default' : 'outline';
+                    })()}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'center')}
                     className="h-7 px-2"
@@ -475,7 +516,10 @@ const EditorSidebar = ({
                     <AlignCenter className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant={getCurrentAlign(elementProperties.className) === 'right' ? 'default' : 'outline'}
+                    variant={(() => {
+                      const parentClassName = selectedElement?.parentElement?.className || '';
+                      return getCurrentAlign(parentClassName, true) === 'right' ? 'default' : 'outline';
+                    })()}
                     size="sm"
                     onClick={() => handlePropertyChange('textAlign', 'right')}
                     className="h-7 px-2"
