@@ -33,6 +33,22 @@
   outline-offset: 2px !important;
 }
 
+/* Special hover styles for button slots - apply to the grid container */
+[data-slot-id$=".button"]:hover {
+  outline: none !important;
+}
+
+.col-span-12:has([data-slot-id$=".button"]:hover) {
+  outline: 1px solid #60a5fa !important;
+  outline-offset: 2px !important;
+}
+
+/* Fallback for browsers that don't support :has() */
+.button-slot-container:hover {
+  outline: 1px solid #60a5fa !important;
+  outline-offset: 2px !important;
+}
+
 /* Selection highlight animation - disabled since no border on click
 .editor-selected {
   animation: selection-pulse 0.3s ease-out;

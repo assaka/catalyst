@@ -793,13 +793,13 @@ export default function CartSlotsEditor({
         keywords="cart, editor, layout, e-commerce"
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="px-4 sm:px-6 lg:px-8 py-12">
         {/* FlashMessage Section with Custom Slots */}
         <div className="flashMessage-section mb-6">
           {/* Inline Flash Message for Editor Demo */}
           {flashMessage && (
             <div className="w-full mb-4">
-              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 border-l-4 p-4 rounded-lg shadow-lg transition-all duration-300">
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg shadow-lg transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <svg className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -1026,7 +1026,7 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group button-slot-container' : ''}`}>
                           <SimpleResizeWrapper
                             slotId={slotId}
                             parentSlot="emptyCart"
@@ -1184,7 +1184,7 @@ export default function CartSlotsEditor({
                         const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
                         const finalClasses = buttonStyling.elementClasses || defaultClasses;
                         return (
-                          <div key={slotId} className={positioning.gridClasses}>
+                          <div key={slotId} className={`${positioning.gridClasses} button-slot-container`}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                               <ResizeElementWrapper
                                 initialWidth={200}

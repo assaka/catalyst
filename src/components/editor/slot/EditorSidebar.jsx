@@ -71,8 +71,22 @@ const EditorSidebar = ({
   
   // Get current alignment from parent element
   const currentAlignment = useMemo(() => {
-    if (!selectedElement?.parentElement) return 'left';
-    const parentClassName = selectedElement.parentElement.className || '';
+    if (!selectedElement) return 'left';
+    
+    const elementSlotId = selectedElement.getAttribute('data-slot-id');
+    let targetElement;
+    
+    if (elementSlotId?.includes('.button')) {
+      // For button slots, check the outer grid container
+      targetElement = selectedElement.closest('.button-slot-container');
+    } else {
+      // For other slots, use the direct parent
+      targetElement = selectedElement.parentElement;
+    }
+    
+    if (!targetElement) return 'left';
+    
+    const parentClassName = targetElement.className || '';
     return getCurrentAlign(parentClassName, true);
   }, [selectedElement, alignmentUpdate]);
   
@@ -234,22 +248,30 @@ const EditorSidebar = ({
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
     if (!elementSlotId) return;
     
-    // Apply alignment to parent element immediately for visual feedback
-    const parentElement = selectedElement.parentElement;
-    if (parentElement) {
-      // Remove existing text alignment classes from parent
-      const currentClasses = parentElement.className.split(' ').filter(Boolean);
+    // For button slots, apply alignment to the outer grid container
+    let targetElement;
+    if (elementSlotId.includes('.button')) {
+      // Find the button-slot-container (the outer div with col-span-12)
+      targetElement = selectedElement.closest('.button-slot-container');
+    } else {
+      // For other slots, use the direct parent
+      targetElement = selectedElement.parentElement;
+    }
+    
+    if (targetElement) {
+      // Remove existing text alignment classes from target
+      const currentClasses = targetElement.className.split(' ').filter(Boolean);
       const newClasses = currentClasses.filter(cls => 
         !cls.startsWith('text-left') && 
         !cls.startsWith('text-center') && 
         !cls.startsWith('text-right')
       );
       newClasses.push(`text-${value}`);
-      parentElement.className = newClasses.join(' ');
+      targetElement.className = newClasses.join(' ');
       
       // Record change in save manager
       saveManager.recordChange(elementSlotId, CHANGE_TYPES.PARENT_CLASSES, {
-        className: parentElement.className,
+        className: targetElement.className,
         styles: {}
       });
     }
