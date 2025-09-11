@@ -86,19 +86,15 @@ const EditorSidebar = ({
       // For button slots, check the outer grid container
       targetElement = selectedElement.closest('.button-slot-container');
     } else {
-      // For text slots, traverse up through ResizeWrapper to find grid cell
-      // Structure: text -> ResizeWrapper -> wrapper div -> grid cell
-      targetElement = selectedElement.parentElement; // ResizeWrapper
-      if (targetElement && targetElement.classList.contains('resize-wrapper')) {
-        targetElement = targetElement.parentElement; // wrapper div
-        if (targetElement) {
-          targetElement = targetElement.parentElement; // grid cell
-        }
-      } else if (targetElement) {
-        // If no ResizeWrapper, check for wrapper div then grid cell
-        const possibleGridCell = targetElement.parentElement;
-        if (possibleGridCell && (possibleGridCell.className.includes('col-span') || possibleGridCell.className.includes('grid'))) {
-          targetElement = possibleGridCell;
+      // For text slots, traverse up to find grid cell with col-span
+      // Structure: text -> wrapper div -> grid cell (cleaner without ResizeWrapper)
+      targetElement = selectedElement.parentElement;
+      while (targetElement && !targetElement.className.includes('col-span')) {
+        targetElement = targetElement.parentElement;
+        // Safety check to avoid infinite loop
+        if (targetElement === document.body) {
+          targetElement = null;
+          break;
         }
       }
     }
@@ -275,19 +271,15 @@ const EditorSidebar = ({
       // Find the button-slot-container (the outer div with col-span-12)
       targetElement = selectedElement.closest('.button-slot-container');
     } else {
-      // For text slots, traverse up through ResizeWrapper to find grid cell
-      // Structure: text -> ResizeWrapper -> wrapper div -> grid cell
-      targetElement = selectedElement.parentElement; // ResizeWrapper
-      if (targetElement && targetElement.classList.contains('resize-wrapper')) {
-        targetElement = targetElement.parentElement; // wrapper div
-        if (targetElement) {
-          targetElement = targetElement.parentElement; // grid cell
-        }
-      } else if (targetElement) {
-        // If no ResizeWrapper, check for wrapper div then grid cell
-        const possibleGridCell = targetElement.parentElement;
-        if (possibleGridCell && (possibleGridCell.className.includes('col-span') || possibleGridCell.className.includes('grid'))) {
-          targetElement = possibleGridCell;
+      // For text slots, traverse up to find grid cell with col-span
+      // Structure: text -> wrapper div -> grid cell (cleaner without ResizeWrapper)
+      targetElement = selectedElement.parentElement;
+      while (targetElement && !targetElement.className.includes('col-span')) {
+        targetElement = targetElement.parentElement;
+        // Safety check to avoid infinite loop
+        if (targetElement === document.body) {
+          targetElement = null;
+          break;
         }
       }
     }

@@ -40,6 +40,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import { SimpleResizeWrapper } from "@/components/editor/slot/SlotResizeWrapper";
 import { ResizeWrapper as ResizeElementWrapper } from "@/components/ui/resize-element-wrapper";
+import { ExternalResizeProvider, useExternalResizeContext } from "@/components/ui/external-resize-provider";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import EditableElement from "@/components/editor/slot/EditableElement";
 import { useElementSelection } from "@/components/editor/slot/useElementSelection";
@@ -145,7 +146,7 @@ function SortableMicroSlot({ id, children, mode, majorSlot }) {
 
 
 // Main Cart Editor Component
-export default function CartSlotsEditor({
+function CartSlotsEditorContent({
   data,
   onSave = () => {},
   mode = 'edit', // 'edit' or 'preview'
@@ -2036,5 +2037,14 @@ export default function CartSlotsEditor({
         />
       )}
     </div>
+  );
+}
+
+// Main exported component with ExternalResizeProvider wrapper
+export default function CartSlotsEditor(props) {
+  return (
+    <ExternalResizeProvider disabled={props.mode !== 'edit'}>
+      <CartSlotsEditorContent {...props} />
+    </ExternalResizeProvider>
   );
 }
