@@ -96,10 +96,14 @@ export default function CartPeerReview({
         });
         
         if (draftResponse.success && draftResponse.data && draftResponse.data.configuration) {
-          const configToLoad = draftResponse.data.configuration;
+          const rawConfig = draftResponse.data.configuration;
+          // Transform from API format to CartSlotsEditor format
+          const configToLoad = slotConfigurationService.transformFromSlotConfigFormat(rawConfig);
           setCartLayoutConfig(configToLoad);
           setConfigStatus('draft');
           console.log('✅ CartPeerReview: Successfully loaded DRAFT configuration:', {
+            rawConfigKeys: Object.keys(rawConfig),
+            transformedKeys: Object.keys(configToLoad),
             slots: configToLoad.slots ? Object.keys(configToLoad.slots) : 'none',
             microSlotOrders: configToLoad.microSlotOrders ? Object.keys(configToLoad.microSlotOrders) : 'none',
             microSlotSpans: configToLoad.microSlotSpans ? Object.keys(configToLoad.microSlotSpans) : 'none',
@@ -117,10 +121,14 @@ export default function CartPeerReview({
           });
           
           if (response.success && response.data && response.data.configuration) {
-            const configToLoad = response.data.configuration;
+            const rawConfig = response.data.configuration;
+            // Transform from API format to CartSlotsEditor format
+            const configToLoad = slotConfigurationService.transformFromSlotConfigFormat(rawConfig);
             setCartLayoutConfig(configToLoad);
             setConfigStatus('published');
             console.log('✅ CartPeerReview: Successfully loaded PUBLISHED configuration as fallback:', {
+              rawConfigKeys: Object.keys(rawConfig),
+              transformedKeys: Object.keys(configToLoad),
               slots: configToLoad.slots ? Object.keys(configToLoad.slots) : 'none',
               microSlotOrders: configToLoad.microSlotOrders ? Object.keys(configToLoad.microSlotOrders) : 'none'
             });

@@ -38,7 +38,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 // Clean imports - no longer using cartConfig fallbacks
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
-import { SmartResizeWrapper } from "@/components/editor/slot/SmartResizeSystem";
+import { SimpleResizeWrapper } from "@/components/editor/slot/SimpleResizeSystem";
 
 // Import generic editor utilities
 import {
@@ -263,7 +263,8 @@ export default function CartSlotsEditor({
           const response = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, PAGE_TYPE);
           
           if (response.success && response.data && response.data.configuration) {
-            configToLoad = response.data.configuration;
+            const rawConfig = response.data.configuration;
+            configToLoad = slotConfigurationService.transformFromSlotConfigFormat(rawConfig);
             console.log('✅ Loaded published cart layout configuration for preview:', configToLoad);
           }
         } else {
@@ -272,14 +273,16 @@ export default function CartSlotsEditor({
           const draftResponse = await slotConfigurationService.getDraftConfiguration(selectedStore.id, PAGE_TYPE);
           
           if (draftResponse.success && draftResponse.data && draftResponse.data.configuration) {
-            configToLoad = draftResponse.data.configuration;
+            const rawConfig = draftResponse.data.configuration;
+            configToLoad = slotConfigurationService.transformFromSlotConfigFormat(rawConfig);
             console.log('✅ Loaded draft cart layout configuration for editing:', configToLoad);
           } else {
             // Fallback to published configuration
             const response = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, PAGE_TYPE);
             
             if (response.success && response.data && response.data.configuration) {
-              configToLoad = response.data.configuration;
+              const rawConfig = response.data.configuration;
+              configToLoad = slotConfigurationService.transformFromSlotConfigFormat(rawConfig);
               console.log('✅ Loaded published cart layout configuration as fallback:', configToLoad);
             }
           }
