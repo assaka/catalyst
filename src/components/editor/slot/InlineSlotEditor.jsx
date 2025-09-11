@@ -502,46 +502,12 @@ export default function InlineSlotEditor({
               </div>
             </div>
 
-            {/* Resize Controls - only show for resizable elements */}
+            {/* Content Controls - padding only (slot resizing handled by ResizeHandle) */}
             {isResizable && (
               <>
                 <div className="w-px h-6 bg-gray-300 mx-1" />
 
-                {/* Width */}
-                <div className="flex items-center gap-1">
-                  <Maximize2 className="w-3 h-3 text-gray-500" />
-                  <select
-                    value={currentWidth}
-                    onChange={(e) => handleWidth(e.target.value)}
-                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-14"
-                    title="Width"
-                  >
-                    {SIZE_OPTIONS.map(size => (
-                      <option key={size.value} value={size.value}>
-                        {size.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Height */}
-                <div className="flex items-center gap-1">
-                  <Square className="w-3 h-3 text-gray-500 rotate-90" />
-                  <select
-                    value={currentHeight}
-                    onChange={(e) => handleHeight(e.target.value)}
-                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-14"
-                    title="Height"
-                  >
-                    {SIZE_OPTIONS.map(size => (
-                      <option key={size.value} value={size.value}>
-                        {size.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Padding */}
+                {/* Padding - Content spacing control */}
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-gray-500 font-mono">P</span>
                   <select
@@ -642,11 +608,13 @@ export default function InlineSlotEditor({
                   if (e.key === 'Enter' && e.ctrlKey) handleSave();
                   if (e.key === 'Escape') handleCancel();
                 }}
-                className={`${localClass} w-full max-w-full outline-2 outline-blue-500 outline outline-offset-2 resize-none overflow-hidden`}
+                className={`${localClass} w-full outline-2 outline-blue-500 outline outline-offset-2 resize-none overflow-hidden`}
                 style={{
                   ...style,
                   minHeight: '1.5em',
-                  maxHeight: '6em'
+                  maxHeight: '6em',
+                  width: '100%', // Ensure it fills the slot container
+                  boxSizing: 'border-box'
                 }}
                 rows={Math.min(4, Math.ceil(localText.length / 50))}
                 title="Press Ctrl+Enter to save, Escape to cancel"
@@ -661,8 +629,12 @@ export default function InlineSlotEditor({
                   if (e.key === 'Enter') handleSave();
                   if (e.key === 'Escape') handleCancel();
                 }}
-                className={`${localClass} w-full max-w-full outline-2 outline-blue-500 outline outline-offset-2`}
-                style={style}
+                className={`${localClass} w-full outline-2 outline-blue-500 outline outline-offset-2`}
+                style={{
+                  ...style,
+                  width: '100%', // Ensure it fills the slot container
+                  boxSizing: 'border-box'
+                }}
               />
             )
           )}
