@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TailwindStyleEditor from './TailwindStyleEditor';
-import ElementResizeHandle from './ElementResizeHandle';
 import { 
   isBold,
   isItalic,
@@ -304,102 +303,6 @@ export default function InlineSlotEditor({
     return myMatch ? myMatch[0] : 'my-0';
   };
 
-  // Handle element resize
-  const handleElementResize = useCallback((slotId, elementType, newSize) => {
-    console.log(`🎯 InlineSlotEditor: Handling resize for ${elementType} in slot ${slotId}:`, newSize);
-    let newClassName = localClass;
-
-    if (elementType === 'icon' || elementType === 'image') {
-      if (newSize.widthPercentage) {
-        // Use percentage-based width for precise control
-        newClassName = localClass
-          .replace(/w-\[?\d+%?\]?|w-\d+/g, '') // Remove existing width classes
-          .replace(/h-\[?\d+%?\]?|h-\d+/g, '') // Remove existing height classes
-          .replace(/\s+/g, ' ')
-          .trim() + ` w-[${newSize.widthPercentage}%] h-auto`;
-      } else {
-        // Fallback to Tailwind size classes
-        const sizeMap = {
-          16: 'w-4 h-4', 20: 'w-5 h-5', 24: 'w-6 h-6', 32: 'w-8 h-8',
-          40: 'w-10 h-10', 48: 'w-12 h-12', 64: 'w-16 h-16', 80: 'w-20 h-20',
-          96: 'w-24 h-24', 128: 'w-32 h-32'
-        };
-        
-        const closestSize = Object.keys(sizeMap)
-          .map(Number)
-          .reduce((prev, curr) => 
-            Math.abs(curr - newSize.width) < Math.abs(prev - newSize.width) ? curr : prev
-          );
-        
-        newClassName = localClass
-          .replace(/w-\[?\d+%?\]?|w-\d+/g, '')
-          .replace(/h-\[?\d+%?\]?|h-\d+/g, '')
-          .replace(/\s+/g, ' ')
-          .trim() + ' ' + sizeMap[closestSize];
-      }
-        
-    } else if (elementType === 'button') {
-      if (newSize.widthPercentage) {
-        // Use inline style for percentage-based width and update font size
-        newClassName = localClass
-          .replace(/w-\[?\d+%?\]?|w-\d+|w-auto|w-full|w-fit|w-max|w-min|w-screen/g, '') // Remove all width classes
-          .replace(/min-w-\[?\w+\]?/g, '') // Remove min-width classes too  
-          .replace(/max-w-\[?\w+\]?/g, '') // Remove max-width classes too
-          .replace(/text-(xs|sm|base|lg|xl|2xl|3xl)/g, '') // Remove existing font size classes
-          .replace(/whitespace-nowrap/g, '') // Remove no-wrap constraints
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        // Add the new font size if provided
-        if (newSize.fontSize) {
-          newClassName += ` ${newSize.fontSize}`;
-        }
-      } else {
-        // For buttons, adjust text size and padding based on dimensions
-        const textSizeMap = {
-          small: 'text-xs px-2 py-1',
-          medium: 'text-sm px-3 py-1.5', 
-          large: 'text-base px-4 py-2',
-          xlarge: 'text-lg px-6 py-3',
-          xxlarge: 'text-xl px-8 py-4'
-        };
-        
-        let sizeCategory = 'medium';
-        if (newSize.width < 80) sizeCategory = 'small';
-        else if (newSize.width > 200) sizeCategory = 'xxlarge';
-        else if (newSize.width > 160) sizeCategory = 'xlarge';
-        else if (newSize.width > 120) sizeCategory = 'large';
-        
-        newClassName = localClass
-          .replace(/text-(xs|sm|base|lg|xl)/g, '') // Remove text size
-          .replace(/px-\d+/g, '') // Remove padding x
-          .replace(/py-\d+(\.\d+)?/g, '') // Remove padding y
-          .replace(/w-\[?\d+%?\]?|w-\d+|w-auto/g, '') // Remove width classes
-          .replace(/\s+/g, ' ')
-          .trim() + ' ' + textSizeMap[sizeCategory] + ' w-auto';
-      }
-    }
-
-    console.log(`✅ Class change for ${elementType}: ${localClass} → ${newClassName.trim()}`);
-    setLocalClass(newClassName.trim());
-    
-    if (onClassChange) {
-      const styleOverrides = {};
-      
-      // For buttons and icons with percentage width, use inline styles for reliable rendering
-      if ((elementType === 'button' || elementType === 'icon' || elementType === 'image') && newSize.widthPercentage) {
-        styleOverrides.width = `${newSize.widthPercentage}%`;
-      }
-      
-      console.log(`🎨 InlineSlotEditor: Resizing ${elementType} for ${slotId}:`, { 
-        newSize,
-        old: localClass, 
-        new: newClassName.trim(),
-        styleOverrides
-      });
-      onClassChange(slotId, newClassName.trim(), styleOverrides);
-    }
-  }, [localClass, onClassChange]);
 
 
   // Get current text color from class or style
@@ -557,16 +460,6 @@ export default function InlineSlotEditor({
             <Edit className="w-3 h-3" />
           </button>
           
-          {/* Element-level resize handle for images and buttons only */}
-          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
-            <ElementResizeHandle
-              elementType={elementType}
-              slotId={slotId}
-              className={localClass}
-              onResize={handleElementResize}
-              position="bottom-right"
-            />
-          )}
         </div>
       ) : (
         // Edit mode with action toolbar
@@ -863,16 +756,6 @@ export default function InlineSlotEditor({
             )
           )}
           
-          {/* Element-level resize handle for images and buttons only in edit mode */}
-          {(elementType === 'icon' || elementType === 'image' || elementType === 'button') && (
-            <ElementResizeHandle
-              elementType={elementType}
-              slotId={slotId}
-              className={localClass}
-              onResize={handleElementResize}
-              position="bottom-right"
-            />
-          )}
         </div>
       )}
 
