@@ -4,7 +4,7 @@
  * Requires proper slot configuration - no fallbacks
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   DndContext,
   closestCenter,
