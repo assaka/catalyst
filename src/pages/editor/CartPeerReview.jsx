@@ -1,7 +1,8 @@
 /**
- * CartPeerReview - Clean read-only version of CartSlotsEditor for peer review
+ * CartPeerReview - Test environment (T in DTAP) for reviewing draft configurations
  * Features: Same layout as editor but without handles, borders, or interactive elements
- * Purpose: Show the cart layout in a clean, professional format for review
+ * Purpose: Test and review draft configurations before publishing to Acceptance
+ * Loads: Draft configurations (not published) for testing purposes
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
@@ -35,6 +36,7 @@ export default function CartPeerReview({
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
   const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
+  const [configStatus, setConfigStatus] = useState('loading'); // 'loading', 'draft', 'published', 'none'
   
   // Sample cart data for preview
   const [cartItems] = useState([
@@ -67,7 +69,7 @@ export default function CartPeerReview({
   const total = 64.78;
   const currencySymbol = '$';
 
-  // Load cart layout configuration directly (matching Cart.jsx)
+  // Load draft configuration for testing (T in DTAP)
   useEffect(() => {
     const loadCartLayoutConfig = async () => {
       if (!selectedStore?.id) {
@@ -76,15 +78,29 @@ export default function CartPeerReview({
       }
       
       try {
-        // Load published configuration for peer review
-        const response = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, PAGE_TYPE);
+        // Load DRAFT configuration for testing environment
+        console.log('📖 Test Environment: Loading draft configuration');
+        const draftResponse = await slotConfigurationService.getDraftConfiguration(selectedStore.id, PAGE_TYPE);
         
-        if (response.success && response.data && response.data.configuration) {
-          const configToLoad = response.data.configuration;
+        if (draftResponse.success && draftResponse.data && draftResponse.data.configuration) {
+          const configToLoad = draftResponse.data.configuration;
           setCartLayoutConfig(configToLoad);
-          console.log('✅ Loaded published cart layout configuration for peer review:', configToLoad);
+          setConfigStatus('draft');
+          console.log('✅ Loaded draft cart layout configuration for testing:', configToLoad);
         } else {
-          console.error('❌ No configuration found');
+          // Fallback to published configuration if no draft exists
+          console.log('⚠️ No draft found, falling back to published configuration');
+          const response = await slotConfigurationService.getPublishedConfiguration(selectedStore.id, PAGE_TYPE);
+          
+          if (response.success && response.data && response.data.configuration) {
+            const configToLoad = response.data.configuration;
+            setCartLayoutConfig(configToLoad);
+            setConfigStatus('published');
+            console.log('✅ Loaded published cart layout configuration as fallback:', configToLoad);
+          } else {
+            setConfigStatus('none');
+            console.error('❌ No configuration found (neither draft nor published)');
+          }
         }
       } catch (error) {
         console.error('❌ Failed to load slot configuration:', error);
@@ -198,7 +214,20 @@ export default function CartPeerReview({
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
           <div className="flex justify-between items-center py-3">
-            <h1 className="text-lg font-semibold text-gray-900">Cart Layout - Peer Review</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-semibold text-gray-900">Cart Layout - Test Environment</h1>
+              {configStatus !== 'loading' && (
+                <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                  configStatus === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                  configStatus === 'published' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {configStatus === 'draft' ? 'Draft Configuration' :
+                   configStatus === 'published' ? 'Published Configuration (Fallback)' :
+                   'No Configuration'}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode('empty')}
@@ -230,9 +259,9 @@ export default function CartPeerReview({
 
       {/* Exact Cart.jsx Layout Structure */}
       <SeoHeadManager
-        title="Cart Layout - Peer Review"
-        description="Review cart layout and appearance"
-        keywords="cart, review, layout, e-commerce"
+        title="Cart Layout - Test Environment"
+        description="Test cart layout with draft configurations before publishing"
+        keywords="cart, test, draft, layout, e-commerce"
       />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
