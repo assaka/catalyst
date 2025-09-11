@@ -69,6 +69,7 @@ const ElementResizeHandle = ({
           height: Math.max(24, Math.min(120, initialSize.height + deltaY)),
           fontSize
         };
+      }
 
       if (newSize && onResize) {
         console.log(`🔄 Resizing ${elementType} to:`, newSize);
