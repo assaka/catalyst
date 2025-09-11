@@ -18,13 +18,10 @@ import {
   isItalic,
   getCurrentAlign,
   getCurrentFontSize,
-  handleBoldToggle,
-  handleItalicToggle,
-  handleAlignmentChange,
-  handleFontSizeChange,
   FONT_SIZES,
   debounce
 } from './editor-utils';
+import { styleManager } from './SimpleStyleManager';
 
 const EditorSidebar = ({ 
   selectedElement, 
@@ -163,171 +160,29 @@ const EditorSidebar = ({
     debouncedTextChange(slotId, newText);
   }, [slotId, debouncedTextChange]);
 
+  // Ultra-simple style management - no React state issues!
   const handlePropertyChange = useCallback((property, value) => {
-    if (!selectedElement || !onClassChange || !slotId) return;
+    if (!selectedElement) return;
 
-    const currentClassName = elementProperties.className;
-    let newClassName = currentClassName;
+    // Map class-based properties (Tailwind)
+    const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle', 'textAlign'];
+    const actualProperty = classBasedProperties.includes(property) ? `class_${property}` : property;
     
-    // Create a deep copy of styles to avoid read-only object issues
-    let newStyles = {};
-    try {
-      newStyles = JSON.parse(JSON.stringify(elementProperties.styles || {}));
-    } catch (error) {
-      console.warn('Error copying elementProperties.styles:', error);
-      newStyles = {};
+    // Apply via simple style manager (avoids all React state issues)
+    const success = styleManager.applyStyle(selectedElement, actualProperty, value);
+    
+    if (success) {
+      console.log(`✅ Applied ${property}: ${value}`);
+      
+      // Update local UI state simply (no complex objects)
+      setElementProperties(prev => ({
+        width: selectedElement.offsetWidth || prev.width,
+        height: selectedElement.offsetHeight || prev.height,
+        className: selectedElement.className,
+        styles: {} // DOM is source of truth
+      }));
     }
-    
-    // Track if this is a class-based change (Tailwind) vs style-based change (inline CSS)
-    let isClassBasedChange = false;
-
-    switch (property) {
-      case 'width':
-        if (value) {
-          selectedElement.style.width = `${value}px`;
-        }
-        break;
-      case 'height':
-        if (value) {
-          selectedElement.style.height = `${value}px`;
-        }
-        break;
-      case 'fontSize':
-        newClassName = handleFontSizeChange(currentClassName, value);
-        isClassBasedChange = true;
-        break;
-      case 'fontWeight':
-        if (value === 'bold') {
-          newClassName = handleBoldToggle(currentClassName);
-          isClassBasedChange = true;
-        }
-        break;
-      case 'fontStyle':
-        if (value === 'italic') {
-          newClassName = handleItalicToggle(currentClassName);
-          isClassBasedChange = true;
-        }
-        break;
-      case 'textAlign':
-        newClassName = handleAlignmentChange(currentClassName, value, false);
-        isClassBasedChange = true;
-        break;
-      case 'color':
-        newStyles.color = value;
-        break;
-      case 'backgroundColor':
-        newStyles.backgroundColor = value;
-        break;
-      case 'padding':
-        newStyles.padding = `${value}px`;
-        break;
-      case 'paddingTop':
-        newStyles.paddingTop = `${value}px`;
-        break;
-      case 'paddingRight':
-        newStyles.paddingRight = `${value}px`;
-        break;
-      case 'paddingBottom':
-        newStyles.paddingBottom = `${value}px`;
-        break;
-      case 'paddingLeft':
-        newStyles.paddingLeft = `${value}px`;
-        break;
-      case 'margin':
-        newStyles.margin = `${value}px`;
-        break;
-      case 'marginTop':
-        newStyles.marginTop = `${value}px`;
-        break;
-      case 'marginRight':
-        newStyles.marginRight = `${value}px`;
-        break;
-      case 'marginBottom':
-        newStyles.marginBottom = `${value}px`;
-        break;
-      case 'marginLeft':
-        newStyles.marginLeft = `${value}px`;
-        break;
-      case 'borderWidth':
-        newStyles.borderWidth = `${value}px`;
-        break;
-      case 'borderRadius':
-        newStyles.borderRadius = `${value}px`;
-        break;
-      case 'borderColor':
-        newStyles.borderColor = value;
-        break;
-      case 'boxShadow':
-        newStyles.boxShadow = value;
-        break;
-      case 'opacity':
-        newStyles.opacity = value;
-        break;
-      case 'zIndex':
-        newStyles.zIndex = value;
-        break;
-      case 'display':
-        newStyles.display = value;
-        break;
-      case 'position':
-        newStyles.position = value;
-        break;
-      case 'flexDirection':
-        newStyles.flexDirection = value;
-        break;
-      case 'justifyContent':
-        newStyles.justifyContent = value;
-        break;
-      case 'alignItems':
-        newStyles.alignItems = value;
-        break;
-      default:
-        return;
-    }
-
-    // Update element visually
-    if (newClassName !== currentClassName) {
-      selectedElement.className = newClassName;
-    }
-    
-    // Apply styles safely, but only for non-class-based changes
-    if (!isClassBasedChange && selectedElement && selectedElement.style) {
-      Object.entries(newStyles).forEach(([property, value]) => {
-        try {
-          if (value !== undefined && value !== null) {
-            // Check if the property is writable before setting it
-            const descriptor = Object.getOwnPropertyDescriptor(selectedElement.style, property);
-            const canWrite = !descriptor || descriptor.writable !== false;
-            
-            if (canWrite) {
-              selectedElement.style[property] = value;
-            } else {
-              console.warn(`Style property "${property}" is read-only, skipping assignment`);
-            }
-          }
-        } catch (error) {
-          console.warn(`Could not set style property "${property}" to "${value}":`, error);
-        }
-      });
-    }
-    
-    // Save to database via CartSlotsEditor
-    onClassChange(slotId, newClassName, newStyles);
-    
-    // Update local state for UI
-    setElementProperties(prev => {
-      try {
-        return {
-          ...prev,
-          className: newClassName,
-          styles: { ...newStyles } // Ensure we don't pass any read-only references
-        };
-      } catch (error) {
-        console.warn('Error updating elementProperties state:', error);
-        return prev; // Return previous state if update fails
-      }
-    });
-  }, [selectedElement, onClassChange, slotId, elementProperties.className, elementProperties.styles]);
+  }, [selectedElement]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">
