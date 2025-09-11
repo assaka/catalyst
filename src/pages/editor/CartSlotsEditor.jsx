@@ -1028,7 +1028,7 @@ export default function CartSlotsEditor({
                       <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                     </div>
                     <div className="col-span-12">
-                      <ResizeWrapper
+                      <ResizeElementWrapper
                         initialWidth={200}
                         initialHeight={44}
                         minWidth={100}
@@ -1037,7 +1037,7 @@ export default function CartSlotsEditor({
                         <Button className="bg-blue-600 hover:bg-blue-700">
                           Continue Shopping
                         </Button>
-                      </ResizeWrapper>
+                      </ResizeElementWrapper>
                     </div>
                   </>
                 )}
@@ -1108,7 +1108,7 @@ export default function CartSlotsEditor({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ResizeWrapper
+                              <ResizeElementWrapper
                                 initialWidth={200}
                                 initialHeight={44}
                                 minWidth={100}
@@ -1121,7 +1121,7 @@ export default function CartSlotsEditor({
                                 >
                                   Continue Shopping
                                 </Button>
-                              </ResizeWrapper>
+                              </ResizeElementWrapper>
                             </div>
                           </div>
                         );
@@ -1142,7 +1142,7 @@ export default function CartSlotsEditor({
                         <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                       </div>
                       <div className="col-span-12">
-                        <ResizeWrapper
+                        <ResizeElementWrapper
                           initialWidth={200}
                           initialHeight={44}
                           minWidth={100}
@@ -1152,7 +1152,7 @@ export default function CartSlotsEditor({
                           <Button className="bg-blue-600 hover:bg-blue-700">
                             Continue Shopping
                           </Button>
-                        </ResizeWrapper>
+                        </ResizeElementWrapper>
                       </div>
                     </>
                   )}
