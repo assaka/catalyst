@@ -523,20 +523,21 @@ export default function InlineSlotEditor({
       ) : (
         // Edit mode with action toolbar
         <div className="relative w-full">
-          {/* Action Toolbar - Multi-row Responsive Design */}
+          {/* Action Toolbar - Container-aware Responsive Design */}
           <div 
-            className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 sm:p-2 z-[100]"
+            className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-1 sm:p-1.5 z-[100]"
             style={{
-              top: '-90px',
+              top: '-85px',
               left: '50%',
               transform: 'translateX(-50%)',
-              maxWidth: '95vw',
-              width: 'auto'
+              maxWidth: 'calc(100% - 16px)',
+              width: 'auto',
+              minWidth: 'min-content'
             }}
           >
             {/* Row 1: Basic formatting and alignment */}
-            <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-1">
-              <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center justify-center gap-0.5 mb-1 flex-wrap">
+              <div className="flex items-center gap-0.5 flex-wrap">
                 {/* Bold */}
                 <button
                   onClick={handleBold}
@@ -555,7 +556,7 @@ export default function InlineSlotEditor({
                   <Italic className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
 
-                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                <div className="w-px h-3 sm:h-4 bg-gray-300 mx-0.5" />
 
                 {/* Alignment */}
                 <button
@@ -580,13 +581,13 @@ export default function InlineSlotEditor({
                   <AlignRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
 
-                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                <div className="w-px h-3 sm:h-4 bg-gray-300 mx-0.5" />
 
                 {/* Font Size */}
                 <select
                   value={currentFontSize}
                   onChange={(e) => handleFontSize(e.target.value)}
-                  className="px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-gray-200 rounded hover:bg-gray-50 min-w-0 w-16 sm:w-auto"
+                  className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 min-w-0 w-12"
                   title="Font Size"
                 >
                   {FONT_SIZES.map(size => (
@@ -599,18 +600,18 @@ export default function InlineSlotEditor({
             </div>
 
             {/* Row 2: Colors, spacing, and actions */}
-            <div className="flex items-center justify-center gap-0.5 sm:gap-1 flex-wrap">
-              <div className="flex items-center gap-0.5 sm:gap-1">
+            <div className="flex items-center justify-center gap-0.5 flex-wrap">
+              <div className="flex items-center gap-0.5 flex-wrap">
                 {/* Text Color */}
                 <div className="relative group">
                   <input
                     type="color"
-                    className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
+                    className="w-5 h-4 sm:w-6 sm:h-5 rounded border border-gray-200 cursor-pointer"
                     title="Text Color"
                     onChange={(e) => handleColorChange('color', e.target.value)}
                     value={getCurrentTextColor(localClass, style)}
                   />
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[9px] text-gray-500">
                     Text
                   </div>
                 </div>
@@ -619,24 +620,24 @@ export default function InlineSlotEditor({
                 <div className="relative group">
                   <input
                     type="color"
-                    className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
+                    className="w-5 h-4 sm:w-6 sm:h-5 rounded border border-gray-200 cursor-pointer"
                     title="Background Color"
                     onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
                     value={getCurrentBackgroundColor(localClass, style)}
                   />
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[9px] text-gray-500">
                     BG
                   </div>
                 </div>
-                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                <div className="w-px h-3 sm:h-4 bg-gray-300 mx-0.5" />
 
                 {/* Horizontal Margin */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <span className="text-xs text-gray-500 font-mono">MX</span>
                   <select
                     value={getCurrentHorizontalMargin()}
                     onChange={(e) => handleHorizontalMargin(e.target.value)}
-                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10 sm:w-12"
+                    className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-8"
                     title="Horizontal Margin"
                   >
                     <option value="mx-0">0</option>
@@ -652,12 +653,12 @@ export default function InlineSlotEditor({
                 </div>
 
                 {/* Vertical Margin */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <span className="text-xs text-gray-500 font-mono">MY</span>
                   <select
                     value={getCurrentVerticalMargin()}
                     onChange={(e) => handleVerticalMargin(e.target.value)}
-                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10 sm:w-12"
+                    className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-8"
                     title="Vertical Margin"
                   >
                     <option value="my-0">0</option>
@@ -674,13 +675,13 @@ export default function InlineSlotEditor({
                 {/* General Padding - only show if isResizable */}
                 {isResizable && (
                   <>
-                    <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
-                    <div className="flex items-center gap-1">
+                    <div className="w-px h-3 sm:h-4 bg-gray-300 mx-0.5" />
+                    <div className="flex items-center gap-0.5">
                       <span className="text-xs text-gray-500 font-mono">P</span>
                       <select
                         value={currentPadding}
                         onChange={(e) => handlePadding(e.target.value)}
-                        className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10 sm:w-12"
+                        className="px-1 py-0.5 text-xs border border-gray-200 rounded hover:bg-gray-50 w-8"
                         title="All Padding"
                       >
                         {PADDING_OPTIONS.map(padding => (
@@ -695,8 +696,8 @@ export default function InlineSlotEditor({
               </div>
 
               {/* Second part of row 2: Edit controls */}
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+              <div className="flex items-center gap-0.5 flex-wrap">
+                <div className="w-px h-3 sm:h-4 bg-gray-300 mx-0.5" />
 
                 {/* HTML Editor */}
                 <button
@@ -722,7 +723,7 @@ export default function InlineSlotEditor({
                   <Palette className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
 
-                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                <div className="w-px h-3 sm:h-4 bg-gray-300 mx-0.5" />
                 {/* Save/Cancel */}
                 <button
                   onClick={handleSave}
