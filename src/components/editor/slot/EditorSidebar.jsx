@@ -26,6 +26,7 @@ const EditorSidebar = ({
   selectedElement, 
   onClearSelection,
   onClassChange,  // New prop for class changes
+  onInlineClassChange, // Prop for inline class changes (alignment, etc.)
   onTextChange,   // New prop for text content changes
   slotId,        // Current slot ID
   slotConfig,    // Current slot configuration from database

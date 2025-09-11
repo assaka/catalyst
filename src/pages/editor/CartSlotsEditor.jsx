@@ -2051,6 +2051,7 @@ export default function CartSlotsEditor({
           onUpdateElement={updateElementProperty}
           onClearSelection={clearSelection}
           onClassChange={handleInlineClassChange}
+          onInlineClassChange={handleInlineClassChange}
           onTextChange={handleSidebarTextChange}
           slotId={selectedSlotId}
           slotConfig={selectedSlotId ? cartLayoutConfig?.slots?.[selectedSlotId] : null}
