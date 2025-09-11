@@ -39,7 +39,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 // Clean imports - no longer using cartConfig fallbacks
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
 import ResizeHandle from "@/components/editor/slot/ResizeHandle";
-import { ElementWithResize, MicroslotContainer } from "@/components/editor/slot/DualResizeSystem";
+import { SmartResizeWrapper } from "@/components/editor/slot/SmartResizeSystem";
 
 // Import generic editor utilities
 import {
@@ -853,15 +853,20 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
                       const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                          <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            {mode === 'edit' ? (
-                              <ElementWithResize
-                                elementType="icon"
-                                currentClasses={finalClasses}
-                                onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                                mode={mode}
-                              >
+                        <SmartResizeWrapper
+                          key={slotId}
+                          slotId={slotId}
+                          parentSlot="emptyCart"
+                          microSlotSpans={positioning.microSlotSpans}
+                          onMicroslotResize={handleMicroSlotResize}
+                          elementType="icon"
+                          currentClasses={finalClasses}
+                          onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
+                          mode={mode}
+                        >
+                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              {mode === 'edit' ? (
                                 <InlineSlotEditor
                                   slotId={slotId}
                                   text="<ShoppingCart />"
@@ -873,29 +878,12 @@ export default function CartSlotsEditor({
                                   mode={mode}
                                   elementType="icon"
                                 />
-                              </ElementWithResize>
-                            ) : (
-                              <ElementWithResize
-                                elementType="icon"
-                                currentClasses={finalClasses}
-                                onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                                mode={mode}
-                              >
+                              ) : (
                                 <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
-                              </ElementWithResize>
-                            )}
+                              )}
+                            </div>
                           </div>
-                          {/* Resize Handle for Edit Mode */}
-                          {mode === 'edit' && (
-                            <ResizeHandle
-                              slotId={slotId}
-                              parentSlot="emptyCart"
-                              microSlotSpans={positioning.microSlotSpans}
-                              onResize={handleMicroSlotResize}
-                              position="bottom-right"
-                            />
-                          )}
-                        </div>
+                        </SmartResizeWrapper>
                       );
                     }
                     
@@ -983,15 +971,20 @@ export default function CartSlotsEditor({
                       const defaultClasses = 'bg-blue-600 hover:bg-blue-700';
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                          <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            {mode === 'edit' ? (
-                              <ElementWithResize
-                                elementType="button"
-                                currentClasses={finalClasses}
-                                onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                                mode={mode}
-                              >
+                        <SmartResizeWrapper
+                          key={slotId}
+                          slotId={slotId}
+                          parentSlot="emptyCart"
+                          microSlotSpans={positioning.microSlotSpans}
+                          onMicroslotResize={handleMicroSlotResize}
+                          elementType="button"
+                          currentClasses={finalClasses}
+                          onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
+                          mode={mode}
+                        >
+                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              {mode === 'edit' ? (
                                 <InlineSlotEditor
                                   slotId={slotId}
                                   text={cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
@@ -1003,34 +996,17 @@ export default function CartSlotsEditor({
                                   mode={mode}
                                   elementType="button"
                                 />
-                              </ElementWithResize>
-                            ) : (
-                              <ElementWithResize
-                                elementType="button"
-                                currentClasses={finalClasses}
-                                onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                                mode={mode}
-                              >
+                              ) : (
                                 <Button 
                                   className={finalClasses}
                                   style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                 >
                                   {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                                 </Button>
-                              </ElementWithResize>
-                            )}
+                              )}
+                            </div>
                           </div>
-                          {/* Resize Handle for Edit Mode */}
-                          {mode === 'edit' && (
-                            <ResizeHandle
-                              slotId={slotId}
-                              parentSlot="emptyCart"
-                              microSlotSpans={positioning.microSlotSpans}
-                              onResize={handleMicroSlotResize}
-                              position="bottom-right"
-                            />
-                          )}
-                        </div>
+                        </SmartResizeWrapper>
                       );
                     }
                     
