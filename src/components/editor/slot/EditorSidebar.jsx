@@ -194,9 +194,9 @@ const EditorSidebar = ({
       // Initialize local text content with slot content
       setLocalTextContent(slotConfig.content || '');
       
-      // Initialize local HTML content with element's outerHTML
+      // Initialize local HTML content with clean HTML (no editor attributes/classes)
       if (isHtmlElement && selectedElement) {
-        setLocalHtmlContent(selectedElement.outerHTML || '');
+        setLocalHtmlContent(getCleanHtml(selectedElement) || '');
       }
       
       // Clear initialization flag after a short delay

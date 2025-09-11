@@ -20,15 +20,11 @@ const EditableElement = ({
     return children;
   }
 
-  // Clone the child element and add editable attributes
+  // Clone the child element and add only essential attributes
   return React.cloneElement(React.Children.only(children), {
     'data-editable': 'true',
     'data-slot-id': slotId,
-    className: cn(
-      children.props.className,
-      'cursor-pointer hover:!outline hover:!outline-1 hover:!outline-blue-400 hover:!outline-offset-2 transition-all duration-200',
-      className
-    ),
+    className: cn(children.props.className, className),
     ...props
   });
 };

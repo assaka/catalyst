@@ -26,25 +26,33 @@
   cursor: pointer;
 }
 
-/* Ensure EditableElement hover styles work even inside ResizeWrapper */
-[data-editable]:hover,
-[data-slot-id]:hover {
+/* Editor functionality through pure CSS - no classes needed on elements */
+
+/* All editable elements get cursor pointer and smooth transitions */
+[data-editable="true"] {
+  cursor: pointer !important;
+  transition: outline 200ms ease-in-out !important;
+}
+
+/* Hover styles for regular editable elements */
+[data-editable="true"]:hover {
   outline: 1px solid #60a5fa !important;
   outline-offset: 2px !important;
 }
 
-/* Special hover styles for button slots - apply to the grid container */
+/* Special handling for button slots - apply hover to container */
 [data-slot-id$=".button"]:hover {
   outline: none !important;
 }
 
-.col-span-12:has([data-slot-id$=".button"]:hover) {
+/* Button slot containers get the hover effect */
+.button-slot-container:hover {
   outline: 1px solid #60a5fa !important;
   outline-offset: 2px !important;
 }
 
-/* Fallback for browsers that don't support :has() */
-.button-slot-container:hover {
+/* For browsers that support :has() - more precise targeting */
+.col-span-12:has([data-slot-id$=".button"]:hover) {
   outline: 1px solid #60a5fa !important;
   outline-offset: 2px !important;
 }
