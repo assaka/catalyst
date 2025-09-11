@@ -577,9 +577,7 @@ export default function CartSlotsEditor({
       {mode === 'edit' && (
         <div className="bg-white border-b shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ paddingLeft: '80px', paddingRight: '80px' }}>
-            <div className="flex justify-between items-center py-3">
-              <h1 className="text-lg font-semibold text-gray-900">Cart Layout Editor</h1>
-              
+            <div className="flex justify-end items-center py-3">
               <div className="flex items-center gap-2">
                 {/* View Mode Switcher */}
                 <button
