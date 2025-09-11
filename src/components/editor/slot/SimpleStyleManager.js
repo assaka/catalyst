@@ -1,3 +1,5 @@
+import { isBold } from './editor-utils';
+
 // Simple style manager that avoids React state issues
 class SimpleStyleManager {
   constructor() {
@@ -65,7 +67,7 @@ class SimpleStyleManager {
         
         if (value === 'bold') {
           // Check if bold was already present (simple toggle check)
-          const wasBold = currentClasses.includes('font-bold');
+          const wasBold = className.includes('font-bold') || className.includes('font-semibold');
           if (wasBold) {
             console.log('🔄 Toggled OFF font-bold (setting font-normal)');
             newClasses.push('font-normal'); // Explicitly set normal weight

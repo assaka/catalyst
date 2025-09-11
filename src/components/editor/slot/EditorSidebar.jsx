@@ -201,7 +201,10 @@ const EditorSidebar = ({
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">
       <button
-        onClick={() => toggleSection(section)}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleSection(section);
+        }}
         className="w-full flex items-center justify-between p-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
       >
         <span>{title}</span>

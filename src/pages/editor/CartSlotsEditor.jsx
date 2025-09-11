@@ -49,11 +49,6 @@ import {
   createDragStartHandler,
   createDragEndHandler,
   createEditSlotHandler,
-  createInlineTextChangeHandler,
-  createInlineClassChangeHandler,
-  createSaveEditHandler,
-  createMicroSlotStyling,
-  createSlotPositioning,
   createCustomSlotRenderer
 } from '@/components/editor/slot/editor-utils';
 
