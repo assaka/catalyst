@@ -229,11 +229,11 @@ const EditorSidebar = ({
     // Update local state immediately for UI responsiveness
     setLocalTextContent(newText);
     
-    // Record change in save manager (will be debounced automatically)
-    if (slotId) {
+    // Record change in save manager (will be debounced automatically) - but not during initialization
+    if (slotId && !isInitializing) {
       saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
     }
-  }, [slotId]);
+  }, [slotId, isInitializing]);
 
   // Handle HTML content changes with immediate DOM update and debounced save
   const handleHtmlContentChange = useCallback((e) => {
@@ -247,12 +247,12 @@ const EditorSidebar = ({
       selectedElement.innerHTML = newHtml;
     }
     
-    // Record change in save manager for text content (HTML will be rendered as text)
-    if (slotId) {
+    // Record change in save manager for text content (HTML will be rendered as text) - but not during initialization
+    if (slotId && !isInitializing) {
       // For HTML elements, we save the HTML as content but also preserve it in the DOM
       saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newHtml });
     }
-  }, [slotId, selectedElement, isHtmlElement]);
+  }, [slotId, selectedElement, isHtmlElement, isInitializing]);
 
   // Simplified alignment change handler using save manager
   const handleAlignmentChange = useCallback((property, value) => {
