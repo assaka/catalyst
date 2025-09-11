@@ -8,7 +8,12 @@ class SimpleStyleManager {
   // Apply style directly to DOM element
   applyStyle(element, property, value) {
     try {
-      if (!element) return false;
+      if (!element) {
+        console.warn('❌ No element provided to applyStyle');
+        return false;
+      }
+      
+      console.log('🎯 Applying style:', { property, value, element: element.tagName });
       
       // Direct DOM manipulation
       if (property.startsWith('class_')) {
@@ -17,6 +22,7 @@ class SimpleStyleManager {
         this.updateClassName(element, actualProperty, value);
       } else {
         // Handle inline style changes
+        console.log('💄 Setting inline style:', property, '=', value);
         element.style[property] = value;
       }
       
@@ -26,6 +32,7 @@ class SimpleStyleManager {
         this.trackChange(elementId, property, value);
       }
       
+      console.log('✅ Style applied successfully');
       return true;
     } catch (error) {
       console.warn(`Failed to apply ${property}: ${value}`, error);
@@ -46,8 +53,13 @@ class SimpleStyleManager {
         break;
       case 'fontWeight':
         if (value === 'bold') {
-          if (!newClasses.includes('font-bold')) {
+          // Toggle behavior: if already bold, remove it; if not bold, add it
+          if (newClasses.includes('font-bold')) {
+            newClasses = newClasses.filter(cls => cls !== 'font-bold');
+            console.log('🔄 Toggled OFF font-bold');
+          } else {
             newClasses.push('font-bold');
+            console.log('🔄 Toggled ON font-bold');
           }
         } else {
           newClasses = newClasses.filter(cls => cls !== 'font-bold');
@@ -55,8 +67,13 @@ class SimpleStyleManager {
         break;
       case 'fontStyle':
         if (value === 'italic') {
-          if (!newClasses.includes('italic')) {
+          // Toggle behavior: if already italic, remove it; if not italic, add it
+          if (newClasses.includes('italic')) {
+            newClasses = newClasses.filter(cls => cls !== 'italic');
+            console.log('🔄 Toggled OFF italic');
+          } else {
             newClasses.push('italic');
+            console.log('🔄 Toggled ON italic');
           }
         } else {
           newClasses = newClasses.filter(cls => cls !== 'italic');
@@ -69,7 +86,17 @@ class SimpleStyleManager {
         break;
     }
 
-    element.className = newClasses.join(' ');
+    const oldClassName = element.className;
+    const newClassName = newClasses.join(' ');
+    element.className = newClassName;
+    
+    console.log('🎨 Class update:', {
+      element: element.tagName + (element.id ? `#${element.id}` : ''),
+      oldClassName,
+      newClassName,
+      property,
+      value
+    });
   }
 
   // Track changes for persistence
