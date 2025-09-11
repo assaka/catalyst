@@ -460,6 +460,45 @@ export default function CartSlotsEditor({
     }, 300);
   }, [cartLayoutConfig, saveConfiguration]);
 
+  // Handle text content changes
+  const handleInlineTextChange = useCallback((slotId, newText) => {
+    if (!cartLayoutConfig) return;
+    
+    // Update the cartLayoutConfig with the new text content
+    const updatedConfig = {
+      ...cartLayoutConfig,
+      slots: {
+        ...cartLayoutConfig.slots,
+        [slotId]: {
+          ...cartLayoutConfig.slots?.[slotId],
+          content: newText
+        }
+      }
+    };
+    
+    // Update state immediately for responsive UI
+    setCartLayoutConfig(updatedConfig);
+    
+    // Update the element content visually
+    const element = document.querySelector(`[data-slot-id="${slotId}"]`);
+    if (element) {
+      if (element.tagName === 'BUTTON') {
+        element.textContent = newText;
+      } else {
+        element.innerHTML = newText;
+      }
+    }
+    
+    // Auto-save with debouncing
+    if (window.textChangeTimeout) {
+      clearTimeout(window.textChangeTimeout);
+    }
+    window.textChangeTimeout = setTimeout(() => {
+      saveConfiguration();
+      console.log('🎨 Auto-saved text change for:', slotId, { content: newText });
+    }, 300);
+  }, [cartLayoutConfig, saveConfiguration]);
+
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {
       // Update the cartLayoutConfig with the new HTML content
@@ -1895,6 +1934,7 @@ export default function CartSlotsEditor({
           onUpdateElement={updateElementProperty}
           onClearSelection={clearSelection}
           onClassChange={handleInlineClassChange}
+          onTextChange={handleInlineTextChange}
           slotId={selectedSlotId}
           slotConfig={selectedSlotId ? cartLayoutConfig?.slots?.[selectedSlotId] : null}
           isVisible={mode === 'edit'}

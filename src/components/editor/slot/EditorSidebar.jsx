@@ -36,11 +36,13 @@ const EditorSidebar = ({
   onUpdateElement, 
   onClearSelection,
   onClassChange,  // New prop for class changes
+  onTextChange,   // New prop for text content changes
   slotId,        // Current slot ID
   slotConfig,    // Current slot configuration from database
   isVisible = true 
 }) => {
   const [expandedSections, setExpandedSections] = useState({
+    content: true,
     text: true,
     layout: true,
     appearance: true,
@@ -205,6 +207,26 @@ const EditorSidebar = ({
             {selectedElement.className || 'No classes'}
           </p>
         </div>
+
+        {/* Content Section */}
+        <SectionHeader title="Content" section="content">
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
+              <textarea
+                id="textContent"
+                value={slotConfig?.content || ''}
+                onChange={(e) => {
+                  if (onTextChange) {
+                    onTextChange(slotId, e.target.value);
+                  }
+                }}
+                className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
+                placeholder="Enter text content..."
+              />
+            </div>
+          </div>
+        </SectionHeader>
 
             {/* Size Section */}
             <SectionHeader title="Size" section="size">
