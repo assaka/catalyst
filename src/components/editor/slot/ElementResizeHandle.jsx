@@ -29,15 +29,15 @@ const ElementResizeHandle = ({
 
       let newSize;
       if (elementType === 'icon' || elementType === 'image') {
-        // For icons/images, maintain aspect ratio
-        const delta = Math.max(deltaX, deltaY);
-        const newDimension = Math.max(16, Math.min(128, initialSize.width + delta));
+        // For icons/images, maintain aspect ratio and use average delta
+        const delta = (deltaX + deltaY) / 2;
+        const newDimension = Math.max(16, Math.min(256, initialSize.width + delta));
         newSize = { width: newDimension, height: newDimension };
       } else if (elementType === 'button') {
-        // For buttons, allow independent width/height
+        // For buttons, allow independent width/height with better constraints
         newSize = {
-          width: Math.max(60, initialSize.width + deltaX),
-          height: Math.max(24, initialSize.height + deltaY)
+          width: Math.max(60, Math.min(400, initialSize.width + deltaX)),
+          height: Math.max(24, Math.min(120, initialSize.height + deltaY))
         };
       }
 
@@ -59,29 +59,55 @@ const ElementResizeHandle = ({
   // Get current size from className or default values
   const getCurrentSize = () => {
     if (elementType === 'icon' || elementType === 'image') {
-      const sizeMatch = className.match(/w-(\d+)/);
-      if (sizeMatch) {
-        const size = parseInt(sizeMatch[1]) * 4; // Convert Tailwind units to pixels
+      // Enhanced size detection for icons/images
+      const wMatch = className.match(/w-(\d+)/);
+      const hMatch = className.match(/h-(\d+)/);
+      
+      if (wMatch && hMatch) {
+        const width = parseInt(wMatch[1]) * 4; // Convert Tailwind units to pixels
+        const height = parseInt(hMatch[1]) * 4;
+        return { width, height };
+      } else if (wMatch) {
+        const size = parseInt(wMatch[1]) * 4;
         return { width: size, height: size };
       }
       return { width: 64, height: 64 }; // Default w-16 h-16
     } else if (elementType === 'button') {
       // For buttons, estimate size based on text size and padding
-      const textSizeMatch = className.match(/text-(xs|sm|base|lg|xl)/);
+      const textSizeMatch = className.match(/text-(xs|sm|base|lg|xl|2xl)/);
       const pxMatch = className.match(/px-(\d+)/);
-      const pyMatch = className.match(/py-(\d+)/);
+      const pyMatch = className.match(/py-(\d+(?:\.\d+)?)/);
       
-      let width = 100; // base width
-      let height = 40; // base height
+      let width = 120; // base width
+      let height = 36; // base height
       
+      // Adjust based on text size
       if (textSizeMatch) {
-        const sizeMap = { xs: 0.8, sm: 0.9, base: 1, lg: 1.2, xl: 1.4 };
-        const multiplier = sizeMap[textSizeMatch[1]] || 1;
-        width *= multiplier;
-        height *= multiplier;
+        const sizeMap = { 
+          xs: { w: 0.7, h: 0.8 }, 
+          sm: { w: 0.85, h: 0.9 }, 
+          base: { w: 1, h: 1 }, 
+          lg: { w: 1.2, h: 1.1 }, 
+          xl: { w: 1.4, h: 1.2 },
+          '2xl': { w: 1.6, h: 1.3 }
+        };
+        const multiplier = sizeMap[textSizeMatch[1]] || { w: 1, h: 1 };
+        width *= multiplier.w;
+        height *= multiplier.h;
       }
       
-      return { width, height };
+      // Adjust based on padding
+      if (pxMatch) {
+        const px = parseInt(pxMatch[1]) * 4; // Convert to pixels
+        width += px * 2; // Padding on both sides
+      }
+      
+      if (pyMatch) {
+        const py = parseFloat(pyMatch[1]) * 4; // Convert to pixels
+        height += py * 2; // Padding on top and bottom
+      }
+      
+      return { width: Math.max(60, width), height: Math.max(24, height) };
     }
     return { width: 64, height: 64 };
   };
@@ -122,7 +148,7 @@ const ElementResizeHandle = ({
       style={getHandleStyle()}
       onMouseDown={handleMouseDown}
       title={`Resize ${elementType} (${getCurrentSize().width}×${getCurrentSize().height}px)`}
-      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+      className="opacity-60 group-hover:opacity-100 hover:opacity-100 transition-opacity hover:bg-blue-600 hover:scale-125"
     />
   );
 };

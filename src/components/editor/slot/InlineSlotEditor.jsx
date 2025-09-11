@@ -252,18 +252,18 @@ export default function InlineSlotEditor({
     }
   };
 
-  // Handle horizontal padding change
-  const handleHorizontalPadding = (paddingClass) => {
-    // Remove existing horizontal padding classes and add new one
+  // Handle horizontal margin change
+  const handleHorizontalMargin = (marginClass) => {
+    // Remove existing horizontal margin classes and add new one
     const newClassName = localClass
-      .replace(/px-\d+/g, '') // Remove existing px classes
-      .trim() + ' ' + paddingClass;
+      .replace(/mx-\d+/g, '') // Remove existing mx classes
+      .trim() + ' ' + marginClass;
     
     setLocalClass(newClassName.trim());
     
     if (onClassChange) {
-      console.log(`🎨 InlineSlotEditor: Changing horizontal padding for ${slotId}:`, { 
-        paddingClass,
+      console.log(`🎨 InlineSlotEditor: Changing horizontal margin for ${slotId}:`, { 
+        marginClass,
         old: localClass, 
         new: newClassName.trim() 
       });
@@ -271,18 +271,18 @@ export default function InlineSlotEditor({
     }
   };
 
-  // Handle vertical padding change
-  const handleVerticalPadding = (paddingClass) => {
-    // Remove existing vertical padding classes and add new one
+  // Handle vertical margin change
+  const handleVerticalMargin = (marginClass) => {
+    // Remove existing vertical margin classes and add new one
     const newClassName = localClass
-      .replace(/py-\d+/g, '') // Remove existing py classes
-      .trim() + ' ' + paddingClass;
+      .replace(/my-\d+/g, '') // Remove existing my classes
+      .trim() + ' ' + marginClass;
     
     setLocalClass(newClassName.trim());
     
     if (onClassChange) {
-      console.log(`🎨 InlineSlotEditor: Changing vertical padding for ${slotId}:`, { 
-        paddingClass,
+      console.log(`🎨 InlineSlotEditor: Changing vertical margin for ${slotId}:`, { 
+        marginClass,
         old: localClass, 
         new: newClassName.trim() 
       });
@@ -290,16 +290,16 @@ export default function InlineSlotEditor({
     }
   };
 
-  // Get current horizontal padding
-  const getCurrentHorizontalPadding = () => {
-    const pxMatch = localClass.match(/px-\d+/);
-    return pxMatch ? pxMatch[0] : 'px-0';
+  // Get current horizontal margin
+  const getCurrentHorizontalMargin = () => {
+    const mxMatch = localClass.match(/mx-\d+/);
+    return mxMatch ? mxMatch[0] : 'mx-0';
   };
 
-  // Get current vertical padding
-  const getCurrentVerticalPadding = () => {
-    const pyMatch = localClass.match(/py-\d+/);
-    return pyMatch ? pyMatch[0] : 'py-0';
+  // Get current vertical margin
+  const getCurrentVerticalMargin = () => {
+    const myMatch = localClass.match(/my-\d+/);
+    return myMatch ? myMatch[0] : 'my-0';
   };
 
   // Handle element resize
@@ -523,215 +523,221 @@ export default function InlineSlotEditor({
       ) : (
         // Edit mode with action toolbar
         <div className="relative w-full">
-          {/* Action Toolbar - Truly Responsive */}
+          {/* Action Toolbar - Multi-row Responsive Design */}
           <div 
             className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 sm:p-2 z-[100]"
             style={{
-              top: '-60px',
+              top: '-90px',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 'max-content',
-              maxWidth: '95vw'
+              maxWidth: '95vw',
+              width: 'auto'
             }}
           >
-            <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              <div className="flex items-center gap-0.5 sm:gap-1 min-w-max">
-            {/* Bold */}
-            <button
-              onClick={handleBold}
-              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${bold ? 'bg-blue-100 text-blue-600' : ''}`}
-              title="Bold"
-            >
-              <Bold className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-
-            {/* Italic */}
-            <button
-              onClick={handleItalic}
-              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${italic ? 'bg-blue-100 text-blue-600' : ''}`}
-              title="Italic"
-            >
-              <Italic className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-
-            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
-
-            {/* Alignment */}
-            <button
-              onClick={() => handleAlign('left')}
-              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'left' ? 'bg-blue-100 text-blue-600' : ''}`}
-              title="Align Left"
-            >
-              <AlignLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-            <button
-              onClick={() => handleAlign('center')}
-              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'center' ? 'bg-blue-100 text-blue-600' : ''}`}
-              title="Align Center"
-            >
-              <AlignCenter className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-            <button
-              onClick={() => handleAlign('right')}
-              className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'right' ? 'bg-blue-100 text-blue-600' : ''}`}
-              title="Align Right"
-            >
-              <AlignRight className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-
-            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
-
-            {/* Font Size */}
-            <select
-              value={currentFontSize}
-              onChange={(e) => handleFontSize(e.target.value)}
-              className="px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-gray-200 rounded hover:bg-gray-50 min-w-0"
-              title="Font Size"
-            >
-              {FONT_SIZES.map(size => (
-                <option key={size.value} value={size.value}>
-                  {size.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
-
-            {/* Text Color */}
-            <div className="relative group">
-              <input
-                type="color"
-                className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
-                title="Text Color"
-                onChange={(e) => handleColorChange('color', e.target.value)}
-                value={getCurrentTextColor(localClass, style)}
-              />
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
-                Text
-              </div>
-            </div>
-
-            {/* Background Color */}
-            <div className="relative group">
-              <input
-                type="color"
-                className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
-                title="Background Color"
-                onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
-                value={getCurrentBackgroundColor(localClass, style)}
-              />
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
-                BG
-              </div>
-            </div>
-
-            {/* Spacing Controls - horizontal and vertical padding */}
-            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
-
-            {/* Horizontal Padding */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-500 font-mono">PX</span>
-              <select
-                value={getCurrentHorizontalPadding()}
-                onChange={(e) => handleHorizontalPadding(e.target.value)}
-                className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
-                title="Horizontal Padding"
-              >
-                <option value="px-0">0</option>
-                <option value="px-1">1</option>
-                <option value="px-2">2</option>
-                <option value="px-3">3</option>
-                <option value="px-4">4</option>
-                <option value="px-6">6</option>
-                <option value="px-8">8</option>
-                <option value="px-12">12</option>
-                <option value="px-16">16</option>
-              </select>
-            </div>
-
-            {/* Vertical Padding */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-500 font-mono">PY</span>
-              <select
-                value={getCurrentVerticalPadding()}
-                onChange={(e) => handleVerticalPadding(e.target.value)}
-                className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
-                title="Vertical Padding"
-              >
-                <option value="py-0">0</option>
-                <option value="py-1">1</option>
-                <option value="py-2">2</option>
-                <option value="py-3">3</option>
-                <option value="py-4">4</option>
-                <option value="py-6">6</option>
-                <option value="py-8">8</option>
-                <option value="py-12">12</option>
-                <option value="py-16">16</option>
-              </select>
-            </div>
-
-            {/* General Padding - only show if isResizable */}
-            {isResizable && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-500 font-mono">P</span>
-                <select
-                  value={currentPadding}
-                  onChange={(e) => handlePadding(e.target.value)}
-                  className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-12"
-                  title="All Padding"
+            {/* Row 1: Basic formatting and alignment */}
+            <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-1">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                {/* Bold */}
+                <button
+                  onClick={handleBold}
+                  className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${bold ? 'bg-blue-100 text-blue-600' : ''}`}
+                  title="Bold"
                 >
-                  {PADDING_OPTIONS.map(padding => (
-                    <option key={padding.value} value={padding.value}>
-                      {padding.label}
+                  <Bold className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+
+                {/* Italic */}
+                <button
+                  onClick={handleItalic}
+                  className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${italic ? 'bg-blue-100 text-blue-600' : ''}`}
+                  title="Italic"
+                >
+                  <Italic className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+
+                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+
+                {/* Alignment */}
+                <button
+                  onClick={() => handleAlign('left')}
+                  className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'left' ? 'bg-blue-100 text-blue-600' : ''}`}
+                  title="Align Left"
+                >
+                  <AlignLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+                <button
+                  onClick={() => handleAlign('center')}
+                  className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'center' ? 'bg-blue-100 text-blue-600' : ''}`}
+                  title="Align Center"
+                >
+                  <AlignCenter className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+                <button
+                  onClick={() => handleAlign('right')}
+                  className={`p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors ${currentAlign === 'right' ? 'bg-blue-100 text-blue-600' : ''}`}
+                  title="Align Right"
+                >
+                  <AlignRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+
+                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+
+                {/* Font Size */}
+                <select
+                  value={currentFontSize}
+                  onChange={(e) => handleFontSize(e.target.value)}
+                  className="px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-gray-200 rounded hover:bg-gray-50 min-w-0 w-16 sm:w-auto"
+                  title="Font Size"
+                >
+                  {FONT_SIZES.map(size => (
+                    <option key={size.value} value={size.value}>
+                      {size.label}
                     </option>
                   ))}
                 </select>
               </div>
-            )}
+            </div>
 
-            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+            {/* Row 2: Colors, spacing, and actions */}
+            <div className="flex items-center justify-center gap-0.5 sm:gap-1 flex-wrap">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                {/* Text Color */}
+                <div className="relative group">
+                  <input
+                    type="color"
+                    className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
+                    title="Text Color"
+                    onChange={(e) => handleColorChange('color', e.target.value)}
+                    value={getCurrentTextColor(localClass, style)}
+                  />
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
+                    Text
+                  </div>
+                </div>
 
-            {/* HTML Editor */}
-            <button
-              onClick={() => {
-                if (onEditSlot) {
-                  onEditSlot(slotId, localText, elementType);
-                } else {
-                  setShowHtmlEditor(true);
-                }
-              }}
-              className="p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors"
-              title="Edit HTML"
-            >
-              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
+                {/* Background Color */}
+                <div className="relative group">
+                  <input
+                    type="color"
+                    className="w-6 h-5 sm:w-8 sm:h-6 rounded border border-gray-200 cursor-pointer"
+                    title="Background Color"
+                    onChange={(e) => handleColorChange('backgroundColor', e.target.value)}
+                    value={getCurrentBackgroundColor(localClass, style)}
+                  />
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] sm:text-xs text-gray-500">
+                    BG
+                  </div>
+                </div>
+                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
 
-            {/* Advanced Style Editor */}
-            <button
-              onClick={() => setShowStyleEditor(true)}
-              className="p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors"
-              title="Advanced Styles"
-            >
-              <Palette className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
+                {/* Horizontal Margin */}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 font-mono">MX</span>
+                  <select
+                    value={getCurrentHorizontalMargin()}
+                    onChange={(e) => handleHorizontalMargin(e.target.value)}
+                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10 sm:w-12"
+                    title="Horizontal Margin"
+                  >
+                    <option value="mx-0">0</option>
+                    <option value="mx-1">1</option>
+                    <option value="mx-2">2</option>
+                    <option value="mx-3">3</option>
+                    <option value="mx-4">4</option>
+                    <option value="mx-6">6</option>
+                    <option value="mx-8">8</option>
+                    <option value="mx-12">12</option>
+                    <option value="mx-16">16</option>
+                  </select>
+                </div>
 
-            <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                {/* Vertical Margin */}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 font-mono">MY</span>
+                  <select
+                    value={getCurrentVerticalMargin()}
+                    onChange={(e) => handleVerticalMargin(e.target.value)}
+                    className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10 sm:w-12"
+                    title="Vertical Margin"
+                  >
+                    <option value="my-0">0</option>
+                    <option value="my-1">1</option>
+                    <option value="my-2">2</option>
+                    <option value="my-3">3</option>
+                    <option value="my-4">4</option>
+                    <option value="my-6">6</option>
+                    <option value="my-8">8</option>
+                    <option value="my-12">12</option>
+                    <option value="my-16">16</option>
+                  </select>
+                </div>
+                {/* General Padding - only show if isResizable */}
+                {isResizable && (
+                  <>
+                    <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-mono">P</span>
+                      <select
+                        value={currentPadding}
+                        onChange={(e) => handlePadding(e.target.value)}
+                        className="px-1 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 w-10 sm:w-12"
+                        title="All Padding"
+                      >
+                        {PADDING_OPTIONS.map(padding => (
+                          <option key={padding.value} value={padding.value}>
+                            {padding.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
 
-            {/* Save/Cancel */}
-            <button
-              onClick={handleSave}
-              className="p-1 sm:p-1.5 rounded hover:bg-green-100 text-green-600 transition-colors"
-              title="Save"
-            >
-              <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-            <button
-              onClick={handleCancel}
-              className="p-1 sm:p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
-              title="Cancel"
-            >
-              <X className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
+              {/* Second part of row 2: Edit controls */}
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+
+                {/* HTML Editor */}
+                <button
+                  onClick={() => {
+                    if (onEditSlot) {
+                      onEditSlot(slotId, localText, elementType);
+                    } else {
+                      setShowHtmlEditor(true);
+                    }
+                  }}
+                  className="p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors"
+                  title="Edit HTML"
+                >
+                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+
+                {/* Advanced Style Editor */}
+                <button
+                  onClick={() => setShowStyleEditor(true)}
+                  className="p-1 sm:p-1.5 rounded hover:bg-gray-100 transition-colors"
+                  title="Advanced Styles"
+                >
+                  <Palette className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+
+                <div className="w-px h-4 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1" />
+                {/* Save/Cancel */}
+                <button
+                  onClick={handleSave}
+                  className="p-1 sm:p-1.5 rounded hover:bg-green-100 text-green-600 transition-colors"
+                  title="Save"
+                >
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="p-1 sm:p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
+                  title="Cancel"
+                >
+                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                </button>
               </div>
             </div>
           </div>
