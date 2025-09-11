@@ -1,5 +1,3 @@
-import { isBold } from './editor-utils';
-
 // Simple style manager that avoids React state issues
 class SimpleStyleManager {
   constructor() {
@@ -140,15 +138,28 @@ class SimpleStyleManager {
       const databaseUpdates = {};
       
       this.changes.forEach((changes, elementId) => {
-        // Get the current element to read its latest className
+        // Get the current element to read its latest className and styles
         const element = document.querySelector(`[data-slot-id="${elementId}"]`) || 
                        document.getElementById(elementId);
         
         if (element) {
-          // Save the className as-is - hover/editor classes should be added dynamically by parent
+          // Collect inline styles from the element
+          const styles = {};
+          const computedStyle = element.style;
+          
+          // Get all inline styles that were set
+          for (let i = 0; i < computedStyle.length; i++) {
+            const property = computedStyle[i];
+            const value = computedStyle.getPropertyValue(property);
+            if (value) {
+              styles[property] = value;
+            }
+          }
+          
+          // Save both className and actual inline styles
           databaseUpdates[elementId] = {
             className: element.className,
-            styles: {}, // Keep styles empty since we're using classes
+            styles: styles,
             metadata: {
               lastModified: new Date().toISOString()
             }

@@ -18,7 +18,6 @@ import {
   isItalic,
   getCurrentAlign,
   getCurrentFontSize,
-  FONT_SIZES,
   debounce
 } from './editor-utils';
 import { styleManager } from './SimpleStyleManager';
@@ -351,11 +350,14 @@ const EditorSidebar = ({
                     onChange={(e) => handlePropertyChange('fontSize', e.target.value)}
                     className="w-full mt-1 h-7 text-xs border border-gray-300 rounded-md"
                   >
-                    {FONT_SIZES.map(size => (
-                      <option key={size.value} value={size.value}>
-                        {size.label}
-                      </option>
-                    ))}
+                    <option value="xs">XS</option>
+                    <option value="sm">SM</option>
+                    <option value="base">Base</option>
+                    <option value="lg">LG</option>
+                    <option value="xl">XL</option>
+                    <option value="2xl">2XL</option>
+                    <option value="3xl">3XL</option>
+                    <option value="4xl">4XL</option>
                   </select>
                 </div>
 

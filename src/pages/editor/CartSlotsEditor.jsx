@@ -459,38 +459,11 @@ export default function CartSlotsEditor({
     }, 300);
   }, [cartLayoutConfig, saveConfiguration]);
 
-  // Handle text content changes for sidebar
+  // Handle text content changes for sidebar with debounced state updates
   const handleSidebarTextChange = useCallback((slotId, newText) => {
     if (!cartLayoutConfig) return;
     
-    try {
-      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
-      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
-      
-      // Safely get existing slot data
-      const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
-      const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
-      
-      // Update the cartLayoutConfig with the new text content
-      const updatedConfig = {
-        ...safeCartLayoutConfig,
-        slots: {
-          ...safeCartLayoutConfig.slots,
-          [slotId]: {
-            ...safeExistingSlot,
-            content: newText
-          }
-        }
-      };
-      
-      // Update state immediately for responsive UI
-      setCartLayoutConfig(updatedConfig);
-    } catch (error) {
-      console.warn('Error updating text content:', error);
-      return; // Exit early if update fails
-    }
-    
-    // Update the element content visually
+    // Update the element content visually immediately for UI responsiveness
     const element = document.querySelector(`[data-slot-id="${slotId}"]`);
     if (element) {
       if (element.tagName === 'BUTTON') {
@@ -500,14 +473,42 @@ export default function CartSlotsEditor({
       }
     }
     
-    // Auto-save with debouncing
+    // Debounce both state update and save operations
     if (window.textChangeTimeout) {
       clearTimeout(window.textChangeTimeout);
     }
+    
     window.textChangeTimeout = setTimeout(() => {
-      saveConfiguration();
-      console.log('🎨 Auto-saved text change for:', slotId, { content: newText });
-    }, 300);
+      try {
+        // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
+        const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+        
+        // Safely get existing slot data
+        const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
+        const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
+        
+        // Update the cartLayoutConfig with the new text content
+        const updatedConfig = {
+          ...safeCartLayoutConfig,
+          slots: {
+            ...safeCartLayoutConfig.slots,
+            [slotId]: {
+              ...safeExistingSlot,
+              content: newText
+            }
+          }
+        };
+        
+        // Update state after debounce delay
+        setCartLayoutConfig(updatedConfig);
+        
+        // Save to database
+        saveConfiguration();
+        console.log('🎨 Auto-saved text change for:', slotId, { content: newText });
+      } catch (error) {
+        console.warn('Error updating text content:', error);
+      }
+    }, 500); // 500ms debounce delay
   }, [cartLayoutConfig, saveConfiguration]);
 
   const handleSaveEdit = useCallback(() => {
