@@ -357,8 +357,17 @@ export default function InlineSlotEditor({
       ) : (
         // Edit mode with action toolbar
         <div className="relative inline-block">
-          {/* Action Toolbar */}
-          <div className="absolute -top-14 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1 z-[100] whitespace-nowrap">
+          {/* Action Toolbar - Centered and Responsive */}
+          <div 
+            className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1 z-[100] whitespace-nowrap overflow-x-auto"
+            style={{
+              top: '-60px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              maxWidth: 'min(90vw, 600px)',
+              minWidth: 'min-content'
+            }}
+          >
             {/* Bold */}
             <button
               onClick={handleBold}

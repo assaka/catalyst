@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Save, RefreshCw, CheckCircle, X, Plus, Minus, Trash2, Tag } from "lucide-react";
+import { ShoppingCart, Package, Save, RefreshCw, CheckCircle, X, Plus, Minus, Trash2, Tag, Code } from "lucide-react";
 import Editor from '@monaco-editor/react';
 
 // Import Cart.jsx's exact dependencies
@@ -192,6 +192,7 @@ export default function CartSlotsEditor({
   const [activeDragSlot, setActiveDragSlot] = useState(null);
   const [saveStatus, setSaveStatus] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
 
   // Save configuration to database
   const saveConfiguration = useCallback(async () => {
@@ -615,6 +616,16 @@ export default function CartSlotsEditor({
                 >
                   <Save className="w-4 h-4 mr-1.5" />
                   Save Changes
+                </Button>
+                
+                <Button
+                  onClick={() => setShowCodeModal(true)}
+                  variant="outline"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                >
+                  <Code className="w-4 h-4 mr-1.5" />
+                  Code
                 </Button>
                 
                 <Button
@@ -1760,6 +1771,43 @@ export default function CartSlotsEditor({
                 <Button onClick={handleSaveEdit}>
                   <Save className="w-4 h-4 mr-2" />
                   Save
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Code Modal */}
+          <Dialog open={showCodeModal} onOpenChange={setShowCodeModal}>
+            <DialogContent className="max-w-4xl w-[90vw] h-[70vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Slot Configuration JSON</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+                <Editor
+                  height="100%"
+                  defaultLanguage="json"
+                  value={JSON.stringify(cartLayoutConfig, null, 2)}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    wordWrap: 'on',
+                    automaticLayout: true,
+                    readOnly: true,
+                  }}
+                  theme="vs-dark"
+                />
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(cartLayoutConfig, null, 2));
+                  }}
+                >
+                  Copy to Clipboard
+                </Button>
+                <Button onClick={() => setShowCodeModal(false)}>
+                  Close
                 </Button>
               </DialogFooter>
             </DialogContent>
