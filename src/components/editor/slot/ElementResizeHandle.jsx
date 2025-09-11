@@ -16,7 +16,9 @@ const ElementResizeHandle = ({
     // Aggressively prevent all default behaviors and event bubbling
     e.preventDefault();
     e.stopPropagation();
-    e.stopImmediatePropagation();
+    if (e.stopImmediatePropagation) {
+      e.stopImmediatePropagation();
+    }
     
     console.log(`🖱️ ElementResizeHandle: Mouse down on ${elementType} for slot ${slotId}`);
     
@@ -195,7 +197,9 @@ const ElementResizeHandle = ({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation();
+        if (e.stopImmediatePropagation) {
+          e.stopImmediatePropagation();
+        }
         console.log(`🔵 Resize handle clicked for ${elementType}`);
       }}
       title={`Resize ${elementType} (${getCurrentSize().widthPercentage ? getCurrentSize().widthPercentage + '%' : getCurrentSize().width + '×' + getCurrentSize().height + 'px'})`}

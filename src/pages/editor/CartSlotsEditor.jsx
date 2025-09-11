@@ -176,7 +176,10 @@ export default function CartSlotsEditor({
   
   const [appliedCoupon] = useState(null);
   const [couponCode, setCouponCode] = useState('');
-  const [flashMessage, setFlashMessage] = useState(null);
+  const [flashMessage, setFlashMessage] = useState({ 
+    type: 'warning', 
+    message: 'Nike Air Max 90 has been removed from your cart.' 
+  });
   const [loading] = useState(false);
   
   // Sample financial calculations
