@@ -340,11 +340,15 @@ export default function InlineSlotEditor({
         
     } else if (elementType === 'button') {
       if (newSize.widthPercentage) {
-        // Use percentage-based width for buttons
+        // Use inline style for percentage-based width for better reliability
         newClassName = localClass
-          .replace(/w-\[?\d+%?\]?|w-\d+|w-auto/g, '') // Remove existing width classes
+          .replace(/w-\[?\d+%?\]?|w-\d+|w-auto|w-full|w-fit|w-max|w-min|w-screen/g, '') // Remove all width classes
+          .replace(/min-w-\[?\w+\]?/g, '') // Remove min-width classes too  
+          .replace(/max-w-\[?\w+\]?/g, '') // Remove max-width classes too
           .replace(/\s+/g, ' ')
-          .trim() + ` w-[${newSize.widthPercentage}%]`;
+          .trim();
+        
+        // We'll apply the inline style after setting the class
       } else {
         // For buttons, adjust text size and padding based on dimensions
         const textSizeMap = {
@@ -375,12 +379,20 @@ export default function InlineSlotEditor({
     setLocalClass(newClassName.trim());
     
     if (onClassChange) {
+      const styleOverrides = {};
+      
+      // For buttons and icons with percentage width, use inline styles for reliable rendering
+      if ((elementType === 'button' || elementType === 'icon' || elementType === 'image') && newSize.widthPercentage) {
+        styleOverrides.width = `${newSize.widthPercentage}%`;
+      }
+      
       console.log(`🎨 InlineSlotEditor: Resizing ${elementType} for ${slotId}:`, { 
         newSize,
         old: localClass, 
-        new: newClassName.trim() 
+        new: newClassName.trim(),
+        styleOverrides
       });
-      onClassChange(slotId, newClassName.trim());
+      onClassChange(slotId, newClassName.trim(), styleOverrides);
     }
   }, [localClass, onClassChange]);
 

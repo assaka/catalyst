@@ -157,32 +157,33 @@ const ElementResizeHandle = ({
   const getHandleStyle = () => {
     const baseStyle = {
       position: 'absolute',
-      width: '16px',
-      height: '16px',
-      background: '#3b82f6',
-      border: '2px solid #ffffff',
+      width: '12px',
+      height: '12px',
+      background: '#10b981', // Green color for better UX
+      border: '1px solid #ffffff',
       borderRadius: '50%',
       cursor: 'se-resize',
       zIndex: 1000,
-      transition: isResizing ? 'none' : 'all 0.2s ease',
-      transform: isResizing ? 'scale(1.3)' : 'scale(1)',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+      transition: isResizing ? 'none' : 'all 0.15s ease',
+      transform: isResizing ? 'scale(1.2)' : 'scale(1)',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
       pointerEvents: 'auto',
-      userSelect: 'none'
+      userSelect: 'none',
+      opacity: 0.9
     };
 
-    // Position the handle based on the position prop
+    // Position the handle based on the position prop - closer to elements
     switch (position) {
       case 'bottom-right':
-        return { ...baseStyle, bottom: '-8px', right: '-8px' };
+        return { ...baseStyle, bottom: '-4px', right: '-4px' };
       case 'bottom-left':
-        return { ...baseStyle, bottom: '-8px', left: '-8px', cursor: 'sw-resize' };
+        return { ...baseStyle, bottom: '-4px', left: '-4px', cursor: 'sw-resize' };
       case 'top-right':
-        return { ...baseStyle, top: '-8px', right: '-8px', cursor: 'ne-resize' };
+        return { ...baseStyle, top: '-4px', right: '-4px', cursor: 'ne-resize' };
       case 'top-left':
-        return { ...baseStyle, top: '-8px', left: '-8px', cursor: 'nw-resize' };
+        return { ...baseStyle, top: '-4px', left: '-4px', cursor: 'nw-resize' };
       default:
-        return { ...baseStyle, bottom: '-8px', right: '-8px' };
+        return { ...baseStyle, bottom: '-4px', right: '-4px' };
     }
   };
 
@@ -193,17 +194,18 @@ const ElementResizeHandle = ({
       ref={resizeRef}
       style={getHandleStyle()}
       onMouseDown={handleMouseDown}
-      onMouseEnter={() => console.log(`🔵 Mouse enter resize handle for ${elementType}`)}
+      onMouseEnter={() => {
+        // Optional: could add subtle visual feedback here
+      }}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         if (e.stopImmediatePropagation) {
           e.stopImmediatePropagation();
         }
-        console.log(`🔵 Resize handle clicked for ${elementType}`);
       }}
-      title={`Resize ${elementType} (${getCurrentSize().widthPercentage ? getCurrentSize().widthPercentage + '%' : getCurrentSize().width + '×' + getCurrentSize().height + 'px'})`}
-      className="opacity-100 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-red-500 hover:scale-125 border-2 border-white shadow-lg"
+      title={`Drag to resize ${elementType} ${getCurrentSize().widthPercentage ? '(' + getCurrentSize().widthPercentage + '% width)' : ''}`}
+      className="opacity-70 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-emerald-600 hover:scale-110 shadow-sm"
     />
   );
 };

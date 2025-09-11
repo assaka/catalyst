@@ -654,7 +654,7 @@ export default function CartSlotsEditor({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* FlashMessage Section with Custom Slots */}
         <div className="flashMessage-section mb-6">
-          <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+          <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} inline={true} />
           {cartLayoutConfig?.microSlotOrders?.flashMessage && (
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig.microSlotOrders.flashMessage.map(slotId => 
