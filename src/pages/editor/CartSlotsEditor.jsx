@@ -38,7 +38,6 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 // Clean imports - no longer using cartConfig fallbacks
 import InlineSlotEditor from "@/components/editor/slot/InlineSlotEditor";
-import ResizeHandle from "@/components/editor/slot/ResizeHandle";
 import { SmartResizeWrapper } from "@/components/editor/slot/SmartResizeSystem";
 
 // Import generic editor utilities
