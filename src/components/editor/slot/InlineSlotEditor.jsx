@@ -92,6 +92,13 @@ export default function InlineSlotEditor({
   const handleTextChange = (e) => {
     const newText = e.target.value;
     setLocalText(newText);
+    
+    // Auto-resize textarea if it's a textarea element
+    if (e.target.tagName === 'TEXTAREA') {
+      e.target.style.height = 'auto';
+      e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+    }
+    
     if (onChange) {
       onChange(newText);
     }
@@ -353,17 +360,23 @@ export default function InlineSlotEditor({
         </Button>
       );
     } else {
-      // For other elements, render as HTML
-      return <span dangerouslySetInnerHTML={{ __html: localText || 'Click to edit' }} />;
+      // For text elements, render with proper text alignment support
+      return (
+        <div 
+          className={`w-full ${localClass}`} 
+          style={style}
+          dangerouslySetInnerHTML={{ __html: localText || 'Click to edit' }} 
+        />
+      );
     }
   };
 
   return (
-    <div className="relative group inline-block">
+    <div className="relative group w-full">
       {!isEditing ? (
         // Display mode with edit button
         <div 
-          className={`${elementType === 'button' ? '' : localClass} cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 transition-all inline-block`}
+          className={`${elementType === 'button' ? '' : localClass} cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 transition-all w-full`}
           style={elementType === 'button' ? {} : style}
           onClick={() => setIsEditing(true)}
           title="Click to edit"
@@ -386,7 +399,7 @@ export default function InlineSlotEditor({
         </div>
       ) : (
         // Edit mode with action toolbar
-        <div className="relative inline-block">
+        <div className="relative w-full">
           {/* Action Toolbar - Truly Responsive */}
           <div 
             className="absolute bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 sm:p-2 z-[100]"
@@ -619,18 +632,39 @@ export default function InlineSlotEditor({
               <span className="text-sm text-gray-500">(Icon - edit styles only)</span>
             </div>
           ) : (
-            <input
-              ref={inputRef}
-              type="text"
-              value={localText}
-              onChange={handleTextChange}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave();
-                if (e.key === 'Escape') handleCancel();
-              }}
-              className={`${localClass} w-auto min-w-[100px] outline-2 outline-blue-500 outline outline-offset-2`}
-              style={style}
-            />
+            // Use textarea for longer text content to prevent width distortion
+            localText && localText.length > 30 ? (
+              <textarea
+                ref={inputRef}
+                value={localText}
+                onChange={handleTextChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) handleSave();
+                  if (e.key === 'Escape') handleCancel();
+                }}
+                className={`${localClass} w-full max-w-full outline-2 outline-blue-500 outline outline-offset-2 resize-none overflow-hidden`}
+                style={{
+                  ...style,
+                  minHeight: '1.5em',
+                  maxHeight: '6em'
+                }}
+                rows={Math.min(4, Math.ceil(localText.length / 50))}
+                title="Press Ctrl+Enter to save, Escape to cancel"
+              />
+            ) : (
+              <input
+                ref={inputRef}
+                type="text"
+                value={localText}
+                onChange={handleTextChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSave();
+                  if (e.key === 'Escape') handleCancel();
+                }}
+                className={`${localClass} w-full max-w-full outline-2 outline-blue-500 outline outline-offset-2`}
+                style={style}
+              />
+            )
           )}
         </div>
       )}
