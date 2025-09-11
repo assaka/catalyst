@@ -428,8 +428,11 @@ export default function CartSlotsEditor({
     const styleKey = isWrapperSlot ? 'parentStyles' : 'styles';
     
     try {
+      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
+      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+      
       // Safely merge existing styles with new styles
-      const existingSlot = cartLayoutConfig.slots?.[slotId] || {};
+      const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
       const existingStyles = existingSlot[styleKey] || {};
       
       // Create deep copies to avoid read-only object issues
@@ -438,9 +441,9 @@ export default function CartSlotsEditor({
       
       // Update the cartLayoutConfig with the new styling in the correct structure
       const updatedConfig = {
-        ...cartLayoutConfig,
+        ...safeCartLayoutConfig,
         slots: {
-          ...cartLayoutConfig.slots,
+          ...safeCartLayoutConfig.slots,
           [slotId]: {
             ...existingSlot,
             [classKey]: newClassName,
@@ -478,15 +481,18 @@ export default function CartSlotsEditor({
     if (!cartLayoutConfig) return;
     
     try {
+      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
+      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+      
       // Safely get existing slot data
-      const existingSlot = cartLayoutConfig.slots?.[slotId] || {};
+      const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
       const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
       
       // Update the cartLayoutConfig with the new text content
       const updatedConfig = {
-        ...cartLayoutConfig,
+        ...safeCartLayoutConfig,
         slots: {
-          ...cartLayoutConfig.slots,
+          ...safeCartLayoutConfig.slots,
           [slotId]: {
             ...safeExistingSlot,
             content: newText
@@ -524,8 +530,11 @@ export default function CartSlotsEditor({
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {
       try {
+        // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
+        const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+        
         // Safely get existing slot and metadata
-        const existingSlot = cartLayoutConfig.slots?.[editingComponent] || {};
+        const existingSlot = safeCartLayoutConfig.slots?.[editingComponent] || {};
         const existingMetadata = existingSlot.metadata || {};
         
         const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
@@ -533,9 +542,9 @@ export default function CartSlotsEditor({
         
         // Update the cartLayoutConfig with the new HTML content
         const updatedConfig = {
-          ...cartLayoutConfig,
+          ...safeCartLayoutConfig,
           slots: {
-            ...cartLayoutConfig.slots,
+            ...safeCartLayoutConfig.slots,
             [editingComponent]: {
               ...safeExistingSlot,
               content: tempCode,
@@ -569,8 +578,11 @@ export default function CartSlotsEditor({
     console.log('🔄 Resizing microslot:', slotId, 'to spans:', newSpans);
 
     try {
+      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
+      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+      
       // Safely get existing spans data
-      const existingMicroSlotSpans = cartLayoutConfig.microSlotSpans || {};
+      const existingMicroSlotSpans = safeCartLayoutConfig.microSlotSpans || {};
       const existingParentSpans = existingMicroSlotSpans[parentSlot] || {};
       const existingSlotSpans = existingParentSpans[slotId] || {};
       
@@ -581,7 +593,7 @@ export default function CartSlotsEditor({
 
       // Update the cartLayoutConfig with the new spans
       const updatedConfig = {
-        ...cartLayoutConfig,
+        ...safeCartLayoutConfig,
         microSlotSpans: {
           ...safeMicroSlotSpans,
           [parentSlot]: {
@@ -618,8 +630,11 @@ export default function CartSlotsEditor({
     console.log('🔄 Resizing element:', slotId, 'to classes:', newClasses);
 
     try {
+      // Create a complete deep copy of cartLayoutConfig to avoid any read-only issues
+      const safeCartLayoutConfig = JSON.parse(JSON.stringify(cartLayoutConfig));
+      
       // Safely get existing slot and metadata
-      const existingSlot = cartLayoutConfig.slots?.[slotId] || {};
+      const existingSlot = safeCartLayoutConfig.slots?.[slotId] || {};
       const existingMetadata = existingSlot.metadata || {};
       
       const safeExistingSlot = JSON.parse(JSON.stringify(existingSlot));
@@ -627,9 +642,9 @@ export default function CartSlotsEditor({
 
       // Update the cartLayoutConfig with the new element classes
       const updatedConfig = {
-        ...cartLayoutConfig,
+        ...safeCartLayoutConfig,
         slots: {
-          ...cartLayoutConfig.slots,
+          ...safeCartLayoutConfig.slots,
           [slotId]: {
             ...safeExistingSlot,
             className: newClasses,
