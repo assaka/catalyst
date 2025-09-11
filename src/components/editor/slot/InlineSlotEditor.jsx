@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TailwindStyleEditor from './TailwindStyleEditor';
-import ElementResizeHandle from './ElementResizeHandle';
 import { 
   isBold,
   isItalic,
