@@ -20,12 +20,9 @@ export function useSlotConfiguration({
 
   // Generic save configuration function
   const saveConfiguration = useCallback(async ({
-    majorSlots,
     slotContent,
     elementStyles,
     elementClasses,
-    microSlotSpans,
-    customSlots,
     componentSizes
   }) => {
     console.log(`💾 ===== SAVE CONFIGURATION STARTED (${pageName}) =====`);
@@ -74,11 +71,7 @@ export function useSlotConfiguration({
     const config = {
       page_name: pageName,
       slot_type: slotType,
-      major_slots: majorSlots,
       slots,
-      microSlotSpans,
-      customSlots,
-      componentSizes,
       metadata: {
         lastModified: new Date().toISOString(),
         version: '1.0',
@@ -147,14 +140,9 @@ export function useSlotConfiguration({
 
   // Generic load configuration function
   const loadConfiguration = useCallback(async ({
-    setMicroSlotOrders,
-    setMicroSlotSpans,
-    setCustomSlots,
-    setComponentSizes,
     setSlotContent,
     setElementStyles,
     setElementClasses,
-    setMajorSlots
   }) => {
     try {
       const storeId = selectedStore?.id;
@@ -166,19 +154,11 @@ export function useSlotConfiguration({
       
       if (!storeId) {
         console.log('No store ID found, initializing with default configuration');
-        
-        // Initialize defaults when no store ID
-        const defaultOrders = {};
-        Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-          defaultOrders[key] = [...def.microSlots];
-        });
-        setMicroSlotOrders?.(defaultOrders);
-        
+
         const defaultSpans = {};
         Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
           defaultSpans[key] = { ...def.defaultSpans };
         });
-        setMicroSlotSpans?.(defaultSpans);
         console.log('🎯 LOAD DEBUG: Initialized defaults (no store ID)');
         return;
       }
@@ -220,37 +200,7 @@ export function useSlotConfiguration({
           console.error('⚠️ No configuration found in database record');
           return;
         }
-        
-        // Load saved majorSlots order
-        if (config.majorSlots && setMajorSlots) {
-          setMajorSlots(config.majorSlots);
-        }
-        
-        // Skip loading  (deprecated)
-        if (setMicroSlotOrders) {
-          const defaultOrders = {};
-          Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-            defaultOrders[key] = [...def.microSlots];
-          });
-          setMicroSlotOrders(defaultOrders);
-        }
-        
-        // Load microSlotSpans with validation
-        if (config.microSlotSpans && setMicroSlotSpans) {
-          const cleanedSpans = {};
-          Object.entries(config.microSlotSpans).forEach(([parentId, slots]) => {
-            cleanedSpans[parentId] = {};
-            Object.entries(slots).forEach(([slotId, spans]) => {
-              cleanedSpans[parentId][slotId] = {
-                col: typeof spans.col === 'number' && spans.col >= 1 && spans.col <= 12 ? spans.col : 12,
-                row: typeof spans.row === 'number' && spans.row >= 1 && spans.row <= 4 ? spans.row : 1,
-                ...(spans.align && { align: spans.align })
-              };
-            });
-          });
-          setMicroSlotSpans(cleanedSpans);
-        }
-        
+
         // Load from config.slots structure
         if (config.slots) {
           console.log('📥 Loading from slots structure:', config.slots);
@@ -301,48 +251,15 @@ export function useSlotConfiguration({
         console.log(`✅ Configuration loaded successfully (${pageName})`);
       } else {
         console.log('No configuration found in database, initializing with defaults');
-        
-        // Skip initializing  (deprecated)
-        if (setMicroSlotOrders) {
-          const defaultOrders = {};
-          Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-            defaultOrders[key] = [...def.microSlots];
-          });
-          setMicroSlotOrders({});
-          console.log('🎯 LOAD DEBUG: Skipped  initialization (deprecated)');
-        }
-        
-        // Initialize default microSlotSpans
-        if (setMicroSlotSpans) {
+
           const defaultSpans = {};
           Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
             defaultSpans[key] = { ...def.defaultSpans };
           });
-          setMicroSlotSpans(defaultSpans);
-          console.log('📐 Initialized default microSlotSpans:', defaultSpans);
-        }
       }
     } catch (error) {
       console.error(`Failed to load configuration from database (${pageName}):`, error);
-      
-      // Initialize defaults on error too
-      if (setMicroSlotOrders) {
-        const defaultOrders = {};
-        Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-          defaultOrders[key] = [...def.microSlots];
-        });
-        setMicroSlotOrders(defaultOrders);
-      }
-      
-      if (setMicroSlotSpans) {
-        const defaultSpans = {};
-        Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-          defaultSpans[key] = { ...def.defaultSpans };
-        });
-        setMicroSlotSpans(defaultSpans);
-      }
-      console.log('🎯 LOAD ERROR: Initialized defaults after error');
-    }
+     }
   }, [pageName, slotType, selectedStore, microSlotDefinitions]);
 
   // Cleanup function
@@ -401,45 +318,16 @@ export function useSlotConfiguration({
         content: extractedContent,
         classes: extractedClasses
       });
-      
-      setters.setElementStyles?.(extractedStyles);
-      setters.setSlotContent?.(extractedContent);
-      setters.setElementClasses?.(extractedClasses);
+
     } else {
       console.warn('⚠️ No slots structure found in configuration');
     }
-    
-    // Apply componentSizes (still in old structure - needs migration)
-    if (config.componentSizes) {
-      setters.setComponentSizes?.(prev => ({
-        ...prev,
-        ...config.componentSizes
-      }));
-      console.log('✅ Applied componentSizes from draft:', config.componentSizes);
-    }
-    
-    // Skip  loading (deprecated)
-    console.log('🎯 LOAD DEBUG: Skipping  loading (deprecated)');
-    setters.setMicroSlotOrders?.({});
-    
-    if (config.microSlotSpans) {
-      setters.setMicroSlotSpans?.(prev => ({
-        ...prev,
-        ...config.microSlotSpans
-      }));
-    }
+
   }, [microSlotDefinitions]);
 
   // Helper function for view mode changes
   const updateSlotsForViewMode = useCallback((requiredSlots, flashMessageContent, setters) => {
-    setters.setMajorSlots?.(prev => {
-      const hasAllSlots = requiredSlots.every(slot => prev.includes(slot));
-      const hasOnlyTheseSlots = prev.every(slot => requiredSlots.includes(slot));
-      
-      return (!hasAllSlots || !hasOnlyTheseSlots) ? requiredSlots : prev;
-    });
-    
-    setters.setSlotContent?.(prev => ({
+   setters.setSlotContent?.(prev => ({
       ...prev,
       'flashMessage.content': flashMessageContent
     }));

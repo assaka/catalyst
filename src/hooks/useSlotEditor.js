@@ -28,18 +28,8 @@ export function useSlotEditor({
   const justSavedRef = useRef(false);
 
   // Core state management
-  const [majorSlots, setMajorSlots] = useState(defaultMajorSlots);
   const [isResizingIcon, setIsResizingIcon] = useState(null);
   const [isResizingButton, setIsResizingButton] = useState(null);
-
-
-  const [microSlotSpans, setMicroSlotSpans] = useState(() => {
-    const spans = {};
-    Object.entries(microSlotDefinitions).forEach(([key, def]) => {
-      spans[key] = { ...(def.defaultSpans || {}) };
-    });
-    return spans;
-  });
 
   // Content and styling state
   const [slotContent, setSlotContent] = useState(defaultSlotContent);
@@ -56,8 +46,6 @@ export function useSlotEditor({
   const [newSlotType, setNewSlotType] = useState('text');
   const [newSlotName, setNewSlotName] = useState('');
   const [newSlotContent, setNewSlotContent] = useState('');
-  const [customSlots, setCustomSlots] = useState({});
-  const [justAddedCustomSlot, setJustAddedCustomSlot] = useState(false);
 
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState({ 
@@ -119,34 +107,10 @@ export function useSlotEditor({
         };
       });
       
-      // Prepare final configuration
-      const finalMicroSlotOrders = {}; // Deprecated - always empty
-      const skipOrders = (() => {
-            const defaultOrders = {};
-            Object.entries(microSlotDefinitions).forEach(([key, def]) => {
-              defaultOrders[key] = [...(def.microSlots || [])];
-            });
-            return defaultOrders;
-          })();
-      
-      const finalMicroSlotSpans = Object.keys(microSlotSpans || {}).length > 0 
-        ? microSlotSpans 
-        : (() => {
-            const defaultSpans = {};
-            Object.entries(microSlotDefinitions).forEach(([key, def]) => {
-              defaultSpans[key] = { ...(def.defaultSpans || {}) };
-            });
-            return defaultSpans;
-          })();
-      
       const config = {
         page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
         slot_type: slotType,
-        major_slots: majorSlots,
         slots,
-        microSlotSpans: finalMicroSlotSpans,
-        customSlots,
-        componentSizes,
         metadata: {
           lastModified: new Date().toISOString(),
           version: '1.0',
@@ -200,13 +164,7 @@ export function useSlotEditor({
   }, [
     pageType,
     slotType,
-    majorSlots,
     slotContent,
-    elementStyles,
-    elementClasses,
-    microSlotSpans,
-    customSlots,
-    componentSizes,
     currentStoreId,
     microSlotDefinitions
   ]);
@@ -243,20 +201,6 @@ export function useSlotEditor({
         if (pageConfig?.configuration) {
           const config = pageConfig.configuration;
           console.log(`📥 Found ${pageType} config:`, config);
-          
-          // Load major slots
-          if (config.major_slots) {
-            setMajorSlots(config.major_slots);
-          }
-          
-          // microSlotOrders removed - using direct grid positioning
-          
-          // Load micro-slot spans
-          if (config.microSlotSpans) {
-            setMicroSlotSpans(config.microSlotSpans);
-          }
-          
-          // customSlots deprecated - now using flattened slots structure with type field
           
           // Load component sizes
           if (config.componentSizes) {
@@ -306,57 +250,6 @@ export function useSlotEditor({
       console.error(`📥 Error loading ${pageType} configurations:`, error);
     }
   }, [currentStoreId, pageType, slotType, onConfigLoad]);
-
-  // Event handlers
-  const handleMicroSlotReorder = useCallback((parentId, activeId, overId) => {
-    setMicroSlotOrders(prevOrders => {
-      const newOrders = { ...prevOrders };
-      
-      if (!newOrders[parentId]) {
-        newOrders[parentId] = microSlotDefinitions[parentId]?.microSlots || [];
-      }
-      
-      const parentOrder = [...newOrders[parentId]];
-      
-      const activeSlotId = activeId.replace(`${parentId}.`, '');
-      const overSlotId = overId.replace(`${parentId}.`, '');
-      
-      const oldIndex = parentOrder.indexOf(activeSlotId);
-      const newIndex = parentOrder.indexOf(overSlotId);
-      
-      if (oldIndex !== -1 && newIndex !== -1) {
-        parentOrder.splice(oldIndex, 1);
-        parentOrder.splice(newIndex, 0, activeSlotId);
-        newOrders[parentId] = parentOrder;
-        
-        // Auto-save after reorder
-        setTimeout(() => {
-          saveConfiguration();
-        }, 100);
-      }
-      
-      return newOrders;
-    });
-  }, [microSlotDefinitions, saveConfiguration]);
-
-  const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
-    setMicroSlotSpans(prev => {
-      const updated = {
-        ...prev,
-        [parentId]: {
-          ...(prev[parentId] || {}),
-          [microSlotId]: newSpans
-        }
-      };
-      
-      // Auto-save after span change
-      setTimeout(() => {
-        saveConfiguration();
-      }, 100);
-      
-      return updated;
-    });
-  }, [saveConfiguration]);
 
   const handleTextChange = useCallback((slotId, newText) => {
     setSlotContent(prev => {
@@ -440,14 +333,10 @@ export function useSlotEditor({
 
   return {
     // State
-    majorSlots,
-    setMajorSlots,
     isResizingIcon,
     setIsResizingIcon,
     isResizingButton,
     setIsResizingButton,
-    microSlotSpans,
-    setMicroSlotSpans,
     slotContent,
     setSlotContent,
     editingComponent,
@@ -470,10 +359,6 @@ export function useSlotEditor({
     setNewSlotName,
     newSlotContent,
     setNewSlotContent,
-    customSlots,
-    setCustomSlots,
-    justAddedCustomSlot,
-    setJustAddedCustomSlot,
     deleteConfirm,
     setDeleteConfirm,
     elementClasses,
@@ -486,8 +371,6 @@ export function useSlotEditor({
     // Functions
     saveConfiguration,
     loadConfiguration,
-    handleMicroSlotReorder,
-    handleSpanChange,
     handleTextChange,
     handleClassChange,
     handleSizeChange,

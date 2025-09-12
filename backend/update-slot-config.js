@@ -60,7 +60,7 @@ async function updateSlotConfiguration() {
     console.log('  - page_type value:', verifiedConfig.page_type);
     console.log('  - Has slotContent:', !!verifiedConfig.slotContent);
     console.log('  - SlotContent keys:', Object.keys(verifiedConfig.slotContent || {}).length);
-    console.log('  - Has microSlotSpans:', !!verifiedConfig.microSlotSpans);
+    console.log('  - Has :', !!verifiedConfig.);
     
     await pool.end();
     

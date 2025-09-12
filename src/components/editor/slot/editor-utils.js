@@ -24,8 +24,6 @@ export function isItalic(className) {
  * Get current alignment from class string
  */
 export function getCurrentAlign(className, isWrapperSlot = false) {
-  // For parent elements (isWrapperSlot = true), we still use text-alignment classes
-  // because our alignment handler applies text-center, text-right to the parent
   if (className.includes('text-center')) return 'center';
   if (className.includes('text-right')) return 'right';
   return 'left';
@@ -88,60 +86,15 @@ export function createDragStartHandler(setActiveDragSlot) {
  * Create drag end handler for slot editors with major and micro slot support
  * @param {Object} config - Configuration object
  * @param {Function} config.setActiveDragSlot - State setter for active drag slot
- * @param {Function} config.setMajorSlots - State setter for major slots
- * @param {Function} config.setLayoutConfig - State setter for layout configuration
- * @param {Function} config.saveConfiguration - Function to save configuration
- * @param {Array} config.majorSlots - Current major slots array
- * @param {Object} config.layoutConfig - Current layout configuration
- * @param {Function} config.arrayMove - Array move utility function
  * @returns {Function} Drag end handler
  */
 export function createDragEndHandler({
   setActiveDragSlot,
-  setMajorSlots,
-  setLayoutConfig,
-  saveConfiguration,
-  majorSlots,
-  layoutConfig,
-  arrayMove
 }) {
   return (event) => {
-    const { active, over } = event;
+    const {active, over} = event;
     setActiveDragSlot(null);
-
-    if (!over || active.id === over.id) return;
-
-    // Determine if this is a majorSlot or microSlot drag
-    const activeId = active.id;
-    const overId = over.id;
-
-    // Check if dragging majorSlots
-    if (majorSlots.includes(activeId) && majorSlots.includes(overId)) {
-      setMajorSlots((slots) => {
-        const oldIndex = slots.indexOf(activeId);
-        const newIndex = slots.indexOf(overId);
-        const newSlots = arrayMove(slots, oldIndex, newIndex);
-        
-        // Auto-save after reordering
-        setTimeout(saveConfiguration, 100);
-        
-        return newSlots;
-      });
-      return;
-    }
-
-    // Check if dragging microSlots
-    const activeSlotParts = activeId.split('.');
-    const overSlotParts = overId.split('.');
-    
-    if (activeSlotParts.length >= 2 && overSlotParts.length >= 2) {
-      const activeMajorSlot = activeSlotParts[0];
-      const overMajorSlot = overSlotParts[0];
-      
-      // Skip reordering logic - using direct grid positioning now
-      console.log('Drag and drop reordering is now handled via direct grid positioning in CSS');
-    }
-  };
+  }
 }
 
 /**
@@ -160,7 +113,6 @@ export function createEditSlotHandler(setEditingComponent, setTempCode) {
     
     let htmlContent = layoutConfig?.slots?.[slotId]?.content || content || '';
     
-    // For button elements, generate full HTML structure if not already stored
     if (elementType === 'button' && htmlContent && !htmlContent.includes('<')) {
       // If it's just text, wrap it in a proper button HTML structure
       const buttonClasses = layoutConfig?.slots?.[slotId]?.className || 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded';
@@ -174,117 +126,5 @@ export function createEditSlotHandler(setEditingComponent, setTempCode) {
     }
     
     setTempCode(htmlContent);
-  };
-}
-
-
-/**
- * Create custom slot renderer with ALL editor customizations
- * @param {Object} config - Configuration object
- * @param {Object} config.layoutConfig - Current layout configuration
- * @param {Function} config.getMicroSlotStyling - Function to get micro slot styling
- * @param {Function} config.getSlotPositioning - Function to get slot positioning
- * @param {Function} config.handleEditSlot - Function to handle slot editing
- * @param {string} config.mode - Editor mode ('edit' or 'preview')
- * @returns {Function} Custom slot renderer
- */
-export function createCustomSlotRenderer({
-  layoutConfig,
-  getMicroSlotStyling,
-  getSlotPositioning,
-  handleEditSlot,
-  mode
-}) {
-  return (slotId, parentSlot) => {
-    if (!layoutConfig?.customSlots?.[slotId]) return null;
-    
-    const customSlot = layoutConfig.customSlots[slotId];
-    const slotContent = layoutConfig.slotContent?.[slotId] || customSlot?.content || '';
-    
-    // Get all editor customizations
-    const elementClasses = layoutConfig.elementClasses?.[slotId] || '';
-    const elementStyles = layoutConfig.elementStyles?.[slotId] || {};
-    const microSlotSpans = layoutConfig.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
-    
-    // Debug: Log what customizations are being applied
-    console.log(`🎨 Rendering custom slot ${slotId}:`);
-    console.log('  - elementClasses:', elementClasses);
-    console.log('  - elementStyles:', elementStyles);
-    console.log('  - microSlotSpans:', microSlotSpans);
-    console.log('  - slotContent:', slotContent);
-    
-    // Build container styles with positioning from slot configuration
-    const containerStyle = {
-      ...elementStyles,
-      // Get positioning from slot configuration instead of fixed grid spans
-      ...(microSlotSpans.position ? { position: microSlotSpans.position } : {}),
-      ...(microSlotSpans.left ? { left: microSlotSpans.left } : {}),
-      ...(microSlotSpans.top ? { top: microSlotSpans.top } : {}),
-      ...(microSlotSpans.right ? { right: microSlotSpans.right } : {}),
-      ...(microSlotSpans.bottom ? { bottom: microSlotSpans.bottom } : {}),
-      ...(microSlotSpans.width ? { width: microSlotSpans.width } : {}),
-      ...(microSlotSpans.height ? { height: microSlotSpans.height } : {}),
-      // Only apply grid spans if they exist in configuration
-      ...(microSlotSpans.col ? { gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col))}` } : {}),
-      ...(microSlotSpans.row ? { gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row))}` } : {})
-    };
-    
-    const renderContent = () => {
-      // Get wrapper styling
-      const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-      
-      // Combine inline styles with container positioning
-      const combinedStyles = {
-        ...elementStyles,
-        ...containerStyle
-      };
-      
-      console.log(`🎨 Final styles for ${slotId}:`, combinedStyles);
-      console.log(`🎨 Final classes for ${slotId}:`, elementClasses);
-      console.log(`🎯 Wrapper styling for ${slotId}_wrapper:`, wrapperStyling);
-      
-      if (customSlot.type === 'text') {
-        return React.createElement('div', null,
-          React.createElement('div', { className: wrapperStyling.elementClasses, style: wrapperStyling.elementStyles },
-            React.createElement('div', { 
-              className: `custom-slot-content ${elementClasses || 'text-gray-600'}`,
-              style: combinedStyles
-            }, slotContent)
-          )
-        );
-      } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
-        return React.createElement('div', null,
-          React.createElement('div', { className: wrapperStyling.elementClasses, style: wrapperStyling.elementStyles },
-            React.createElement('div', { 
-              className: `custom-slot-content ${elementClasses || ''}`,
-              style: combinedStyles,
-              dangerouslySetInnerHTML: { __html: slotContent }
-            })
-          )
-        );
-      }
-      return null;
-    };
-    
-    const positioning = getSlotPositioning(slotId, parentSlot);
-    
-    return React.createElement('div', {
-      key: slotId,
-      className: `custom-slot ${customSlot.type}-slot ${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`,
-      'data-slot-id': slotId,
-      'data-parent-slot': parentSlot,
-      style: positioning.elementStyles
-    },
-      // Editor action bar - only show in edit mode
-      mode === 'edit' && React.createElement('div', {
-        className: 'absolute top-0 right-0 bg-blue-600 text-white px-2 py-1 text-xs rounded-bl opacity-0 group-hover:opacity-100 transition-opacity z-10'
-      },
-        React.createElement('button', {
-          onClick: () => handleEditSlot(slotId, slotContent),
-          className: 'mr-2 hover:underline'
-        }, 'Edit')
-      ),
-      renderContent()
-    );
   };
 }

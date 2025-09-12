@@ -5,12 +5,9 @@ export const cartConfig = {
   page_name: 'Cart',
   slot_type: 'cart_layout',
   
-  // Root slots (replaces majorSlots - these are top-level containers)
-  rootSlots: ['flashMessage', 'header', 'emptyCart', 'cartItem', 'coupon', 'orderSummary', 'recommendations', 'empty'],
-  
-  // Flat microSlotSpans structure - parent-child relationships determined by naming convention
-  microSlotSpans: {
-    // All slots at root level - hierarchy is implicit in the naming
+  // Clean JSON structure - cart sections as direct properties
+  microSlots: {
+    // Cart sections as top-level properties in a blank JSON object
     "flashMessage": { col: 12, row: 1 },
     "flashMessage.content": { col: 12, row: 1 },
     "flashMessage.message": { col: 12, row: 1 },
@@ -51,10 +48,7 @@ export const cartConfig = {
     
     "recommendations": { col: 12, row: 1 },
     "recommendations.title": { col: 12, row: 1 },
-    "recommendations.products": { col: 12, row: 3 },
-    
-    "empty": { col: 12, row: 1 },
-    "empty.content": { col: 12, row: 2 }
+    "recommendations.products": { col: 12, row: 3 }
   },
   
   // Slot definitions for metadata and properties (replaces microSlotDefinitions)
@@ -462,8 +456,6 @@ export const cartConfig = {
     }
   },
   
-  // Custom slots (empty by default)
-  customSlots: {},
   
   // Component sizes configuration
   componentSizes: {},

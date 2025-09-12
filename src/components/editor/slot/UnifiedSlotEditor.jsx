@@ -128,22 +128,12 @@ export default function UnifiedSlotEditor({
       
       // Database load disabled - use CartSlotsEditor with versioning system instead
       console.log('💾 UnifiedSlotEditor database load disabled - use CartSlotsEditor with versioning system');
-      
-      // Fallback to localStorage
-      if (!config) {
-        // SlotStorage.load is disabled - using database only
-        console.log('Loaded from localStorage:', config);
-      }
-      
+
       const loadedPageConfig = getPageConfig(pageType);
       setSlotConfig(config);
       setPageConfig(loadedPageConfig);
-      
-      // Initialize slot order
-      if (config?.majorSlots) {
-        console.log('Setting slot order from config:', config.majorSlots);
-        setSlotOrder(config.majorSlots);
-      } else if (loadedPageConfig?.defaultSlots) {
+
+      if (loadedPageConfig?.defaultSlots) {
         console.log('Setting slot order from defaults:', loadedPageConfig.defaultSlots);
         setSlotOrder(loadedPageConfig.defaultSlots);
       }

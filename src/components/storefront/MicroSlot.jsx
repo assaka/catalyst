@@ -22,7 +22,6 @@ function MicroSlot({
   elementStyles = {}, 
   componentSizes = {}, 
   onSizeChange, 
-  microSlotSpans = {}, 
   mode = 'edit' 
 }) {
   const [isResizing, setIsResizing] = useState(false);
@@ -72,26 +71,8 @@ function MicroSlot({
     const colClass = colClasses[Math.min(12, Math.max(1, safeColSpan))] || 'col-span-12';
     const rowClass = rowClasses[Math.min(4, Math.max(1, safeRowSpan))] || '';
     
-    // Add alignment classes based on microSlotSpans
-    const parentSlot = id.split('.')[0];
-    const alignment = microSlotSpans[parentSlot]?.[id]?.align;
-    let alignClass = '';
-    
-    if (alignment) {
-      switch (alignment) {
-        case 'left':
-          alignClass = 'justify-self-start';
-          break;
-        case 'center':
-          alignClass = 'justify-self-center';
-          break;
-        case 'right':
-          alignClass = 'justify-self-end';
-          break;
-      }
-    }
-    
-    return `${colClass} ${rowClass} ${alignClass}`;
+    // Alignment now handled via direct CSS classes in slot configuration
+    return `${colClass} ${rowClass}`;
   };
 
   const style = {

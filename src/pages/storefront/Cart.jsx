@@ -134,7 +134,6 @@ export default function Cart() {
                     if (publishedConfig.configuration) {
                         setCartLayoutConfig(publishedConfig.configuration);
                         console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
-                        console.log('🔧 CustomSlots in loaded config:', publishedConfig.configuration?.customSlots);
                     } else {
                         console.warn('⚠️ Published configuration has no configuration data');
                         // Fallback to default configuration
@@ -925,169 +924,19 @@ export default function Cart() {
         };
     };
 
-    // Helper function to get positioning and styling for slots with grid support
-    const getSlotPositioning = (slotId, parentSlot) => {
-        const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
+    // Helper function to get positioning and styling for slots
+    const getSlotPositioning = (slotId) => {
+        const slotConfig = cartLayoutConfig?.slots?.[slotId];
         const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
         const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
         
-        // Build grid positioning classes with alignment support
-        let gridClasses = `col-span-${Math.min(12, Math.max(1, microSlotSpans.col || 12))} row-span-${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`;
-        
-        // Add horizontal alignment classes to parent container
-        if (microSlotSpans.align) {
-            switch (microSlotSpans.align) {
-                case 'left':
-                    gridClasses += ' justify-self-start';
-                    break;
-                case 'center':  
-                    gridClasses += ' justify-self-center';
-                    break;
-                case 'right':
-                    gridClasses += ' justify-self-end';
-                    break;
-            }
-        }
-        
-        // Add margin and padding support from configuration
-        const spacingStyles = {
-            ...(microSlotSpans.margin ? { margin: microSlotSpans.margin } : {}),
-            ...(microSlotSpans.padding ? { padding: microSlotSpans.padding } : {}),
-            ...(microSlotSpans.marginTop ? { marginTop: microSlotSpans.marginTop } : {}),
-            ...(microSlotSpans.marginRight ? { marginRight: microSlotSpans.marginRight } : {}),
-            ...(microSlotSpans.marginBottom ? { marginBottom: microSlotSpans.marginBottom } : {}),
-            ...(microSlotSpans.marginLeft ? { marginLeft: microSlotSpans.marginLeft } : {}),
-            ...(microSlotSpans.paddingTop ? { paddingTop: microSlotSpans.paddingTop } : {}),
-            ...(microSlotSpans.paddingRight ? { paddingRight: microSlotSpans.paddingRight } : {}),
-            ...(microSlotSpans.paddingBottom ? { paddingBottom: microSlotSpans.paddingBottom } : {}),
-            ...(microSlotSpans.paddingLeft ? { paddingLeft: microSlotSpans.paddingLeft } : {}),
-            ...elementStyles
-        };
-        
         return {
-            gridClasses,
+            gridClasses: slotConfig?.className || '',
             elementClasses,
-            elementStyles: spacingStyles,
-            microSlotSpans
+            elementStyles: { ...slotConfig?.styles, ...elementStyles }
         };
     };
 
-    // Helper function to render custom slots with ALL editor customizations
-    const renderCustomSlot = (slotId, parentSlot) => {
-        if (!cartLayoutConfig?.customSlots?.[slotId]) return null;
-        
-        const customSlot = cartLayoutConfig.customSlots[slotId];
-        const slotContent = cartLayoutConfig.slotContent?.[slotId] || customSlot?.content || '';
-        
-        // Get all editor customizations
-        const elementClasses = cartLayoutConfig.elementClasses?.[slotId] || '';
-        const elementStyles = cartLayoutConfig.elementStyles?.[slotId] || {};
-        const microSlotSpans = cartLayoutConfig.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
-        
-        // Debug: Log what customizations are being applied
-        console.log(`🎨 Rendering custom slot ${slotId}:`);
-        console.log('  - elementClasses:', elementClasses);
-        console.log('  - elementStyles:', elementStyles);
-        console.log('  - microSlotSpans:', microSlotSpans);
-        console.log('  - slotContent:', slotContent);
-        
-        // Build container styles with positioning from slot configuration
-        const containerStyle = {
-            ...elementStyles,
-            // Get positioning from slot configuration instead of fixed grid spans
-            ...(microSlotSpans.position ? { position: microSlotSpans.position } : {}),
-            ...(microSlotSpans.left ? { left: microSlotSpans.left } : {}),
-            ...(microSlotSpans.top ? { top: microSlotSpans.top } : {}),
-            ...(microSlotSpans.right ? { right: microSlotSpans.right } : {}),
-            ...(microSlotSpans.bottom ? { bottom: microSlotSpans.bottom } : {}),
-            ...(microSlotSpans.width ? { width: microSlotSpans.width } : {}),
-            ...(microSlotSpans.height ? { height: microSlotSpans.height } : {}),
-            // Only apply grid spans if they exist in configuration
-            ...(microSlotSpans.col ? { gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col))}` } : {}),
-            ...(microSlotSpans.row ? { gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row))}` } : {})
-        };
-        
-        const renderContent = () => {
-            // Get wrapper styling
-            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-            
-            // Combine inline styles with container positioning
-            const combinedStyles = {
-                ...elementStyles,
-                ...containerStyle
-            };
-            
-            console.log(`🎨 Final styles for ${slotId}:`, combinedStyles);
-            console.log(`🎨 Final classes for ${slotId}:`, elementClasses);
-            console.log(`🎯 Wrapper styling for ${slotId}_wrapper:`, wrapperStyling);
-            
-            if (customSlot.type === 'text') {
-                return (
-                    <div>
-                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            <div 
-                                className={`custom-slot-content ${elementClasses || 'text-gray-600'}`}
-                                style={combinedStyles}
-                            >
-                                {slotContent}
-                            </div>
-                        </div>
-                    </div>
-                );
-            } else if (customSlot.type === 'html' || customSlot.type === 'javascript') {
-                return (
-                    <div>
-                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            <div 
-                                className={`custom-slot-content ${elementClasses || ''}`}
-                                style={combinedStyles}
-                                dangerouslySetInnerHTML={{ __html: slotContent }} 
-                            />
-                        </div>
-                    </div>
-                );
-            }
-            return null;
-        };
-        
-        const positioning = getSlotPositioning(slotId, parentSlot);
-        
-        return (
-            <div 
-                key={slotId} 
-                className={`custom-slot ${customSlot.type}-slot ${positioning.gridClasses} ${isEditorMode ? 'relative group' : ''}`}
-                data-slot-id={slotId}
-                data-parent-slot={parentSlot}
-                style={positioning.elementStyles}
-            >
-                {/* Action bar for editor mode */}
-                {isEditorMode && (
-                    <div className="absolute top-0 right-0 bg-blue-600 text-white px-2 py-1 text-xs rounded-bl opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button 
-                            onClick={() => window.dispatchEvent(new CustomEvent('editCustomSlot', { detail: { slotId, parentSlot } }))}
-                            className="mr-2 hover:underline"
-                        >
-                            Edit
-                        </button>
-                        <button 
-                            onClick={() => window.dispatchEvent(new CustomEvent('deleteCustomSlot', { detail: { slotId, parentSlot } }))}
-                            className="text-red-200 hover:text-red-100 hover:underline"
-                        >
-                            Delete
-                        </button>
-                    </div>
-                )}
-                {renderContent()}
-            </div>
-        );
-    };
-
-    // Log custom slots if configuration exists
-    if (cartLayoutConfig) {
-        console.log('✅ Cart layout configuration found, using custom rendering system');
-        console.log('🔧 Available customSlots:', cartLayoutConfig.customSlots);
-    }
-    
     // Render the default cart layout (when no custom configuration)
     return (
         <div 
@@ -1121,12 +970,10 @@ export default function Cart() {
                         <div className="text-center py-12">
                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
                                 {false ? (
-                                    cartLayoutConfig.microSlotOrdersRemoved.emptyCart.map(slotId => {
-                                        const positioning = getSlotPositioning(slotId, 'emptyCart');
-                                        
-                                        if (slotId.includes('.custom_')) {
-                                            return renderCustomSlot(slotId, 'emptyCart');
-                                        }
+                                    Object.keys(cartLayoutConfig.slots)
+                                        .filter(slotId => slotId.startsWith('emptyCart.'))
+                                        .map(slotId => {
+                                        const positioning = getSlotPositioning(slotId);
                                         
                                         // Render standard emptyCart micro-slots
                                         if (slotId === 'emptyCart.icon') {
@@ -1320,12 +1167,10 @@ export default function Cart() {
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
                                                 {false ? (
-                                                    cartLayoutConfig.microSlotOrdersRemoved.coupon.map(slotId => {
-                                                        const positioning = getSlotPositioning(slotId, 'coupon');
-                                                        
-                                                        if (slotId.includes('.custom_')) {
-                                                            return renderCustomSlot(slotId, 'coupon');
-                                                        }
+                                                    Object.keys(cartLayoutConfig.slots)
+                                                        .filter(slotId => slotId.startsWith('coupon.'))
+                                                        .map(slotId => {
+                                                        const positioning = getSlotPositioning(slotId);
                                                         
                                                         // Render standard coupon micro-slots
                                                         if (slotId === 'coupon.title') {
@@ -1465,12 +1310,10 @@ export default function Cart() {
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
                                                 {false ? (
-                                                    cartLayoutConfig.microSlotOrdersRemoved.orderSummary.map(slotId => {
-                                                        const positioning = getSlotPositioning(slotId, 'orderSummary');
-                                                        
-                                                        if (slotId.includes('.custom_')) {
-                                                            return renderCustomSlot(slotId, 'orderSummary');
-                                                        }
+                                                    Object.keys(cartLayoutConfig.slots)
+                                                        .filter(slotId => slotId.startsWith('orderSummary.'))
+                                                        .map(slotId => {
+                                                        const positioning = getSlotPositioning(slotId);
                                                         
                                                         // Render standard orderSummary micro-slots
                                                         if (slotId === 'orderSummary.title') {

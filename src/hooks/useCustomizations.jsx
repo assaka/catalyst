@@ -111,27 +111,6 @@ export const useCustomizations = (options = {}) => {
     }
   }, [isPreviewMode]);
 
-  // Get custom styles for this component
-  const getCustomStyles = useCallback((baseStyles = {}) => {
-    // This would be enhanced to merge custom styles with base styles
-    // For now, it returns the base styles with customization context
-    return {
-      ...baseStyles,
-      '--customization-component': componentName,
-      '--customization-preview': isPreviewMode ? 'true' : 'false'
-    };
-  }, [componentName, isPreviewMode]);
-
-  // Get custom props for this component
-  const getCustomProps = useCallback((baseProps = {}) => {
-    // This would be enhanced to merge custom props with base props
-    return {
-      ...baseProps,
-      'data-customizable': componentName,
-      'data-preview-mode': isPreviewMode
-    };
-  }, [componentName, isPreviewMode]);
-
   return {
     // State
     isInitialized,
@@ -143,11 +122,7 @@ export const useCustomizations = (options = {}) => {
     // Actions
     initialize,
     applyInlineCustomization,
-    
-    // Utilities
-    getCustomStyles,
-    getCustomProps,
-    
+
     // Checks
     hasReplacement: !!componentReplacement,
     isCustomizable: isInitialized && !!componentName
@@ -160,9 +135,7 @@ export const withCustomizations = (WrappedComponent, options = {}) => {
     const {
       isInitialized,
       isPreviewMode,
-      componentReplacement,
-      getCustomStyles,
-      getCustomProps
+      componentReplacement
     } = useCustomizations({
       componentName: options.componentName || WrappedComponent.displayName || WrappedComponent.name,
       storeId: props.storeId || options.storeId,

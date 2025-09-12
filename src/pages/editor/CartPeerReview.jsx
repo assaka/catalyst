@@ -106,9 +106,6 @@ export default function CartPeerReview({
             rawConfigKeys: Object.keys(rawConfig),
             transformedKeys: Object.keys(configToLoad),
             slots: configToLoad.slots ? Object.keys(configToLoad.slots) : 'none',
-            microSlotOrdersRemoved: configToLoad.microSlotOrdersRemoved ? Object.keys(configToLoad.microSlotOrdersRemoved) : 'none',
-            microSlotSpans: configToLoad.microSlotSpans ? Object.keys(configToLoad.microSlotSpans) : 'none',
-            customSlots: configToLoad.customSlots ? Object.keys(configToLoad.customSlots) : 'none'
           });
         } else {
           // Fallback to published configuration if no draft exists
@@ -131,7 +128,6 @@ export default function CartPeerReview({
               rawConfigKeys: Object.keys(rawConfig),
               transformedKeys: Object.keys(configToLoad),
               slots: configToLoad.slots ? Object.keys(configToLoad.slots) : 'none',
-              microSlotOrdersRemoved: configToLoad.microSlotOrdersRemoved ? Object.keys(configToLoad.microSlotOrdersRemoved) : 'none'
             });
           } else {
             setConfigStatus('none');
@@ -177,50 +173,16 @@ export default function CartPeerReview({
     };
   }, [cartLayoutConfig]);
 
-  // Custom slot positioning that reads from slots.{slotId}.className and slots.{slotId}.styles
-  const getSlotPositioning = useCallback((slotId, parentSlot) => {
-    const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
-    const elementClasses = cartLayoutConfig?.slots?.[slotId]?.className || '';
-    const elementStyles = cartLayoutConfig?.slots?.[slotId]?.styles || {};
-    
-    // Build grid positioning classes with alignment support
-    let gridClasses = `col-span-${Math.min(12, Math.max(1, microSlotSpans.col || 12))} row-span-${Math.min(4, Math.max(1, microSlotSpans.row || 1))}`;
-    
-    // Add horizontal alignment classes to parent container
-    if (microSlotSpans.align) {
-      switch (microSlotSpans.align) {
-        case 'left':
-          gridClasses += ' justify-self-start';
-          break;
-        case 'center':  
-          gridClasses += ' justify-self-center';
-          break;
-        case 'right':
-          gridClasses += ' justify-self-end';
-          break;
-      }
-    }
-    
-    // Add margin and padding support from configuration
-    const spacingStyles = {
-      ...(microSlotSpans.margin ? { margin: microSlotSpans.margin } : {}),
-      ...(microSlotSpans.padding ? { padding: microSlotSpans.padding } : {}),
-      ...(microSlotSpans.marginTop ? { marginTop: microSlotSpans.marginTop } : {}),
-      ...(microSlotSpans.marginRight ? { marginRight: microSlotSpans.marginRight } : {}),
-      ...(microSlotSpans.marginBottom ? { marginBottom: microSlotSpans.marginBottom } : {}),
-      ...(microSlotSpans.marginLeft ? { marginLeft: microSlotSpans.marginLeft } : {}),
-      ...(microSlotSpans.paddingTop ? { paddingTop: microSlotSpans.paddingTop } : {}),
-      ...(microSlotSpans.paddingRight ? { paddingRight: microSlotSpans.paddingRight } : {}),
-      ...(microSlotSpans.paddingBottom ? { paddingBottom: microSlotSpans.paddingBottom } : {}),
-      ...(microSlotSpans.paddingLeft ? { paddingLeft: microSlotSpans.paddingLeft } : {}),
-      ...elementStyles
-    };
+  // Simplified slot positioning using flattened structure
+  const getSlotPositioning = useCallback((slotId) => {
+    const slotConfig = cartLayoutConfig?.slots?.[slotId];
+    const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
+    const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
     
     return {
-      gridClasses,
+      gridClasses: slotConfig?.className || 'col-span-12',
       elementClasses,
-      elementStyles: spacingStyles,
-      microSlotSpans
+      elementStyles: { ...slotConfig?.styles, ...elementStyles }
     };
   }, [cartLayoutConfig]);
 
@@ -328,11 +290,12 @@ export default function CartPeerReview({
               </div>
             </div>
           )}
-          {cartLayoutConfig?.microSlotOrdersRemoved?.flashMessage && (
+          {cartLayoutConfig?.slots && (
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {cartLayoutConfig.microSlotOrdersRemoved.flashMessage.map(slotId => 
-                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'flashMessage') : null
-              )}
+              {Object.keys(cartLayoutConfig.slots)
+                .filter(slotId => slotId.startsWith('flashMessage.') && cartLayoutConfig.slots[slotId].type === 'custom')
+                .map(slotId => renderCustomSlot(slotId, 'flashMessage'))
+              }
             </div>
           )}
         </div>
@@ -340,8 +303,10 @@ export default function CartPeerReview({
         {/* Header Section with Grid Layout */}
         <div className="header-section mb-8">
           <div className="grid grid-cols-12 gap-2 auto-rows-min">
-            {cartLayoutConfig?.microSlotOrdersRemoved?.header ? (
-              cartLayoutConfig.microSlotOrdersRemoved.header.map(slotId => {
+            {cartLayoutConfig?.slots ? (
+              Object.keys(cartLayoutConfig.slots)
+                .filter(slotId => slotId.startsWith('header.'))
+                .map(slotId => {
                 console.log('🎯 CartPeerReview: Rendering header slot:', slotId, {
                   slotContent: cartLayoutConfig?.slots?.[slotId]?.content,
                   slotClasses: cartLayoutConfig?.slots?.[slotId]?.className,
@@ -387,8 +352,10 @@ export default function CartPeerReview({
           <div className="emptyCart-section">
             <div className="text-center py-12">
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {cartLayoutConfig?.microSlotOrdersRemoved?.emptyCart ? (
-                  cartLayoutConfig.microSlotOrdersRemoved.emptyCart.map(slotId => {
+                {cartLayoutConfig?.slots ? (
+                  Object.keys(cartLayoutConfig.slots)
+                    .filter(slotId => slotId.startsWith('emptyCart.'))
+                    .map(slotId => {
                     const positioning = getSlotPositioning(slotId, 'emptyCart');
                     
                     if (slotId.includes('.custom_')) {
@@ -542,8 +509,10 @@ export default function CartPeerReview({
               <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.microSlotOrdersRemoved?.coupon ? (
-                      cartLayoutConfig.microSlotOrdersRemoved.coupon.map(slotId => {
+                    {cartLayoutConfig?.slots ? (
+                      Object.keys(cartLayoutConfig.slots)
+                        .filter(slotId => slotId.startsWith('coupon.'))
+                        .map(slotId => {
                         const positioning = getSlotPositioning(slotId, 'coupon');
                         
                         if (slotId.includes('.custom_')) {
@@ -626,8 +595,10 @@ export default function CartPeerReview({
               <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.microSlotOrdersRemoved?.orderSummary ? (
-                      cartLayoutConfig.microSlotOrdersRemoved.orderSummary.map(slotId => {
+                    {cartLayoutConfig?.slots ? (
+                      Object.keys(cartLayoutConfig.slots)
+                        .filter(slotId => slotId.startsWith('orderSummary.'))
+                        .map(slotId => {
                         const positioning = getSlotPositioning(slotId, 'orderSummary');
                         
                         if (slotId.includes('.custom_')) {

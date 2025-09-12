@@ -217,12 +217,11 @@ class SlotConfigurationService {
     // Check if cart config has the new unified structure or original structure
     let initialConfig;
     
-    // Use the new nested microSlotSpans structure
+    // Use the new nested  structure
     initialConfig = {
-      // Use the root slots and nested microSlotSpans structure
+      // Use the root slots and nested  structure
       rootSlots: cartConfig.rootSlots || [],
       slotDefinitions: cartConfig.slotDefinitions || {},
-      microSlotSpans: cartConfig.microSlotSpans || {},
       slots: { ...cartConfig.slots },
       componentSizes: cartConfig.componentSizes || {},
       
@@ -230,7 +229,7 @@ class SlotConfigurationService {
       metadata: {
         name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
         version: '2.0',
-        system: 'nested-microSlotSpans',
+        system: 'nested-',
         created: new Date().toISOString(),
         lastModified: new Date().toISOString(),
         pageType: pageType,
@@ -245,7 +244,7 @@ class SlotConfigurationService {
       slotsCount: Object.keys(initialConfig.slots || {}).length,
       system: initialConfig.metadata.system,
       hasRootSlots: !!initialConfig.rootSlots,
-      hasNestedSpans: !!initialConfig.microSlotSpans,
+      hasNestedSpans: !!initialConfig.,
       rootSlotsCount: initialConfig.rootSlots?.length || 0
     });
 
@@ -271,26 +270,17 @@ class SlotConfigurationService {
       },
       // Preserve CartSlotsEditor specific data structure
       cartData: {
-        majorSlots: cartConfig.majorSlots || {},
-        microSlotSpans: cartConfig.microSlotSpans || {},
-        slotContent: cartConfig.slotContent || {},
-        elementClasses: cartConfig.elementClasses || {},
-        elementStyles: cartConfig.elementStyles || {},
-        componentSizes: cartConfig.componentSizes || {}
+        majorSlots: cartConfig.majorSlots || {}
       }
     };
 
     // Build slots structure for compatibility with generic slot system
-    const { slotContent, elementClasses, elementStyles, microSlotSpans } = cartConfig;
+    const { slotContent  } = cartConfig;
     
     if (slotContent) {
       Object.keys(slotContent).forEach(slotId => {
         transformed.slots[slotId] = {
           content: slotContent[slotId],
-          className: elementClasses?.[slotId] || '',
-          styles: elementStyles?.[slotId] || {},
-          // Include alignment from microSlotSpans
-          alignment: this.extractAlignment(slotId, microSlotSpans),
           metadata: {
             lastModified: new Date().toISOString()
           }
@@ -303,15 +293,8 @@ class SlotConfigurationService {
   }
 
   // Extract alignment information for a slot
-  extractAlignment(slotId, microSlotSpans) {
-    if (!microSlotSpans) return null;
-    
-    // Check all parent slots for this micro slot
-    for (const parentSlot in microSlotSpans) {
-      if (microSlotSpans[parentSlot]?.[slotId]?.align) {
-        return microSlotSpans[parentSlot][slotId].align;
-      }
-    }
+  extractAlignment(slotId, ) {
+    if (!) return null;
     return null;
   }
 
@@ -339,12 +322,7 @@ class SlotConfigurationService {
       page_type: apiConfig.metadata?.page_type || 'cart', 
       slot_type: apiConfig.metadata?.slot_type || 'cart_layout',
       timestamp: apiConfig.metadata?.lastModified || apiConfig.metadata?.created,
-      majorSlots: {},
-      microSlotSpans: {},
-      slotContent: {},
-      elementClasses: {},
-      elementStyles: {},
-      componentSizes: {}
+      slotContent: {}
     };
 
     // Extract data from slots structure
@@ -354,19 +332,6 @@ class SlotConfigurationService {
         cartConfig.slotContent[slotId] = slot.content || '';
         cartConfig.elementClasses[slotId] = slot.className || '';
         cartConfig.elementStyles[slotId] = slot.styles || {};
-        
-        // Handle alignment - need to determine parent slot
-        if (slot.alignment) {
-          // For now, assume all micro slots belong to a default parent
-          // This can be enhanced based on actual slot hierarchy
-          const parentSlot = this.determineParentSlot(slotId);
-          if (!cartConfig.microSlotSpans[parentSlot]) {
-            cartConfig.microSlotSpans[parentSlot] = {};
-          }
-          cartConfig.microSlotSpans[parentSlot][slotId] = {
-            align: slot.alignment
-          };
-        }
       });
     }
 
