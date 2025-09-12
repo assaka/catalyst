@@ -472,23 +472,30 @@ function CartSlotsEditorContent({
     });
   }, []);
 
-  // Simplified text change handler using save manager with debouncing
+  // Text change handler - only save to database, no state updates
   const handleSidebarTextChange = useCallback((slotId, newText) => {
-    // Immediately update the local state to prevent input lag
-    setCartLayoutConfig(prevConfig => ({
-      ...prevConfig,
-      slots: {
-        ...prevConfig.slots,
-        [slotId]: {
-          ...prevConfig.slots?.[slotId],
-          content: newText
-        }
-      }
-    }));
+    // Only update the database, not the local state
+    // The sidebar manages its own local state for smooth typing
+    // State will be refreshed when the component re-mounts or refreshes
     
-    // Record the change for debounced save - save manager handles the rest
-    saveManager.recordChange(slotId, CHANGE_TYPES.TEXT_CONTENT, { content: newText });
-  }, []);
+    // Just save to database directly
+    if (saveConfigurationRef.current) {
+      // Update only the specific slot content in the config for saving
+      const updatedConfig = {
+        ...cartLayoutConfigRef.current,
+        slots: {
+          ...cartLayoutConfigRef.current?.slots,
+          [slotId]: {
+            ...cartLayoutConfigRef.current?.slots?.[slotId],
+            content: newText
+          }
+        }
+      };
+      
+      // Save to database without updating local state
+      saveConfiguration(updatedConfig);
+    }
+  }, [saveConfiguration]);
 
   const handleSaveEdit = useCallback(() => {
     if (editingComponent && cartLayoutConfig) {

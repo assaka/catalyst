@@ -178,14 +178,15 @@ export const useDirectResize = (elementRef, options = {}) => {
     if (!elementRef.current || disabled) return;
 
     const element = elementRef.current;
-    const handle = createResizeHandle();
-    setResizeHandle(handle);
-
+    
     // Make element relatively positioned if not already
     const originalPosition = element.style.position;
     if (!originalPosition || originalPosition === 'static') {
       element.style.position = 'relative';
     }
+    
+    const handle = createResizeHandle();
+    setResizeHandle(handle);
 
     // Add handle to element
     element.appendChild(handle);

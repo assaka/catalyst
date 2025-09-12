@@ -285,11 +285,11 @@ const EditorSidebar = ({
     setLocalTextContent(newText);
   }, []);
 
-  // Simple HTML content change handler - only update local state for smooth typing
+  // Simple HTML content change handler - only update local state
   const handleHtmlContentChange = useCallback((e) => {
     const newHtml = e.target.value;
     
-    // Only update local state - no DOM manipulation during typing for smooth performance
+    // Only update local state for smooth typing
     setLocalHtmlContent(newHtml);
     
     // Clear validation errors

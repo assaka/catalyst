@@ -117,7 +117,7 @@ export const DirectResizableImage = ({
 };
 
 /**
- * Generic resizable wrapper - still no nested div, just applies hook to first child
+ * Generic resizable wrapper - uses a div wrapper with proper sizing
  */
 export const DirectResizable = ({ 
   children, 
@@ -132,7 +132,7 @@ export const DirectResizable = ({
 }) => {
   const elementRef = useRef(null);
   
-  useDirectResize(elementRef, {
+  const { isResizing } = useDirectResize(elementRef, {
     elementType,
     handlePosition,
     minWidth,
@@ -143,11 +143,21 @@ export const DirectResizable = ({
     disabled
   });
 
-  // Clone the child and attach the ref - no wrapper div!
-  return React.cloneElement(React.Children.only(children), {
-    ref: elementRef,
-    className: cn(children.props.className, "select-none")
-  });
+  // Use a div wrapper that maintains the child's layout
+  return (
+    <div 
+      ref={elementRef} 
+      style={{ 
+        display: 'inline-block',
+        position: 'relative',
+        width: 'fit-content',
+        height: 'fit-content'
+      }}
+      className={cn("select-none", isResizing && "cursor-se-resize")}
+    >
+      {children}
+    </div>
+  );
 };
 
 export default DirectResizableButton;
