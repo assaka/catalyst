@@ -56,7 +56,7 @@ const FeatureIntegration = ({
   // State management
   const [availableFeatures, setAvailableFeatures] = useState([]);
   const [assignedFeatures, setAssignedFeatures] = useState([]);
-  const [selectedFeature, setSelectedFeature] = useState('');
+  const [selectedFeature, setSelectedFeature] = useState(null);
   const [featureParams, setFeatureParams] = useState({});
   const [expandedFeatures, setExpandedFeatures] = useState(new Set());
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
@@ -104,7 +104,7 @@ const FeatureIntegration = ({
       setAssignedFeatures(prev => [...prev, newAssignment]);
       
       // Clear selection
-      setSelectedFeature('');
+      setSelectedFeature(null);
       setFeatureParams({});
 
       // Notify parent component
@@ -363,7 +363,6 @@ const FeatureIntegration = ({
                 <SelectValue placeholder="Choose a feature..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Select a feature...</SelectItem>
                 {availableFeatures.map((feature) => (
                   <SelectItem key={feature.id} value={feature.id}>
                     <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@ import React, { useRef, cloneElement, Children, isValidElement, useState, useCal
 
 /**
  * WebflowResizer - Smooth, professional element resizing with Webflow-like UX
- * No jittering, smooth interactions, visual feedback
+ * Uses React-based rendering for better compatibility
  */
 export const WebflowResizer = ({ 
   children, 
@@ -16,7 +16,7 @@ export const WebflowResizer = ({
   const [isHovered, setIsHovered] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [ghostSize, setGhostSize] = useState(null);
-  const [initialSize, setInitialSize] = useState(null);
+  const [showTooltip, setShowTooltip] = useState(false);
   
   // Detect element type automatically if not specified
   const getElementType = (child) => {
@@ -73,41 +73,14 @@ export const WebflowResizer = ({
   const detectedType = getElementType(child);
   const constraints = getResizeConstraints(detectedType);
   
-  // Create resize handles
-  const createResizeHandle = useCallback(() => {
-    const handle = document.createElement('div');
-    
-    // Handle styles for smooth Webflow-like experience
-    Object.assign(handle.style, {
-      position: 'absolute',
-      bottom: '-6px',
-      right: '-6px',
-      width: '12px',
-      height: '12px',
-      backgroundColor: '#3b82f6',
-      border: '2px solid white',
-      borderRadius: '50%',
-      cursor: 'se-resize',
-      opacity: '0',
-      transform: 'scale(0.8)',
-      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-      zIndex: '1000',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-      pointerEvents: 'auto'
-    });
-    
-    return handle;
-  }, []);
-  
-  // Handle mouse events for resizing
+  // Handle mouse down on resize handle
   const handleMouseDown = useCallback((e) => {
-    if (disabled || !elementRef.current || !containerRef.current) return;
+    if (disabled || !elementRef.current) return;
     
     e.preventDefault();
     e.stopPropagation();
     
     const element = elementRef.current;
-    const container = containerRef.current;
     const rect = element.getBoundingClientRect();
     
     const startX = e.clientX;
@@ -116,31 +89,15 @@ export const WebflowResizer = ({
     const startHeight = rect.height;
     
     setIsResizing(true);
-    setInitialSize({ width: startWidth, height: startHeight });
     setGhostSize({ width: startWidth, height: startHeight });
+    setShowTooltip(true);
     
-    // Disable text selection and interactions
+    // Disable text selection
     document.body.style.userSelect = 'none';
     document.body.style.pointerEvents = 'none';
-    container.style.pointerEvents = 'auto';
-    
-    // Create size tooltip
-    const tooltip = document.createElement('div');
-    tooltip.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: monospace;
-      z-index: 9999;
-      pointer-events: none;
-      backdrop-filter: blur(8px);
-    `;
-    document.body.appendChild(tooltip);
+    if (containerRef.current) {
+      containerRef.current.style.pointerEvents = 'auto';
+    }
     
     const handleMouseMove = (moveEvent) => {
       const deltaX = moveEvent.clientX - startX;
@@ -157,17 +114,18 @@ export const WebflowResizer = ({
         } else {
           newWidth = newHeight * aspectRatio;
         }
+        
+        // Ensure constraints are still respected after aspect ratio calculation
+        newWidth = Math.max(constraints.minWidth, Math.min(constraints.maxWidth, newWidth));
+        newHeight = Math.max(constraints.minHeight, Math.min(constraints.maxHeight, newHeight));
       }
       
-      // Update ghost size for visual feedback
       setGhostSize({ width: newWidth, height: newHeight });
-      
-      // Update tooltip
-      tooltip.textContent = `${Math.round(newWidth)} × ${Math.round(newHeight)}`;
     };
     
     const handleMouseUp = () => {
       setIsResizing(false);
+      setShowTooltip(false);
       
       // Apply final size to element
       if (ghostSize && elementRef.current) {
@@ -194,7 +152,7 @@ export const WebflowResizer = ({
           element.style.width = `${ghostSize.width}px`;
           element.style.height = `${ghostSize.height}px`;
           element.style.fontSize = `${Math.max(11, Math.min(20, ghostSize.height * 0.35))}px`;
-          element.style.lineHeight = `${ghostSize.height - 4}px`;
+          element.style.lineHeight = `${Math.max(ghostSize.height - 8, 20)}px`;
         } else {
           element.style.width = `${ghostSize.width}px`;
           element.style.height = `${ghostSize.height}px`;
@@ -209,14 +167,11 @@ export const WebflowResizer = ({
       // Clean up
       document.body.style.userSelect = '';
       document.body.style.pointerEvents = '';
-      if (container) container.style.pointerEvents = '';
-      
-      if (tooltip && document.body.contains(tooltip)) {
-        document.body.removeChild(tooltip);
+      if (containerRef.current) {
+        containerRef.current.style.pointerEvents = '';
       }
       
       setGhostSize(null);
-      setInitialSize(null);
       
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -226,46 +181,6 @@ export const WebflowResizer = ({
     document.addEventListener('mouseup', handleMouseUp);
   }, [disabled, constraints, detectedType, onResize, ghostSize]);
   
-  // Setup resize handle
-  useEffect(() => {
-    if (disabled || !containerRef.current) return;
-    
-    const container = containerRef.current;
-    const handle = createResizeHandle();
-    
-    // Add handle to container
-    container.appendChild(handle);
-    
-    // Handle visibility on hover
-    const showHandle = () => {
-      setIsHovered(true);
-      handle.style.opacity = '1';
-      handle.style.transform = 'scale(1)';
-    };
-    
-    const hideHandle = () => {
-      if (!isResizing) {
-        setIsHovered(false);
-        handle.style.opacity = '0';
-        handle.style.transform = 'scale(0.8)';
-      }
-    };
-    
-    // Event listeners
-    handle.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mouseenter', showHandle);
-    container.addEventListener('mouseleave', hideHandle);
-    
-    return () => {
-      if (container.contains(handle)) {
-        container.removeChild(handle);
-      }
-      handle.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mouseenter', showHandle);
-      container.removeEventListener('mouseleave', hideHandle);
-    };
-  }, [disabled, createResizeHandle, handleMouseDown, isResizing]);
-  
   // Clone the child element with enhanced styling
   const enhancedChild = cloneElement(child, {
     ...child.props,
@@ -274,9 +189,12 @@ export const WebflowResizer = ({
     style: {
       ...child.props.style,
       transition: isResizing ? 'none' : 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-      transformOrigin: 'top left',
     }
   });
+  
+  if (disabled) {
+    return enhancedChild;
+  }
   
   return (
     <div 
@@ -286,8 +204,33 @@ export const WebflowResizer = ({
         display: 'inline-block',
         lineHeight: 0,
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => !isResizing && setIsHovered(false)}
     >
       {enhancedChild}
+      
+      {/* Resize Handle */}
+      {isHovered && !disabled && (
+        <div
+          onMouseDown={handleMouseDown}
+          style={{
+            position: 'absolute',
+            bottom: '-6px',
+            right: '-6px',
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#3b82f6',
+            border: '2px solid white',
+            borderRadius: '50%',
+            cursor: 'se-resize',
+            opacity: isResizing ? 1 : 0.8,
+            transform: isResizing ? 'scale(1.1)' : 'scale(1)',
+            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+            zIndex: 1000,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        />
+      )}
       
       {/* Ghost overlay during resize for visual feedback */}
       {isResizing && ghostSize && (
@@ -302,24 +245,47 @@ export const WebflowResizer = ({
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             borderRadius: '4px',
             pointerEvents: 'none',
-            zIndex: '999',
+            zIndex: 999,
           }}
         >
           <div style={{
             position: 'absolute',
-            bottom: '-24px',
+            bottom: '-28px',
             left: '0',
             fontSize: '11px',
             color: '#3b82f6',
-            fontWeight: '500',
-            fontFamily: 'monospace',
+            fontWeight: '600',
+            fontFamily: 'ui-monospace, monospace',
             background: 'white',
-            padding: '2px 6px',
-            borderRadius: '3px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            padding: '4px 8px',
+            borderRadius: '4px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            border: '1px solid #e5e7eb'
           }}>
             {Math.round(ghostSize.width)} × {Math.round(ghostSize.height)}
           </div>
+        </div>
+      )}
+      
+      {/* Size tooltip during resize */}
+      {showTooltip && ghostSize && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontFamily: 'ui-monospace, monospace',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          {Math.round(ghostSize.width)} × {Math.round(ghostSize.height)}
         </div>
       )}
       
