@@ -15,17 +15,44 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  isBold,
-  isItalic,
-  getCurrentAlign,
-  getCurrentFontSize,
-  debounce
-} from './editor-utils';
+import { debounce } from './editor-utils';
 import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '../../../utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
+
+// Utility functions moved from editor-utils.js
+/**
+ * Check if a class string contains bold styling
+ */
+function isBold(className) {
+  return className.includes('font-bold') || className.includes('font-semibold');
+}
+
+/**
+ * Check if a class string contains italic styling
+ */
+function isItalic(className) {
+  return className.includes('italic');
+}
+
+/**
+ * Get current alignment from class string
+ */
+function getCurrentAlign(className, isWrapperSlot = false) {
+  if (className.includes('text-center')) return 'center';
+  if (className.includes('text-right')) return 'right';
+  return 'left';
+}
+
+/**
+ * Get current font size from class string
+ */
+function getCurrentFontSize(className) {
+  const sizes = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl'];
+  const found = sizes.find(size => className.includes(size));
+  return found ? found.replace('text-', '') : 'base';
+}
 
 const EditorSidebar = ({ 
   selectedElement, 
