@@ -28,7 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Save, RefreshCw, CheckCircle, X, Plus, Minus, Trash2, Tag, Code } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ShoppingCart, Package, Save, RefreshCw, CheckCircle, X, Plus, Minus, Trash2, Tag, Code, PlusCircle } from "lucide-react";
 import Editor from '@monaco-editor/react';
 
 // Import Cart.jsx's exact dependencies
@@ -285,6 +286,9 @@ function CartSlotsEditorContent({
   const [saveStatus, setSaveStatus] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
+  const [showAddSlotModal, setShowAddSlotModal] = useState(false);
+  const [newSlotType, setNewSlotType] = useState('');
+  const [insertAfterSlot, setInsertAfterSlot] = useState(null);
 
   // Element selection for sidebar
   const { 
@@ -768,6 +772,18 @@ function CartSlotsEditorContent({
     [cartLayoutConfig, getMicroSlotStyling, getSlotPositioning, handleEditSlot, mode]
   );
 
+  // Function to open add slot modal
+  const openAddSlotModal = useCallback((afterSlot = null) => {
+    setInsertAfterSlot(afterSlot);
+    setShowAddSlotModal(true);
+  }, []);
+
+  // Get available slot types for the add modal
+  const getAvailableSlotTypes = useCallback(() => {
+    const allSlotTypes = Object.keys(cartConfig.microSlotDefinitions);
+    const currentSlots = majorSlots || [];
+    return allSlotTypes.filter(slotType => !currentSlots.includes(slotType));
+  }, [majorSlots]);
 
   // Render using exact Cart.jsx layout structure with slot_configurations
   return (
@@ -922,6 +938,21 @@ function CartSlotsEditorContent({
           )}
         </div>
         
+        {/* Add New Slot Button - Before header */}
+        {mode === 'edit' && (
+          <div className="mb-4 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openAddSlotModal(null)}
+              className="border-dashed border-2 border-blue-300 text-blue-600 hover:border-blue-400 hover:text-blue-700"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Add New Section
+            </Button>
+          </div>
+        )}
+
         {/* Header Section with Grid Layout */}
         <div className="header-section mb-8">
           {mode === 'edit' ? (
@@ -1024,6 +1055,21 @@ function CartSlotsEditorContent({
             </div>
           )}
         </div>
+        
+        {/* Add New Slot Button - After header */}
+        {mode === 'edit' && (
+          <div className="mb-6 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openAddSlotModal('header')}
+              className="border-dashed border-2 border-blue-300 text-blue-600 hover:border-blue-400 hover:text-blue-700"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Add Section After Header
+            </Button>
+          </div>
+        )}
         
         <CmsBlockRenderer position="cart_above_items" />
         
@@ -1400,6 +1446,21 @@ function CartSlotsEditorContent({
                 </div>
               )}
             </div>
+            
+            {/* Add New Slot Button - After empty cart */}
+            {mode === 'edit' && (
+              <div className="mt-6 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openAddSlotModal('emptyCart')}
+                  className="border-dashed border-2 border-blue-300 text-blue-600 hover:border-blue-400 hover:text-blue-700"
+                >
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  Add Section After Empty Cart
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           // Cart with products layout
@@ -2087,6 +2148,21 @@ function CartSlotsEditorContent({
         <div className="mt-12">
           <RecommendedProducts />
         </div>
+        
+        {/* Add New Slot Button - At the end */}
+        {mode === 'edit' && (
+          <div className="mt-8 mb-8 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openAddSlotModal('orderSummary')}
+              className="border-dashed border-2 border-blue-300 text-blue-600 hover:border-blue-400 hover:text-blue-700"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Add Section at End
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Editor Modals - only show in edit mode */}
@@ -2213,6 +2289,58 @@ function CartSlotsEditorContent({
                   }}
                 >
                   Reset Layout
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Add New Slot Modal */}
+          <Dialog open={showAddSlotModal} onOpenChange={setShowAddSlotModal}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Section</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Choose a section type to add{insertAfterSlot ? ` after "${insertAfterSlot}"` : ' to your cart layout'}.
+                </p>
+                <div className="space-y-2">
+                  {getAvailableSlotTypes().map(slotType => {
+                    const slotDef = cartConfig.microSlotDefinitions[slotType];
+                    return (
+                      <div
+                        key={slotType}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          newSlotType === slotType 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                        onClick={() => setNewSlotType(slotType)}
+                      >
+                        <div className="font-medium text-sm">{slotDef.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Contains: {slotDef.microSlots.join(', ')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {getAvailableSlotTypes().length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    All available sections are already in use.
+                  </p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddSlotModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleAddMajorSlot(newSlotType, insertAfterSlot)}
+                  disabled={!newSlotType}
+                >
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  Add Section
                 </Button>
               </DialogFooter>
             </DialogContent>
