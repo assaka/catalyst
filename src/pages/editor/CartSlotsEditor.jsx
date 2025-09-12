@@ -332,7 +332,7 @@ const CartSlotsEditor = ({
                       const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                       
                       return (
-                        <div key={slotId} className="col-span-12">
+                        <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId={slotId}
                             mode={mode}
@@ -362,7 +362,7 @@ const CartSlotsEditor = ({
                       .map(slotId => {
                         if (slotId === 'emptyCart.icon') {
                           return (
-                            <div key={slotId} className="col-span-12">
+                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -382,7 +382,7 @@ const CartSlotsEditor = ({
                           const finalClasses = titleStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className="col-span-12">
+                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -404,7 +404,7 @@ const CartSlotsEditor = ({
                           const finalClasses = textStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className="col-span-12">
+                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -424,7 +424,7 @@ const CartSlotsEditor = ({
                           const buttonStyling = getMicroSlotStyling('emptyCart.button');
                           
                           return (
-                            <div key={slotId} className="col-span-12 flex justify-center">
+                            <div key={slotId} className={`col-span-12 flex justify-center ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -539,7 +539,7 @@ const CartSlotsEditor = ({
                   <Card>
                     <CardContent className="p-4">
                       <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className="col-span-12">
+                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="coupon.title"
                             mode={mode}
@@ -551,7 +551,7 @@ const CartSlotsEditor = ({
                             Apply Coupon
                           </EditableElement>
                         </div>
-                        <div className="col-span-8">
+                        <div className={`col-span-8 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="coupon.input"
                             mode={mode}
@@ -560,7 +560,7 @@ const CartSlotsEditor = ({
                             <Input placeholder="Enter coupon code" />
                           </EditableElement>
                         </div>
-                        <div className="col-span-4">
+                        <div className={`col-span-4 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="coupon.button"
                             mode={mode}
@@ -579,7 +579,7 @@ const CartSlotsEditor = ({
                   <Card>
                     <CardContent className="p-4">
                       <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className="col-span-12">
+                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="orderSummary.title"
                             mode={mode}
@@ -591,7 +591,7 @@ const CartSlotsEditor = ({
                             Order Summary
                           </EditableElement>
                         </div>
-                        <div className="col-span-12">
+                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="orderSummary.subtotal"
                             mode={mode}
@@ -603,7 +603,7 @@ const CartSlotsEditor = ({
                             <span>Subtotal</span><span>$79.97</span>
                           </EditableElement>
                         </div>
-                        <div className="col-span-12">
+                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="orderSummary.tax"
                             mode={mode}
@@ -615,7 +615,7 @@ const CartSlotsEditor = ({
                             <span>Tax</span><span>$6.40</span>
                           </EditableElement>
                         </div>
-                        <div className="col-span-12">
+                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="orderSummary.total"
                             mode={mode}
@@ -627,7 +627,7 @@ const CartSlotsEditor = ({
                             <span>Total</span><span>$81.37</span>
                           </EditableElement>
                         </div>
-                        <div className="col-span-12">
+                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <div className="border-t mt-6 pt-6">
                             <EditableElement
                               slotId="orderSummary.checkoutButton"
