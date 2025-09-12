@@ -69,6 +69,9 @@ const EditorSidebar = ({
   // Local HTML content state for HTML editing
   const [localHtmlContent, setLocalHtmlContent] = useState('');
   
+  // HTML validation state
+  const [htmlValidationError, setHtmlValidationError] = useState(null);
+  
   // Flag to prevent change recording during initialization
   const [isInitializing, setIsInitializing] = useState(false);
   
@@ -282,12 +285,15 @@ const EditorSidebar = ({
     setLocalTextContent(newText);
   }, []);
 
-  // Simple HTML content change handler - only update local state
+  // Simple HTML content change handler - only update local state for smooth typing
   const handleHtmlContentChange = useCallback((e) => {
     const newHtml = e.target.value;
     
-    // Only update local state - no save manager calls
+    // Only update local state - no DOM manipulation during typing for smooth performance
     setLocalHtmlContent(newHtml);
+    
+    // Clear validation errors
+    setHtmlValidationError(null);
   }, []);
 
   // Save text content when user stops typing (onBlur)
@@ -300,7 +306,16 @@ const EditorSidebar = ({
   // Save HTML content when user stops typing (onBlur)
   const handleHtmlContentSave = useCallback(() => {
     if (slotId && onTextChange && !isInitializing) {
-      onTextChange(slotId, localHtmlContent);
+      // Extract text content from HTML for database storage
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = localHtmlContent;
+        const textContent = tempDiv.textContent || tempDiv.innerText || localHtmlContent;
+        onTextChange(slotId, textContent);
+      } catch (error) {
+        // Fallback to raw HTML if parsing fails
+        onTextChange(slotId, localHtmlContent);
+      }
     }
   }, [slotId, onTextChange, localHtmlContent, isInitializing]);
 
@@ -502,11 +517,18 @@ const EditorSidebar = ({
                   value={localHtmlContent}
                   onChange={handleHtmlContentChange}
                   onBlur={handleHtmlContentSave}
-                  className="w-full mt-1 text-xs font-mono border border-gray-300 rounded-md p-2 h-32 resize-none"
+                  className={`w-full mt-1 text-xs font-mono border rounded-md p-2 h-32 resize-none ${
+                    htmlValidationError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="<button class='...'>Content</button>"
                 />
+                {htmlValidationError && (
+                  <p className="text-xs text-red-600 mt-1">
+                    ❌ {htmlValidationError}
+                  </p>
+                )}
                 <p className="text-xs text-orange-600 mt-1">
-                  ⚠️ Advanced: This replaces the entire element. Keep data-slot-id and data-editable attributes.
+                  ✨ Live preview: Changes appear immediately in the editor
                 </p>
               </div>
             )}
