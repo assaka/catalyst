@@ -135,7 +135,6 @@ export default function Cart() {
                         setCartLayoutConfig(publishedConfig.configuration);
                         console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
                         console.log('🔧 CustomSlots in loaded config:', publishedConfig.configuration?.customSlots);
-                        console.log('📐 MicroSlotOrders in loaded config:', publishedConfig.configuration?.microSlotOrders);
                     } else {
                         console.warn('⚠️ Published configuration has no configuration data');
                         // Fallback to default configuration
@@ -953,26 +952,25 @@ export default function Cart() {
         return null; // Standard slots will be handled by the normal cart rendering
     };
     
-    // Helper function to render ALL slots in a section (mixing custom and standard slots dynamically)
+    // Helper function to render all custom slots in a section by scanning available slots
     const renderSectionSlots = (parentSlot) => {
-        if (!cartLayoutConfig?.microSlotOrders?.[parentSlot]) return null;
+        if (!cartLayoutConfig?.slots) return null;
         
-        const microSlotOrder = cartLayoutConfig.microSlotOrders[parentSlot] || [];
         const slots = [];
         
-        microSlotOrder.forEach(slotId => {
-            if (slotId.includes('.custom_')) {
-                // Render custom slots
-                const slot = renderSlot(slotId, parentSlot);
-                if (slot) slots.push(slot);
+        // Find all custom slots that belong to this parent slot
+        Object.keys(cartLayoutConfig.slots).forEach(slotId => {
+            const slot = cartLayoutConfig.slots[slotId];
+            // Check for custom slots either by type='custom' or by .custom_ naming pattern (backward compatibility)
+            if ((slot.type === 'custom' || slotId.includes('.custom_')) && slotId.startsWith(`${parentSlot}.`)) {
+                const renderedSlot = renderSlot(slotId, parentSlot);
+                if (renderedSlot) slots.push(renderedSlot);
             }
-            // Standard slots are handled by normal cart rendering, 
-            // but we could extend this to handle them too for full dynamic layout
         });
         
         if (slots.length === 0) return null;
         
-        // Render in a grid if there are multiple slots
+        // Render in a grid
         return (
             <div className={`section-slots ${parentSlot}-slots ${slots.length > 1 ? 'grid grid-cols-12 gap-2 mb-4' : 'mb-4'}`}>
                 {slots}
@@ -1191,7 +1189,6 @@ export default function Cart() {
     if (cartLayoutConfig) {
         console.log('✅ Cart layout configuration found, using custom rendering system');
         console.log('🔧 Available customSlots:', cartLayoutConfig.customSlots);
-        console.log('📐 MicroSlotOrders:', cartLayoutConfig.microSlotOrders);
     }
     
     // Render the default cart layout (when no custom configuration)
@@ -1209,53 +1206,16 @@ export default function Cart() {
                 {/* FlashMessage Section with Custom Slots */}
                 <div className="flashMessage-section mb-6">
                     <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                    {cartLayoutConfig?.microSlotOrders?.flashMessage && (
-                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                            {cartLayoutConfig.microSlotOrders.flashMessage.map(slotId => 
-                                slotId.includes('.custom_') ? renderCustomSlot(slotId, 'flashMessage') : null
-                            )}
-                        </div>
-                    )}
+                    {renderSectionSlots('flashMessage')}
                 </div>
                 
                 {/* Header Section with Grid Layout */}
                 <div className="header-section mb-8">
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        {cartLayoutConfig?.microSlotOrders?.header ? (
-                            cartLayoutConfig.microSlotOrders.header.map(slotId => {
-                                const positioning = getSlotPositioning(slotId, 'header');
-                                
-                                if (slotId.includes('.custom_')) {
-                                    return renderCustomSlot(slotId, 'header');
-                                }
-                                
-                                // Render standard header micro-slots
-                                if (slotId === 'header.title') {
-                                    const headerTitleStyling = getMicroSlotStyling('header.title');
-                                    const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-                                    const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                                    const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
-                                    return (
-                                        <div key={slotId} className={positioning.gridClasses}>
-                                            <div>
-                                                <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                    <h1 className={finalClasses} style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}>
-                                                        My Cart
-                                                    </h1>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                }
-                                
-                                return null;
-                            })
-                        ) : (
-                            // Fallback to default layout if no microSlotOrders
-                            <div className="col-span-12">
-                                <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
-                            </div>
-                        )}
+                        <div className="col-span-12">
+                            <h1 className="text-3xl font-bold text-gray-900 mb-4">{store?.name || 'My Cart'}</h1>
+                        </div>
+                        {renderSectionSlots('header')}
                     </div>
                 </div>
                 
@@ -1265,7 +1225,7 @@ export default function Cart() {
                     <div className="emptyCart-section">
                         <div className="text-center py-12">
                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
+                                {false ? (
                                     cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
                                         const positioning = getSlotPositioning(slotId, 'emptyCart');
                                         
@@ -1465,7 +1425,7 @@ export default function Cart() {
                                     <Card className={couponStyling.elementClasses} style={couponStyling.elementStyles}>
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                                {cartLayoutConfig?.microSlotOrders?.coupon ? (
+                                                {false ? (
                                                     cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
                                                         const positioning = getSlotPositioning(slotId, 'coupon');
                                                         
@@ -1611,7 +1571,7 @@ export default function Cart() {
                                     <Card className={orderSummaryStyling.elementClasses} style={orderSummaryStyling.elementStyles}>
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                                {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
+                                                {false ? (
                                                     cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
                                                         const positioning = getSlotPositioning(slotId, 'orderSummary');
                                                         

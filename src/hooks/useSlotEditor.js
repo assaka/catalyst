@@ -32,14 +32,8 @@ export function useSlotEditor({
   const [isResizingIcon, setIsResizingIcon] = useState(null);
   const [isResizingButton, setIsResizingButton] = useState(null);
 
-  // Micro-slot state management
-  const [microSlotOrders, setMicroSlotOrders] = useState(() => {
-    const orders = {};
-    Object.entries(microSlotDefinitions).forEach(([key, def]) => {
-      orders[key] = [...(def.microSlots || [])];
-    });
-    return orders;
-  });
+  // Micro-slot state management (deprecated - using direct grid positioning now)
+  const [microSlotOrders, setMicroSlotOrders] = useState({});
 
   const [microSlotSpans, setMicroSlotSpans] = useState(() => {
     const spans = {};
@@ -128,9 +122,8 @@ export function useSlotEditor({
       });
       
       // Prepare final configuration
-      const finalMicroSlotOrders = Object.keys(microSlotOrders || {}).length > 0 
-        ? microSlotOrders 
-        : (() => {
+      const finalMicroSlotOrders = {}; // Deprecated - always empty
+      const skipOrders = (() => {
             const defaultOrders = {};
             Object.entries(microSlotDefinitions).forEach(([key, def]) => {
               defaultOrders[key] = [...(def.microSlots || [])];
@@ -153,7 +146,6 @@ export function useSlotEditor({
         slot_type: slotType,
         major_slots: majorSlots,
         slots,
-        microSlotOrders: finalMicroSlotOrders,
         microSlotSpans: finalMicroSlotSpans,
         customSlots,
         componentSizes,
@@ -214,7 +206,6 @@ export function useSlotEditor({
     slotContent,
     elementStyles,
     elementClasses,
-    microSlotOrders,
     microSlotSpans,
     customSlots,
     componentSizes,
@@ -260,20 +251,14 @@ export function useSlotEditor({
             setMajorSlots(config.major_slots);
           }
           
-          // Load micro-slot orders
-          if (config.microSlotOrders) {
-            setMicroSlotOrders(config.microSlotOrders);
-          }
+          // Skip loading microSlotOrders (deprecated)
           
           // Load micro-slot spans
           if (config.microSlotSpans) {
             setMicroSlotSpans(config.microSlotSpans);
           }
           
-          // Load custom slots
-          if (config.customSlots) {
-            setCustomSlots(config.customSlots);
-          }
+          // customSlots deprecated - now using flattened slots structure with type field
           
           // Load component sizes
           if (config.componentSizes) {
@@ -463,8 +448,6 @@ export function useSlotEditor({
     setIsResizingIcon,
     isResizingButton,
     setIsResizingButton,
-    microSlotOrders,
-    setMicroSlotOrders,
     microSlotSpans,
     setMicroSlotSpans,
     slotContent,

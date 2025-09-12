@@ -4,100 +4,108 @@ import { ShoppingCart, Package } from 'lucide-react';
 export const cartConfig = {
   page_name: 'Cart',
   slot_type: 'cart_layout',
-  majorSlots: ['flashMessage', 'header', 'emptyCart', 'cartItem', 'coupon', 'orderSummary', 'recommendations', 'empty'],
   
-  // Micro-slot definitions - Complete structure for all cart slots
-  microSlotDefinitions: {
+  // Root slots (replaces majorSlots - these are top-level containers)
+  rootSlots: ['flashMessage', 'header', 'emptyCart', 'cartItem', 'coupon', 'orderSummary', 'recommendations', 'empty'],
+  
+  // Flat microSlotSpans structure - parent-child relationships determined by naming convention
+  microSlotSpans: {
+    // All slots at root level - hierarchy is implicit in the naming
+    "flashMessage": { col: 12, row: 1 },
+    "flashMessage.content": { col: 12, row: 1 },
+    "flashMessage.message": { col: 12, row: 1 },
+    
+    "header": { col: 12, row: 1 },
+    "header.title": { col: 12, row: 1 },
+    
+    "emptyCart": { col: 12, row: 1 },
+    "emptyCart.icon": { col: 2, row: 1 },
+    "emptyCart.title": { col: 10, row: 1 },
+    "emptyCart.text": { col: 12, row: 1 },
+    "emptyCart.button": { col: 12, row: 1 },
+    
+    "cartItem": { col: 12, row: 1 },
+    "cartItem.productImage": { col: 2, row: 2 },
+    "cartItem.productTitle": { col: 6, row: 1 },
+    "cartItem.quantityControl": { col: 2, row: 1 },
+    "cartItem.productPrice": { col: 2, row: 1 },
+    "cartItem.removeButton": { col: 12, row: 1 },
+    
+    "coupon": { col: 12, row: 1 },
+    "coupon.title": { col: 12, row: 1 },
+    "coupon.title.icon": { col: 2, row: 1 },
+    "coupon.title.label": { col: 10, row: 1 },
+    "coupon.input": { col: 8, row: 1 },
+    "coupon.button": { col: 4, row: 1 },
+    "coupon.message": { col: 12, row: 1 },
+    "coupon.appliedCoupon": { col: 12, row: 1 },
+    
+    "orderSummary": { col: 12, row: 1 },
+    "orderSummary.title": { col: 12, row: 1 },
+    "orderSummary.subtotal": { col: 12, row: 1 },
+    "orderSummary.discount": { col: 12, row: 1 },
+    "orderSummary.shipping": { col: 12, row: 1 },
+    "orderSummary.tax": { col: 12, row: 1 },
+    "orderSummary.total": { col: 12, row: 1 },
+    "orderSummary.checkoutButton": { col: 12, row: 1 },
+    
+    "recommendations": { col: 12, row: 1 },
+    "recommendations.title": { col: 12, row: 1 },
+    "recommendations.products": { col: 12, row: 3 },
+    
+    "empty": { col: 12, row: 1 },
+    "empty.content": { col: 12, row: 2 }
+  },
+  
+  // Slot definitions for metadata and properties (replaces microSlotDefinitions)
+  slotDefinitions: {
     flashMessage: {
       id: 'flashMessage',
       name: 'Flash Message',
-      microSlots: ['flashMessage.content', 'flashMessage.message'],
       gridCols: 12,
-      defaultSpans: {
-        'flashMessage.content': { col: 12, row: 1 },
-        'flashMessage.message': { col: 12, row: 1 }
-      }
+      type: 'container'
     },
     header: {
       id: 'header',
       name: 'Page Header',
-      microSlots: ['header.title'],
       gridCols: 12,
-      defaultSpans: {
-        'header.title': { col: 12, row: 1 }
-      }
+      type: 'container'
     },
     emptyCart: {
       id: 'emptyCart',
       name: 'Empty Cart',
-      microSlots: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
       gridCols: 12,
-      defaultSpans: {
-        'emptyCart.icon': { col: 2, row: 1 },
-        'emptyCart.title': { col: 10, row: 1 },
-        'emptyCart.text': { col: 12, row: 1 },
-        'emptyCart.button': { col: 12, row: 1 }
-      }
+      type: 'container'
     },
     cartItem: {
       id: 'cartItem',
       name: 'Cart Item',
-      microSlots: ['cartItem.productImage', 'cartItem.productTitle', 'cartItem.quantityControl', 'cartItem.productPrice', 'cartItem.removeButton'],
       gridCols: 12,
-      defaultSpans: {
-        'cartItem.productImage': { col: 2, row: 2 },
-        'cartItem.productTitle': { col: 6, row: 1 },
-        'cartItem.quantityControl': { col: 2, row: 1 },
-        'cartItem.productPrice': { col: 2, row: 1 },
-        'cartItem.removeButton': { col: 12, row: 1 }
-      }
+      type: 'container'
     },
     coupon: {
       id: 'coupon',
       name: 'Coupon Section',
-      microSlots: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.message', 'coupon.appliedCoupon'],
       gridCols: 12,
-      defaultSpans: {
-        'coupon.title': { col: 12, row: 1 },
-        'coupon.input': { col: 8, row: 1 },
-        'coupon.button': { col: 4, row: 1 },
-        'coupon.message': { col: 12, row: 1 },
-        'coupon.appliedCoupon': { col: 12, row: 1 }
-      }
+      type: 'container'
     },
     orderSummary: {
       id: 'orderSummary',
       name: 'Order Summary',
-      microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.shipping', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
       gridCols: 12,
-      defaultSpans: {
-        'orderSummary.title': { col: 12, row: 1 },
-        'orderSummary.subtotal': { col: 12, row: 1 },
-        'orderSummary.discount': { col: 12, row: 1 },
-        'orderSummary.shipping': { col: 12, row: 1 },
-        'orderSummary.tax': { col: 12, row: 1 },
-        'orderSummary.total': { col: 12, row: 1 },
-        'orderSummary.checkoutButton': { col: 12, row: 1 }
-      }
+      type: 'container'
     },
     recommendations: {
       id: 'recommendations',
       name: 'Product Recommendations',
-      microSlots: ['recommendations.title', 'recommendations.products'],
       gridCols: 12,
-      defaultSpans: {
-        'recommendations.title': { col: 12, row: 1 },
-        'recommendations.products': { col: 12, row: 3 }
-      }
+      type: 'container'
     },
     empty: {
       id: 'empty',
       name: 'Empty Slot',
-      microSlots: ['empty.content'],
       gridCols: 12,
-      defaultSpans: {
-        'empty.content': { col: 12, row: 2 }
-      }
+      type: 'container'
     }
   },
   
@@ -265,6 +273,29 @@ export const cartConfig = {
         lastModified: new Date().toISOString(),
         slotType: 'coupon',
         description: 'Coupon section title'
+      }
+    },
+    // Nested coupon title children (example of deep nesting)
+    'coupon.title.icon': {
+      content: '🎫',
+      className: 'text-lg',
+      parentClassName: '',
+      styles: {},
+      metadata: {
+        lastModified: new Date().toISOString(),
+        slotType: 'coupon',
+        description: 'Coupon title icon'
+      }
+    },
+    'coupon.title.label': {
+      content: 'Apply Coupon',
+      className: 'font-bold text-gray-800',
+      parentClassName: '',
+      styles: {},
+      metadata: {
+        lastModified: new Date().toISOString(),
+        slotType: 'coupon',
+        description: 'Coupon title label'
       }
     },
     'coupon.input': {

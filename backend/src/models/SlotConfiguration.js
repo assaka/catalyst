@@ -254,59 +254,13 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
 
   // Create proper default configuration with micro-slot definitions
   const getDefaultConfig = () => {
-    // Default micro-slot definitions for cart
-    const defaultMicroSlotOrders = {
-      flashMessage: ['flashMessage.message'],
-      emptyCart: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
-      header: ['header.title'],
-      cartItem: ['cartItem.productImage', 'cartItem.productTitle', 'cartItem.quantityControl', 'cartItem.productPrice', 'cartItem.removeButton'],
-      coupon: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.message', 'coupon.appliedCoupon'],
-      orderSummary: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.shipping', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
-      recommendations: ['recommendations.title', 'recommendations.products']
-    };
-    
-    const defaultMicroSlotSpans = {
-      flashMessage: { 'flashMessage.message': { col: 12, row: 1 } },
-      emptyCart: {
-        'emptyCart.icon': { col: 2, row: 1 },
-        'emptyCart.title': { col: 10, row: 1 },
-        'emptyCart.text': { col: 12, row: 1 },
-        'emptyCart.button': { col: 12, row: 1 }
-      },
-      header: { 'header.title': { col: 12, row: 1 } },
-      cartItem: {
-        'cartItem.productImage': { col: 2, row: 2 },
-        'cartItem.productTitle': { col: 6, row: 1 },
-        'cartItem.quantityControl': { col: 2, row: 1 },
-        'cartItem.productPrice': { col: 2, row: 1 },
-        'cartItem.removeButton': { col: 12, row: 1 }
-      },
-      coupon: {
-        'coupon.title': { col: 12, row: 1 },
-        'coupon.input': { col: 8, row: 1 },
-        'coupon.button': { col: 4, row: 1 },
-        'coupon.message': { col: 12, row: 1 },
-        'coupon.appliedCoupon': { col: 12, row: 1 }
-      },
-      orderSummary: {
-        'orderSummary.title': { col: 12, row: 1 },
-        'orderSummary.subtotal': { col: 12, row: 1 },
-        'orderSummary.discount': { col: 12, row: 1 },
-        'orderSummary.shipping': { col: 12, row: 1 },
-        'orderSummary.tax': { col: 12, row: 1 },
-        'orderSummary.total': { col: 12, row: 1 },
-        'orderSummary.checkoutButton': { col: 12, row: 1 }
-      },
-      recommendations: {
-        'recommendations.title': { col: 12, row: 1 },
-        'recommendations.products': { col: 12, row: 3 }
-      }
-    };
     
     // Create complete slot content with Tailwind classes
     const defaultSlots = {
       // Header content
       'header.title': {
+        type: 'system',
+        type: 'system',
         content: 'My Cart',
         styles: {},
         className: 'text-2xl font-bold text-gray-800',
@@ -316,6 +270,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
       
       // Empty cart content
       'emptyCart.icon': {
+        type: 'system',
         content: '🛒',
         styles: {},
         className: 'text-6xl text-gray-400',
@@ -323,6 +278,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'emptyCart.title': {
+        type: 'system',
         content: 'Your cart is empty',
         styles: {},
         className: 'text-xl font-bold text-gray-600',
@@ -337,6 +293,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'emptyCart.button': {
+        type: 'system',
         content: 'Continue Shopping',
         styles: {},
         className: 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
@@ -346,6 +303,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
 
       // Cart item content templates
       'cartItem.productImage': {
+        type: 'system',
         content: 'Product Image',
         styles: {},
         className: 'w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500',
@@ -353,6 +311,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'cartItem.productTitle': {
+        type: 'system',
         content: 'Product Name',
         styles: {},
         className: 'font-semibold text-gray-900',
@@ -360,6 +319,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'cartItem.quantityControl': {
+        type: 'system',
         content: '1',
         styles: {},
         className: 'flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded',
@@ -367,6 +327,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'cartItem.productPrice': {
+        type: 'system',
         content: '$29.99',
         styles: {},
         className: 'font-bold text-gray-900',
@@ -374,6 +335,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'cartItem.removeButton': {
+        type: 'system',
         content: 'Remove',
         styles: {},
         className: 'text-red-500 hover:text-red-700 text-sm',
@@ -383,6 +345,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
 
       // Coupon content
       'coupon.title': {
+        type: 'system',
         content: 'Apply Coupon',
         styles: {},
         className: 'text-lg font-bold text-gray-800',
@@ -390,6 +353,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'coupon.input': {
+        type: 'system',
         content: 'Enter coupon code',
         styles: {},
         className: 'flex-1 px-3 py-2 border rounded bg-white text-gray-700',
@@ -397,6 +361,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'coupon.button': {
+        type: 'system',
         content: 'Apply',
         styles: {},
         className: 'px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium',
@@ -406,6 +371,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
 
       // Order summary content
       'orderSummary.title': {
+        type: 'system',
         content: 'Order Summary',
         styles: {},
         className: 'text-lg font-bold text-gray-800 mb-4',
@@ -413,6 +379,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'orderSummary.subtotal': {
+        type: 'system',
         content: 'Subtotal: $59.98',
         styles: {},
         className: 'flex justify-between text-gray-600 mb-2',
@@ -420,6 +387,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'orderSummary.total': {
+        type: 'system',
         content: 'Total: $59.98',
         styles: {},
         className: 'flex justify-between font-bold text-lg text-gray-900 border-t pt-4',
@@ -427,6 +395,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         metadata: { lastModified: new Date().toISOString() }
       },
       'orderSummary.checkoutButton': {
+        type: 'system',
         content: 'Proceed to Checkout',
         styles: {},
         className: 'w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
@@ -439,10 +408,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
       page_name: 'Cart',
       slots: defaultSlots,
       majorSlots: ['header', 'emptyCart', 'cartItems'],
-      microSlotOrders: defaultMicroSlotOrders,
-      microSlotSpans: defaultMicroSlotSpans,
       componentSizes: {},
-      customSlots: {},
       metadata: {
         created: new Date().toISOString(),
         lastModified: new Date().toISOString()

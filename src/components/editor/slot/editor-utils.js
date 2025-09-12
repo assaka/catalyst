@@ -138,33 +138,8 @@ export function createDragEndHandler({
       const activeMajorSlot = activeSlotParts[0];
       const overMajorSlot = overSlotParts[0];
       
-      // Only allow reordering within the same majorSlot
-      if (activeMajorSlot === overMajorSlot && layoutConfig?.microSlotOrders?.[activeMajorSlot]) {
-        setLayoutConfig(prevConfig => {
-          const currentOrder = prevConfig.microSlotOrders[activeMajorSlot] || [];
-          const oldIndex = currentOrder.indexOf(activeId);
-          const newIndex = currentOrder.indexOf(overId);
-          
-          if (oldIndex === -1 || newIndex === -1) {
-            return prevConfig;
-          }
-          
-          const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
-          
-          const updatedConfig = {
-            ...prevConfig,
-            microSlotOrders: {
-              ...prevConfig.microSlotOrders,
-              [activeMajorSlot]: newOrder
-            }
-          };
-          
-          // Auto-save after reordering
-          setTimeout(() => saveConfiguration(), 100);
-          
-          return updatedConfig;
-        });
-      }
+      // Skip reordering logic - using direct grid positioning now
+      console.log('Drag and drop reordering is now handled via direct grid positioning in CSS');
     }
   };
 }

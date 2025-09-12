@@ -121,7 +121,8 @@ function SortableMicroSlot({ id, children, mode, majorSlot, onResize, cartLayout
   } = useSortable({ id, data: { type: 'microSlot', majorSlot } });
 
   // Get current microslot spans for sizing and positioning
-  const currentSpans = cartLayoutConfig?.microSlotSpans?.[majorSlot]?.[id] || { col: 12, row: 1 };
+  // Get spans from flat structure - all slots are at root level now
+  const currentSpans = cartLayoutConfig?.microSlotSpans?.[id] || { col: 12, row: 1 };
   
   // Build grid positioning classes
   const getGridClasses = () => {
@@ -240,7 +241,7 @@ function CartSlotsEditorContent({
   // Core state matching Cart.jsx
   const [viewMode, setViewMode] = useState(propViewMode || 'empty');
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
-  const [majorSlots, setMajorSlots] = useState(['header', 'emptyCart']);
+  const [rootSlots, setRootSlots] = useState(['header', 'emptyCart']);
   
   // Refs to avoid circular dependencies in save manager
   const cartLayoutConfigRef = useRef(cartLayoutConfig);
@@ -363,7 +364,7 @@ function CartSlotsEditorContent({
       const configuration = {
         page_name: PAGE_NAME,
         slots: config.slots || {},
-        majorSlots: majorSlots,
+        rootSlots: rootSlots,
         microSlotOrders: config.microSlotOrders || {},
         microSlotSpans: config.microSlotSpans || {},
         customSlots: config.customSlots || {},
@@ -400,7 +401,7 @@ function CartSlotsEditorContent({
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(''), 5000);
     }
-  }, [currentStoreId, cartLayoutConfig, majorSlots, onSave]);
+  }, [currentStoreId, cartLayoutConfig, rootSlots, onSave]);
 
   // Keep refs updated - placed after saveConfiguration declaration
   useEffect(() => {
@@ -483,13 +484,13 @@ function CartSlotsEditorContent({
 
   // Update major slots based on view mode and configuration
   useEffect(() => {
-    if (cartLayoutConfig?.majorSlots && Array.isArray(cartLayoutConfig.majorSlots)) {
-      setMajorSlots(cartLayoutConfig.majorSlots);
+    if (cartLayoutConfig?.rootSlots && Array.isArray(cartLayoutConfig.rootSlots)) {
+      setRootSlots(cartLayoutConfig.rootSlots);
     } else {
       const emptySlots = ['header', 'emptyCart'];
       const withProductsSlots = ['header', 'cartItem', 'coupon', 'orderSummary'];
       
-      setMajorSlots(viewMode === 'empty' ? emptySlots : withProductsSlots);
+      setRootSlots(viewMode === 'empty' ? emptySlots : withProductsSlots);
     }
   }, [viewMode, cartLayoutConfig]);
 
@@ -509,14 +510,14 @@ function CartSlotsEditorContent({
   const handleDragEnd = useMemo(() =>
     createDragEndHandler({
       setActiveDragSlot,
-      setMajorSlots,
+      setRootSlots,
       setLayoutConfig: setCartLayoutConfig,
       saveConfiguration,
-      majorSlots,
+      rootSlots,
       layoutConfig: cartLayoutConfig,
       arrayMove
     }),
-    [setActiveDragSlot, setMajorSlots, setCartLayoutConfig, saveConfiguration, majorSlots, cartLayoutConfig]
+    [setActiveDragSlot, setRootSlots, setCartLayoutConfig, saveConfiguration, rootSlots, cartLayoutConfig]
   );
 
   // Function to add a new major slot
@@ -524,14 +525,14 @@ function CartSlotsEditorContent({
     console.log(`Adding new major slot: ${slotType} after ${afterSlot}`);
     
     // Get the slot definition from cart config
-    const slotDefinition = cartConfig.microSlotDefinitions[slotType];
+    const slotDefinition = cartConfig.slotDefinitions[slotType];
     if (!slotDefinition) {
       console.error('Slot definition not found for:', slotType);
       return;
     }
     
     // Update major slots array
-    setMajorSlots(prevSlots => {
+    setRootSlots(prevSlots => {
       const newSlots = [...prevSlots];
       if (afterSlot && newSlots.includes(afterSlot)) {
         const insertIndex = newSlots.indexOf(afterSlot) + 1;
@@ -741,17 +742,14 @@ function CartSlotsEditorContent({
 
   // Simplified microslot resize handler using save manager with immediate state update
   const handleMicroSlotResize = useCallback((slotId, parentSlot, newSpans) => {
-    // Immediately update the local state to prevent visual lag
+    // Immediately update the local state with flat structure
     setCartLayoutConfig(prevConfig => ({
       ...prevConfig,
       microSlotSpans: {
         ...prevConfig.microSlotSpans,
-        [parentSlot]: {
-          ...prevConfig.microSlotSpans?.[parentSlot],
-          [slotId]: {
-            ...prevConfig.microSlotSpans?.[parentSlot]?.[slotId],
-            ...newSpans
-          }
+        [slotId]: {
+          ...prevConfig.microSlotSpans?.[slotId],
+          ...newSpans
         }
       }
     }));
@@ -867,10 +865,10 @@ function CartSlotsEditorContent({
 
   // Get available slot types for the add modal
   const getAvailableSlotTypes = useCallback(() => {
-    const allSlotTypes = Object.keys(cartConfig.microSlotDefinitions);
-    const currentSlots = majorSlots || [];
+    const allSlotTypes = Object.keys(cartConfig.slotDefinitions);
+    const currentSlots = rootSlots || [];
     return allSlotTypes.filter(slotType => !currentSlots.includes(slotType));
-  }, [majorSlots]);
+  }, [rootSlots]);
 
 
   const handleSlotDelete = useCallback((slotId) => {
@@ -2377,16 +2375,8 @@ function CartSlotsEditorContent({
                     // Reset to cartConfig defaults
                     const defaultConfig = {
                       slots: cartConfig.slots,
-                      microSlotOrders: Object.fromEntries(
-                        Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
-                          key, def.microSlots
-                        ])
-                      ),
-                      microSlotSpans: Object.fromEntries(
-                        Object.entries(cartConfig.microSlotDefinitions).map(([key, def]) => [
-                          key, def.defaultSpans
-                        ])
-                      ),
+                      // Use the nested microSlotSpans structure from cart config
+                      microSlotSpans: cartConfig.microSlotSpans || {},
                       customSlots: {},
                       componentSizes: {},
                       metadata: {
@@ -2421,7 +2411,8 @@ function CartSlotsEditorContent({
                 </p>
                 <div className="space-y-2">
                   {getAvailableSlotTypes().map(slotType => {
-                    const slotDef = cartConfig.microSlotDefinitions[slotType];
+                    const slotDef = cartConfig.slotDefinitions[slotType];
+                    const childSlots = cartConfig.microSlotSpans[slotType] ? Object.keys(cartConfig.microSlotSpans[slotType]) : [];
                     return (
                       <div
                         key={slotType}
@@ -2434,7 +2425,7 @@ function CartSlotsEditorContent({
                       >
                         <div className="font-medium text-sm">{slotDef.name}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Contains: {slotDef.microSlots.join(', ')}
+                          Contains: {childSlots.join(', ')}
                         </div>
                       </div>
                     );

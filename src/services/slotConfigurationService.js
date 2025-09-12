@@ -217,71 +217,36 @@ class SlotConfigurationService {
     // Check if cart config has the new unified structure or original structure
     let initialConfig;
     
-    if (cartConfig.defaultLayout && cartConfig.defaultLayout.slots) {
-      // New unified slot system
-      initialConfig = {
-        slots: { ...cartConfig.defaultLayout.slots },
-        rootSlots: [...cartConfig.defaultLayout.rootSlots],
-        metadata: {
-          name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
-          version: '2.0',
-          system: 'unified-slots',
-          created: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-          pageType: pageType,
-          fileName: fileName,
-          source: 'cart-config.js'
-        }
-      };
-    } else {
-      // Original majorSlot/microSlot structure - transform to the expected format
-      initialConfig = {
-        // Use the original cart config structure
-        majorSlots: cartConfig.majorSlots || [],
-        microSlotDefinitions: cartConfig.microSlotDefinitions || {},
-        microSlotOrders: {},
-        microSlotSpans: {},
-        slots: { ...cartConfig.slots },
-        customSlots: cartConfig.customSlots || {},
-        componentSizes: cartConfig.componentSizes || {},
-        
-        // Add metadata
-        metadata: {
-          name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
-          version: '1.0',
-          system: 'majorSlot-microSlot',
-          created: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-          pageType: pageType,
-          fileName: fileName,
-          source: 'cart-config.js',
-          page_name: cartConfig.page_name,
-          slot_type: cartConfig.slot_type
-        },
-        
-        // Initialize microSlotOrders and microSlotSpans from definitions
-        ...(() => {
-          const microSlotOrders = {};
-          const microSlotSpans = {};
-          
-          cartConfig.majorSlots.forEach(majorSlotId => {
-            const definition = cartConfig.microSlotDefinitions[majorSlotId];
-            if (definition) {
-              microSlotOrders[majorSlotId] = definition.microSlots || [];
-              microSlotSpans[majorSlotId] = definition.defaultSpans || {};
-            }
-          });
-          
-          return { microSlotOrders, microSlotSpans };
-        })()
-      };
-    }
+    // Use the new nested microSlotSpans structure
+    initialConfig = {
+      // Use the root slots and nested microSlotSpans structure
+      rootSlots: cartConfig.rootSlots || [],
+      slotDefinitions: cartConfig.slotDefinitions || {},
+      microSlotSpans: cartConfig.microSlotSpans || {},
+      slots: { ...cartConfig.slots },
+      componentSizes: cartConfig.componentSizes || {},
+      
+      // Add metadata
+      metadata: {
+        name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
+        version: '2.0',
+        system: 'nested-microSlotSpans',
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        pageType: pageType,
+        fileName: fileName,
+        source: 'cart-config.js',
+        page_name: cartConfig.page_name,
+        slot_type: cartConfig.slot_type
+      }
+    };
 
     console.log(`📋 Initial configuration created:`, {
       slotsCount: Object.keys(initialConfig.slots || {}).length,
       system: initialConfig.metadata.system,
       hasRootSlots: !!initialConfig.rootSlots,
-      hasMajorSlots: !!initialConfig.majorSlots
+      hasNestedSpans: !!initialConfig.microSlotSpans,
+      rootSlotsCount: initialConfig.rootSlots?.length || 0
     });
 
     return initialConfig;
@@ -307,13 +272,11 @@ class SlotConfigurationService {
       // Preserve CartSlotsEditor specific data structure
       cartData: {
         majorSlots: cartConfig.majorSlots || {},
-        microSlotOrders: cartConfig.microSlotOrders || {},
         microSlotSpans: cartConfig.microSlotSpans || {},
         slotContent: cartConfig.slotContent || {},
         elementClasses: cartConfig.elementClasses || {},
         elementStyles: cartConfig.elementStyles || {},
-        componentSizes: cartConfig.componentSizes || {},
-        customSlots: cartConfig.customSlots || {}
+        componentSizes: cartConfig.componentSizes || {}
       }
     };
 
@@ -355,7 +318,7 @@ class SlotConfigurationService {
   // Transform SlotConfiguration API format back to CartSlotsEditor format
   transformFromSlotConfigFormat(apiConfig) {
     // If it's already in CartSlotsEditor format, return as-is
-    if (apiConfig.majorSlots || apiConfig.microSlotOrders || apiConfig.cartData) {
+    if (apiConfig.majorSlots || apiConfig.cartData) {
       return apiConfig;
     }
 
@@ -377,13 +340,11 @@ class SlotConfigurationService {
       slot_type: apiConfig.metadata?.slot_type || 'cart_layout',
       timestamp: apiConfig.metadata?.lastModified || apiConfig.metadata?.created,
       majorSlots: {},
-      microSlotOrders: {},
       microSlotSpans: {},
       slotContent: {},
       elementClasses: {},
       elementStyles: {},
-      componentSizes: {},
-      customSlots: {}
+      componentSizes: {}
     };
 
     // Extract data from slots structure
