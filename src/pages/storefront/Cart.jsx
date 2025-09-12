@@ -910,30 +910,29 @@ export default function Cart() {
     
     // Helper function to get slot styling from configuration
     const getSlotStyling = (slotId) => {
+        const slotConfig = cartLayoutConfig?.slots?.[slotId];
         return {
-            elementClasses: cartLayoutConfig?.elementClasses?.[slotId] || '',
-            elementStyles: cartLayoutConfig?.elementStyles?.[slotId] || {}
+            elementClasses: slotConfig?.className || '',
+            elementStyles: slotConfig?.styles || {}
         };
     };
 
     // Helper function to get styling for a specific micro-slot
     const getMicroSlotStyling = (microSlotId) => {
+        const slotConfig = cartLayoutConfig?.slots?.[microSlotId];
         return {
-            elementClasses: cartLayoutConfig?.elementClasses?.[microSlotId] || '',
-            elementStyles: cartLayoutConfig?.elementStyles?.[microSlotId] || {}
+            elementClasses: slotConfig?.className || '',
+            elementStyles: slotConfig?.styles || {}
         };
     };
 
     // Helper function to get positioning and styling for slots
     const getSlotPositioning = (slotId) => {
         const slotConfig = cartLayoutConfig?.slots?.[slotId];
-        const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
-        const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
-        
         return {
             gridClasses: slotConfig?.className || '',
-            elementClasses,
-            elementStyles: { ...slotConfig?.styles, ...elementStyles }
+            elementClasses: slotConfig?.className || '',
+            elementStyles: slotConfig?.styles || {}
         };
     };
 
@@ -979,7 +978,7 @@ export default function Cart() {
                                         if (slotId === 'emptyCart.icon') {
                                             return (
                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                    <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" style={positioning.elementStyles} />
+                                                    <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" style={{}} />
                                                 </div>
                                             );
                                         }
@@ -993,7 +992,7 @@ export default function Cart() {
                                                 <div key={slotId} className={positioning.gridClasses}>
                                                     <div>
                                                         <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                            <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                            <h2 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                                                 Your cart is empty
                                                             </h2>
                                                         </div>
@@ -1011,7 +1010,7 @@ export default function Cart() {
                                                 <div key={slotId} className={positioning.gridClasses}>
                                                     <div>
                                                         <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                            <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                                            <p className={finalClasses} style={{...textStyling.elementStyles}}>
                                                                 Looks like you haven't added anything to your cart yet.
                                                             </p>
                                                         </div>
@@ -1026,7 +1025,7 @@ export default function Cart() {
                                                     <Button 
                                                         onClick={() => navigate(getStoreBaseUrl(store))}
                                                         className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                                        style={positioning.elementStyles}
+                                                        style={{}}
                                                     >
                                                         Continue Shopping
                                                     </Button>
@@ -1178,7 +1177,7 @@ export default function Cart() {
                                                             const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                                                         Apply Coupon
                                                                     </h3>
                                                                 </div>
@@ -1193,7 +1192,7 @@ export default function Cart() {
                                                                         value={couponCode}
                                                                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                                                                         onKeyPress={handleCouponKeyPress}
-                                                                        style={positioning.elementStyles}
+                                                                        style={{}}
                                                                     />
                                                                 </div>
                                                             );
@@ -1205,7 +1204,7 @@ export default function Cart() {
                                                                     <Button 
                                                                         onClick={handleApplyCoupon}
                                                                         disabled={!couponCode.trim()}
-                                                                        style={positioning.elementStyles}
+                                                                        style={{}}
                                                                     >
                                                                         <Tag className="w-4 h-4 mr-2" /> Apply
                                                                     </Button>
@@ -1216,7 +1215,7 @@ export default function Cart() {
                                                         if (slotId === 'coupon.applied' && appliedCoupon) {
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className="bg-green-50 p-3 rounded-lg" style={positioning.elementStyles}>
+                                                                    <div className="bg-green-50 p-3 rounded-lg" style={{}}>
                                                                         <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
                                                                         <p className="text-xs text-green-600">
                                                                             {appliedCoupon.discount_type === 'fixed' 
@@ -1237,7 +1236,7 @@ export default function Cart() {
                                                                         size="sm" 
                                                                         onClick={handleRemoveCoupon}
                                                                         className="text-red-600 hover:text-red-800"
-                                                                        style={positioning.elementStyles}
+                                                                        style={{}}
                                                                     >
                                                                         Remove
                                                                     </Button>
@@ -1321,7 +1320,7 @@ export default function Cart() {
                                                             const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                                                         Order Summary
                                                                     </h3>
                                                                 </div>
@@ -1334,7 +1333,7 @@ export default function Cart() {
                                                             const finalClasses = subtotalStyling.elementClasses || defaultClasses;
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                    <div className={finalClasses} style={{...subtotalStyling.elementStyles}}>
                                                                         <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
                                                                     </div>
                                                                 </div>
@@ -1347,7 +1346,7 @@ export default function Cart() {
                                                             const finalClasses = taxStyling.elementClasses || defaultClasses;
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                    <div className={finalClasses} style={{...taxStyling.elementStyles}}>
                                                                         <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
                                                                     </div>
                                                                 </div>
@@ -1357,7 +1356,7 @@ export default function Cart() {
                                                         if (slotId === 'orderSummary.shipping') {
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className="flex justify-between" style={positioning.elementStyles}>
+                                                                    <div className="flex justify-between" style={{}}>
                                                                         <span>Shipping</span><span>Free</span>
                                                                     </div>
                                                                 </div>
@@ -1370,7 +1369,7 @@ export default function Cart() {
                                                             const finalClasses = discountStyling.elementClasses || defaultClasses;
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...discountStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                    <div className={finalClasses} style={{...discountStyling.elementStyles}}>
                                                                         <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
                                                                     </div>
                                                                 </div>
@@ -1383,7 +1382,7 @@ export default function Cart() {
                                                             const finalClasses = totalStyling.elementClasses || defaultClasses;
                                                             return (
                                                                 <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...totalStyling.elementStyles, ...positioning.elementStyles}}>
+                                                                    <div className={finalClasses} style={{...totalStyling.elementStyles}}>
                                                                         <span>Total</span>
                                                                         <span>{currencySymbol}{safeToFixed(total)}</span>
                                                                     </div>
@@ -1405,8 +1404,7 @@ export default function Cart() {
                                                                             style={{
                                                                                 backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
                                                                                 color: '#FFFFFF',
-                                                                                ...buttonStyling.elementStyles,
-                                                                                ...positioning.elementStyles
+                                                                                ...buttonStyling.elementStyles
                                                                             }}
                                                                         >
                                                                             Proceed to Checkout

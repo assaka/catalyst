@@ -20,10 +20,7 @@ export function useSlotConfiguration({
 
   // Generic save configuration function
   const saveConfiguration = useCallback(async ({
-    slotContent,
-    elementStyles,
-    elementClasses,
-    componentSizes
+    slotContent
   }) => {
     console.log(`💾 ===== SAVE CONFIGURATION STARTED (${pageName}) =====`);
     setSaveStatus('saving');
@@ -33,35 +30,13 @@ export function useSlotConfiguration({
     
     // Combine all slot data into the slots structure
     const allSlotIds = new Set([
-      ...Object.keys(slotContent || {}),
-      ...Object.keys(elementStyles || {}),
-      ...Object.keys(elementClasses || {})
+      ...Object.keys(slotContent || {})
     ]);
-    
-    // Add base slot IDs from wrapper IDs (remove -wrapper suffix)
-    Object.keys(elementClasses || {}).forEach(key => {
-      if (key.endsWith('-wrapper')) {
-        const baseSlotId = key.replace('-wrapper', '');
-        allSlotIds.add(baseSlotId);
-      }
-    });
-    
-    // Process each slot
+
+    // Process each slot with content only - styles/classes now come from slot config
     allSlotIds.forEach(id => {
-      // Skip processing wrapper IDs themselves
-      if (id.endsWith('-wrapper')) {
-        return;
-      }
-      
-      // Check for parent wrapper classes (for alignment and other parent styles)
-      const wrapperId = `${id}-wrapper`;
-      const parentClassName = elementClasses[wrapperId] || '';
-      
       slots[id] = {
         content: slotContent[id] || '',
-        styles: elementStyles[id] || {},
-        className: elementClasses[id] || '',
-        parentClassName: parentClassName,
         metadata: {
           lastModified: new Date().toISOString()
         }
@@ -140,9 +115,7 @@ export function useSlotConfiguration({
 
   // Generic load configuration function
   const loadConfiguration = useCallback(async ({
-    setSlotContent,
-    setElementStyles,
-    setElementClasses,
+    setSlotContent
   }) => {
     try {
       const storeId = selectedStore?.id;
@@ -201,53 +174,24 @@ export function useSlotConfiguration({
           return;
         }
 
-        // Load from config.slots structure
+        // Load from config.slots structure - only content, styles/classes now in slot config
         if (config.slots) {
           console.log('📥 Loading from slots structure:', config.slots);
           const loadedContent = {};
-          const loadedClasses = {};
-          const loadedStyles = {};
           
           Object.entries(config.slots).forEach(([slotId, slotData]) => {
             if (slotData.content !== undefined) {
               loadedContent[slotId] = slotData.content;
             }
-            
-            if (slotData.className !== undefined) {
-              loadedClasses[slotId] = slotData.className;
-            }
-            
-            if (slotData.parentClassName !== undefined) {
-              const wrapperId = `${slotId}-wrapper`;
-              loadedClasses[wrapperId] = slotData.parentClassName;
-            }
-            
-            if (slotData.styles !== undefined) {
-              loadedStyles[slotId] = slotData.styles;
-            }
           });
           
           console.log('📥 Loaded content:', loadedContent);
-          console.log('📥 Loaded classes:', loadedClasses);
-          console.log('📥 Loaded styles:', loadedStyles);
           
           if (setSlotContent) {
             setSlotContent(prev => ({ ...prev, ...loadedContent }));
           }
-          if (setElementClasses) {
-            setElementClasses(prev => ({ ...prev, ...loadedClasses }));
-          }
-          if (setElementStyles) {
-            setElementStyles(prev => ({ ...prev, ...loadedStyles }));
-          }
         }
-        
-        if (config.componentSizes && setComponentSizes) {
-          setComponentSizes(prev => ({ ...prev, ...config.componentSizes }));
-        }
-        
-        // customSlots deprecated - now using flattened slots structure with type field
-        
+
         console.log(`✅ Configuration loaded successfully (${pageName})`);
       } else {
         console.log('No configuration found in database, initializing with defaults');
@@ -283,33 +227,19 @@ export function useSlotConfiguration({
     const config = draftConfig.configuration;
     console.log('🔄 LOADING CONFIG STRUCTURE CHECK:', {
       configKeys: Object.keys(config),
-      hasOldStructure: !!(config.elementStyles || config.slotContent || config.elementClasses),
+      hasSlotContent: !!config.slotContent,
       hasNewStructure: !!config.slots,
-      elementStyles: config.elementStyles,
       slots: config.slots,
       fullConfig: config
     });
     
     // Load from the slots structure (the only structure we should use)
     if (config.slots) {
-      const extractedStyles = {};
       const extractedContent = {};
-      const extractedClasses = {};
       
       Object.entries(config.slots).forEach(([slotId, slotData]) => {
-        if (slotData?.styles) {
-          extractedStyles[slotId] = slotData.styles;
-        }
         if (slotData?.content !== undefined) {
           extractedContent[slotId] = slotData.content;
-        }
-        if (slotData?.className) {
-          extractedClasses[slotId] = slotData.className;
-        }
-        // Load parentClassName as wrapper classes
-        if (slotData?.parentClassName) {
-          const wrapperId = `${slotId}-wrapper`;
-          extractedClasses[wrapperId] = slotData.parentClassName;
         }
       });
       

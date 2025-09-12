@@ -54,10 +54,6 @@ export function useSlotEditor({
     slotLabel: '' 
   });
 
-  // Element styling state
-  const [elementClasses, setElementClasses] = useState({});
-  const [elementStyles, setElementStyles] = useState({});
-  const [componentSizes, setComponentSizes] = useState({});
 
   // Save configuration function
   const saveConfiguration = useCallback(async () => {
@@ -202,11 +198,6 @@ export function useSlotEditor({
           const config = pageConfig.configuration;
           console.log(`📥 Found ${pageType} config:`, config);
           
-          // Load component sizes
-          if (config.componentSizes) {
-            setComponentSizes(config.componentSizes);
-          }
-          
           // Load slot content, styles, and classes from the slots structure
           if (config.slots) {
             const loadedContent = {};
@@ -232,8 +223,6 @@ export function useSlotEditor({
             
             // Merge with existing content (preserving any defaults)
             setSlotContent(prev => ({ ...prev, ...loadedContent }));
-            setElementStyles(prev => ({ ...prev, ...loadedStyles }));
-            setElementClasses(prev => ({ ...prev, ...loadedClasses }));
           }
           
           // Call onConfigLoad callback if provided
@@ -266,27 +255,13 @@ export function useSlotEditor({
 
   const handleClassChange = useCallback((slotId, newClass, newStyles = null) => {
     if (newClass !== undefined) {
-      setElementClasses(prev => ({ ...prev, [slotId]: newClass }));
     }
     
     if (newStyles) {
       if (Array.isArray(newStyles)) {
         // newStyles is an array of style keys to clear
-        setElementStyles(prev => {
-          const updated = { ...prev };
-          const currentStyles = updated[slotId] || {};
-          newStyles.forEach(styleKey => {
-            delete currentStyles[styleKey];
-          });
-          updated[slotId] = currentStyles;
-          return updated;
-        });
       } else {
         // newStyles is a style object to merge
-        setElementStyles(prev => ({
-          ...prev,
-          [slotId]: { ...(prev[slotId] || {}), ...newStyles }
-        }));
       }
     }
     
@@ -294,19 +269,6 @@ export function useSlotEditor({
     setTimeout(() => {
       saveConfiguration();
     }, 500);
-  }, [saveConfiguration]);
-
-  const handleSizeChange = useCallback((slotId, newSize) => {
-    setComponentSizes(prev => {
-      const updated = { ...prev, [slotId]: newSize };
-      
-      // Auto-save after size change
-      setTimeout(() => {
-        saveConfiguration();
-      }, 100);
-      
-      return updated;
-    });
   }, [saveConfiguration]);
 
   // Force save event handler
@@ -361,19 +323,12 @@ export function useSlotEditor({
     setNewSlotContent,
     deleteConfirm,
     setDeleteConfirm,
-    elementClasses,
-    setElementClasses,
-    elementStyles,
-    setElementStyles,
-    componentSizes,
-    setComponentSizes,
     
     // Functions
     saveConfiguration,
     loadConfiguration,
     handleTextChange,
-    handleClassChange,
-    handleSizeChange,
+    handleClassChange
     
     // Utilities
     formatPrice,

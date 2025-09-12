@@ -671,7 +671,7 @@ function CartSlotsEditorContent({
       const baseSlotId = microSlotId.replace('_wrapper', '');
       return {
         elementClasses: cartLayoutConfig?.slots?.[baseSlotId]?.parentClassName || '',
-        elementStyles: cartLayoutConfig?.slots?.[baseSlotId]?.parentStyles || {}
+        elementStyles: cartLayoutConfig?.slots?.[baseSlotId]?.styles || {}
       };
     }
     
@@ -685,13 +685,13 @@ function CartSlotsEditorContent({
   // Custom slot positioning that reads from slots.{slotId}.className and slots.{slotId}.styles
   const getSlotPositioning = useCallback((slotId) => {
     const slotConfig = cartLayoutConfig?.slots?.[slotId];
-    const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
-    const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
+    const elementClasses = cartLayoutConfig?.slots?.[slotId]?.className || '';
+    const elementStyles = cartLayoutConfig?.slots?.[slotId]?.styles || {};
     
     return {
       gridClasses: slotConfig?.className || 'col-span-12',
       elementClasses,
-      elementStyles: { ...slotConfig?.styles, ...elementStyles }
+      elementStyles: slotConfig?.styles || {}
     };
   }, [cartLayoutConfig]);
 
@@ -924,7 +924,7 @@ function CartSlotsEditorContent({
                           <EditableElement slotId={slotId} editable={mode === 'edit'}>
                             <h1 
                               className={finalClasses} 
-                              style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                              style={{...headerTitleStyling.elementStyles}}
                             >
                               {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
                             </h1>
@@ -961,7 +961,7 @@ function CartSlotsEditorContent({
                         <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                           <h1 
                             className={finalClasses} 
-                            style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                            style={{...headerTitleStyling.elementStyles}}
                             data-slot-id={slotId}
                           >
                             {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
@@ -1049,14 +1049,14 @@ function CartSlotsEditorContent({
                               >
                                 <ShoppingCart 
                                   className={finalClasses} 
-                                  style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                  style={{...iconStyling.elementStyles}} 
                                   data-slot-id={slotId}
                                 />
                               </WebflowResizer>
                             ) : (
                               <ShoppingCart 
                                 className={finalClasses} 
-                                style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                style={{...iconStyling.elementStyles}} 
                                 data-slot-id={slotId}
                               />
                             )}
@@ -1093,14 +1093,14 @@ function CartSlotsEditorContent({
                                   }}
                                 >
                                   <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                    <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                    <h2 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                       {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                                     </h2>
                                   </EditableElement>
                                 </DirectResizable>
                               ) : (
                                 <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                  <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                  <h2 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                                   </h2>
                                 </EditableElement>
@@ -1139,14 +1139,14 @@ function CartSlotsEditorContent({
                                   }}
                                 >
                                   <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                    <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                    <p className={finalClasses} style={{...textStyling.elementStyles}}>
                                       {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                                     </p>
                                   </EditableElement>
                                 </DirectResizable>
                               ) : (
                                 <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                  <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                  <p className={finalClasses} style={{...textStyling.elementStyles}}>
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                                   </p>
                                 </EditableElement>
@@ -1190,7 +1190,7 @@ function CartSlotsEditorContent({
                                 >
                                   <Button 
                                     className={finalClasses}
-                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                    style={{...buttonStyling.elementStyles}}
                                   >
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                                   </Button>
@@ -1199,7 +1199,7 @@ function CartSlotsEditorContent({
                             ) : (
                               <Button 
                                 className={finalClasses}
-                                style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                style={{...buttonStyling.elementStyles}}
                               >
                                 {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                               </Button>
@@ -1279,7 +1279,7 @@ function CartSlotsEditorContent({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
+                              <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles}} />
                             </div>
                           </div>
                         );
@@ -1293,7 +1293,7 @@ function CartSlotsEditorContent({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                              <h2 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                 {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                               </h2>
                             </div>
@@ -1309,7 +1309,7 @@ function CartSlotsEditorContent({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                              <p className={finalClasses} style={{...textStyling.elementStyles}}>
                                 {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                               </p>
                             </div>
@@ -1327,7 +1327,7 @@ function CartSlotsEditorContent({
                           <div key={slotId} className={`${positioning.gridClasses} button-slot-container ${wrapperStyling.elementClasses}`} style={wrapperStyling.elementStyles}>
                             <Button 
                               className={finalClasses}
-                              style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                              style={{...buttonStyling.elementStyles}}
                             >
                               {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                             </Button>
@@ -1406,7 +1406,7 @@ function CartSlotsEditorContent({
                                     onResize={(newSize, detectedType) => {
                                       // Update image styling in configuration
                                       const newStyles = {
-                                        ...imageStyling.elementStyles,
+                                        ...imageStyling.elementStyles
                                         width: `${newSize.width}px`,
                                         height: `${newSize.height}px`
                                       };
@@ -1533,7 +1533,7 @@ function CartSlotsEditorContent({
                           const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                           return (
                             <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                              <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                 Apply Coupon
                               </h3>
                             </div>
@@ -1587,7 +1587,7 @@ function CartSlotsEditorContent({
                                         <Button 
                                           disabled={!couponCode.trim()}
                                           className={finalClasses}
-                                          style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                          style={{...buttonStyling.elementStyles}}
                                         >
                                           {cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
                                         </Button>
@@ -1597,7 +1597,7 @@ function CartSlotsEditorContent({
                                     <Button 
                                       disabled={!couponCode.trim()}
                                       className={finalClasses}
-                                      style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                      style={{...buttonStyling.elementStyles}}
                                     >
                                       {cartLayoutConfig?.slots?.[slotId]?.content ? 
                                         <span dangerouslySetInnerHTML={{ __html: cartLayoutConfig.slots[slotId].content }} />
@@ -1652,7 +1652,7 @@ function CartSlotsEditorContent({
                             const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                             return (
                               <div key={slotId} className={positioning.gridClasses}>
-                                <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                   Apply Coupon
                                 </h3>
                               </div>
@@ -1683,7 +1683,7 @@ function CartSlotsEditorContent({
                                   <Button 
                                     disabled={!couponCode.trim()}
                                     className={finalClasses}
-                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                    style={{...buttonStyling.elementStyles}}
                                   >
                                     <Tag className="w-4 h-4 mr-2" /> Apply
                                   </Button>
@@ -1742,7 +1742,7 @@ function CartSlotsEditorContent({
                           const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                           return (
                             <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                              <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                 Order Summary
                               </h3>
                             </div>
@@ -1755,7 +1755,7 @@ function CartSlotsEditorContent({
                           const finalClasses = subtotalStyling.elementClasses || defaultClasses;
                           return (
                             <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
+                              <div className={finalClasses} style={{...subtotalStyling.elementStyles}}>
                                 <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
                               </div>
                             </div>
@@ -1768,7 +1768,7 @@ function CartSlotsEditorContent({
                           const finalClasses = taxStyling.elementClasses || defaultClasses;
                           return (
                             <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
+                              <div className={finalClasses} style={{...taxStyling.elementStyles}}>
                                 <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
                               </div>
                             </div>
@@ -1781,7 +1781,7 @@ function CartSlotsEditorContent({
                           const finalClasses = totalStyling.elementClasses || defaultClasses;
                           return (
                             <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <div className={finalClasses} style={{...totalStyling.elementStyles, ...positioning.elementStyles}}>
+                              <div className={finalClasses} style={{...totalStyling.elementStyles}}>
                                 <span>Total</span>
                                 <span>{currencySymbol}{total.toFixed(2)}</span>
                               </div>
@@ -1917,7 +1917,7 @@ function CartSlotsEditorContent({
                             const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
                             return (
                               <div key={slotId} className={positioning.gridClasses}>
-                                <h3 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
                                   Order Summary
                                 </h3>
                               </div>
@@ -1930,7 +1930,7 @@ function CartSlotsEditorContent({
                             const finalClasses = subtotalStyling.elementClasses || defaultClasses;
                             return (
                               <div key={slotId} className={positioning.gridClasses}>
-                                <div className={finalClasses} style={{...subtotalStyling.elementStyles, ...positioning.elementStyles}}>
+                                <div className={finalClasses} style={{...subtotalStyling.elementStyles}}>
                                   <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
                                 </div>
                               </div>
@@ -1943,7 +1943,7 @@ function CartSlotsEditorContent({
                             const finalClasses = taxStyling.elementClasses || defaultClasses;
                             return (
                               <div key={slotId} className={positioning.gridClasses}>
-                                <div className={finalClasses} style={{...taxStyling.elementStyles, ...positioning.elementStyles}}>
+                                <div className={finalClasses} style={{...taxStyling.elementStyles}}>
                                   <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
                                 </div>
                               </div>
@@ -1956,7 +1956,7 @@ function CartSlotsEditorContent({
                             const finalClasses = totalStyling.elementClasses || defaultClasses;
                             return (
                               <div key={slotId} className={positioning.gridClasses}>
-                                <div className={finalClasses} style={{...totalStyling.elementStyles, ...positioning.elementStyles}}>
+                                <div className={finalClasses} style={{...totalStyling.elementStyles}}>
                                   <span>Total</span>
                                   <span>{currencySymbol}{total.toFixed(2)}</span>
                                 </div>

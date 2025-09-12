@@ -456,10 +456,6 @@ export const cartConfig = {
     }
   },
   
-  
-  // Component sizes configuration
-  componentSizes: {},
-  
   // Configuration metadata
   metadata: {
     created: new Date().toISOString(),

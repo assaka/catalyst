@@ -18,9 +18,6 @@ function MicroSlot({
   isEditable = false, 
   onContentChange, 
   onClassChange, 
-  elementClasses = {}, 
-  elementStyles = {}, 
-  componentSizes = {}, 
   onSizeChange, 
   mode = 'edit' 
 }) {
@@ -201,8 +198,6 @@ function MicroSlot({
     };
   }, []);
 
-  const currentStyles = elementStyles[id] || {};
-  const currentClasses = elementClasses[id] || '';
 
   return (
     <div
@@ -210,10 +205,9 @@ function MicroSlot({
         setNodeRef(node);
         slotRef.current = node;
       }}
-      style={{ ...style, ...currentStyles }}
+      style={style}
       className={`
         ${getGridSpanClass()}
-        ${currentClasses}
         relative border border-dashed border-gray-300 p-2 min-h-[40px]
         transition-all duration-200
         ${mode === 'edit' ? 'hover:border-gray-400 hover:bg-gray-50/50' : ''}

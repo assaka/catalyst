@@ -223,7 +223,6 @@ class SlotConfigurationService {
       rootSlots: cartConfig.rootSlots || [],
       slotDefinitions: cartConfig.slotDefinitions || {},
       slots: { ...cartConfig.slots },
-      componentSizes: cartConfig.componentSizes || {},
       
       // Add metadata
       metadata: {
@@ -330,8 +329,6 @@ class SlotConfigurationService {
       Object.keys(apiConfig.slots).forEach(slotId => {
         const slot = apiConfig.slots[slotId];
         cartConfig.slotContent[slotId] = slot.content || '';
-        cartConfig.elementClasses[slotId] = slot.className || '';
-        cartConfig.elementStyles[slotId] = slot.styles || {};
       });
     }
 
