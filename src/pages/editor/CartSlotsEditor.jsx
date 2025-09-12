@@ -261,8 +261,10 @@ function CartSlotsEditorContent({
   }, [selectedElement]);
 
   // Save configuration to database
-  const saveConfiguration = useCallback(async () => {
-    if (!currentStoreId || !cartLayoutConfig) {
+  const saveConfiguration = useCallback(async (configToSave = null) => {
+    const config = configToSave || cartLayoutConfig;
+    
+    if (!currentStoreId || !config) {
       console.error('No store ID or configuration available for saving');
       return;
     }
@@ -270,17 +272,17 @@ function CartSlotsEditorContent({
     setSaveStatus('saving');
     
     try {
-      // Create configuration object in slot_configurations format using current cartLayoutConfig
+      // Create configuration object in slot_configurations format using provided config
       const configuration = {
         page_name: PAGE_NAME,
-        slots: cartLayoutConfig.slots || {},
+        slots: config.slots || {},
         majorSlots: majorSlots,
-        microSlotOrders: cartLayoutConfig.microSlotOrders || {},
-        microSlotSpans: cartLayoutConfig.microSlotSpans || {},
-        customSlots: cartLayoutConfig.customSlots || {},
-        componentSizes: cartLayoutConfig.componentSizes || {},
+        microSlotOrders: config.microSlotOrders || {},
+        microSlotSpans: config.microSlotSpans || {},
+        customSlots: config.customSlots || {},
+        componentSizes: config.componentSizes || {},
         metadata: {
-          ...cartLayoutConfig.metadata,
+          ...config.metadata,
           lastModified: new Date().toISOString(),
           version: '1.0'
         }
@@ -474,6 +476,8 @@ function CartSlotsEditorContent({
 
   // Text change handler - update DOM element and save to database
   const handleSidebarTextChange = useCallback((slotId, newText) => {
+    console.log('💾 Text change for slot:', slotId, 'New text:', newText);
+    
     // Update the DOM element's text content immediately
     const element = document.querySelector(`[data-slot-id="${slotId}"]`);
     if (element) {
@@ -483,6 +487,7 @@ function CartSlotsEditorContent({
       } else {
         element.textContent = newText;
       }
+      console.log('✅ DOM element updated for slot:', slotId);
     }
     
     // Also save to database
@@ -499,6 +504,7 @@ function CartSlotsEditorContent({
         }
       };
       
+      console.log('💾 Saving updated config to database...');
       // Save to database
       saveConfiguration(updatedConfig);
     }
