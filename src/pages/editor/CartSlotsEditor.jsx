@@ -477,6 +477,8 @@ function CartSlotsEditorContent({
   // Text change handler - update DOM element and save to database
   const handleSidebarTextChange = useCallback((slotId, newText) => {
     console.log('💾 Text change for slot:', slotId, 'New text:', newText);
+    console.log('🔍 Current cartLayoutConfig:', cartLayoutConfigRef.current);
+    console.log('🔍 Current slot config:', cartLayoutConfigRef.current?.slots?.[slotId]);
     
     // Update the DOM element's text content immediately
     const element = document.querySelector(`[data-slot-id="${slotId}"]`);
@@ -504,6 +506,11 @@ function CartSlotsEditorContent({
         }
       };
       
+      console.log('💾 Updated config for saving:', {
+        slotId,
+        slotConfig: updatedConfig.slots[slotId],
+        allSlots: Object.keys(updatedConfig.slots)
+      });
       console.log('💾 Saving updated config to database...');
       // Save to database
       saveConfiguration(updatedConfig);
