@@ -239,14 +239,6 @@ class SlotConfigurationService {
       }
     };
 
-    console.log(`📋 Initial configuration created:`, {
-      slotsCount: Object.keys(initialConfig.slots || {}).length,
-      system: initialConfig.metadata.system,
-      hasRootSlots: !!initialConfig.rootSlots,
-      hasNestedSpans: !!initialConfig.nestedSpans,
-      rootSlotsCount: initialConfig.rootSlots?.length || 0
-    });
-
     return initialConfig;
   }
 
@@ -289,12 +281,6 @@ class SlotConfigurationService {
 
     console.log('🔄 Transformed configuration:', transformed);
     return transformed;
-  }
-
-  // Extract alignment information for a slot
-  extractAlignment(slotId, ) {
-    if (!) return null;
-    return null;
   }
 
   // Transform SlotConfiguration API format back to CartSlotsEditor format
