@@ -159,6 +159,89 @@ class SlotConfigurationService {
     }
   }
 
+  // Check if draft exists, create from initial values if not
+  async ensureDraftExists(storeId, pageType = 'cart', fileName = null) {
+    try {
+      console.log(`🔍 Checking draft configuration for ${storeId}/${pageType}...`);
+      
+      // Try to get existing draft
+      try {
+        const draftResponse = await this.getDraftConfiguration(storeId, pageType);
+        if (draftResponse.success && draftResponse.data) {
+          console.log(`✅ Found existing draft configuration for ${storeId}/${pageType}`);
+          return {
+            exists: true,
+            draft: draftResponse.data,
+            created: false
+          };
+        }
+      } catch (error) {
+        // Draft doesn't exist, we'll create it
+        console.log(`📝 No draft found for ${storeId}/${pageType}, will create new one`);
+      }
+
+      // Create new draft from cart-config.js initial values
+      const initialConfiguration = await this.getInitialConfiguration(pageType, fileName);
+      
+      // Create draft using the API
+      const createResponse = await apiClient.post(`${API_BASE}/draft`, {
+        storeId,
+        pageType,
+        configuration: initialConfiguration
+      });
+
+      if (createResponse.success) {
+        console.log(`✨ Created new draft configuration for ${storeId}/${pageType} from initial values`);
+        return {
+          exists: false,
+          draft: createResponse.data,
+          created: true
+        };
+      } else {
+        throw new Error('Failed to create draft configuration');
+      }
+
+    } catch (error) {
+      console.error('Error ensuring draft exists:', error);
+      throw error;
+    }
+  }
+
+  // Get initial configuration from cart-config.js
+  async getInitialConfiguration(pageType = 'cart', fileName = null) {
+    // Dynamic import to get the latest cart config
+    const { cartConfig } = await import('@/components/editor/slot/configs/cart-config.js');
+    
+    console.log(`🏗️ Creating initial configuration for ${pageType} from cart-config.js`);
+    
+    // Use the clean unified slot system configuration
+    const initialConfig = {
+      // Use the default layout from cart config
+      slots: { ...cartConfig.defaultLayout.slots },
+      rootSlots: [...cartConfig.defaultLayout.rootSlots],
+      
+      // Add metadata
+      metadata: {
+        name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
+        version: '2.0',
+        system: 'unified-slots',
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        pageType: pageType,
+        fileName: fileName,
+        source: 'cart-config.js'
+      }
+    };
+
+    console.log(`📋 Initial configuration created:`, {
+      slotsCount: Object.keys(initialConfig.slots).length,
+      rootSlotsCount: initialConfig.rootSlots.length,
+      system: initialConfig.metadata.system
+    });
+
+    return initialConfig;
+  }
+
   // Transform CartSlotsEditor configuration to SlotConfiguration API format
   transformToSlotConfigFormat(cartConfig) {
     // Check if it's already in the correct format

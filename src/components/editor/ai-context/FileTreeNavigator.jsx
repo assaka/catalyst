@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import apiClient from '@/api/client';
+import slotConfigurationService from '@/services/slotConfigurationService';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { 
   Folder,
   FolderOpen,
@@ -19,7 +21,9 @@ import {
   Settings,
   Database,
   Globe,
-  RefreshCw
+  RefreshCw,
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 
 const FileTreeNavigator = ({ 
@@ -29,9 +33,11 @@ const FileTreeNavigator = ({
   onRefresh,
   className = '' 
 }) => {
+  const { selectedStore } = useStoreSelection();
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
+  const [loadingDraft, setLoadingDraft] = useState(null); // Track which file is loading
 
   // Load file tree data from file_baselines
   useEffect(() => {
@@ -220,7 +226,7 @@ const FileTreeNavigator = ({
     setExpandedFolders(newExpanded);
   };
 
-  const handleFileClick = (file, path) => {
+  const handleFileClick = async (file, path) => {
     if (file.type === 'file') {
       console.log('📁 FileTreeNavigator: File clicked', {
         fileName: file.name,
@@ -228,8 +234,108 @@ const FileTreeNavigator = ({
         fileType: file.type,
         fullFileObject: file
       });
-      onFileSelect && onFileSelect({ ...file, path });
+
+      // Check if this is a layout file that needs slot configuration
+      const needsSlotConfig = isLayoutFile(file.name, path);
+      
+      if (needsSlotConfig && selectedStore?.id) {
+        setLoadingDraft(path);
+        
+        try {
+          console.log('🎯 Checking slot configuration for layout file:', file.name);
+          
+          // Determine page type from file name/path
+          const pageType = getPageTypeFromFile(file.name, path);
+          
+          // Ensure draft exists, create from cart-config.js if not
+          const draftResult = await slotConfigurationService.ensureDraftExists(
+            selectedStore.id,
+            pageType,
+            file.name
+          );
+
+          console.log('📋 Draft check result:', {
+            exists: draftResult.exists,
+            created: draftResult.created,
+            draftId: draftResult.draft?.id,
+            fileName: file.name,
+            pageType
+          });
+
+          // Add draft information to the file object
+          const fileWithDraft = {
+            ...file,
+            path,
+            slotConfiguration: {
+              hasDraft: true,
+              draftId: draftResult.draft.id,
+              created: draftResult.created,
+              pageType,
+              configuration: draftResult.draft.configuration
+            }
+          };
+
+          onFileSelect && onFileSelect(fileWithDraft);
+
+        } catch (error) {
+          console.error('❌ Error handling slot configuration:', error);
+          
+          // Still pass the file, but without slot config
+          onFileSelect && onFileSelect({ ...file, path, slotConfiguration: { error: error.message } });
+        } finally {
+          setLoadingDraft(null);
+        }
+      } else {
+        // Regular file click, no slot configuration needed
+        onFileSelect && onFileSelect({ ...file, path });
+      }
     }
+  };
+
+  // Check if file needs slot configuration
+  const isLayoutFile = (fileName, filePath) => {
+    const layoutFiles = [
+      'Cart.jsx',
+      'CartSlotsEditor.jsx', 
+      'Checkout.jsx',
+      'ProductDetail.jsx',
+      'Category.jsx',
+      'Homepage.jsx'
+    ];
+    
+    // Check if it's a known layout file
+    if (layoutFiles.includes(fileName)) {
+      return true;
+    }
+    
+    // Check if it's in pages/storefront directory (likely a layout)
+    if (filePath.includes('pages/storefront/') && fileName.endsWith('.jsx')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Determine page type from file name/path
+  const getPageTypeFromFile = (fileName, filePath) => {
+    // Map common files to page types
+    const fileToPageType = {
+      'Cart.jsx': 'cart',
+      'CartSlotsEditor.jsx': 'cart',
+      'Checkout.jsx': 'checkout', 
+      'ProductDetail.jsx': 'product',
+      'Category.jsx': 'category',
+      'Homepage.jsx': 'homepage'
+    };
+    
+    // Check exact filename match first
+    if (fileToPageType[fileName]) {
+      return fileToPageType[fileName];
+    }
+    
+    // Fallback to extracting from filename
+    const baseName = fileName.replace('.jsx', '').toLowerCase();
+    return baseName;
   };
 
   const getFileIcon = (file) => {
@@ -333,6 +439,16 @@ const FileTreeNavigator = ({
           {getFileIcon(nodeWithPath)}
           
           <span className="flex-1 text-sm font-medium">{node.name}</span>
+          
+          {/* Loading indicator for slot configuration check */}
+          {loadingDraft === currentPath && (
+            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+          )}
+          
+          {/* Layout file indicator */}
+          {node.type === 'file' && isLayoutFile(node.name, currentPath) && (
+            <Settings className="w-3 h-3 text-green-500" title="Layout file with slot configuration" />
+          )}
           
           {showDetails && node.type === 'file' && (
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
