@@ -328,7 +328,7 @@ export function useSlotEditor({
     saveConfiguration,
     loadConfiguration,
     handleTextChange,
-    handleClassChange
+    handleClassChange,
     
     // Utilities
     formatPrice,
