@@ -463,42 +463,16 @@ function CartSlotsEditorContent({
   const handleAddSlot = useCallback((slotType, afterSlot = null) => {
     console.log(`Adding new slot: ${slotType} after ${afterSlot}`);
     
-    // Get the slot definition from cart config
-    const slotDefinition = cartConfig.slotDefinitions[slotType];
-    if (!slotDefinition) {
-      console.error('Slot definition not found for:', slotType);
-      return;
-    }
-    
-    // Update cart layout config with new slot
+    // Update cart layout config with new slot (simplified - no slot definitions needed)
     setCartLayoutConfig(prevConfig => {
       const updatedConfig = {
         ...prevConfig,
         
-        
-        // Add micro slot spans from the definition
-                  [slotType]: slotDefinition.defaultSpans
-        },
-        
         // Add slot content from cart config
         slots: {
           ...prevConfig?.slots,
-          ...Object.fromEntries(
-            slotDefinition.microSlots.map(microSlot => [
-              microSlot,
-              cartConfig.slots[microSlot] || {
-                content: `Content for ${microSlot}`,
-                className: '',
-                parentClassName: '',
-                styles: {},
-                metadata: {
-                  lastModified: new Date().toISOString(),
-                  slotType: slotType,
-                  description: `Auto-generated ${microSlot} slot`
-                }
-              }
-            ])
-          )
+          // Add the specific slot if it exists in cartConfig
+          ...(cartConfig.slots[slotType] ? { [slotType]: cartConfig.slots[slotType] } : {})
         }
       };
       
