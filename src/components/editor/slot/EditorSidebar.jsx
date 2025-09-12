@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
-import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '../../../utils/secureHtmlParser';
+import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
 
 /**

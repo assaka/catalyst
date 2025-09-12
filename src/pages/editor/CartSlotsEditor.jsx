@@ -28,32 +28,36 @@ import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 
 // Simple editable element that opens EditorSidebar on click
-const EditableElement = ({ slotId, children, className, style, onClick, canResize = false }) => {
+const EditableElement = ({ slotId, children, className, style, onClick, canResize = false, mode = 'edit' }) => {
   const handleClick = useCallback((e) => {
+    // Don't handle clicks in preview mode
+    if (mode === 'preview') return;
+    
     e.stopPropagation();
     if (onClick) {
       onClick(slotId, e.currentTarget);
     }
-  }, [slotId, onClick]);
+  }, [slotId, onClick, mode]);
 
   const content = (
     <div
-      className={`cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 transition-all ${className || ''}`}
-      style={{
+      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2' : ''} transition-all ${className || ''}`}
+      style={mode === 'edit' ? {
         border: '1px dotted rgba(200, 200, 200, 0.3)',
         borderRadius: '2px',
         minHeight: '20px',
         padding: '2px',
         ...style
-      }}
+      } : style}
       onClick={handleClick}
       data-slot-id={slotId}
-      data-editable={true}
+      data-editable={mode === 'edit'}
     >
       {children}
     </div>
   );
 
+  // Show resize wrapper but disable it in preview mode
   if (canResize) {
     return (
       <ResizeWrapper
@@ -61,6 +65,7 @@ const EditableElement = ({ slotId, children, className, style, onClick, canResiz
         minHeight={40}
         maxWidth={600}
         maxHeight={400}
+        disabled={mode === 'preview'}
       >
         {content}
       </ResizeWrapper>
@@ -250,60 +255,59 @@ const CartSlotsEditor = ({
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold">Cart Slots Editor</h1>
-              
-              {/* View Mode Selector - matches Cart.jsx logic */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('empty')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'empty'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-                  Empty Cart
-                </button>
-                <button
-                  onClick={() => setViewMode('withProducts')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'withProducts'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  <Package className="w-4 h-4 inline mr-1.5" />
-                  With Products
-                </button>
+            {/* View Mode Selector - matches Cart.jsx logic */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('empty')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'empty'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+                Empty Cart
+              </button>
+              <button
+                onClick={() => setViewMode('withProducts')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'withProducts'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <Package className="w-4 h-4 inline mr-1.5" />
+                With Products
+              </button>
+            </div>
+
+            {/* Only show controls in edit mode */}
+            {mode === 'edit' && (
+              <div className="flex items-center gap-2">
+                {/* Save Status */}
+                {saveStatus && (
+                  <div className={`flex items-center gap-2 text-sm ${
+                    saveStatus === 'saving' ? 'text-blue-600' : 
+                    saveStatus === 'saved' ? 'text-green-600' : 
+                    'text-red-600'
+                  }`}>
+                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saveStatus === 'saved' && '✓ Saved'}
+                    {saveStatus === 'error' && '✗ Save Failed'}
+                  </div>
+                )}
+
+                <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+
+                <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Save Status */}
-              {saveStatus && (
-                <div className={`flex items-center gap-2 text-sm ${
-                  saveStatus === 'saving' ? 'text-blue-600' : 
-                  saveStatus === 'saved' ? 'text-green-600' : 
-                  'text-red-600'
-                }`}>
-                  {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {saveStatus === 'saved' && '✓ Saved'}
-                  {saveStatus === 'error' && '✗ Save Failed'}
-                </div>
-              )}
-
-              <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
-
-              <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
-            </div>
+            )}
           </div>
         </div>
 
@@ -331,7 +335,7 @@ const CartSlotsEditor = ({
                         <div key={slotId} className="col-span-12">
                           <EditableElement
                             slotId={slotId}
-                            editable={mode === 'edit'}
+                            mode={mode}
                             onClick={(e) => handleElementClick(slotId, e.currentTarget)}
                             className={finalClasses}
                             style={headerTitleStyling.elementStyles}
@@ -361,6 +365,7 @@ const CartSlotsEditor = ({
                             <div key={slotId} className="col-span-12">
                               <EditableElement
                                 slotId={slotId}
+                                mode={mode}
                                 onClick={handleElementClick}
                                 canResize={true}
                               >
@@ -417,6 +422,7 @@ const CartSlotsEditor = ({
                             <div key={slotId} className="col-span-12 flex justify-center">
                               <EditableElement
                                 slotId={slotId}
+                                mode={mode}
                                 onClick={handleElementClick}
                                 canResize={true}
                               >
@@ -446,6 +452,8 @@ const CartSlotsEditor = ({
                       <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
                         <EditableElement
                           slotId="cartItem.image"
+                          mode={mode}
+                          mode={mode}
                           onClick={handleElementClick}
                           canResize={true}
                         >
@@ -459,6 +467,7 @@ const CartSlotsEditor = ({
                         <div className="flex-1">
                           <EditableElement
                             slotId="cartItem.title"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="text-lg font-semibold"
@@ -468,6 +477,7 @@ const CartSlotsEditor = ({
                           
                           <EditableElement
                             slotId="cartItem.price"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="text-gray-600"
@@ -478,6 +488,7 @@ const CartSlotsEditor = ({
                           <div className="flex items-center space-x-3 mt-3">
                             <EditableElement
                               slotId="cartItem.quantity"
+                              mode={mode}
                               onClick={handleElementClick}
                               canResize={true}
                             >
@@ -500,6 +511,7 @@ const CartSlotsEditor = ({
                         <div className="text-right">
                           <EditableElement
                             slotId="cartItem.total"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="text-xl font-bold"
@@ -520,6 +532,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-12">
                           <EditableElement
                             slotId="coupon.title"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="text-lg font-semibold mb-4"
@@ -530,6 +543,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-8">
                           <EditableElement
                             slotId="coupon.input"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                           >
@@ -539,6 +553,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-4">
                           <EditableElement
                             slotId="coupon.button"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                           >
@@ -558,6 +573,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-12">
                           <EditableElement
                             slotId="orderSummary.title"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="text-lg font-semibold mb-4"
@@ -568,6 +584,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-12">
                           <EditableElement
                             slotId="orderSummary.subtotal"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="flex justify-between"
@@ -578,6 +595,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-12">
                           <EditableElement
                             slotId="orderSummary.tax"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="flex justify-between"
@@ -588,6 +606,7 @@ const CartSlotsEditor = ({
                         <div className="col-span-12">
                           <EditableElement
                             slotId="orderSummary.total"
+                            mode={mode}
                             onClick={handleElementClick}
                             canResize={true}
                             className="flex justify-between text-lg font-semibold border-t pt-4"
@@ -618,8 +637,8 @@ const CartSlotsEditor = ({
         </div>
       </div>
 
-      {/* EditorSidebar */}
-      {isSidebarVisible && selectedElement && (
+      {/* EditorSidebar - only show in edit mode */}
+      {mode === 'edit' && isSidebarVisible && selectedElement && (
         <EditorSidebar
           selectedElement={selectedElement}
           slotId={selectedElement.getAttribute('data-slot-id')}
