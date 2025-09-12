@@ -180,8 +180,9 @@ export const useDirectResize = (elementRef, options = {}) => {
     const element = elementRef.current;
     
     // Make element relatively positioned if not already
-    const originalPosition = element.style.position;
-    if (!originalPosition || originalPosition === 'static') {
+    const computedStyle = window.getComputedStyle(element);
+    const originalPosition = computedStyle.position;
+    if (originalPosition === 'static') {
       element.style.position = 'relative';
     }
     
@@ -189,15 +190,22 @@ export const useDirectResize = (elementRef, options = {}) => {
     setResizeHandle(handle);
 
     // Add handle to element
-    element.appendChild(handle);
+    try {
+      element.appendChild(handle);
+    } catch (error) {
+      console.error('Failed to append resize handle:', error);
+      return;
+    }
 
     // Show/hide handle on hover
     const handleMouseEnter = () => {
-      handle.style.opacity = '1';
+      if (handle && handle.style) {
+        handle.style.opacity = '1';
+      }
     };
     
     const handleMouseLeave = () => {
-      if (!isResizing) {
+      if (!isResizing && handle && handle.style) {
         handle.style.opacity = '0';
       }
     };
@@ -209,19 +217,29 @@ export const useDirectResize = (elementRef, options = {}) => {
 
     return () => {
       // Cleanup
-      if (element.contains(handle)) {
-        element.removeChild(handle);
+      try {
+        if (element && handle && element.contains(handle)) {
+          element.removeChild(handle);
+        }
+      } catch (error) {
+        console.warn('Cleanup error:', error);
       }
-      element.removeEventListener('mouseenter', handleMouseEnter);
-      element.removeEventListener('mouseleave', handleMouseLeave);
-      handle.removeEventListener('mousedown', handleMouseDown);
+      
+      if (element) {
+        element.removeEventListener('mouseenter', handleMouseEnter);
+        element.removeEventListener('mouseleave', handleMouseLeave);
+      }
+      
+      if (handle) {
+        handle.removeEventListener('mousedown', handleMouseDown);
+      }
       
       // Restore original position if we changed it
-      if (!originalPosition || originalPosition === 'static') {
-        element.style.position = originalPosition || '';
+      if (element && originalPosition === 'static') {
+        element.style.position = '';
       }
     };
-  }, [elementRef, disabled, createResizeHandle, handleMouseDown, isResizing]);
+  }, [elementRef.current, disabled, createResizeHandle, handleMouseDown, isResizing]);
 
   return {
     isResizing,
