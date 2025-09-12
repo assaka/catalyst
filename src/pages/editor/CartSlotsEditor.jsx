@@ -39,7 +39,13 @@ const EditableElement = ({ slotId, children, className, style, onClick, canResiz
   const content = (
     <div
       className={`cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 transition-all ${className || ''}`}
-      style={style}
+      style={{
+        border: '1px dotted rgba(200, 200, 200, 0.3)',
+        borderRadius: '2px',
+        minHeight: '20px',
+        padding: '2px',
+        ...style
+      }}
       onClick={handleClick}
       data-slot-id={slotId}
       data-editable={true}
