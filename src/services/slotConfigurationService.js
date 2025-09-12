@@ -243,7 +243,7 @@ class SlotConfigurationService {
       slotsCount: Object.keys(initialConfig.slots || {}).length,
       system: initialConfig.metadata.system,
       hasRootSlots: !!initialConfig.rootSlots,
-      hasNestedSpans: !!initialConfig.,
+      hasNestedSpans: !!initialConfig.nestedSpans,
       rootSlotsCount: initialConfig.rootSlots?.length || 0
     });
 
