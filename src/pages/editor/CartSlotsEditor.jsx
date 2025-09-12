@@ -518,6 +518,92 @@ function CartSlotsEditorContent({
     [setActiveDragSlot, setMajorSlots, setCartLayoutConfig, saveConfiguration, majorSlots, cartLayoutConfig]
   );
 
+  // Function to add a new major slot
+  const handleAddMajorSlot = useCallback((slotType, afterSlot = null) => {
+    console.log(`Adding new major slot: ${slotType} after ${afterSlot}`);
+    
+    // Get the slot definition from cart config
+    const slotDefinition = cartConfig.microSlotDefinitions[slotType];
+    if (!slotDefinition) {
+      console.error('Slot definition not found for:', slotType);
+      return;
+    }
+    
+    // Update major slots array
+    setMajorSlots(prevSlots => {
+      const newSlots = [...prevSlots];
+      if (afterSlot && newSlots.includes(afterSlot)) {
+        const insertIndex = newSlots.indexOf(afterSlot) + 1;
+        newSlots.splice(insertIndex, 0, slotType);
+      } else {
+        newSlots.push(slotType);
+      }
+      return newSlots;
+    });
+    
+    // Update cart layout config with new slot
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = {
+        ...prevConfig,
+        majorSlots: afterSlot ? 
+          (() => {
+            const newMajorSlots = [...(prevConfig?.majorSlots || majorSlots)];
+            const insertIndex = newMajorSlots.indexOf(afterSlot) + 1;
+            newMajorSlots.splice(insertIndex, 0, slotType);
+            return newMajorSlots;
+          })() : 
+          [...(prevConfig?.majorSlots || majorSlots), slotType],
+        
+        // Add micro slot orders from the definition
+        microSlotOrders: {
+          ...prevConfig?.microSlotOrders,
+          [slotType]: slotDefinition.microSlots
+        },
+        
+        // Add micro slot spans from the definition
+        microSlotSpans: {
+          ...prevConfig?.microSlotSpans,
+          [slotType]: slotDefinition.defaultSpans
+        },
+        
+        // Add slot content from cart config
+        slots: {
+          ...prevConfig?.slots,
+          ...Object.fromEntries(
+            slotDefinition.microSlots.map(microSlot => [
+              microSlot,
+              cartConfig.slots[microSlot] || {
+                content: `Content for ${microSlot}`,
+                className: '',
+                parentClassName: '',
+                styles: {},
+                metadata: {
+                  lastModified: new Date().toISOString(),
+                  slotType: slotType,
+                  description: `Auto-generated ${microSlot} slot`
+                }
+              }
+            ])
+          )
+        }
+      };
+      
+      // Auto-save the updated configuration
+      setTimeout(() => {
+        if (saveConfigurationRef.current) {
+          saveConfigurationRef.current(updatedConfig);
+        }
+      }, 100);
+      
+      return updatedConfig;
+    });
+    
+    // Close modal
+    setShowAddSlotModal(false);
+    setNewSlotType('');
+    setInsertAfterSlot(null);
+  }, [majorSlots]);
+
   // Generic edit handlers using editor-utils
   const handleEditSlot = useMemo(() => {
     const baseHandler = createEditSlotHandler(setEditingComponent, setTempCode);
