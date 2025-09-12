@@ -104,7 +104,7 @@ function SortableMajorSlot({ id, children, mode }) {
   );
 }
 
-// Enhanced Sortable MicroSlot Component with Smooth Resizing
+// Enhanced Sortable MicroSlot Component with Smooth Resizing and Grid Positioning
 function SortableMicroSlot({ id, children, mode, majorSlot, onResize, cartLayoutConfig }) {
   const microSlotRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -118,12 +118,34 @@ function SortableMicroSlot({ id, children, mode, majorSlot, onResize, cartLayout
     isDragging,
   } = useSortable({ id, data: { type: 'microSlot', majorSlot } });
 
-  // Get current microslot spans for sizing
+  // Get current microslot spans for sizing and positioning
   const currentSpans = cartLayoutConfig?.microSlotSpans?.[majorSlot]?.[id] || { col: 12, row: 1 };
+  
+  // Build grid positioning classes
+  const getGridClasses = () => {
+    let gridClasses = `col-span-${Math.min(12, Math.max(1, currentSpans.col || 12))} row-span-${Math.min(4, Math.max(1, currentSpans.row || 1))}`;
+    
+    // Add alignment if specified
+    if (currentSpans.align) {
+      switch (currentSpans.align) {
+        case 'left':
+          gridClasses += ' justify-self-start';
+          break;
+        case 'center':
+          gridClasses += ' justify-self-center';
+          break;
+        case 'right':
+          gridClasses += ' justify-self-end';
+          break;
+      }
+    }
+    
+    return gridClasses;
+  };
   
   // Calculate pixel dimensions based on grid system (approximate)
   const gridCellWidth = 80; // Approximate width per grid column
-  const gridCellHeight = 40; // Approximate height per grid row
+  const gridCellHeight = 60; // Approximate height per grid row
   const initialWidth = Math.max(100, currentSpans.col * gridCellWidth);
   const initialHeight = Math.max(40, currentSpans.row * gridCellHeight);
 
@@ -152,8 +174,6 @@ function SortableMicroSlot({ id, children, mode, majorSlot, onResize, cartLayout
     transform: CSS.Transform.toString(transform),
     transition: isResizing ? 'none' : transition,
     opacity: isDragging ? 0.5 : 1,
-    minWidth: `${initialWidth}px`,
-    minHeight: `${initialHeight}px`,
   };
 
   return (
@@ -164,7 +184,7 @@ function SortableMicroSlot({ id, children, mode, majorSlot, onResize, cartLayout
       }}
       style={style}
       {...attributes}
-      className={`relative ${mode === 'edit' ? 'group' : ''} ${isResizing ? 'z-30' : ''}`}
+      className={`${getGridClasses()} relative ${mode === 'edit' ? 'group border border-dashed border-gray-300 hover:border-blue-400' : ''} ${isResizing ? 'z-30' : ''} ${isDragging ? 'z-40 shadow-lg' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -908,31 +928,34 @@ function CartSlotsEditorContent({
               <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                 header
               </div>
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {cartLayoutConfig?.microSlotOrders?.header ? (
-              cartLayoutConfig.microSlotOrders.header.map(slotId => {
-                const positioning = getSlotPositioning(slotId, 'header');
-                
-                if (slotId.includes('.custom_')) {
-                  return renderCustomSlot(slotId, 'header');
-                }
-                
-                // Render standard header micro-slots
-                if (slotId === 'header.title') {
-                  const headerTitleStyling = getMicroSlotStyling('header.title');
-                  const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-                  const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                  const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
-                  return (
-                    <SortableMicroSlot
-                      key={slotId}
-                      id={slotId}
-                      mode={mode}
-                      majorSlot="header"
-                      onResize={handleMicroSlotResize}
-                      cartLayoutConfig={cartLayoutConfig}
-                    >
-                      <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+              <SortableContext 
+                items={cartLayoutConfig?.microSlotOrders?.header || []} 
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                  {cartLayoutConfig?.microSlotOrders?.header ? (
+                cartLayoutConfig.microSlotOrders.header.map(slotId => {
+                  const positioning = getSlotPositioning(slotId, 'header');
+                  
+                  if (slotId.includes('.custom_')) {
+                    return renderCustomSlot(slotId, 'header');
+                  }
+                  
+                  // Render standard header micro-slots
+                  if (slotId === 'header.title') {
+                    const headerTitleStyling = getMicroSlotStyling('header.title');
+                    const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
+                    const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
+                    const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
+                    return (
+                      <SortableMicroSlot
+                        key={slotId}
+                        id={slotId}
+                        mode={mode}
+                        majorSlot="header"
+                        onResize={handleMicroSlotResize}
+                        cartLayoutConfig={cartLayoutConfig}
+                      >
                         <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                           <EditableElement slotId={slotId} editable={mode === 'edit'}>
                             <h1 
@@ -943,20 +966,20 @@ function CartSlotsEditorContent({
                             </h1>
                           </EditableElement>
                         </div>
-                      </div>
-                    </SortableMicroSlot>
-                  );
-                }
-                
-                return null;
-              })
+                      </SortableMicroSlot>
+                    );
+                  }
+                  
+                  return null;
+                })
             ) : (
-              // Fallback to default layout if no microSlotOrders
-              <div className="col-span-12">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
-              </div>
-            )}
-              </div>
+                // Fallback to default layout if no microSlotOrders
+                <div className="col-span-12">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                </div>
+              )}
+                </div>
+              </SortableContext>
             </div>
           ) : (
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
@@ -1012,9 +1035,13 @@ function CartSlotsEditorContent({
                   <div className="absolute -top-3 left-2 bg-white px-2 text-sm font-medium text-gray-600">
                     emptyCart
                   </div>
-                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
-                  cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
+                  <SortableContext 
+                    items={cartLayoutConfig?.microSlotOrders?.emptyCart || []} 
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                      {cartLayoutConfig?.microSlotOrders?.emptyCart ? (
+                    cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
                     const positioning = getSlotPositioning(slotId, 'emptyCart');
                     
                     if (slotId.includes('.custom_')) {
@@ -1036,7 +1063,7 @@ function CartSlotsEditorContent({
                           onResize={handleMicroSlotResize}
                           cartLayoutConfig={cartLayoutConfig}
                         >
-                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                          <div className={`${mode === 'edit' ? 'relative group' : ''}`}>
                             {mode === 'edit' ? (
                               <DirectResizable
                                 elementType="icon"
@@ -1204,57 +1231,58 @@ function CartSlotsEditorContent({
                     return null;
                   })
                 ) : (
-                  // Fallback to default layout if no microSlotOrders
-                  <>
-                    <div className="col-span-12">
-                      <DirectResizable
-                        elementType="icon"
-                        minWidth={32}
-                        minHeight={32}
-                        maxWidth={128}
-                        maxHeight={128}
-                      >
-                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      </DirectResizable>
+                    // Fallback to default layout if no microSlotOrders
+                    <>
+                      <div className="col-span-12">
+                        <DirectResizable
+                          elementType="icon"
+                          minWidth={32}
+                          minHeight={32}
+                          maxWidth={128}
+                          maxHeight={128}
+                        >
+                          <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                        </DirectResizable>
+                      </div>
+                      <div className="col-span-12">
+                        <DirectResizable
+                          elementType="generic"
+                          minWidth={150}
+                          minHeight={32}
+                          maxWidth={600}
+                          maxHeight={80}
+                        >
+                          <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                        </DirectResizable>
+                      </div>
+                      <div className="col-span-12">
+                        <DirectResizable
+                          elementType="generic"
+                          minWidth={200}
+                          minHeight={24}
+                          maxWidth={800}
+                          maxHeight={60}
+                        >
+                          <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                        </DirectResizable>
+                      </div>
+                      <div className="col-span-12">
+                        <DirectResizable
+                          elementType="button"
+                          minWidth={100}
+                          minHeight={44}
+                          maxWidth={400}
+                          maxHeight={80}
+                        >
+                          <Button className="bg-blue-600 hover:bg-blue-700">
+                            Continue Shopping
+                          </Button>
+                        </DirectResizable>
+                      </div>
+                    </>
+                  )}
                     </div>
-                    <div className="col-span-12">
-                      <DirectResizable
-                        elementType="generic"
-                        minWidth={150}
-                        minHeight={32}
-                        maxWidth={600}
-                        maxHeight={80}
-                      >
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
-                      </DirectResizable>
-                    </div>
-                    <div className="col-span-12">
-                      <DirectResizable
-                        elementType="generic"
-                        minWidth={200}
-                        minHeight={24}
-                        maxWidth={800}
-                        maxHeight={60}
-                      >
-                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                      </DirectResizable>
-                    </div>
-                    <div className="col-span-12">
-                      <DirectResizable
-                        elementType="button"
-                        minWidth={100}
-                        minHeight={44}
-                        maxWidth={400}
-                        maxHeight={80}
-                      >
-                        <Button className="bg-blue-600 hover:bg-blue-700">
-                          Continue Shopping
-                        </Button>
-                      </DirectResizable>
-                    </div>
-                  </>
-                )}
-                  </div>
+                  </SortableContext>
                 </div>
               ) : (
                 <div className="grid grid-cols-12 gap-2 auto-rows-min">
@@ -1494,9 +1522,13 @@ function CartSlotsEditorContent({
                   </div>
                   <Card>
                     <CardContent className="p-4">
-                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.microSlotOrders?.coupon ? (
-                      cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
+                  <SortableContext 
+                    items={cartLayoutConfig?.microSlotOrders?.coupon || []} 
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                      {cartLayoutConfig?.microSlotOrders?.coupon ? (
+                        cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
                         const positioning = getSlotPositioning(slotId, 'coupon');
                         
                         if (slotId.includes('.custom_')) {
@@ -1576,26 +1608,27 @@ function CartSlotsEditorContent({
                         return null;
                       })
                     ) : (
-                      // Default coupon layout
-                      <>
-                        <div className="col-span-12">
-                          <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
-                        </div>
-                        <div className="col-span-8">
-                          <Input 
-                            placeholder="Enter coupon code" 
-                            value={couponCode}
-                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                          />
-                        </div>
-                        <div className="col-span-4">
-                          <Button disabled={!couponCode.trim()}>
-                            <Tag className="w-4 h-4 mr-2" /> Apply
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                        // Default coupon layout
+                        <>
+                          <div className="col-span-12">
+                            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+                          </div>
+                          <div className="col-span-8">
+                            <Input 
+                              placeholder="Enter coupon code" 
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <Button disabled={!couponCode.trim()}>
+                              <Tag className="w-4 h-4 mr-2" /> Apply
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </SortableContext>
                     </CardContent>
                   </Card>
                 </div>
@@ -1692,9 +1725,13 @@ function CartSlotsEditorContent({
                   </div>
                   <Card>
                     <CardContent className="p-4">
-                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
-                      cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
+                  <SortableContext 
+                    items={cartLayoutConfig?.microSlotOrders?.orderSummary || []} 
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                      {cartLayoutConfig?.microSlotOrders?.orderSummary ? (
+                        cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
                         const positioning = getSlotPositioning(slotId, 'orderSummary');
                         
                         if (slotId.includes('.custom_')) {
@@ -1810,44 +1847,45 @@ function CartSlotsEditorContent({
                         return null;
                       })
                     ) : (
-                      // Default order summary layout
-                      <>
-                        <div className="col-span-12">
-                          <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-                        </div>
-                        <div className="col-span-12">
-                          <div className="flex justify-between">
-                            <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                        // Default order summary layout
+                        <>
+                          <div className="col-span-12">
+                            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
                           </div>
-                        </div>
-                        <div className="col-span-12">
-                          <div className="flex justify-between">
-                            <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
+                          <div className="col-span-12">
+                            <div className="flex justify-between">
+                              <span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="col-span-12">
-                          <div className="flex justify-between text-lg font-semibold border-t pt-4">
-                            <span>Total</span>
-                            <span>{currencySymbol}{total.toFixed(2)}</span>
+                          <div className="col-span-12">
+                            <div className="flex justify-between">
+                              <span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="col-span-12">
-                          <div className="border-t mt-6 pt-6">
-                            <Button 
-                              size="lg" 
-                              className="w-full"
-                              style={{
-                                backgroundColor: '#007bff',
-                                color: '#FFFFFF'
-                              }}
-                            >
-                              Proceed to Checkout
-                            </Button>
+                          <div className="col-span-12">
+                            <div className="flex justify-between text-lg font-semibold border-t pt-4">
+                              <span>Total</span>
+                              <span>{currencySymbol}{total.toFixed(2)}</span>
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                          <div className="col-span-12">
+                            <div className="border-t mt-6 pt-6">
+                              <Button 
+                                size="lg" 
+                                className="w-full"
+                                style={{
+                                  backgroundColor: '#007bff',
+                                  color: '#FFFFFF'
+                                }}
+                              >
+                                Proceed to Checkout
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </SortableContext>
                     </CardContent>
                   </Card>
                 </div>

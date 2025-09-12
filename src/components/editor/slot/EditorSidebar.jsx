@@ -8,7 +8,9 @@ import {
   Maximize2,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Shield,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,7 @@ import {
 } from './editor-utils';
 import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
+import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '../../../utils/secureHtmlParser';
 
 const EditorSidebar = ({ 
   selectedElement, 
@@ -71,8 +74,14 @@ const EditorSidebar = ({
   const [localTextContent, setLocalTextContent] = useState('');
   const [localHtmlContent, setLocalHtmlContent] = useState('');
   
-  // HTML validation state
-  const [htmlValidationError, setHtmlValidationError] = useState(null);
+  // HTML validation and security state
+  const [htmlValidation, setHtmlValidation] = useState({
+    error: null,
+    isValid: true,
+    isSafe: true,
+    wasModified: false,
+    warnings: []
+  });
   
   // Flag to prevent change recording during initialization
   const [isInitializing, setIsInitializing] = useState(false);
@@ -297,11 +306,24 @@ const EditorSidebar = ({
     // This eliminates React re-render lag completely
   }, []);
 
-  // Ultra-fast HTML content change handler - no React state updates during typing  
+  // Secure HTML content change handler with XSS prevention
   const handleHtmlContentChange = useCallback((e) => {
-    // Do absolutely nothing - let the textarea be uncontrolled during typing
-    // Clear validation errors only
-    setHtmlValidationError(null);
+    const newHtml = e.target.value;
+    
+    // Validate HTML in real-time for security feedback
+    if (newHtml.trim()) {
+      const validation = validateEditorHtml(newHtml);
+      setHtmlValidation(validation);
+    } else {
+      // Clear validation for empty input
+      setHtmlValidation({
+        error: null,
+        isValid: true,
+        isSafe: true,
+        wasModified: false,
+        warnings: []
+      });
+    }
   }, []);
 
   // Save text content when user stops typing (onBlur)
@@ -313,22 +335,36 @@ const EditorSidebar = ({
     }
   }, [slotId, onTextChange, isInitializing]);
 
-  // Save HTML content when user stops typing (onBlur)
+  // Save HTML content when user stops typing (onBlur) with XSS prevention
   const handleHtmlContentSave = useCallback(() => {
     if (slotId && onTextChange && !isInitializing && htmlContentRef.current) {
       const currentHtml = htmlContentRef.current.value;
       
-      // Extract text content from HTML for database storage
-      try {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = currentHtml;
-        const textContent = tempDiv.textContent || tempDiv.innerText || currentHtml;
-        onTextChange(slotId, textContent);
+      // Parse and sanitize HTML securely
+      const parsed = parseEditorHtml(currentHtml);
+      
+      if (parsed.isValid && parsed.sanitizedHtml) {
+        // Save the sanitized HTML (XSS-safe)
+        onTextChange(slotId, parsed.sanitizedHtml);
         setLocalHtmlContent(currentHtml); // Update state for consistency
-      } catch (error) {
-        // Fallback to raw HTML if parsing fails
-        onTextChange(slotId, currentHtml);
-        setLocalHtmlContent(currentHtml);
+        
+        // Update validation state
+        setHtmlValidation({
+          error: parsed.error,
+          isValid: parsed.isValid,
+          isSafe: true, // parseEditorHtml ensures safety
+          wasModified: parsed.wasModified,
+          warnings: parsed.wasModified ? ['HTML was sanitized for security'] : []
+        });
+      } else {
+        // Handle invalid HTML
+        setHtmlValidation({
+          error: parsed.error || 'Invalid HTML content',
+          isValid: false,
+          isSafe: false,
+          wasModified: false,
+          warnings: ['HTML content could not be processed safely']
+        });
       }
     }
   }, [slotId, onTextChange, isInitializing]);
@@ -525,8 +561,14 @@ const EditorSidebar = ({
             {/* HTML Content Editor - only show for HTML elements */}
             {isHtmlElement && (
               <div>
-                <Label htmlFor="htmlContent" className="text-xs font-medium">Complete HTML Element</Label>
-                <p className="text-xs text-gray-500 mt-1 mb-2">Edit the complete HTML element including tag, attributes, and content</p>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="htmlContent" className="text-xs font-medium">HTML Content</Label>
+                  <div className="flex items-center gap-1">
+                    <Shield className="w-3 h-3 text-green-600" />
+                    <span className="text-xs text-green-600 font-medium">XSS Protected</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 mb-2">Edit HTML content - automatically sanitized for security</p>
                 <textarea
                   ref={htmlContentRef}
                   id="htmlContent"
@@ -534,18 +576,51 @@ const EditorSidebar = ({
                   onChange={handleHtmlContentChange}
                   onBlur={handleHtmlContentSave}
                   className={`w-full mt-1 text-xs font-mono border rounded-md p-2 h-32 resize-none ${
-                    htmlValidationError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    htmlValidation.error 
+                      ? 'border-red-300 bg-red-50' 
+                      : htmlValidation.wasModified 
+                        ? 'border-yellow-300 bg-yellow-50'
+                        : 'border-gray-300'
                   }`}
-                  placeholder="<button class='...'>Content</button>"
+                  placeholder="<button class='btn btn-primary'>Click me</button>"
                 />
-                {htmlValidationError && (
-                  <p className="text-xs text-red-600 mt-1">
-                    ❌ {htmlValidationError}
-                  </p>
+                
+                {/* Validation Feedback */}
+                {htmlValidation.error && (
+                  <div className="flex items-start gap-1 mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                    <AlertTriangle className="w-3 h-3 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-red-700 font-medium">Security Error</p>
+                      <p className="text-xs text-red-600">{htmlValidation.error}</p>
+                    </div>
+                  </div>
                 )}
-                <p className="text-xs text-orange-600 mt-1">
-                  ✨ Live preview: Changes appear immediately in the editor
-                </p>
+                
+                {htmlValidation.wasModified && !htmlValidation.error && (
+                  <div className="flex items-start gap-1 mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                    <Shield className="w-3 h-3 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-yellow-700 font-medium">Content Sanitized</p>
+                      <p className="text-xs text-yellow-600">HTML was automatically cleaned for security</p>
+                    </div>
+                  </div>
+                )}
+                
+                {htmlValidation.warnings.length > 0 && (
+                  <div className="mt-2">
+                    {htmlValidation.warnings.map((warning, index) => (
+                      <p key={index} className="text-xs text-yellow-600">⚠️ {warning}</p>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                  <Shield className="w-3 h-3 text-blue-600" />
+                  <div className="text-xs text-blue-700">
+                    <p className="font-medium">Security Level: Editor</p>
+                    <p>Allows common HTML elements while preventing XSS attacks</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
