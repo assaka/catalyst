@@ -917,25 +917,6 @@ export default function Cart() {
         };
     };
 
-    // Helper function to get styling for a specific micro-slot
-    const getMicroSlotStyling = (microSlotId) => {
-        const slotConfig = cartLayoutConfig?.slots?.[microSlotId];
-        return {
-            elementClasses: slotConfig?.className || '',
-            elementStyles: slotConfig?.styles || {}
-        };
-    };
-
-    // Helper function to get positioning and styling for slots
-    const getSlotPositioning = (slotId) => {
-        const slotConfig = cartLayoutConfig?.slots?.[slotId];
-        return {
-            gridClasses: slotConfig?.className || '',
-            elementClasses: slotConfig?.className || '',
-            elementStyles: slotConfig?.styles || {}
-        };
-    };
-
     // Render the default cart layout (when no custom configuration)
     return (
         <div 
@@ -968,75 +949,9 @@ export default function Cart() {
                     <div className="emptyCart-section">
                         <div className="text-center py-12">
                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                {false ? (
-                                    Object.keys(cartLayoutConfig.slots)
-                                        .filter(slotId => slotId.startsWith('emptyCart.'))
-                                        .map(slotId => {
-                                        const positioning = getSlotPositioning(slotId);
-                                        
-                                        // Render standard emptyCart micro-slots
-                                        if (slotId === 'emptyCart.icon') {
-                                            return (
-                                                <div key={slotId} className={positioning.gridClasses}>
-                                                    <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" style={{}} />
-                                                </div>
-                                            );
-                                        }
-                                        
-                                        if (slotId === 'emptyCart.title') {
-                                            const titleStyling = getMicroSlotStyling('emptyCart.title');
-                                            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-                                            const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
-                                            const finalClasses = titleStyling.elementClasses || defaultClasses;
-                                            return (
-                                                <div key={slotId} className={positioning.gridClasses}>
-                                                    <div>
-                                                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                            <h2 className={finalClasses} style={{...titleStyling.elementStyles}}>
-                                                                Your cart is empty
-                                                            </h2>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        
-                                        if (slotId === 'emptyCart.text') {
-                                            const textStyling = getMicroSlotStyling('emptyCart.text');
-                                            const wrapperStyling = getMicroSlotStyling(`${slotId}_wrapper`);
-                                            const defaultClasses = 'text-gray-600 mb-6';
-                                            const finalClasses = textStyling.elementClasses || defaultClasses;
-                                            return (
-                                                <div key={slotId} className={positioning.gridClasses}>
-                                                    <div>
-                                                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                                            <p className={finalClasses} style={{...textStyling.elementStyles}}>
-                                                                Looks like you haven't added anything to your cart yet.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        
-                                        if (slotId === 'emptyCart.button') {
-                                            return (
-                                                <div key={slotId} className={`${positioning.gridClasses} flex justify-center`}>
-                                                    <Button 
-                                                        onClick={() => navigate(getStoreBaseUrl(store))}
-                                                        className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                                        style={{}}
-                                                    >
-                                                        Continue Shopping
-                                                    </Button>
-                                                </div>
-                                            );
-                                        }
-                                        
-                                        return null;
-                                    })
-                                ) : (
-                                    // Fallback to default layout if no                                     <>
+                                {(
+                                    // Fallback to default layout if no configuration
+                                    <>
                                         <div className="col-span-12">
                                             <ResizeElementWrapper
                                                 initialWidth={64}
@@ -1045,17 +960,19 @@ export default function Cart() {
                                                 maxWidth={128}
                                                 disabled={true}
                                             >
-                                                <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                                <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4"/>
                                             </ResizeElementWrapper>
                                         </div>
                                         <div className="col-span-12">
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is
+                                                empty</h2>
                                         </div>
                                         <div className="col-span-12">
-                                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to
+                                                your cart yet.</p>
                                         </div>
                                         <div className="col-span-12 flex justify-center">
-                                            <Button 
+                                            <Button
                                                 onClick={() => navigate(getStoreBaseUrl(store))}
                                                 className="bg-blue-600 hover:bg-blue-700 w-auto"
                                             >
@@ -1165,108 +1082,28 @@ export default function Cart() {
                                     <Card className={couponStyling.elementClasses} style={couponStyling.elementStyles}>
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                                {false ? (
-                                                    Object.keys(cartLayoutConfig.slots)
-                                                        .filter(slotId => slotId.startsWith('coupon.'))
-                                                        .map(slotId => {
-                                                        const positioning = getSlotPositioning(slotId);
-                                                        
-                                                        // Render standard coupon micro-slots
-                                                        if (slotId === 'coupon.title') {
-                                                            const titleStyling = getMicroSlotStyling('coupon.title');
-                                                            const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
-                                                                        Apply Coupon
-                                                                    </h3>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'coupon.input' && !appliedCoupon) {
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <Input 
-                                                                        placeholder="Enter coupon code" 
-                                                                        value={couponCode}
-                                                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                                                        onKeyPress={handleCouponKeyPress}
-                                                                        style={{}}
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'coupon.button' && !appliedCoupon) {
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <Button 
-                                                                        onClick={handleApplyCoupon}
-                                                                        disabled={!couponCode.trim()}
-                                                                        style={{}}
-                                                                    >
-                                                                        <Tag className="w-4 h-4 mr-2" /> Apply
-                                                                    </Button>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'coupon.applied' && appliedCoupon) {
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className="bg-green-50 p-3 rounded-lg" style={{}}>
-                                                                        <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
-                                                                        <p className="text-xs text-green-600">
-                                                                            {appliedCoupon.discount_type === 'fixed' 
-                                                                                ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
-                                                                                : `${safeToFixed(appliedCoupon.discount_value)}% off`
-                                                                            }
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'coupon.removeButton' && appliedCoupon) {
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <Button 
-                                                                        variant="outline" 
-                                                                        size="sm" 
-                                                                        onClick={handleRemoveCoupon}
-                                                                        className="text-red-600 hover:text-red-800"
-                                                                        style={{}}
-                                                                    >
-                                                                        Remove
-                                                                    </Button>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        return null;
-                                                    })
-                                                ) : (
-                                                    // Fallback to default layout if no                                                     <>
+                                                {(
+                                                    // Fallback to default layout if no configuration
+                                                    <>
                                                         <div className="col-span-12">
                                                             <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
                                                         </div>
                                                         {!appliedCoupon ? (
                                                             <>
                                                                 <div className="col-span-8">
-                                                                    <Input 
-                                                                        placeholder="Enter coupon code" 
+                                                                    <Input
+                                                                        placeholder="Enter coupon code"
                                                                         value={couponCode}
                                                                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                                                                         onKeyPress={handleCouponKeyPress}
                                                                     />
                                                                 </div>
                                                                 <div className="col-span-4">
-                                                                    <Button 
+                                                                    <Button
                                                                         onClick={handleApplyCoupon}
                                                                         disabled={!couponCode.trim()}
                                                                     >
-                                                                        <Tag className="w-4 h-4 mr-2" /> Apply
+                                                                        <Tag className="w-4 h-4 mr-2"/> Apply
                                                                     </Button>
                                                                 </div>
                                                             </>
@@ -1276,7 +1113,7 @@ export default function Cart() {
                                                                     <div className="bg-green-50 p-3 rounded-lg">
                                                                         <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
                                                                         <p className="text-xs text-green-600">
-                                                                            {appliedCoupon.discount_type === 'fixed' 
+                                                                            {appliedCoupon.discount_type === 'fixed'
                                                                                 ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
                                                                                 : `${safeToFixed(appliedCoupon.discount_value)}% off`
                                                                             }
@@ -1284,9 +1121,9 @@ export default function Cart() {
                                                                     </div>
                                                                 </div>
                                                                 <div className="col-span-4">
-                                                                    <Button 
-                                                                        variant="outline" 
-                                                                        size="sm" 
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
                                                                         onClick={handleRemoveCoupon}
                                                                         className="text-red-600 hover:text-red-800"
                                                                     >
@@ -1308,118 +1145,12 @@ export default function Cart() {
                                     <Card className={orderSummaryStyling.elementClasses} style={orderSummaryStyling.elementStyles}>
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                                {false ? (
-                                                    Object.keys(cartLayoutConfig.slots)
-                                                        .filter(slotId => slotId.startsWith('orderSummary.'))
-                                                        .map(slotId => {
-                                                        const positioning = getSlotPositioning(slotId);
-                                                        
-                                                        // Render standard orderSummary micro-slots
-                                                        if (slotId === 'orderSummary.title') {
-                                                            const titleStyling = getMicroSlotStyling('orderSummary.title');
-                                                            const finalClasses = titleStyling.elementClasses || 'text-lg font-semibold mb-4';
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <h3 className={finalClasses} style={{...titleStyling.elementStyles}}>
-                                                                        Order Summary
-                                                                    </h3>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'orderSummary.subtotal') {
-                                                            const subtotalStyling = getMicroSlotStyling('orderSummary.subtotal');
-                                                            const defaultClasses = 'flex justify-between';
-                                                            const finalClasses = subtotalStyling.elementClasses || defaultClasses;
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...subtotalStyling.elementStyles}}>
-                                                                        <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'orderSummary.tax') {
-                                                            const taxStyling = getMicroSlotStyling('orderSummary.tax');
-                                                            const defaultClasses = 'flex justify-between';
-                                                            const finalClasses = taxStyling.elementClasses || defaultClasses;
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...taxStyling.elementStyles}}>
-                                                                        <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'orderSummary.shipping') {
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className="flex justify-between" style={{}}>
-                                                                        <span>Shipping</span><span>Free</span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'orderSummary.discount' && discount > 0) {
-                                                            const discountStyling = getMicroSlotStyling('orderSummary.discount');
-                                                            const defaultClasses = 'flex justify-between';
-                                                            const finalClasses = discountStyling.elementClasses || defaultClasses;
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...discountStyling.elementStyles}}>
-                                                                        <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'orderSummary.total') {
-                                                            const totalStyling = getMicroSlotStyling('orderSummary.total');
-                                                            const defaultClasses = 'flex justify-between text-lg font-semibold border-t pt-4';
-                                                            const finalClasses = totalStyling.elementClasses || defaultClasses;
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className={finalClasses} style={{...totalStyling.elementStyles}}>
-                                                                        <span>Total</span>
-                                                                        <span>{currencySymbol}{safeToFixed(total)}</span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        if (slotId === 'orderSummary.checkout') {
-                                                            const buttonStyling = getMicroSlotStyling('orderSummary.checkout');
-                                                            const defaultClasses = 'w-full';
-                                                            const finalClasses = buttonStyling.elementClasses || defaultClasses;
-                                                            return (
-                                                                <div key={slotId} className={positioning.gridClasses}>
-                                                                    <div className="border-t mt-6 pt-6">
-                                                                        <Button 
-                                                                            size="lg" 
-                                                                            className={finalClasses}
-                                                                            onClick={handleCheckout}
-                                                                            style={{
-                                                                                backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-                                                                                color: '#FFFFFF',
-                                                                                ...buttonStyling.elementStyles
-                                                                            }}
-                                                                        >
-                                                                            Proceed to Checkout
-                                                                        </Button>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        
-                                                        return null;
-                                                    })
-                                                ) : (
-                                                    // Fallback to default layout if no                                                     <>
+                                                {(
+                                                    // Fallback to default layout if no configuration
+                                                    <>
                                                         <div className="col-span-12">
-                                                            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+                                                            <h3 className="text-lg font-semibold mb-4">Order
+                                                                Summary</h3>
                                                         </div>
                                                         <div className="col-span-12">
                                                             <div className="flex justify-between">
@@ -1439,20 +1170,22 @@ export default function Cart() {
                                                         {discount > 0 && (
                                                             <div className="col-span-12">
                                                                 <div className="flex justify-between">
-                                                                    <span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
+                                                                    <span>Discount</span><span
+                                                                    className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
                                                                 </div>
                                                             </div>
                                                         )}
                                                         <div className="col-span-12">
-                                                            <div className="flex justify-between text-lg font-semibold border-t pt-4">
+                                                            <div
+                                                                className="flex justify-between text-lg font-semibold border-t pt-4">
                                                                 <span>Total</span>
                                                                 <span>{currencySymbol}{safeToFixed(total)}</span>
                                                             </div>
                                                         </div>
                                                         <div className="col-span-12">
                                                             <div className="border-t mt-6 pt-6">
-                                                                <Button 
-                                                                    size="lg" 
+                                                                <Button
+                                                                    size="lg"
                                                                     className="w-full"
                                                                     onClick={handleCheckout}
                                                                     style={{
