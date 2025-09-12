@@ -31,6 +31,109 @@ import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-el
 import { getPageConfig } from '@/components/editor/slot/configs/index';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
+// Grid resize handle component for changing col-span
+const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startColSpan, setStartColSpan] = useState(currentColSpan);
+
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    setStartX(e.clientX);
+    setStartColSpan(currentColSpan);
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [currentColSpan]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const deltaX = e.clientX - startX;
+    const sensitivity = 30; // pixels per col-span unit
+    const colSpanDelta = Math.round(deltaX / sensitivity);
+    const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startColSpan + colSpanDelta));
+    
+    if (newColSpan !== currentColSpan) {
+      onResize(newColSpan);
+    }
+  }, [isDragging, startX, startColSpan, currentColSpan, maxColSpan, minColSpan, onResize]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
+
+  return (
+    <div
+      className={`absolute -right-1 top-0 bottom-0 w-2 cursor-col-resize bg-blue-500 opacity-0 hover:opacity-70 transition-opacity ${
+        isDragging ? 'opacity-100' : ''
+      }`}
+      onMouseDown={handleMouseDown}
+      style={{ zIndex: 1000 }}
+      title={`Resize grid column (current: ${currentColSpan}/12)`}
+    >
+      <div className="w-full h-full bg-blue-500 rounded-sm"></div>
+    </div>
+  );
+};
+
+// Enhanced editable element with grid resize capabilities for Cart.jsx
+const EditableElement = ({ 
+  children, 
+  className, 
+  style, 
+  gridColSpan,
+  onGridResize,
+  slotId,
+  isEditorMode = false
+}) => {
+  if (!isEditorMode) {
+    // In normal view mode, just render children with styling
+    return (
+      <div className={className} style={style}>
+        {children}
+      </div>
+    );
+  }
+
+  // In editor mode, add grid resize functionality
+  return (
+    <div
+      className={`${className} relative`}
+      style={{
+        border: '1px dotted rgba(200, 200, 200, 0.3)',
+        borderRadius: '2px',
+        minHeight: '20px',
+        padding: '2px',
+        ...style
+      }}
+      data-slot-id={slotId}
+    >
+      {children}
+      {/* Grid resize handle - only show when grid resize is enabled and in editor mode */}
+      {gridColSpan && onGridResize && (
+        <GridResizeHandle
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          currentColSpan={gridColSpan}
+          maxColSpan={12}
+          minColSpan={1}
+        />
+      )}
+    </div>
+  );
+};
+
 const getSessionId = () => {
   let sid = localStorage.getItem('cart_session_id');
   if (!sid) {
@@ -233,6 +336,43 @@ export default function Cart() {
     const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
     
     const [quantityUpdates, setQuantityUpdates] = useState({});
+
+    // Handle grid resize changes
+    const handleGridResize = useCallback(async (slotId, newColSpan) => {
+        if (!store?.id) return;
+
+        try {
+            // Update the cartLayoutConfig state immediately for UI responsiveness
+            setCartLayoutConfig(prevConfig => {
+                if (!prevConfig) return prevConfig;
+                
+                const updatedConfig = {
+                    ...prevConfig,
+                    microSlots: {
+                        ...prevConfig?.microSlots,
+                        [slotId]: {
+                            ...prevConfig?.microSlots?.[slotId],
+                            col: newColSpan
+                        }
+                    }
+                };
+
+                // Save to backend (you may want to debounce this)
+                setTimeout(async () => {
+                    try {
+                        await slotConfigurationService.updateConfiguration(store.id, 'cart', updatedConfig);
+                        console.log(`Grid resize saved: ${slotId} to ${newColSpan} columns`);
+                    } catch (error) {
+                        console.error('Failed to save grid resize:', error);
+                    }
+                }, 1000);
+
+                return updatedConfig;
+            });
+        } catch (error) {
+            console.error('Error handling grid resize:', error);
+        }
+    }, [store?.id]);
 
     useEffect(() => {
         // Wait for store data to load before loading cart
@@ -1090,45 +1230,73 @@ export default function Cart() {
                                                         </div>
                                                         {!appliedCoupon ? (
                                                             <>
-                                                                <div className="col-span-8">
-                                                                    <Input
-                                                                        placeholder="Enter coupon code"
-                                                                        value={couponCode}
-                                                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                                                        onKeyPress={handleCouponKeyPress}
-                                                                    />
-                                                                </div>
-                                                                <div className="col-span-4">
-                                                                    <Button
-                                                                        onClick={handleApplyCoupon}
-                                                                        disabled={!couponCode.trim()}
+                                                                <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}`}>
+                                                                    <EditableElement
+                                                                        slotId="coupon.input"
+                                                                        gridColSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
+                                                                        onGridResize={handleGridResize}
+                                                                        isEditorMode={isEditorMode}
                                                                     >
-                                                                        <Tag className="w-4 h-4 mr-2"/> Apply
-                                                                    </Button>
+                                                                        <Input
+                                                                            placeholder="Enter coupon code"
+                                                                            value={couponCode}
+                                                                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                                            onKeyPress={handleCouponKeyPress}
+                                                                        />
+                                                                    </EditableElement>
+                                                                </div>
+                                                                <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}`}>
+                                                                    <EditableElement
+                                                                        slotId="coupon.button"
+                                                                        gridColSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
+                                                                        onGridResize={handleGridResize}
+                                                                        isEditorMode={isEditorMode}
+                                                                    >
+                                                                        <Button
+                                                                            onClick={handleApplyCoupon}
+                                                                            disabled={!couponCode.trim()}
+                                                                        >
+                                                                            <Tag className="w-4 h-4 mr-2"/> Apply
+                                                                        </Button>
+                                                                    </EditableElement>
                                                                 </div>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <div className="col-span-8">
-                                                                    <div className="bg-green-50 p-3 rounded-lg">
-                                                                        <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
-                                                                        <p className="text-xs text-green-600">
-                                                                            {appliedCoupon.discount_type === 'fixed'
-                                                                                ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
-                                                                                : `${safeToFixed(appliedCoupon.discount_value)}% off`
-                                                                            }
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="col-span-4">
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={handleRemoveCoupon}
-                                                                        className="text-red-600 hover:text-red-800"
+                                                                <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}`}>
+                                                                    <EditableElement
+                                                                        slotId="coupon.appliedDisplay"
+                                                                        gridColSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
+                                                                        onGridResize={handleGridResize}
+                                                                        isEditorMode={isEditorMode}
                                                                     >
-                                                                        Remove
-                                                                    </Button>
+                                                                        <div className="bg-green-50 p-3 rounded-lg">
+                                                                            <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
+                                                                            <p className="text-xs text-green-600">
+                                                                                {appliedCoupon.discount_type === 'fixed'
+                                                                                    ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
+                                                                                    : `${safeToFixed(appliedCoupon.discount_value)}% off`
+                                                                                }
+                                                                            </p>
+                                                                        </div>
+                                                                    </EditableElement>
+                                                                </div>
+                                                                <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}`}>
+                                                                    <EditableElement
+                                                                        slotId="coupon.removeButton"
+                                                                        gridColSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
+                                                                        onGridResize={handleGridResize}
+                                                                        isEditorMode={isEditorMode}
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={handleRemoveCoupon}
+                                                                            className="text-red-600 hover:text-red-800"
+                                                                        >
+                                                                            Remove
+                                                                        </Button>
+                                                                    </EditableElement>
                                                                 </div>
                                                             </>
                                                         )}

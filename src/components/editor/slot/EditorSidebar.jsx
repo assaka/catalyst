@@ -232,6 +232,15 @@ const EditorSidebar = ({
       const storedClassName = slotConfig.className || '';
       const storedStyles = slotConfig.styles || {};
       
+      // Debug logging to help diagnose configuration loading issues
+      console.log('EditorSidebar: Loading configuration for slot:', {
+        slotId,
+        slotConfigKeys: slotConfig ? Object.keys(slotConfig) : 'no slotConfig',
+        storedClassName,
+        storedStyles,
+        fullSlotConfig: slotConfig
+      });
+      
       // Initialize local text content with slot content
       const textContent = slotConfig.content || '';
       setLocalTextContent(textContent);
@@ -280,10 +289,15 @@ const EditorSidebar = ({
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
                       elementStyles[prop] = hex;
+                    } else {
+                      elementStyles[prop] = computedValue;
                     }
                   } catch (e) {
                     elementStyles[prop] = computedValue;
                   }
+                } else if (computedValue.startsWith('#')) {
+                  // Already a hex value
+                  elementStyles[prop] = computedValue;
                 } else {
                   elementStyles[prop] = computedValue;
                 }
@@ -793,7 +807,7 @@ const EditorSidebar = ({
                     <input
                       id="textColor"
                       type="color"
-                      value={elementProperties.styles.color || '#000000'}
+                      value={elementProperties.styles.color && elementProperties.styles.color.startsWith('#') ? elementProperties.styles.color : '#000000'}
                       onChange={(e) => handlePropertyChange('color', e.target.value)}
                       className="w-8 h-7 rounded border border-gray-300"
                     />
@@ -801,7 +815,7 @@ const EditorSidebar = ({
                       value={elementProperties.styles.color || ''}
                       onChange={(e) => handlePropertyChange('color', e.target.value)}
                       className="text-xs h-7"
-                      placeholder="Current color"
+                      placeholder={elementProperties.styles.color || 'No color set'}
                     />
                   </div>
                 </div>
@@ -812,7 +826,7 @@ const EditorSidebar = ({
                     <input
                       id="bgColor"
                       type="color"
-                      value={elementProperties.styles.backgroundColor || '#ffffff'}
+                      value={elementProperties.styles.backgroundColor && elementProperties.styles.backgroundColor.startsWith('#') ? elementProperties.styles.backgroundColor : '#ffffff'}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="w-8 h-7 rounded border border-gray-300"
                     />
@@ -820,7 +834,7 @@ const EditorSidebar = ({
                       value={elementProperties.styles.backgroundColor || ''}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="text-xs h-7"
-                      placeholder="Current background"
+                      placeholder={elementProperties.styles.backgroundColor || 'No background set'}
                     />
                   </div>
                 </div>
@@ -867,7 +881,7 @@ const EditorSidebar = ({
                       <input
                         id="borderColor"
                         type="color"
-                        value={elementProperties.styles.borderColor || '#e5e7eb'}
+                        value={elementProperties.styles.borderColor && elementProperties.styles.borderColor.startsWith('#') ? elementProperties.styles.borderColor : '#e5e7eb'}
                         onChange={(e) => handlePropertyChange('borderColor', e.target.value)}
                         className="w-8 h-6 rounded border border-gray-300"
                       />
@@ -875,7 +889,7 @@ const EditorSidebar = ({
                         value={elementProperties.styles.borderColor || ''}
                         onChange={(e) => handlePropertyChange('borderColor', e.target.value)}
                         className="text-xs h-6"
-                        placeholder="Current border"
+                        placeholder={elementProperties.styles.borderColor || 'No border color set'}
                       />
                     </div>
                   </div>

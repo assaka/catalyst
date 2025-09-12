@@ -28,8 +28,76 @@ import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
+// Grid resize handle component for changing col-span
+const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startColSpan, setStartColSpan] = useState(currentColSpan);
+
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    setStartX(e.clientX);
+    setStartColSpan(currentColSpan);
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [currentColSpan]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const deltaX = e.clientX - startX;
+    const sensitivity = 30; // pixels per col-span unit
+    const colSpanDelta = Math.round(deltaX / sensitivity);
+    const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startColSpan + colSpanDelta));
+    
+    if (newColSpan !== currentColSpan) {
+      onResize(newColSpan);
+    }
+  }, [isDragging, startX, startColSpan, currentColSpan, maxColSpan, minColSpan, onResize]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
+
+  return (
+    <div
+      className={`absolute -right-1 top-0 bottom-0 w-2 cursor-col-resize bg-blue-500 opacity-0 hover:opacity-70 transition-opacity ${
+        isDragging ? 'opacity-100' : ''
+      }`}
+      onMouseDown={handleMouseDown}
+      style={{ zIndex: 1000 }}
+      title={`Resize grid column (current: ${currentColSpan}/12)`}
+    >
+      <div className="w-full h-full bg-blue-500 rounded-sm"></div>
+    </div>
+  );
+};
+
 // Enhanced editable element with resize and drag capabilities
-const EditableElement = ({ slotId, children, className, style, onClick, canResize = false, draggable = false, mode = 'edit' }) => {
+const EditableElement = ({ 
+  slotId, 
+  children, 
+  className, 
+  style, 
+  onClick, 
+  canResize = false, 
+  draggable = false, 
+  mode = 'edit',
+  gridColSpan,
+  onGridResize
+}) => {
   const handleClick = useCallback((e) => {
     // Don't handle clicks in preview mode
     if (mode === 'preview') return;
@@ -42,7 +110,7 @@ const EditableElement = ({ slotId, children, className, style, onClick, canResiz
 
   const content = (
     <div
-      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2' : ''} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 relative' : ''} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={mode === 'edit' ? {
         border: '1px dotted rgba(200, 200, 200, 0.3)',
         borderRadius: '2px',
@@ -56,6 +124,15 @@ const EditableElement = ({ slotId, children, className, style, onClick, canResiz
       draggable={draggable && mode === 'edit'}
     >
       {children}
+      {/* Grid resize handle - only show when grid resize is enabled and in edit mode */}
+      {gridColSpan && onGridResize && mode === 'edit' && (
+        <GridResizeHandle
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          currentColSpan={gridColSpan}
+          maxColSpan={12}
+          minColSpan={1}
+        />
+      )}
     </div>
   );
 
@@ -235,6 +312,26 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Handle grid resize changes
+  const handleGridResize = useCallback((slotId, newColSpan) => {
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = {
+        ...prevConfig,
+        microSlots: {
+          ...prevConfig?.microSlots,
+          [slotId]: {
+            ...prevConfig?.microSlots?.[slotId],
+            col: newColSpan
+          }
+        }
+      };
+
+      // Auto-save
+      setTimeout(() => saveConfiguration(updatedConfig), 500);
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -333,7 +430,7 @@ const CartSlotsEditor = ({
                       const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                       
                       return (
-                        <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                        <div key={slotId} className={`col-span-${cartLayoutConfig?.microSlots?.[slotId]?.col || 12} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId={slotId}
                             mode={mode}
@@ -342,6 +439,8 @@ const CartSlotsEditor = ({
                             style={headerTitleStyling.elementStyles}
                             canResize={true}
                             draggable={true}
+                            gridColSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                            onGridResize={handleGridResize}
                           >
                             {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
                           </EditableElement>
@@ -557,20 +656,24 @@ const CartSlotsEditor = ({
                             Apply Coupon
                           </EditableElement>
                         </div>
-                        <div className={`col-span-8 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                        <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="coupon.input"
                             mode={mode}
                             onClick={handleElementClick}
+                            gridColSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
+                            onGridResize={handleGridResize}
                           >
                             <Input placeholder="Enter coupon code" />
                           </EditableElement>
                         </div>
-                        <div className={`col-span-4 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                        <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                           <EditableElement
                             slotId="coupon.button"
                             mode={mode}
                             onClick={handleElementClick}
+                            gridColSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
+                            onGridResize={handleGridResize}
                           >
                             <Button>
                               <Tag className="w-4 h-4 mr-2" /> Apply
