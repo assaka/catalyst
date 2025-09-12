@@ -15,13 +15,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { debounce } from './editor-utils';
 import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '../../../utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
 
-// Utility functions moved from editor-utils.js
 /**
  * Check if a class string contains bold styling
  */
