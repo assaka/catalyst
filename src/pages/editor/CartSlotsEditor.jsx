@@ -27,8 +27,8 @@ import {
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 
-// Simple editable element that opens EditorSidebar on click
-const EditableElement = ({ slotId, children, className, style, onClick, canResize = false, mode = 'edit' }) => {
+// Enhanced editable element with resize and drag capabilities
+const EditableElement = ({ slotId, children, className, style, onClick, canResize = false, draggable = false, mode = 'edit' }) => {
   const handleClick = useCallback((e) => {
     // Don't handle clicks in preview mode
     if (mode === 'preview') return;
@@ -41,7 +41,7 @@ const EditableElement = ({ slotId, children, className, style, onClick, canResiz
 
   const content = (
     <div
-      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2' : ''} transition-all ${className || ''}`}
+      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2' : ''} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={mode === 'edit' ? {
         border: '1px dotted rgba(200, 200, 200, 0.3)',
         borderRadius: '2px',
@@ -52,20 +52,20 @@ const EditableElement = ({ slotId, children, className, style, onClick, canResiz
       onClick={handleClick}
       data-slot-id={slotId}
       data-editable={mode === 'edit'}
+      draggable={draggable && mode === 'edit'}
     >
       {children}
     </div>
   );
 
-  // Show resize wrapper but disable it in preview mode
-  if (canResize) {
+  // Show resize wrapper only in edit mode when canResize is true
+  if (canResize && mode === 'edit') {
     return (
       <ResizeWrapper
         minWidth={100}
         minHeight={40}
         maxWidth={600}
         maxHeight={400}
-        disabled={mode === 'preview'}
       >
         {content}
       </ResizeWrapper>
@@ -368,6 +368,7 @@ const CartSlotsEditor = ({
                                 mode={mode}
                                 onClick={handleElementClick}
                                 canResize={true}
+                                draggable={true}
                               >
                                 <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                               </EditableElement>
@@ -384,10 +385,12 @@ const CartSlotsEditor = ({
                             <div key={slotId} className="col-span-12">
                               <EditableElement
                                 slotId={slotId}
+                                mode={mode}
                                 onClick={handleElementClick}
                                 className={finalClasses}
                                 style={titleStyling.elementStyles}
                                 canResize={true}
+                                draggable={true}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Your cart is empty"}
                               </EditableElement>
@@ -404,10 +407,12 @@ const CartSlotsEditor = ({
                             <div key={slotId} className="col-span-12">
                               <EditableElement
                                 slotId={slotId}
+                                mode={mode}
                                 onClick={handleElementClick}
                                 className={finalClasses}
                                 style={textStyling.elementStyles}
                                 canResize={true}
+                                draggable={true}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                               </EditableElement>
@@ -425,6 +430,7 @@ const CartSlotsEditor = ({
                                 mode={mode}
                                 onClick={handleElementClick}
                                 canResize={true}
+                                draggable={true}
                               >
                                 <Button 
                                   className="bg-blue-600 hover:bg-blue-700 w-auto"
@@ -453,9 +459,9 @@ const CartSlotsEditor = ({
                         <EditableElement
                           slotId="cartItem.image"
                           mode={mode}
-                          mode={mode}
                           onClick={handleElementClick}
                           canResize={true}
+                          draggable={true}
                         >
                           <img 
                             src="https://placehold.co/100x100?text=Product" 
@@ -469,8 +475,9 @@ const CartSlotsEditor = ({
                             slotId="cartItem.title"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="text-lg font-semibold"
+                            canResize={true}
+                            draggable={true}
                           >
                             Sample Product
                           </EditableElement>
@@ -479,8 +486,9 @@ const CartSlotsEditor = ({
                             slotId="cartItem.price"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="text-gray-600"
+                            canResize={true}
+                            draggable={true}
                           >
                             $29.99 each
                           </EditableElement>
@@ -491,6 +499,7 @@ const CartSlotsEditor = ({
                               mode={mode}
                               onClick={handleElementClick}
                               canResize={true}
+                              draggable={true}
                             >
                               <div className="flex items-center space-x-2">
                                 <Button size="sm" variant="outline">
@@ -513,8 +522,9 @@ const CartSlotsEditor = ({
                             slotId="cartItem.total"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="text-xl font-bold"
+                            canResize={true}
+                            draggable={true}
                           >
                             $29.99
                           </EditableElement>
@@ -534,8 +544,9 @@ const CartSlotsEditor = ({
                             slotId="coupon.title"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="text-lg font-semibold mb-4"
+                            canResize={true}
+                            draggable={true}
                           >
                             Apply Coupon
                           </EditableElement>
@@ -545,7 +556,6 @@ const CartSlotsEditor = ({
                             slotId="coupon.input"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                           >
                             <Input placeholder="Enter coupon code" />
                           </EditableElement>
@@ -555,7 +565,6 @@ const CartSlotsEditor = ({
                             slotId="coupon.button"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                           >
                             <Button>
                               <Tag className="w-4 h-4 mr-2" /> Apply
@@ -575,8 +584,9 @@ const CartSlotsEditor = ({
                             slotId="orderSummary.title"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="text-lg font-semibold mb-4"
+                            canResize={true}
+                            draggable={true}
                           >
                             Order Summary
                           </EditableElement>
@@ -586,7 +596,6 @@ const CartSlotsEditor = ({
                             slotId="orderSummary.subtotal"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="flex justify-between"
                           >
                             <span>Subtotal</span><span>$79.97</span>
@@ -597,7 +606,6 @@ const CartSlotsEditor = ({
                             slotId="orderSummary.tax"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="flex justify-between"
                           >
                             <span>Tax</span><span>$6.40</span>
@@ -608,7 +616,6 @@ const CartSlotsEditor = ({
                             slotId="orderSummary.total"
                             mode={mode}
                             onClick={handleElementClick}
-                            canResize={true}
                             className="flex justify-between text-lg font-semibold border-t pt-4"
                           >
                             <span>Total</span><span>$81.37</span>
@@ -620,6 +627,7 @@ const CartSlotsEditor = ({
                               slotId="orderSummary.checkoutButton"
                               onClick={handleElementClick}
                               canResize={true}
+                              draggable={true}
                             >
                               <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
                                 Proceed to Checkout
