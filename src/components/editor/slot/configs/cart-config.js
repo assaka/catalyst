@@ -4,7 +4,7 @@ import { ShoppingCart, Package } from 'lucide-react';
 export const cartConfig = {
   page_name: 'Cart',
   slot_type: 'cart_layout',
-  majorSlots: ['flashMessage', 'header', 'emptyCart', 'cartItem', 'coupon', 'orderSummary', 'recommendations'],
+  majorSlots: ['flashMessage', 'header', 'emptyCart', 'cartItem', 'coupon', 'orderSummary', 'recommendations', 'empty'],
   
   // Micro-slot definitions - Complete structure for all cart slots
   microSlotDefinitions: {
@@ -88,6 +88,15 @@ export const cartConfig = {
       defaultSpans: {
         'recommendations.title': { col: 12, row: 1 },
         'recommendations.products': { col: 12, row: 3 }
+      }
+    },
+    empty: {
+      id: 'empty',
+      name: 'Empty Slot',
+      microSlots: ['empty.content'],
+      gridCols: 12,
+      defaultSpans: {
+        'empty.content': { col: 12, row: 2 }
       }
     }
   },
@@ -403,6 +412,21 @@ export const cartConfig = {
         lastModified: new Date().toISOString(),
         slotType: 'recommendations',
         description: 'Product recommendations grid'
+      }
+    },
+    
+    // Empty Slots
+    'empty.content': {
+      content: '<div class="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 bg-gray-50"><p>This is an empty slot. Click to edit and add your custom content.</p></div>',
+      className: 'empty-slot-content',
+      parentClassName: 'empty-slot-wrapper',
+      styles: {
+        minHeight: '120px'
+      },
+      metadata: {
+        lastModified: new Date().toISOString(),
+        slotType: 'empty',
+        description: 'Customizable empty slot for any content'
       }
     }
   },

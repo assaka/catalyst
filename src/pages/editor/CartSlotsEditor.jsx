@@ -46,6 +46,7 @@ import { WebflowResizer } from "@/components/ui/WebflowResizer";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import EditableElement from "@/components/editor/slot/EditableElement";
 import { useElementSelection } from "@/components/editor/slot/useElementSelection";
+import WebflowStyleEditor from "@/components/editor/slot/WebflowStyleEditor";
 import "@/components/editor/slot/editor-styles.css";
 
 // Import generic editor utilities
@@ -300,6 +301,10 @@ function CartSlotsEditorContent({
 
   // Track currently selected slot ID
   const [selectedSlotId, setSelectedSlotId] = useState(null);
+  
+  // Webflow-style visual editing state
+  const [webflowMode, setWebflowMode] = useState(false);
+  const [selectedSlotForVisualEdit, setSelectedSlotForVisualEdit] = useState(null);
 
   // Check if sidebar should be visible
   const isSidebarVisible = mode === 'edit' && selectedElement && (
@@ -871,6 +876,62 @@ function CartSlotsEditorContent({
     return allSlotTypes.filter(slotType => !currentSlots.includes(slotType));
   }, [majorSlots]);
 
+  // Webflow-style editing handlers
+  const handleSlotSelect = useCallback((slotId) => {
+    setSelectedSlotForVisualEdit(slotId);
+  }, []);
+
+  const handleSlotUpdate = useCallback((slotId, updates) => {
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = {
+        ...prevConfig,
+        slots: {
+          ...prevConfig?.slots,
+          [slotId]: {
+            ...prevConfig?.slots?.[slotId],
+            ...updates
+          }
+        }
+      };
+      
+      // Auto-save the updates
+      setTimeout(() => {
+        if (saveConfigurationRef.current) {
+          saveConfigurationRef.current(updatedConfig);
+        }
+      }, 100);
+      
+      return updatedConfig;
+    });
+  }, []);
+
+  const handleSlotDelete = useCallback((slotId) => {
+    // Handle slot deletion - remove from configuration
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = { ...prevConfig };
+      if (updatedConfig.slots) {
+        delete updatedConfig.slots[slotId];
+      }
+      
+      // Remove from microSlotOrders if present
+      Object.keys(updatedConfig.microSlotOrders || {}).forEach(majorSlot => {
+        updatedConfig.microSlotOrders[majorSlot] = 
+          updatedConfig.microSlotOrders[majorSlot].filter(id => id !== slotId);
+      });
+      
+      // Auto-save
+      setTimeout(() => {
+        if (saveConfigurationRef.current) {
+          saveConfigurationRef.current(updatedConfig);
+        }
+      }, 100);
+      
+      return updatedConfig;
+    });
+    
+    setSelectedSlotForVisualEdit(null);
+  }, []);
+
   // Render using exact Cart.jsx layout structure with slot_configurations
   return (
     <div className={`min-h-screen bg-gray-50 ${
@@ -945,6 +1006,22 @@ function CartSlotsEditorContent({
                   With Products
                 </button>
 
+                <div className="border-l mx-2 h-6" />
+                
+                {/* Webflow Mode Toggle */}
+                <button
+                  onClick={() => setWebflowMode(!webflowMode)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    webflowMode
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  title="Toggle Webflow-style visual editing"
+                >
+                  <Edit className="w-4 h-4 inline mr-1.5" />
+                  Visual Editor
+                </button>
+                
                 <div className="border-l mx-2 h-6" />
                 
                 <Button 
@@ -1075,14 +1152,41 @@ function CartSlotsEditorContent({
                         cartLayoutConfig={cartLayoutConfig}
                       >
                         <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                          <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                            <h1 
-                              className={finalClasses} 
-                              style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                          {webflowMode ? (
+                            <WebflowStyleEditor
+                              slot={{
+                                id: slotId,
+                                type: 'text',
+                                content: cartLayoutConfig?.slots?.[slotId]?.content || "My Cart",
+                                styles: {
+                                  className: finalClasses,
+                                  styles: {...headerTitleStyling.elementStyles, ...positioning.elementStyles}
+                                },
+                                metadata: { name: 'Header Title' }
+                              }}
+                              isSelected={selectedSlotForVisualEdit === slotId}
+                              onSelect={handleSlotSelect}
+                              onUpdate={handleSlotUpdate}
+                              onDelete={handleSlotDelete}
+                              mode={mode}
                             >
-                              {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
-                            </h1>
-                          </EditableElement>
+                              <h1 
+                                className={finalClasses} 
+                                style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                              >
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
+                              </h1>
+                            </WebflowStyleEditor>
+                          ) : (
+                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                              <h1 
+                                className={finalClasses} 
+                                style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                              >
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
+                              </h1>
+                            </EditableElement>
+                          )}
                         </div>
                       </SortableMicroSlot>
                     );
