@@ -626,12 +626,15 @@ function CartSlotsEditorContent({
     }
   }, [editingComponent, tempCode, cartLayoutConfig, saveConfiguration]);
 
-  // Simplified microslot resize handler using save manager with immediate state update
-  const handleMicroSlotResize = useCallback((slotId, parentSlot, newSpans) => {
-    // Immediately update the local state with flat structure
+  // Simplified microslot resize handler - since we removed microSlots structure, this is simplified
+  const handleMicroSlotResize = useCallback((slotId, newSpans) => {
+    // Update the cart layout config directly with simplified structure
     setCartLayoutConfig(prevConfig => ({
       ...prevConfig,
-              [slotId]: {
+      // Store span information in a simple structure (optional - depends on if we need this)
+      microSlots: {
+        ...prevConfig?.microSlots,
+        [slotId]: {
           ...newSpans
         }
       }
@@ -639,7 +642,6 @@ function CartSlotsEditorContent({
     
     // Record the change for debounced save - save manager handles the rest
     saveManager.recordChange(slotId, CHANGE_TYPES.SLOT_RESIZE, { 
-      parentSlot, 
       spans: newSpans 
     });
   }, []);
@@ -701,35 +703,6 @@ function CartSlotsEditorContent({
     setShowAddSlotModal(true);
   }, []);
 
-  // Get available slot types for the add modal
-  const getAvailableSlotTypes = useCallback(() => {
-    return Object.keys(cartConfig.slotDefinitions || {});
-  }, []);
-
-
-  const handleSlotDelete = useCallback((slotId) => {
-    // Handle slot deletion - remove from configuration
-    setCartLayoutConfig(prevConfig => {
-      const updatedConfig = { ...prevConfig };
-      if (updatedConfig.slots) {
-        delete updatedConfig.slots[slotId];
-      }
-      
-      
-      // Auto-save
-      setTimeout(() => {
-        if (saveConfigurationRef.current) {
-          saveConfigurationRef.current(updatedConfig);
-        }
-      }, 100);
-      
-      return updatedConfig;
-    });
-    
-    setSelectedSlotForVisualEdit(null);
-  }, []);
-
-  // Render using exact Cart.jsx layout structure with slot_configurations
   return (
     <div className={`min-h-screen bg-gray-50 ${
       isSidebarVisible ? 'grid grid-cols-[1fr_320px]' : 'block'
@@ -982,7 +955,6 @@ function CartSlotsEditorContent({
           )}
         </div>
         
-        {/* Add New Slot Button - After header */}
         {mode === 'edit' && (
           <div className="mb-6 flex justify-center">
             <Button
