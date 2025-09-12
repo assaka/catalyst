@@ -298,6 +298,11 @@ function CartSlotsEditorContent({
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(''), 2000);
       
+      // Update local state with the saved configuration so EditorSidebar gets fresh data
+      if (configToSave) {
+        setCartLayoutConfig(configToSave);
+      }
+      
       // Notify parent component
       onSave(configuration);
       
