@@ -145,7 +145,9 @@ export function createDragEndHandler({
           const oldIndex = currentOrder.indexOf(activeId);
           const newIndex = currentOrder.indexOf(overId);
           
-          if (oldIndex === -1 || newIndex === -1) return prevConfig;
+          if (oldIndex === -1 || newIndex === -1) {
+            return prevConfig;
+          }
           
           const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
           
@@ -158,7 +160,7 @@ export function createDragEndHandler({
           };
           
           // Auto-save after reordering
-          setTimeout(saveConfiguration, 100);
+          setTimeout(() => saveConfiguration(), 100);
           
           return updatedConfig;
         });

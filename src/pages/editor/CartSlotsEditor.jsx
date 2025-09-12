@@ -41,6 +41,7 @@ import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import { DirectResizable } from "@/components/ui/DirectResizableElement";
 import useDirectResize from '@/hooks/useDirectResize';
 import { ExternalResizeProvider, useExternalResizeContext } from "@/components/ui/external-resize-provider";
+import { WebflowResizer } from "@/components/ui/WebflowResizer";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import EditableElement from "@/components/editor/slot/EditableElement";
 import { useElementSelection } from "@/components/editor/slot/useElementSelection";
@@ -1065,17 +1066,18 @@ function CartSlotsEditorContent({
                         >
                           <div className={`${mode === 'edit' ? 'relative group' : ''}`}>
                             {mode === 'edit' ? (
-                              <DirectResizable
+                              <WebflowResizer
                                 elementType="icon"
-                                minWidth={32}
-                                minHeight={32}
-                                maxWidth={128}
-                                maxHeight={128}
-                                onResize={(newSize) => {
-                                  const widthClass = `w-${Math.round(newSize.width / 4)}`;
-                                  const heightClass = `h-${Math.round(newSize.height / 4)}`;
-                                  const newClasses = finalClasses.replace(/w-\d+|h-\d+/g, '').trim() + ` ${widthClass} ${heightClass}`;
-                                  handleElementResize(slotId, newClasses);
+                                disabled={false}
+                                onResize={(newSize, detectedType) => {
+                                  // Update element styling in configuration
+                                  const newStyles = {
+                                    ...iconStyling.elementStyles,
+                                    width: `${newSize.width}px`,
+                                    height: `${newSize.height}px`
+                                  };
+                                  // Save the updated styles to the configuration
+                                  handleElementResize(slotId, finalClasses, newStyles);
                                 }}
                               >
                                 <ShoppingCart 
@@ -1083,7 +1085,7 @@ function CartSlotsEditorContent({
                                   style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
                                   data-slot-id={slotId}
                                 />
-                              </DirectResizable>
+                              </WebflowResizer>
                             ) : (
                               <ShoppingCart 
                                 className={finalClasses} 
@@ -1208,12 +1210,27 @@ function CartSlotsEditorContent({
                           <div className={`${positioning.gridClasses} button-slot-container ${wrapperStyling.elementClasses}`} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
                               <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                <Button 
-                                  className={finalClasses}
-                                  style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                <WebflowResizer
+                                  elementType="button"
+                                  disabled={false}
+                                  onResize={(newSize, detectedType) => {
+                                    // Update button styling in configuration
+                                    const newStyles = {
+                                      ...buttonStyling.elementStyles,
+                                      width: `${newSize.width}px`,
+                                      height: `${newSize.height}px`,
+                                      fontSize: `${Math.max(12, Math.min(18, newSize.height * 0.4))}px`
+                                    };
+                                    handleElementResize(slotId, finalClasses, newStyles);
+                                  }}
                                 >
-                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                                </Button>
+                                  <Button 
+                                    className={finalClasses}
+                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                  >
+                                    {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                                  </Button>
+                                </WebflowResizer>
                               </EditableElement>
                             ) : (
                               <Button 
@@ -1409,14 +1426,20 @@ function CartSlotsEditorContent({
                             {/* Product Image with wrapper div for alignment */}
                             <div className={imageWrapperStyling.elementClasses} style={imageWrapperStyling.elementStyles}>
                               {mode === 'edit' ? (
-                                <DirectResizable
-                                  elementType="image"
-                                  minWidth={40}
-                                  minHeight={40}
-                                  maxWidth={120}
-                                  maxHeight={120}
-                                >
-                                  <EditableElement slotId="cartItem.productImage" editable={mode === 'edit'}>
+                                <EditableElement slotId="cartItem.productImage" editable={mode === 'edit'}>
+                                  <WebflowResizer
+                                    elementType="image"
+                                    disabled={false}
+                                    onResize={(newSize, detectedType) => {
+                                      // Update image styling in configuration
+                                      const newStyles = {
+                                        ...imageStyling.elementStyles,
+                                        width: `${newSize.width}px`,
+                                        height: `${newSize.height}px`
+                                      };
+                                      handleElementResize("cartItem.productImage", imageClasses, newStyles);
+                                    }}
+                                  >
                                     <img 
                                       src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
                                       alt={product.name}
@@ -1424,8 +1447,8 @@ function CartSlotsEditorContent({
                                       style={imageStyling.elementStyles}
                                       data-slot-id="cartItem.productImage"
                                     />
-                                  </EditableElement>
-                                </DirectResizable>
+                                  </WebflowResizer>
+                                </EditableElement>
                               ) : (
                                 <img 
                                   src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
@@ -1579,13 +1602,28 @@ function CartSlotsEditorContent({
                                 <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                                   {mode === 'edit' ? (
                                     <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                      <Button 
-                                        disabled={!couponCode.trim()}
-                                        className={finalClasses}
-                                        style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                      <WebflowResizer
+                                        elementType="button"
+                                        disabled={false}
+                                        onResize={(newSize, detectedType) => {
+                                          // Update button styling in configuration
+                                          const newStyles = {
+                                            ...buttonStyling.elementStyles,
+                                            width: `${newSize.width}px`,
+                                            height: `${newSize.height}px`,
+                                            fontSize: `${Math.max(12, Math.min(16, newSize.height * 0.4))}px`
+                                          };
+                                          handleElementResize(slotId, finalClasses, newStyles);
+                                        }}
                                       >
-                                        {cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
-                                      </Button>
+                                        <Button 
+                                          disabled={!couponCode.trim()}
+                                          className={finalClasses}
+                                          style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                        >
+                                          {cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
+                                        </Button>
+                                      </WebflowResizer>
                                     </EditableElement>
                                   ) : (
                                     <Button 
@@ -1810,18 +1848,35 @@ function CartSlotsEditorContent({
                                   <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                                     {mode === 'edit' ? (
                                       <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                        <Button 
-                                          size="lg" 
-                                          className={finalClasses}
-                                          style={{
-                                            backgroundColor: '#007bff',
-                                            color: '#FFFFFF',
-                                            ...buttonStyling.elementStyles,
-                                            ...positioning.elementStyles
+                                        <WebflowResizer
+                                          elementType="button"
+                                          disabled={false}
+                                          onResize={(newSize, detectedType) => {
+                                            // Update button styling in configuration
+                                            const newStyles = {
+                                              backgroundColor: '#007bff',
+                                              color: '#FFFFFF',
+                                              ...buttonStyling.elementStyles,
+                                              width: `${newSize.width}px`,
+                                              height: `${newSize.height}px`,
+                                              fontSize: `${Math.max(14, Math.min(20, newSize.height * 0.4))}px`
+                                            };
+                                            handleElementResize(slotId, finalClasses, newStyles);
                                           }}
                                         >
-                                          {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
-                                        </Button>
+                                          <Button 
+                                            size="lg" 
+                                            className={finalClasses}
+                                            style={{
+                                              backgroundColor: '#007bff',
+                                              color: '#FFFFFF',
+                                              ...buttonStyling.elementStyles,
+                                              ...positioning.elementStyles
+                                            }}
+                                          >
+                                            {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
+                                          </Button>
+                                        </WebflowResizer>
                                       </EditableElement>
                                     ) : (
                                       <Button 
