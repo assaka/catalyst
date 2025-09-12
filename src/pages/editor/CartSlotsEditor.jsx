@@ -597,6 +597,8 @@ const CartSlotsEditor = ({
                             mode={mode}
                             onClick={handleElementClick}
                             className="flex justify-between"
+                            canResize={true}
+                            draggable={true}
                           >
                             <span>Subtotal</span><span>$79.97</span>
                           </EditableElement>
@@ -607,6 +609,8 @@ const CartSlotsEditor = ({
                             mode={mode}
                             onClick={handleElementClick}
                             className="flex justify-between"
+                            canResize={true}
+                            draggable={true}
                           >
                             <span>Tax</span><span>$6.40</span>
                           </EditableElement>
@@ -617,6 +621,8 @@ const CartSlotsEditor = ({
                             mode={mode}
                             onClick={handleElementClick}
                             className="flex justify-between text-lg font-semibold border-t pt-4"
+                            canResize={true}
+                            draggable={true}
                           >
                             <span>Total</span><span>$81.37</span>
                           </EditableElement>
