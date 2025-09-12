@@ -226,7 +226,7 @@ export function useSlotConfiguration({
           setMajorSlots(config.majorSlots);
         }
         
-        // Skip loading microSlotOrders (deprecated)
+        // Skip loading  (deprecated)
         if (setMicroSlotOrders) {
           const defaultOrders = {};
           Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
@@ -302,14 +302,14 @@ export function useSlotConfiguration({
       } else {
         console.log('No configuration found in database, initializing with defaults');
         
-        // Skip initializing microSlotOrders (deprecated)
+        // Skip initializing  (deprecated)
         if (setMicroSlotOrders) {
           const defaultOrders = {};
           Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
             defaultOrders[key] = [...def.microSlots];
           });
           setMicroSlotOrders({});
-          console.log('🎯 LOAD DEBUG: Skipped microSlotOrders initialization (deprecated)');
+          console.log('🎯 LOAD DEBUG: Skipped  initialization (deprecated)');
         }
         
         // Initialize default microSlotSpans
@@ -418,8 +418,8 @@ export function useSlotConfiguration({
       console.log('✅ Applied componentSizes from draft:', config.componentSizes);
     }
     
-    // Skip microSlotOrders loading (deprecated)
-    console.log('🎯 LOAD DEBUG: Skipping microSlotOrders loading (deprecated)');
+    // Skip  loading (deprecated)
+    console.log('🎯 LOAD DEBUG: Skipping  loading (deprecated)');
     setters.setMicroSlotOrders?.({});
     
     if (config.microSlotSpans) {

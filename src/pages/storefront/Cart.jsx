@@ -873,110 +873,7 @@ export default function Cart() {
     
     console.log('✅ Cart component loaded - proceeding to render');
     
-    // Helper function to render a single slot (custom or standard) with ALL editor customizations
-    const renderSlot = (slotId, parentSlot) => {
-        // Handle custom slots
-        if (slotId.includes('.custom_')) {
-            const customSlot = cartLayoutConfig?.customSlots?.[slotId];
-            const slotContent = cartLayoutConfig?.slotContent?.[slotId] || customSlot?.content || '';
-            
-            if (!customSlot) return null;
-            
-            // Get all editor customizations
-            const elementClasses = cartLayoutConfig?.elementClasses?.[slotId] || '';
-            const elementStyles = cartLayoutConfig?.elementStyles?.[slotId] || {};
-            const microSlotSpans = cartLayoutConfig?.microSlotSpans?.[parentSlot]?.[slotId] || { col: 12, row: 1 };
-            
-            // Container styles with positioning from slot configuration
-            const containerStyle = {
-                ...elementStyles,
-                // Get positioning from slot configuration instead of fixed grid spans
-                ...(microSlotSpans.position ? { position: microSlotSpans.position } : {}),
-                ...(microSlotSpans.left ? { left: microSlotSpans.left } : {}),
-                ...(microSlotSpans.top ? { top: microSlotSpans.top } : {}),
-                ...(microSlotSpans.right ? { right: microSlotSpans.right } : {}),
-                ...(microSlotSpans.bottom ? { bottom: microSlotSpans.bottom } : {}),
-                ...(microSlotSpans.width ? { width: microSlotSpans.width } : {}),
-                ...(microSlotSpans.height ? { height: microSlotSpans.height } : {}),
-                // Only apply grid spans if they exist in configuration
-                ...(microSlotSpans.col ? { gridColumn: `span ${Math.min(12, Math.max(1, microSlotSpans.col))}` } : {}),
-                ...(microSlotSpans.row ? { gridRow: `span ${Math.min(4, Math.max(1, microSlotSpans.row))}` } : {})
-            };
-            
-            if (customSlot.type === 'text') {
-                return (
-                    <div 
-                        key={slotId} 
-                        className="custom-slot text-slot"
-                        style={containerStyle}
-                    >
-                        <div 
-                            className={elementClasses || 'text-gray-600'}
-                            style={elementStyles}
-                        >
-                            {slotContent}
-                        </div>
-                    </div>
-                );
-            } else if (customSlot.type === 'html') {
-                return (
-                    <div 
-                        key={slotId} 
-                        className="custom-slot html-slot"
-                        style={containerStyle}
-                    >
-                        <div 
-                            className={elementClasses}
-                            style={elementStyles}
-                            dangerouslySetInnerHTML={{ __html: slotContent }} 
-                        />
-                    </div>
-                );
-            } else if (customSlot.type === 'javascript') {
-                return (
-                    <div 
-                        key={slotId} 
-                        className="custom-slot js-slot"
-                        style={containerStyle}
-                    >
-                        <div 
-                            className={elementClasses}
-                            style={elementStyles}
-                            dangerouslySetInnerHTML={{ __html: slotContent }} 
-                        />
-                    </div>
-                );
-            }
-        }
-        
-        return null; // Standard slots will be handled by the normal cart rendering
-    };
     
-    // Helper function to render all custom slots in a section by scanning available slots
-    const renderSectionSlots = (parentSlot) => {
-        if (!cartLayoutConfig?.slots) return null;
-        
-        const slots = [];
-        
-        // Find all custom slots that belong to this parent slot
-        Object.keys(cartLayoutConfig.slots).forEach(slotId => {
-            const slot = cartLayoutConfig.slots[slotId];
-            // Check for custom slots either by type='custom' or by .custom_ naming pattern (backward compatibility)
-            if ((slot.type === 'custom' || slotId.includes('.custom_')) && slotId.startsWith(`${parentSlot}.`)) {
-                const renderedSlot = renderSlot(slotId, parentSlot);
-                if (renderedSlot) slots.push(renderedSlot);
-            }
-        });
-        
-        if (slots.length === 0) return null;
-        
-        // Render in a grid
-        return (
-            <div className={`section-slots ${parentSlot}-slots ${slots.length > 1 ? 'grid grid-cols-12 gap-2 mb-4' : 'mb-4'}`}>
-                {slots}
-            </div>
-        );
-    };
     
     // Prepare data object for CartSlots component
     const cartSlotsData = {
@@ -1206,7 +1103,6 @@ export default function Cart() {
                 {/* FlashMessage Section with Custom Slots */}
                 <div className="flashMessage-section mb-6">
                     <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                    {renderSectionSlots('flashMessage')}
                 </div>
                 
                 {/* Header Section with Grid Layout */}
@@ -1215,7 +1111,6 @@ export default function Cart() {
                         <div className="col-span-12">
                             <h1 className="text-3xl font-bold text-gray-900 mb-4">{store?.name || 'My Cart'}</h1>
                         </div>
-                        {renderSectionSlots('header')}
                     </div>
                 </div>
                 
@@ -1226,7 +1121,7 @@ export default function Cart() {
                         <div className="text-center py-12">
                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
                                 {false ? (
-                                    cartLayoutConfig.microSlotOrders.emptyCart.map(slotId => {
+                                    cartLayoutConfig.microSlotOrdersRemoved.emptyCart.map(slotId => {
                                         const positioning = getSlotPositioning(slotId, 'emptyCart');
                                         
                                         if (slotId.includes('.custom_')) {
@@ -1295,8 +1190,7 @@ export default function Cart() {
                                         return null;
                                     })
                                 ) : (
-                                    // Fallback to default layout if no microSlotOrders
-                                    <>
+                                    // Fallback to default layout if no                                     <>
                                         <div className="col-span-12">
                                             <ResizeElementWrapper
                                                 initialWidth={64}
@@ -1426,7 +1320,7 @@ export default function Cart() {
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
                                                 {false ? (
-                                                    cartLayoutConfig.microSlotOrders.coupon.map(slotId => {
+                                                    cartLayoutConfig.microSlotOrdersRemoved.coupon.map(slotId => {
                                                         const positioning = getSlotPositioning(slotId, 'coupon');
                                                         
                                                         if (slotId.includes('.custom_')) {
@@ -1509,8 +1403,7 @@ export default function Cart() {
                                                         return null;
                                                     })
                                                 ) : (
-                                                    // Fallback to default layout if no microSlotOrders
-                                                    <>
+                                                    // Fallback to default layout if no                                                     <>
                                                         <div className="col-span-12">
                                                             <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
                                                         </div>
@@ -1572,7 +1465,7 @@ export default function Cart() {
                                         <CardContent className="p-4">
                                             <div className="grid grid-cols-12 gap-2 auto-rows-min">
                                                 {false ? (
-                                                    cartLayoutConfig.microSlotOrders.orderSummary.map(slotId => {
+                                                    cartLayoutConfig.microSlotOrdersRemoved.orderSummary.map(slotId => {
                                                         const positioning = getSlotPositioning(slotId, 'orderSummary');
                                                         
                                                         if (slotId.includes('.custom_')) {
@@ -1683,8 +1576,7 @@ export default function Cart() {
                                                         return null;
                                                     })
                                                 ) : (
-                                                    // Fallback to default layout if no microSlotOrders
-                                                    <>
+                                                    // Fallback to default layout if no                                                     <>
                                                         <div className="col-span-12">
                                                             <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
                                                         </div>

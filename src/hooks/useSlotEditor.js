@@ -32,8 +32,6 @@ export function useSlotEditor({
   const [isResizingIcon, setIsResizingIcon] = useState(null);
   const [isResizingButton, setIsResizingButton] = useState(null);
 
-  // Micro-slot state management (deprecated - using direct grid positioning now)
-  const [microSlotOrders, setMicroSlotOrders] = useState({});
 
   const [microSlotSpans, setMicroSlotSpans] = useState(() => {
     const spans = {};
@@ -251,7 +249,7 @@ export function useSlotEditor({
             setMajorSlots(config.major_slots);
           }
           
-          // Skip loading microSlotOrders (deprecated)
+          // microSlotOrders removed - using direct grid positioning
           
           // Load micro-slot spans
           if (config.microSlotSpans) {
