@@ -38,8 +38,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 
 // Clean imports - importing cartConfig for reset functionality
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
-import { SimpleResizeWrapper } from "@/components/editor/slot/SlotResizeWrapper";
-import { ResizeWrapper as ResizeElementWrapper } from "@/components/ui/resize-element-wrapper";
+import { DirectResizable } from "@/components/ui/DirectResizableElement";
 import { ExternalResizeProvider, useExternalResizeContext } from "@/components/ui/external-resize-provider";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import EditableElement from "@/components/editor/slot/EditableElement";
@@ -928,39 +927,33 @@ function CartSlotsEditorContent({
                       const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                          <SimpleResizeWrapper
-                            slotId={slotId}
-                            parentSlot="emptyCart"
-                            spans={positioning.microSlotSpans}
-                            onSlotResize={handleMicroSlotResize}
-                            elementType="icon"
-                            currentClasses={finalClasses}
-                            onElementResize={(newClasses) => handleElementResize(slotId, newClasses)}
-                            mode={mode}
-                          >
-                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              {mode === 'edit' ? (
-                                <ResizeElementWrapper
-                                  initialWidth={64}
-                                  initialHeight={64}
-                                  minWidth={32}
-                                  maxWidth={128}
-                                >
-                                  <ShoppingCart 
-                                    className={finalClasses} 
-                                    style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
-                                    data-slot-id={slotId}
-                                  />
-                                </ResizeElementWrapper>
-                              ) : (
-                                <ShoppingCart 
-                                  className={finalClasses} 
-                                  style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
-                                  data-slot-id={slotId}
-                                />
-                              )}
-                            </div>
-                          </SimpleResizeWrapper>
+                          {mode === 'edit' ? (
+                            <DirectResizable
+                              elementType="icon"
+                              minWidth={32}
+                              minHeight={32}
+                              maxWidth={128}
+                              maxHeight={128}
+                              onResize={(newSize) => {
+                                const widthClass = `w-${Math.round(newSize.width / 4)}`;
+                                const heightClass = `h-${Math.round(newSize.height / 4)}`;
+                                const newClasses = finalClasses.replace(/w-\d+|h-\d+/g, '').trim() + ` ${widthClass} ${heightClass}`;
+                                handleElementResize(slotId, newClasses);
+                              }}
+                            >
+                              <ShoppingCart 
+                                className={finalClasses} 
+                                style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                data-slot-id={slotId}
+                              />
+                            </DirectResizable>
+                          ) : (
+                            <ShoppingCart 
+                              className={finalClasses} 
+                              style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                              data-slot-id={slotId}
+                            />
+                          )}
                         </div>
                       );
                     }
@@ -974,18 +967,23 @@ function CartSlotsEditorContent({
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
-                              <ResizeElementWrapper
-                                initialWidth={300}
-                                initialHeight={32}
+                              <DirectResizable
+                                elementType="generic"
                                 minWidth={150}
+                                minHeight={32}
                                 maxWidth={600}
+                                maxHeight={80}
+                                onResize={(newSize) => {
+                                  const fontSize = Math.max(14, Math.min(24, newSize.height * 0.6));
+                                  handleElementResize(slotId, `${finalClasses} text-[${fontSize}px]`);
+                                }}
                               >
                                 <EditableElement slotId={slotId} editable={mode === 'edit'}>
                                   <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                                   </h2>
                                 </EditableElement>
-                              </ResizeElementWrapper>
+                              </DirectResizable>
                             ) : (
                               <EditableElement slotId={slotId} editable={mode === 'edit'}>
                                 <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
@@ -1007,18 +1005,23 @@ function CartSlotsEditorContent({
                         <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
                           <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
                             {mode === 'edit' ? (
-                              <ResizeElementWrapper
-                                initialWidth={400}
-                                initialHeight={24}
+                              <DirectResizable
+                                elementType="generic"
                                 minWidth={200}
+                                minHeight={24}
                                 maxWidth={800}
+                                maxHeight={60}
+                                onResize={(newSize) => {
+                                  const fontSize = Math.max(12, Math.min(18, newSize.height * 0.5));
+                                  handleElementResize(slotId, `${finalClasses} text-[${fontSize}px]`);
+                                }}
                               >
                                 <EditableElement slotId={slotId} editable={mode === 'edit'}>
                                   <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                                   </p>
                                 </EditableElement>
-                              </ResizeElementWrapper>
+                              </DirectResizable>
                             ) : (
                               <EditableElement slotId={slotId} editable={mode === 'edit'}>
                                 <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
@@ -1066,46 +1069,50 @@ function CartSlotsEditorContent({
                   // Fallback to default layout if no microSlotOrders
                   <>
                     <div className="col-span-12">
-                      <ResizeElementWrapper
-                        initialWidth={64}
-                        initialHeight={64}
+                      <DirectResizable
+                        elementType="icon"
                         minWidth={32}
+                        minHeight={32}
                         maxWidth={128}
+                        maxHeight={128}
                       >
                         <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                      </ResizeElementWrapper>
+                      </DirectResizable>
                     </div>
                     <div className="col-span-12">
-                      <ResizeElementWrapper
-                        initialWidth={300}
-                        initialHeight={32}
+                      <DirectResizable
+                        elementType="generic"
                         minWidth={150}
+                        minHeight={32}
                         maxWidth={600}
+                        maxHeight={80}
                       >
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
-                      </ResizeElementWrapper>
+                      </DirectResizable>
                     </div>
                     <div className="col-span-12">
-                      <ResizeElementWrapper
-                        initialWidth={400}
-                        initialHeight={24}
+                      <DirectResizable
+                        elementType="generic"
                         minWidth={200}
+                        minHeight={24}
                         maxWidth={800}
+                        maxHeight={60}
                       >
                         <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                      </ResizeElementWrapper>
+                      </DirectResizable>
                     </div>
                     <div className="col-span-12">
-                      <ResizeElementWrapper
-                        initialWidth={200}
-                        initialHeight={44}
+                      <DirectResizable
+                        elementType="button"
                         minWidth={100}
+                        minHeight={44}
                         maxWidth={400}
+                        maxHeight={80}
                       >
                         <Button className="bg-blue-600 hover:bg-blue-700">
                           Continue Shopping
                         </Button>
-                      </ResizeElementWrapper>
+                      </DirectResizable>
                     </div>
                   </>
                 )}
@@ -1130,15 +1137,7 @@ function CartSlotsEditorContent({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ResizeElementWrapper
-                                initialWidth={64}
-                                initialHeight={64}
-                                minWidth={32}
-                                maxWidth={128}
-                                disabled={true}
-                              >
-                                <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
-                              </ResizeElementWrapper>
+                              <ShoppingCart className={finalClasses} style={{...iconStyling.elementStyles, ...positioning.elementStyles}} />
                             </div>
                           </div>
                         );
@@ -1152,17 +1151,9 @@ function CartSlotsEditorContent({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ResizeElementWrapper
-                                initialWidth={300}
-                                initialHeight={32}
-                                minWidth={150}
-                                maxWidth={600}
-                                disabled={true}
-                              >
-                                <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
-                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
-                                </h2>
-                              </ResizeElementWrapper>
+                              <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
+                              </h2>
                             </div>
                           </div>
                         );
@@ -1176,17 +1167,9 @@ function CartSlotsEditorContent({
                         return (
                           <div key={slotId} className={positioning.gridClasses}>
                             <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                              <ResizeElementWrapper
-                                initialWidth={400}
-                                initialHeight={24}
-                                minWidth={200}
-                                maxWidth={800}
-                                disabled={true}
-                              >
-                                <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
-                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                                </p>
-                              </ResizeElementWrapper>
+                              <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
+                              </p>
                             </div>
                           </div>
                         );
@@ -1216,50 +1199,18 @@ function CartSlotsEditorContent({
                     // Fallback to default layout if no microSlotOrders
                     <>
                       <div className="col-span-12">
-                        <ResizeElementWrapper
-                          initialWidth={64}
-                          initialHeight={64}
-                          minWidth={32}
-                          maxWidth={128}
-                          disabled={true}
-                        >
-                          <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                        </ResizeElementWrapper>
+                        <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                       </div>
                       <div className="col-span-12">
-                        <ResizeElementWrapper
-                          initialWidth={300}
-                          initialHeight={32}
-                          minWidth={150}
-                          maxWidth={600}
-                          disabled={true}
-                        >
-                          <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
-                        </ResizeElementWrapper>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
                       </div>
                       <div className="col-span-12">
-                        <ResizeElementWrapper
-                          initialWidth={400}
-                          initialHeight={24}
-                          minWidth={200}
-                          maxWidth={800}
-                          disabled={true}
-                        >
-                          <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                        </ResizeElementWrapper>
+                        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                       </div>
                       <div className="col-span-12">
-                        <ResizeElementWrapper
-                          initialWidth={200}
-                          initialHeight={44}
-                          minWidth={100}
-                          maxWidth={400}
-                          disabled={true}
-                        >
-                          <Button className="bg-blue-600 hover:bg-blue-700">
-                            Continue Shopping
-                          </Button>
-                        </ResizeElementWrapper>
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                          Continue Shopping
+                        </Button>
                       </div>
                     </>
                   )}
@@ -1292,11 +1243,12 @@ function CartSlotsEditorContent({
                             {/* Product Image with wrapper div for alignment */}
                             <div className={imageWrapperStyling.elementClasses} style={imageWrapperStyling.elementStyles}>
                               {mode === 'edit' ? (
-                                <ResizeElementWrapper
-                                  initialWidth={80}
-                                  initialHeight={80}
+                                <DirectResizable
+                                  elementType="image"
                                   minWidth={40}
+                                  minHeight={40}
                                   maxWidth={120}
+                                  maxHeight={120}
                                 >
                                   <EditableElement slotId="cartItem.productImage" editable={mode === 'edit'}>
                                     <img 
@@ -1307,7 +1259,7 @@ function CartSlotsEditorContent({
                                       data-slot-id="cartItem.productImage"
                                     />
                                   </EditableElement>
-                                </ResizeElementWrapper>
+                                </DirectResizable>
                               ) : (
                                 <img 
                                   src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'} 
