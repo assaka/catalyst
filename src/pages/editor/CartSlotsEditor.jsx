@@ -39,6 +39,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 // Clean imports - importing cartConfig for reset functionality
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import { DirectResizable } from "@/components/ui/DirectResizableElement";
+import useDirectResize from '@/hooks/useDirectResize';
 import { ExternalResizeProvider, useExternalResizeContext } from "@/components/ui/external-resize-provider";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import EditableElement from "@/components/editor/slot/EditableElement";
@@ -103,8 +104,11 @@ function SortableMajorSlot({ id, children, mode }) {
   );
 }
 
-// Sortable MicroSlot Component  
-function SortableMicroSlot({ id, children, mode, majorSlot }) {
+// Enhanced Sortable MicroSlot Component with Smooth Resizing
+function SortableMicroSlot({ id, children, mode, majorSlot, onResize, cartLayoutConfig }) {
+  const microSlotRef = useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
+  
   const {
     attributes,
     listeners,
@@ -114,23 +118,61 @@ function SortableMicroSlot({ id, children, mode, majorSlot }) {
     isDragging,
   } = useSortable({ id, data: { type: 'microSlot', majorSlot } });
 
+  // Get current microslot spans for sizing
+  const currentSpans = cartLayoutConfig?.microSlotSpans?.[majorSlot]?.[id] || { col: 12, row: 1 };
+  
+  // Calculate pixel dimensions based on grid system (approximate)
+  const gridCellWidth = 80; // Approximate width per grid column
+  const gridCellHeight = 40; // Approximate height per grid row
+  const initialWidth = Math.max(100, currentSpans.col * gridCellWidth);
+  const initialHeight = Math.max(40, currentSpans.row * gridCellHeight);
+
+  // Enhanced resize hook with microslot-specific settings
+  const { isResizing } = useDirectResize(microSlotRef, {
+    elementType: 'microslot',
+    minWidth: gridCellWidth, // Minimum 1 column
+    minHeight: gridCellHeight, // Minimum 1 row
+    maxWidth: 12 * gridCellWidth, // Maximum 12 columns
+    maxHeight: 4 * gridCellHeight, // Maximum 4 rows
+    handlePosition: 'corner',
+    onResize: (newSize) => {
+      // Convert pixel dimensions back to grid columns/rows
+      const newCols = Math.max(1, Math.min(12, Math.round(newSize.width / gridCellWidth)));
+      const newRows = Math.max(1, Math.min(4, Math.round(newSize.height / gridCellHeight)));
+      
+      // Call resize callback if dimensions changed
+      if (onResize && (newCols !== currentSpans.col || newRows !== currentSpans.row)) {
+        onResize(id, majorSlot, { col: newCols, row: newRows });
+      }
+    },
+    disabled: mode !== 'edit' || isDragging
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isResizing ? 'none' : transition,
     opacity: isDragging ? 0.5 : 1,
+    minWidth: `${initialWidth}px`,
+    minHeight: `${initialHeight}px`,
   };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        microSlotRef.current = node;
+      }}
       style={style}
       {...attributes}
-      className={`relative ${mode === 'edit' ? 'group' : ''}`}
+      className={`relative ${mode === 'edit' ? 'group' : ''} ${isResizing ? 'z-30' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {mode === 'edit' && (
+      {/* Drag Handle - only show when not resizing */}
+      {mode === 'edit' && !isResizing && (
         <div 
           {...listeners}
-          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-move bg-green-500 text-white p-0.5 rounded text-xs z-20"
+          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-move bg-green-500 text-white p-0.5 rounded text-xs z-20 hover:bg-green-600"
           title={`Drag ${id}`}
         >
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -138,7 +180,26 @@ function SortableMicroSlot({ id, children, mode, majorSlot }) {
           </svg>
         </div>
       )}
-      {children}
+      
+      {/* Microslot Info Badge - shows current grid dimensions */}
+      {mode === 'edit' && isHovered && !isDragging && (
+        <div className="absolute -top-6 left-1 bg-slate-700 text-white text-xs px-2 py-1 rounded shadow-lg z-25 pointer-events-none">
+          {currentSpans.col}×{currentSpans.row} grid
+        </div>
+      )}
+      
+      {/* Visual feedback during resize */}
+      {isResizing && (
+        <div className="absolute inset-0 bg-blue-100 bg-opacity-50 border-2 border-blue-400 border-dashed rounded pointer-events-none z-10">
+          <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+            Resizing {id.split('.').pop()}
+          </div>
+        </div>
+      )}
+      
+      <div className={`${isResizing ? 'pointer-events-none' : ''}`}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -863,18 +924,27 @@ function CartSlotsEditorContent({
                   const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
                   const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                   return (
-                    <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                      <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                        <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                          <h1 
-                            className={finalClasses} 
-                            style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
-                          >
-                            {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
-                          </h1>
-                        </EditableElement>
+                    <SortableMicroSlot
+                      key={slotId}
+                      id={slotId}
+                      mode={mode}
+                      majorSlot="header"
+                      onResize={handleMicroSlotResize}
+                      cartLayoutConfig={cartLayoutConfig}
+                    >
+                      <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                        <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                          <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                            <h1 
+                              className={finalClasses} 
+                              style={{...headerTitleStyling.elementStyles, ...positioning.elementStyles}}
+                            >
+                              {cartLayoutConfig?.slots?.[slotId]?.content || "My Cart"}
+                            </h1>
+                          </EditableElement>
+                        </div>
                       </div>
-                    </div>
+                    </SortableMicroSlot>
                   );
                 }
                 
@@ -958,35 +1028,44 @@ function CartSlotsEditorContent({
                       const defaultClasses = 'w-16 h-16 mx-auto text-gray-400 mb-4';
                       const finalClasses = iconStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                          {mode === 'edit' ? (
-                            <DirectResizable
-                              elementType="icon"
-                              minWidth={32}
-                              minHeight={32}
-                              maxWidth={128}
-                              maxHeight={128}
-                              onResize={(newSize) => {
-                                const widthClass = `w-${Math.round(newSize.width / 4)}`;
-                                const heightClass = `h-${Math.round(newSize.height / 4)}`;
-                                const newClasses = finalClasses.replace(/w-\d+|h-\d+/g, '').trim() + ` ${widthClass} ${heightClass}`;
-                                handleElementResize(slotId, newClasses);
-                              }}
-                            >
+                        <SortableMicroSlot
+                          key={slotId}
+                          id={slotId}
+                          mode={mode}
+                          majorSlot="emptyCart"
+                          onResize={handleMicroSlotResize}
+                          cartLayoutConfig={cartLayoutConfig}
+                        >
+                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                            {mode === 'edit' ? (
+                              <DirectResizable
+                                elementType="icon"
+                                minWidth={32}
+                                minHeight={32}
+                                maxWidth={128}
+                                maxHeight={128}
+                                onResize={(newSize) => {
+                                  const widthClass = `w-${Math.round(newSize.width / 4)}`;
+                                  const heightClass = `h-${Math.round(newSize.height / 4)}`;
+                                  const newClasses = finalClasses.replace(/w-\d+|h-\d+/g, '').trim() + ` ${widthClass} ${heightClass}`;
+                                  handleElementResize(slotId, newClasses);
+                                }}
+                              >
+                                <ShoppingCart 
+                                  className={finalClasses} 
+                                  style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
+                                  data-slot-id={slotId}
+                                />
+                              </DirectResizable>
+                            ) : (
                               <ShoppingCart 
                                 className={finalClasses} 
                                 style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
                                 data-slot-id={slotId}
                               />
-                            </DirectResizable>
-                          ) : (
-                            <ShoppingCart 
-                              className={finalClasses} 
-                              style={{...iconStyling.elementStyles, ...positioning.elementStyles}} 
-                              data-slot-id={slotId}
-                            />
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        </SortableMicroSlot>
                       );
                     }
                     
@@ -996,35 +1075,44 @@ function CartSlotsEditorContent({
                       const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
                       const finalClasses = titleStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                          <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            {mode === 'edit' ? (
-                              <DirectResizable
-                                elementType="generic"
-                                minWidth={150}
-                                minHeight={32}
-                                maxWidth={600}
-                                maxHeight={80}
-                                onResize={(newSize) => {
-                                  const fontSize = Math.max(14, Math.min(24, newSize.height * 0.6));
-                                  handleElementResize(slotId, `${finalClasses} text-[${fontSize}px]`);
-                                }}
-                              >
+                        <SortableMicroSlot
+                          key={slotId}
+                          id={slotId}
+                          mode={mode}
+                          majorSlot="emptyCart"
+                          onResize={handleMicroSlotResize}
+                          cartLayoutConfig={cartLayoutConfig}
+                        >
+                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              {mode === 'edit' ? (
+                                <DirectResizable
+                                  elementType="generic"
+                                  minWidth={150}
+                                  minHeight={32}
+                                  maxWidth={600}
+                                  maxHeight={80}
+                                  onResize={(newSize) => {
+                                    const fontSize = Math.max(14, Math.min(24, newSize.height * 0.6));
+                                    handleElementResize(slotId, `${finalClasses} text-[${fontSize}px]`);
+                                  }}
+                                >
+                                  <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                    <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
+                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
+                                    </h2>
+                                  </EditableElement>
+                                </DirectResizable>
+                              ) : (
                                 <EditableElement slotId={slotId} editable={mode === 'edit'}>
                                   <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
                                   </h2>
                                 </EditableElement>
-                              </DirectResizable>
-                            ) : (
-                              <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                <h2 className={finalClasses} style={{...titleStyling.elementStyles, ...positioning.elementStyles}}>
-                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Your cart is empty"}
-                                </h2>
-                              </EditableElement>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        </SortableMicroSlot>
                       );
                     }
                     
@@ -1034,35 +1122,44 @@ function CartSlotsEditorContent({
                       const defaultClasses = 'text-gray-600 mb-6';
                       const finalClasses = textStyling.elementClasses || defaultClasses;
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                          <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                            {mode === 'edit' ? (
-                              <DirectResizable
-                                elementType="generic"
-                                minWidth={200}
-                                minHeight={24}
-                                maxWidth={800}
-                                maxHeight={60}
-                                onResize={(newSize) => {
-                                  const fontSize = Math.max(12, Math.min(18, newSize.height * 0.5));
-                                  handleElementResize(slotId, `${finalClasses} text-[${fontSize}px]`);
-                                }}
-                              >
+                        <SortableMicroSlot
+                          key={slotId}
+                          id={slotId}
+                          mode={mode}
+                          majorSlot="emptyCart"
+                          onResize={handleMicroSlotResize}
+                          cartLayoutConfig={cartLayoutConfig}
+                        >
+                          <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                            <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                              {mode === 'edit' ? (
+                                <DirectResizable
+                                  elementType="generic"
+                                  minWidth={200}
+                                  minHeight={24}
+                                  maxWidth={800}
+                                  maxHeight={60}
+                                  onResize={(newSize) => {
+                                    const fontSize = Math.max(12, Math.min(18, newSize.height * 0.5));
+                                    handleElementResize(slotId, `${finalClasses} text-[${fontSize}px]`);
+                                  }}
+                                >
+                                  <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                    <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
+                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
+                                    </p>
+                                  </EditableElement>
+                                </DirectResizable>
+                              ) : (
                                 <EditableElement slotId={slotId} editable={mode === 'edit'}>
                                   <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
                                     {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                                   </p>
                                 </EditableElement>
-                              </DirectResizable>
-                            ) : (
-                              <EditableElement slotId={slotId} editable={mode === 'edit'}>
-                                <p className={finalClasses} style={{...textStyling.elementStyles, ...positioning.elementStyles}}>
-                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                                </p>
-                              </EditableElement>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        </SortableMicroSlot>
                       );
                     }
                     
@@ -1073,25 +1170,34 @@ function CartSlotsEditorContent({
                       const finalClasses = buttonStyling.elementClasses || defaultClasses;
                       
                       return (
-                        <div key={slotId} className={`${positioning.gridClasses} button-slot-container ${wrapperStyling.elementClasses}`} style={wrapperStyling.elementStyles}>
-                          {mode === 'edit' ? (
-                            <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                        <SortableMicroSlot
+                          key={slotId}
+                          id={slotId}
+                          mode={mode}
+                          majorSlot="emptyCart"
+                          onResize={handleMicroSlotResize}
+                          cartLayoutConfig={cartLayoutConfig}
+                        >
+                          <div className={`${positioning.gridClasses} button-slot-container ${wrapperStyling.elementClasses}`} style={wrapperStyling.elementStyles}>
+                            {mode === 'edit' ? (
+                              <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                <Button 
+                                  className={finalClasses}
+                                  style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                >
+                                  {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
+                                </Button>
+                              </EditableElement>
+                            ) : (
                               <Button 
                                 className={finalClasses}
                                 style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                               >
                                 {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
                               </Button>
-                            </EditableElement>
-                          ) : (
-                            <Button 
-                              className={finalClasses}
-                              style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                            >
-                              {cartLayoutConfig?.slots?.[slotId]?.content || "Continue Shopping"}
-                            </Button>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        </SortableMicroSlot>
                       );
                     }
                     
@@ -1429,32 +1535,41 @@ function CartSlotsEditorContent({
                           const defaultClasses = '';
                           const finalClasses = buttonStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                {mode === 'edit' ? (
-                                  <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                            <SortableMicroSlot
+                              key={slotId}
+                              id={slotId}
+                              mode={mode}
+                              majorSlot="coupon"
+                              onResize={handleMicroSlotResize}
+                              cartLayoutConfig={cartLayoutConfig}
+                            >
+                              <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                                <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                  {mode === 'edit' ? (
+                                    <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                      <Button 
+                                        disabled={!couponCode.trim()}
+                                        className={finalClasses}
+                                        style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
+                                      >
+                                        {cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
+                                      </Button>
+                                    </EditableElement>
+                                  ) : (
                                     <Button 
                                       disabled={!couponCode.trim()}
                                       className={finalClasses}
                                       style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
                                     >
-                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Apply"}
+                                      {cartLayoutConfig?.slots?.[slotId]?.content ? 
+                                        <span dangerouslySetInnerHTML={{ __html: cartLayoutConfig.slots[slotId].content }} />
+                                        : <><Tag className="w-4 h-4 mr-2" /> Apply</>
+                                      }
                                     </Button>
-                                  </EditableElement>
-                                ) : (
-                                  <Button 
-                                    disabled={!couponCode.trim()}
-                                    className={finalClasses}
-                                    style={{...buttonStyling.elementStyles, ...positioning.elementStyles}}
-                                  >
-                                    {cartLayoutConfig?.slots?.[slotId]?.content ? 
-                                      <span dangerouslySetInnerHTML={{ __html: cartLayoutConfig.slots[slotId].content }} />
-                                      : <><Tag className="w-4 h-4 mr-2" /> Apply</>
-                                    }
-                                  </Button>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            </SortableMicroSlot>
                           );
                         }
                         
@@ -1645,11 +1760,33 @@ function CartSlotsEditorContent({
                           const defaultClasses = 'w-full';
                           const finalClasses = buttonStyling.elementClasses || defaultClasses;
                           return (
-                            <div key={slotId} className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
-                              <div className="border-t mt-6 pt-6">
-                                <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
-                                  {mode === 'edit' ? (
-                                    <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                            <SortableMicroSlot
+                              key={slotId}
+                              id={slotId}
+                              mode={mode}
+                              majorSlot="orderSummary"
+                              onResize={handleMicroSlotResize}
+                              cartLayoutConfig={cartLayoutConfig}
+                            >
+                              <div className={`${positioning.gridClasses} ${mode === 'edit' ? 'relative group' : ''}`}>
+                                <div className="border-t mt-6 pt-6">
+                                  <div className={wrapperStyling.elementClasses} style={wrapperStyling.elementStyles}>
+                                    {mode === 'edit' ? (
+                                      <EditableElement slotId={slotId} editable={mode === 'edit'}>
+                                        <Button 
+                                          size="lg" 
+                                          className={finalClasses}
+                                          style={{
+                                            backgroundColor: '#007bff',
+                                            color: '#FFFFFF',
+                                            ...buttonStyling.elementStyles,
+                                            ...positioning.elementStyles
+                                          }}
+                                        >
+                                          {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
+                                        </Button>
+                                      </EditableElement>
+                                    ) : (
                                       <Button 
                                         size="lg" 
                                         className={finalClasses}
@@ -1662,24 +1799,11 @@ function CartSlotsEditorContent({
                                       >
                                         {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
                                       </Button>
-                                    </EditableElement>
-                                  ) : (
-                                    <Button 
-                                      size="lg" 
-                                      className={finalClasses}
-                                      style={{
-                                        backgroundColor: '#007bff',
-                                        color: '#FFFFFF',
-                                        ...buttonStyling.elementStyles,
-                                        ...positioning.elementStyles
-                                      }}
-                                    >
-                                      {cartLayoutConfig?.slots?.[slotId]?.content || "Proceed to Checkout"}
-                                    </Button>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            </SortableMicroSlot>
                           );
                         }
                         
