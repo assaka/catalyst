@@ -472,13 +472,20 @@ function CartSlotsEditorContent({
     });
   }, []);
 
-  // Text change handler - only save to database, no state updates
+  // Text change handler - update DOM element and save to database
   const handleSidebarTextChange = useCallback((slotId, newText) => {
-    // Only update the database, not the local state
-    // The sidebar manages its own local state for smooth typing
-    // State will be refreshed when the component re-mounts or refreshes
+    // Update the DOM element's text content immediately
+    const element = document.querySelector(`[data-slot-id="${slotId}"]`);
+    if (element) {
+      // Update the text content of the element
+      if (element.tagName.toLowerCase() === 'input') {
+        element.value = newText;
+      } else {
+        element.textContent = newText;
+      }
+    }
     
-    // Just save to database directly
+    // Also save to database
     if (saveConfigurationRef.current) {
       // Update only the specific slot content in the config for saving
       const updatedConfig = {
@@ -492,7 +499,7 @@ function CartSlotsEditorContent({
         }
       };
       
-      // Save to database without updating local state
+      // Save to database
       saveConfiguration(updatedConfig);
     }
   }, [saveConfiguration]);
@@ -1991,7 +1998,10 @@ function CartSlotsEditorContent({
           onInlineClassChange={handleInlineClassChange}
           onTextChange={handleSidebarTextChange}
           slotId={selectedSlotId}
-          slotConfig={selectedSlotId ? cartLayoutConfig?.slots?.[selectedSlotId] : null}
+          slotConfig={useMemo(() => 
+            selectedSlotId ? cartLayoutConfig?.slots?.[selectedSlotId] : null, 
+            [selectedSlotId, cartLayoutConfig?.slots?.[selectedSlotId]]
+          )}
           isVisible={mode === 'edit'}
         />
       )}

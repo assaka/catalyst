@@ -18,24 +18,26 @@ export const useDirectResize = (elementRef, options = {}) => {
 
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHandle, setResizeHandle] = useState(null);
+  const [sizeTooltip, setSizeTooltip] = useState(null);
 
   const createResizeHandle = useCallback(() => {
     const handle = document.createElement('div');
     
-    // Base handle styles
+    // Base handle styles - improved visual design
     Object.assign(handle.style, {
       position: 'absolute',
-      width: '8px',
-      height: '8px',
-      backgroundColor: '#10b981',
+      width: '12px',
+      height: '12px',
+      backgroundColor: '#3b82f6',
       border: '2px solid white',
       borderRadius: '50%',
       cursor: 'se-resize',
-      zIndex: '50',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+      zIndex: '1000',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
       opacity: '0',
-      transition: 'opacity 0.2s, transform 0.1s',
-      pointerEvents: 'auto'
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      pointerEvents: 'auto',
+      willChange: 'opacity, transform'
     });
 
     // Position based on handlePosition
@@ -64,16 +66,18 @@ export const useDirectResize = (elementRef, options = {}) => {
         });
     }
 
-    // Add hover effects
+    // Add hover effects with better transitions
     handle.addEventListener('mouseenter', () => {
-      handle.style.transform = (handle.style.transform || '') + ' scale(1.1)';
-      handle.style.backgroundColor = '#059669';
+      handle.style.transform = (handle.style.transform || '') + ' scale(1.2)';
+      handle.style.backgroundColor = '#2563eb';
+      handle.style.boxShadow = '0 6px 12px rgba(37, 99, 235, 0.4)';
     });
     
     handle.addEventListener('mouseleave', () => {
       if (!isResizing) {
-        handle.style.transform = handle.style.transform.replace(' scale(1.1)', '');
-        handle.style.backgroundColor = '#10b981';
+        handle.style.transform = handle.style.transform.replace(' scale(1.2)', '');
+        handle.style.backgroundColor = '#3b82f6';
+        handle.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
       }
     });
 
@@ -94,6 +98,27 @@ export const useDirectResize = (elementRef, options = {}) => {
     const startHeight = rect.height;
 
     setIsResizing(true);
+    
+    // Create size tooltip
+    const tooltip = document.createElement('div');
+    tooltip.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 9999;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    `;
+    document.body.appendChild(tooltip);
+    setSizeTooltip(tooltip);
 
     const handleMouseMove = (moveEvent) => {
       const deltaX = moveEvent.clientX - startX;
@@ -130,17 +155,33 @@ export const useDirectResize = (elementRef, options = {}) => {
         }
       }
 
-      // Apply new dimensions directly to element
-      element.style.width = `${newWidth}px`;
-      element.style.height = `${newHeight}px`;
-      element.style.minWidth = `${newWidth}px`;
-      element.style.minHeight = `${newHeight}px`;
-
-      // Element-specific adjustments
-      if (elementType === 'button') {
-        const fontSize = Math.max(12, Math.min(20, newHeight * 0.4));
-        element.style.fontSize = `${fontSize}px`;
-      }
+      // Apply smooth transitions with requestAnimationFrame
+      requestAnimationFrame(() => {
+        // Apply new dimensions directly to element
+        element.style.width = `${newWidth}px`;
+        element.style.height = `${newHeight}px`;
+        element.style.minWidth = `${newWidth}px`;
+        element.style.minHeight = `${newHeight}px`;
+        
+        // Add visual feedback during resize
+        element.style.transition = 'none'; // Disable transitions during drag
+        element.style.userSelect = 'none';
+        element.style.pointerEvents = 'none';
+        element.style.opacity = '0.8';
+        element.style.transform = 'scale(1.02)';
+        element.style.filter = 'drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3))';
+        
+        // Element-specific adjustments
+        if (elementType === 'button') {
+          const fontSize = Math.max(12, Math.min(20, newHeight * 0.4));
+          element.style.fontSize = `${fontSize}px`;
+        }
+        
+        // Update tooltip with current size
+        if (tooltip) {
+          tooltip.textContent = `${Math.round(newWidth)} × ${Math.round(newHeight)}px`;
+        }
+      });
 
       // Callback with new dimensions
       if (onResize) {
@@ -150,10 +191,27 @@ export const useDirectResize = (elementRef, options = {}) => {
 
     const handleMouseUp = () => {
       setIsResizing(false);
-      if (resizeHandle) {
-        resizeHandle.style.transform = resizeHandle.style.transform.replace(' scale(1.1)', '');
-        resizeHandle.style.backgroundColor = '#10b981';
+      
+      // Restore element interactivity and transitions
+      element.style.transition = '';
+      element.style.userSelect = '';
+      element.style.pointerEvents = '';
+      element.style.opacity = '';
+      element.style.transform = '';
+      element.style.filter = '';
+      
+      // Remove size tooltip
+      if (tooltip && document.body.contains(tooltip)) {
+        document.body.removeChild(tooltip);
       }
+      setSizeTooltip(null);
+      
+      if (resizeHandle) {
+        resizeHandle.style.transform = resizeHandle.style.transform.replace(' scale(1.2)', '');
+        resizeHandle.style.backgroundColor = '#3b82f6';
+        resizeHandle.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+      }
+      
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -221,6 +279,12 @@ export const useDirectResize = (elementRef, options = {}) => {
         if (element && handle && element.contains(handle)) {
           element.removeChild(handle);
         }
+        
+        // Clean up any leftover tooltips
+        if (sizeTooltip && document.body.contains(sizeTooltip)) {
+          document.body.removeChild(sizeTooltip);
+        }
+        
       } catch (error) {
         console.warn('Cleanup error:', error);
       }
@@ -228,6 +292,14 @@ export const useDirectResize = (elementRef, options = {}) => {
       if (element) {
         element.removeEventListener('mouseenter', handleMouseEnter);
         element.removeEventListener('mouseleave', handleMouseLeave);
+        
+        // Restore element styles
+        element.style.transition = '';
+        element.style.userSelect = '';
+        element.style.pointerEvents = '';
+        element.style.opacity = '';
+        element.style.transform = '';
+        element.style.filter = '';
       }
       
       if (handle) {

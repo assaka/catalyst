@@ -63,10 +63,12 @@ const EditorSidebar = ({
   // State for persistent button selection
   const [lastSelectedButton, setLastSelectedButton] = useState(null);
   
-  // Local text content state for immediate UI updates
-  const [localTextContent, setLocalTextContent] = useState('');
+  // Refs for uncontrolled textareas to avoid React re-render lag
+  const textContentRef = useRef(null);
+  const htmlContentRef = useRef(null);
   
-  // Local HTML content state for HTML editing
+  // Keep local state only for initialization and blur handling
+  const [localTextContent, setLocalTextContent] = useState('');
   const [localHtmlContent, setLocalHtmlContent] = useState('');
   
   // HTML validation state
@@ -195,11 +197,23 @@ const EditorSidebar = ({
       const storedStyles = slotConfig.styles || {};
       
       // Initialize local text content with slot content
-      setLocalTextContent(slotConfig.content || '');
+      const textContent = slotConfig.content || '';
+      setLocalTextContent(textContent);
+      
+      // Update textarea ref value
+      if (textContentRef.current) {
+        textContentRef.current.value = textContent;
+      }
       
       // Initialize local HTML content with clean HTML (no editor attributes/classes)
       if (isHtmlElement && selectedElement) {
-        setLocalHtmlContent(getCleanHtml(selectedElement) || '');
+        const htmlContent = getCleanHtml(selectedElement) || '';
+        setLocalHtmlContent(htmlContent);
+        
+        // Update HTML textarea ref value
+        if (htmlContentRef.current) {
+          htmlContentRef.current.value = htmlContent;
+        }
       }
       
       // Clear initialization flag after a short delay
@@ -277,47 +291,47 @@ const EditorSidebar = ({
     }));
   }, []);
 
-  // Simple text change handler - only update local state
+  // Ultra-fast text change handler - no React state updates during typing
   const handleTextContentChange = useCallback((e) => {
-    const newText = e.target.value;
-    
-    // Only update local state - no save manager calls
-    setLocalTextContent(newText);
+    // Do absolutely nothing - let the textarea be uncontrolled during typing
+    // This eliminates React re-render lag completely
   }, []);
 
-  // Simple HTML content change handler - only update local state
+  // Ultra-fast HTML content change handler - no React state updates during typing  
   const handleHtmlContentChange = useCallback((e) => {
-    const newHtml = e.target.value;
-    
-    // Only update local state for smooth typing
-    setLocalHtmlContent(newHtml);
-    
-    // Clear validation errors
+    // Do absolutely nothing - let the textarea be uncontrolled during typing
+    // Clear validation errors only
     setHtmlValidationError(null);
   }, []);
 
   // Save text content when user stops typing (onBlur)
   const handleTextContentSave = useCallback(() => {
-    if (slotId && onTextChange && !isInitializing) {
-      onTextChange(slotId, localTextContent);
+    if (slotId && onTextChange && !isInitializing && textContentRef.current) {
+      const currentValue = textContentRef.current.value;
+      onTextChange(slotId, currentValue);
+      setLocalTextContent(currentValue); // Update state for consistency
     }
-  }, [slotId, onTextChange, localTextContent, isInitializing]);
+  }, [slotId, onTextChange, isInitializing]);
 
   // Save HTML content when user stops typing (onBlur)
   const handleHtmlContentSave = useCallback(() => {
-    if (slotId && onTextChange && !isInitializing) {
+    if (slotId && onTextChange && !isInitializing && htmlContentRef.current) {
+      const currentHtml = htmlContentRef.current.value;
+      
       // Extract text content from HTML for database storage
       try {
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = localHtmlContent;
-        const textContent = tempDiv.textContent || tempDiv.innerText || localHtmlContent;
+        tempDiv.innerHTML = currentHtml;
+        const textContent = tempDiv.textContent || tempDiv.innerText || currentHtml;
         onTextChange(slotId, textContent);
+        setLocalHtmlContent(currentHtml); // Update state for consistency
       } catch (error) {
         // Fallback to raw HTML if parsing fails
-        onTextChange(slotId, localHtmlContent);
+        onTextChange(slotId, currentHtml);
+        setLocalHtmlContent(currentHtml);
       }
     }
-  }, [slotId, onTextChange, localHtmlContent, isInitializing]);
+  }, [slotId, onTextChange, isInitializing]);
 
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
@@ -498,8 +512,9 @@ const EditorSidebar = ({
             <div>
               <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
               <textarea
+                ref={textContentRef}
                 id="textContent"
-                value={localTextContent}
+                defaultValue={localTextContent}
                 onChange={handleTextContentChange}
                 onBlur={handleTextContentSave}
                 className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
@@ -513,8 +528,9 @@ const EditorSidebar = ({
                 <Label htmlFor="htmlContent" className="text-xs font-medium">Complete HTML Element</Label>
                 <p className="text-xs text-gray-500 mt-1 mb-2">Edit the complete HTML element including tag, attributes, and content</p>
                 <textarea
+                  ref={htmlContentRef}
                   id="htmlContent"
-                  value={localHtmlContent}
+                  defaultValue={localHtmlContent}
                   onChange={handleHtmlContentChange}
                   onBlur={handleHtmlContentSave}
                   className={`w-full mt-1 text-xs font-mono border rounded-md p-2 h-32 resize-none ${

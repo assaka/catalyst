@@ -9,7 +9,6 @@ class SimpleStyleManager {
   // Set the database save callback from parent component
   setDatabaseSaveCallback(callback) {
     this.databaseSaveCallback = callback;
-    console.log('💾 Database save callback registered');
   }
 
   // Apply style directly to DOM element
@@ -20,8 +19,6 @@ class SimpleStyleManager {
         return false;
       }
       
-      console.log('🎯 Applying style:', { property, value, element: element.tagName });
-      
       // Direct DOM manipulation
       if (property.startsWith('class_')) {
         // Handle class-based changes (Tailwind)
@@ -29,10 +26,7 @@ class SimpleStyleManager {
         this.updateClassName(element, actualProperty, value);
       } else {
         // Handle inline style changes
-        console.log('💄 Setting inline style:', property, '=', value, 'on element:', element);
         element.style[property] = value;
-        console.log('💄 After setting, element.style[' + property + '] =', element.style[property]);
-        console.log('💄 Element style length:', element.style.length);
       }
       
       // Track the change for persistence
@@ -40,8 +34,6 @@ class SimpleStyleManager {
       if (elementId) {
         this.trackChange(elementId, property, value);
       }
-      
-      console.log('✅ Style applied successfully');
       return true;
     } catch (error) {
       console.warn(`Failed to apply ${property}: ${value}`, error);
@@ -69,10 +61,8 @@ class SimpleStyleManager {
           // Check if bold was already present (simple toggle check)
           const wasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
           if (wasBold) {
-            console.log('🔄 Toggled OFF font-bold (setting font-normal)');
-            newClasses.push('font-normal'); // Explicitly set normal weight
+              newClasses.push('font-normal'); // Explicitly set normal weight
           } else {
-            console.log('🔄 Toggled ON font-bold');
             newClasses.push('font-bold');
           }
         } else {
@@ -84,7 +74,6 @@ class SimpleStyleManager {
           // Toggle behavior: if already italic, remove it; if not italic, add it
           if (newClasses.includes('italic')) {
             newClasses = newClasses.filter(cls => cls !== 'italic');
-            console.log('🔄 Toggled OFF italic');
           } else {
             newClasses.push('italic');
             console.log('🔄 Toggled ON italic');
