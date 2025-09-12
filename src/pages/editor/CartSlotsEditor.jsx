@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 // Enhanced editable element with resize and drag capabilities
 const EditableElement = ({ slotId, children, className, style, onClick, canResize = false, draggable = false, mode = 'edit' }) => {
@@ -339,6 +340,8 @@ const CartSlotsEditor = ({
                             onClick={(e) => handleElementClick(slotId, e.currentTarget)}
                             className={finalClasses}
                             style={headerTitleStyling.elementStyles}
+                            canResize={true}
+                            draggable={true}
                           >
                             {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
                           </EditableElement>
@@ -350,6 +353,8 @@ const CartSlotsEditor = ({
                   })}
               </div>
             </div>
+            
+            <CmsBlockRenderer position="cart_above_items" />
             
             {/* Conditional rendering based on viewMode */}
             {viewMode === 'empty' ? (
@@ -532,6 +537,7 @@ const CartSlotsEditor = ({
                       </div>
                     </CardContent>
                   </Card>
+                  <CmsBlockRenderer position="cart_below_items" />
                 </div>
                 
                 <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
@@ -631,6 +637,7 @@ const CartSlotsEditor = ({
                           <div className="border-t mt-6 pt-6">
                             <EditableElement
                               slotId="orderSummary.checkoutButton"
+                              mode={mode}
                               onClick={handleElementClick}
                               canResize={true}
                               draggable={true}
