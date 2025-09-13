@@ -111,6 +111,40 @@ export const useCustomizations = (options = {}) => {
     }
   }, [isPreviewMode]);
 
+  // Get custom props with customizations applied
+  const getCustomProps = useCallback((props = {}) => {
+    if (!isInitialized) return props;
+    
+    try {
+      // Get customization props from the engine
+      const customizationProps = customizationEngine.getCustomProps(componentName, storeId);
+      return {
+        ...props,
+        ...customizationProps
+      };
+    } catch (error) {
+      console.warn('Error getting custom props:', error);
+      return props;
+    }
+  }, [isInitialized, componentName, storeId]);
+
+  // Get custom styles with customizations applied
+  const getCustomStyles = useCallback((styles = {}) => {
+    if (!isInitialized) return styles;
+    
+    try {
+      // Get customization styles from the engine
+      const customizationStyles = customizationEngine.getCustomStyles(componentName, storeId);
+      return {
+        ...styles,
+        ...customizationStyles
+      };
+    } catch (error) {
+      console.warn('Error getting custom styles:', error);
+      return styles;
+    }
+  }, [isInitialized, componentName, storeId]);
+
   return {
     // State
     isInitialized,
@@ -122,6 +156,10 @@ export const useCustomizations = (options = {}) => {
     // Actions
     initialize,
     applyInlineCustomization,
+
+    // Customization functions
+    getCustomProps,
+    getCustomStyles,
 
     // Checks
     hasReplacement: !!componentReplacement,
@@ -135,7 +173,9 @@ export const withCustomizations = (WrappedComponent, options = {}) => {
     const {
       isInitialized,
       isPreviewMode,
-      componentReplacement
+      componentReplacement,
+      getCustomProps,
+      getCustomStyles
     } = useCustomizations({
       componentName: options.componentName || WrappedComponent.displayName || WrappedComponent.name,
       storeId: props.storeId || options.storeId,

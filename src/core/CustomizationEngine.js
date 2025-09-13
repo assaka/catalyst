@@ -741,6 +741,36 @@ class CustomizationEngine {
   }
 
   /**
+   * Get custom props for a component
+   */
+  getCustomProps(componentName, storeId) {
+    try {
+      // Return empty object as default - can be extended later
+      // This method can be enhanced to fetch component-specific props
+      // from customizations database when needed
+      return {};
+    } catch (error) {
+      console.warn('Error getting custom props:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Get custom styles for a component
+   */
+  getCustomStyles(componentName, storeId) {
+    try {
+      // Return empty object as default - can be extended later
+      // This method can be enhanced to fetch component-specific styles
+      // from customizations database when needed
+      return {};
+    } catch (error) {
+      console.warn('Error getting custom styles:', error);
+      return {};
+    }
+  }
+
+  /**
    * Cleanup - remove all customizations
    */
   cleanup() {
