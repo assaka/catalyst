@@ -101,7 +101,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ zIndex: 9999 }}
-      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue}/${maxValue})` : `(${currentValue}px)`}`}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
       {/* Modern subtle handle */}
       <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
@@ -120,7 +120,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       {/* Subtle indicator when dragging */}
       {isDragging && (
         <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'} bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
-          {isHorizontal ? `${currentValue}/${maxValue}` : `${currentValue}px`}
+          {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
         </div>
       )}
     </div>
@@ -500,7 +500,7 @@ const CartSlotsEditor = ({
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
-    const slotConfig = cartLayoutConfig?.slots?.[slotId];
+    const slotConfig = cartLayoutConfig && cartLayoutConfig.slots ? cartLayoutConfig.slots[slotId] : null;
     return {
       elementClasses: slotConfig?.className || '',
       elementStyles: slotConfig?.styles || {}
@@ -710,13 +710,6 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
-
-
-
-
-
-  // No loading state needed since we have initial config
-
   // Create the additional view mode controls for the wrapper
   const additionalControls = (
     <div className="flex bg-gray-100 rounded-lg p-1">
@@ -755,9 +748,6 @@ const CartSlotsEditor = ({
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* View Mode Selector */}
-            {additionalControls}
-
             {/* Only show controls in edit mode */}
             {mode === 'edit' && (
               <div className="flex items-center gap-2">
@@ -788,13 +778,13 @@ const CartSlotsEditor = ({
           </div>
         </div>
         {/* Cart Layout - Hierarchical Structure */}
-        <div 
+        <div
           className="bg-gray-50 cart-page"
           style={{ backgroundColor: '#f9fafb' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
+              {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
                 <HierarchicalSlotRenderer
                   slots={cartLayoutConfig.slots}
                   parentId={null}
@@ -811,20 +801,19 @@ const CartSlotsEditor = ({
                 </div>
               )}
             </div>
-            
+
             <CmsBlockRenderer position="cart_above_items" />
-            
+
             <CmsBlockRenderer position="cart_below_items" />
           </div>
         </div>
-      </div>
 
       {/* EditorSidebar - only show in edit mode */}
       {mode === 'edit' && isSidebarVisible && selectedElement && (
         <EditorSidebar
           selectedElement={selectedElement}
-          slotId={selectedElement?.getAttribute?.('data-slot-id') || null}
-          slotConfig={cartLayoutConfig?.slots?.[selectedElement?.getAttribute?.('data-slot-id')]}
+          slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
+          slotConfig={cartLayoutConfig && cartLayoutConfig.slots && selectedElement?.getAttribute ? cartLayoutConfig.slots[selectedElement.getAttribute('data-slot-id')] : null}
           onTextChange={handleTextChange}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}
