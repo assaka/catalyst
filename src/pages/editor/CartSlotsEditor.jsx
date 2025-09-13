@@ -317,14 +317,26 @@ const GridColumn = ({
         </div>
       )}
       {children}
-      {/* Grid resize handle on the column itself */}
-      {showHandle && (
+      
+      {/* Horizontal grid resize handle */}
+      {showHorizontalHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
           direction="horizontal"
+        />
+      )}
+      
+      {/* Vertical grid height resize handle */}
+      {showVerticalHandle && (
+        <GridResizeHandle
+          onResize={(newHeight) => onHeightResize(slotId, newHeight)}
+          currentValue={typeof currentHeight === 'number' ? currentHeight : 60}
+          maxValue={400}
+          minValue={30}
+          direction="vertical"
         />
       )}
     </div>
@@ -680,6 +692,35 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Handle slot container height resize changes (for GridColumn)
+  const handleSlotHeightResize = useCallback((slotId, newHeight) => {
+    console.log('📐 handleSlotHeightResize called:', { slotId, newHeight });
+    
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = {
+        ...prevConfig,
+        microSlots: {
+          ...prevConfig?.microSlots,
+          [slotId]: {
+            ...prevConfig?.microSlots?.[slotId],
+            height: newHeight
+          }
+        }
+      };
+
+      // Debounced auto-save
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Saving configuration after slot height resize...');
+        saveConfiguration(updatedConfig);
+      }, 1000);
+
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -783,6 +824,8 @@ const CartSlotsEditor = ({
                           colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
                           slotId={slotId}
                           onGridResize={handleGridResize}
+                          onHeightResize={handleSlotHeightResize}
+                          currentHeight={cartLayoutConfig?.microSlots?.[slotId]?.height || 'auto'}
                           mode={mode}
                           parentClassName={positioning.parentClassName}
                         >
@@ -816,6 +859,8 @@ const CartSlotsEditor = ({
                   colSpan={cartLayoutConfig?.microSlots?.['test.slot']?.col || 6}
                   slotId="test.slot"
                   onGridResize={handleGridResize}
+                  onHeightResize={handleSlotHeightResize}
+                  currentHeight={cartLayoutConfig?.microSlots?.['test.slot']?.height || 60}
                   mode={mode}
                 >
                   <EditableElement
