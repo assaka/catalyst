@@ -809,8 +809,6 @@ const CartSlotsEditor = ({
         </div>
       </div>
 
-      </div>
-
       {/* EditorSidebar - only show in edit mode */}
       {mode === 'edit' && isSidebarVisible && selectedElement && (
         <EditorSidebar
