@@ -136,17 +136,18 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const wrapperStyle = {
-    // Allow wrapper to expand to full available space
-    width: '100%',
+    // Allow wrapper to expand while maintaining resize functionality
+    width: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'fit-content',
     height: 'auto',
     maxWidth: '100%',
-    display: 'block'
+    display: 'inline-block',
+    minWidth: '100%' // This ensures it takes full width when not explicitly sized
   };
 
   return (
     <div 
       ref={wrapperRef}
-      className={cn("relative block group", className)}
+      className={cn("relative inline-block group", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
       onMouseLeave={() => !disabled && setIsHovered(false)}
       style={wrapperStyle}
@@ -162,10 +163,11 @@ const ResizeWrapper = ({
           ...children.props.style,
           ...(size.width !== 'auto' && { width: `${size.width}${size.widthUnit || 'px'}` }),
           ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
-          minWidth: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : undefined,
+          minWidth: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
-          display: 'block'
+          display: 'block',
+          width: size.width === 'auto' ? '100%' : undefined
         }
       })}
       
