@@ -1,44 +1,55 @@
 import { ShoppingCart, Package } from 'lucide-react';
 
-// Helper function to create slot with hierarchical properties
-const createSlot = (id, type = 'text', config = {}) => {
-  return {
-    id,
-    type,
-    content: config.content || '',
-    className: config.className || '',
-    styles: config.styles || {},
-    
-    // Hierarchical properties
-    parentId: config.parentId || null,
-    children: config.children || [],
-    
-    // Layout properties for containers
-    layout: config.layout || (type === 'grid' ? 'grid' : type === 'flex' ? 'flex' : 'block'),
-    gridCols: config.gridCols || 12,
-    gap: config.gap || 2,
-    
-    // Relative sizing
-    colSpan: config.colSpan || 12,
-    rowSpan: config.rowSpan || 1,
-    
-    // Constraints
-    allowedChildren: config.allowedChildren || ['container', 'text', 'button', 'image', 'input', 'grid', 'flex'],
-    maxDepth: config.maxDepth || 5,
-    minChildren: config.minChildren || 0,
-    maxChildren: config.maxChildren || null,
-    
-    // Metadata
-    locked: config.locked || false,
-    collapsed: config.collapsed || false,
-    metadata: config.metadata || {}
-  };
-};
-
-// Cart Page Configuration - Hierarchical structure
+// Cart Page Configuration with hierarchical support
 export const cartConfig = {
   page_name: 'Cart',
   slot_type: 'cart_layout',
+  
+  // Clean JSON structure - cart sections as direct properties
+  microSlots: {
+    // Cart sections as top-level properties in a blank JSON object
+    "flashMessage": { col: 12, row: 1 },
+    "flashMessage.content": { col: 12, row: 1 },
+    "flashMessage.message": { col: 12, row: 1 },
+    
+    "header": { col: 12, row: 1 },
+    "header.title": { col: 12, row: 1 },
+    
+    "emptyCart": { col: 12, row: 1 },
+    "emptyCart.icon": { col: 2, row: 1 },
+    "emptyCart.title": { col: 10, row: 1 },
+    "emptyCart.text": { col: 12, row: 1 },
+    "emptyCart.button": { col: 12, row: 1 },
+    
+    "cartItem": { col: 12, row: 1 },
+    "cartItem.productImage": { col: 2, row: 2 },
+    "cartItem.productTitle": { col: 6, row: 1 },
+    "cartItem.quantityControl": { col: 2, row: 1 },
+    "cartItem.productPrice": { col: 2, row: 1 },
+    "cartItem.removeButton": { col: 12, row: 1 },
+    
+    "coupon": { col: 12, row: 1 },
+    "coupon.title": { col: 12, row: 1 },
+    "coupon.title.icon": { col: 2, row: 1 },
+    "coupon.title.label": { col: 10, row: 1 },
+    "coupon.input": { col: 8, row: 1 },
+    "coupon.button": { col: 4, row: 1 },
+    "coupon.message": { col: 12, row: 1 },
+    "coupon.appliedCoupon": { col: 12, row: 1 },
+    
+    "orderSummary": { col: 12, row: 1 },
+    "orderSummary.title": { col: 12, row: 1 },
+    "orderSummary.subtotal": { col: 12, row: 1 },
+    "orderSummary.discount": { col: 12, row: 1 },
+    "orderSummary.shipping": { col: 12, row: 1 },
+    "orderSummary.tax": { col: 12, row: 1 },
+    "orderSummary.total": { col: 12, row: 1 },
+    "orderSummary.checkoutButton": { col: 12, row: 1 },
+    
+    "recommendations": { col: 12, row: 1 },
+    "recommendations.title": { col: 12, row: 1 },
+    "recommendations.products": { col: 12, row: 3 }
+  },
   
   // Slot definitions for metadata and properties (replaces microSlotDefinitions)
   slotDefinitions: {
@@ -92,164 +103,263 @@ export const cartConfig = {
     }
   },
   
-  // Hierarchical slot configuration
+  // Slot configuration with content, styling and metadata (slot_configurations format)
   slots: {
-    // Main layout container
-    main_layout: createSlot('main_layout', 'grid', {
+    // Hierarchical structure defined via parentId and children properties
+    // Main containers with parent-child relationships
+    main_layout: {
+      id: 'main_layout',
+      type: 'grid',
+      content: '',
       className: 'main-layout',
+      styles: {},
+      parentId: null,
+      children: ['header_container', 'content_area', 'sidebar_area'],
       layout: 'grid',
       gridCols: 12,
-      children: ['header_container', 'content_area', 'sidebar_area'],
-      colSpan: 12
-    }),
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    // Header container
-    header_container: createSlot('header_container', 'flex', {
+    header_container: {
+      id: 'header_container', 
+      type: 'flex',
+      content: '',
       className: 'header-container',
+      styles: {},
       parentId: 'main_layout',
-      layout: 'flex',
       children: ['header_title'],
-      colSpan: 12
-    }),
+      layout: 'flex',
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    header_title: createSlot('header_title', 'text', {
+    content_area: {
+      id: 'content_area',
+      type: 'container', 
+      content: '',
+      className: 'content-area',
+      styles: {},
+      parentId: 'main_layout',
+      children: ['empty_cart_container'],
+      layout: 'block',
+      colSpan: 8,
+      metadata: { hierarchical: true }
+    },
+    
+    sidebar_area: {
+      id: 'sidebar_area',
+      type: 'flex',
+      content: '',
+      className: 'sidebar-area', 
+      styles: { flexDirection: 'column' },
+      parentId: 'main_layout',
+      children: ['coupon_container', 'order_summary_container'],
+      layout: 'flex',
+      colSpan: 4,
+      metadata: { hierarchical: true }
+    },
+    
+    // Keep existing flat structure slots for backwards compatibility
+    // Header slots (both hierarchical and flat)
+    header_title: {
+      id: 'header_title',
+      type: 'text',
       content: 'My Cart',
       className: 'text-3xl font-bold text-gray-900 mb-4',
+      styles: {},
       parentId: 'header_container',
-      colSpan: 12
-    }),
+      children: [],
+      metadata: { hierarchical: true }
+    },
     
-    // Content area (8 columns)
-    content_area: createSlot('content_area', 'container', {
-      className: 'content-area',
-      parentId: 'main_layout',
-      layout: 'block',
-      children: ['empty_cart_container'],
-      colSpan: 8
-    }),
-    
-    // Empty cart container
-    empty_cart_container: createSlot('empty_cart_container', 'container', {
+    // Empty cart hierarchical structure
+    empty_cart_container: {
+      id: 'empty_cart_container',
+      type: 'container',
+      content: '',
       className: 'empty-cart-container text-center',
+      styles: {},
       parentId: 'content_area',
-      layout: 'block',
       children: ['empty_cart_icon', 'empty_cart_title', 'empty_cart_text', 'empty_cart_button'],
-      colSpan: 12
-    }),
+      layout: 'block',
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    empty_cart_icon: createSlot('empty_cart_icon', 'image', {
+    empty_cart_icon: {
+      id: 'empty_cart_icon', 
+      type: 'image',
       content: 'shopping-cart-icon',
       className: 'w-16 h-16 mx-auto text-gray-400 mb-4',
+      styles: {},
       parentId: 'empty_cart_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    empty_cart_title: createSlot('empty_cart_title', 'text', {
+    empty_cart_title: {
+      id: 'empty_cart_title',
+      type: 'text', 
       content: 'Your cart is empty',
       className: 'text-xl font-semibold text-gray-900 mb-2',
+      styles: {},
       parentId: 'empty_cart_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    empty_cart_text: createSlot('empty_cart_text', 'text', {
+    empty_cart_text: {
+      id: 'empty_cart_text',
+      type: 'text',
       content: "Looks like you haven't added anything to your cart yet.",
       className: 'text-gray-600 mb-6',
-      parentId: 'empty_cart_container',
-      colSpan: 12
-    }),
+      styles: {},
+      parentId: 'empty_cart_container', 
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    empty_cart_button: createSlot('empty_cart_button', 'button', {
+    empty_cart_button: {
+      id: 'empty_cart_button',
+      type: 'button',
       content: 'Continue Shopping',
       className: 'bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded',
+      styles: {},
       parentId: 'empty_cart_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    // Sidebar area (4 columns)
-    sidebar_area: createSlot('sidebar_area', 'flex', {
-      className: 'sidebar-area',
-      parentId: 'main_layout',
-      layout: 'flex',
-      styles: { flexDirection: 'column' },
-      children: ['coupon_container', 'order_summary_container'],
-      colSpan: 4
-    }),
-    
-    // Coupon container
-    coupon_container: createSlot('coupon_container', 'grid', {
+    // Sidebar hierarchical structure
+    coupon_container: {
+      id: 'coupon_container',
+      type: 'grid',
+      content: '',
       className: 'coupon-container bg-white p-4 rounded-lg shadow',
+      styles: {},
       parentId: 'sidebar_area',
+      children: ['coupon_title', 'coupon_input', 'coupon_button'],
       layout: 'grid',
       gridCols: 12,
-      children: ['coupon_title', 'coupon_input', 'coupon_button'],
-      colSpan: 12
-    }),
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    coupon_title: createSlot('coupon_title', 'text', {
+    coupon_title: {
+      id: 'coupon_title',
+      type: 'text',
       content: 'Apply Coupon',
       className: 'text-lg font-semibold mb-4',
+      styles: {},
       parentId: 'coupon_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    coupon_input: createSlot('coupon_input', 'input', {
+    coupon_input: {
+      id: 'coupon_input',
+      type: 'input',
       content: 'Enter coupon code',
       className: 'border rounded px-3 py-2',
+      styles: {},
       parentId: 'coupon_container',
-      colSpan: 8
-    }),
+      children: [],
+      colSpan: 8,
+      metadata: { hierarchical: true }
+    },
     
-    coupon_button: createSlot('coupon_button', 'button', {
+    coupon_button: {
+      id: 'coupon_button',
+      type: 'button',
       content: 'Apply',
       className: 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded',
+      styles: {},
       parentId: 'coupon_container',
-      colSpan: 4
-    }),
+      children: [],
+      colSpan: 4,
+      metadata: { hierarchical: true }
+    },
     
-    // Order summary container
-    order_summary_container: createSlot('order_summary_container', 'container', {
+    order_summary_container: {
+      id: 'order_summary_container',
+      type: 'container',
+      content: '',
       className: 'order-summary-container bg-white p-4 rounded-lg shadow mt-4',
+      styles: {},
       parentId: 'sidebar_area',
-      layout: 'block',
       children: ['order_summary_title', 'order_summary_subtotal', 'order_summary_tax', 'order_summary_total', 'checkout_button'],
-      colSpan: 12
-    }),
+      layout: 'block',
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    order_summary_title: createSlot('order_summary_title', 'text', {
+    order_summary_title: {
+      id: 'order_summary_title',
+      type: 'text',
       content: 'Order Summary',
       className: 'text-lg font-semibold mb-4',
+      styles: {},
       parentId: 'order_summary_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    order_summary_subtotal: createSlot('order_summary_subtotal', 'text', {
+    order_summary_subtotal: {
+      id: 'order_summary_subtotal',
+      type: 'text',
       content: '<span>Subtotal</span><span>$79.97</span>',
       className: 'flex justify-between mb-2',
+      styles: {},
       parentId: 'order_summary_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    order_summary_tax: createSlot('order_summary_tax', 'text', {
+    order_summary_tax: {
+      id: 'order_summary_tax',
+      type: 'text',
       content: '<span>Tax</span><span>$6.40</span>',
       className: 'flex justify-between mb-2',
+      styles: {},
       parentId: 'order_summary_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    order_summary_total: createSlot('order_summary_total', 'text', {
+    order_summary_total: {
+      id: 'order_summary_total',
+      type: 'text',
       content: '<span>Total</span><span>$81.37</span>',
       className: 'flex justify-between text-lg font-semibold border-t pt-4 mb-4',
+      styles: {},
       parentId: 'order_summary_container',
-      colSpan: 12
-    }),
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
     
-    checkout_button: createSlot('checkout_button', 'button', {
+    checkout_button: {
+      id: 'checkout_button',
+      type: 'button',
       content: 'Proceed to Checkout',
       className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded text-lg',
+      styles: {},
       parentId: 'order_summary_container',
-      colSpan: 12
-    }),
-    // Flash Message Slots
+      children: [],
+      colSpan: 12,
+      metadata: { hierarchical: true }
+    },
+    
+    // Flash Message Slots (flat structure for backwards compatibility)
     'flashMessage.content': {
       content: `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
   <div class="flex">

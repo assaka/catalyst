@@ -780,203 +780,42 @@ const EditorSidebar = ({
             {/* Size Section */}
             <SectionHeader title="Size" section="size">
               <div className="space-y-3">
-                {/* Element type detection and appropriate controls */}
-                {(() => {
-                  const isButton = selectedElement?.tagName?.toLowerCase() === 'button' || 
-                                  selectedElement?.className?.includes('resize-button');
-                  const isImage = selectedElement?.tagName?.toLowerCase() === 'img' || 
-                                 selectedElement?.className?.includes('resize-image');
-                  const isIcon = selectedElement?.tagName?.toLowerCase() === 'svg' || 
-                                selectedElement?.className?.includes('resize-icon');
-                  const isInput = selectedElement?.tagName?.toLowerCase() === 'input' || 
-                                 selectedElement?.className?.includes('resize-input');
-                  
-                  if (isIcon) {
-                    // Icon-specific controls
-                    return (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <Label className="text-xs font-medium text-blue-800">Icon Size</Label>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div>
-                              <Input
-                                type="number"
-                                value={parseInt(elementProperties.styles?.width) || 64}
-                                onChange={(e) => {
-                                  const size = `${e.target.value}px`;
-                                  handlePropertyChange('width', size);
-                                  handlePropertyChange('height', size);
-                                }}
-                                className="text-xs h-7"
-                                placeholder="64"
-                                min="16"
-                                max="256"
-                                step="8"
-                              />
-                              <span className="text-xs text-gray-500">Width/Height (px)</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button variant="outline" size="sm" onClick={() => {
-                                handlePropertyChange('width', '32px');
-                                handlePropertyChange('height', '32px');
-                              }} className="h-7 px-2 text-xs">32px</Button>
-                              <Button variant="outline" size="sm" onClick={() => {
-                                handlePropertyChange('width', '64px');
-                                handlePropertyChange('height', '64px');
-                              }} className="h-7 px-2 text-xs">64px</Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  if (isImage) {
-                    // Image-specific controls
-                    return (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                          <Label className="text-xs font-medium text-green-800">Image Dimensions</Label>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div>
-                              <Label className="text-xs">Width</Label>
-                              <Input
-                                type="number"
-                                value={parseInt(elementProperties.styles?.width) || 100}
-                                onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
-                                className="text-xs h-7"
-                                placeholder="100"
-                                min="10"
-                                max="300"
-                                step="10"
-                              />
-                              <span className="text-xs text-gray-500">%</span>
-                            </div>
-                            <div>
-                              <Label className="text-xs">Max Height</Label>
-                              <Input
-                                type="number"
-                                value={parseInt(elementProperties.styles?.maxHeight) || 300}
-                                onChange={(e) => handlePropertyChange('maxHeight', `${e.target.value}px`)}
-                                className="text-xs h-7"
-                                placeholder="300"
-                                min="50"
-                                max="800"
-                                step="50"
-                              />
-                              <span className="text-xs text-gray-500">px</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 mt-2">
-                            <Button variant="outline" size="sm" onClick={() => {
-                              handlePropertyChange('width', '50%');
-                              handlePropertyChange('height', 'auto');
-                            }} className="h-7 px-2 text-xs">50%</Button>
-                            <Button variant="outline" size="sm" onClick={() => {
-                              handlePropertyChange('width', '100%');
-                              handlePropertyChange('height', 'auto');
-                            }} className="h-7 px-2 text-xs">100%</Button>
-                            <Button variant="outline" size="sm" onClick={() => {
-                              handlePropertyChange('width', '150%');
-                              handlePropertyChange('height', 'auto');
-                            }} className="h-7 px-2 text-xs">150%</Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  if (isButton) {
-                    // Button-specific controls
-                    return (
-                      <div className="space-y-3">
-                        <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                          <Label className="text-xs font-medium text-purple-800">Button Size</Label>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div>
-                              <Label className="text-xs">Width</Label>
-                              <Input
-                                type="number"
-                                value={parseInt(elementProperties.styles?.width) || 100}
-                                onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
-                                className="text-xs h-7"
-                                placeholder="100"
-                                min="10"
-                                max="300"
-                                step="5"
-                              />
-                              <span className="text-xs text-gray-500">%</span>
-                            </div>
-                            <div>
-                              <Label className="text-xs">Padding</Label>
-                              <Input
-                                type="number"
-                                value={parseInt(elementProperties.styles?.padding) || 12}
-                                onChange={(e) => handlePropertyChange('padding', `${e.target.value}px`)}
-                                className="text-xs h-7"
-                                placeholder="12"
-                                min="4"
-                                max="32"
-                                step="4"
-                              />
-                              <span className="text-xs text-gray-500">px</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 mt-2">
-                            <Button variant="outline" size="sm" onClick={() => {
-                              handlePropertyChange('width', 'auto');
-                              handlePropertyChange('padding', '8px 16px');
-                            }} className="h-7 px-2 text-xs">Auto</Button>
-                            <Button variant="outline" size="sm" onClick={() => {
-                              handlePropertyChange('width', '100%');
-                              handlePropertyChange('padding', '12px 24px');
-                            }} className="h-7 px-2 text-xs">Full</Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  // Default text/general element controls
-                  return (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="width" className="text-xs font-medium">Width</Label>
-                        <div className="flex items-center mt-1">
-                          <Input
-                            id="width"
-                            type="number"
-                            value={parseInt(elementProperties.styles?.width) || 100}
-                            onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
-                            className="text-xs h-7"
-                            placeholder="100"
-                            min="5"
-                            max="300"
-                            step="5"
-                          />
-                          <span className="ml-1 text-xs text-gray-500">%</span>
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="height" className="text-xs font-medium">Height</Label>
-                        <div className="flex items-center mt-1">
-                          <Input
-                            id="height"
-                            type="number"
-                            value={parseInt(elementProperties.styles?.minHeight) || 40}
-                            onChange={(e) => handlePropertyChange('minHeight', `${e.target.value}px`)}
-                            className="text-xs h-7"
-                            placeholder="Auto"
-                            min="20"
-                            max="500"
-                            step="10"
-                          />
-                          <span className="ml-1 text-xs text-gray-500">px</span>
-                        </div>
-                      </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="width" className="text-xs font-medium">Width</Label>
+                    <div className="flex items-center mt-1">
+                      <Input
+                        id="width"
+                        type="number"
+                        value={parseInt(elementProperties.styles?.width) || 100}
+                        onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
+                        className="text-xs h-7"
+                        placeholder="100"
+                        min="5"
+                        max="300"
+                        step="5"
+                      />
+                      <span className="ml-1 text-xs text-gray-500">%</span>
                     </div>
-                  );
-                })()}
+                  </div>
+                  <div>
+                    <Label htmlFor="height" className="text-xs font-medium">Height</Label>
+                    <div className="flex items-center mt-1">
+                      <Input
+                        id="height"
+                        type="number"
+                        value={parseInt(elementProperties.styles?.minHeight) || 40}
+                        onChange={(e) => handlePropertyChange('minHeight', `${e.target.value}px`)}
+                        className="text-xs h-7"
+                        placeholder="Auto"
+                        min="20"
+                        max="500"
+                        step="10"
+                      />
+                      <span className="ml-1 text-xs text-gray-500">px</span>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="space-y-2">
                   <Label className="text-xs font-medium">Quick Width</Label>
