@@ -342,7 +342,27 @@ const CartSlotsEditor = ({
 
   // Handle element selection for EditorSidebar
   const handleElementClick = useCallback((slotId, element) => {
-    setSelectedElement(element);
+    // If element is a ResizeWrapper, find the actual content element inside
+    let actualElement = element;
+    
+    if (element && element.classList && element.classList.contains('resize-none')) {
+      // This is a ResizeWrapper child, look for the actual content element
+      const button = element.querySelector('button');
+      const svg = element.querySelector('svg');
+      const input = element.querySelector('input');
+      
+      // Use the most specific element found
+      actualElement = button || svg || input || element;
+    }
+    
+    console.log('🎯 Selected element for EditorSidebar:', {
+      slotId,
+      elementType: actualElement.tagName,
+      elementClasses: actualElement.className,
+      isWrapper: element !== actualElement
+    });
+    
+    setSelectedElement(actualElement);
     setIsSidebarVisible(true);
   }, []);
 
