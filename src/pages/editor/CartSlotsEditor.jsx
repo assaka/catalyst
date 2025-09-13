@@ -97,8 +97,8 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
     <div
       className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
         isHovered || isDragging || parentHovered
-          ? 'opacity-100' 
-          : 'opacity-0'
+          ? 'opacity-100 scale-110' 
+          : 'opacity-0 scale-95'
       }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
@@ -106,18 +106,18 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       style={{ zIndex: 9999 }}
       title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
-      {/* Modern subtle handle */}
-      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
+      {/* Improved handle design */}
+      <div className={`w-full h-full rounded-lg flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 shadow-lg border border-white/20 ${
         isDragging 
-          ? 'bg-blue-500 shadow-lg scale-110' 
-          : isHovered 
-            ? 'bg-blue-400 shadow-md' 
-            : 'bg-gray-300'
+          ? 'bg-blue-600 shadow-xl scale-110' 
+          : isHovered || parentHovered
+            ? 'bg-blue-500 shadow-lg' 
+            : 'bg-gray-400/80'
       }`}>
-        {/* Three subtle lines for grip */}
-        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
-        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
-        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
+        {/* Three dots for grip */}
+        <div className={`${isHorizontal ? 'w-1 h-1' : 'w-1 h-1'} bg-white rounded-full`}></div>
+        <div className={`${isHorizontal ? 'w-1 h-1' : 'w-1 h-1'} bg-white rounded-full`}></div>
+        <div className={`${isHorizontal ? 'w-1 h-1' : 'w-1 h-1'} bg-white rounded-full`}></div>
       </div>
       
       {/* Subtle indicator when dragging */}
@@ -172,8 +172,8 @@ const GridColumn = ({
     <div 
       className={`${colSpanClass} ${rowSpanClass} ${
         mode === 'edit' 
-          ? `border border-dashed rounded-md overflow-hidden ${
-              isHovered ? 'border-blue-400' : 'border-transparent'
+          ? `border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
+              isHovered ? 'border-blue-400 bg-blue-50/30' : 'border-gray-200 hover:border-gray-300'
             }` 
           : 'overflow-hidden'
       } relative responsive-slot`}
@@ -185,58 +185,32 @@ const GridColumn = ({
         maxHeight: height ? `${height}px` : undefined
       }}
     >
-      {/* Hover detection system */}
-      {mode === 'edit' && (
+      {/* Simplified hover detection - only for non-container elements */}
+      {mode === 'edit' && !['container', 'grid', 'flex'].some(type => 
+        children && children.type && children.type.toString().includes(type)
+      ) && (
         <div 
-          className="absolute inset-0 pointer-events-auto"
+          className="absolute inset-0 pointer-events-auto opacity-0 hover:opacity-100 transition-opacity duration-200"
           onMouseEnter={(e) => {
-            // Only trigger hover if mouse is in border area (outer 8px)
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const borderWidth = 8;
-            
-            const inBorderArea = 
-              x < borderWidth || 
-              x > rect.width - borderWidth || 
-              y < borderWidth || 
-              y > rect.height - borderWidth;
-            
-            if (inBorderArea) {
-              e.stopPropagation();
-              setIsHovered(true);
-            }
-          }}
-          onMouseMove={(e) => {
-            // Check if still in border area during mouse move
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const borderWidth = 8;
-            
-            const inBorderArea = 
-              x < borderWidth || 
-              x > rect.width - borderWidth || 
-              y < borderWidth || 
-              y > rect.height - borderWidth;
-            
-            if (!inBorderArea && isHovered) {
-              setIsHovered(false);
-            } else if (inBorderArea && !isHovered) {
-              e.stopPropagation();
-              setIsHovered(true);
-            }
+            e.stopPropagation();
+            setIsHovered(true);
           }}
           onMouseLeave={(e) => {
             e.stopPropagation();
             setIsHovered(false);
           }}
-          style={{ zIndex: 1 }}
+          style={{ 
+            zIndex: 1,
+            background: 'rgba(59, 130, 246, 0.05)',
+            border: '1px solid rgba(59, 130, 246, 0.3)'
+          }}
         />
       )}
       
       {/* Content area with padding */}
-      <div className="p-2 relative" style={{ zIndex: 2 }}>
+      <div className={`p-2 relative transition-all duration-200 ${
+        mode === 'edit' ? 'cursor-pointer hover:bg-white/50 rounded-md' : ''
+      }`} style={{ zIndex: 2 }}>
         {children}
       </div>
       
@@ -807,58 +781,63 @@ const CartSlotsEditor = ({
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* View Mode Tabs */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('empty')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'empty'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-                Empty Cart
-              </button>
-              <button
-                onClick={() => setViewMode('withProducts')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'withProducts'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                <Package className="w-4 h-4 inline mr-1.5" />
-                With Products
-              </button>
+            <div className="flex items-center gap-4">
+              {/* View Mode Tabs */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('empty')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'empty'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+                  Empty Cart
+                </button>
+                <button
+                  onClick={() => setViewMode('withProducts')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'withProducts'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <Package className="w-4 h-4 inline mr-1.5" />
+                  With Products
+                </button>
+              </div>
+
+              {/* Edit mode controls */}
+              {mode === 'edit' && (
+                <>
+                  {/* Save Status */}
+                  {saveStatus && (
+                    <div className={`flex items-center gap-2 text-sm ${
+                      saveStatus === 'saving' ? 'text-blue-600' :
+                      saveStatus === 'saved' ? 'text-green-600' :
+                      'text-red-600'
+                    }`}>
+                      {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {saveStatus === 'saved' && '✓ Saved'}
+                      {saveStatus === 'error' && '✗ Save Failed'}
+                    </div>
+                  )}
+
+                  <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                </>
+              )}
             </div>
 
-            {/* Only show controls in edit mode */}
+            {/* Right side controls */}
             {mode === 'edit' && (
-              <div className="flex items-center gap-2">
-                {/* Save Status */}
-                {saveStatus && (
-                  <div className={`flex items-center gap-2 text-sm ${
-                    saveStatus === 'saving' ? 'text-blue-600' :
-                    saveStatus === 'saved' ? 'text-green-600' :
-                    'text-red-600'
-                  }`}>
-                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {saveStatus === 'saved' && '✓ Saved'}
-                    {saveStatus === 'error' && '✗ Save Failed'}
-                  </div>
-                )}
-
-                <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-
-                <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
+              <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
             )}
           </div>
         </div>
