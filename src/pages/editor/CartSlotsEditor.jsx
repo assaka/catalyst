@@ -373,8 +373,19 @@ const CartSlotsEditor = ({
   onSave,
   viewMode: propViewMode = 'empty'
 }) => {
-  // State management
-  const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
+  // State management - Initialize with empty config to avoid React error #130
+  const [cartLayoutConfig, setCartLayoutConfig] = useState({
+    page_name: 'Cart',
+    slot_type: 'cart_layout',
+    slots: {},
+    metadata: {
+      created: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      version: '1.0',
+      pageType: 'cart'
+    },
+    cmsBlocks: []
+  });
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -445,23 +456,28 @@ const CartSlotsEditor = ({
           console.warn('⚠️ No slots found in cart configuration');
         }
         
-        setCartLayoutConfig(initialConfig);
+        // Defer state update to avoid React error #130
+        setTimeout(() => {
+          setCartLayoutConfig(initialConfig);
+        }, 0);
       } catch (error) {
         console.error('❌ Failed to initialize cart configuration:', error);
         // Set a minimal fallback configuration
-        setCartLayoutConfig({
-          page_name: 'Cart',
-          slot_type: 'cart_layout',
-          slots: {},
-          metadata: {
-            created: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
-            version: '1.0',
-            pageType: 'cart',
-            error: 'Failed to load configuration'
-          },
-          cmsBlocks: []
-        });
+        setTimeout(() => {
+          setCartLayoutConfig({
+            page_name: 'Cart',
+            slot_type: 'cart_layout',
+            slots: {},
+            metadata: {
+              created: new Date().toISOString(),
+              lastModified: new Date().toISOString(),
+              version: '1.0',
+              pageType: 'cart',
+              error: 'Failed to load configuration'
+            },
+            cmsBlocks: []
+          });
+        }, 0);
       } finally {
         setIsLoading(false);
       }
