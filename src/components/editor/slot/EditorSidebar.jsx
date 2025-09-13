@@ -190,21 +190,31 @@ const EditorSidebar = ({
     // Remove editor-specific classes
     const editorClasses = [
       'cursor-pointer',
+      'cursor-move',
       'transition-all',
       'duration-200',
       'editor-selected',
       'resize-none',
-      'select-none'
+      'select-none',
+      'group',
+      'relative'
     ];
-    
+
     const hoverClasses = ['hover:!outline-1', 'hover:!outline-blue-400', 'hover:!outline-offset-2', 'hover:outline'];
     const allEditorClasses = [...editorClasses, ...hoverClasses];
-    
+
     // Clean classes from the element
     if (clonedElement.className) {
       const cleanClasses = clonedElement.className
         .split(' ')
-        .filter(cls => !allEditorClasses.some(editorCls => cls.includes(editorCls.replace('!', ''))))
+        .filter(cls => {
+          // Check for exact matches or hover classes that contain the editor class
+          return !allEditorClasses.some(editorCls => {
+            const cleanEditorCls = editorCls.replace('!', '').replace(':', '');
+            return cls === editorCls || cls === cleanEditorCls ||
+                   (editorCls.includes('hover:') && cls.includes(cleanEditorCls));
+          });
+        })
         .join(' ');
       
       if (cleanClasses.trim()) {
