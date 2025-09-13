@@ -21,6 +21,7 @@ export const cartConfig = {
       layout: 'grid',
       gridCols: 12,
       colSpan: 12,
+      viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -33,6 +34,7 @@ export const cartConfig = {
       parentId: 'main_layout',
       layout: 'flex',
       colSpan: 12,
+      viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -45,6 +47,7 @@ export const cartConfig = {
       parentId: 'main_layout',
       layout: 'block',
       colSpan: 8,
+      viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -57,6 +60,7 @@ export const cartConfig = {
       parentId: 'main_layout',
       layout: 'flex',
       colSpan: 4,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -69,6 +73,7 @@ export const cartConfig = {
       parentClassName: 'text-center',
       styles: {},
       parentId: 'header_container',
+      viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -82,6 +87,7 @@ export const cartConfig = {
       parentId: 'content_area',
       layout: 'block',
       colSpan: 12,
+      viewMode: ['empty'],
       metadata: { hierarchical: true }
     },
     
@@ -94,6 +100,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'empty_cart_container',
       colSpan: 12,
+      viewMode: ['empty'],
       metadata: { hierarchical: true }
     },
     
@@ -106,6 +113,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'empty_cart_container',
       colSpan: 12,
+      viewMode: ['empty'],
       metadata: { hierarchical: true }
     },
     
@@ -118,6 +126,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'empty_cart_container', 
       colSpan: 12,
+      viewMode: ['empty'],
       metadata: { hierarchical: true }
     },
     
@@ -130,6 +139,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'empty_cart_container',
       colSpan: 12,
+      viewMode: ['empty'],
       metadata: { hierarchical: true }
     },
     
@@ -144,6 +154,7 @@ export const cartConfig = {
       layout: 'grid',
       gridCols: 12,
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -156,6 +167,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'coupon_container',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -168,6 +180,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'coupon_container',
       colSpan: 8,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -180,6 +193,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'coupon_container',
       colSpan: 4,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -192,6 +206,7 @@ export const cartConfig = {
       parentId: 'sidebar_area',
       layout: 'block',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -204,6 +219,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'order_summary_container',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -216,6 +232,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'order_summary_container',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -228,6 +245,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'order_summary_container',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -240,6 +258,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'order_summary_container',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -252,6 +271,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'order_summary_container',
       colSpan: 12,
+      viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
   },

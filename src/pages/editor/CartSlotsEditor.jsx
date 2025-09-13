@@ -284,31 +284,15 @@ const HierarchicalSlotRenderer = ({
 }) => {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
   
-  // Filter slots based on view mode
+  // Filter slots based on their viewMode property from config
   const filteredSlots = childSlots.filter(slot => {
-    // Always show header and main layout elements
-    if (slot.id === 'main_layout' || slot.id === 'header_container' || slot.id === 'header_title') {
+    // If slot doesn't have viewMode defined, show it always
+    if (!slot.viewMode || !Array.isArray(slot.viewMode)) {
       return true;
     }
     
-    // For empty cart mode: show empty cart elements, hide sidebar
-    if (viewMode === 'empty') {
-      if (slot.id.startsWith('empty_cart')) return true;
-      if (slot.id === 'content_area') return true;
-      if (slot.id === 'empty_cart_container') return true;
-      if (slot.id === 'sidebar_area') return false; // Hide sidebar in empty mode
-      if (slot.id.startsWith('coupon_') || slot.id.startsWith('order_summary_')) return false;
-    }
-    
-    // For with products mode: hide empty cart elements, show sidebar
-    if (viewMode === 'withProducts') {
-      if (slot.id.startsWith('empty_cart')) return false; // Hide empty cart elements
-      if (slot.id === 'content_area') return true;
-      if (slot.id === 'sidebar_area') return true; // Show sidebar
-      if (slot.id.startsWith('coupon_') || slot.id.startsWith('order_summary_')) return true;
-    }
-    
-    return true; // Default: show all
+    // Show slot only if current viewMode is in its viewMode array
+    return slot.viewMode.includes(viewMode);
   });
   
   return filteredSlots.map(slot => {
@@ -348,24 +332,6 @@ const HierarchicalSlotRenderer = ({
           )}
           {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
             <div className="w-full h-full grid grid-cols-12 gap-2">
-              {/* Show cart items in "With Products" mode for content_area */}
-              {slot.id === 'content_area' && viewMode === 'withProducts' && (
-                <div className="col-span-12 mb-4">
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <div className="flex items-center gap-4 py-4 border-b">
-                      <img src="https://placehold.co/80x80?text=Product" alt="Product" className="w-20 h-20 rounded" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold">Sample Product</h3>
-                        <p className="text-gray-600">$29.99</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold">$29.99</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
               <HierarchicalSlotRenderer 
                 slots={slots}
                 parentId={slot.id}
