@@ -470,20 +470,33 @@ const CartSlotsEditor = ({
   }, [saveConfiguration]);
 
   // Handle class changes from EditorSidebar for hierarchical slots
-  const handleClassChange = useCallback((slotId, className, styles) => {
+  const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false) => {
+    console.log('🎨 handleClassChange called:', { slotId, className, styles, isAlignmentChange });
+    
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
       
       if (updatedSlots[slotId]) {
+        // Merge existing styles with new styles
+        const existingStyles = updatedSlots[slotId].styles || {};
+        const mergedStyles = { ...existingStyles, ...styles };
+        
         updatedSlots[slotId] = {
           ...updatedSlots[slotId],
           className: className,
-          styles: styles || updatedSlots[slotId].styles || {},
+          styles: mergedStyles,
           metadata: {
             ...updatedSlots[slotId].metadata,
             lastModified: new Date().toISOString()
           }
         };
+        
+        console.log('✅ Updated slot configuration:', {
+          slotId,
+          className,
+          styles: mergedStyles,
+          isAlignmentChange
+        });
       }
       
       const updatedConfig = {

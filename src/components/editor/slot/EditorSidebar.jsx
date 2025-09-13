@@ -602,6 +602,13 @@ const EditorSidebar = ({
         
         // Save immediately using parent callback with preserved styles
         if (onInlineClassChange) {
+          console.log('🎨 EditorSidebar calling onInlineClassChange for class-based property:', {
+            elementSlotId,
+            property,
+            value,
+            className: selectedElement.className,
+            currentInlineStyles
+          });
           onInlineClassChange(elementSlotId, selectedElement.className, currentInlineStyles);
         }
       }
@@ -621,6 +628,13 @@ const EditorSidebar = ({
       
       // Save immediately using parent callback (for inline styles, we update classes to persist)
       if (onInlineClassChange) {
+        console.log('🎨 EditorSidebar calling onInlineClassChange for inline style:', {
+          elementSlotId,
+          property,
+          formattedValue,
+          className: selectedElement.className,
+          inlineStyles: { [property]: formattedValue }
+        });
         onInlineClassChange(elementSlotId, selectedElement.className, { [property]: formattedValue });
       }
     }
