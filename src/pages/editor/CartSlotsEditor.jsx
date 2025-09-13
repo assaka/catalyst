@@ -394,21 +394,52 @@ const CartSlotsEditor = ({
         }
         
         // Don't include views or other properties with React components
+        // Create a deep clone to ensure no React components or functions are included
+        const cleanSlots = {};
+        if (cartConfig.slots) {
+          Object.entries(cartConfig.slots).forEach(([key, slot]) => {
+            // Only copy serializable properties, ensure no undefined values
+            cleanSlots[key] = {
+              id: slot.id || key,
+              type: slot.type || 'container',
+              content: slot.content || '',
+              className: slot.className || '',
+              parentClassName: slot.parentClassName || '',
+              styles: slot.styles ? { ...slot.styles } : {},
+              parentId: slot.parentId === undefined ? null : slot.parentId,
+              layout: slot.layout || null,
+              gridCols: slot.gridCols || null,
+              colSpan: slot.colSpan || 12,
+              rowSpan: slot.rowSpan || 1,
+              viewMode: slot.viewMode ? [...slot.viewMode] : [],
+              metadata: slot.metadata ? { ...slot.metadata } : {}
+            };
+          });
+        }
+        
         const initialConfig = {
           page_name: cartConfig.page_name || 'Cart',
           slot_type: cartConfig.slot_type || 'cart_layout',
-          slots: cartConfig.slots ? { ...cartConfig.slots } : {},
+          slots: cleanSlots,
           metadata: {
-            ...(cartConfig.metadata || {}),
             created: new Date().toISOString(),
-            lastModified: new Date().toISOString()
+            lastModified: new Date().toISOString(),
+            version: '1.0',
+            pageType: 'cart'
           },
-          // Store only serializable view data, not React components
-          cmsBlocks: cartConfig.cmsBlocks || []
+          cmsBlocks: cartConfig.cmsBlocks ? [...cartConfig.cmsBlocks] : []
         };
 
         console.log('📦 Initialized cart configuration with hierarchical structure:', initialConfig);
         console.log('🔍 Available slots:', Object.keys(initialConfig.slots || {}));
+        
+        // Verify the config is serializable
+        try {
+          JSON.stringify(initialConfig);
+          console.log('✅ Configuration is serializable');
+        } catch (e) {
+          console.error('❌ Configuration contains non-serializable data:', e);
+        }
         
         if (Object.keys(initialConfig.slots).length === 0) {
           console.warn('⚠️ No slots found in cart configuration');
