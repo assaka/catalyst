@@ -792,7 +792,7 @@ const EditorSidebar = ({
                         className="text-xs h-7"
                         placeholder="100"
                         min="5"
-                        max="100"
+                        max="300"
                         step="5"
                       />
                       <span className="ml-1 text-xs text-gray-500">%</span>
@@ -851,6 +851,32 @@ const EditorSidebar = ({
                       className="h-7 px-2 text-xs"
                     >
                       100%
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '150%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      150%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '200%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      200%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '250%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      250%
                     </Button>
                   </div>
                 </div>

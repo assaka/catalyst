@@ -33,7 +33,42 @@ const ResizeWrapper = ({
     e.stopPropagation();
     
     const rect = wrapperRef.current.getBoundingClientRect();
-    const parentRect = wrapperRef.current.parentElement?.getBoundingClientRect();
+    
+    // Find the closest slot container for relative sizing
+    // Look for the immediate container that represents the slot bounds
+    let slotContainer = wrapperRef.current.parentElement;
+    let searchDepth = 0;
+    const maxSearchDepth = 5; // Prevent infinite loops
+    
+    while (slotContainer && searchDepth < maxSearchDepth) {
+      // Check if this is a slot container (has slot identifier or grid column class)
+      const isSlotContainer = slotContainer.hasAttribute('data-grid-slot-id') ||
+                              slotContainer.hasAttribute('data-slot-id') ||
+                              slotContainer.className.includes('col-span-') ||
+                              slotContainer.className.includes('responsive-slot');
+      
+      if (isSlotContainer) {
+        break;
+      }
+      
+      slotContainer = slotContainer.parentElement;
+      searchDepth++;
+      
+      if (slotContainer === document.body) {
+        slotContainer = null;
+        break;
+      }
+    }
+    
+    // Use slot container or fall back to immediate parent
+    const parentRect = slotContainer?.getBoundingClientRect() || wrapperRef.current.parentElement?.getBoundingClientRect();
+    
+    console.log('🎯 Resize container detection:', {
+      slotContainerFound: !!slotContainer,
+      slotContainerClasses: slotContainer?.className || 'none',
+      slotContainerWidth: parentRect?.width || 0,
+      elementWidth: rect.width
+    });
     
     const startX = e.clientX;
     const startY = e.clientY;
@@ -54,9 +89,15 @@ const ResizeWrapper = ({
       let widthUnit = 'px';
       
       if (parentRect && parentRect.width > 0) {
-        const widthPercentage = Math.min(100, Math.max(1, (newWidth / parentRect.width) * 100));
+        const widthPercentage = Math.max(1, (newWidth / parentRect.width) * 100);
         widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
+        
+        console.log('📏 Width calculation:', {
+          newWidth,
+          parentWidth: parentRect.width,
+          percentage: widthPercentage.toFixed(1) + '%'
+        });
       }
 
       // Use min-height for more flexible vertical sizing
