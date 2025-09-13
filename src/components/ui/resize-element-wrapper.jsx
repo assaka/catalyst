@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 const ResizeWrapper = ({ 
   children,
   className,
-  minWidth = 100,
-  minHeight = 36,
-  maxWidth = 400,
-  maxHeight = 200,
+  minWidth = 50,
+  minHeight = 20,
+  maxWidth = Infinity,
+  maxHeight = 600,
   onResize,
   initialWidth,
   initialHeight,
@@ -46,24 +46,34 @@ const ResizeWrapper = ({
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
-      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + deltaX));
-      const newHeight = Math.min(maxHeight, Math.max(minHeight, startHeight + deltaY));
+      const newWidth = Math.max(minWidth, startWidth + deltaX);
+      const newHeight = Math.max(minHeight, startHeight + deltaY);
 
       // Calculate percentage width based on parent container
       let widthValue = newWidth;
       let widthUnit = 'px';
       
       if (parentRect && parentRect.width > 0) {
-        const widthPercentage = Math.min(100, Math.max(5, (newWidth / parentRect.width) * 100));
-        widthValue = widthPercentage;
+        const widthPercentage = Math.min(100, Math.max(1, (newWidth / parentRect.width) * 100));
+        widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
+      }
+
+      // Use min-height for more flexible vertical sizing
+      let heightValue = newHeight;
+      let heightUnit = 'px';
+      
+      // For very small heights, use auto to allow natural content flow
+      if (newHeight <= 30) {
+        heightValue = 'auto';
+        heightUnit = '';
       }
 
       const newSize = { 
         width: widthValue, 
-        height: newHeight,
+        height: heightValue,
         widthUnit,
-        heightUnit: 'px'
+        heightUnit
       };
       setSize(newSize);
       
@@ -106,9 +116,8 @@ const ResizeWrapper = ({
         style: {
           ...children.props.style,
           ...(size.width !== 'auto' && { width: `${size.width}${size.widthUnit || 'px'}` }),
-          ...(size.height !== 'auto' && { height: `${size.height}${size.heightUnit || 'px'}` }),
+          ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
           minWidth: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : undefined,
-          minHeight: size.height !== 'auto' ? `${size.height}${size.heightUnit || 'px'}` : undefined,
           boxSizing: 'border-box'
         }
       })}
@@ -152,7 +161,7 @@ const ResizeWrapper = ({
         <div
           className="fixed top-4 right-4 bg-black/80 text-white text-xs font-medium px-3 py-1.5 rounded shadow-lg z-50 pointer-events-none"
         >
-          {Math.round(size.width)}{size.widthUnit || 'px'} × {Math.round(size.height)}{size.heightUnit || 'px'}
+          {Math.round(size.width)}{size.widthUnit || 'px'} × {size.height === 'auto' ? 'auto' : Math.round(size.height) + (size.heightUnit || 'px')}
         </div>
       )}
     </div>

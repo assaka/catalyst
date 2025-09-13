@@ -34,15 +34,18 @@ import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Simple Slot Types
+// Hierarchical Slot Types
 export const SlotTypes = {
+  CONTAINER: 'container',    // Can contain other slots
   TEXT: 'text',              // Text content
   BUTTON: 'button',          // Button element
   IMAGE: 'image',            // Image element
   INPUT: 'input',            // Input field
+  GRID: 'grid',              // Grid layout container
+  FLEX: 'flex',              // Flex layout container
 };
 
-// Create simple flat slot
+// Create hierarchical slot
 export const createSlot = (id, type = SlotTypes.TEXT, config = {}) => {
   return {
     id,
@@ -50,10 +53,193 @@ export const createSlot = (id, type = SlotTypes.TEXT, config = {}) => {
     content: config.content || '',
     className: config.className || '',
     styles: config.styles || {},
+    
+    // Hierarchical properties
+    parentId: config.parentId || null,
+    children: config.children || [],
+    
+    // Layout properties for containers
+    layout: config.layout || (type === SlotTypes.GRID ? 'grid' : type === SlotTypes.FLEX ? 'flex' : 'block'),
+    gridCols: config.gridCols || 12,  // For grid containers
+    gap: config.gap || 2,              // Gap between children
+    
+    // Relative sizing
+    colSpan: config.colSpan || 12,     // Relative to parent's grid
+    rowSpan: config.rowSpan || 1,      // For grid layouts
+    
+    // Constraints
+    allowedChildren: config.allowedChildren || Object.values(SlotTypes), // Which types can be nested
+    maxDepth: config.maxDepth || 5,    // Maximum nesting depth
+    minChildren: config.minChildren || 0,
+    maxChildren: config.maxChildren || null,
+    
+    // Metadata
+    locked: config.locked || false,     // Prevent modifications
+    collapsed: config.collapsed || false, // For UI tree view
     metadata: config.metadata || {}
   };
 };
 
+// Create default hierarchical structure for cart page
+export const createDefaultSlots = () => {
+  return {
+    // Main layout container
+    main_layout: createSlot('main_layout', SlotTypes.GRID, {
+      className: 'main-layout',
+      layout: 'grid',
+      gridCols: 12,
+      children: ['header_container', 'content_area', 'sidebar_area'],
+      colSpan: 12
+    }),
+    
+    // Header container
+    header_container: createSlot('header_container', SlotTypes.FLEX, {
+      className: 'header-container',
+      parentId: 'main_layout',
+      layout: 'flex',
+      children: ['header_title'],
+      colSpan: 12
+    }),
+    
+    header_title: createSlot('header_title', SlotTypes.TEXT, {
+      content: 'My Cart',
+      className: 'text-3xl font-bold text-gray-900 mb-4',
+      parentId: 'header_container',
+      colSpan: 12
+    }),
+    
+    // Content area (8 columns)
+    content_area: createSlot('content_area', SlotTypes.CONTAINER, {
+      className: 'content-area',
+      parentId: 'main_layout',
+      layout: 'block',
+      children: ['empty_cart_container'],
+      colSpan: 8
+    }),
+    
+    // Empty cart container
+    empty_cart_container: createSlot('empty_cart_container', SlotTypes.CONTAINER, {
+      className: 'empty-cart-container text-center',
+      parentId: 'content_area',
+      layout: 'block',
+      children: ['empty_cart_icon', 'empty_cart_title', 'empty_cart_text', 'empty_cart_button'],
+      colSpan: 12
+    }),
+    
+    empty_cart_icon: createSlot('empty_cart_icon', SlotTypes.IMAGE, {
+      content: 'shopping-cart-icon',
+      className: 'w-16 h-16 mx-auto text-gray-400 mb-4',
+      parentId: 'empty_cart_container',
+      colSpan: 12
+    }),
+    
+    empty_cart_title: createSlot('empty_cart_title', SlotTypes.TEXT, {
+      content: 'Your cart is empty',
+      className: 'text-xl font-semibold text-gray-900 mb-2',
+      parentId: 'empty_cart_container',
+      colSpan: 12
+    }),
+    
+    empty_cart_text: createSlot('empty_cart_text', SlotTypes.TEXT, {
+      content: "Looks like you haven't added anything to your cart yet.",
+      className: 'text-gray-600 mb-6',
+      parentId: 'empty_cart_container',
+      colSpan: 12
+    }),
+    
+    empty_cart_button: createSlot('empty_cart_button', SlotTypes.BUTTON, {
+      content: 'Continue Shopping',
+      className: 'bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded',
+      parentId: 'empty_cart_container',
+      colSpan: 12
+    }),
+    
+    // Sidebar area (4 columns)
+    sidebar_area: createSlot('sidebar_area', SlotTypes.FLEX, {
+      className: 'sidebar-area',
+      parentId: 'main_layout',
+      layout: 'flex',
+      styles: { flexDirection: 'column' },
+      children: ['coupon_container', 'order_summary_container'],
+      colSpan: 4
+    }),
+    
+    // Coupon container
+    coupon_container: createSlot('coupon_container', SlotTypes.GRID, {
+      className: 'coupon-container bg-white p-4 rounded-lg shadow',
+      parentId: 'sidebar_area',
+      layout: 'grid',
+      gridCols: 12,
+      children: ['coupon_title', 'coupon_input', 'coupon_button'],
+      colSpan: 12
+    }),
+    
+    coupon_title: createSlot('coupon_title', SlotTypes.TEXT, {
+      content: 'Apply Coupon',
+      className: 'text-lg font-semibold mb-4',
+      parentId: 'coupon_container',
+      colSpan: 12
+    }),
+    
+    coupon_input: createSlot('coupon_input', SlotTypes.INPUT, {
+      content: 'Enter coupon code',
+      className: 'border rounded px-3 py-2',
+      parentId: 'coupon_container',
+      colSpan: 8
+    }),
+    
+    coupon_button: createSlot('coupon_button', SlotTypes.BUTTON, {
+      content: 'Apply',
+      className: 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded',
+      parentId: 'coupon_container',
+      colSpan: 4
+    }),
+    
+    // Order summary container
+    order_summary_container: createSlot('order_summary_container', SlotTypes.CONTAINER, {
+      className: 'order-summary-container bg-white p-4 rounded-lg shadow mt-4',
+      parentId: 'sidebar_area',
+      layout: 'block',
+      children: ['order_summary_title', 'order_summary_subtotal', 'order_summary_tax', 'order_summary_total', 'checkout_button'],
+      colSpan: 12
+    }),
+    
+    order_summary_title: createSlot('order_summary_title', SlotTypes.TEXT, {
+      content: 'Order Summary',
+      className: 'text-lg font-semibold mb-4',
+      parentId: 'order_summary_container',
+      colSpan: 12
+    }),
+    
+    order_summary_subtotal: createSlot('order_summary_subtotal', SlotTypes.TEXT, {
+      content: '<span>Subtotal</span><span>$79.97</span>',
+      className: 'flex justify-between mb-2',
+      parentId: 'order_summary_container',
+      colSpan: 12
+    }),
+    
+    order_summary_tax: createSlot('order_summary_tax', SlotTypes.TEXT, {
+      content: '<span>Tax</span><span>$6.40</span>',
+      className: 'flex justify-between mb-2',
+      parentId: 'order_summary_container',
+      colSpan: 12
+    }),
+    
+    order_summary_total: createSlot('order_summary_total', SlotTypes.TEXT, {
+      content: '<span>Total</span><span>$81.37</span>',
+      className: 'flex justify-between text-lg font-semibold border-t pt-4 mb-4',
+      parentId: 'order_summary_container',
+      colSpan: 12
+    }),
+    
+    checkout_button: createSlot('checkout_button', SlotTypes.BUTTON, {
+      content: 'Proceed to Checkout',
+      className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded text-lg',
+      parentId: 'order_summary_container',
+      colSpan: 12
+    })
+  };
+};
 
 // Modern resize handle for horizontal (grid column) or vertical (height) resizing
 const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
