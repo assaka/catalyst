@@ -207,49 +207,63 @@ const ResizeWrapper = ({
         className: cn(
           children.props.className,
           "resize-none select-none",
-          isResizing && "cursor-se-resize"
+          isResizing && "cursor-se-resize",
+          // Add class for forced sizing when needed
+          size.width !== 'auto' && size.widthUnit !== 'auto' && "resize-wrapper-sized"
         ),
         style: {
           ...children.props.style,
-          ...(size.width !== 'auto' && size.widthUnit !== 'auto' && { width: `${size.width}${size.widthUnit || 'px'}` }),
+          ...(size.width !== 'auto' && size.widthUnit !== 'auto' && { 
+            width: `${size.width}${size.widthUnit || 'px'}`,
+            minWidth: `${size.width}${size.widthUnit || 'px'}`,
+            maxWidth: `${size.width}${size.widthUnit || 'px'}`
+          }),
           ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
-          maxWidth: '100%',
+          maxWidth: size.width === 'auto' ? '100%' : undefined,
           boxSizing: 'border-box',
-          display: 'block'
+          display: 'inline-block',
+          border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
+          borderRadius: '4px',
+          transition: 'border-color 0.2s ease-in-out',
+          position: 'relative'
         }
       })}
       
-      {/* Resize handle - diagonal resize icon in bottom right */}
+      {/* Resize handle - positioned exactly at border corner */}
       {!disabled && (
         <div
           className={cn(
-            "absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-10",
+            "absolute cursor-se-resize z-20",
             "transition-opacity duration-200",
-            "flex items-end justify-end",
+            "flex items-center justify-center",
             isHovered || isResizing ? "opacity-100" : "opacity-0"
           )}
           onMouseDown={handleMouseDown}
           style={{
-            transform: 'translate(50%, 50%)'
+            bottom: '-2px',
+            right: '-2px',
+            width: '12px',
+            height: '12px',
+            background: 'rgba(59, 130, 246, 0.8)',
+            borderRadius: '0 0 4px 0',
+            border: '1px solid rgba(59, 130, 246, 1)'
           }}
         >
-          {/* Diagonal lines icon */}
-          <div className="w-3 h-3 relative">
-            <svg 
-              width="12" 
-              height="12" 
-              viewBox="0 0 12 12" 
-              className="absolute bottom-0 right-0 text-gray-500 hover:text-gray-700"
-            >
-              <path 
-                d="M2,10 L10,2 M5,10 L10,5 M8,10 L10,8" 
-                stroke="currentColor" 
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                fill="none"
-              />
-            </svg>
-          </div>
+          {/* Small diagonal grip icon */}
+          <svg 
+            width="8" 
+            height="8" 
+            viewBox="0 0 8 8" 
+            className="text-white"
+          >
+            <path 
+              d="M1,7 L7,1 M3,7 L7,3 M5,7 L7,5" 
+              stroke="currentColor" 
+              strokeWidth="1"
+              strokeLinecap="round"
+              fill="none"
+            />
+          </svg>
         </div>
       )}
 
