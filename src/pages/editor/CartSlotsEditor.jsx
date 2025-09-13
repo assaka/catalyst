@@ -274,14 +274,18 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
 // Grid column wrapper with resize handle
 const GridColumn = ({ 
   colSpan = 12, 
+  rowSpan = 1,
+  height,
   slotId, 
   onGridResize, 
+  onSlotHeightResize,
   mode = 'edit', 
   parentClassName = '',  // For grid alignment classes
   className = '',        // For element classes (backward compatibility)
   children 
 }) => {
-  const showHandle = onGridResize && mode === 'edit' && colSpan;
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
+  const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   
   // Generate the col-span class dynamically to ensure Tailwind includes it
   const getColSpanClass = (span) => {
@@ -292,33 +296,58 @@ const GridColumn = ({
     };
     return classes[span] || 'col-span-12';
   };
+
+  // Generate the row-span class dynamically to ensure Tailwind includes it
+  const getRowSpanClass = (span) => {
+    const classes = {
+      1: 'row-span-1', 2: 'row-span-2', 3: 'row-span-3', 4: 'row-span-4',
+      5: 'row-span-5', 6: 'row-span-6', 7: 'row-span-7', 8: 'row-span-8',
+      9: 'row-span-9', 10: 'row-span-10', 11: 'row-span-11', 12: 'row-span-12'
+    };
+    return classes[span] || 'row-span-1';
+  };
   
   const colSpanClass = getColSpanClass(colSpan);
+  const rowSpanClass = getRowSpanClass(rowSpan);
   
   // Debug logging
-  console.log(`GridColumn ${slotId}:`, { colSpan, colSpanClass, showHandle });
+  console.log(`GridColumn ${slotId}:`, { colSpan, rowSpan, colSpanClass, rowSpanClass, showHorizontalHandle, showVerticalHandle });
   
   return (
     <div 
-      className={`group ${colSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${parentClassName} ${className} relative`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${parentClassName} ${className} relative`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
-      style={{ backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}
+      data-row-span={rowSpan}
+      style={{ 
+        backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+        height: height ? `${height}px` : undefined
+      }}
     >
       {mode === 'edit' && (
         <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-          {slotId}: {colSpan}
+          {slotId}: {colSpan}×{rowSpan}
         </div>
       )}
       {children}
-      {/* Grid resize handle on the column itself */}
-      {showHandle && (
+      {/* Horizontal grid resize handle on the column itself */}
+      {showHorizontalHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
           direction="horizontal"
+        />
+      )}
+      {/* Vertical grid resize handle for slot height */}
+      {showVerticalHandle && (
+        <GridResizeHandle
+          onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
+          currentValue={height || 80}
+          maxValue={1000}
+          minValue={40}
+          direction="vertical"
         />
       )}
     </div>
@@ -642,6 +671,43 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Handle slot container height resize changes (for GridColumn)
+  const handleSlotHeightResize = useCallback((slotId, newHeight) => {
+    console.log('📐 handleSlotHeightResize called:', { slotId, newHeight });
+    
+    setCartLayoutConfig(prevConfig => {
+      // Calculate row span based on height (rough approximation: 40px per row)
+      const estimatedRowSpan = Math.max(1, Math.round(newHeight / 40));
+      
+      console.log(`📏 Height ${newHeight}px ≈ ${estimatedRowSpan} row spans`);
+      
+      const updatedConfig = {
+        ...prevConfig,
+        microSlots: {
+          ...prevConfig?.microSlots,
+          [slotId]: {
+            ...prevConfig?.microSlots?.[slotId],
+            height: newHeight,
+            row: estimatedRowSpan // Add row span for CSS Grid
+          }
+        }
+      };
+
+      console.log('✅ Updated slot with height and row span:', updatedConfig.microSlots[slotId]);
+
+      // Debounced auto-save - clear previous timeout and set new one
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Saving configuration after slot height resize...');
+        saveConfiguration(updatedConfig);
+      }, 1000); // Wait 1 second after resize stops
+
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
+
   // Handle element height resize changes  
   const handleHeightResize = useCallback((slotId, newHeight) => {
     console.log('📏 handleHeightResize called:', { slotId, newHeight });
@@ -775,8 +841,11 @@ const CartSlotsEditor = ({
                         <GridColumn
                           key={slotId}
                           colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                          rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                          height={cartLayoutConfig?.microSlots?.[slotId]?.height}
                           slotId={slotId}
                           onGridResize={handleGridResize}
+                          onSlotHeightResize={handleSlotHeightResize}
                           mode={mode}
                           parentClassName={positioning.parentClassName}
                         >
@@ -808,8 +877,11 @@ const CartSlotsEditor = ({
               <div className="grid grid-cols-12 gap-4 mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
                 <GridColumn
                   colSpan={cartLayoutConfig?.microSlots?.['test.slot']?.col || 6}
+                  rowSpan={cartLayoutConfig?.microSlots?.['test.slot']?.row || 1}
+                  height={cartLayoutConfig?.microSlots?.['test.slot']?.height}
                   slotId="test.slot"
                   onGridResize={handleGridResize}
+                  onSlotHeightResize={handleSlotHeightResize}
                   mode={mode}
                 >
                   <EditableElement
@@ -864,8 +936,11 @@ const CartSlotsEditor = ({
                             <GridColumn
                               key={slotId}
                               colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
                               slotId={slotId}
                               onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
                               mode={mode}
                               parentClassName={positioning.parentClassName}
                             >
@@ -894,8 +969,11 @@ const CartSlotsEditor = ({
                             <GridColumn
                               key={slotId}
                               colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
                               slotId={slotId}
                               onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
                               mode={mode}
                               parentClassName={positioning.parentClassName}
                             >
@@ -922,8 +1000,11 @@ const CartSlotsEditor = ({
                             <GridColumn
                               key={slotId}
                               colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
                               slotId={slotId}
                               onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
                               mode={mode}
                               parentClassName={`flex justify-center ${positioning.parentClassName}`}
                             >
@@ -1056,8 +1137,11 @@ const CartSlotsEditor = ({
                         </div>
                         <GridColumn
                           colSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
+                          rowSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.row || 1}
+                          height={cartLayoutConfig?.microSlots?.['coupon.input']?.height}
                           slotId="coupon.input"
                           onGridResize={handleGridResize}
+                          onSlotHeightResize={handleSlotHeightResize}
                           mode={mode}
                           parentClassName={getSlotPositioning('coupon.input').parentClassName}
                         >
@@ -1071,8 +1155,11 @@ const CartSlotsEditor = ({
                         </GridColumn>
                         <GridColumn
                           colSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
+                          rowSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.row || 1}
+                          height={cartLayoutConfig?.microSlots?.['coupon.button']?.height}
                           slotId="coupon.button"
                           onGridResize={handleGridResize}
+                          onSlotHeightResize={handleSlotHeightResize}
                           mode={mode}
                           parentClassName={getSlotPositioning('coupon.button').parentClassName}
                         >
