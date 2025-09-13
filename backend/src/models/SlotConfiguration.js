@@ -488,36 +488,23 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
     }
   });
 
-  // Create proper default configuration with micro-slot definitions
+  // Use hierarchical configuration - no legacy flat structure
   const getDefaultConfig = () => {
-    
-    // Create complete slot content with Tailwind classes
-    const defaultSlots = {
-      // Header content
-      'header.title': {
-        type: 'system',
-        type: 'system',
-        content: 'My Cart',
-        styles: {},
-        className: 'text-2xl font-bold text-gray-800',
-        parentClassName: 'text-center',
-        metadata: { lastModified: new Date().toISOString() }
-      },
-      
-      // Empty cart content
-      'emptyCart.icon': {
-        type: 'system',
-        content: '🛒',
-        styles: {},
-        className: 'text-6xl text-gray-400',
-        parentClassName: 'text-center',
-        metadata: { lastModified: new Date().toISOString() }
-      },
-      'emptyCart.title': {
-        type: 'system',
-        content: 'Your cart is empty',
-        styles: {},
-        className: 'text-xl font-bold text-gray-600',
+    // Use hierarchical configuration - no more legacy fallback
+    console.log('📦 Backend: Using hierarchical cart configuration');
+    return {
+      page_name: cartConfig.page_name || 'Cart',
+      slot_type: cartConfig.slot_type || 'cart_layout',
+      slots: cartConfig.slots || {},
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        ...cartConfig.metadata
+      }
+    };
+  };
+
+  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : getDefaultConfig());
         parentClassName: 'text-center',
         metadata: { lastModified: new Date().toISOString() }
       },
