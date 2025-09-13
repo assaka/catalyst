@@ -959,31 +959,43 @@ export default ExampleComponent;`;
                           console.log('🎯 Is slot file?', isSlotFile);
                           
                           if (isSlotFile) {
-                            // This is a slots/editor file - use CartSlotsEditor for cart pages
-                            const isCartSlot = selectedFile.name.toLowerCase().includes('cart');
+                            // Determine slot type from filename
+                            const getSlotTypeFromFilename = (filename) => {
+                              const name = filename.toLowerCase();
+                              if (name.includes('cart')) return 'cart';
+                              if (name.includes('category')) return 'category';
+                              if (name.includes('product')) return 'product';
+                              if (name.includes('homepage')) return 'homepage';
+                              if (name.includes('checkout')) return 'checkout';
+                              return null;
+                            };
                             
-                            if (isCartSlot) {
+                            const slotType = getSlotTypeFromFilename(selectedFile.name);
+                            
+                            if (slotType) {
                               const handleSave = async (configToSave) => {
                                 try {
-                                  console.log('💾 Saving cart configuration:', configToSave);
-                                  const response = await slotConfigurationService.saveConfiguration('cart', configToSave);
-                                  console.log('✅ Configuration saved successfully:', response);
+                                  console.log(`💾 Saving ${slotType} configuration:`, configToSave);
+                                  const response = await slotConfigurationService.saveConfiguration(slotType, configToSave);
+                                  console.log(`✅ ${slotType} configuration saved successfully:`, response);
                                   return response;
                                 } catch (error) {
-                                  console.error('❌ Failed to save configuration:', error);
+                                  console.error(`❌ Failed to save ${slotType} configuration:`, error);
                                   throw error;
                                 }
                               };
                               
+                              // Use CartSlotsEditor for all slot types for now (can be extended later)
                               return (
                                 <CartSlotsEditor
                                   mode="edit"
                                   viewMode="empty"
+                                  slotType={slotType}
                                   onSave={handleSave}
                                 />
                               );
                             } else {
-                              // For non-cart slot files, use CodeEditor
+                              // For slot files without recognized type, use CodeEditor
                               return (
                                 <CodeEditor
                                   filePath={selectedFile.path}
@@ -1207,31 +1219,43 @@ export default ExampleComponent;`;
                             console.log('🎯 Mobile: Is slot file?', isSlotFile, { fileName, filePath });
                             
                             if (isSlotFile) {
-                              // This is a slots/editor file - use CartSlotsEditor for cart pages
-                              const isCartSlot = selectedFile.name.toLowerCase().includes('cart');
+                              // Determine slot type from filename
+                              const getSlotTypeFromFilename = (filename) => {
+                                const name = filename.toLowerCase();
+                                if (name.includes('cart')) return 'cart';
+                                if (name.includes('category')) return 'category';
+                                if (name.includes('product')) return 'product';
+                                if (name.includes('homepage')) return 'homepage';
+                                if (name.includes('checkout')) return 'checkout';
+                                return null;
+                              };
                               
-                              if (isCartSlot) {
+                              const slotType = getSlotTypeFromFilename(selectedFile.name);
+                              
+                              if (slotType) {
                                 const handleSave = async (configToSave) => {
                                   try {
-                                    console.log('💾 Mobile: Saving cart configuration:', configToSave);
-                                    const response = await slotConfigurationService.saveConfiguration('cart', configToSave);
-                                    console.log('✅ Mobile: Configuration saved successfully:', response);
+                                    console.log(`💾 Mobile: Saving ${slotType} configuration:`, configToSave);
+                                    const response = await slotConfigurationService.saveConfiguration(slotType, configToSave);
+                                    console.log(`✅ Mobile: ${slotType} configuration saved successfully:`, response);
                                     return response;
                                   } catch (error) {
-                                    console.error('❌ Mobile: Failed to save configuration:', error);
+                                    console.error(`❌ Mobile: Failed to save ${slotType} configuration:`, error);
                                     throw error;
                                   }
                                 };
                                 
+                                // Use CartSlotsEditor for all slot types for now (can be extended later)
                                 return (
                                   <CartSlotsEditor
                                     mode="edit"
                                     viewMode="empty"
+                                    slotType={slotType}
                                     onSave={handleSave}
                                   />
                                 );
                               } else {
-                                // For non-cart slot files, use CodeEditor
+                                // For slot files without recognized type, use CodeEditor
                                 return (
                                   <CodeEditor
                                     filePath={selectedFile.path}
