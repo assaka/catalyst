@@ -313,7 +313,7 @@ const HierarchicalSlotRenderer = ({
             onClick={onElementClick}
             className={slot.className}
             style={slot.styles}
-            canResize={true}
+            canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={true}
           >
           {slot.type === 'text' && <span>{slot.content || `Text: ${slot.id}`}</span>}
