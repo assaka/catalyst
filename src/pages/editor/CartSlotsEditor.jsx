@@ -319,7 +319,7 @@ const HierarchicalSlotRenderer = ({
           {slot.type === 'image' && (
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
           )}
-          {slot.type === 'container' && (
+          {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
             <div className="w-full h-full grid grid-cols-12 gap-2">
               <HierarchicalSlotRenderer 
                 slots={slots}

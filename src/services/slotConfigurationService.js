@@ -249,77 +249,52 @@ class SlotConfigurationService {
       return cartConfig;
     }
 
-    // Transform from CartSlotsEditor format to API format
+    // Transform from hierarchical CartSlotsEditor format to API format
     const transformed = {
-      slots: {},
+      slots: cartConfig.slots || {},
       metadata: {
         created: cartConfig.timestamp || new Date().toISOString(),
         lastModified: new Date().toISOString(),
         page_name: cartConfig.page_name || 'Cart',
         page_type: cartConfig.page_type || 'cart',
         slot_type: cartConfig.slot_type || 'cart_layout'
-      },
-      // Preserve CartSlotsEditor specific data structure
-      cartData: {
-        majorSlots: cartConfig.majorSlots || {}
       }
     };
 
-    // Build slots structure for compatibility with generic slot system
-    const { slotContent  } = cartConfig;
-    
-    if (slotContent) {
-      Object.keys(slotContent).forEach(slotId => {
-        transformed.slots[slotId] = {
-          content: slotContent[slotId],
-          metadata: {
-            lastModified: new Date().toISOString()
-          }
-        };
-      });
+    // If slots are already properly structured, use them as-is
+    if (!transformed.slots || Object.keys(transformed.slots).length === 0) {
+      // Handle legacy slotContent format if it exists
+      const { slotContent } = cartConfig;
+      if (slotContent) {
+        Object.keys(slotContent).forEach(slotId => {
+          transformed.slots[slotId] = {
+            id: slotId,
+            type: 'text',
+            content: slotContent[slotId],
+            parentId: null,
+            metadata: {
+              lastModified: new Date().toISOString()
+            }
+          };
+        });
+      }
     }
 
     console.log('🔄 Transformed configuration:', transformed);
     return transformed;
   }
 
-  // Transform SlotConfiguration API format back to CartSlotsEditor format
+  // Keep hierarchical structure - no more legacy transformations
   transformFromSlotConfigFormat(apiConfig) {
-    // If it's already in CartSlotsEditor format, return as-is
-    if (apiConfig.majorSlots || apiConfig.cartData) {
-      return apiConfig;
-    }
-
-    // If it has cartData section, use that
-    if (apiConfig.cartData) {
-      return {
-        page_name: apiConfig.metadata?.page_name || 'Cart',
-        page_type: apiConfig.metadata?.page_type || 'cart',
-        slot_type: apiConfig.metadata?.slot_type || 'cart_layout',
-        timestamp: apiConfig.metadata?.lastModified || apiConfig.metadata?.created,
-        ...apiConfig.cartData
-      };
-    }
-
-    // Otherwise, it's in the old slots format - convert to CartSlotsEditor format
-    const cartConfig = {
+    console.log('🔄 Preserving hierarchical structure (no legacy transformation):', apiConfig);
+    
+    // Return the hierarchical structure as-is for CartSlotsEditor
+    return {
       page_name: apiConfig.metadata?.page_name || 'Cart',
-      page_type: apiConfig.metadata?.page_type || 'cart', 
       slot_type: apiConfig.metadata?.slot_type || 'cart_layout',
-      timestamp: apiConfig.metadata?.lastModified || apiConfig.metadata?.created,
-      slotContent: {}
+      slots: apiConfig.slots || {},
+      metadata: apiConfig.metadata || {}
     };
-
-    // Extract data from slots structure
-    if (apiConfig.slots) {
-      Object.keys(apiConfig.slots).forEach(slotId => {
-        const slot = apiConfig.slots[slotId];
-        cartConfig.slotContent[slotId] = slot.content || '';
-      });
-    }
-
-    console.log('🔄 Transformed from API format:', cartConfig);
-    return cartConfig;
   }
 
   // Determine parent slot for a micro slot (can be enhanced)

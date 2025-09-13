@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor';
+// UnifiedSlotEditor removed - use specific slot editors or code editor
 import { getPageConfig } from '@/components/editor/slot/configs/index';
 
 // Category-specific slot components

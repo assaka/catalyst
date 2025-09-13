@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
-import UnifiedSlotEditor from '@/components/editor/slot/UnifiedSlotEditor.jsx';
+import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -959,19 +959,26 @@ export default ExampleComponent;`;
                           console.log('🎯 Is slot file?', isSlotFile);
                           
                           if (isSlotFile) {
-                            // This is a slots/editor file - use UnifiedSlotEditor
-                            return (
-                              <UnifiedSlotEditor
-                                pageName={selectedFile.name
-                                  .replace('SlotsEditor.jsx', '')
-                                  .replace('SlotEditor.jsx', '')
-                                  .replace('Slots.jsx', '')
-                                  .replace('.jsx', '')}
-                                onClose={() => {}}
-                                slotType="layout"
-                                pageId={null}
-                              />
-                            );
+                            // This is a slots/editor file - use CartSlotsEditor for cart pages
+                            const isCartSlot = selectedFile.name.toLowerCase().includes('cart');
+                            
+                            if (isCartSlot) {
+                              return (
+                                <CartSlotsEditor
+                                  mode="edit"
+                                  viewMode="empty"
+                                />
+                              );
+                            } else {
+                              // For non-cart slot files, use CodeEditor
+                              return (
+                                <CodeEditor
+                                  filePath={selectedFile.path}
+                                  fileName={selectedFile.name}
+                                  codeSnippet={selectedFile.content}
+                                />
+                              );
+                            }
                           } else {
                             // Regular file - use CodeEditor
                             return (
@@ -1187,19 +1194,26 @@ export default ExampleComponent;`;
                             console.log('🎯 Mobile: Is slot file?', isSlotFile, { fileName, filePath });
                             
                             if (isSlotFile) {
-                              // This is a slots/editor file - use UnifiedSlotEditor
-                              return (
-                                <UnifiedSlotEditor
-                                  pageName={selectedFile.name
-                                    .replace('SlotsEditor.jsx', '')
-                                    .replace('SlotEditor.jsx', '')
-                                    .replace('Slots.jsx', '')
-                                    .replace('.jsx', '')}
-                                  onClose={() => {}}
-                                  slotType="layout"
-                                  pageId={null}
-                                />
-                              );
+                              // This is a slots/editor file - use CartSlotsEditor for cart pages
+                              const isCartSlot = selectedFile.name.toLowerCase().includes('cart');
+                              
+                              if (isCartSlot) {
+                                return (
+                                  <CartSlotsEditor
+                                    mode="edit"
+                                    viewMode="empty"
+                                  />
+                                );
+                              } else {
+                                // For non-cart slot files, use CodeEditor
+                                return (
+                                  <CodeEditor
+                                    filePath={selectedFile.path}
+                                    fileName={selectedFile.name}
+                                    codeSnippet={selectedFile.content}
+                                  />
+                                );
+                              }
                             } else {
                               // Regular file - use CodeEditor
                               return (
