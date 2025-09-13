@@ -187,7 +187,7 @@ const AIContextWindowPage = () => {
     setIsPublishingConfig(true);
     
     try {
-      const storeId = await getStoreId();
+      const storeId = getSelectedStoreId();
       if (!storeId) {
         throw new Error('Store ID not found. Please select a store first.');
       }
@@ -219,7 +219,7 @@ const AIContextWindowPage = () => {
     } finally {
       setIsPublishingConfig(false);
     }
-  }, [getStoreId]);
+  }, [getSelectedStoreId]);
 
 
   // Helper function to fetch baseline code from database
