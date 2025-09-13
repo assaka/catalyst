@@ -232,7 +232,16 @@ const ResizeWrapper = ({
       ref={wrapperRef}
       className={cn("relative inline-block group", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
-      onMouseLeave={() => !disabled && setIsHovered(false)}
+      onMouseLeave={(e) => {
+        if (!disabled) {
+          setIsHovered(false);
+          // Remove all borders on mouseout
+          if (wrapperRef.current) {
+            wrapperRef.current.style.borderColor = '';
+            wrapperRef.current.style.border = 'none';
+          }
+        }
+      }}
       style={wrapperStyle}
       {...props}
     >

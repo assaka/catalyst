@@ -181,6 +181,12 @@ function MicroSlot({
       return;
     }
     
+    // Remove all borders on mouseout
+    if (slotRef.current) {
+      slotRef.current.style.borderColor = '';
+      slotRef.current.style.border = 'none';
+    }
+    
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }

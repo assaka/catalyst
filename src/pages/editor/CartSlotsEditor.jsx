@@ -196,6 +196,12 @@ const GridColumn = ({
           onMouseLeave={(e) => {
             e.stopPropagation();
             setIsHovered(false);
+            // Remove all borders on mouseout
+            const parentElement = e.currentTarget.closest('[data-grid-slot-id]');
+            if (parentElement) {
+              parentElement.style.borderColor = '';
+              parentElement.style.border = 'none';
+            }
           }}
           style={{ 
             pointerEvents: 'auto',
@@ -349,8 +355,8 @@ const HierarchicalSlotRenderer = ({
             slotId={slot.id}
             mode={mode}
             onClick={onElementClick}
-            className="" 
-            style={{}}
+            className={slot.className || ''}
+            style={slot.styles || {}}
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={true}
             selectedElementId={selectedElementId}
@@ -442,13 +448,13 @@ const CartSlotsEditor = ({
     onSave
   });
 
-  // Initialize cart configuration with both hierarchical and flat structure support
+  // Initialize cart configuration - first try to load from database, then fall back to static config
   useEffect(() => {
     let isMounted = true; // Track if component is still mounted
-    
+
     const initializeConfig = async () => {
       if (!isMounted) return;
-      
+
       try {
         console.log('🔄 CartSlotsEditor: Starting configuration initialization...');
         console.log('🏪 Store context check:', {
@@ -456,70 +462,93 @@ const CartSlotsEditor = ({
           storeId: selectedStore?.id,
           getSelectedStoreId: getSelectedStoreId ? getSelectedStoreId() : 'function not available'
         });
-        
-        // First, load the static configuration as a template
-        const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
-        
-        if (!cartConfig || !cartConfig.slots) {
-          throw new Error('Cart configuration is invalid or missing slots');
-        }
-        
-        // Don't include views or other properties with React components
-        // Create a deep clone to ensure no React components or functions are included
-        const cleanSlots = {};
-        if (cartConfig.slots) {
-          Object.entries(cartConfig.slots).forEach(([key, slot]) => {
-            // Only copy serializable properties, ensure no undefined values
-            cleanSlots[key] = {
-              id: slot.id || key,
-              type: slot.type || 'container',
-              content: slot.content || '',
-              className: slot.className || '',
-              parentClassName: slot.parentClassName || '',
-              styles: slot.styles ? { ...slot.styles } : {},
-              parentId: slot.parentId === undefined ? null : slot.parentId,
-              layout: slot.layout || null,
-              gridCols: slot.gridCols || null,
-              colSpan: slot.colSpan || 12,
-              rowSpan: slot.rowSpan || 1,
-              viewMode: slot.viewMode ? [...slot.viewMode] : [],
-              metadata: slot.metadata ? { ...slot.metadata } : {}
-            };
-          });
-        }
-        
-        const initialConfig = {
-          page_name: cartConfig.page_name || 'Cart',
-          slot_type: cartConfig.slot_type || 'cart_layout',
-          slots: cleanSlots,
-          metadata: {
-            created: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
-            version: '1.0',
-            pageType: 'cart'
-          },
-          cmsBlocks: cartConfig.cmsBlocks ? [...cartConfig.cmsBlocks] : []
-        };
 
-        console.log('📦 Initialized cart configuration with hierarchical structure:', initialConfig);
-        console.log('🔍 Available slots:', Object.keys(initialConfig.slots || {}));
-        
+        let configToUse = null;
+
+        // Try to load saved configuration from database first
+        const storeId = getSelectedStoreId();
+        if (storeId && loadFromDatabase) {
+          try {
+            console.log('💾 Attempting to load saved configuration from database...');
+            const savedConfig = await loadFromDatabase();
+            if (savedConfig && savedConfig.slots && Object.keys(savedConfig.slots).length > 0) {
+              console.log('✅ Found saved configuration in database:', savedConfig);
+              configToUse = savedConfig;
+            }
+          } catch (dbError) {
+            console.log('📝 No saved configuration found, will use static config as fallback');
+          }
+        }
+
+        // If no saved config found, load the static configuration as template
+        if (!configToUse) {
+          console.log('📂 Loading static configuration as template...');
+          const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+
+          if (!cartConfig || !cartConfig.slots) {
+            throw new Error('Cart configuration is invalid or missing slots');
+          }
+
+          // Create a deep clone to ensure no React components or functions are included
+          const cleanSlots = {};
+          if (cartConfig.slots) {
+            Object.entries(cartConfig.slots).forEach(([key, slot]) => {
+              // Only copy serializable properties, ensure no undefined values
+              cleanSlots[key] = {
+                id: slot.id || key,
+                type: slot.type || 'container',
+                content: slot.content || '',
+                className: slot.className || '',
+                parentClassName: slot.parentClassName || '',
+                styles: slot.styles ? { ...slot.styles } : {},
+                parentId: slot.parentId === undefined ? null : slot.parentId,
+                layout: slot.layout || null,
+                gridCols: slot.gridCols || null,
+                colSpan: slot.colSpan || 12,
+                rowSpan: slot.rowSpan || 1,
+                viewMode: slot.viewMode ? [...slot.viewMode] : [],
+                metadata: slot.metadata ? { ...slot.metadata } : {}
+              };
+            });
+          }
+
+          configToUse = {
+            page_name: cartConfig.page_name || 'Cart',
+            slot_type: cartConfig.slot_type || 'cart_layout',
+            slots: cleanSlots,
+            metadata: {
+              created: new Date().toISOString(),
+              lastModified: new Date().toISOString(),
+              version: '1.0',
+              pageType: 'cart'
+            },
+            cmsBlocks: cartConfig.cmsBlocks ? [...cartConfig.cmsBlocks] : []
+          };
+          console.log('📦 Using static configuration as template');
+        }
+
+        console.log('🔍 Final configuration to use:', {
+          source: configToUse && configToUse.metadata && configToUse.metadata.source === 'database' ? 'database' : 'static',
+          slotsCount: Object.keys(configToUse.slots || {}).length,
+          slots: Object.keys(configToUse.slots || {})
+        });
+
         // Verify the config is serializable
         try {
-          JSON.stringify(initialConfig);
+          JSON.stringify(configToUse);
           console.log('✅ Configuration is serializable');
         } catch (e) {
           console.error('❌ Configuration contains non-serializable data:', e);
         }
-        
-        if (Object.keys(initialConfig.slots).length === 0) {
-          console.warn('⚠️ No slots found in cart configuration');
+
+        if (Object.keys(configToUse.slots).length === 0) {
+          console.warn('⚠️ No slots found in final configuration');
         }
-        
+
         // Defer state update to avoid React error #130
         setTimeout(() => {
           if (isMounted) {
-            setCartLayoutConfig(initialConfig);
+            setCartLayoutConfig(configToUse);
           }
         }, 0);
       } catch (error) {
@@ -542,18 +571,16 @@ const CartSlotsEditor = ({
           });
           }
         }, 0);
-      } finally {
-        // No need to set loading state since we start with false
       }
     };
 
     initializeConfig();
-    
+
     // Cleanup function to prevent state updates on unmounted component
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedStore, loadFromDatabase, getSelectedStoreId]);
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {

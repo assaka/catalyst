@@ -39,10 +39,20 @@ const EditorInteractionWrapper = ({
     })
   };
 
+  const handleMouseLeave = (e) => {
+    // Remove all borders on mouseout
+    if (e.currentTarget) {
+      e.currentTarget.style.borderColor = '';
+      e.currentTarget.style.border = 'none';
+      e.currentTarget.style.outline = 'none';
+    }
+  };
+
   return (
     <div
       className={`${editorClasses} ${className}`}
       style={editorStyles}
+      onMouseLeave={handleMouseLeave}
     >
       {children}
     </div>
