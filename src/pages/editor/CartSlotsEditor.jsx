@@ -128,7 +128,8 @@ const GridColumn = ({
   slotId, 
   onGridResize, 
   mode = 'edit', 
-  className = '',
+  parentClassName = '',  // For grid alignment classes
+  className = '',        // For element classes (backward compatibility)
   children 
 }) => {
   const showHandle = onGridResize && mode === 'edit' && colSpan;
@@ -150,7 +151,7 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${className} relative`}
+      className={`group ${colSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${parentClassName} ${className} relative`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       style={{ backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}
@@ -362,8 +363,8 @@ const CartSlotsEditor = ({
     );
     
     return {
-      gridClasses: alignmentClasses.join(' '),
-      elementClasses: elementClasses.join(' '),
+      parentClassName: alignmentClasses.join(' '),  // For grid alignment classes
+      className: elementClasses.join(' '),          // For element classes  
       elementStyles: slotConfig?.styles || {}
     };
   }, [cartLayoutConfig]);
@@ -555,7 +556,7 @@ const CartSlotsEditor = ({
                           slotId={slotId}
                           onGridResize={handleGridResize}
                           mode={mode}
-                          className={positioning.gridClasses}
+                          parentClassName={positioning.parentClassName}
                         >
                           <EditableElement
                             slotId={slotId}
@@ -633,7 +634,7 @@ const CartSlotsEditor = ({
                           const titleStyling = getMicroSlotStyling('emptyCart.title');
                           const positioning = getSlotPositioning(slotId);
                           const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
-                          const finalClasses = positioning.elementClasses || titleStyling.elementClasses || defaultClasses;
+                          const finalClasses = positioning.className || titleStyling.elementClasses || defaultClasses;
                           
                           return (
                             <GridColumn
@@ -642,7 +643,7 @@ const CartSlotsEditor = ({
                               slotId={slotId}
                               onGridResize={handleGridResize}
                               mode={mode}
-                              className={positioning.gridClasses}
+                              parentClassName={positioning.parentClassName}
                             >
                               <EditableElement
                                 slotId={slotId}
@@ -663,7 +664,7 @@ const CartSlotsEditor = ({
                           const textStyling = getMicroSlotStyling('emptyCart.text');
                           const positioning = getSlotPositioning(slotId);
                           const defaultClasses = 'text-gray-600 mb-6';
-                          const finalClasses = positioning.elementClasses || textStyling.elementClasses || defaultClasses;
+                          const finalClasses = positioning.className || textStyling.elementClasses || defaultClasses;
                           
                           return (
                             <GridColumn
@@ -672,7 +673,7 @@ const CartSlotsEditor = ({
                               slotId={slotId}
                               onGridResize={handleGridResize}
                               mode={mode}
-                              className={positioning.gridClasses}
+                              parentClassName={positioning.parentClassName}
                             >
                               <EditableElement
                                 slotId={slotId}
@@ -700,7 +701,7 @@ const CartSlotsEditor = ({
                               slotId={slotId}
                               onGridResize={handleGridResize}
                               mode={mode}
-                              className={`flex justify-center ${positioning.gridClasses}`}
+                              parentClassName={`flex justify-center ${positioning.parentClassName}`}
                             >
                               <EditableElement
                                 slotId={slotId}
@@ -834,7 +835,7 @@ const CartSlotsEditor = ({
                           slotId="coupon.input"
                           onGridResize={handleGridResize}
                           mode={mode}
-                          className={getSlotPositioning('coupon.input').gridClasses}
+                          parentClassName={getSlotPositioning('coupon.input').parentClassName}
                         >
                           <EditableElement
                             slotId="coupon.input"
@@ -849,7 +850,7 @@ const CartSlotsEditor = ({
                           slotId="coupon.button"
                           onGridResize={handleGridResize}
                           mode={mode}
-                          className={getSlotPositioning('coupon.button').gridClasses}
+                          parentClassName={getSlotPositioning('coupon.button').parentClassName}
                         >
                           <EditableElement
                             slotId="coupon.button"
