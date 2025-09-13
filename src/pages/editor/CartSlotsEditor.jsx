@@ -21,9 +21,12 @@ import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { SlotManager } from '@/utils/slotUtils';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Advanced resize handle for horizontal (grid column) or vertical (height) resizing
-const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
+const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
@@ -95,7 +98,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
         isHovered || isDragging 
           ? 'opacity-100' 
-          : 'opacity-0 group-hover:opacity-70'
+          : 'opacity-0'
       }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
@@ -167,7 +170,7 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${
+      className={`${colSpanClass} ${rowSpanClass} ${
         mode === 'edit' 
           ? `border border-dashed rounded-md p-2 overflow-hidden ${
               isHovered ? 'border-blue-400' : 'border-transparent'
@@ -177,8 +180,18 @@ const GridColumn = ({
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
-      onMouseEnter={() => mode === 'edit' && setIsHovered(true)}
-      onMouseLeave={() => mode === 'edit' && setIsHovered(false)}
+      onMouseEnter={(e) => {
+        if (mode === 'edit') {
+          e.stopPropagation();
+          setIsHovered(true);
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (mode === 'edit') {
+          e.stopPropagation();
+          setIsHovered(false);
+        }
+      }}
       style={{ 
         height: height ? `${height}px` : undefined,
         maxHeight: height ? `${height}px` : undefined
@@ -193,6 +206,7 @@ const GridColumn = ({
           maxValue={12}
           minValue={1}
           direction="horizontal"
+          parentHovered={isHovered}
         />
       )}
       {/* Vertical grid resize handle for slot height */}
@@ -203,6 +217,7 @@ const GridColumn = ({
           maxValue={1000}
           minValue={40}
           direction="vertical"
+          parentHovered={isHovered}
         />
       )}
     </div>
@@ -374,6 +389,9 @@ const CartSlotsEditor = ({
   onSave,
   viewMode: propViewMode = 'empty'
 }) => {
+  // Store context for database operations
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  
   // State management - Initialize with empty config to avoid React error #130
   const [cartLayoutConfig, setCartLayoutConfig] = useState({
     page_name: 'Cart',
@@ -390,7 +408,25 @@ const CartSlotsEditor = ({
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('');
+  
+  // Database configuration hook
+  const {
+    saveConfiguration: saveToDatabase,
+    loadConfiguration: loadFromDatabase,
+    saveStatus
+  } = useSlotConfiguration({
+    pageType: 'cart',
+    pageName: 'Cart',
+    slotType: 'cart_layout',
+    selectedStore,
+    updateConfiguration: async (config) => {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        await slotConfigurationService.saveConfiguration(storeId, config, 'cart_layout');
+      }
+    },
+    onSave
+  });
 
   // Initialize cart configuration with both hierarchical and flat structure support
   useEffect(() => {
