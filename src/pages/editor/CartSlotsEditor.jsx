@@ -443,6 +443,7 @@ const CartSlotsEditor = ({
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [localSaveStatus, setLocalSaveStatus] = useState('');
   
   // Database configuration hook
   const {
@@ -627,21 +628,32 @@ const CartSlotsEditor = ({
     };
   }, [cartLayoutConfig]);
 
-  // Save configuration
+  // Save configuration using the slot configuration service
   const saveConfiguration = useCallback(async (configToSave = cartLayoutConfig) => {
-    if (!configToSave || !onSave) return;
+    if (!configToSave) return;
 
-    setSaveStatus('saving');
+    setLocalSaveStatus('saving');
     try {
-      await onSave(configToSave);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus(''), 3000);
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        console.log('💾 Saving configuration to database...');
+        await slotConfigurationService.saveConfiguration(storeId, configToSave, 'cart');
+        console.log('✅ Configuration saved successfully');
+      }
+
+      // Also call parent onSave callback if provided
+      if (onSave) {
+        await onSave(configToSave);
+      }
+
+      setLocalSaveStatus('saved');
+      setTimeout(() => setLocalSaveStatus(''), 3000);
     } catch (error) {
-      console.error('Save failed:', error);
-      setSaveStatus('error');
-      setTimeout(() => setSaveStatus(''), 5000);
+      console.error('❌ Save failed:', error);
+      setLocalSaveStatus('error');
+      setTimeout(() => setLocalSaveStatus(''), 5000);
     }
-  }, [cartLayoutConfig, onSave]);
+  }, [cartLayoutConfig, onSave, getSelectedStoreId]);
 
 
   // Handle element selection for EditorSidebar
@@ -872,19 +884,19 @@ const CartSlotsEditor = ({
               {mode === 'edit' && (
                 <>
                   {/* Save Status */}
-                  {saveStatus && (
+                  {localSaveStatus && (
                     <div className={`flex items-center gap-2 text-sm ${
-                      saveStatus === 'saving' ? 'text-blue-600' :
-                      saveStatus === 'saved' ? 'text-green-600' :
+                      localSaveStatus === 'saving' ? 'text-blue-600' :
+                      localSaveStatus === 'saved' ? 'text-green-600' :
                       'text-red-600'
                     }`}>
-                      {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {saveStatus === 'saved' && '✓ Saved'}
-                      {saveStatus === 'error' && '✗ Save Failed'}
+                      {localSaveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {localSaveStatus === 'saved' && '✓ Saved'}
+                      {localSaveStatus === 'error' && '✗ Save Failed'}
                     </div>
                   )}
 
-                  <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
+                  <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
                     <Save className="w-4 h-4 mr-2" />
                     Save
                   </Button>
