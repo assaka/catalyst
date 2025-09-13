@@ -315,13 +315,14 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${parentClassName} ${className} relative`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden' : 'overflow-hidden'} ${parentClassName} ${className} relative`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       style={{ 
         backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-        height: height ? `${height}px` : undefined
+        height: height ? `${height}px` : undefined,
+        maxHeight: height ? `${height}px` : undefined
       }}
     >
       {mode === 'edit' && (
@@ -633,6 +634,28 @@ const CartSlotsEditor = ({
       console.log('📊 Previous microSlots:', prevConfig?.microSlots);
       console.log('📊 Previous slot config:', prevConfig?.microSlots?.[slotId]);
       
+      // Find and constrain any elements within this slot (width constraint)
+      const updatedSlots = { ...prevConfig?.slots };
+      // Estimate max width based on col-span (rough approximation: each col-span ≈ 100px)
+      const maxElementWidth = Math.max(50, newColSpan * 80); // Conservative width estimation
+      
+      // Check all slots for elements that belong to this slot container
+      Object.keys(updatedSlots).forEach(elementSlotId => {
+        if (elementSlotId.startsWith(slotId + '.') || elementSlotId === slotId) {
+          const currentSlot = updatedSlots[elementSlotId];
+          if (currentSlot?.styles?.width && parseInt(currentSlot.styles.width) > maxElementWidth) {
+            console.log(`🔧 Constraining element ${elementSlotId} width from ${currentSlot.styles.width}px to ${maxElementWidth}px`);
+            updatedSlots[elementSlotId] = {
+              ...currentSlot,
+              styles: {
+                ...currentSlot.styles,
+                width: `${maxElementWidth}px`
+              }
+            };
+          }
+        }
+      });
+      
       const updatedConfig = {
         ...prevConfig,
         microSlots: {
@@ -641,7 +664,8 @@ const CartSlotsEditor = ({
             ...prevConfig?.microSlots?.[slotId],
             col: newColSpan
           }
-        }
+        },
+        slots: updatedSlots
       };
 
       console.log('✅ Updated microSlots:', updatedConfig.microSlots);
@@ -670,6 +694,27 @@ const CartSlotsEditor = ({
       
       console.log(`📏 Height ${newHeight}px ≈ ${estimatedRowSpan} row spans`);
       
+      // Find and constrain any elements within this slot
+      const updatedSlots = { ...prevConfig?.slots };
+      const maxElementHeight = Math.max(20, newHeight - 16); // Leave 16px padding
+      
+      // Check all slots for elements that belong to this slot container
+      Object.keys(updatedSlots).forEach(elementSlotId => {
+        if (elementSlotId.startsWith(slotId + '.') || elementSlotId === slotId) {
+          const currentSlot = updatedSlots[elementSlotId];
+          if (currentSlot?.styles?.height && parseInt(currentSlot.styles.height) > maxElementHeight) {
+            console.log(`🔧 Constraining element ${elementSlotId} height from ${currentSlot.styles.height}px to ${maxElementHeight}px`);
+            updatedSlots[elementSlotId] = {
+              ...currentSlot,
+              styles: {
+                ...currentSlot.styles,
+                height: `${maxElementHeight}px`
+              }
+            };
+          }
+        }
+      });
+      
       const updatedConfig = {
         ...prevConfig,
         microSlots: {
@@ -679,7 +724,8 @@ const CartSlotsEditor = ({
             height: newHeight,
             row: estimatedRowSpan // Add row span for CSS Grid
           }
-        }
+        },
+        slots: updatedSlots
       };
 
       console.log('✅ Updated slot with height and row span:', updatedConfig.microSlots[slotId]);
