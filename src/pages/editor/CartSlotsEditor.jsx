@@ -388,20 +388,45 @@ const CartSlotsEditor = ({
       try {
         // Start with cart config as the single source of truth
         const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+        
+        if (!cartConfig || !cartConfig.slots) {
+          throw new Error('Cart configuration is invalid or missing slots');
+        }
+        
         const initialConfig = {
-          page_name: cartConfig.page_name,
-          slot_type: cartConfig.slot_type,
-          slots: { ...cartConfig.slots },
+          page_name: cartConfig.page_name || 'Cart',
+          slot_type: cartConfig.slot_type || 'cart_layout',
+          slots: cartConfig.slots ? { ...cartConfig.slots } : {},
           metadata: {
-            ...cartConfig.metadata,
+            ...(cartConfig.metadata || {}),
             created: new Date().toISOString(),
             lastModified: new Date().toISOString()
           }
         };
 
         console.log('📦 Initialized cart configuration with hierarchical structure:', initialConfig);
-        console.log('🔍 Available slots:', Object.keys(initialConfig.slots));
+        console.log('🔍 Available slots:', Object.keys(initialConfig.slots || {}));
+        
+        if (Object.keys(initialConfig.slots).length === 0) {
+          console.warn('⚠️ No slots found in cart configuration');
+        }
+        
         setCartLayoutConfig(initialConfig);
+      } catch (error) {
+        console.error('❌ Failed to initialize cart configuration:', error);
+        // Set a minimal fallback configuration
+        setCartLayoutConfig({
+          page_name: 'Cart',
+          slot_type: 'cart_layout',
+          slots: {},
+          metadata: {
+            created: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            version: '1.0',
+            pageType: 'cart',
+            error: 'Failed to load configuration'
+          }
+        });
       } finally {
         setIsLoading(false);
       }
@@ -686,7 +711,7 @@ const CartSlotsEditor = ({
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {cartLayoutConfig?.slots && (
+              {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
                 <HierarchicalSlotRenderer
                   slots={cartLayoutConfig.slots}
                   parentId={null}
@@ -697,6 +722,10 @@ const CartSlotsEditor = ({
                   onSlotHeightResize={handleSlotHeightResize}
                   selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
                 />
+              ) : (
+                <div className="col-span-12 text-center py-12 text-gray-500">
+                  {cartLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
+                </div>
               )}
             </div>
             
