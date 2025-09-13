@@ -111,11 +111,33 @@ const GridColumn = ({
 }) => {
   const showHandle = onGridResize && mode === 'edit' && colSpan;
   
+  // Generate the col-span class dynamically to ensure Tailwind includes it
+  const getColSpanClass = (span) => {
+    const classes = {
+      1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
+      5: 'col-span-5', 6: 'col-span-6', 7: 'col-span-7', 8: 'col-span-8',
+      9: 'col-span-9', 10: 'col-span-10', 11: 'col-span-11', 12: 'col-span-12'
+    };
+    return classes[span] || 'col-span-12';
+  };
+  
+  const colSpanClass = getColSpanClass(colSpan);
+  
+  // Debug logging
+  console.log(`GridColumn ${slotId}:`, { colSpan, colSpanClass, showHandle });
+  
   return (
     <div 
-      className={`group col-span-${colSpan} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${className} relative`}
+      className={`group ${colSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${className} relative`}
       data-grid-slot-id={slotId}
+      data-col-span={colSpan}
+      style={{ backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}
     >
+      {mode === 'edit' && (
+        <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
+          {slotId}: {colSpan}
+        </div>
+      )}
       {children}
       {/* Grid resize handle on the column itself */}
       {showHandle && (
@@ -130,18 +152,16 @@ const GridColumn = ({
   );
 };
 
-// Enhanced editable element with resize and drag capabilities
+// Enhanced editable element with drag and element resize capabilities  
 const EditableElement = ({ 
   slotId, 
   children, 
   className, 
   style, 
   onClick, 
-  canResize = false, 
+  canResize = false,
   draggable = false, 
-  mode = 'edit',
-  gridColSpan,
-  onGridResize
+  mode = 'edit'
 }) => {
   const handleClick = useCallback((e) => {
     // Don't handle clicks in preview mode
@@ -155,7 +175,7 @@ const EditableElement = ({
 
   const content = (
     <div
-      className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={mode === 'edit' ? {
         border: '1px dotted rgba(200, 200, 200, 0.1)',
         borderRadius: '4px',
@@ -169,15 +189,6 @@ const EditableElement = ({
       draggable={draggable && mode === 'edit'}
     >
       {children}
-      {/* Grid resize handle - only show when grid resize is enabled and in edit mode */}
-      {gridColSpan && onGridResize && mode === 'edit' && (
-        <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
-          currentColSpan={gridColSpan}
-          maxColSpan={12}
-          minColSpan={1}
-        />
-      )}
     </div>
   );
 
@@ -531,18 +542,22 @@ const CartSlotsEditor = ({
             {/* Test Grid Resize - visible test slot */}
             {mode === 'edit' && (
               <div className="grid grid-cols-12 gap-4 mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
-                <div className={`col-span-${cartLayoutConfig?.microSlots?.['test.slot']?.col || 6} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                <GridColumn
+                  colSpan={cartLayoutConfig?.microSlots?.['test.slot']?.col || 6}
+                  slotId="test.slot"
+                  onGridResize={handleGridResize}
+                  mode={mode}
+                >
                   <EditableElement
                     slotId="test.slot"
                     mode={mode}
                     onClick={handleElementClick}
                     className="bg-blue-100 p-4 text-center font-bold border-2 border-blue-300"
-                    gridColSpan={cartLayoutConfig?.microSlots?.['test.slot']?.col || 6}
-                    onGridResize={handleGridResize}
+                    canResize={true}
                   >
-                    TEST RESIZE SLOT (drag right edge)
+                    TEST RESIZE SLOT (drag edges - grid & element)
                   </EditableElement>
-                </div>
+                </GridColumn>
                 <div className="col-span-6 p-4 bg-gray-100 text-center text-gray-600">
                   Other content
                 </div>
@@ -580,7 +595,13 @@ const CartSlotsEditor = ({
                           const finalClasses = titleStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className={`col-span-${cartLayoutConfig?.microSlots?.[slotId]?.col || 12} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              mode={mode}
+                            >
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -589,12 +610,10 @@ const CartSlotsEditor = ({
                                 style={titleStyling.elementStyles}
                                 canResize={true}
                                 draggable={true}
-                                gridColSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                                onGridResize={handleGridResize}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Your cart is empty"}
                               </EditableElement>
-                            </div>
+                            </GridColumn>
                           );
                         }
                         
