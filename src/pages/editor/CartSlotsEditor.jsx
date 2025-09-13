@@ -308,16 +308,21 @@ const renderHierarchicalSlot = ({
   const renderChildren = () => {
     if (!hasChildren || !isExpanded) return null;
     
-    const childElements = childSlots.map(childSlot => (
-      renderHierarchicalSlot({
-        slot: childSlot,
-        allSlots,
-        depth: depth + 1,
-        parentWidth: actualWidth,
-        mode,
-        onElementClick
-      })
-    ));
+    const childElements = childSlots.map((childSlot, index) => {
+      if (!childSlot) return null;
+      return (
+        <React.Fragment key={childSlot.id || `child-${index}`}>
+          {renderHierarchicalSlot({
+            slot: childSlot,
+            allSlots,
+            depth: depth + 1,
+            parentWidth: actualWidth,
+            mode,
+            onElementClick
+          })}
+        </React.Fragment>
+      );
+    }).filter(Boolean);
     
     if (slot.layout === 'grid') {
       return (
@@ -327,7 +332,7 @@ const renderHierarchicalSlot = ({
       );
     } else if (slot.layout === 'flex') {
       return (
-        <div className={`flex gap-${slot.gap} ${slot.styles?.flexDirection || 'flex-row'} min-h-[50px]`}>
+        <div className={`flex gap-${slot.gap} ${slot.styles?.flexDirection === 'column' ? 'flex-col' : 'flex-row'} min-h-[50px]`}>
           {childElements}
         </div>
       );
