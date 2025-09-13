@@ -394,7 +394,10 @@ const CartSlotsEditor = ({
 
   // Initialize cart configuration with both hierarchical and flat structure support
   useEffect(() => {
+    let isMounted = true; // Track if component is still mounted
+    
     const initializeConfig = async () => {
+      if (!isMounted) return;
       setIsLoading(true);
       try {
         // Start with cart config as the single source of truth
@@ -458,13 +461,16 @@ const CartSlotsEditor = ({
         
         // Defer state update to avoid React error #130
         setTimeout(() => {
-          setCartLayoutConfig(initialConfig);
+          if (isMounted) {
+            setCartLayoutConfig(initialConfig);
+          }
         }, 0);
       } catch (error) {
         console.error('❌ Failed to initialize cart configuration:', error);
         // Set a minimal fallback configuration
         setTimeout(() => {
-          setCartLayoutConfig({
+          if (isMounted) {
+            setCartLayoutConfig({
             page_name: 'Cart',
             slot_type: 'cart_layout',
             slots: {},
@@ -477,13 +483,21 @@ const CartSlotsEditor = ({
             },
             cmsBlocks: []
           });
+          }
         }, 0);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initializeConfig();
+    
+    // Cleanup function to prevent state updates on unmounted component
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Helper functions for slot styling
