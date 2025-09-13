@@ -393,6 +393,7 @@ const CartSlotsEditor = ({
           throw new Error('Cart configuration is invalid or missing slots');
         }
         
+        // Don't include views or other properties with React components
         const initialConfig = {
           page_name: cartConfig.page_name || 'Cart',
           slot_type: cartConfig.slot_type || 'cart_layout',
@@ -401,7 +402,9 @@ const CartSlotsEditor = ({
             ...(cartConfig.metadata || {}),
             created: new Date().toISOString(),
             lastModified: new Date().toISOString()
-          }
+          },
+          // Store only serializable view data, not React components
+          cmsBlocks: cartConfig.cmsBlocks || []
         };
 
         console.log('📦 Initialized cart configuration with hierarchical structure:', initialConfig);
@@ -425,7 +428,8 @@ const CartSlotsEditor = ({
             version: '1.0',
             pageType: 'cart',
             error: 'Failed to load configuration'
-          }
+          },
+          cmsBlocks: []
         });
       } finally {
         setIsLoading(false);
