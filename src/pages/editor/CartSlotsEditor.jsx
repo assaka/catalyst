@@ -37,6 +37,7 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseDown = useCallback((e) => {
+    console.log('🎯 GridResizeHandle clicked!', { currentColSpan, clientX: e.clientX });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -85,15 +86,15 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
 
   return (
     <div
-      className={`absolute -right-0.5 top-1/2 -translate-y-1/2 w-3 h-12 cursor-col-resize transition-all duration-200 ${
-        isHovered || isDragging 
-          ? 'opacity-100' 
-          : 'opacity-0 group-hover:opacity-80'
-      }`}
+      className={`absolute -right-1 top-1/2 -translate-y-1/2 w-4 h-16 cursor-col-resize transition-all duration-200 opacity-100 border-2 border-red-500`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ zIndex: 1000 }}
+      onClick={(e) => {
+        e.stopPropagation();
+        console.log('🖱️ Handle clicked (not dragged)');
+      }}
+      style={{ zIndex: 9999 }}
       title={`Resize column (${currentColSpan}/${maxColSpan}) - drag to resize`}
     >
       {/* More visible handle when dragging */}
@@ -660,31 +661,47 @@ const CartSlotsEditor = ({
                         
                         if (slotId === 'emptyCart.text') {
                           const textStyling = getMicroSlotStyling('emptyCart.text');
+                          const positioning = getSlotPositioning(slotId);
                           const defaultClasses = 'text-gray-600 mb-6';
-                          const finalClasses = textStyling.elementClasses || defaultClasses;
+                          const finalClasses = positioning.elementClasses || textStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              mode={mode}
+                              className={positioning.gridClasses}
+                            >
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
                                 onClick={handleElementClick}
                                 className={finalClasses}
-                                style={textStyling.elementStyles}
+                                style={positioning.elementStyles || textStyling.elementStyles}
                                 canResize={true}
                                 draggable={true}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
                               </EditableElement>
-                            </div>
+                            </GridColumn>
                           );
                         }
                         
                         if (slotId === 'emptyCart.button') {
                           const buttonStyling = getMicroSlotStyling('emptyCart.button');
+                          const positioning = getSlotPositioning(slotId);
                           
                           return (
-                            <div key={slotId} className={`col-span-12 flex justify-center ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              mode={mode}
+                              className={`flex justify-center ${positioning.gridClasses}`}
+                            >
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -694,12 +711,12 @@ const CartSlotsEditor = ({
                               >
                                 <Button 
                                   className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                  style={buttonStyling.elementStyles}
+                                  style={positioning.elementStyles || buttonStyling.elementStyles}
                                 >
                                   {cartLayoutConfig.slots[slotId]?.content || "Continue Shopping"}
                                 </Button>
                               </EditableElement>
-                            </div>
+                            </GridColumn>
                           );
                         }
                         
@@ -812,30 +829,38 @@ const CartSlotsEditor = ({
                             Apply Coupon
                           </EditableElement>
                         </div>
-                        <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                        <GridColumn
+                          colSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
+                          slotId="coupon.input"
+                          onGridResize={handleGridResize}
+                          mode={mode}
+                          className={getSlotPositioning('coupon.input').gridClasses}
+                        >
                           <EditableElement
                             slotId="coupon.input"
                             mode={mode}
                             onClick={handleElementClick}
-                            gridColSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
-                            onGridResize={handleGridResize}
                           >
                             <Input placeholder="Enter coupon code" />
                           </EditableElement>
-                        </div>
-                        <div className={`col-span-${cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                        </GridColumn>
+                        <GridColumn
+                          colSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
+                          slotId="coupon.button"
+                          onGridResize={handleGridResize}
+                          mode={mode}
+                          className={getSlotPositioning('coupon.button').gridClasses}
+                        >
                           <EditableElement
                             slotId="coupon.button"
                             mode={mode}
                             onClick={handleElementClick}
-                            gridColSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
-                            onGridResize={handleGridResize}
                           >
                             <Button>
                               <Tag className="w-4 h-4 mr-2" /> Apply
                             </Button>
                           </EditableElement>
-                        </div>
+                        </GridColumn>
                       </div>
                     </CardContent>
                   </Card>

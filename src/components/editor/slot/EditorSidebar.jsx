@@ -499,9 +499,17 @@ const EditorSidebar = ({
         }
       }));
       
+      // Combine alignment classes (from target) with element classes (from selected element)
+      // This ensures both are saved together so they can be properly separated on load
+      const targetAlignmentClasses = targetElement.className.split(' ').filter(cls => 
+        cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right')
+      );
+      const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+      const combinedClasses = [...elementClasses, ...targetAlignmentClasses].join(' ');
+      
       // Save immediately using parent callback with preserved styles
       if (onInlineClassChange) {
-        onInlineClassChange(elementSlotId, selectedElement.className, currentInlineStyles, true);
+        onInlineClassChange(elementSlotId, combinedClasses, currentInlineStyles, true);
       }
     }
     
