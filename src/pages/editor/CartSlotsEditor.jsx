@@ -7,9 +7,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from '@/components/ui/card';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
-import { Input } from '@/components/ui/input';
 import { 
   Save, 
   Settings, 
@@ -17,11 +15,7 @@ import {
   EyeOff, 
   ShoppingCart,
   Package,
-  Layers,
-  ChevronDown,
-  ChevronRight,
-  Move,
-  RotateCcw
+  Loader2
 } from "lucide-react";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
@@ -751,19 +745,48 @@ const CartSlotsEditor = ({
     </div>
   );
 
-  // Main render - Clean and maintainable wrapped with EditorWrapper
+  // Main render - Clean and maintainable  
   return (
-    <EditorWrapper
-      title="Cart Editor"
-      onSave={() => saveConfiguration()}
-      saveStatus={saveStatus}
-      isSidebarVisible={isSidebarVisible}
-      onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
-      additionalControls={additionalControls}
-    >
-      <div className={`min-h-full bg-gray-50 ${
-        isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
-      }`}>
+    <div className={`min-h-screen bg-gray-50 ${
+      isSidebarVisible && viewMode === 'withProducts' ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
+    }`}>
+      {/* Main Editor Area */}
+      <div className="flex flex-col">
+        {/* Editor Header */}
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* View Mode Selector */}
+            {additionalControls}
+
+            {/* Only show controls in edit mode */}
+            {mode === 'edit' && (
+              <div className="flex items-center gap-2">
+                {/* Save Status */}
+                {saveStatus && (
+                  <div className={`flex items-center gap-2 text-sm ${
+                    saveStatus === 'saving' ? 'text-blue-600' : 
+                    saveStatus === 'saved' ? 'text-green-600' : 
+                    'text-red-600'
+                  }`}>
+                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saveStatus === 'saved' && '✓ Saved'}
+                    {saveStatus === 'error' && '✗ Save Failed'}
+                  </div>
+                )}
+
+                <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+
+                <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
         {/* Cart Layout - Hierarchical Structure */}
         <div 
           className="bg-gray-50 cart-page"
@@ -812,7 +835,8 @@ const CartSlotsEditor = ({
           isVisible={true}
         />
       )}
-    </EditorWrapper>
+      </div>
+    </div>
   );
 };
 
