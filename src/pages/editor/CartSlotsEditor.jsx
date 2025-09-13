@@ -32,10 +32,10 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 // Webflow-style resize handle - subtle and only appears on hover
 const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startColSpan, setStartColSpan] = useState(currentColSpan);
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startColSpanRef = useRef(currentColSpan);
 
   const handleMouseDown = useCallback((e) => {
     console.log('🎯 GridResizeHandle clicked!', { currentColSpan, clientX: e.clientX });
@@ -43,24 +43,29 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     e.stopPropagation();
     setIsDragging(true);
     isDraggingRef.current = true;
-    setStartX(e.clientX);
-    setStartColSpan(currentColSpan);
+    startXRef.current = e.clientX;
+    startColSpanRef.current = currentColSpan;
+    
+    console.log('📍 Starting drag with:', { startX: startXRef.current, startColSpan: startColSpanRef.current });
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   }, [currentColSpan]);
 
   const handleMouseMove = useCallback((e) => {
-    console.log('🖱️ Mouse move:', { isDragging: isDraggingRef.current, clientX: e.clientX, startX });
-    
     if (!isDraggingRef.current) return;
     
+    const startX = startXRef.current;
+    const startColSpan = startColSpanRef.current;
     const deltaX = e.clientX - startX;
     const sensitivity = 30; // pixels per col-span unit
     const colSpanDelta = Math.round(deltaX / sensitivity);
     const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startColSpan + colSpanDelta));
     
-    console.log('🎯 GridResizeHandle drag:', { 
+    console.log('🖱️ Mouse move:', { 
+      isDragging: isDraggingRef.current, 
+      clientX: e.clientX, 
+      startX,
       deltaX, 
       colSpanDelta, 
       startColSpan, 
@@ -73,7 +78,7 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
       console.log('📞 Calling onResize with:', newColSpan);
       onResize(newColSpan);
     }
-  }, [isDragging, startX, startColSpan, currentColSpan, maxColSpan, minColSpan, onResize]);
+  }, [currentColSpan, maxColSpan, minColSpan, onResize]);
 
   const handleMouseUp = useCallback(() => {
     console.log('🛑 Mouse up - ending drag');
