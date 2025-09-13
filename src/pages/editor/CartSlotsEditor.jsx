@@ -185,58 +185,54 @@ const GridColumn = ({
         maxHeight: height ? `${height}px` : undefined
       }}
     >
-      {/* Hover detection only on border areas - not content */}
+      {/* Hover detection system */}
       {mode === 'edit' && (
-        <>
-          {/* Top border */}
-          <div 
-            className="absolute top-0 left-0 right-0 h-2 pointer-events-auto"
-            onMouseEnter={(e) => {
+        <div 
+          className="absolute inset-0 pointer-events-auto"
+          onMouseEnter={(e) => {
+            // Only trigger hover if mouse is in border area (outer 8px)
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const borderWidth = 8;
+            
+            const inBorderArea = 
+              x < borderWidth || 
+              x > rect.width - borderWidth || 
+              y < borderWidth || 
+              y > rect.height - borderWidth;
+            
+            if (inBorderArea) {
               e.stopPropagation();
               setIsHovered(true);
-            }}
-            style={{ zIndex: 3 }}
-          />
-          {/* Bottom border */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 h-2 pointer-events-auto"
-            onMouseEnter={(e) => {
-              e.stopPropagation();
-              setIsHovered(true);
-            }}
-            style={{ zIndex: 3 }}
-          />
-          {/* Left border */}
-          <div 
-            className="absolute top-0 bottom-0 left-0 w-2 pointer-events-auto"
-            onMouseEnter={(e) => {
-              e.stopPropagation();
-              setIsHovered(true);
-            }}
-            style={{ zIndex: 3 }}
-          />
-          {/* Right border */}
-          <div 
-            className="absolute top-0 bottom-0 right-0 w-2 pointer-events-auto"
-            onMouseEnter={(e) => {
-              e.stopPropagation();
-              setIsHovered(true);
-            }}
-            style={{ zIndex: 3 }}
-          />
-          {/* Mouse leave detector for entire slot */}
-          <div 
-            className="absolute inset-0 pointer-events-none"
-            onMouseLeave={(e) => {
-              e.stopPropagation();
+            }
+          }}
+          onMouseMove={(e) => {
+            // Check if still in border area during mouse move
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const borderWidth = 8;
+            
+            const inBorderArea = 
+              x < borderWidth || 
+              x > rect.width - borderWidth || 
+              y < borderWidth || 
+              y > rect.height - borderWidth;
+            
+            if (!inBorderArea && isHovered) {
               setIsHovered(false);
-            }}
-            style={{ 
-              pointerEvents: 'auto',
-              zIndex: 1
-            }}
-          />
-        </>
+            } else if (inBorderArea && !isHovered) {
+              e.stopPropagation();
+              setIsHovered(true);
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.stopPropagation();
+            setIsHovered(false);
+          }}
+          style={{ zIndex: 1 }}
+        />
       )}
       
       {/* Content area with padding */}
