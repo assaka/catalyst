@@ -35,12 +35,14 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
   const [startX, setStartX] = useState(0);
   const [startColSpan, setStartColSpan] = useState(currentColSpan);
   const [isHovered, setIsHovered] = useState(false);
+  const isDraggingRef = useRef(false);
 
   const handleMouseDown = useCallback((e) => {
     console.log('🎯 GridResizeHandle clicked!', { currentColSpan, clientX: e.clientX });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
+    isDraggingRef.current = true;
     setStartX(e.clientX);
     setStartColSpan(currentColSpan);
     
@@ -49,14 +51,16 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
   }, [currentColSpan]);
 
   const handleMouseMove = useCallback((e) => {
-    if (!isDragging) return;
+    console.log('🖱️ Mouse move:', { isDragging: isDraggingRef.current, clientX: e.clientX, startX });
+    
+    if (!isDraggingRef.current) return;
     
     const deltaX = e.clientX - startX;
     const sensitivity = 30; // pixels per col-span unit
     const colSpanDelta = Math.round(deltaX / sensitivity);
     const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startColSpan + colSpanDelta));
     
-    console.log('GridResizeHandle drag:', { 
+    console.log('🎯 GridResizeHandle drag:', { 
       deltaX, 
       colSpanDelta, 
       startColSpan, 
@@ -66,13 +70,15 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     });
     
     if (newColSpan !== currentColSpan) {
-      console.log('Calling onResize with:', newColSpan);
+      console.log('📞 Calling onResize with:', newColSpan);
       onResize(newColSpan);
     }
   }, [isDragging, startX, startColSpan, currentColSpan, maxColSpan, minColSpan, onResize]);
 
   const handleMouseUp = useCallback(() => {
+    console.log('🛑 Mouse up - ending drag');
     setIsDragging(false);
+    isDraggingRef.current = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   }, [handleMouseMove]);
