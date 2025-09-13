@@ -17,7 +17,6 @@ import {
   EyeOff, 
   ShoppingCart,
   Package,
-  Loader2,
   Layers,
   ChevronDown,
   ChevronRight,
@@ -390,7 +389,6 @@ const CartSlotsEditor = ({
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize cart configuration with both hierarchical and flat structure support
   useEffect(() => {
@@ -398,7 +396,7 @@ const CartSlotsEditor = ({
     
     const initializeConfig = async () => {
       if (!isMounted) return;
-      setIsLoading(true);
+      
       try {
         // Start with cart config as the single source of truth
         const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
@@ -486,9 +484,7 @@ const CartSlotsEditor = ({
           }
         }, 0);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        // No need to set loading state since we start with false
       }
     };
 
@@ -717,16 +713,7 @@ const CartSlotsEditor = ({
 
 
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-gray-600">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          Loading cart editor...
-        </div>
-      </div>
-    );
-  }
+  // No loading state needed since we have initial config
 
   // Create the additional view mode controls for the wrapper
   const additionalControls = (
