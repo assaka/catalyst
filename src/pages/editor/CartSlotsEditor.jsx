@@ -22,21 +22,151 @@ import {
   Tag,
   Plus,
   Minus,
-  Trash2
+  Trash2,
+  Move,
+  Layers,
+  Copy,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Modern resize handle for horizontal (grid column) resizing
-const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1, direction = 'horizontal' }) => {
+// Hierarchical Slot System Types
+export const SlotTypes = {
+  CONTAINER: 'container',    // Can contain other slots
+  TEXT: 'text',              // Text content
+  BUTTON: 'button',          // Button element
+  IMAGE: 'image',            // Image element
+  INPUT: 'input',            // Input field
+  GRID: 'grid',              // Grid layout container
+  FLEX: 'flex',              // Flex layout container
+};
+
+// Create hierarchical slot
+export const createHierarchicalSlot = (id, type = SlotTypes.TEXT, config = {}) => {
+  return {
+    id,
+    type,
+    content: config.content || '',
+    className: config.className || '',
+    styles: config.styles || {},
+    
+    // Hierarchical properties
+    parentId: config.parentId || null,
+    children: config.children || [],
+    
+    // Layout properties for containers
+    layout: config.layout || (type === SlotTypes.GRID ? 'grid' : type === SlotTypes.FLEX ? 'flex' : 'block'),
+    gridCols: config.gridCols || 12,  // For grid containers
+    gap: config.gap || 2,              // Gap between children
+    
+    // Relative sizing
+    colSpan: config.colSpan || 12,     // Relative to parent's grid
+    rowSpan: config.rowSpan || 1,      // For grid layouts
+    
+    // Constraints
+    allowedChildren: config.allowedChildren || Object.values(SlotTypes), // Which types can be nested
+    maxDepth: config.maxDepth || 5,    // Maximum nesting depth
+    minChildren: config.minChildren || 0,
+    maxChildren: config.maxChildren || null,
+    
+    // Metadata
+    locked: config.locked || false,     // Prevent modifications
+    collapsed: config.collapsed || false, // For UI tree view
+    metadata: config.metadata || {}
+  };
+};
+
+// Convert existing flat slots to hierarchical structure
+export const convertToHierarchical = (flatSlots = {}, microSlots = {}) => {
+  const hierarchicalSlots = {};
+  
+  // Create containers for grouped slots based on naming patterns
+  const groups = {};
+  Object.keys(flatSlots).forEach(slotId => {
+    const parts = slotId.split('.');
+    if (parts.length > 1) {
+      const groupName = parts[0];
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(slotId);
+    } else {
+      // Root level slots
+      const slot = flatSlots[slotId];
+      let slotType = SlotTypes.TEXT;
+      
+      if (slotId.includes('button') || slot.content?.includes('<button')) {
+        slotType = SlotTypes.BUTTON;
+      } else if (slotId.includes('input') || slot.content?.includes('<input')) {
+        slotType = SlotTypes.INPUT;
+      } else if (slotId.includes('image') || slot.content?.includes('<img')) {
+        slotType = SlotTypes.IMAGE;
+      }
+      
+      hierarchicalSlots[slotId] = createHierarchicalSlot(slotId, slotType, {
+        content: slot.content || '',
+        className: slot.className || '',
+        styles: slot.styles || {},
+        colSpan: microSlots[slotId]?.col || 12
+      });
+    }
+  });
+  
+  // Create group containers
+  Object.entries(groups).forEach(([groupName, slotIds]) => {
+    const containerId = `${groupName}_container`;
+    let containerType = SlotTypes.CONTAINER;
+    
+    if (groupName === 'coupon' || groupName === 'orderSummary') {
+      containerType = SlotTypes.GRID;
+    } else if (groupName === 'header' || groupName === 'footer') {
+      containerType = SlotTypes.FLEX;
+    }
+    
+    hierarchicalSlots[containerId] = createHierarchicalSlot(containerId, containerType, {
+      className: `${groupName}-container`,
+      children: slotIds,
+      colSpan: 12
+    });
+    
+    // Convert child slots
+    slotIds.forEach(slotId => {
+      const slot = flatSlots[slotId];
+      let slotType = SlotTypes.TEXT;
+      
+      if (slotId.includes('button') || slot.content?.includes('<button')) {
+        slotType = SlotTypes.BUTTON;
+      } else if (slotId.includes('input') || slot.content?.includes('<input')) {
+        slotType = SlotTypes.INPUT;
+      } else if (slotId.includes('image') || slot.content?.includes('<img')) {
+        slotType = SlotTypes.IMAGE;
+      }
+      
+      hierarchicalSlots[slotId] = createHierarchicalSlot(slotId, slotType, {
+        content: slot.content || '',
+        className: slot.className || '',
+        styles: slot.styles || {},
+        parentId: containerId,
+        colSpan: microSlots[slotId]?.col || 12
+      });
+    });
+  });
+  
+  return hierarchicalSlots;
+};
+
+// Modern resize handle for horizontal (grid column) or vertical (height) resizing
+const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
-  const startValueRef = useRef(currentColSpan);
+  const startValueRef = useRef(currentValue);
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -45,11 +175,13 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     isDraggingRef.current = true;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
-    startValueRef.current = currentColSpan;
+    startValueRef.current = currentValue;
+    
+    console.log(`🎯 Starting ${direction} resize:`, { currentValue, startX: e.clientX, startY: e.clientY });
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [currentColSpan]);
+  }, [currentValue, direction]);
 
   const handleMouseMove = useCallback((e) => {
     if (!isDraggingRef.current) return;
@@ -62,19 +194,24 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
       const deltaX = e.clientX - startX;
       const sensitivity = 30; // pixels per col-span unit
       const colSpanDelta = Math.round(deltaX / sensitivity);
-      const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startValue + colSpanDelta));
+      const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
       
-      if (newColSpan !== currentColSpan) {
+      console.log(`🖱️ Horizontal resize:`, { deltaX, colSpanDelta, startValue, newColSpan, currentValue });
+      
+      if (newColSpan !== currentValue) {
         onResize(newColSpan);
       }
     } else if (direction === 'vertical') {
       const deltaY = e.clientY - startY;
-      const heightDelta = Math.round(deltaY / 10); // 10px increments
+      const heightDelta = Math.round(deltaY / 2); // 2px increments for smoother resize
       const newHeight = Math.max(20, startValue + heightDelta); // Minimum 20px height
       
+      console.log(`🖱️ Vertical resize:`, { deltaY, heightDelta, startValue, newHeight });
+      
+      // Always call onResize for height changes since we want smooth updates
       onResize(newHeight);
     }
-  }, [currentColSpan, maxColSpan, minColSpan, onResize, direction]);
+  }, [currentValue, maxValue, minValue, onResize, direction]);
 
   const handleMouseUp = useCallback(() => {
     console.log('🛑 Mouse up - ending drag');
@@ -108,7 +245,7 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ zIndex: 9999 }}
-      title={`Resize ${direction}ly ${isHorizontal ? `(${currentColSpan}/${maxColSpan})` : ''}`}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue}/${maxValue})` : `(${currentValue}px)`}`}
     >
       {/* Modern subtle handle */}
       <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
@@ -125,9 +262,9 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
       </div>
       
       {/* Subtle indicator when dragging */}
-      {isDragging && isHorizontal && (
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg">
-          {currentColSpan}/{maxColSpan}
+      {isDragging && (
+        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'} bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
+          {isHorizontal ? `${currentValue}/${maxValue}` : `${currentValue}px`}
         </div>
       )}
     </div>
@@ -178,9 +315,10 @@ const GridColumn = ({
       {showHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
-          currentColSpan={colSpan}
-          maxColSpan={12}
-          minColSpan={1}
+          currentValue={colSpan}
+          maxValue={12}
+          minValue={1}
+          direction="horizontal"
         />
       )}
     </div>
@@ -230,8 +368,10 @@ const EditableElement = ({
       {canResize && onHeightResize && mode === 'edit' && (
         <GridResizeHandle
           direction="vertical"
-          onResize={onHeightResize}
-          currentColSpan={0} // Not used for vertical
+          onResize={(newHeight) => onHeightResize(slotId, newHeight)}
+          currentValue={parseInt(style?.minHeight) || 50}
+          maxValue={500}
+          minValue={20}
         />
       )}
     </div>
