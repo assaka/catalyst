@@ -100,12 +100,6 @@ const ResizeWrapper = ({
       if (parentRect && parentRect.width > 0 && rect.width > 0) {
         const naturalPercentage = Math.min(100, (rect.width / parentRect.width) * 100);
         
-        console.log('🎯 Natural size calculation:', {
-          elementWidth: rect.width,
-          slotWidth: parentRect.width,
-          naturalPercentage: naturalPercentage.toFixed(1) + '%'
-        });
-        
         setNaturalSize({ width: rect.width, height: rect.height });
         setSize(prev => ({
           ...prev,

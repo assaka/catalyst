@@ -482,16 +482,37 @@ const CartSlotsEditor = ({
 
         // Try to load saved configuration from database first
         const storeId = getSelectedStoreId();
-        if (storeId && loadFromDatabase) {
+        if (storeId) {
           try {
             console.log('💾 Attempting to load saved configuration from database...');
-            const savedConfig = await loadFromDatabase();
-            if (savedConfig && savedConfig.slots && Object.keys(savedConfig.slots).length > 0) {
-              console.log('✅ Found saved configuration in database:', savedConfig);
-              configToUse = savedConfig;
+            const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+            console.log('📥 Raw database response:', savedConfig);
+
+            if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
+              console.log('📄 Database configuration found:', savedConfig.data.configuration);
+              const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(savedConfig.data.configuration);
+              console.log('🔄 Transformed configuration:', dbConfig);
+
+              if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
+                console.log('✅ Found saved configuration in database:', dbConfig);
+                // Check specifically for header_title italic
+                const headerTitle = dbConfig.slots.header_title;
+                if (headerTitle) {
+                  console.log('🎨 Header title from DB:', {
+                    className: headerTitle.className,
+                    hasItalic: headerTitle.className?.includes('italic'),
+                    styles: headerTitle.styles
+                  });
+                }
+                configToUse = dbConfig;
+              } else {
+                console.log('📝 Database config exists but has no slots:', dbConfig);
+              }
+            } else {
+              console.log('📝 No valid configuration structure in database response');
             }
           } catch (dbError) {
-            console.log('📝 No saved configuration found, will use static config as fallback');
+            console.log('📝 No saved configuration found, will use static config as fallback:', dbError.message);
           }
         }
 
@@ -595,7 +616,7 @@ const CartSlotsEditor = ({
     return () => {
       isMounted = false;
     };
-  }, [selectedStore, loadFromDatabase, getSelectedStoreId]);
+  }, [selectedStore, getSelectedStoreId]);
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
