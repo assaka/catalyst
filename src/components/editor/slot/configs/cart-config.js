@@ -40,13 +40,13 @@ export const cartConfig = {
     
     content_area: {
       id: 'content_area',
-      type: 'container', 
+      type: 'container',
       content: '',
       className: 'content-area',
       styles: {},
       parentId: 'main_layout',
       layout: 'block',
-      colSpan: 8,
+      colSpan: 12, // Will be dynamically adjusted to 8 in withProducts mode
       viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
