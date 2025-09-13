@@ -403,6 +403,117 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Debounced save ref
+  const saveTimeoutRef = useRef(null);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle grid resize changes for hierarchical slots
+  const handleGridResize = useCallback((slotId, newColSpan) => {
+    console.log('🔄 handleGridResize called:', { slotId, newColSpan });
+    
+    setCartLayoutConfig(prevConfig => {
+      const updatedSlots = { ...prevConfig?.slots };
+      const updatedMicroSlots = { ...prevConfig?.microSlots };
+      
+      if (updatedSlots[slotId]) {
+        // Update hierarchical slot colSpan
+        updatedSlots[slotId] = {
+          ...updatedSlots[slotId],
+          colSpan: newColSpan
+        };
+      }
+      
+      // Also update microSlots if they exist for backward compatibility
+      if (updatedMicroSlots[slotId]) {
+        updatedMicroSlots[slotId] = {
+          ...updatedMicroSlots[slotId],
+          col: newColSpan
+        };
+      }
+      
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        microSlots: updatedMicroSlots
+      };
+
+      console.log('✅ Updated slot:', updatedConfig.slots[slotId]);
+
+      // Debounced auto-save - clear previous timeout and set new one
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Saving configuration after resize...');
+        saveConfiguration(updatedConfig);
+      }, 1000); // Wait 1 second after resize stops
+
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
+
+  // Handle slot container height resize changes
+  const handleSlotHeightResize = useCallback((slotId, newHeight) => {
+    console.log('📐 handleSlotHeightResize called:', { slotId, newHeight });
+    
+    setCartLayoutConfig(prevConfig => {
+      const updatedSlots = { ...prevConfig?.slots };
+      const updatedMicroSlots = { ...prevConfig?.microSlots };
+      
+      if (updatedSlots[slotId]) {
+        // Calculate row span based on height (rough approximation: 40px per row)
+        const estimatedRowSpan = Math.max(1, Math.round(newHeight / 40));
+        console.log(`📏 Height ${newHeight}px ≈ ${estimatedRowSpan} row spans`);
+        
+        // Update the slot's height and rowSpan
+        updatedSlots[slotId] = {
+          ...updatedSlots[slotId],
+          rowSpan: estimatedRowSpan,
+          styles: {
+            ...updatedSlots[slotId].styles,
+            minHeight: `${newHeight}px`
+          }
+        };
+      }
+      
+      // Also update microSlots if they exist
+      if (updatedMicroSlots[slotId]) {
+        updatedMicroSlots[slotId] = {
+          ...updatedMicroSlots[slotId],
+          height: newHeight,
+          row: Math.max(1, Math.round(newHeight / 40))
+        };
+      }
+      
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        microSlots: updatedMicroSlots
+      };
+
+      console.log('✅ Updated slot with height:', updatedConfig.slots[slotId]);
+
+      // Debounced auto-save - clear previous timeout and set new one
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Saving configuration after slot height resize...');
+        saveConfiguration(updatedConfig);
+      }, 1000); // Wait 1 second after resize stops
+
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
+
 
 
 
