@@ -143,6 +143,280 @@ export const cartConfig = {
       metadata: { hierarchical: true }
     },
     
+    // Cart items hierarchical structure
+    cart_items_container: {
+      id: 'cart_items_container',
+      type: 'container',
+      content: '',
+      className: 'cart-items-container',
+      styles: {},
+      parentId: 'content_area',
+      layout: 'block',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1: {
+      id: 'cart_item_1',
+      type: 'container',
+      content: '',
+      className: 'cart-item bg-white p-4 border-b border-gray-200 flex items-center space-x-4',
+      styles: {},
+      parentId: 'cart_items_container',
+      layout: 'flex',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_image: {
+      id: 'cart_item_1_image',
+      type: 'image',
+      content: 'https://via.placeholder.com/80x80',
+      className: 'w-20 h-20 object-cover rounded',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_1',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_details: {
+      id: 'cart_item_1_details',
+      type: 'container',
+      content: '',
+      className: 'flex-1',
+      styles: {},
+      parentId: 'cart_item_1',
+      layout: 'block',
+      colSpan: 6,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_name: {
+      id: 'cart_item_1_name',
+      type: 'text',
+      content: 'Wireless Headphones',
+      className: 'text-lg font-semibold text-gray-900',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_1_details',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_description: {
+      id: 'cart_item_1_description',
+      type: 'text',
+      content: 'Premium noise-canceling wireless headphones with 30-hour battery life',
+      className: 'text-gray-600 text-sm mt-1',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_1_details',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_quantity: {
+      id: 'cart_item_1_quantity',
+      type: 'container',
+      content: '',
+      className: 'flex items-center space-x-2 mt-2',
+      styles: {},
+      parentId: 'cart_item_1_details',
+      layout: 'flex',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_qty_label: {
+      id: 'cart_item_1_qty_label',
+      type: 'text',
+      content: 'Qty:',
+      className: 'text-sm text-gray-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_1_quantity',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_qty_input: {
+      id: 'cart_item_1_qty_input',
+      type: 'input',
+      content: '1',
+      className: 'w-16 px-2 py-1 border border-gray-300 rounded text-center',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_1_quantity',
+      colSpan: 4,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_price: {
+      id: 'cart_item_1_price',
+      type: 'text',
+      content: '$49.99',
+      className: 'text-lg font-semibold text-gray-900',
+      parentClassName: 'text-right',
+      styles: {},
+      parentId: 'cart_item_1',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_1_remove: {
+      id: 'cart_item_1_remove',
+      type: 'button',
+      content: '×',
+      className: 'text-red-500 hover:text-red-700 text-xl font-bold',
+      parentClassName: 'text-center',
+      styles: {},
+      parentId: 'cart_item_1',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2: {
+      id: 'cart_item_2',
+      type: 'container',
+      content: '',
+      className: 'cart-item bg-white p-4 border-b border-gray-200 flex items-center space-x-4',
+      styles: {},
+      parentId: 'cart_items_container',
+      layout: 'flex',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_image: {
+      id: 'cart_item_2_image',
+      type: 'image',
+      content: 'https://via.placeholder.com/80x80',
+      className: 'w-20 h-20 object-cover rounded',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_2',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_details: {
+      id: 'cart_item_2_details',
+      type: 'container',
+      content: '',
+      className: 'flex-1',
+      styles: {},
+      parentId: 'cart_item_2',
+      layout: 'block',
+      colSpan: 6,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_name: {
+      id: 'cart_item_2_name',
+      type: 'text',
+      content: 'Smart Watch',
+      className: 'text-lg font-semibold text-gray-900',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_2_details',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_description: {
+      id: 'cart_item_2_description',
+      type: 'text',
+      content: 'Fitness tracking smartwatch with heart rate monitor and GPS',
+      className: 'text-gray-600 text-sm mt-1',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_2_details',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_quantity: {
+      id: 'cart_item_2_quantity',
+      type: 'container',
+      content: '',
+      className: 'flex items-center space-x-2 mt-2',
+      styles: {},
+      parentId: 'cart_item_2_details',
+      layout: 'flex',
+      colSpan: 12,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_qty_label: {
+      id: 'cart_item_2_qty_label',
+      type: 'text',
+      content: 'Qty:',
+      className: 'text-sm text-gray-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_2_quantity',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_qty_input: {
+      id: 'cart_item_2_qty_input',
+      type: 'input',
+      content: '2',
+      className: 'w-16 px-2 py-1 border border-gray-300 rounded text-center',
+      parentClassName: '',
+      styles: {},
+      parentId: 'cart_item_2_quantity',
+      colSpan: 4,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_price: {
+      id: 'cart_item_2_price',
+      type: 'text',
+      content: '$29.98',
+      className: 'text-lg font-semibold text-gray-900',
+      parentClassName: 'text-right',
+      styles: {},
+      parentId: 'cart_item_2',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
+    cart_item_2_remove: {
+      id: 'cart_item_2_remove',
+      type: 'button',
+      content: '×',
+      className: 'text-red-500 hover:text-red-700 text-xl font-bold',
+      parentClassName: 'text-center',
+      styles: {},
+      parentId: 'cart_item_2',
+      colSpan: 2,
+      viewMode: ['withProducts'],
+      metadata: { hierarchical: true }
+    },
+    
     // Sidebar hierarchical structure
     coupon_container: {
       id: 'coupon_container',
