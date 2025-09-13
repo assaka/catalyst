@@ -55,7 +55,17 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     const colSpanDelta = Math.round(deltaX / sensitivity);
     const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startColSpan + colSpanDelta));
     
+    console.log('GridResizeHandle drag:', { 
+      deltaX, 
+      colSpanDelta, 
+      startColSpan, 
+      currentColSpan, 
+      newColSpan,
+      shouldUpdate: newColSpan !== currentColSpan 
+    });
+    
     if (newColSpan !== currentColSpan) {
+      console.log('Calling onResize with:', newColSpan);
       onResize(newColSpan);
     }
   }, [isDragging, startX, startColSpan, currentColSpan, maxColSpan, minColSpan, onResize]);
@@ -75,27 +85,38 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
 
   return (
     <div
-      className={`absolute -right-0.5 top-1/2 -translate-y-1/2 w-2 h-8 cursor-col-resize transition-all duration-200 ${
+      className={`absolute -right-0.5 top-1/2 -translate-y-1/2 w-3 h-12 cursor-col-resize transition-all duration-200 ${
         isHovered || isDragging 
           ? 'opacity-100' 
-          : 'opacity-0 group-hover:opacity-60'
+          : 'opacity-0 group-hover:opacity-80'
       }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ zIndex: 1000 }}
-      title={`Resize column (${currentColSpan}/${maxColSpan})`}
+      title={`Resize column (${currentColSpan}/${maxColSpan}) - drag to resize`}
     >
-      {/* Subtle handle with dots like Webflow */}
+      {/* More visible handle when dragging */}
       <div className={`w-full h-full rounded-full flex flex-col items-center justify-center space-y-0.5 transition-colors duration-200 ${
-        isHovered || isDragging 
-          ? 'bg-blue-500 shadow-md' 
-          : 'bg-gray-400'
+        isDragging 
+          ? 'bg-blue-600 shadow-lg border-2 border-blue-300' 
+          : isHovered 
+            ? 'bg-blue-500 shadow-md' 
+            : 'bg-gray-400'
       }`}>
         <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
         <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
         <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
+        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
+        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
       </div>
+      
+      {/* Debug indicator when dragging */}
+      {isDragging && (
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+          {currentColSpan}/12
+        </div>
+      )}
     </div>
   );
 };
@@ -403,10 +424,11 @@ const CartSlotsEditor = ({
 
   // Handle grid resize changes
   const handleGridResize = useCallback((slotId, newColSpan) => {
-    console.log('handleGridResize called:', { slotId, newColSpan });
+    console.log('🔄 handleGridResize called:', { slotId, newColSpan });
     
     setCartLayoutConfig(prevConfig => {
-      console.log('Current microSlots:', prevConfig?.microSlots);
+      console.log('📊 Previous microSlots:', prevConfig?.microSlots);
+      console.log('📊 Previous slot config:', prevConfig?.microSlots?.[slotId]);
       
       const updatedConfig = {
         ...prevConfig,
@@ -419,7 +441,8 @@ const CartSlotsEditor = ({
         }
       };
 
-      console.log('Updated microSlots:', updatedConfig.microSlots);
+      console.log('✅ Updated microSlots:', updatedConfig.microSlots);
+      console.log('✅ New slot config:', updatedConfig.microSlots[slotId]);
 
       // Auto-save
       setTimeout(() => saveConfiguration(updatedConfig), 500);
