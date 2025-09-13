@@ -27,6 +27,7 @@ import {
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Grid resize handle component for changing col-span
 const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1 }) => {
@@ -71,16 +72,19 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  // Debug logging
+  console.log('GridResizeHandle rendered:', { currentColSpan, isDragging });
+
   return (
     <div
-      className={`absolute -right-1 top-0 bottom-0 w-2 cursor-col-resize bg-blue-500 opacity-0 hover:opacity-70 transition-opacity ${
+      className={`absolute -right-1 top-0 bottom-0 w-3 cursor-col-resize bg-blue-500 border border-blue-600 opacity-30 hover:opacity-90 transition-opacity ${
         isDragging ? 'opacity-100' : ''
       }`}
       onMouseDown={handleMouseDown}
       style={{ zIndex: 1000 }}
       title={`Resize grid column (current: ${currentColSpan}/12)`}
     >
-      <div className="w-full h-full bg-blue-500 rounded-sm"></div>
+      <div className="w-full h-full bg-blue-500 rounded-sm shadow-sm"></div>
     </div>
   );
 };
@@ -110,7 +114,7 @@ const EditableElement = ({
 
   const content = (
     <div
-      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 relative' : ''} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={mode === 'edit' ? {
         border: '1px dotted rgba(200, 200, 200, 0.3)',
         borderRadius: '2px',
@@ -125,7 +129,17 @@ const EditableElement = ({
     >
       {children}
       {/* Grid resize handle - only show when grid resize is enabled and in edit mode */}
-      {gridColSpan && onGridResize && mode === 'edit' && (
+      {(() => {
+        const shouldShowHandle = gridColSpan && onGridResize && mode === 'edit';
+        console.log('EditableElement grid resize check:', {
+          slotId,
+          gridColSpan,
+          hasOnGridResize: !!onGridResize,
+          mode,
+          shouldShowHandle
+        });
+        return shouldShowHandle;
+      })() && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentColSpan={gridColSpan}
@@ -187,21 +201,43 @@ const CartSlotsEditor = ({
           }
         };
 
-        // Load from database if available
+        // Load DRAFT configuration for editing using versioning API
         if (selectedStore?.id && onSave) {
           try {
-            const response = await fetch(`/api/slot-configurations?store_id=${selectedStore.id}&page_name=Cart`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data.configuration?.slots) {
-                // Merge database config with cart-config defaults
+            const response = await slotConfigurationService.getDraftConfiguration(selectedStore.id, 'cart');
+            
+            if (response.success && response.data?.configuration) {
+              const config = response.data.configuration;
+              
+              // Handle both old format (config.slots[slotId]) and new format (config[slotId])
+              if (config.slots) {
+                // Old format: config.slots[slotId]
                 initialConfig.slots = { 
                   ...initialConfig.slots, 
-                  ...data.configuration.slots 
+                  ...config.slots 
                 };
+                console.log('📦 Loaded DRAFT cart configuration (old format):', config.slots);
+              } else {
+                // New format: config[slotId] directly
+                // Convert flat structure to slots structure for editor
+                const convertedSlots = {};
+                Object.keys(config).forEach(key => {
+                  if (key !== 'metadata' && typeof config[key] === 'object' && config[key].content !== undefined) {
+                    convertedSlots[key] = config[key];
+                  }
+                });
+                
+                initialConfig.slots = { 
+                  ...initialConfig.slots, 
+                  ...convertedSlots 
+                };
+                console.log('📦 Loaded DRAFT cart configuration (new format):', convertedSlots);
               }
+            } else {
+              console.log('📝 No draft configuration found, using cart-config.js defaults');
             }
           } catch (error) {
+            console.warn('❌ Failed to load draft configuration:', error);
             console.log('Using cart-config.js defaults');
           }
         }
@@ -314,7 +350,11 @@ const CartSlotsEditor = ({
 
   // Handle grid resize changes
   const handleGridResize = useCallback((slotId, newColSpan) => {
+    console.log('handleGridResize called:', { slotId, newColSpan });
+    
     setCartLayoutConfig(prevConfig => {
+      console.log('Current microSlots:', prevConfig?.microSlots);
+      
       const updatedConfig = {
         ...prevConfig,
         microSlots: {
@@ -325,6 +365,8 @@ const CartSlotsEditor = ({
           }
         }
       };
+
+      console.log('Updated microSlots:', updatedConfig.microSlots);
 
       // Auto-save
       setTimeout(() => saveConfiguration(updatedConfig), 500);
@@ -455,6 +497,27 @@ const CartSlotsEditor = ({
             
             <CmsBlockRenderer position="cart_above_items" />
             
+            {/* Test Grid Resize - visible test slot */}
+            {mode === 'edit' && (
+              <div className="grid grid-cols-12 gap-4 mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+                <div className={`col-span-${cartLayoutConfig?.microSlots?.['test.slot']?.col || 6} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                  <EditableElement
+                    slotId="test.slot"
+                    mode={mode}
+                    onClick={handleElementClick}
+                    className="bg-blue-100 p-4 text-center font-bold border-2 border-blue-300"
+                    gridColSpan={cartLayoutConfig?.microSlots?.['test.slot']?.col || 6}
+                    onGridResize={handleGridResize}
+                  >
+                    TEST RESIZE SLOT (drag right edge)
+                  </EditableElement>
+                </div>
+                <div className="col-span-6 p-4 bg-gray-100 text-center text-gray-600">
+                  Other content
+                </div>
+              </div>
+            )}
+            
             {/* Conditional rendering based on viewMode */}
             {viewMode === 'empty' ? (
               // Empty cart state with simple editable slots
@@ -486,7 +549,7 @@ const CartSlotsEditor = ({
                           const finalClasses = titleStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                            <div key={slotId} className={`col-span-${cartLayoutConfig?.microSlots?.[slotId]?.col || 12} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
@@ -495,6 +558,8 @@ const CartSlotsEditor = ({
                                 style={titleStyling.elementStyles}
                                 canResize={true}
                                 draggable={true}
+                                gridColSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                                onGridResize={handleGridResize}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Your cart is empty"}
                               </EditableElement>

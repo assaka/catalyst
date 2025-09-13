@@ -237,6 +237,7 @@ export default function Cart() {
                     if (publishedConfig.configuration) {
                         setCartLayoutConfig(publishedConfig.configuration);
                         console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
+                        console.log('🔍 Empty cart title config:', publishedConfig.configuration['emptyCart.title']);
                     } else {
                         console.warn('⚠️ Published configuration has no configuration data');
                         // Fallback to default configuration
@@ -1050,11 +1051,18 @@ export default function Cart() {
     
     // Helper function to get slot styling from configuration
     const getSlotStyling = (slotId) => {
-        const slotConfig = cartLayoutConfig?.slots?.[slotId];
+        // Handle both old format (config.slots[slotId]) and new format (config[slotId])
+        const slotConfig = cartLayoutConfig?.slots?.[slotId] || cartLayoutConfig?.[slotId];
         return {
             elementClasses: slotConfig?.className || '',
             elementStyles: slotConfig?.styles || {}
         };
+    };
+    
+    // Helper function to get slot content from configuration
+    const getSlotContent = (slotId, fallback = '') => {
+        const slotConfig = cartLayoutConfig?.slots?.[slotId] || cartLayoutConfig?.[slotId];
+        return slotConfig?.content || fallback;
     };
 
     // Render the default cart layout (when no custom configuration)
@@ -1104,20 +1112,47 @@ export default function Cart() {
                                             </ResizeElementWrapper>
                                         </div>
                                         <div className="col-span-12">
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is
-                                                empty</h2>
+                                            {(() => {
+                                                const titleStyling = getSlotStyling('emptyCart.title');
+                                                const titleContent = getSlotContent('emptyCart.title', 'Your cart is empty');
+                                                return (
+                                                    <h2 
+                                                        className={titleStyling.elementClasses || "text-xl font-semibold text-gray-900 mb-2"}
+                                                        style={titleStyling.elementStyles}
+                                                    >
+                                                        {titleContent}
+                                                    </h2>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="col-span-12">
-                                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to
-                                                your cart yet.</p>
+                                            {(() => {
+                                                const textStyling = getSlotStyling('emptyCart.text');
+                                                const textContent = getSlotContent('emptyCart.text', "Looks like you haven't added anything to your cart yet.");
+                                                return (
+                                                    <p 
+                                                        className={textStyling.elementClasses || "text-gray-600 mb-6"}
+                                                        style={textStyling.elementStyles}
+                                                    >
+                                                        {textContent}
+                                                    </p>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="col-span-12 flex justify-center">
-                                            <Button
-                                                onClick={() => navigate(getStoreBaseUrl(store))}
-                                                className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                            >
-                                                Continue Shopping
-                                            </Button>
+                                            {(() => {
+                                                const buttonStyling = getSlotStyling('emptyCart.button');
+                                                const buttonContent = getSlotContent('emptyCart.button', 'Continue Shopping');
+                                                return (
+                                                    <Button
+                                                        onClick={() => navigate(getStoreBaseUrl(store))}
+                                                        className={buttonStyling.elementClasses || "bg-blue-600 hover:bg-blue-700 w-auto"}
+                                                        style={buttonStyling.elementStyles}
+                                                    >
+                                                        {buttonContent}
+                                                    </Button>
+                                                );
+                                            })()}
                                         </div>
                                     </>
                                 )}
