@@ -309,6 +309,15 @@ const CartSlotsEditor = ({
                 };
                 console.log('📦 Loaded DRAFT cart configuration (new format):', convertedSlots);
               }
+              
+              // IMPORTANT: Also merge microSlots from saved configuration
+              if (config.microSlots) {
+                initialConfig.microSlots = {
+                  ...initialConfig.microSlots,
+                  ...config.microSlots
+                };
+                console.log('📏 Loaded DRAFT microSlots:', config.microSlots);
+              }
             } else {
               console.log('📝 No draft configuration found, using cart-config.js defaults');
             }
@@ -435,6 +444,18 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Debounced save ref
+  const saveTimeoutRef = useRef(null);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Handle grid resize changes
   const handleGridResize = useCallback((slotId, newColSpan) => {
     console.log('🔄 handleGridResize called:', { slotId, newColSpan });
@@ -457,8 +478,15 @@ const CartSlotsEditor = ({
       console.log('✅ Updated microSlots:', updatedConfig.microSlots);
       console.log('✅ New slot config:', updatedConfig.microSlots[slotId]);
 
-      // Auto-save
-      setTimeout(() => saveConfiguration(updatedConfig), 500);
+      // Debounced auto-save - clear previous timeout and set new one
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Saving configuration after resize...');
+        saveConfiguration(updatedConfig);
+      }, 1000); // Wait 1 second after resize stops
+
       return updatedConfig;
     });
   }, [saveConfiguration]);
