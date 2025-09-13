@@ -223,7 +223,57 @@ const EditorSidebar = ({
         clonedElement.removeAttribute('class');
       }
     }
-    
+
+    // Remove editor-specific inline styles
+    if (clonedElement.style) {
+      const stylesToRemove = [
+        'border',
+        'borderRadius',
+        'borderColor',
+        'transition',
+        'position'
+      ];
+
+      stylesToRemove.forEach(styleProp => {
+        if (clonedElement.style[styleProp]) {
+          // Only remove if it looks like an editor style
+          const value = clonedElement.style[styleProp];
+          if (
+            (styleProp === 'border' && value.includes('dashed')) ||
+            (styleProp === 'borderRadius' && value === '4px') ||
+            (styleProp === 'borderColor' && value.includes('rgba(59, 130, 246')) ||
+            (styleProp === 'transition' && value.includes('border-color')) ||
+            (styleProp === 'position' && value === 'relative')
+          ) {
+            clonedElement.style.removeProperty(styleProp);
+          }
+        }
+      });
+
+      // Remove inline styles that match editor patterns
+      const inlineStyle = clonedElement.getAttribute('style');
+      if (inlineStyle) {
+        const cleanStyle = inlineStyle
+          .split(';')
+          .filter(rule => {
+            const trimmedRule = rule.trim();
+            return trimmedRule &&
+                   !trimmedRule.includes('border: 1px dashed') &&
+                   !trimmedRule.includes('border-color') &&
+                   !trimmedRule.includes('transition: border-color') &&
+                   !trimmedRule.includes('position: relative') &&
+                   !trimmedRule.includes('border-radius: 4px');
+          })
+          .join('; ');
+
+        if (cleanStyle.trim()) {
+          clonedElement.setAttribute('style', cleanStyle);
+        } else {
+          clonedElement.removeAttribute('style');
+        }
+      }
+    }
+
     return clonedElement.outerHTML;
   }, []);
 

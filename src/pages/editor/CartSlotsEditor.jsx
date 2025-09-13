@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from '@/components/ui/card';
+import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { Input } from '@/components/ui/input';
 import { 
   Save, 
@@ -229,16 +230,22 @@ const EditableElement = ({
   }, [slotId, onClick, mode]);
 
   const content = (
-    <div
-      className={`group ${mode === 'edit' ? 'cursor-pointer relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
-      style={style}
-      onClick={handleClick}
-      data-slot-id={slotId}
-      data-editable={mode === 'edit'}
-      draggable={draggable && mode === 'edit'}
+    <EditorInteractionWrapper
+      mode={mode}
+      draggable={draggable}
+      isSelected={false} // Will be set by parent component
     >
-      {children}
-    </div>
+      <div
+        className={className || ''}
+        style={style}
+        onClick={handleClick}
+        data-slot-id={slotId}
+        data-editable={mode === 'edit'}
+        draggable={draggable && mode === 'edit'}
+      >
+        {children}
+      </div>
+    </EditorInteractionWrapper>
   );
 
   // Show resize wrapper only in edit mode when canResize is true
@@ -701,7 +708,6 @@ const CartSlotsEditor = ({
           isVisible={true}
         />
       )}
-      </div>
     </EditorWrapper>
   );
 };
