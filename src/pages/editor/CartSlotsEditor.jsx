@@ -98,7 +98,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
         isHovered || isDragging || parentHovered
           ? 'opacity-100 scale-110' 
-          : 'opacity-0 scale-95'
+          : 'opacity-30 scale-100 hover:opacity-80'
       }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
@@ -106,18 +106,18 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       style={{ zIndex: 9999 }}
       title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
-      {/* Improved handle design */}
-      <div className={`w-full h-full rounded-lg flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 shadow-lg border border-white/20 ${
+      {/* Prominent resize handle design */}
+      <div className={`w-full h-full rounded-lg flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 shadow-lg border border-white/50 ${
         isDragging 
-          ? 'bg-blue-600 shadow-xl scale-110' 
+          ? 'bg-blue-600 shadow-xl scale-110 border-blue-400' 
           : isHovered || parentHovered
-            ? 'bg-blue-500 shadow-lg' 
-            : 'bg-gray-400/80'
+            ? 'bg-blue-500 shadow-lg border-blue-300' 
+            : 'bg-blue-400/90 shadow-md'
       }`}>
         {/* Three dots for grip */}
-        <div className={`${isHorizontal ? 'w-1 h-1' : 'w-1 h-1'} bg-white rounded-full`}></div>
-        <div className={`${isHorizontal ? 'w-1 h-1' : 'w-1 h-1'} bg-white rounded-full`}></div>
-        <div className={`${isHorizontal ? 'w-1 h-1' : 'w-1 h-1'} bg-white rounded-full`}></div>
+        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
+        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
+        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
       </div>
       
       {/* Subtle indicator when dragging */}
@@ -185,12 +185,10 @@ const GridColumn = ({
         maxHeight: height ? `${height}px` : undefined
       }}
     >
-      {/* Simplified hover detection - only for non-container elements */}
-      {mode === 'edit' && !['container', 'grid', 'flex'].some(type => 
-        children && children.type && children.type.toString().includes(type)
-      ) && (
+      {/* Hover detection for all elements */}
+      {mode === 'edit' && (
         <div 
-          className="absolute inset-0 pointer-events-auto opacity-0 hover:opacity-100 transition-opacity duration-200"
+          className="absolute inset-0 pointer-events-none"
           onMouseEnter={(e) => {
             e.stopPropagation();
             setIsHovered(true);
@@ -200,9 +198,8 @@ const GridColumn = ({
             setIsHovered(false);
           }}
           style={{ 
-            zIndex: 1,
-            background: 'rgba(59, 130, 246, 0.05)',
-            border: '1px solid rgba(59, 130, 246, 0.3)'
+            pointerEvents: 'auto',
+            zIndex: 1
           }}
         />
       )}
