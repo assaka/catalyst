@@ -129,7 +129,10 @@ const EditorWrapper = ({
 
       {/* Editor Content */}
       <div className="flex-1 overflow-hidden">
-        {React.cloneElement(children, { mode: editorMode })}
+        {React.isValidElement(children) 
+          ? React.cloneElement(children, { mode: editorMode })
+          : children
+        }
       </div>
     </div>
   );
