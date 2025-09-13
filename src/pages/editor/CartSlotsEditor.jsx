@@ -634,23 +634,39 @@ const CartSlotsEditor = ({
       console.log('📊 Previous microSlots:', prevConfig?.microSlots);
       console.log('📊 Previous slot config:', prevConfig?.microSlots?.[slotId]);
       
-      // Find and constrain any elements within this slot (width constraint)
+      // Calculate scaling ratio for responsive element resizing
+      const previousColSpan = prevConfig?.microSlots?.[slotId]?.col || 12;
+      const scalingRatio = newColSpan / previousColSpan;
       const updatedSlots = { ...prevConfig?.slots };
-      // Estimate max width based on col-span (rough approximation: each col-span ≈ 100px)
-      const maxElementWidth = Math.max(50, newColSpan * 80); // Conservative width estimation
       
-      // Check all slots for elements that belong to this slot container
+      console.log(`📐 Slot width scaling: ${previousColSpan} → ${newColSpan} cols (ratio: ${scalingRatio.toFixed(2)})`);
+      
+      // Responsively scale all elements within this slot container
       Object.keys(updatedSlots).forEach(elementSlotId => {
         if (elementSlotId.startsWith(slotId + '.') || elementSlotId === slotId) {
           const currentSlot = updatedSlots[elementSlotId];
-          if (currentSlot?.styles?.width && parseInt(currentSlot.styles.width) > maxElementWidth) {
-            console.log(`🔧 Constraining element ${elementSlotId} width from ${currentSlot.styles.width}px to ${maxElementWidth}px`);
+          if (currentSlot?.styles) {
+            const updatedStyles = { ...currentSlot.styles };
+            
+            // Scale width proportionally if it exists
+            if (currentSlot.styles.width) {
+              const currentWidth = parseInt(currentSlot.styles.width);
+              const newWidth = Math.max(20, Math.round(currentWidth * scalingRatio));
+              updatedStyles.width = `${newWidth}px`;
+              console.log(`📏 Scaling element ${elementSlotId} width: ${currentWidth}px → ${newWidth}px (${scalingRatio.toFixed(2)}x)`);
+            }
+            
+            // Scale font-size proportionally if it exists
+            if (currentSlot.styles.fontSize) {
+              const currentFontSize = parseInt(currentSlot.styles.fontSize);
+              const newFontSize = Math.max(10, Math.round(currentFontSize * scalingRatio));
+              updatedStyles.fontSize = `${newFontSize}px`;
+              console.log(`🔤 Scaling element ${elementSlotId} font-size: ${currentFontSize}px → ${newFontSize}px (${scalingRatio.toFixed(2)}x)`);
+            }
+            
             updatedSlots[elementSlotId] = {
               ...currentSlot,
-              styles: {
-                ...currentSlot.styles,
-                width: `${maxElementWidth}px`
-              }
+              styles: updatedStyles
             };
           }
         }
@@ -694,22 +710,47 @@ const CartSlotsEditor = ({
       
       console.log(`📏 Height ${newHeight}px ≈ ${estimatedRowSpan} row spans`);
       
-      // Find and constrain any elements within this slot
+      // Calculate scaling ratio for responsive element height resizing
+      const previousHeight = prevConfig?.microSlots?.[slotId]?.height || 80; // Default height
+      const scalingRatio = newHeight / previousHeight;
       const updatedSlots = { ...prevConfig?.slots };
-      const maxElementHeight = Math.max(20, newHeight - 16); // Leave 16px padding
       
-      // Check all slots for elements that belong to this slot container
+      console.log(`📐 Slot height scaling: ${previousHeight}px → ${newHeight}px (ratio: ${scalingRatio.toFixed(2)})`);
+      
+      // Responsively scale all elements within this slot container
       Object.keys(updatedSlots).forEach(elementSlotId => {
         if (elementSlotId.startsWith(slotId + '.') || elementSlotId === slotId) {
           const currentSlot = updatedSlots[elementSlotId];
-          if (currentSlot?.styles?.height && parseInt(currentSlot.styles.height) > maxElementHeight) {
-            console.log(`🔧 Constraining element ${elementSlotId} height from ${currentSlot.styles.height}px to ${maxElementHeight}px`);
+          if (currentSlot?.styles) {
+            const updatedStyles = { ...currentSlot.styles };
+            
+            // Scale height proportionally if it exists
+            if (currentSlot.styles.height) {
+              const currentElementHeight = parseInt(currentSlot.styles.height);
+              const newElementHeight = Math.max(16, Math.round(currentElementHeight * scalingRatio));
+              updatedStyles.height = `${newElementHeight}px`;
+              console.log(`📏 Scaling element ${elementSlotId} height: ${currentElementHeight}px → ${newElementHeight}px (${scalingRatio.toFixed(2)}x)`);
+            }
+            
+            // Scale font-size proportionally for height changes too (for better proportion)
+            if (currentSlot.styles.fontSize) {
+              const currentFontSize = parseInt(currentSlot.styles.fontSize);
+              const newFontSize = Math.max(8, Math.round(currentFontSize * Math.sqrt(scalingRatio))); // Square root for more subtle scaling
+              updatedStyles.fontSize = `${newFontSize}px`;
+              console.log(`🔤 Scaling element ${elementSlotId} font-size for height: ${currentFontSize}px → ${newFontSize}px (√${scalingRatio.toFixed(2)}x)`);
+            }
+            
+            // Scale padding proportionally if it exists
+            if (currentSlot.styles.padding) {
+              const currentPadding = parseInt(currentSlot.styles.padding);
+              const newPadding = Math.max(2, Math.round(currentPadding * scalingRatio));
+              updatedStyles.padding = `${newPadding}px`;
+              console.log(`📦 Scaling element ${elementSlotId} padding: ${currentPadding}px → ${newPadding}px (${scalingRatio.toFixed(2)}x)`);
+            }
+            
             updatedSlots[elementSlotId] = {
               ...currentSlot,
-              styles: {
-                ...currentSlot.styles,
-                height: `${maxElementHeight}px`
-              }
+              styles: updatedStyles
             };
           }
         }
