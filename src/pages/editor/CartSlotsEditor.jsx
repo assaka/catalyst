@@ -378,14 +378,16 @@ const HierarchicalSlotRenderer = ({
             slotId={slot.id}
             mode={mode}
             onClick={onElementClick}
-            className={slot.className}
-            style={slot.styles}
+            className="" 
+            style={{}}
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={true}
             selectedElementId={selectedElementId}
           >
           {slot.type === 'text' && (
             <span 
+              className={slot.className}
+              style={slot.styles}
               dangerouslySetInnerHTML={{ 
                 __html: String(slot.content || `Text: ${slot.id}`)
               }}
@@ -404,7 +406,7 @@ const HierarchicalSlotRenderer = ({
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
           )}
           {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
-            <div className="w-full h-full grid grid-cols-12 gap-2">
+            <div className={`w-full h-full grid grid-cols-12 gap-2 ${slot.className}`} style={slot.styles}>
               <HierarchicalSlotRenderer
                 slots={slots}
                 parentId={slot.id}
@@ -794,33 +796,6 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
-  // Create the additional view mode controls for the wrapper
-  const additionalControls = (
-    <div className="flex bg-gray-100 rounded-lg p-1">
-      <button
-        onClick={() => setViewMode('empty')}
-        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-          viewMode === 'empty'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-        }`}
-      >
-        <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-        Empty Cart
-      </button>
-      <button
-        onClick={() => setViewMode('withProducts')}
-        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-          viewMode === 'withProducts'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-        }`}
-      >
-        <Package className="w-4 h-4 inline mr-1.5" />
-        With Products
-      </button>
-    </div>
-  );
 
   // Main render - Clean and maintainable  
   return (
@@ -832,14 +807,40 @@ const CartSlotsEditor = ({
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
+            {/* View Mode Tabs */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('empty')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'empty'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+                Empty Cart
+              </button>
+              <button
+                onClick={() => setViewMode('withProducts')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  viewMode === 'withProducts'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <Package className="w-4 h-4 inline mr-1.5" />
+                With Products
+              </button>
+            </div>
+
             {/* Only show controls in edit mode */}
             {mode === 'edit' && (
               <div className="flex items-center gap-2">
                 {/* Save Status */}
                 {saveStatus && (
                   <div className={`flex items-center gap-2 text-sm ${
-                    saveStatus === 'saving' ? 'text-blue-600' : 
-                    saveStatus === 'saved' ? 'text-green-600' : 
+                    saveStatus === 'saving' ? 'text-blue-600' :
+                    saveStatus === 'saved' ? 'text-green-600' :
                     'text-red-600'
                   }`}>
                     {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
