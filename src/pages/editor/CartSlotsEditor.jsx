@@ -284,7 +284,14 @@ const HierarchicalSlotRenderer = ({
   });
   
   return filteredSlots.map(slot => {
-    const colSpan = slot.colSpan || 12;
+    // Calculate dynamic colSpan based on viewMode for specific slots
+    let colSpan = slot.colSpan || 12;
+    
+    // Make content_area responsive to viewMode
+    if (slot.id === 'content_area') {
+      colSpan = viewMode === 'empty' ? 12 : 8; // Full width when empty, 8 cols when with products
+    }
+    
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
     
@@ -599,7 +606,7 @@ const CartSlotsEditor = ({
   // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible ? 'grid grid-cols-[75%_25%]' : 'block'
+      isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
     }`}>
       {/* Main Editor Area */}
       <div className="flex flex-col">
