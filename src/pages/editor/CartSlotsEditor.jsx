@@ -185,52 +185,86 @@ const GridColumn = ({
         maxHeight: height ? `${height}px` : undefined
       }}
     >
-      {/* Hover detection overlay - only on the border area */}
+      {/* Hover detection only on border areas - not content */}
       {mode === 'edit' && (
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            setIsHovered(true);
-          }}
-          onMouseLeave={(e) => {
-            e.stopPropagation();
-            setIsHovered(false);
-          }}
-          style={{ 
-            pointerEvents: 'auto',
-            zIndex: 1
-          }}
-        />
+        <>
+          {/* Top border */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-2 pointer-events-auto"
+            onMouseEnter={(e) => {
+              e.stopPropagation();
+              setIsHovered(true);
+            }}
+            style={{ zIndex: 3 }}
+          />
+          {/* Bottom border */}
+          <div 
+            className="absolute bottom-0 left-0 right-0 h-2 pointer-events-auto"
+            onMouseEnter={(e) => {
+              e.stopPropagation();
+              setIsHovered(true);
+            }}
+            style={{ zIndex: 3 }}
+          />
+          {/* Left border */}
+          <div 
+            className="absolute top-0 bottom-0 left-0 w-2 pointer-events-auto"
+            onMouseEnter={(e) => {
+              e.stopPropagation();
+              setIsHovered(true);
+            }}
+            style={{ zIndex: 3 }}
+          />
+          {/* Right border */}
+          <div 
+            className="absolute top-0 bottom-0 right-0 w-2 pointer-events-auto"
+            onMouseEnter={(e) => {
+              e.stopPropagation();
+              setIsHovered(true);
+            }}
+            style={{ zIndex: 3 }}
+          />
+          {/* Mouse leave detector for entire slot */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            onMouseLeave={(e) => {
+              e.stopPropagation();
+              setIsHovered(false);
+            }}
+            style={{ 
+              pointerEvents: 'auto',
+              zIndex: 1
+            }}
+          />
+        </>
       )}
       
       {/* Content area with padding */}
       <div className="p-2 relative" style={{ zIndex: 2 }}>
         {children}
-        
-        {/* Horizontal grid resize handle on the column itself */}
-        {showHorizontalHandle && (
-          <GridResizeHandle
-            onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
-            currentValue={colSpan}
-            maxValue={12}
-            minValue={1}
-            direction="horizontal"
-            parentHovered={isHovered}
-          />
-        )}
-        {/* Vertical grid resize handle for slot height */}
-        {showVerticalHandle && (
-          <GridResizeHandle
-            onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
-            currentValue={height || 80}
-            maxValue={1000}
-            minValue={40}
-            direction="vertical"
-            parentHovered={isHovered}
-          />
-        )}
       </div>
+      
+      {/* Resize handles at GridColumn level */}
+      {showHorizontalHandle && (
+        <GridResizeHandle
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          currentValue={colSpan}
+          maxValue={12}
+          minValue={1}
+          direction="horizontal"
+          parentHovered={isHovered}
+        />
+      )}
+      {showVerticalHandle && (
+        <GridResizeHandle
+          onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
+          currentValue={height || 80}
+          maxValue={1000}
+          minValue={40}
+          direction="vertical"
+          parentHovered={isHovered}
+        />
+      )}
     </div>
   );
 };
