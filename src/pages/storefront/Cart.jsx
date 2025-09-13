@@ -30,6 +30,7 @@ import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-element-wrapper';
 import { getPageConfig } from '@/components/editor/slot/configs/index';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { SlotManager } from '@/utils/slotUtils';
 
 
 

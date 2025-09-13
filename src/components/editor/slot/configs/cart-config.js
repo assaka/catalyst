@@ -5,103 +5,7 @@ export const cartConfig = {
   page_name: 'Cart',
   slot_type: 'cart_layout',
   
-  // Clean JSON structure - cart sections as direct properties
-  microSlots: {
-    // Cart sections as top-level properties in a blank JSON object
-    "flashMessage": { col: 12, row: 1 },
-    "flashMessage.content": { col: 12, row: 1 },
-    "flashMessage.message": { col: 12, row: 1 },
-    
-    "header": { col: 12, row: 1 },
-    "header.title": { col: 12, row: 1 },
-    
-    "emptyCart": { col: 12, row: 1 },
-    "emptyCart.icon": { col: 2, row: 1 },
-    "emptyCart.title": { col: 10, row: 1 },
-    "emptyCart.text": { col: 12, row: 1 },
-    "emptyCart.button": { col: 12, row: 1 },
-    
-    "cartItem": { col: 12, row: 1 },
-    "cartItem.productImage": { col: 2, row: 2 },
-    "cartItem.productTitle": { col: 6, row: 1 },
-    "cartItem.quantityControl": { col: 2, row: 1 },
-    "cartItem.productPrice": { col: 2, row: 1 },
-    "cartItem.removeButton": { col: 12, row: 1 },
-    
-    "coupon": { col: 12, row: 1 },
-    "coupon.title": { col: 12, row: 1 },
-    "coupon.title.icon": { col: 2, row: 1 },
-    "coupon.title.label": { col: 10, row: 1 },
-    "coupon.input": { col: 8, row: 1 },
-    "coupon.button": { col: 4, row: 1 },
-    "coupon.message": { col: 12, row: 1 },
-    "coupon.appliedCoupon": { col: 12, row: 1 },
-    
-    "orderSummary": { col: 12, row: 1 },
-    "orderSummary.title": { col: 12, row: 1 },
-    "orderSummary.subtotal": { col: 12, row: 1 },
-    "orderSummary.discount": { col: 12, row: 1 },
-    "orderSummary.shipping": { col: 12, row: 1 },
-    "orderSummary.tax": { col: 12, row: 1 },
-    "orderSummary.total": { col: 12, row: 1 },
-    "orderSummary.checkoutButton": { col: 12, row: 1 },
-    
-    "recommendations": { col: 12, row: 1 },
-    "recommendations.title": { col: 12, row: 1 },
-    "recommendations.products": { col: 12, row: 3 }
-  },
   
-  // Slot definitions for metadata and properties (replaces microSlotDefinitions)
-  slotDefinitions: {
-    flashMessage: {
-      id: 'flashMessage',
-      name: 'Flash Message',
-      gridCols: 12,
-      type: 'container'
-    },
-    header: {
-      id: 'header',
-      name: 'Page Header',
-      gridCols: 12,
-      type: 'container'
-    },
-    emptyCart: {
-      id: 'emptyCart',
-      name: 'Empty Cart',
-      gridCols: 12,
-      type: 'container'
-    },
-    cartItem: {
-      id: 'cartItem',
-      name: 'Cart Item',
-      gridCols: 12,
-      type: 'container'
-    },
-    coupon: {
-      id: 'coupon',
-      name: 'Coupon Section',
-      gridCols: 12,
-      type: 'container'
-    },
-    orderSummary: {
-      id: 'orderSummary',
-      name: 'Order Summary',
-      gridCols: 12,
-      type: 'container'
-    },
-    recommendations: {
-      id: 'recommendations',
-      name: 'Product Recommendations',
-      gridCols: 12,
-      type: 'container'
-    },
-    empty: {
-      id: 'empty',
-      name: 'Empty Slot',
-      gridCols: 12,
-      type: 'container'
-    }
-  },
   
   // Slot configuration with content, styling and metadata (slot_configurations format)
   slots: {
@@ -114,7 +18,6 @@ export const cartConfig = {
       className: 'main-layout',
       styles: {},
       parentId: null,
-      children: ['header_container', 'content_area', 'sidebar_area'],
       layout: 'grid',
       gridCols: 12,
       colSpan: 12,
@@ -128,7 +31,6 @@ export const cartConfig = {
       className: 'header-container',
       styles: {},
       parentId: 'main_layout',
-      children: ['header_title'],
       layout: 'flex',
       colSpan: 12,
       metadata: { hierarchical: true }
@@ -141,7 +43,6 @@ export const cartConfig = {
       className: 'content-area',
       styles: {},
       parentId: 'main_layout',
-      children: ['empty_cart_container'],
       layout: 'block',
       colSpan: 8,
       metadata: { hierarchical: true }
@@ -154,22 +55,20 @@ export const cartConfig = {
       className: 'sidebar-area', 
       styles: { flexDirection: 'column' },
       parentId: 'main_layout',
-      children: ['coupon_container', 'order_summary_container'],
       layout: 'flex',
       colSpan: 4,
       metadata: { hierarchical: true }
     },
     
-    // Keep existing flat structure slots for backwards compatibility
-    // Header slots (both hierarchical and flat)
+    // Header slot
     header_title: {
       id: 'header_title',
       type: 'text',
       content: 'My Cart',
       className: 'text-3xl font-bold text-gray-900 mb-4',
+      parentClassName: 'text-center',
       styles: {},
       parentId: 'header_container',
-      children: [],
       metadata: { hierarchical: true }
     },
     
@@ -181,7 +80,6 @@ export const cartConfig = {
       className: 'empty-cart-container text-center',
       styles: {},
       parentId: 'content_area',
-      children: ['empty_cart_icon', 'empty_cart_title', 'empty_cart_text', 'empty_cart_button'],
       layout: 'block',
       colSpan: 12,
       metadata: { hierarchical: true }
@@ -192,9 +90,9 @@ export const cartConfig = {
       type: 'image',
       content: 'shopping-cart-icon',
       className: 'w-16 h-16 mx-auto text-gray-400 mb-4',
+      parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -204,9 +102,9 @@ export const cartConfig = {
       type: 'text', 
       content: 'Your cart is empty',
       className: 'text-xl font-semibold text-gray-900 mb-2',
+      parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -216,9 +114,9 @@ export const cartConfig = {
       type: 'text',
       content: "Looks like you haven't added anything to your cart yet.",
       className: 'text-gray-600 mb-6',
+      parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container', 
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -228,9 +126,9 @@ export const cartConfig = {
       type: 'button',
       content: 'Continue Shopping',
       className: 'bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded',
+      parentClassName: 'text-center',
       styles: {},
       parentId: 'empty_cart_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -243,7 +141,6 @@ export const cartConfig = {
       className: 'coupon-container bg-white p-4 rounded-lg shadow',
       styles: {},
       parentId: 'sidebar_area',
-      children: ['coupon_title', 'coupon_input', 'coupon_button'],
       layout: 'grid',
       gridCols: 12,
       colSpan: 12,
@@ -255,9 +152,9 @@ export const cartConfig = {
       type: 'text',
       content: 'Apply Coupon',
       className: 'text-lg font-semibold mb-4',
+      parentClassName: '',
       styles: {},
       parentId: 'coupon_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -267,9 +164,9 @@ export const cartConfig = {
       type: 'input',
       content: 'Enter coupon code',
       className: 'border rounded px-3 py-2',
+      parentClassName: '',
       styles: {},
       parentId: 'coupon_container',
-      children: [],
       colSpan: 8,
       metadata: { hierarchical: true }
     },
@@ -279,9 +176,9 @@ export const cartConfig = {
       type: 'button',
       content: 'Apply',
       className: 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded',
+      parentClassName: '',
       styles: {},
       parentId: 'coupon_container',
-      children: [],
       colSpan: 4,
       metadata: { hierarchical: true }
     },
@@ -293,7 +190,6 @@ export const cartConfig = {
       className: 'order-summary-container bg-white p-4 rounded-lg shadow mt-4',
       styles: {},
       parentId: 'sidebar_area',
-      children: ['order_summary_title', 'order_summary_subtotal', 'order_summary_tax', 'order_summary_total', 'checkout_button'],
       layout: 'block',
       colSpan: 12,
       metadata: { hierarchical: true }
@@ -304,9 +200,9 @@ export const cartConfig = {
       type: 'text',
       content: 'Order Summary',
       className: 'text-lg font-semibold mb-4',
+      parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -316,9 +212,9 @@ export const cartConfig = {
       type: 'text',
       content: '<span>Subtotal</span><span>$79.97</span>',
       className: 'flex justify-between mb-2',
+      parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -328,9 +224,9 @@ export const cartConfig = {
       type: 'text',
       content: '<span>Tax</span><span>$6.40</span>',
       className: 'flex justify-between mb-2',
+      parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -340,9 +236,9 @@ export const cartConfig = {
       type: 'text',
       content: '<span>Total</span><span>$81.37</span>',
       className: 'flex justify-between text-lg font-semibold border-t pt-4 mb-4',
+      parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -352,362 +248,12 @@ export const cartConfig = {
       type: 'button',
       content: 'Proceed to Checkout',
       className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded text-lg',
+      parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
-      children: [],
       colSpan: 12,
       metadata: { hierarchical: true }
     },
-    
-    // Flash Message Slots (flat structure for backwards compatibility)
-    'flashMessage.content': {
-      content: `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-  <div class="flex">
-    <div class="flex-shrink-0">
-      <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-      </svg>
-    </div>
-    <div class="ml-3">
-      <h3 class="text-sm font-medium text-yellow-800">Product Removed</h3>
-      <p class="text-sm text-yellow-700">Nike Air Max 90 has been removed from your cart.</p>
-    </div>
-  </div>
-</div>`,
-      className: 'mb-4',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'flashMessage',
-        description: 'Flash message content for notifications'
-      }
-    },
-    'flashMessage.message': {
-      content: 'Cart updated successfully!',
-      className: 'text-sm text-blue-700',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'flashMessage',
-        description: 'Flash message text content'
-      }
-    },
-    
-    // Header Slots
-    'header.title': {
-      content: 'My Cart',
-      className: 'text-2xl font-bold text-gray-800',
-      parentClassName: 'text-center',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'header',
-        description: 'Main page title'
-      }
-    },
-    
-    // Empty Cart Slots
-    'emptyCart.icon': {
-      content: '🛒',
-      className: 'text-6xl text-gray-400',
-      parentClassName: 'text-center',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'emptyCart',
-        description: 'Empty cart icon'
-      }
-    },
-    'emptyCart.title': {
-      content: 'Your cart is empty',
-      className: 'text-xl font-bold text-gray-600',
-      parentClassName: 'text-center',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'emptyCart',
-        description: 'Empty cart title'
-      }
-    },
-    'emptyCart.text': {
-      content: "Looks like you haven't added anything to your cart yet.",
-      className: 'text-gray-500 mb-4',
-      parentClassName: 'text-center',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'emptyCart',
-        description: 'Empty cart description text'
-      }
-    },
-    'emptyCart.button': {
-      content: 'Continue Shopping',
-      className: 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
-      parentClassName: 'text-center',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'emptyCart',
-        description: 'Continue shopping button'
-      }
-    },
-    
-    // Cart Item Slots (consistent naming with CartSlotsEditor)
-    'cartItem.productImage': {
-      content: 'Product Image',
-      className: 'w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'cartItem',
-        description: 'Product image placeholder'
-      }
-    },
-    'cartItem.productTitle': {
-      content: 'Product Name',
-      className: 'font-semibold text-gray-900',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'cartItem',
-        description: 'Product name/title'
-      }
-    },
-    'cartItem.productPrice': {
-      content: '$29.99',
-      className: 'font-bold text-gray-900',
-      parentClassName: 'text-right',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'cartItem',
-        description: 'Product price'
-      }
-    },
-    'cartItem.quantityControl': {
-      content: '1',
-      className: 'flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded',
-      parentClassName: 'text-center',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'cartItem',
-        description: 'Quantity control buttons'
-      }
-    },
-    'cartItem.removeButton': {
-      content: 'Remove',
-      className: 'text-red-500 hover:text-red-700 text-sm',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'cartItem',
-        description: 'Remove item button'
-      }
-    },
-    
-    // Coupon Slots
-    'coupon.title': {
-      content: 'Apply Coupon',
-      className: 'text-lg font-bold text-gray-800',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Coupon section title'
-      }
-    },
-    // Nested coupon title children (example of deep nesting)
-    'coupon.title.icon': {
-      content: '🎫',
-      className: 'text-lg',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Coupon title icon'
-      }
-    },
-    'coupon.title.label': {
-      content: 'Apply Coupon',
-      className: 'font-bold text-gray-800',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Coupon title label'
-      }
-    },
-    'coupon.input': {
-      content: 'Enter coupon code',
-      className: 'flex-1 px-3 py-2 border rounded bg-white text-gray-700',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Coupon input field'
-      }
-    },
-    'coupon.button': {
-      content: 'Apply',
-      className: 'px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Apply coupon button'
-      }
-    },
-    'coupon.message': {
-      content: '',
-      className: 'text-sm mt-2',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Coupon status/error message'
-      }
-    },
-    'coupon.appliedCoupon': {
-      content: '',
-      className: 'bg-green-50 border border-green-200 rounded p-3',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'coupon',
-        description: 'Applied coupon display'
-      }
-    },
-    
-    // Order Summary Slots
-    'orderSummary.title': {
-      content: 'Order Summary',
-      className: 'text-lg font-bold text-gray-800 mb-4',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Order summary title'
-      }
-    },
-    'orderSummary.subtotal': {
-      content: 'Subtotal: $59.98',
-      className: 'flex justify-between text-gray-600 mb-2',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Order subtotal line'
-      }
-    },
-    'orderSummary.discount': {
-      content: 'Discount: -$5.00',
-      className: 'flex justify-between text-green-600 mb-2',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Discount amount line'
-      }
-    },
-    'orderSummary.shipping': {
-      content: 'Shipping: $9.99',
-      className: 'flex justify-between text-gray-600 mb-2',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Shipping cost line'
-      }
-    },
-    'orderSummary.tax': {
-      content: 'Tax: $4.80',
-      className: 'flex justify-between text-gray-600 mb-2',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Tax amount line'
-      }
-    },
-    'orderSummary.total': {
-      content: 'Total: $59.98',
-      className: 'flex justify-between font-bold text-lg text-gray-900 border-t pt-4',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Order total line'
-      }
-    },
-    'orderSummary.checkoutButton': {
-      content: 'Proceed to Checkout',
-      className: 'w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'orderSummary',
-        description: 'Checkout button'
-      }
-    },
-    
-    // Recommendations Slots
-    'recommendations.title': {
-      content: 'You might also like',
-      className: 'text-xl font-semibold mb-4',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'recommendations',
-        description: 'Recommendations section title'
-      }
-    },
-    'recommendations.products': {
-      content: `<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>`,
-      className: '',
-      parentClassName: '',
-      styles: {},
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'recommendations',
-        description: 'Product recommendations grid'
-      }
-    },
-    
-    // Empty Slots
-    'empty.content': {
-      content: '<div class="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 bg-gray-50"><p>This is an empty slot. Click to edit and add your custom content.</p></div>',
-      className: 'empty-slot-content',
-      parentClassName: 'empty-slot-wrapper',
-      styles: {
-        minHeight: '120px'
-      },
-      metadata: {
-        lastModified: new Date().toISOString(),
-        slotType: 'empty',
-        description: 'Customizable empty slot for any content'
-      }
-    }
   },
   
   // Configuration metadata
