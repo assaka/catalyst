@@ -187,92 +187,9 @@ const EditorSidebar = ({
       clonedElement.removeAttribute(attr);
     });
     
-    // Remove editor-specific classes
-    const editorClasses = [
-      'cursor-pointer',
-      'cursor-move',
-      'transition-all',
-      'duration-200',
-      'editor-selected',
-      'resize-none',
-      'select-none',
-      'group',
-      'relative'
-    ];
-
-    const hoverClasses = ['hover:!outline-1', 'hover:!outline-blue-400', 'hover:!outline-offset-2', 'hover:outline'];
-    const allEditorClasses = [...editorClasses, ...hoverClasses];
-
-    // Clean classes from the element
-    if (clonedElement.className) {
-      const cleanClasses = clonedElement.className
-        .split(' ')
-        .filter(cls => {
-          // Check for exact matches or hover classes that contain the editor class
-          return !allEditorClasses.some(editorCls => {
-            const cleanEditorCls = editorCls.replace('!', '').replace(':', '');
-            return cls === editorCls || cls === cleanEditorCls ||
-                   (editorCls.includes('hover:') && cls.includes(cleanEditorCls));
-          });
-        })
-        .join(' ');
-      
-      if (cleanClasses.trim()) {
-        clonedElement.className = cleanClasses;
-      } else {
-        clonedElement.removeAttribute('class');
-      }
-    }
-
-    // Remove editor-specific inline styles
-    if (clonedElement.style) {
-      const stylesToRemove = [
-        'border',
-        'borderRadius',
-        'borderColor',
-        'transition',
-        'position'
-      ];
-
-      stylesToRemove.forEach(styleProp => {
-        if (clonedElement.style[styleProp]) {
-          // Only remove if it looks like an editor style
-          const value = clonedElement.style[styleProp];
-          if (
-            (styleProp === 'border' && value.includes('dashed')) ||
-            (styleProp === 'borderRadius' && value === '4px') ||
-            (styleProp === 'borderColor' && value.includes('rgba(59, 130, 246')) ||
-            (styleProp === 'transition' && value.includes('border-color')) ||
-            (styleProp === 'position' && value === 'relative')
-          ) {
-            clonedElement.style.removeProperty(styleProp);
-          }
-        }
-      });
-
-      // Remove inline styles that match editor patterns
-      const inlineStyle = clonedElement.getAttribute('style');
-      if (inlineStyle) {
-        const cleanStyle = inlineStyle
-          .split(';')
-          .filter(rule => {
-            const trimmedRule = rule.trim();
-            return trimmedRule &&
-                   !trimmedRule.includes('border: 1px dashed') &&
-                   !trimmedRule.includes('border-color') &&
-                   !trimmedRule.includes('transition: border-color') &&
-                   !trimmedRule.includes('position: relative') &&
-                   !trimmedRule.includes('border-radius: 4px');
-          })
-          .join('; ');
-
-        if (cleanStyle.trim()) {
-          clonedElement.setAttribute('style', cleanStyle);
-        } else {
-          clonedElement.removeAttribute('style');
-        }
-      }
-    }
+    // Since we're now using EditorInteractionWrapper, the content elements
+    // should already be clean of editor-specific classes and styles.
+    // We only need to remove the data attributes that are editor-specific.
 
     return clonedElement.outerHTML;
   }, []);

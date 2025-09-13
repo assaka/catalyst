@@ -174,7 +174,7 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden hover:border-blue-400' : 'overflow-hidden'} relative responsive-slot`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-transparent rounded-md p-2 overflow-hidden hover:border-blue-400' : 'overflow-hidden'} relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
@@ -270,14 +270,15 @@ const EditableElement = ({
 
 
 // Component to render hierarchical slots
-const HierarchicalSlotRenderer = ({ 
-  slots, 
-  parentId = null, 
-  mode, 
+const HierarchicalSlotRenderer = ({
+  slots,
+  parentId = null,
+  mode,
   viewMode = 'empty',
-  onElementClick, 
-  onGridResize, 
-  onSlotHeightResize 
+  onElementClick,
+  onGridResize,
+  onSlotHeightResize,
+  selectedElementId = null
 }) => {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
   
@@ -324,6 +325,7 @@ const HierarchicalSlotRenderer = ({
             style={slot.styles}
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={true}
+            selectedElementId={selectedElementId}
           >
           {slot.type === 'text' && (
             <span 
@@ -346,7 +348,7 @@ const HierarchicalSlotRenderer = ({
           )}
           {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
             <div className="w-full h-full grid grid-cols-12 gap-2">
-              <HierarchicalSlotRenderer 
+              <HierarchicalSlotRenderer
                 slots={slots}
                 parentId={slot.id}
                 mode={mode}
@@ -354,6 +356,7 @@ const HierarchicalSlotRenderer = ({
                 onElementClick={onElementClick}
                 onGridResize={onGridResize}
                 onSlotHeightResize={onSlotHeightResize}
+                selectedElementId={selectedElementId}
               />
             </div>
           )}
@@ -692,6 +695,7 @@ const CartSlotsEditor = ({
                   onElementClick={handleElementClick}
                   onGridResize={handleGridResize}
                   onSlotHeightResize={handleSlotHeightResize}
+                  selectedElementId={selectedElement?.getAttribute('data-slot-id') || null}
                 />
               )}
             </div>
