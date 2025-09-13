@@ -172,7 +172,7 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden' : 'overflow-hidden'} relative responsive-slot`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden hover:border-blue-400' : 'overflow-hidden'} relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
@@ -229,7 +229,7 @@ const EditableElement = ({
 
   const content = (
     <div
-      className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      className={`group ${mode === 'edit' ? 'cursor-pointer relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={style}
       onClick={handleClick}
       data-slot-id={slotId}
@@ -606,7 +606,7 @@ const CartSlotsEditor = ({
   // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible && viewMode === 'withProducts' ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
+      isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
     }`}>
       {/* Main Editor Area */}
       <div className="flex flex-col">
