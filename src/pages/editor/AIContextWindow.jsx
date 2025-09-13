@@ -11,8 +11,7 @@ import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
 // VersionHistoryModal removed - functionality integrated into unified editor
-// Store context no longer needed - backend resolves store automatically
-// import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
  * Get language type from filename
@@ -117,9 +116,9 @@ const createSimpleHash = (content) => {
  */
 const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { getSelectedStoreId } = useStoreSelection();
   
-  // Store context no longer needed - backend resolves store automatically
-  console.log('🏪 [AIContextWindow] Store ID now resolved server-side automatically');
+  console.log('🏪 [AIContextWindow] Using StoreSelectionContext for store ID resolution');
   
   // State management
   const [selectedFile, setSelectedFile] = useState(null);
@@ -139,7 +138,6 @@ const AIContextWindowPage = () => {
   // Slot configuration publishing state
   const [isPublishingConfig, setIsPublishingConfig] = useState(false);
   const [configPublishSuccess, setConfigPublishSuccess] = useState(null);
-  const [currentStoreId, setCurrentStoreId] = useState(null);
   // Version history functionality integrated into UnifiedSlotEditor
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -183,26 +181,6 @@ const AIContextWindowPage = () => {
   }, []);
 
 
-  // Get store ID from localStorage or API
-  const getStoreId = useCallback(async () => {
-    if (currentStoreId) return currentStoreId;
-    
-    try {
-      // Try to get from localStorage first
-      const storeId = localStorage.getItem('selected_store_id') || localStorage.getItem('store_id');
-      if (storeId) {
-        setCurrentStoreId(storeId);
-        return storeId;
-      }
-      
-      // Fallback: try to get from API or other source
-      console.warn('No store ID found in localStorage');
-      return null;
-    } catch (error) {
-      console.error('Error getting store ID:', error);
-      return null;
-    }
-  }, [currentStoreId]);
 
   // Publish slot configuration
   const publishSlotConfiguration = useCallback(async () => {
@@ -976,7 +954,7 @@ export default ExampleComponent;`;
                               const handleSave = async (configToSave) => {
                                 try {
                                   console.log(`💾 Saving ${slotType} configuration:`, configToSave);
-                                  const storeId = await getStoreId();
+                                  const storeId = getSelectedStoreId();
                                   const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
                                   console.log(`✅ ${slotType} configuration saved successfully:`, response);
                                   return response;
@@ -1237,7 +1215,7 @@ export default ExampleComponent;`;
                                 const handleSave = async (configToSave) => {
                                   try {
                                     console.log(`💾 Mobile: Saving ${slotType} configuration:`, configToSave);
-                                    const storeId = await getStoreId();
+                                    const storeId = getSelectedStoreId();
                                     const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
                                     console.log(`✅ Mobile: ${slotType} configuration saved successfully:`, response);
                                     return response;
