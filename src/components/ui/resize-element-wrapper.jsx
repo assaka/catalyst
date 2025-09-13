@@ -35,6 +35,37 @@ const ResizeWrapper = ({
            element.type?.name?.toLowerCase().includes('icon');
   };
 
+  // Helper to check if element is a button component
+  const isButtonElement = (element) => {
+    return element.type === 'button' || 
+           element.props?.type === 'button' ||
+           element.type?.displayName === 'Button' ||
+           element.type?.name === 'Button' ||
+           (element.props?.className && element.props.className.includes('justify-center')) || // Common button pattern
+           (element.props?.role === 'button');
+  };
+
+  // Helper to clean conflicting size classes
+  const cleanConflictingClasses = (className, element) => {
+    if (!className) return className;
+    
+    let cleanedClasses = className;
+    
+    if (isButtonElement(element)) {
+      // Remove width classes (w-auto, w-fit, w-max, etc.)
+      cleanedClasses = cleanedClasses.replace(/\bw-\w+\b/g, '').trim();
+    }
+    
+    if (isSvgElement(element)) {
+      // Remove fixed width/height classes for SVGs
+      cleanedClasses = cleanedClasses.replace(/\b[wh]-\d+\b/g, '').trim();
+      cleanedClasses = cleanedClasses.replace(/\b[wh]-\w+\b/g, '').trim();
+    }
+    
+    // Clean up multiple spaces
+    return cleanedClasses.replace(/\s+/g, ' ').trim();
+  };
+
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
     if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
@@ -213,12 +244,12 @@ const ResizeWrapper = ({
     >
       {React.cloneElement(children, {
         className: cn(
-          children.props.className,
+          // Clean conflicting classes for better control
+          cleanConflictingClasses(children.props.className, children),
           "resize-none select-none",
           isResizing && "cursor-se-resize",
-          // Add special class for buttons to force full width
-          (children.type === 'button' || children.props?.type === 'button' || children.type?.displayName === 'Button') && "w-full",
-          // Add special classes for SVGs and icons to fill container
+          // Add our desired size classes
+          isButtonElement(children) && "w-full",
           isSvgElement(children) && "w-full h-full"
         ),
         style: {
