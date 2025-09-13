@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 
 const ResizeWrapper = ({ 
@@ -19,12 +19,63 @@ const ResizeWrapper = ({
   const [size, setSize] = useState({ 
     width: initialWidth || 'auto', 
     height: initialHeight || 'auto',
-    widthUnit: '%',
+    widthUnit: initialWidth ? '%' : 'auto',
     heightUnit: 'px'
   });
+  const [naturalSize, setNaturalSize] = useState({ width: null, height: null });
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const wrapperRef = useRef(null);
+
+  // Capture natural dimensions and calculate initial percentage
+  useEffect(() => {
+    if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      
+      // Find parent slot container
+      let slotContainer = wrapperRef.current.parentElement;
+      let searchDepth = 0;
+      const maxSearchDepth = 5;
+      
+      while (slotContainer && searchDepth < maxSearchDepth) {
+        const isSlotContainer = slotContainer.hasAttribute('data-grid-slot-id') ||
+                                slotContainer.hasAttribute('data-slot-id') ||
+                                slotContainer.className.includes('col-span-') ||
+                                slotContainer.className.includes('responsive-slot');
+        
+        if (isSlotContainer) {
+          break;
+        }
+        
+        slotContainer = slotContainer.parentElement;
+        searchDepth++;
+        
+        if (slotContainer === document.body) {
+          slotContainer = null;
+          break;
+        }
+      }
+      
+      const parentRect = slotContainer?.getBoundingClientRect();
+      
+      if (parentRect && parentRect.width > 0 && rect.width > 0) {
+        const naturalPercentage = Math.min(100, (rect.width / parentRect.width) * 100);
+        
+        console.log('🎯 Natural size calculation:', {
+          elementWidth: rect.width,
+          slotWidth: parentRect.width,
+          naturalPercentage: naturalPercentage.toFixed(1) + '%'
+        });
+        
+        setNaturalSize({ width: rect.width, height: rect.height });
+        setSize(prev => ({
+          ...prev,
+          width: Math.round(naturalPercentage * 10) / 10,
+          widthUnit: '%'
+        }));
+      }
+    }
+  }, [naturalSize.width, size.width]);
 
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
@@ -136,12 +187,11 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const wrapperStyle = {
-    // Allow wrapper to expand while maintaining resize functionality
-    width: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'fit-content',
+    // Use calculated size or natural fit-content
+    width: size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'fit-content',
     height: 'auto',
     maxWidth: '100%',
-    display: 'inline-block',
-    minWidth: '100%' // This ensures it takes full width when not explicitly sized
+    display: 'inline-block'
   };
 
   return (
@@ -161,13 +211,11 @@ const ResizeWrapper = ({
         ),
         style: {
           ...children.props.style,
-          ...(size.width !== 'auto' && { width: `${size.width}${size.widthUnit || 'px'}` }),
+          ...(size.width !== 'auto' && size.widthUnit !== 'auto' && { width: `${size.width}${size.widthUnit || 'px'}` }),
           ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
-          minWidth: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
-          display: 'block',
-          width: size.width === 'auto' ? '100%' : undefined
+          display: 'block'
         }
       })}
       
