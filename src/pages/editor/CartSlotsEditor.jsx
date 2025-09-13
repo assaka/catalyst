@@ -95,10 +95,10 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
 
   return (
     <div
-      className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
+      className={`absolute ${positionClass} ${cursorClass} transition-all duration-300 ease-out ${
         isHovered || isDragging || parentHovered
-          ? 'opacity-100 scale-110' 
-          : 'opacity-30 scale-100 hover:opacity-80'
+          ? 'opacity-100 scale-125 animate-in zoom-in-50' 
+          : 'opacity-40 scale-100 hover:opacity-80 hover:scale-110'
       }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
@@ -106,24 +106,27 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       style={{ zIndex: 9999 }}
       title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
-      {/* Prominent resize handle design */}
-      <div className={`w-full h-full rounded-lg flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 shadow-lg border border-white/50 ${
+      {/* Framer-style resize handle design */}
+      <div className={`w-full h-full rounded-xl flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-300 ease-out backdrop-blur-sm ${
         isDragging 
-          ? 'bg-blue-600 shadow-xl scale-110 border-blue-400' 
+          ? 'bg-blue-600 shadow-2xl shadow-blue-400/60 scale-110 border-2 border-blue-300 ring-2 ring-blue-400/50 ring-offset-2 ring-offset-white' 
           : isHovered || parentHovered
-            ? 'bg-blue-500 shadow-lg border-blue-300' 
-            : 'bg-blue-400/90 shadow-md'
+            ? 'bg-blue-500 shadow-xl shadow-blue-300/50 border-2 border-blue-200 scale-105' 
+            : 'bg-blue-500/90 shadow-lg shadow-blue-200/40 border border-blue-300/50 hover:shadow-xl hover:shadow-blue-300/50'
       }`}>
-        {/* Three dots for grip */}
-        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
-        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
-        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
+        {/* Animated grip dots */}
+        <div className={`w-1.5 h-1.5 bg-white rounded-full shadow-sm transition-all duration-200 ${isDragging ? 'animate-pulse' : ''}`}></div>
+        <div className={`w-1.5 h-1.5 bg-white rounded-full shadow-sm transition-all duration-200 delay-75 ${isDragging ? 'animate-pulse' : ''}`}></div>
+        <div className={`w-1.5 h-1.5 bg-white rounded-full shadow-sm transition-all duration-200 delay-150 ${isDragging ? 'animate-pulse' : ''}`}></div>
       </div>
       
-      {/* Subtle indicator when dragging */}
+      {/* Enhanced drag indicator with Framer-style */}
       {isDragging && (
-        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'} bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
+        <div className={`absolute ${isHorizontal ? '-top-8 left-1/2 -translate-x-1/2' : '-left-12 top-1/2 -translate-y-1/2'} 
+          bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-lg shadow-xl shadow-gray-900/50 
+          whitespace-nowrap border border-gray-700/50 animate-in slide-in-from-bottom-2 duration-200`}>
           {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg"></div>
         </div>
       )}
     </div>
@@ -172,8 +175,10 @@ const GridColumn = ({
     <div 
       className={`${colSpanClass} ${rowSpanClass} ${
         mode === 'edit' 
-          ? `border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
-              isHovered ? 'border-blue-400 bg-blue-50/30' : 'border-gray-200 hover:border-gray-300'
+          ? `border-2 border-dashed rounded-xl overflow-hidden transition-all duration-300 ease-out ${
+              isHovered 
+                ? 'border-blue-500 bg-blue-50/40 shadow-lg shadow-blue-200/50 scale-[1.02] -translate-y-0.5 backdrop-blur-sm ring-1 ring-blue-300/50' 
+                : 'border-gray-300/60 hover:border-gray-400 hover:bg-gray-50/30 hover:shadow-md hover:shadow-gray-200/40 hover:scale-[1.01]'
             }` 
           : 'overflow-hidden'
       } relative responsive-slot`}
@@ -210,9 +215,13 @@ const GridColumn = ({
         />
       )}
       
-      {/* Content area with padding */}
-      <div className={`p-2 relative transition-all duration-200 ${
-        mode === 'edit' ? 'cursor-pointer hover:bg-white/50 rounded-md' : ''
+      {/* Enhanced content area with Framer-style effects */}
+      <div className={`p-3 relative transition-all duration-300 ease-out ${
+        mode === 'edit' 
+          ? `cursor-pointer rounded-lg backdrop-blur-sm
+             hover:bg-white/60 hover:shadow-inner hover:shadow-blue-100/50
+             ${isHovered ? 'bg-white/40 shadow-inner shadow-blue-50' : ''}` 
+          : ''
       }`} style={{ zIndex: 2 }}>
         {children}
       </div>

@@ -12,30 +12,39 @@ const EditorInteractionWrapper = ({
     return children;
   }
 
-  // Editor-specific classes and styles
+  // Framer-style editor classes and styles
   const editorClasses = [
     'relative',
     'cursor-pointer',
     'transition-all',
-    'duration-200',
+    'duration-300',
+    'ease-out',
     draggable ? 'cursor-move' : '',
     'group',
-    // Hover styles using Tailwind
-    'hover:outline',
-    'hover:outline-1',
-    'hover:outline-blue-400',
-    'hover:outline-offset-2',
-    // Selected styles
-    isSelected ? 'outline outline-2 outline-blue-500 outline-offset-1' : ''
+    'rounded-lg',
+    // Framer-style hover effects
+    'hover:scale-[1.02]',
+    'hover:-translate-y-0.5',
+    'hover:shadow-lg',
+    'hover:shadow-blue-200/40',
+    'hover:bg-blue-50/20',
+    'hover:backdrop-blur-sm',
+    // Selected styles with enhanced visual feedback
+    isSelected ? 'scale-[1.02] -translate-y-0.5 shadow-xl shadow-blue-300/60 bg-blue-50/30' : ''
   ].filter(Boolean).join(' ');
 
   const editorStyles = {
-    // Inline styles for editor-specific styling that can't be done with Tailwind
-    border: isSelected ? '1px dashed rgba(59, 130, 246, 0.5)' : '1px dashed transparent',
-    borderRadius: '4px',
-    transition: 'border-color 0.2s ease-in-out',
+    // Enhanced inline styles with Framer-style effects
+    border: isSelected 
+      ? '2px solid rgba(59, 130, 246, 0.6)' 
+      : '2px solid transparent',
+    borderRadius: '12px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    backdropFilter: isSelected ? 'blur(8px)' : 'none',
     ...(isSelected && {
-      borderColor: 'rgba(59, 130, 246, 0.5)'
+      borderColor: 'rgba(59, 130, 246, 0.6)',
+      boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2)',
+      background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.1) 100%)'
     })
   };
 
