@@ -29,11 +29,12 @@ import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Grid resize handle component for changing col-span
+// Webflow-style resize handle - subtle and only appears on hover
 const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [startColSpan, setStartColSpan] = useState(currentColSpan);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -72,19 +73,29 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     };
   }, [handleMouseMove, handleMouseUp]);
 
-  // Debug logging
-  console.log('GridResizeHandle rendered:', { currentColSpan, isDragging });
-
   return (
     <div
-      className={`absolute -right-1 top-0 bottom-0 w-3 cursor-col-resize bg-blue-500 border border-blue-600 opacity-30 hover:opacity-90 transition-opacity ${
-        isDragging ? 'opacity-100' : ''
+      className={`absolute -right-0.5 top-1/2 -translate-y-1/2 w-2 h-8 cursor-col-resize transition-all duration-200 ${
+        isHovered || isDragging 
+          ? 'opacity-100' 
+          : 'opacity-0 group-hover:opacity-60'
       }`}
       onMouseDown={handleMouseDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{ zIndex: 1000 }}
-      title={`Resize grid column (current: ${currentColSpan}/12)`}
+      title={`Resize column (${currentColSpan}/${maxColSpan})`}
     >
-      <div className="w-full h-full bg-blue-500 rounded-sm shadow-sm"></div>
+      {/* Subtle handle with dots like Webflow */}
+      <div className={`w-full h-full rounded-full flex flex-col items-center justify-center space-y-0.5 transition-colors duration-200 ${
+        isHovered || isDragging 
+          ? 'bg-blue-500 shadow-md' 
+          : 'bg-gray-400'
+      }`}>
+        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
+        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
+        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
+      </div>
     </div>
   );
 };
@@ -114,12 +125,12 @@ const EditableElement = ({
 
   const content = (
     <div
-      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-2 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={mode === 'edit' ? {
-        border: '1px dotted rgba(200, 200, 200, 0.3)',
-        borderRadius: '2px',
+        border: '1px dotted rgba(200, 200, 200, 0.1)',
+        borderRadius: '4px',
         minHeight: '20px',
-        padding: '2px',
+        padding: '4px',
         ...style
       } : style}
       onClick={handleClick}
@@ -129,17 +140,7 @@ const EditableElement = ({
     >
       {children}
       {/* Grid resize handle - only show when grid resize is enabled and in edit mode */}
-      {(() => {
-        const shouldShowHandle = gridColSpan && onGridResize && mode === 'edit';
-        console.log('EditableElement grid resize check:', {
-          slotId,
-          gridColSpan,
-          hasOnGridResize: !!onGridResize,
-          mode,
-          shouldShowHandle
-        });
-        return shouldShowHandle;
-      })() && (
+      {gridColSpan && onGridResize && mode === 'edit' && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentColSpan={gridColSpan}

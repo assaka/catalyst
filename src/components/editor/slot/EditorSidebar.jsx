@@ -471,20 +471,41 @@ const EditorSidebar = ({
     const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle'];
     
     if (classBasedProperties.includes(property)) {
+      // Preserve existing inline styles before class changes
+      const currentInlineStyles = {};
+      if (selectedElement.style) {
+        for (let i = 0; i < selectedElement.style.length; i++) {
+          const styleProp = selectedElement.style[i];
+          const styleValue = selectedElement.style.getPropertyValue(styleProp);
+          if (styleValue && styleValue.trim() !== '') {
+            currentInlineStyles[styleProp] = styleValue;
+          }
+        }
+      }
+      
       // Handle class-based properties (Tailwind) - apply immediately
       const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
-        // Update local state for UI responsiveness
+        // Restore preserved inline styles after class change
+        Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
+          selectedElement.style.setProperty(styleProp, styleValue);
+        });
+        
+        // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {
           setElementProperties(prev => ({
             ...prev,
-            className: selectedElement.className
+            className: selectedElement.className,
+            styles: {
+              ...prev.styles,
+              ...currentInlineStyles
+            }
           }));
         }, 10);
         
-        // Save immediately using parent callback
+        // Save immediately using parent callback with preserved styles
         if (onInlineClassChange) {
-          onInlineClassChange(elementSlotId, selectedElement.className, {});
+          onInlineClassChange(elementSlotId, selectedElement.className, currentInlineStyles);
         }
       }
     } else {

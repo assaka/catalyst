@@ -48,8 +48,9 @@ class SimpleStyleManager {
 
     switch (property) {
       case 'fontSize':
-        // Remove existing font size classes
-        newClasses = newClasses.filter(cls => !cls.startsWith('text-'));
+        // Remove existing font size classes only (not alignment classes)
+        const fontSizeClasses = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl', 'text-6xl', 'text-7xl', 'text-8xl', 'text-9xl'];
+        newClasses = newClasses.filter(cls => !fontSizeClasses.includes(cls));
         newClasses.push(`text-${value}`);
         break;
       case 'fontWeight':
