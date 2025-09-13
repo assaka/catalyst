@@ -362,11 +362,26 @@ const HierarchicalSlotRenderer = ({
             selectedElementId={selectedElementId}
           >
           {slot.type === 'text' && (
-            <span 
+            <span
               className={slot.className}
-              style={slot.styles}
-              dangerouslySetInnerHTML={{ 
+              style={{
+                ...slot.styles,
+                // Ensure italic is applied as inline style if class includes 'italic'
+                ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+              }}
+              dangerouslySetInnerHTML={{
                 __html: String(slot.content || `Text: ${slot.id}`)
+              }}
+              ref={(el) => {
+                if (el && slot.id === 'header_title') {
+                  console.log(`🎨 Applying styles to ${slot.id}:`, {
+                    className: slot.className,
+                    computedStyle: window.getComputedStyle(el).fontStyle,
+                    hasItalic: slot.className?.includes('italic'),
+                    inlineStyle: el.style.fontStyle,
+                    element: el
+                  });
+                }
               }}
             />
           )}
