@@ -26,6 +26,14 @@ const ResizeWrapper = ({
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const wrapperRef = useRef(null);
+  
+  // Helper to check if element is an SVG or icon component
+  const isSvgElement = (element) => {
+    return element.type === 'svg' || 
+           element.props?.viewBox !== undefined ||
+           element.type?.displayName?.toLowerCase().includes('icon') ||
+           element.type?.name?.toLowerCase().includes('icon');
+  };
 
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
@@ -207,20 +215,39 @@ const ResizeWrapper = ({
         className: cn(
           children.props.className,
           "resize-none select-none",
-          isResizing && "cursor-se-resize"
+          isResizing && "cursor-se-resize",
+          // Add special class for buttons to force full width
+          (children.type === 'button' || children.props?.type === 'button' || children.type?.displayName === 'Button') && "w-full",
+          // Add special classes for SVGs and icons to fill container
+          isSvgElement(children) && "w-full h-full"
         ),
         style: {
           ...children.props.style,
           // Don't set width on child since it's set on wrapper
-          ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
+          ...(size.height !== 'auto' && size.height && { 
+            minHeight: `${size.height}${size.heightUnit || 'px'}`,
+            height: isSvgElement(children) ? '100%' : undefined
+          }),
           width: '100%', // Child takes full width of wrapper
+          minWidth: '100%', // Force elements to respect full width
+          maxWidth: '100%', // Prevent elements from shrinking
           boxSizing: 'border-box',
           display: 'block',
           border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
           borderRadius: '4px',
           transition: 'border-color 0.2s ease-in-out',
-          position: 'relative'
-        }
+          position: 'relative',
+          // Special handling for SVG elements
+          ...(isSvgElement(children) ? {
+            objectFit: 'contain',
+            width: '100%',
+            height: '100%'
+          } : {})
+        },
+        // Add preserveAspectRatio for SVGs to maintain proper scaling
+        ...(isSvgElement(children) ? {
+          preserveAspectRatio: children.props?.preserveAspectRatio || "xMidYMid meet"
+        } : {})
       })}
       
       {/* Resize handle - positioned exactly at border corner */}
