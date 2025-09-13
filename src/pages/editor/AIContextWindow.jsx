@@ -976,7 +976,8 @@ export default ExampleComponent;`;
                               const handleSave = async (configToSave) => {
                                 try {
                                   console.log(`💾 Saving ${slotType} configuration:`, configToSave);
-                                  const response = await slotConfigurationService.saveConfiguration(slotType, configToSave);
+                                  const storeId = await getStoreId();
+                                  const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
                                   console.log(`✅ ${slotType} configuration saved successfully:`, response);
                                   return response;
                                 } catch (error) {
@@ -1236,7 +1237,8 @@ export default ExampleComponent;`;
                                 const handleSave = async (configToSave) => {
                                   try {
                                     console.log(`💾 Mobile: Saving ${slotType} configuration:`, configToSave);
-                                    const response = await slotConfigurationService.saveConfiguration(slotType, configToSave);
+                                    const storeId = await getStoreId();
+                                    const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
                                     console.log(`✅ Mobile: ${slotType} configuration saved successfully:`, response);
                                     return response;
                                   } catch (error) {

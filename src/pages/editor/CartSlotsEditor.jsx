@@ -177,16 +177,10 @@ const GridColumn = ({
       data-col-span={colSpan}
       data-row-span={rowSpan}
       style={{ 
-        backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
         height: height ? `${height}px` : undefined,
         maxHeight: height ? `${height}px` : undefined
       }}
     >
-      {mode === 'edit' && (
-        <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-          {slotId}: {colSpan}×{rowSpan}
-        </div>
-      )}
       {children}
       {/* Horizontal grid resize handle on the column itself */}
       {showHorizontalHandle && (
@@ -236,13 +230,7 @@ const EditableElement = ({
   const content = (
     <div
       className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
-      style={mode === 'edit' ? {
-        border: '1px dotted rgba(200, 200, 200, 0.1)',
-        borderRadius: '4px',
-        minHeight: '20px',
-        padding: '4px',
-        ...style
-      } : style}
+      style={style}
       onClick={handleClick}
       data-slot-id={slotId}
       data-editable={mode === 'edit'}
@@ -323,9 +311,9 @@ const HierarchicalSlotRenderer = ({
           >
           {slot.type === 'text' && <span>{slot.content || `Text: ${slot.id}`}</span>}
           {slot.type === 'button' && (
-            <Button className={slot.className} style={slot.styles}>
+            <button className={slot.className} style={slot.styles}>
               {slot.content || `Button: ${slot.id}`}
-            </Button>
+            </button>
           )}
           {slot.type === 'image' && (
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
