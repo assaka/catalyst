@@ -275,7 +275,7 @@ const EditableElement = ({
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
 const CartSlotsEditor = ({ 
-  mode = 'preview', 
+  mode = 'edit', 
   onSave,
   viewMode: propViewMode = 'empty'
 }) => {
@@ -657,20 +657,26 @@ const CartSlotsEditor = ({
                       .map(slotId => {
                         if (slotId === 'emptyCart.icon') {
                           return (
-                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                              <div
-                                className="cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                                onClick={(e) => handleElementClick(slotId, e.currentTarget)}
-                                data-slot-id={slotId}
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
+                              mode={mode}
+                            >
+                              <EditableElement
+                                slotId={slotId}
+                                mode={mode}
+                                onClick={(slotId, element) => handleElementClick(slotId, element)}
+                                canResize={true}
+                                draggable={true}
                               >
                                 <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                              </div>
-                              {mode === 'edit' && (
-                                <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                  {slotId}
-                                </div>
-                              )}
-                            </div>
+                              </EditableElement>
+                            </GridColumn>
                           );
                         }
                         
@@ -680,21 +686,28 @@ const CartSlotsEditor = ({
                           const finalClasses = titleStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                              <div
-                                className={`cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 transition-all ${finalClasses}`}
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
+                              mode={mode}
+                            >
+                              <EditableElement
+                                slotId={slotId}
+                                mode={mode}
+                                onClick={(slotId, element) => handleElementClick(slotId, element)}
+                                className={finalClasses}
                                 style={titleStyling.elementStyles}
-                                onClick={(e) => handleElementClick(slotId, e.currentTarget)}
-                                data-slot-id={slotId}
+                                canResize={true}
+                                draggable={true}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Your cart is empty"}
-                              </div>
-                              {mode === 'edit' && (
-                                <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                  {slotId}
-                                </div>
-                              )}
-                            </div>
+                              </EditableElement>
+                            </GridColumn>
                           );
                         }
                         
@@ -704,21 +717,28 @@ const CartSlotsEditor = ({
                           const finalClasses = textStyling.elementClasses || defaultClasses;
                           
                           return (
-                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                              <div
-                                className={`cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 transition-all ${finalClasses}`}
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
+                              mode={mode}
+                            >
+                              <EditableElement
+                                slotId={slotId}
+                                mode={mode}
+                                onClick={(slotId, element) => handleElementClick(slotId, element)}
+                                className={finalClasses}
                                 style={textStyling.elementStyles}
-                                onClick={(e) => handleElementClick(slotId, e.currentTarget)}
-                                data-slot-id={slotId}
+                                canResize={true}
+                                draggable={true}
                               >
                                 {cartLayoutConfig.slots[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                              </div>
-                              {mode === 'edit' && (
-                                <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                  {slotId}
-                                </div>
-                              )}
-                            </div>
+                              </EditableElement>
+                            </GridColumn>
                           );
                         }
                         
@@ -726,25 +746,33 @@ const CartSlotsEditor = ({
                           const buttonStyling = getSlotStyling('emptyCart.button');
                           
                           return (
-                            <div key={slotId} className={`col-span-12 flex justify-center ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                              <div
-                                className="cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                                onClick={(e) => handleElementClick(slotId, e.currentTarget)}
-                                data-slot-id={slotId}
-                              >
-                                <Button 
-                                  className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                  style={buttonStyling.elementStyles}
+                            <GridColumn
+                              key={slotId}
+                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
+                              slotId={slotId}
+                              onGridResize={handleGridResize}
+                              onSlotHeightResize={handleSlotHeightResize}
+                              mode={mode}
+                            >
+                              <div className="flex justify-center">
+                                <EditableElement
+                                  slotId={slotId}
+                                  mode={mode}
+                                  onClick={(slotId, element) => handleElementClick(slotId, element)}
+                                  canResize={true}
+                                  draggable={true}
                                 >
-                                  {cartLayoutConfig.slots[slotId]?.content || "Continue Shopping"}
-                                </Button>
+                                  <Button 
+                                    className="bg-blue-600 hover:bg-blue-700 w-auto"
+                                    style={buttonStyling.elementStyles}
+                                  >
+                                    {cartLayoutConfig.slots[slotId]?.content || "Continue Shopping"}
+                                  </Button>
+                                </EditableElement>
                               </div>
-                              {mode === 'edit' && (
-                                <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                  {slotId}
-                                </div>
-                              )}
-                            </div>
+                            </GridColumn>
                           );
                         }
                         
