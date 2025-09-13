@@ -234,8 +234,8 @@ export const createDefaultSlots = () => {
 
 
 
-// Pure Hierarchical Slot Renderer - renders nested slots recursively
-const renderHierarchicalSlot = ({ 
+// Pure Hierarchical Slot Renderer Component - renders nested slots recursively
+const HierarchicalSlot = ({ 
   slot, 
   allSlots, 
   depth = 0, 
@@ -270,12 +270,44 @@ const renderHierarchicalSlot = ({
     );
   };
   
-  // Render content based on slot type
+  // Render content based on slot type with enhanced resize capabilities
   const renderSlotTypeContent = () => {
+    // Get responsive sizing classes based on styles
+    const getResponsiveSizing = () => {
+      const styles = slot.styles || {};
+      const sizeClasses = [];
+      
+      // Add width classes if width is set
+      if (styles.width) {
+        if (styles.width.includes('%')) {
+          sizeClasses.push('w-full'); // Use full width for percentage-based widths
+        } else if (styles.width.includes('px')) {
+          // For pixel widths, add responsive constraint
+          sizeClasses.push('w-auto max-w-full');
+        }
+      }
+      
+      // Add height classes if height is set
+      if (styles.height || styles.minHeight) {
+        sizeClasses.push('h-auto');
+      }
+      
+      return sizeClasses.join(' ');
+    };
+
+    const responsiveClasses = getResponsiveSizing();
+
     switch (slot.type) {
       case SlotTypes.BUTTON:
         return (
-          <Button className={slot.className} style={slot.styles}>
+          <Button 
+            className={`${slot.className} ${responsiveClasses} transition-all duration-200 resize-button`} 
+            style={{
+              ...slot.styles,
+              minWidth: slot.styles?.width ? 'auto' : undefined,
+              minHeight: slot.styles?.height || slot.styles?.minHeight ? 'auto' : undefined
+            }}
+          >
             {slot.content || 'Button'}
           </Button>
         );
@@ -283,24 +315,57 @@ const renderHierarchicalSlot = ({
         return (
           <Input 
             placeholder={slot.content || 'Enter text...'} 
-            className={slot.className}
-            style={slot.styles}
+            className={`${slot.className} ${responsiveClasses} transition-all duration-200 resize-input`}
+            style={{
+              ...slot.styles,
+              minWidth: slot.styles?.width ? 'auto' : undefined
+            }}
           />
         );
       case SlotTypes.IMAGE:
         if (slot.content === 'shopping-cart-icon') {
-          return <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />;
+          const iconSize = slot.styles?.width || slot.styles?.height || '64px';
+          const iconSizeValue = parseInt(iconSize) || 64;
+          // Use standard Tailwind sizes instead of dynamic classes
+          let iconClass = 'w-16 h-16'; // Default size
+          if (iconSizeValue <= 24) iconClass = 'w-6 h-6';
+          else if (iconSizeValue <= 32) iconClass = 'w-8 h-8';
+          else if (iconSizeValue <= 48) iconClass = 'w-12 h-12';
+          else if (iconSizeValue <= 64) iconClass = 'w-16 h-16';
+          else if (iconSizeValue <= 96) iconClass = 'w-24 h-24';
+          else iconClass = 'w-32 h-32';
+          
+          return (
+            <ShoppingCart 
+              className={`${iconClass} mx-auto text-gray-400 mb-4 transition-all duration-200 resize-icon ${slot.className}`}
+              style={{
+                ...slot.styles,
+                width: slot.styles?.width || iconSize,
+                height: slot.styles?.height || iconSize
+              }}
+            />
+          );
         }
         return (
           <img 
             src={slot.content || 'https://placehold.co/200x150'} 
             alt="Slot image"
-            className={slot.className}
-            style={slot.styles}
+            className={`${slot.className} ${responsiveClasses} transition-all duration-200 resize-image object-cover`}
+            style={{
+              ...slot.styles,
+              maxWidth: '100%',
+              height: 'auto'
+            }}
           />
         );
       default:
-        return <div dangerouslySetInnerHTML={{ __html: slot.content || `${slot.type} content` }} />;
+        return (
+          <div 
+            className={`${slot.className} ${responsiveClasses} transition-all duration-200`}
+            style={slot.styles}
+            dangerouslySetInnerHTML={{ __html: slot.content || `${slot.type} content` }} 
+          />
+        );
     }
   };
   
@@ -311,16 +376,15 @@ const renderHierarchicalSlot = ({
     const childElements = childSlots.map((childSlot, index) => {
       if (!childSlot) return null;
       return (
-        <React.Fragment key={childSlot.id || `child-${index}`}>
-          {renderHierarchicalSlot({
-            slot: childSlot,
-            allSlots,
-            depth: depth + 1,
-            parentWidth: actualWidth,
-            mode,
-            onElementClick
-          })}
-        </React.Fragment>
+        <HierarchicalSlot
+          key={childSlot.id || `child-${index}`}
+          slot={childSlot}
+          allSlots={allSlots}
+          depth={depth + 1}
+          parentWidth={actualWidth}
+          mode={mode}
+          onElementClick={onElementClick}
+        />
       );
     }).filter(Boolean);
     
@@ -650,14 +714,14 @@ const CartSlotsEditor = ({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             {/* Render main layout hierarchically */}
             {cartLayoutConfig?.slots?.main_layout && (
-              renderHierarchicalSlot({
-                slot: cartLayoutConfig.slots.main_layout,
-                allSlots: cartLayoutConfig.slots,
-                depth: 0,
-                parentWidth: 12,
-                mode,
-                onElementClick: handleElementClick
-              })
+              <HierarchicalSlot
+                slot={cartLayoutConfig.slots.main_layout}
+                allSlots={cartLayoutConfig.slots}
+                depth={0}
+                parentWidth={12}
+                mode={mode}
+                onElementClick={handleElementClick}
+              />
             )}
             
             <CmsBlockRenderer position="cart_above_items" />
