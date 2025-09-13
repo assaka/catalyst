@@ -138,9 +138,10 @@ export default function Cart() {
                         console.log('🔍 Empty cart title config:', publishedConfig.configuration['emptyCart.title']);
                     } else {
                         console.warn('⚠️ Published configuration has no configuration data');
-                        // Fallback to default configuration
+                        // Fallback to cart-config.js
+                        const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
                         setCartLayoutConfig({
-                            slots: {},
+                            slots: { ...cartConfig.slots },
                             metadata: {
                                 created: new Date().toISOString(),
                                 lastModified: new Date().toISOString()
@@ -160,9 +161,10 @@ export default function Cart() {
                 }
             } catch (error) {
                 console.warn('⚠️ Could not load published slot configuration:', error);
-                // Fallback to default configuration
+                // Fallback to cart-config.js
+                const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
                 setCartLayoutConfig({
-                    slots: {},
+                    slots: { ...cartConfig.slots },
                     metadata: {
                         created: new Date().toISOString(),
                         lastModified: new Date().toISOString()
