@@ -7,7 +7,9 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from '@/components/ui/card';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
+import { Input } from '@/components/ui/input';
 import { 
   Save, 
   Settings, 
@@ -15,10 +17,16 @@ import {
   EyeOff, 
   ShoppingCart,
   Package,
-  Loader2
+  Loader2,
+  Layers,
+  ChevronDown,
+  ChevronRight,
+  Move,
+  RotateCcw
 } from "lucide-react";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
+import EditorWrapper from '@/components/editor/EditorWrapper';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { SlotManager } from '@/utils/slotUtils';
 
@@ -101,7 +109,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ zIndex: 9999 }}
-      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue}/${maxValue})` : `(${currentValue}px)`}`}
     >
       {/* Modern subtle handle */}
       <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
@@ -120,7 +128,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
       {/* Subtle indicator when dragging */}
       {isDragging && (
         <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'} bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
-          {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
+          {isHorizontal ? `${currentValue}/${maxValue}` : `${currentValue}px`}
         </div>
       )}
     </div>
@@ -138,7 +146,6 @@ const GridColumn = ({
   mode = 'edit', 
   children 
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   
@@ -167,18 +174,10 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${
-        mode === 'edit' 
-          ? `border border-dashed rounded-md p-2 overflow-hidden ${
-              isHovered ? 'border-blue-400' : 'border-transparent'
-            }` 
-          : 'overflow-hidden'
-      } relative responsive-slot`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-transparent rounded-md p-2 overflow-hidden hover:border-blue-400' : 'overflow-hidden'} relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
-      onMouseEnter={() => mode === 'edit' && setIsHovered(true)}
-      onMouseLeave={() => mode === 'edit' && setIsHovered(false)}
       style={{ 
         height: height ? `${height}px` : undefined,
         maxHeight: height ? `${height}px` : undefined
@@ -391,6 +390,7 @@ const CartSlotsEditor = ({
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Start with false since we have initial config
 
   // Initialize cart configuration with both hierarchical and flat structure support
   useEffect(() => {
@@ -500,7 +500,7 @@ const CartSlotsEditor = ({
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
-    const slotConfig = cartLayoutConfig && cartLayoutConfig.slots ? cartLayoutConfig.slots[slotId] : null;
+    const slotConfig = cartLayoutConfig?.slots?.[slotId];
     return {
       elementClasses: slotConfig?.className || '',
       elementStyles: slotConfig?.styles || {}
@@ -710,6 +710,13 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+
+
+
+
+
+  // No loading state needed since we have initial config
+
   // Create the additional view mode controls for the wrapper
   const additionalControls = (
     <div className="flex bg-gray-100 rounded-lg p-1">
@@ -738,53 +745,27 @@ const CartSlotsEditor = ({
     </div>
   );
 
-  // Main render - Clean and maintainable  
+  // Main render - Clean and maintainable wrapped with EditorWrapper
   return (
-    <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible && viewMode === 'withProducts' ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
-    }`}>
-      {/* Main Editor Area */}
-      <div className="flex flex-col">
-        {/* Editor Header */}
-        <div className="bg-white border-b px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Only show controls in edit mode */}
-            {mode === 'edit' && (
-              <div className="flex items-center gap-2">
-                {/* Save Status */}
-                {saveStatus && (
-                  <div className={`flex items-center gap-2 text-sm ${
-                    saveStatus === 'saving' ? 'text-blue-600' : 
-                    saveStatus === 'saved' ? 'text-green-600' : 
-                    'text-red-600'
-                  }`}>
-                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {saveStatus === 'saved' && '✓ Saved'}
-                    {saveStatus === 'error' && '✗ Save Failed'}
-                  </div>
-                )}
-
-                <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-
-                <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+    <EditorWrapper
+      title="Cart Editor"
+      onSave={() => saveConfiguration()}
+      saveStatus={saveStatus}
+      isSidebarVisible={isSidebarVisible}
+      onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
+      additionalControls={additionalControls}
+    >
+      <div className={`min-h-full bg-gray-50 ${
+        isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
+      }`}>
         {/* Cart Layout - Hierarchical Structure */}
-        <div
+        <div 
           className="bg-gray-50 cart-page"
           style={{ backgroundColor: '#f9fafb' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
+              {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
                 <HierarchicalSlotRenderer
                   slots={cartLayoutConfig.slots}
                   parentId={null}
@@ -801,19 +782,20 @@ const CartSlotsEditor = ({
                 </div>
               )}
             </div>
-
+            
             <CmsBlockRenderer position="cart_above_items" />
-
+            
             <CmsBlockRenderer position="cart_below_items" />
           </div>
         </div>
+      </div>
 
       {/* EditorSidebar - only show in edit mode */}
       {mode === 'edit' && isSidebarVisible && selectedElement && (
         <EditorSidebar
           selectedElement={selectedElement}
-          slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
-          slotConfig={cartLayoutConfig && cartLayoutConfig.slots && selectedElement?.getAttribute ? cartLayoutConfig.slots[selectedElement.getAttribute('data-slot-id')] : null}
+          slotId={selectedElement?.getAttribute?.('data-slot-id') || null}
+          slotConfig={cartLayoutConfig?.slots?.[selectedElement?.getAttribute?.('data-slot-id')]}
           onTextChange={handleTextChange}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}
@@ -824,8 +806,7 @@ const CartSlotsEditor = ({
           isVisible={true}
         />
       )}
-      </div>
-    </div>
+    </EditorWrapper>
   );
 };
 
