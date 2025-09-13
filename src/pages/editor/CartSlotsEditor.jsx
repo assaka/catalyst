@@ -29,24 +29,23 @@ import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Webflow-style resize handle - subtle and only appears on hover
-const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1 }) => {
+// Modern resize handle for horizontal (grid column) resizing
+const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpan = 1, direction = 'horizontal' }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
-  const startColSpanRef = useRef(currentColSpan);
+  const startYRef = useRef(0);
+  const startValueRef = useRef(currentColSpan);
 
   const handleMouseDown = useCallback((e) => {
-    console.log('🎯 GridResizeHandle clicked!', { currentColSpan, clientX: e.clientX });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
     isDraggingRef.current = true;
     startXRef.current = e.clientX;
-    startColSpanRef.current = currentColSpan;
-    
-    console.log('📍 Starting drag with:', { startX: startXRef.current, startColSpan: startColSpanRef.current });
+    startYRef.current = e.clientY;
+    startValueRef.current = currentColSpan;
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -56,29 +55,26 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     if (!isDraggingRef.current) return;
     
     const startX = startXRef.current;
-    const startColSpan = startColSpanRef.current;
-    const deltaX = e.clientX - startX;
-    const sensitivity = 30; // pixels per col-span unit
-    const colSpanDelta = Math.round(deltaX / sensitivity);
-    const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startColSpan + colSpanDelta));
+    const startY = startYRef.current;
+    const startValue = startValueRef.current;
     
-    console.log('🖱️ Mouse move:', { 
-      isDragging: isDraggingRef.current, 
-      clientX: e.clientX, 
-      startX,
-      deltaX, 
-      colSpanDelta, 
-      startColSpan, 
-      currentColSpan, 
-      newColSpan,
-      shouldUpdate: newColSpan !== currentColSpan 
-    });
-    
-    if (newColSpan !== currentColSpan) {
-      console.log('📞 Calling onResize with:', newColSpan);
-      onResize(newColSpan);
+    if (direction === 'horizontal') {
+      const deltaX = e.clientX - startX;
+      const sensitivity = 30; // pixels per col-span unit
+      const colSpanDelta = Math.round(deltaX / sensitivity);
+      const newColSpan = Math.max(minColSpan, Math.min(maxColSpan, startValue + colSpanDelta));
+      
+      if (newColSpan !== currentColSpan) {
+        onResize(newColSpan);
+      }
+    } else if (direction === 'vertical') {
+      const deltaY = e.clientY - startY;
+      const heightDelta = Math.round(deltaY / 10); // 10px increments
+      const newHeight = Math.max(20, startValue + heightDelta); // Minimum 20px height
+      
+      onResize(newHeight);
     }
-  }, [currentColSpan, maxColSpan, minColSpan, onResize]);
+  }, [currentColSpan, maxColSpan, minColSpan, onResize, direction]);
 
   const handleMouseUp = useCallback(() => {
     console.log('🛑 Mouse up - ending drag');
@@ -95,38 +91,43 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  const isHorizontal = direction === 'horizontal';
+  const cursorClass = isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize';
+  const positionClass = isHorizontal 
+    ? '-right-1 top-1/2 -translate-y-1/2 w-2 h-8' 
+    : '-bottom-1 left-1/2 -translate-x-1/2 h-2 w-8';
+
   return (
     <div
-      className={`absolute -right-1 top-1/2 -translate-y-1/2 w-4 h-16 cursor-col-resize transition-all duration-200 opacity-100 border-2 border-red-500`}
+      className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
+        isHovered || isDragging 
+          ? 'opacity-100' 
+          : 'opacity-0 group-hover:opacity-70'
+      }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={(e) => {
-        e.stopPropagation();
-        console.log('🖱️ Handle clicked (not dragged)');
-      }}
       style={{ zIndex: 9999 }}
-      title={`Resize column (${currentColSpan}/${maxColSpan}) - drag to resize`}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentColSpan}/${maxColSpan})` : ''}`}
     >
-      {/* More visible handle when dragging */}
-      <div className={`w-full h-full rounded-full flex flex-col items-center justify-center space-y-0.5 transition-colors duration-200 ${
+      {/* Modern subtle handle */}
+      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
         isDragging 
-          ? 'bg-blue-600 shadow-lg border-2 border-blue-300' 
+          ? 'bg-blue-500 shadow-lg scale-110' 
           : isHovered 
-            ? 'bg-blue-500 shadow-md' 
-            : 'bg-gray-400'
+            ? 'bg-blue-400 shadow-md' 
+            : 'bg-gray-300'
       }`}>
-        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
-        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
-        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
-        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
-        <div className="w-0.5 h-0.5 bg-white rounded-full opacity-80"></div>
+        {/* Three subtle lines for grip */}
+        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
+        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
+        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
       </div>
       
-      {/* Debug indicator when dragging */}
-      {isDragging && (
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-          {currentColSpan}/12
+      {/* Subtle indicator when dragging */}
+      {isDragging && isHorizontal && (
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg">
+          {currentColSpan}/{maxColSpan}
         </div>
       )}
     </div>
@@ -194,6 +195,7 @@ const EditableElement = ({
   style, 
   onClick, 
   canResize = false,
+  onHeightResize,
   draggable = false, 
   mode = 'edit'
 }) => {
@@ -209,7 +211,7 @@ const EditableElement = ({
 
   const content = (
     <div
-      className={`${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
       style={mode === 'edit' ? {
         border: '1px dotted rgba(200, 200, 200, 0.1)',
         borderRadius: '4px',
@@ -223,6 +225,15 @@ const EditableElement = ({
       draggable={draggable && mode === 'edit'}
     >
       {children}
+      
+      {/* Vertical resize handle for element height */}
+      {canResize && onHeightResize && mode === 'edit' && (
+        <GridResizeHandle
+          direction="vertical"
+          onResize={onHeightResize}
+          currentColSpan={0} // Not used for vertical
+        />
+      )}
     </div>
   );
 
@@ -491,6 +502,38 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Handle element height resize changes  
+  const handleHeightResize = useCallback((slotId, newHeight) => {
+    console.log('📏 handleHeightResize called:', { slotId, newHeight });
+    
+    setCartLayoutConfig(prevConfig => {
+      const updatedConfig = {
+        ...prevConfig,
+        slots: {
+          ...prevConfig?.slots,
+          [slotId]: {
+            ...prevConfig?.slots?.[slotId],
+            styles: {
+              ...prevConfig?.slots?.[slotId]?.styles,
+              minHeight: `${newHeight}px`
+            }
+          }
+        }
+      };
+
+      // Debounced auto-save
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Saving configuration after height resize...');
+        saveConfiguration(updatedConfig);
+      }, 1000);
+
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -604,6 +647,7 @@ const CartSlotsEditor = ({
                             className={finalClasses}
                             style={positioning.elementStyles || headerTitleStyling.elementStyles}
                             canResize={true}
+                            onHeightResize={(newHeight) => handleHeightResize(slotId, newHeight)}
                             draggable={true}
                           >
                             {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
@@ -634,8 +678,9 @@ const CartSlotsEditor = ({
                     onClick={handleElementClick}
                     className="bg-blue-100 p-4 text-center font-bold border-2 border-blue-300"
                     canResize={true}
+                    onHeightResize={(newHeight) => handleHeightResize('test.slot', newHeight)}
                   >
-                    TEST RESIZE SLOT (drag edges - grid & element)
+                    TEST DUAL RESIZE (drag right: width, bottom: height)
                   </EditableElement>
                 </GridColumn>
                 <div className="col-span-6 p-4 bg-gray-100 text-center text-gray-600">
