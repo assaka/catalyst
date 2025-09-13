@@ -5,7 +5,7 @@
  * - Maintainable structure
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,10 +19,254 @@ import {
   Loader2,
   Layers,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Move,
+  RotateCcw
 } from "lucide-react";
+import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+
+// Advanced resize handle for horizontal (grid column) or vertical (height) resizing
+const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const startValueRef = useRef(currentValue);
+
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    isDraggingRef.current = true;
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    startValueRef.current = currentValue;
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [currentValue, direction]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDraggingRef.current) return;
+    
+    const startX = startXRef.current;
+    const startY = startYRef.current;
+    const startValue = startValueRef.current;
+    
+    if (direction === 'horizontal') {
+      const deltaX = e.clientX - startX;
+      const sensitivity = 30; // pixels per col-span unit
+      const colSpanDelta = Math.round(deltaX / sensitivity);
+      const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
+      
+      if (newColSpan !== currentValue) {
+        onResize(newColSpan);
+      }
+    } else if (direction === 'vertical') {
+      const deltaY = e.clientY - startY;
+      const heightDelta = Math.round(deltaY / 2); // 2px increments for smoother resize
+      const newHeight = Math.max(20, startValue + heightDelta); // Minimum 20px height
+      
+      // Always call onResize for height changes since we want smooth updates
+      onResize(newHeight);
+    }
+  }, [currentValue, maxValue, minValue, onResize, direction]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    isDraggingRef.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
+
+  const isHorizontal = direction === 'horizontal';
+  const cursorClass = isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize';
+  const positionClass = isHorizontal 
+    ? '-right-1 top-1/2 -translate-y-1/2 w-2 h-8' 
+    : '-bottom-1 left-1/2 -translate-x-1/2 h-2 w-8';
+
+  return (
+    <div
+      className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
+        isHovered || isDragging 
+          ? 'opacity-100' 
+          : 'opacity-0 group-hover:opacity-70'
+      }`}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ zIndex: 9999 }}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue}/${maxValue})` : `(${currentValue}px)`}`}
+    >
+      {/* Modern subtle handle */}
+      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
+        isDragging 
+          ? 'bg-blue-500 shadow-lg scale-110' 
+          : isHovered 
+            ? 'bg-blue-400 shadow-md' 
+            : 'bg-gray-300'
+      }`}>
+        {/* Three subtle lines for grip */}
+        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
+        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
+        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
+      </div>
+      
+      {/* Subtle indicator when dragging */}
+      {isDragging && (
+        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'} bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
+          {isHorizontal ? `${currentValue}/${maxValue}` : `${currentValue}px`}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Grid column wrapper with resize handle
+const GridColumn = ({ 
+  colSpan = 12, 
+  rowSpan = 1,
+  height,
+  slotId, 
+  onGridResize,
+  onSlotHeightResize,
+  mode = 'edit', 
+  children 
+}) => {
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
+  const showVerticalHandle = onSlotHeightResize && mode === 'edit';
+  
+  // Generate the col-span class dynamically to ensure Tailwind includes it
+  const getColSpanClass = (span) => {
+    const classes = {
+      1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
+      5: 'col-span-5', 6: 'col-span-6', 7: 'col-span-7', 8: 'col-span-8',
+      9: 'col-span-9', 10: 'col-span-10', 11: 'col-span-11', 12: 'col-span-12'
+    };
+    return classes[span] || 'col-span-12';
+  };
+
+  // Generate the row-span class dynamically to ensure Tailwind includes it
+  const getRowSpanClass = (span) => {
+    const classes = {
+      1: 'row-span-1', 2: 'row-span-2', 3: 'row-span-3', 4: 'row-span-4',
+      5: 'row-span-5', 6: 'row-span-6', 7: 'row-span-7', 8: 'row-span-8',
+      9: 'row-span-9', 10: 'row-span-10', 11: 'row-span-11', 12: 'row-span-12'
+    };
+    return classes[span] || 'row-span-1';
+  };
+  
+  const colSpanClass = getColSpanClass(colSpan);
+  const rowSpanClass = getRowSpanClass(rowSpan);
+  
+  return (
+    <div 
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden' : 'overflow-hidden'} relative responsive-slot`}
+      data-grid-slot-id={slotId}
+      data-col-span={colSpan}
+      data-row-span={rowSpan}
+      style={{ 
+        backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+        height: height ? `${height}px` : undefined,
+        maxHeight: height ? `${height}px` : undefined
+      }}
+    >
+      {mode === 'edit' && (
+        <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
+          {slotId}: {colSpan}×{rowSpan}
+        </div>
+      )}
+      {children}
+      {/* Horizontal grid resize handle on the column itself */}
+      {showHorizontalHandle && (
+        <GridResizeHandle
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          currentValue={colSpan}
+          maxValue={12}
+          minValue={1}
+          direction="horizontal"
+        />
+      )}
+      {/* Vertical grid resize handle for slot height */}
+      {showVerticalHandle && (
+        <GridResizeHandle
+          onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
+          currentValue={height || 80}
+          maxValue={1000}
+          minValue={40}
+          direction="vertical"
+        />
+      )}
+    </div>
+  );
+};
+
+// Enhanced editable element with drag and element resize capabilities  
+const EditableElement = ({ 
+  slotId, 
+  children, 
+  className, 
+  style, 
+  onClick, 
+  canResize = false,
+  draggable = false, 
+  mode = 'edit'
+}) => {
+  const handleClick = useCallback((e) => {
+    // Don't handle clicks in preview mode
+    if (mode === 'preview') return;
+    
+    e.stopPropagation();
+    if (onClick) {
+      onClick(slotId, e.currentTarget);
+    }
+  }, [slotId, onClick, mode]);
+
+  const content = (
+    <div
+      className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
+      style={mode === 'edit' ? {
+        border: '1px dotted rgba(200, 200, 200, 0.1)',
+        borderRadius: '4px',
+        minHeight: '20px',
+        padding: '4px',
+        ...style
+      } : style}
+      onClick={handleClick}
+      data-slot-id={slotId}
+      data-editable={mode === 'edit'}
+      draggable={draggable && mode === 'edit'}
+    >
+      {children}
+    </div>
+  );
+
+  // Show resize wrapper only in edit mode when canResize is true
+  if (canResize && mode === 'edit') {
+    return (
+      <ResizeWrapper
+        minWidth={100}
+        minHeight={40}
+        maxWidth={600}
+        maxHeight={400}
+      >
+        {content}
+      </ResizeWrapper>
+    );
+  }
+
+  return content;
+};
 
 
 
@@ -260,21 +504,28 @@ const CartSlotsEditor = ({
                       const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
                       
                       return (
-                        <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div
-                            className={`cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 transition-all ${finalClasses}`}
+                        <GridColumn
+                          key={slotId}
+                          colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                          rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
+                          height={cartLayoutConfig?.microSlots?.[slotId]?.height}
+                          slotId={slotId}
+                          onGridResize={handleGridResize}
+                          onSlotHeightResize={handleSlotHeightResize}
+                          mode={mode}
+                        >
+                          <EditableElement
+                            slotId={slotId}
+                            mode={mode}
+                            onClick={(slotId, element) => handleElementClick(slotId, element)}
+                            className={finalClasses}
                             style={headerTitleStyling.elementStyles}
-                            onClick={(e) => handleElementClick(slotId, e.currentTarget)}
-                            data-slot-id={slotId}
+                            canResize={true}
+                            draggable={true}
                           >
                             {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
-                          </div>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              {slotId}
-                            </div>
-                          )}
-                        </div>
+                          </EditableElement>
+                        </GridColumn>
                       );
                     }
                     return null;
