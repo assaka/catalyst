@@ -206,7 +206,9 @@ const GridColumn = ({
       
       {/* Content area with padding */}
       <div className="p-2 relative" style={{ zIndex: 2 }}>
-      {children}
+        {children}
+      </div>
+      
       {/* Horizontal grid resize handle on the column itself */}
       {showHorizontalHandle && (
         <GridResizeHandle
