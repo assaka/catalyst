@@ -392,17 +392,6 @@ const EditableElement = ({
       draggable={draggable && mode === 'edit'}
     >
       {children}
-      
-      {/* Vertical resize handle for element height */}
-      {canResize && onHeightResize && mode === 'edit' && (
-        <GridResizeHandle
-          direction="vertical"
-          onResize={(newHeight) => onHeightResize(slotId, newHeight)}
-          currentValue={parseInt(style?.minHeight) || 50}
-          maxValue={500}
-          minValue={20}
-        />
-      )}
     </div>
   );
 
