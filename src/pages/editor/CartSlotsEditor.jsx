@@ -606,7 +606,7 @@ const CartSlotsEditor = ({
   // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
+      isSidebarVisible && viewMode === 'withProducts' ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
     }`}>
       {/* Main Editor Area */}
       <div className="flex flex-col">
