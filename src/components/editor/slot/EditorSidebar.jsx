@@ -119,10 +119,20 @@ const EditorSidebar = ({
   // Get current alignment from parent element
   const currentAlignment = useMemo(() => {
     if (!selectedElement) return 'left';
-    
+
+    // First check if we have slotConfig with parentClassName
+    if (slotConfig && slotConfig.parentClassName) {
+      const alignment = getCurrentAlign(slotConfig.parentClassName, true);
+      if (alignment !== 'left') { // Only use config if it has explicit alignment
+        console.log('🎯 Using alignment from slotConfig:', alignment, slotConfig.parentClassName);
+        return alignment;
+      }
+    }
+
+    // Fallback to DOM detection for newly created elements
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
     let targetElement;
-    
+
     if (elementSlotId?.includes('.button')) {
       // For button slots, check the outer grid container
       targetElement = selectedElement.closest('.button-slot-container');
@@ -139,13 +149,14 @@ const EditorSidebar = ({
         }
       }
     }
-    
+
     if (!targetElement) return 'left';
-    
+
     const parentClassName = targetElement.className || '';
     const alignment = getCurrentAlign(parentClassName, true);
+    console.log('🎯 Using alignment from DOM:', alignment, parentClassName);
     return alignment;
-  }, [selectedElement, alignmentUpdate]);
+  }, [selectedElement, alignmentUpdate, slotConfig]);
   
   // Note: Save manager callback is handled by the parent CartSlotsEditor
   // EditorSidebar just records changes, parent handles the actual saving

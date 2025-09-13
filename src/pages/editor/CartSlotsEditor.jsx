@@ -714,33 +714,60 @@ const CartSlotsEditor = ({
   // Handle class changes from EditorSidebar for hierarchical slots
   const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false) => {
     console.log('🎨 handleClassChange called:', { slotId, className, styles, isAlignmentChange });
-    
+
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
-      
+
       if (updatedSlots[slotId]) {
         // Merge existing styles with new styles
         const existingStyles = updatedSlots[slotId].styles || {};
         const mergedStyles = { ...existingStyles, ...styles };
-        
-        updatedSlots[slotId] = {
-          ...updatedSlots[slotId],
-          className: className,
-          styles: mergedStyles,
-          metadata: {
-            ...updatedSlots[slotId].metadata,
-            lastModified: new Date().toISOString()
-          }
-        };
-        
-        console.log('✅ Updated slot configuration:', {
-          slotId,
-          className,
-          styles: mergedStyles,
-          isAlignmentChange
-        });
+
+        if (isAlignmentChange) {
+          // For alignment changes, split classes between className and parentClassName
+          const alignmentClasses = ['text-left', 'text-center', 'text-right'];
+          const allClasses = className.split(' ').filter(Boolean);
+
+          const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
+          const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+
+          updatedSlots[slotId] = {
+            ...updatedSlots[slotId],
+            className: elementClassList.join(' '),
+            parentClassName: alignmentClassList.join(' '),
+            styles: mergedStyles,
+            metadata: {
+              ...updatedSlots[slotId].metadata,
+              lastModified: new Date().toISOString()
+            }
+          };
+
+          console.log('✅ Updated slot configuration (alignment):', {
+            slotId,
+            elementClassName: elementClassList.join(' '),
+            parentClassName: alignmentClassList.join(' '),
+            styles: mergedStyles
+          });
+        } else {
+          // For non-alignment changes, update className normally
+          updatedSlots[slotId] = {
+            ...updatedSlots[slotId],
+            className: className,
+            styles: mergedStyles,
+            metadata: {
+              ...updatedSlots[slotId].metadata,
+              lastModified: new Date().toISOString()
+            }
+          };
+
+          console.log('✅ Updated slot configuration (regular):', {
+            slotId,
+            className,
+            styles: mergedStyles
+          });
+        }
       }
-      
+
       const updatedConfig = {
         ...prevConfig,
         slots: updatedSlots
