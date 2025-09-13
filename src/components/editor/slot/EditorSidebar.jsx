@@ -417,6 +417,33 @@ const EditorSidebar = ({
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
     if (!elementSlotId) return;
     
+    // Preserve existing inline styles and Tailwind color classes on the selected element before alignment change
+    const currentInlineStyles = {};
+    const currentColorClasses = [];
+    
+    // Preserve inline styles
+    if (selectedElement.style) {
+      for (let i = 0; i < selectedElement.style.length; i++) {
+        const styleProp = selectedElement.style[i];
+        const styleValue = selectedElement.style.getPropertyValue(styleProp);
+        if (styleValue && styleValue.trim() !== '') {
+          currentInlineStyles[styleProp] = styleValue;
+        }
+      }
+    }
+    
+    // Preserve Tailwind color classes (text-white, text-black, text-blue-200, etc.)
+    const currentClasses = selectedElement.className.split(' ').filter(Boolean);
+    currentClasses.forEach(cls => {
+      if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
+        // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
+        const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
+        if (isColorClass) {
+          currentColorClasses.push(cls);
+        }
+      }
+    });
+    
     // Find the correct target element for alignment classes
     let targetElement;
     if (elementSlotId.includes('.button')) {
@@ -445,9 +472,36 @@ const EditorSidebar = ({
       newClasses.push(`text-${value}`);
       targetElement.className = newClasses.join(' ');
       
-      // Save immediately using parent callback
+      // Restore preserved inline styles on the selected element
+      Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
+        selectedElement.style.setProperty(styleProp, styleValue);
+      });
+      
+      // Restore preserved Tailwind color classes on the selected element
+      if (currentColorClasses.length > 0) {
+        const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+        // Remove any existing color classes to avoid conflicts
+        const cleanClasses = elementClasses.filter(cls => {
+          const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
+          return !isColorClass;
+        });
+        // Add back the preserved color classes
+        selectedElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+      }
+      
+      // Update local state with preserved styles
+      setElementProperties(prev => ({
+        ...prev,
+        className: selectedElement.className,
+        styles: {
+          ...prev.styles,
+          ...currentInlineStyles
+        }
+      }));
+      
+      // Save immediately using parent callback with preserved styles
       if (onInlineClassChange) {
-        onInlineClassChange(elementSlotId, targetElement.className, {}, true);
+        onInlineClassChange(elementSlotId, selectedElement.className, currentInlineStyles, true);
       }
     }
     
@@ -471,8 +525,11 @@ const EditorSidebar = ({
     const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle'];
     
     if (classBasedProperties.includes(property)) {
-      // Preserve existing inline styles before class changes
+      // Preserve existing inline styles and Tailwind color classes before class changes
       const currentInlineStyles = {};
+      const currentColorClasses = [];
+      
+      // Preserve inline styles
       if (selectedElement.style) {
         for (let i = 0; i < selectedElement.style.length; i++) {
           const styleProp = selectedElement.style[i];
@@ -483,6 +540,18 @@ const EditorSidebar = ({
         }
       }
       
+      // Preserve Tailwind color classes (text-white, text-black, text-blue-200, etc.)
+      const currentClasses = selectedElement.className.split(' ').filter(Boolean);
+      currentClasses.forEach(cls => {
+        if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
+          // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
+          const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
+          if (isColorClass) {
+            currentColorClasses.push(cls);
+          }
+        }
+      });
+      
       // Handle class-based properties (Tailwind) - apply immediately
       const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
@@ -490,6 +559,18 @@ const EditorSidebar = ({
         Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
           selectedElement.style.setProperty(styleProp, styleValue);
         });
+        
+        // Restore preserved Tailwind color classes after class change
+        if (currentColorClasses.length > 0) {
+          const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+          // Remove any existing color classes to avoid conflicts
+          const cleanClasses = elementClasses.filter(cls => {
+            const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
+            return !isColorClass;
+          });
+          // Add back the preserved color classes
+          selectedElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+        }
         
         // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {

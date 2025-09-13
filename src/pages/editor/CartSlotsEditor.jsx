@@ -100,6 +100,36 @@ const GridResizeHandle = ({ onResize, currentColSpan, maxColSpan = 12, minColSpa
   );
 };
 
+// Grid column wrapper with resize handle
+const GridColumn = ({ 
+  colSpan = 12, 
+  slotId, 
+  onGridResize, 
+  mode = 'edit', 
+  className = '',
+  children 
+}) => {
+  const showHandle = onGridResize && mode === 'edit' && colSpan;
+  
+  return (
+    <div 
+      className={`group col-span-${colSpan} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${className} relative`}
+      data-grid-slot-id={slotId}
+    >
+      {children}
+      {/* Grid resize handle on the column itself */}
+      {showHandle && (
+        <GridResizeHandle
+          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          currentColSpan={colSpan}
+          maxColSpan={12}
+          minColSpan={1}
+        />
+      )}
+    </div>
+  );
+};
+
 // Enhanced editable element with resize and drag capabilities
 const EditableElement = ({ 
   slotId, 
