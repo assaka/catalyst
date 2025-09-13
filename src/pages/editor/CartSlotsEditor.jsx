@@ -96,7 +96,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
   return (
     <div
       className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
-        isHovered || isDragging 
+        isHovered || isDragging || parentHovered
           ? 'opacity-100' 
           : 'opacity-0'
       }`}
