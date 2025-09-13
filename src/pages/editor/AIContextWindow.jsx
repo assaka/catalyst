@@ -614,7 +614,9 @@ export default ExampleComponent;`;
 
   // Handle preview mode changes - simplified
   const handlePreviewModeChange = useCallback(async (mode) => {
-    setPreviewMode(mode);
+    // Don't set preview mode here as it's already set by the caller
+    // This was causing duplicate state updates and React error #130
+    console.log('Preview mode changed to:', mode);
   }, []);
 
 
