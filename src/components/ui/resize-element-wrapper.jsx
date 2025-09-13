@@ -207,21 +207,15 @@ const ResizeWrapper = ({
         className: cn(
           children.props.className,
           "resize-none select-none",
-          isResizing && "cursor-se-resize",
-          // Add class for forced sizing when needed
-          size.width !== 'auto' && size.widthUnit !== 'auto' && "resize-wrapper-sized"
+          isResizing && "cursor-se-resize"
         ),
         style: {
           ...children.props.style,
-          ...(size.width !== 'auto' && size.widthUnit !== 'auto' && { 
-            width: `${size.width}${size.widthUnit || 'px'}`,
-            minWidth: `${size.width}${size.widthUnit || 'px'}`,
-            maxWidth: `${size.width}${size.widthUnit || 'px'}`
-          }),
+          // Don't set width on child since it's set on wrapper
           ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
-          maxWidth: size.width === 'auto' ? '100%' : undefined,
+          width: '100%', // Child takes full width of wrapper
           boxSizing: 'border-box',
-          display: 'inline-block',
+          display: 'block',
           border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
           borderRadius: '4px',
           transition: 'border-color 0.2s ease-in-out',

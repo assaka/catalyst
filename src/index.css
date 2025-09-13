@@ -156,10 +156,3 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
-
-/* ResizeWrapper forced sizing for elements that resist width changes */
-.resize-wrapper-sized {
-  width: inherit !important;
-  min-width: inherit !important;
-  max-width: inherit !important;
-}
