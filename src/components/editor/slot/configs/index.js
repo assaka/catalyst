@@ -18,10 +18,10 @@ export function getPageConfig(pageType) {
   return PAGE_CONFIGS[pageType] || PAGE_CONFIGS.homepage;
 }
 
-// Helper function to get default slots for a page
+// Helper function to get hierarchical slots for a page
 export function getDefaultSlots(pageType) {
   const config = getPageConfig(pageType);
-  return config.defaultSlots || [];
+  return config.slots || {};
 }
 
 // Helper function to get CMS block positions for a page
@@ -30,26 +30,29 @@ export function getCmsBlocks(pageType) {
   return config.cmsBlocks || [];
 }
 
-// Helper function to validate slot configuration
+// Helper function to validate hierarchical slot configuration
 export function validateSlotConfig(pageType, slotConfig) {
   const pageConfig = getPageConfig(pageType);
-  const validSlots = Object.keys(pageConfig.slots);
+  const validSlots = Object.keys(pageConfig.slots || {});
   
-  // Filter out invalid slots
-  const validatedSlots = slotConfig.majorSlots?.filter(slot => 
-    validSlots.includes(slot)
-  ) || pageConfig.defaultSlots;
+  // Validate that all slots in config exist in page definition
+  const validatedSlots = {};
+  Object.keys(slotConfig.slots || {}).forEach(slotId => {
+    if (validSlots.includes(slotId)) {
+      validatedSlots[slotId] = slotConfig.slots[slotId];
+    }
+  });
   
   return {
     ...slotConfig,
-    majorSlots: validatedSlots
+    slots: validatedSlots
   };
 }
 
-// Helper function to get micro-slot definitions for a page
-export function getMicroSlotDefinitions(pageType) {
+// Helper function to get slot type definitions for a page (replaces microSlotDefinitions)
+export function getSlotDefinitions(pageType) {
   const config = getPageConfig(pageType);
-  return config.microSlotDefinitions || {};
+  return config.slotDefinitions || {};
 }
 
 // Export individual configs for direct import

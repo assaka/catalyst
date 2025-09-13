@@ -1211,10 +1211,23 @@ export default ExampleComponent;`;
                               const isCartSlot = selectedFile.name.toLowerCase().includes('cart');
                               
                               if (isCartSlot) {
+                                const handleSave = async (configToSave) => {
+                                  try {
+                                    console.log('💾 Mobile: Saving cart configuration:', configToSave);
+                                    const response = await slotConfigurationService.saveConfiguration('cart', configToSave);
+                                    console.log('✅ Mobile: Configuration saved successfully:', response);
+                                    return response;
+                                  } catch (error) {
+                                    console.error('❌ Mobile: Failed to save configuration:', error);
+                                    throw error;
+                                  }
+                                };
+                                
                                 return (
                                   <CartSlotsEditor
                                     mode="edit"
                                     viewMode="empty"
+                                    onSave={handleSave}
                                   />
                                 );
                               } else {
