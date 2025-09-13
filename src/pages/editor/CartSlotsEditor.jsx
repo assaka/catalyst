@@ -330,7 +330,7 @@ const HierarchicalSlotRenderer = ({
           {slot.type === 'text' && (
             <span 
               dangerouslySetInnerHTML={{ 
-                __html: slot.content || `Text: ${slot.id}` 
+                __html: String(slot.content || `Text: ${slot.id}`)
               }}
             />
           )}
@@ -339,7 +339,7 @@ const HierarchicalSlotRenderer = ({
               className={slot.className} 
               style={slot.styles}
               dangerouslySetInnerHTML={{ 
-                __html: slot.content || `Button: ${slot.id}` 
+                __html: String(slot.content || `Button: ${slot.id}`)
               }}
             />
           )}
@@ -695,7 +695,7 @@ const CartSlotsEditor = ({
                   onElementClick={handleElementClick}
                   onGridResize={handleGridResize}
                   onSlotHeightResize={handleSlotHeightResize}
-                  selectedElementId={selectedElement?.getAttribute('data-slot-id') || null}
+                  selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
                 />
               )}
             </div>
@@ -711,8 +711,8 @@ const CartSlotsEditor = ({
       {mode === 'edit' && isSidebarVisible && selectedElement && (
         <EditorSidebar
           selectedElement={selectedElement}
-          slotId={selectedElement.getAttribute('data-slot-id')}
-          slotConfig={cartLayoutConfig?.slots?.[selectedElement.getAttribute('data-slot-id')]}
+          slotId={selectedElement?.getAttribute?.('data-slot-id') || null}
+          slotConfig={cartLayoutConfig?.slots?.[selectedElement?.getAttribute?.('data-slot-id')]}
           onTextChange={handleTextChange}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}
