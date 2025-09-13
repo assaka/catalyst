@@ -363,7 +363,6 @@ const CartSlotsEditor = ({
         const initialConfig = {
           page_name: cartConfig.page_name,
           slot_type: cartConfig.slot_type,
-          microSlots: { ...cartConfig.microSlots },
           slots: { ...cartConfig.slots },
           metadata: {
             ...cartConfig.metadata,
@@ -372,7 +371,8 @@ const CartSlotsEditor = ({
           }
         };
 
-        console.log('📦 Initialized cart configuration with view mode support');
+        console.log('📦 Initialized cart configuration with hierarchical structure:', initialConfig);
+        console.log('🔍 Available slots:', Object.keys(initialConfig.slots));
         setCartLayoutConfig(initialConfig);
       } finally {
         setIsLoading(false);
@@ -509,7 +509,6 @@ const CartSlotsEditor = ({
     
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
-      const updatedMicroSlots = { ...prevConfig?.microSlots };
       
       if (updatedSlots[slotId]) {
         // Update hierarchical slot colSpan
@@ -519,18 +518,9 @@ const CartSlotsEditor = ({
         };
       }
       
-      // Also update microSlots if they exist for backward compatibility
-      if (updatedMicroSlots[slotId]) {
-        updatedMicroSlots[slotId] = {
-          ...updatedMicroSlots[slotId],
-          col: newColSpan
-        };
-      }
-      
       const updatedConfig = {
         ...prevConfig,
-        slots: updatedSlots,
-        microSlots: updatedMicroSlots
+        slots: updatedSlots
       };
 
       console.log('✅ Updated slot:', updatedConfig.slots[slotId]);
@@ -554,7 +544,6 @@ const CartSlotsEditor = ({
     
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
-      const updatedMicroSlots = { ...prevConfig?.microSlots };
       
       if (updatedSlots[slotId]) {
         // Calculate row span based on height (rough approximation: 40px per row)
@@ -572,19 +561,9 @@ const CartSlotsEditor = ({
         };
       }
       
-      // Also update microSlots if they exist
-      if (updatedMicroSlots[slotId]) {
-        updatedMicroSlots[slotId] = {
-          ...updatedMicroSlots[slotId],
-          height: newHeight,
-          row: Math.max(1, Math.round(newHeight / 40))
-        };
-      }
-      
       const updatedConfig = {
         ...prevConfig,
-        slots: updatedSlots,
-        microSlots: updatedMicroSlots
+        slots: updatedSlots
       };
 
       console.log('✅ Updated slot with height:', updatedConfig.slots[slotId]);
