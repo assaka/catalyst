@@ -275,13 +275,16 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
 const GridColumn = ({ 
   colSpan = 12, 
   slotId, 
-  onGridResize, 
+  onGridResize,
+  onHeightResize,
+  currentHeight = 'auto',
   mode = 'edit', 
   parentClassName = '',  // For grid alignment classes
   className = '',        // For element classes (backward compatibility)
   children 
 }) => {
-  const showHandle = onGridResize && mode === 'edit' && colSpan;
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
+  const showVerticalHandle = onHeightResize && mode === 'edit';
   
   // Generate the col-span class dynamically to ensure Tailwind includes it
   const getColSpanClass = (span) => {
@@ -296,14 +299,17 @@ const GridColumn = ({
   const colSpanClass = getColSpanClass(colSpan);
   
   // Debug logging
-  console.log(`GridColumn ${slotId}:`, { colSpan, colSpanClass, showHandle });
+  console.log(`GridColumn ${slotId}:`, { colSpan, colSpanClass, showHorizontalHandle, showVerticalHandle });
   
   return (
     <div 
       className={`group ${colSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''} ${parentClassName} ${className} relative`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
-      style={{ backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}
+      style={{ 
+        backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+        height: currentHeight !== 'auto' ? `${currentHeight}px` : 'auto'
+      }}
     >
       {mode === 'edit' && (
         <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
