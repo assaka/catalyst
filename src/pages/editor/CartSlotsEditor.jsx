@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
-import EditorWrapper from '@/components/editor/EditorWrapper';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { SlotManager } from '@/utils/slotUtils';
 
@@ -145,6 +144,7 @@ const GridColumn = ({
   mode = 'edit', 
   children 
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   
@@ -173,10 +173,18 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-transparent rounded-md p-2 overflow-hidden hover:border-blue-400' : 'overflow-hidden'} relative responsive-slot`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${
+        mode === 'edit' 
+          ? `border border-dashed rounded-md p-2 overflow-hidden ${
+              isHovered ? 'border-blue-400' : 'border-transparent'
+            }` 
+          : 'overflow-hidden'
+      } relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
+      onMouseEnter={() => mode === 'edit' && setIsHovered(true)}
+      onMouseLeave={() => mode === 'edit' && setIsHovered(false)}
       style={{ 
         height: height ? `${height}px` : undefined,
         maxHeight: height ? `${height}px` : undefined
