@@ -328,9 +328,20 @@ const CartSlotsEditor = ({
 
   const getSlotPositioning = useCallback((slotId) => {
     const slotConfig = cartLayoutConfig?.slots?.[slotId];
+    const className = slotConfig?.className || '';
+    
+    // Separate alignment classes (for parent/grid) from other classes (for element)
+    const classes = className.split(' ').filter(Boolean);
+    const alignmentClasses = classes.filter(cls => 
+      cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right')
+    );
+    const elementClasses = classes.filter(cls => 
+      !cls.startsWith('text-left') && !cls.startsWith('text-center') && !cls.startsWith('text-right')
+    );
+    
     return {
-      gridClasses: slotConfig?.className || '',
-      elementClasses: slotConfig?.className || '',
+      gridClasses: alignmentClasses.join(' '),
+      elementClasses: elementClasses.join(' '),
       elementStyles: slotConfig?.styles || {}
     };
   }, [cartLayoutConfig]);
@@ -511,24 +522,29 @@ const CartSlotsEditor = ({
                     if (slotId === 'header.title') {
                       const headerTitleStyling = getMicroSlotStyling('header.title');
                       const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                      const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
+                      const finalClasses = positioning.elementClasses || headerTitleStyling.elementClasses || defaultClasses;
                       
                       return (
-                        <div key={slotId} className={`col-span-${cartLayoutConfig?.microSlots?.[slotId]?.col || 12} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
+                        <GridColumn
+                          key={slotId}
+                          colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
+                          slotId={slotId}
+                          onGridResize={handleGridResize}
+                          mode={mode}
+                          className={positioning.gridClasses}
+                        >
                           <EditableElement
                             slotId={slotId}
                             mode={mode}
                             onClick={(e) => handleElementClick(slotId, e.currentTarget)}
                             className={finalClasses}
-                            style={headerTitleStyling.elementStyles}
+                            style={positioning.elementStyles || headerTitleStyling.elementStyles}
                             canResize={true}
                             draggable={true}
-                            gridColSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                            onGridResize={handleGridResize}
                           >
                             {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
                           </EditableElement>
-                        </div>
+                        </GridColumn>
                       );
                     }
                     
@@ -591,8 +607,9 @@ const CartSlotsEditor = ({
                         
                         if (slotId === 'emptyCart.title') {
                           const titleStyling = getMicroSlotStyling('emptyCart.title');
+                          const positioning = getSlotPositioning(slotId);
                           const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
-                          const finalClasses = titleStyling.elementClasses || defaultClasses;
+                          const finalClasses = positioning.elementClasses || titleStyling.elementClasses || defaultClasses;
                           
                           return (
                             <GridColumn
@@ -601,13 +618,14 @@ const CartSlotsEditor = ({
                               slotId={slotId}
                               onGridResize={handleGridResize}
                               mode={mode}
+                              className={positioning.gridClasses}
                             >
                               <EditableElement
                                 slotId={slotId}
                                 mode={mode}
                                 onClick={handleElementClick}
                                 className={finalClasses}
-                                style={titleStyling.elementStyles}
+                                style={positioning.elementStyles || titleStyling.elementStyles}
                                 canResize={true}
                                 draggable={true}
                               >
