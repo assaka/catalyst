@@ -787,12 +787,15 @@ const EditorSidebar = ({
                       <Input
                         id="width"
                         type="number"
-                        value={elementProperties.width}
-                        onChange={(e) => handlePropertyChange('width', e.target.value)}
+                        value={parseInt(elementProperties.styles?.width) || 100}
+                        onChange={(e) => handlePropertyChange('width', `${e.target.value}%`)}
                         className="text-xs h-7"
-                        placeholder="Auto"
+                        placeholder="100"
+                        min="5"
+                        max="100"
+                        step="5"
                       />
-                      <span className="ml-1 text-xs text-gray-500">px</span>
+                      <span className="ml-1 text-xs text-gray-500">%</span>
                     </div>
                   </div>
                   <div>
@@ -801,28 +804,58 @@ const EditorSidebar = ({
                       <Input
                         id="height"
                         type="number"
-                        value={elementProperties.height}
-                        onChange={(e) => handlePropertyChange('height', e.target.value)}
+                        value={parseInt(elementProperties.styles?.minHeight) || 40}
+                        onChange={(e) => handlePropertyChange('minHeight', `${e.target.value}px`)}
                         className="text-xs h-7"
                         placeholder="Auto"
+                        min="20"
+                        max="500"
+                        step="10"
                       />
                       <span className="ml-1 text-xs text-gray-500">px</span>
                     </div>
                   </div>
                 </div>
                 
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Quick Width</Label>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '25%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      25%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '50%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      50%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '75%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      75%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePropertyChange('width', '100%')}
+                      className="h-7 px-2 text-xs"
+                    >
+                      100%
+                    </Button>
+                  </div>
+                </div>
+                
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      handlePropertyChange('width', elementProperties.width + 10);
-                    }}
-                    className="h-7 px-2 text-xs"
-                  >
-                    <Maximize2 className="w-3 h-3 mr-1" />
-                    Resize
-                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -832,7 +865,19 @@ const EditorSidebar = ({
                     }}
                     className="h-7 px-2 text-xs"
                   >
-                    Auto
+                    Auto Size
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handlePropertyChange('width', '100%');
+                      handlePropertyChange('maxWidth', '100%');
+                    }}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <Maximize2 className="w-3 h-3 mr-1" />
+                    Fill
                   </Button>
                 </div>
               </div>

@@ -34,130 +34,26 @@ import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Hierarchical Slot System Types
+// Simple Slot Types
 export const SlotTypes = {
-  CONTAINER: 'container',    // Can contain other slots
   TEXT: 'text',              // Text content
   BUTTON: 'button',          // Button element
   IMAGE: 'image',            // Image element
   INPUT: 'input',            // Input field
-  GRID: 'grid',              // Grid layout container
-  FLEX: 'flex',              // Flex layout container
 };
 
-// Create hierarchical slot
-export const createHierarchicalSlot = (id, type = SlotTypes.TEXT, config = {}) => {
+// Create simple flat slot
+export const createSlot = (id, type = SlotTypes.TEXT, config = {}) => {
   return {
     id,
     type,
     content: config.content || '',
     className: config.className || '',
     styles: config.styles || {},
-    
-    // Hierarchical properties
-    parentId: config.parentId || null,
-    children: config.children || [],
-    
-    // Layout properties for containers
-    layout: config.layout || (type === SlotTypes.GRID ? 'grid' : type === SlotTypes.FLEX ? 'flex' : 'block'),
-    gridCols: config.gridCols || 12,  // For grid containers
-    gap: config.gap || 2,              // Gap between children
-    
-    // Relative sizing
-    colSpan: config.colSpan || 12,     // Relative to parent's grid
-    rowSpan: config.rowSpan || 1,      // For grid layouts
-    
-    // Constraints
-    allowedChildren: config.allowedChildren || Object.values(SlotTypes), // Which types can be nested
-    maxDepth: config.maxDepth || 5,    // Maximum nesting depth
-    minChildren: config.minChildren || 0,
-    maxChildren: config.maxChildren || null,
-    
-    // Metadata
-    locked: config.locked || false,     // Prevent modifications
-    collapsed: config.collapsed || false, // For UI tree view
     metadata: config.metadata || {}
   };
 };
 
-// Convert existing flat slots to hierarchical structure
-export const convertToHierarchical = (flatSlots = {}, microSlots = {}) => {
-  const hierarchicalSlots = {};
-  
-  // Create containers for grouped slots based on naming patterns
-  const groups = {};
-  Object.keys(flatSlots).forEach(slotId => {
-    const parts = slotId.split('.');
-    if (parts.length > 1) {
-      const groupName = parts[0];
-      if (!groups[groupName]) {
-        groups[groupName] = [];
-      }
-      groups[groupName].push(slotId);
-    } else {
-      // Root level slots
-      const slot = flatSlots[slotId];
-      let slotType = SlotTypes.TEXT;
-      
-      if (slotId.includes('button') || slot.content?.includes('<button')) {
-        slotType = SlotTypes.BUTTON;
-      } else if (slotId.includes('input') || slot.content?.includes('<input')) {
-        slotType = SlotTypes.INPUT;
-      } else if (slotId.includes('image') || slot.content?.includes('<img')) {
-        slotType = SlotTypes.IMAGE;
-      }
-      
-      hierarchicalSlots[slotId] = createHierarchicalSlot(slotId, slotType, {
-        content: slot.content || '',
-        className: slot.className || '',
-        styles: slot.styles || {},
-        colSpan: microSlots[slotId]?.col || 12
-      });
-    }
-  });
-  
-  // Create group containers
-  Object.entries(groups).forEach(([groupName, slotIds]) => {
-    const containerId = `${groupName}_container`;
-    let containerType = SlotTypes.CONTAINER;
-    
-    if (groupName === 'coupon' || groupName === 'orderSummary') {
-      containerType = SlotTypes.GRID;
-    } else if (groupName === 'header' || groupName === 'footer') {
-      containerType = SlotTypes.FLEX;
-    }
-    
-    hierarchicalSlots[containerId] = createHierarchicalSlot(containerId, containerType, {
-      className: `${groupName}-container`,
-      children: slotIds,
-      colSpan: 12
-    });
-    
-    // Convert child slots
-    slotIds.forEach(slotId => {
-      const slot = flatSlots[slotId];
-      let slotType = SlotTypes.TEXT;
-      
-      if (slotId.includes('button') || slot.content?.includes('<button')) {
-        slotType = SlotTypes.BUTTON;
-      } else if (slotId.includes('input') || slot.content?.includes('<input')) {
-        slotType = SlotTypes.INPUT;
-      } else if (slotId.includes('image') || slot.content?.includes('<img')) {
-        slotType = SlotTypes.IMAGE;
-      }
-      
-      hierarchicalSlots[slotId] = createHierarchicalSlot(slotId, slotType, {
-        content: slot.content || '',
-        className: slot.className || '',
-        styles: slot.styles || {},
-        parentId: containerId,
-        colSpan: microSlots[slotId]?.col || 12
-      });
-    });
-  });
-  
-  return hierarchicalSlots;
-};
 
 // Modern resize handle for horizontal (grid column) or vertical (height) resizing
 const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
@@ -315,7 +211,7 @@ const GridColumn = ({
   
   return (
     <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden' : 'overflow-hidden'} ${parentClassName} ${className} relative`}
+      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden' : 'overflow-hidden'} ${parentClassName} ${className} relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
@@ -648,12 +544,19 @@ const CartSlotsEditor = ({
           if (currentSlot?.styles) {
             const updatedStyles = { ...currentSlot.styles };
             
-            // Scale width proportionally if it exists
+            // Convert fixed width to responsive percentage or remove it for natural responsiveness
             if (currentSlot.styles.width) {
-              const currentWidth = parseInt(currentSlot.styles.width);
-              const newWidth = Math.max(20, Math.round(currentWidth * scalingRatio));
-              updatedStyles.width = `${newWidth}px`;
-              console.log(`📏 Scaling element ${elementSlotId} width: ${currentWidth}px → ${newWidth}px (${scalingRatio.toFixed(2)}x)`);
+              // For smaller slots, remove fixed width to allow natural responsiveness
+              if (newColSpan <= 3) {
+                delete updatedStyles.width;
+                updatedStyles.maxWidth = '100%';
+                console.log(`🔄 Removing fixed width from ${elementSlotId} for natural responsiveness (slot width: ${newColSpan} cols)`);
+              } else {
+                // For larger slots, use percentage-based width
+                const widthPercentage = Math.min(100, Math.max(20, 80 / newColSpan * 12)); // Scale percentage based on col-span
+                updatedStyles.width = `${Math.round(widthPercentage)}%`;
+                console.log(`📏 Converting ${elementSlotId} to responsive width: ${widthPercentage.toFixed(1)}% (${newColSpan} cols)`);
+              }
             }
             
             // Scale font-size proportionally if it exists
@@ -724,12 +627,20 @@ const CartSlotsEditor = ({
           if (currentSlot?.styles) {
             const updatedStyles = { ...currentSlot.styles };
             
-            // Scale height proportionally if it exists
+            // Convert fixed height to responsive or constrain for slot fit
             if (currentSlot.styles.height) {
-              const currentElementHeight = parseInt(currentSlot.styles.height);
-              const newElementHeight = Math.max(16, Math.round(currentElementHeight * scalingRatio));
-              updatedStyles.height = `${newElementHeight}px`;
-              console.log(`📏 Scaling element ${elementSlotId} height: ${currentElementHeight}px → ${newElementHeight}px (${scalingRatio.toFixed(2)}x)`);
+              // For very small slots, remove fixed height for natural flow
+              if (newHeight <= 60) {
+                delete updatedStyles.height;
+                updatedStyles.maxHeight = `${Math.max(20, newHeight - 8)}px`;
+                console.log(`🔄 Removing fixed height from ${elementSlotId} for natural flow (slot height: ${newHeight}px)`);
+              } else {
+                // For larger slots, use constrained height that fits within slot
+                const maxElementHeight = Math.max(20, newHeight - 16);
+                updatedStyles.height = `${maxElementHeight}px`;
+                updatedStyles.maxHeight = `${maxElementHeight}px`;
+                console.log(`📏 Constraining ${elementSlotId} height to fit slot: ${maxElementHeight}px (slot: ${newHeight}px)`);
+              }
             }
             
             // Scale font-size proportionally for height changes too (for better proportion)
@@ -831,7 +742,7 @@ const CartSlotsEditor = ({
   // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible ? 'grid grid-cols-[1fr_320px]' : 'block'
+      isSidebarVisible ? 'grid grid-cols-[75%_25%]' : 'block'
     }`}>
       {/* Main Editor Area */}
       <div className="flex flex-col">
