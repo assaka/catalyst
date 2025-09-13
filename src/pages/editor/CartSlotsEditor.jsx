@@ -207,30 +207,30 @@ const GridColumn = ({
       {/* Content area with padding */}
       <div className="p-2 relative" style={{ zIndex: 2 }}>
         {children}
+        
+        {/* Horizontal grid resize handle on the column itself */}
+        {showHorizontalHandle && (
+          <GridResizeHandle
+            onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+            currentValue={colSpan}
+            maxValue={12}
+            minValue={1}
+            direction="horizontal"
+            parentHovered={isHovered}
+          />
+        )}
+        {/* Vertical grid resize handle for slot height */}
+        {showVerticalHandle && (
+          <GridResizeHandle
+            onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
+            currentValue={height || 80}
+            maxValue={1000}
+            minValue={40}
+            direction="vertical"
+            parentHovered={isHovered}
+          />
+        )}
       </div>
-      
-      {/* Horizontal grid resize handle on the column itself */}
-      {showHorizontalHandle && (
-        <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
-          currentValue={colSpan}
-          maxValue={12}
-          minValue={1}
-          direction="horizontal"
-          parentHovered={isHovered}
-        />
-      )}
-      {/* Vertical grid resize handle for slot height */}
-      {showVerticalHandle && (
-        <GridResizeHandle
-          onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
-          currentValue={height || 80}
-          maxValue={1000}
-          minValue={40}
-          direction="vertical"
-          parentHovered={isHovered}
-        />
-      )}
     </div>
   );
 };
