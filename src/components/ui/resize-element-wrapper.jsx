@@ -9,7 +9,7 @@ const ResizeWrapper = ({
   minWidth = 50,
   minHeight = 20,
   maxWidth = Infinity,
-  maxHeight = 600,
+  maxHeight = Infinity,
   onResize,
   initialWidth,
   initialHeight,
@@ -81,15 +81,17 @@ const ResizeWrapper = ({
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
-      const newWidth = Math.max(minWidth, startWidth + deltaX);
-      const newHeight = Math.max(minHeight, startHeight + deltaY);
+      // Allow full width expansion up to parent container
+      const maxAllowedWidth = parentRect ? parentRect.width - 20 : Infinity; // 20px padding
+      const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
       // Calculate percentage width based on parent container
       let widthValue = newWidth;
       let widthUnit = 'px';
       
       if (parentRect && parentRect.width > 0) {
-        const widthPercentage = Math.max(1, (newWidth / parentRect.width) * 100);
+        const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
         widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
         
@@ -134,9 +136,11 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const wrapperStyle = {
-    // Remove fixed dimensions from wrapper to let child handle its own sizing
-    width: 'fit-content',
-    height: 'fit-content',
+    // Allow wrapper to expand to full available space
+    width: 'auto',
+    height: 'auto',
+    maxWidth: '100%',
+    display: 'inline-block'
   };
 
   return (
@@ -159,7 +163,9 @@ const ResizeWrapper = ({
           ...(size.width !== 'auto' && { width: `${size.width}${size.widthUnit || 'px'}` }),
           ...(size.height !== 'auto' && size.height && { minHeight: `${size.height}${size.heightUnit || 'px'}` }),
           minWidth: size.width !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : undefined,
-          boxSizing: 'border-box'
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          display: 'block'
         }
       })}
       

@@ -255,10 +255,8 @@ const EditableElement = ({
   if (canResize && mode === 'edit') {
     return (
       <ResizeWrapper
-        minWidth={100}
-        minHeight={40}
-        maxWidth={600}
-        maxHeight={400}
+        minWidth={50}
+        minHeight={20}
       >
         {content}
       </ResizeWrapper>
