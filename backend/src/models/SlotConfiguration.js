@@ -1,5 +1,16 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
+const path = require('path');
+
+// Import hierarchical cart configuration
+let cartConfig = null;
+try {
+  const cartConfigPath = path.resolve(__dirname, '../../../src/components/editor/slot/configs/cart-config.js');
+  const cartConfigModule = require(cartConfigPath);
+  cartConfig = cartConfigModule.cartConfig || cartConfigModule.default;
+} catch (error) {
+  console.warn('Could not load cart-config.js:', error.message);
+}
 
 const SlotConfiguration = sequelize.define('SlotConfiguration', {
   id: {
@@ -404,6 +415,23 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
       }
     };
 
+    // Use hierarchical configuration from cart-config.js if available
+    if (cartConfig) {
+      console.log('📦 Backend: Using hierarchical cart configuration from cart-config.js');
+      return {
+        page_name: cartConfig.page_name || 'Cart',
+        slot_type: cartConfig.slot_type || 'cart_layout',
+        slots: cartConfig.slots || {},
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          ...cartConfig.metadata
+        }
+      };
+    }
+
+    // Fallback to legacy structure if cart-config.js couldn't be loaded
+    console.warn('⚠️ Backend: cart-config.js not available, using legacy fallback');
     return {
       page_name: 'Cart',
       slots: defaultSlots,
