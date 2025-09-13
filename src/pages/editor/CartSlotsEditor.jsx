@@ -26,6 +26,7 @@ import {
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import { SlotManager } from '@/utils/slotUtils';
 
 // Advanced resize handle for horizontal (grid column) or vertical (height) resizing
 const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
@@ -271,6 +272,73 @@ const EditableElement = ({
 
 
 
+// Component to render hierarchical slots
+const HierarchicalSlotRenderer = ({ 
+  slots, 
+  parentId = null, 
+  mode, 
+  viewMode = 'empty',
+  onElementClick, 
+  onGridResize, 
+  onSlotHeightResize 
+}) => {
+  const childSlots = SlotManager.getChildSlots(slots, parentId);
+  
+  return childSlots.map(slot => {
+    const colSpan = slot.colSpan || 12;
+    const rowSpan = slot.rowSpan || 1;
+    const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
+    
+    return (
+      <GridColumn
+        key={slot.id}
+        colSpan={colSpan}
+        rowSpan={rowSpan}
+        height={height}
+        slotId={slot.id}
+        onGridResize={onGridResize}
+        onSlotHeightResize={onSlotHeightResize}
+        mode={mode}
+      >
+        <div className={slot.parentClassName || ''}>
+          <EditableElement
+            slotId={slot.id}
+            mode={mode}
+            onClick={onElementClick}
+            className={slot.className}
+            style={slot.styles}
+            canResize={true}
+            draggable={true}
+          >
+          {slot.type === 'text' && <span>{slot.content || `Text: ${slot.id}`}</span>}
+          {slot.type === 'button' && (
+            <Button className={slot.className} style={slot.styles}>
+              {slot.content || `Button: ${slot.id}`}
+            </Button>
+          )}
+          {slot.type === 'image' && (
+            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
+          )}
+          {slot.type === 'container' && (
+            <div className="w-full h-full grid grid-cols-12 gap-2">
+              <HierarchicalSlotRenderer 
+                slots={slots}
+                parentId={slot.id}
+                mode={mode}
+                viewMode={viewMode}
+                onElementClick={onElementClick}
+                onGridResize={onGridResize}
+                onSlotHeightResize={onSlotHeightResize}
+              />
+            </div>
+          )}
+          </EditableElement>
+        </div>
+      </GridColumn>
+    );
+  });
+};
+
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
 const CartSlotsEditor = ({ 
   mode = 'edit', 
@@ -359,7 +427,9 @@ const CartSlotsEditor = ({
       slotId,
       elementType: actualElement.tagName,
       elementClasses: actualElement.className,
-      isWrapper: element !== actualElement
+      isWrapper: element !== actualElement,
+      outerHTML: actualElement.outerHTML.substring(0, 200) + '...',
+      textContent: actualElement.textContent
     });
     
     setSelectedElement(actualElement);
@@ -614,401 +684,29 @@ const CartSlotsEditor = ({
           </div>
         </div>
 
-        {/* Cart Layout - Restored with View Modes */}
+        {/* Cart Layout - Hierarchical Structure */}
         <div 
           className="bg-gray-50 cart-page"
           style={{ backgroundColor: '#f9fafb' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            
-            {/* Header Section */}
-            <div className="header-section mb-8">
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots)
-                  .filter(slotId => slotId.startsWith('header.'))
-                  .map(slotId => {
-                    if (slotId === 'header.title') {
-                      const headerTitleStyling = getSlotStyling('header.title');
-                      const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                      const finalClasses = headerTitleStyling.elementClasses || defaultClasses;
-                      
-                      return (
-                        <GridColumn
-                          key={slotId}
-                          colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                          rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                          height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                          slotId={slotId}
-                          onGridResize={handleGridResize}
-                          onSlotHeightResize={handleSlotHeightResize}
-                          mode={mode}
-                        >
-                          <EditableElement
-                            slotId={slotId}
-                            mode={mode}
-                            onClick={(slotId, element) => handleElementClick(slotId, element)}
-                            className={finalClasses}
-                            style={headerTitleStyling.elementStyles}
-                            canResize={true}
-                            draggable={true}
-                          >
-                            {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
-                          </EditableElement>
-                        </GridColumn>
-                      );
-                    }
-                    return null;
-                  })}
-              </div>
+            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              {cartLayoutConfig?.slots && (
+                <HierarchicalSlotRenderer
+                  slots={cartLayoutConfig.slots}
+                  parentId={null}
+                  mode={mode}
+                  viewMode={viewMode}
+                  onElementClick={handleElementClick}
+                  onGridResize={handleGridResize}
+                  onSlotHeightResize={handleSlotHeightResize}
+                />
+              )}
             </div>
             
             <CmsBlockRenderer position="cart_above_items" />
             
-            {/* Conditional rendering based on viewMode */}
-            {viewMode === 'empty' ? (
-              // Empty cart state
-              <div className="emptyCart-section">
-                <div className="text-center py-12">
-                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots)
-                      .filter(slotId => slotId.startsWith('emptyCart.'))
-                      .map(slotId => {
-                        if (slotId === 'emptyCart.icon') {
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                            >
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={(slotId, element) => handleElementClick(slotId, element)}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                              </EditableElement>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        if (slotId === 'emptyCart.title') {
-                          const titleStyling = getSlotStyling('emptyCart.title');
-                          const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
-                          const finalClasses = titleStyling.elementClasses || defaultClasses;
-                          
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                            >
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={(slotId, element) => handleElementClick(slotId, element)}
-                                className={finalClasses}
-                                style={titleStyling.elementStyles}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                {cartLayoutConfig.slots[slotId]?.content || "Your cart is empty"}
-                              </EditableElement>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        if (slotId === 'emptyCart.text') {
-                          const textStyling = getSlotStyling('emptyCart.text');
-                          const defaultClasses = 'text-gray-600 mb-6';
-                          const finalClasses = textStyling.elementClasses || defaultClasses;
-                          
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                            >
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={(slotId, element) => handleElementClick(slotId, element)}
-                                className={finalClasses}
-                                style={textStyling.elementStyles}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                {cartLayoutConfig.slots[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                              </EditableElement>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        if (slotId === 'emptyCart.button') {
-                          const buttonStyling = getSlotStyling('emptyCart.button');
-                          
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.slots?.[slotId]?.colSpan || cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.slots?.[slotId]?.rowSpan || cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                            >
-                              <div className="flex justify-center">
-                                <EditableElement
-                                  slotId={slotId}
-                                  mode={mode}
-                                  onClick={(slotId, element) => handleElementClick(slotId, element)}
-                                  canResize={true}
-                                  draggable={true}
-                                >
-                                  <Button 
-                                    className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                    style={buttonStyling.elementStyles}
-                                  >
-                                    {cartLayoutConfig.slots[slotId]?.content || "Continue Shopping"}
-                                  </Button>
-                                </EditableElement>
-                              </div>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        return null;
-                      })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Cart with products view
-              <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                <div className="lg:col-span-2">
-                  <Card className="bg-white">
-                    <CardContent className="px-4 divide-y divide-gray-200">
-                      {/* Sample cart items */}
-                      <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                        <div className={`${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <img 
-                            src="https://placehold.co/100x100?text=Product" 
-                            alt="Sample Product"
-                            className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('cartItem.image', e.currentTarget)}
-                            data-slot-id="cartItem.image"
-                          />
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              cartItem.image
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className={`${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2 mb-2' : ''}`}>
-                            <div
-                              className="text-lg font-semibold cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                              onClick={(e) => handleElementClick('cartItem.title', e.currentTarget)}
-                              data-slot-id="cartItem.title"
-                            >
-                              Sample Product
-                            </div>
-                            {mode === 'edit' && (
-                              <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                cartItem.title
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className={`${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2 mb-2' : ''}`}>
-                            <div
-                              className="text-gray-600 cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                              onClick={(e) => handleElementClick('cartItem.price', e.currentTarget)}
-                              data-slot-id="cartItem.price"
-                            >
-                              $29.99 each
-                            </div>
-                            {mode === 'edit' && (
-                              <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                cartItem.price
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <div className={`${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                            <div
-                              className="text-xl font-bold cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                              onClick={(e) => handleElementClick('cartItem.total', e.currentTarget)}
-                              data-slot-id="cartItem.total"
-                            >
-                              $29.99
-                            </div>
-                            {mode === 'edit' && (
-                              <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                cartItem.total
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <CmsBlockRenderer position="cart_below_items" />
-                </div>
-                
-                <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
-                  {/* Coupon Section */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div
-                            className="text-lg font-semibold mb-4 cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('coupon.title', e.currentTarget)}
-                            data-slot-id="coupon.title"
-                          >
-                            Apply Coupon
-                          </div>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              coupon.title
-                            </div>
-                          )}
-                        </div>
-                        <div className={`col-span-8 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <Input 
-                            placeholder="Enter coupon code"
-                            className="cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('coupon.input', e.currentTarget)}
-                            data-slot-id="coupon.input"
-                          />
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              coupon.input
-                            </div>
-                          )}
-                        </div>
-                        <div className={`col-span-4 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <Button
-                            className="cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('coupon.button', e.currentTarget)}
-                            data-slot-id="coupon.button"
-                          >
-                            Apply
-                          </Button>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              coupon.button
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Order Summary */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div
-                            className="text-lg font-semibold mb-4 cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('orderSummary.title', e.currentTarget)}
-                            data-slot-id="orderSummary.title"
-                          >
-                            Order Summary
-                          </div>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              orderSummary.title
-                            </div>
-                          )}
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div
-                            className="flex justify-between cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('orderSummary.subtotal', e.currentTarget)}
-                            data-slot-id="orderSummary.subtotal"
-                          >
-                            <span>Subtotal</span><span>$79.97</span>
-                          </div>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              orderSummary.subtotal
-                            </div>
-                          )}
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div
-                            className="flex justify-between cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('orderSummary.tax', e.currentTarget)}
-                            data-slot-id="orderSummary.tax"
-                          >
-                            <span>Tax</span><span>$6.40</span>
-                          </div>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              orderSummary.tax
-                            </div>
-                          )}
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div
-                            className="flex justify-between text-lg font-semibold border-t pt-4 cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                            onClick={(e) => handleElementClick('orderSummary.total', e.currentTarget)}
-                            data-slot-id="orderSummary.total"
-                          >
-                            <span>Total</span><span>$81.37</span>
-                          </div>
-                          {mode === 'edit' && (
-                            <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                              orderSummary.total
-                            </div>
-                          )}
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'relative group border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div className="border-t mt-6 pt-6">
-                            <Button 
-                              size="lg" 
-                              className="w-full bg-blue-600 hover:bg-blue-700 cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400"
-                              onClick={(e) => handleElementClick('orderSummary.checkoutButton', e.currentTarget)}
-                              data-slot-id="orderSummary.checkoutButton"
-                            >
-                              Proceed to Checkout
-                            </Button>
-                            {mode === 'edit' && (
-                              <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-                                orderSummary.checkoutButton
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
+            <CmsBlockRenderer position="cart_below_items" />
           </div>
         </div>
       </div>

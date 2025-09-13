@@ -163,7 +163,15 @@ const EditorSidebar = ({
     if (!selectedElement) return false;
     const tagName = selectedElement.tagName?.toLowerCase();
     const htmlSupportedTags = ['button', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'section', 'article'];
-    return htmlSupportedTags.includes(tagName);
+    const isSupported = htmlSupportedTags.includes(tagName);
+    
+    console.log('🔍 EditorSidebar isHtmlElement check:', {
+      tagName,
+      isSupported,
+      selectedElement: selectedElement?.outerHTML?.substring(0, 100) + '...'
+    });
+    
+    return isSupported;
   }, [selectedElement]);
 
   // Generate clean HTML without editor-specific classes and attributes
