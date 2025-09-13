@@ -277,7 +277,7 @@ const GridColumn = ({
   rowSpan = 1,
   height,
   slotId, 
-  onGridResize, 
+  onGridResize,
   onSlotHeightResize,
   mode = 'edit', 
   parentClassName = '',  // For grid alignment classes
@@ -739,6 +739,7 @@ const CartSlotsEditor = ({
       return updatedConfig;
     });
   }, [saveConfiguration]);
+
 
   if (isLoading) {
     return (
