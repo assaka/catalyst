@@ -5,12 +5,10 @@
  * - Maintainable structure
  */
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { 
   Save, 
   Settings, 
@@ -19,20 +17,12 @@ import {
   ShoppingCart,
   Package,
   Loader2,
-  Tag,
-  Plus,
-  Minus,
-  Trash2,
-  Move,
   Layers,
-  Copy,
   ChevronDown,
   ChevronRight
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
-import { cartConfig } from "@/components/editor/slot/configs/cart-config";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Hierarchical Slot Types
 export const SlotTypes = {
@@ -241,135 +231,116 @@ export const createDefaultSlots = () => {
   };
 };
 
-// Modern resize handle for horizontal (grid column) or vertical (height) resizing
-const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal' }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const startValueRef = useRef(currentValue);
 
-  const handleMouseDown = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-    isDraggingRef.current = true;
-    startXRef.current = e.clientX;
-    startYRef.current = e.clientY;
-    startValueRef.current = currentValue;
-    
-    console.log(`🎯 Starting ${direction} resize:`, { currentValue, startX: e.clientX, startY: e.clientY });
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [currentValue, direction]);
 
-  const handleMouseMove = useCallback((e) => {
-    if (!isDraggingRef.current) return;
-    
-    const startX = startXRef.current;
-    const startY = startYRef.current;
-    const startValue = startValueRef.current;
-    
-    if (direction === 'horizontal') {
-      const deltaX = e.clientX - startX;
-      const sensitivity = 30; // pixels per col-span unit
-      const colSpanDelta = Math.round(deltaX / sensitivity);
-      const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
-      
-      console.log(`🖱️ Horizontal resize:`, { deltaX, colSpanDelta, startValue, newColSpan, currentValue });
-      
-      if (newColSpan !== currentValue) {
-        onResize(newColSpan);
-      }
-    } else if (direction === 'vertical') {
-      const deltaY = e.clientY - startY;
-      const heightDelta = Math.round(deltaY / 2); // 2px increments for smoother resize
-      const newHeight = Math.max(20, startValue + heightDelta); // Minimum 20px height
-      
-      console.log(`🖱️ Vertical resize:`, { deltaY, heightDelta, startValue, newHeight });
-      
-      // Always call onResize for height changes since we want smooth updates
-      onResize(newHeight);
-    }
-  }, [currentValue, maxValue, minValue, onResize, direction]);
 
-  const handleMouseUp = useCallback(() => {
-    console.log('🛑 Mouse up - ending drag');
-    setIsDragging(false);
-    isDraggingRef.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove]);
-
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp]);
-
-  const isHorizontal = direction === 'horizontal';
-  const cursorClass = isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize';
-  const positionClass = isHorizontal 
-    ? '-right-1 top-1/2 -translate-y-1/2 w-2 h-8' 
-    : '-bottom-1 left-1/2 -translate-x-1/2 h-2 w-8';
-
-  return (
-    <div
-      className={`absolute ${positionClass} ${cursorClass} transition-all duration-200 ${
-        isHovered || isDragging 
-          ? 'opacity-100' 
-          : 'opacity-0 group-hover:opacity-70'
-      }`}
-      onMouseDown={handleMouseDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{ zIndex: 9999 }}
-      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue}/${maxValue})` : `(${currentValue}px)`}`}
-    >
-      {/* Modern subtle handle */}
-      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 transition-all duration-200 ${
-        isDragging 
-          ? 'bg-blue-500 shadow-lg scale-110' 
-          : isHovered 
-            ? 'bg-blue-400 shadow-md' 
-            : 'bg-gray-300'
-      }`}>
-        {/* Three subtle lines for grip */}
-        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
-        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
-        <div className={`${isHorizontal ? 'w-3 h-0.5' : 'w-0.5 h-3'} bg-white rounded-full opacity-70`}></div>
-      </div>
-      
-      {/* Subtle indicator when dragging */}
-      {isDragging && (
-        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'} bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
-          {isHorizontal ? `${currentValue}/${maxValue}` : `${currentValue}px`}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Grid column wrapper with resize handle
-const GridColumn = ({ 
-  colSpan = 12, 
-  rowSpan = 1,
-  height,
-  slotId, 
-  onGridResize,
-  onSlotHeightResize,
-  mode = 'edit', 
-  parentClassName = '',  // For grid alignment classes
-  className = '',        // For element classes (backward compatibility)
-  children 
+// Pure Hierarchical Slot Renderer - renders nested slots recursively
+const renderHierarchicalSlot = ({ 
+  slot, 
+  allSlots, 
+  depth = 0, 
+  parentWidth = 12, 
+  mode = 'edit',
+  onElementClick
 }) => {
-  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
-  const showVerticalHandle = onSlotHeightResize && mode === 'edit';
+  const [isExpanded, setIsExpanded] = useState(!slot.collapsed);
   
-  // Generate the col-span class dynamically to ensure Tailwind includes it
+  // Calculate actual width based on parent
+  const actualWidth = (slot.colSpan / 12) * parentWidth;
+  
+  const isContainer = [SlotTypes.CONTAINER, SlotTypes.GRID, SlotTypes.FLEX].includes(slot.type);
+  const hasChildren = slot.children && slot.children.length > 0;
+  
+  // Get children slots
+  const childSlots = hasChildren 
+    ? slot.children.map(childId => allSlots[childId]).filter(Boolean)
+    : [];
+  
+  // Render slot content based on type
+  const renderSlotContent = () => {
+    if (isContainer) {
+      return renderChildren();
+    }
+    
+    // Render content based on slot type
+    return (
+      <div className={`${slot.className}`} style={slot.styles}>
+        {renderSlotTypeContent()}
+      </div>
+    );
+  };
+  
+  // Render content based on slot type
+  const renderSlotTypeContent = () => {
+    switch (slot.type) {
+      case SlotTypes.BUTTON:
+        return (
+          <Button className={slot.className} style={slot.styles}>
+            {slot.content || 'Button'}
+          </Button>
+        );
+      case SlotTypes.INPUT:
+        return (
+          <Input 
+            placeholder={slot.content || 'Enter text...'} 
+            className={slot.className}
+            style={slot.styles}
+          />
+        );
+      case SlotTypes.IMAGE:
+        if (slot.content === 'shopping-cart-icon') {
+          return <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />;
+        }
+        return (
+          <img 
+            src={slot.content || 'https://placehold.co/200x150'} 
+            alt="Slot image"
+            className={slot.className}
+            style={slot.styles}
+          />
+        );
+      default:
+        return <div dangerouslySetInnerHTML={{ __html: slot.content || `${slot.type} content` }} />;
+    }
+  };
+  
+  // Render children for containers
+  const renderChildren = () => {
+    if (!hasChildren || !isExpanded) return null;
+    
+    const childElements = childSlots.map(childSlot => (
+      renderHierarchicalSlot({
+        slot: childSlot,
+        allSlots,
+        depth: depth + 1,
+        parentWidth: actualWidth,
+        mode,
+        onElementClick
+      })
+    ));
+    
+    if (slot.layout === 'grid') {
+      return (
+        <div className={`grid grid-cols-${slot.gridCols} gap-${slot.gap} min-h-[50px]`}>
+          {childElements}
+        </div>
+      );
+    } else if (slot.layout === 'flex') {
+      return (
+        <div className={`flex gap-${slot.gap} ${slot.styles?.flexDirection || 'flex-row'} min-h-[50px]`}>
+          {childElements}
+        </div>
+      );
+    } else {
+      return (
+        <div className="space-y-2 min-h-[50px]">
+          {childElements}
+        </div>
+      );
+    }
+  };
+  
+  // Calculate grid column class
   const getColSpanClass = (span) => {
     const classes = {
       1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
@@ -378,121 +349,89 @@ const GridColumn = ({
     };
     return classes[span] || 'col-span-12';
   };
-
-  // Generate the row-span class dynamically to ensure Tailwind includes it
-  const getRowSpanClass = (span) => {
-    const classes = {
-      1: 'row-span-1', 2: 'row-span-2', 3: 'row-span-3', 4: 'row-span-4',
-      5: 'row-span-5', 6: 'row-span-6', 7: 'row-span-7', 8: 'row-span-8',
-      9: 'row-span-9', 10: 'row-span-10', 11: 'row-span-11', 12: 'row-span-12'
-    };
-    return classes[span] || 'row-span-1';
-  };
-  
-  const colSpanClass = getColSpanClass(colSpan);
-  const rowSpanClass = getRowSpanClass(rowSpan);
-  
-  // Debug logging
-  console.log(`GridColumn ${slotId}:`, { colSpan, rowSpan, colSpanClass, rowSpanClass, showHorizontalHandle, showVerticalHandle });
   
   return (
-    <div 
-      className={`group ${colSpanClass} ${rowSpanClass} ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2 overflow-hidden' : 'overflow-hidden'} ${parentClassName} ${className} relative responsive-slot`}
-      data-grid-slot-id={slotId}
-      data-col-span={colSpan}
-      data-row-span={rowSpan}
-      style={{ 
-        backgroundColor: mode === 'edit' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-        height: height ? `${height}px` : undefined,
-        maxHeight: height ? `${height}px` : undefined
+    <div
+      key={slot.id}
+      className={`
+        ${getColSpanClass(slot.colSpan)}
+        ${mode === 'edit' ? 'relative group cursor-pointer' : ''}
+      `}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (mode === 'edit' && onElementClick) {
+          onElementClick(slot.id, e.currentTarget);
+        }
       }}
     >
+      {/* Edit mode controls */}
       {mode === 'edit' && (
-        <div className="absolute top-0 left-0 text-xs bg-blue-500 text-white px-1 rounded">
-          {slotId}: {colSpan}×{rowSpan}
-        </div>
+        <>
+          {/* Hover info bar */}
+          <div className="absolute -top-6 left-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50">
+            <span>{slot.id} ({slot.type})</span>
+            {depth > 0 && <span className="ml-2">D:{depth}</span>}
+            <span className="ml-2">{slot.colSpan}/12</span>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-40">
+            {isContainer && hasChildren && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-5 w-5 p-0 bg-white shadow-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+              >
+                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              </Button>
+            )}
+          </div>
+        </>
       )}
-      {children}
-      {/* Horizontal grid resize handle on the column itself */}
-      {showHorizontalHandle && (
-        <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
-          currentValue={colSpan}
-          maxValue={12}
-          minValue={1}
-          direction="horizontal"
-        />
-      )}
-      {/* Vertical grid resize handle for slot height */}
-      {showVerticalHandle && (
-        <GridResizeHandle
-          onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
-          currentValue={height || 80}
-          maxValue={1000}
-          minValue={40}
-          direction="vertical"
-        />
-      )}
-    </div>
-  );
-};
-
-// Enhanced editable element with drag and element resize capabilities  
-const EditableElement = ({ 
-  slotId, 
-  children, 
-  className, 
-  style, 
-  onClick, 
-  canResize = false,
-  onHeightResize,
-  draggable = false, 
-  mode = 'edit'
-}) => {
-  const handleClick = useCallback((e) => {
-    // Don't handle clicks in preview mode
-    if (mode === 'preview') return;
-    
-    e.stopPropagation();
-    if (onClick) {
-      onClick(slotId, e.currentTarget);
-    }
-  }, [slotId, onClick, mode]);
-
-  const content = (
-    <div
-      className={`group ${mode === 'edit' ? 'cursor-pointer hover:outline hover:outline-1 hover:outline-blue-400 hover:outline-offset-1 relative' : 'relative'} ${draggable && mode === 'edit' ? 'cursor-move' : ''} transition-all ${className || ''}`}
-      style={mode === 'edit' ? {
-        border: '1px dotted rgba(200, 200, 200, 0.1)',
-        borderRadius: '4px',
-        minHeight: '20px',
-        padding: '4px',
-        ...style
-      } : style}
-      onClick={handleClick}
-      data-slot-id={slotId}
-      data-editable={mode === 'edit'}
-      draggable={draggable && mode === 'edit'}
-    >
-      {children}
-    </div>
-  );
-
-  // Show resize wrapper only in edit mode when canResize is true
-  if (canResize && mode === 'edit') {
-    return (
-      <ResizeWrapper
-        minWidth={100}
-        minHeight={40}
-        maxWidth={600}
-        maxHeight={400}
+      
+      {/* Slot content */}
+      <div 
+        className={`
+          ${slot.className}
+          ${mode === 'edit' ? 'min-h-[40px] border border-dashed border-gray-300 p-2 rounded hover:border-blue-400' : ''}
+          ${isContainer ? `bg-gray-50 ${mode === 'edit' ? `bg-opacity-${Math.min(80, 20 * (depth + 1))}` : ''}` : ''}
+        `}
+        style={{
+          ...slot.styles,
+          backgroundColor: isContainer && mode === 'edit' 
+            ? `rgba(59, 130, 246, ${0.05 * (depth + 1)})` 
+            : slot.styles?.backgroundColor
+        }}
       >
-        {content}
-      </ResizeWrapper>
-    );
-  }
-
-  return content;
+        {/* Container type indicator */}
+        {mode === 'edit' && isContainer && (
+          <div className="flex items-center justify-between mb-2 text-xs text-gray-500">
+            <div className="flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              <span>{slot.type} ({slot.layout})</span>
+            </div>
+            <span>Width: {actualWidth.toFixed(1)}/12</span>
+          </div>
+        )}
+        
+        {renderSlotContent()}
+        
+        {/* Empty container placeholder */}
+        {isContainer && !hasChildren && mode === 'edit' && (
+          <div className="flex items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded text-gray-400">
+            <div className="text-center">
+              <Layers className="w-6 h-6 mx-auto mb-1" />
+              <p className="text-xs">Drop slots here</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
@@ -501,8 +440,6 @@ const CartSlotsEditor = ({
   onSave,
   viewMode: propViewMode = 'empty'
 }) => {
-  const { selectedStore } = useStoreSelection();
-  
   // State management
   const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
   const [viewMode, setViewMode] = useState(propViewMode);
@@ -511,73 +448,25 @@ const CartSlotsEditor = ({
   const [saveStatus, setSaveStatus] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize configuration from cart-config.js
+  // Initialize hierarchical slot configuration
   useEffect(() => {
     const initializeConfig = async () => {
       setIsLoading(true);
       try {
-        // Start with cart config as the single source of truth
+        // Use hierarchical slots as the single source of truth
+        const defaultHierarchicalSlots = createDefaultSlots();
         const initialConfig = {
-          page_name: cartConfig.page_name,
-          slot_type: cartConfig.slot_type,
-          microSlots: { ...cartConfig.microSlots },
-          slots: { ...cartConfig.slots },
+          page_name: 'cart',
+          slot_type: 'hierarchical',
+          slots: { ...defaultHierarchicalSlots },
           metadata: {
-            ...cartConfig.metadata,
             created: new Date().toISOString(),
             lastModified: new Date().toISOString()
           }
         };
 
-        // Load DRAFT configuration for editing using versioning API
-        if (selectedStore?.id && onSave) {
-          try {
-            const response = await slotConfigurationService.getDraftConfiguration(selectedStore.id, 'cart');
-            
-            if (response.success && response.data?.configuration) {
-              const config = response.data.configuration;
-              
-              // Handle both old format (config.slots[slotId]) and new format (config[slotId])
-              if (config.slots) {
-                // Old format: config.slots[slotId]
-                initialConfig.slots = { 
-                  ...initialConfig.slots, 
-                  ...config.slots 
-                };
-                console.log('📦 Loaded DRAFT cart configuration (old format):', config.slots);
-              } else {
-                // New format: config[slotId] directly
-                // Convert flat structure to slots structure for editor
-                const convertedSlots = {};
-                Object.keys(config).forEach(key => {
-                  if (key !== 'metadata' && typeof config[key] === 'object' && config[key].content !== undefined) {
-                    convertedSlots[key] = config[key];
-                  }
-                });
-                
-                initialConfig.slots = { 
-                  ...initialConfig.slots, 
-                  ...convertedSlots 
-                };
-                console.log('📦 Loaded DRAFT cart configuration (new format):', convertedSlots);
-              }
-              
-              // IMPORTANT: Also merge microSlots from saved configuration
-              if (config.microSlots) {
-                initialConfig.microSlots = {
-                  ...initialConfig.microSlots,
-                  ...config.microSlots
-                };
-                console.log('📏 Loaded DRAFT microSlots:', config.microSlots);
-              }
-            } else {
-              console.log('📝 No draft configuration found, using cart-config.js defaults');
-            }
-          } catch (error) {
-            console.warn('❌ Failed to load draft configuration:', error);
-            console.log('Using cart-config.js defaults');
-          }
-        }
+        // Configuration loading handled by parent component
+        console.log('📦 Initialized hierarchical cart configuration');
 
         setCartLayoutConfig(initialConfig);
       } finally {
@@ -586,11 +475,11 @@ const CartSlotsEditor = ({
     };
 
     initializeConfig();
-  }, [selectedStore?.id, onSave]);
+  }, []);
 
-  // Save configuration to database
+  // Save hierarchical configuration
   const saveConfiguration = useCallback(async (configToSave = cartLayoutConfig) => {
-    if (!configToSave || !selectedStore?.id || !onSave) return;
+    if (!configToSave || !onSave) return;
 
     setSaveStatus('saving');
     try {
@@ -602,44 +491,8 @@ const CartSlotsEditor = ({
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(''), 5000);
     }
-  }, [cartLayoutConfig, selectedStore?.id, onSave]);
+  }, [cartLayoutConfig, onSave]);
 
-  // Helper functions - match Cart.jsx exactly
-  const getSlotStyling = useCallback((slotId) => {
-    const slotConfig = cartLayoutConfig?.slots?.[slotId];
-    return {
-      elementClasses: slotConfig?.className || '',
-      elementStyles: slotConfig?.styles || {}
-    };
-  }, [cartLayoutConfig]);
-
-  const getMicroSlotStyling = useCallback((microSlotId) => {
-    const slotConfig = cartLayoutConfig?.slots?.[microSlotId];
-    return {
-      elementClasses: slotConfig?.className || '',
-      elementStyles: slotConfig?.styles || {}
-    };
-  }, [cartLayoutConfig]);
-
-  const getSlotPositioning = useCallback((slotId) => {
-    const slotConfig = cartLayoutConfig?.slots?.[slotId];
-    const className = slotConfig?.className || '';
-    
-    // Separate alignment classes (for parent/grid) from other classes (for element)
-    const classes = className.split(' ').filter(Boolean);
-    const alignmentClasses = classes.filter(cls => 
-      cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right')
-    );
-    const elementClasses = classes.filter(cls => 
-      !cls.startsWith('text-left') && !cls.startsWith('text-center') && !cls.startsWith('text-right')
-    );
-    
-    return {
-      parentClassName: alignmentClasses.join(' '),  // For grid alignment classes
-      className: elementClasses.join(' '),          // For element classes  
-      elementStyles: slotConfig?.styles || {}
-    };
-  }, [cartLayoutConfig]);
 
   // Handle element selection for EditorSidebar
   const handleElementClick = useCallback((slotId, element) => {
@@ -647,271 +500,64 @@ const CartSlotsEditor = ({
     setIsSidebarVisible(true);
   }, []);
 
-  // Handle text changes from EditorSidebar
+  // Handle text changes from EditorSidebar for hierarchical slots
   const handleTextChange = useCallback((slotId, newText) => {
     setCartLayoutConfig(prevConfig => {
+      const updatedSlots = { ...prevConfig?.slots };
+      
+      if (updatedSlots[slotId]) {
+        updatedSlots[slotId] = {
+          ...updatedSlots[slotId],
+          content: newText,
+          metadata: {
+            ...updatedSlots[slotId].metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+      }
+      
       const updatedConfig = {
         ...prevConfig,
-        slots: {
-          ...prevConfig?.slots,
-          [slotId]: {
-            ...prevConfig?.slots?.[slotId],
-            content: newText,
-            metadata: {
-              ...prevConfig?.slots?.[slotId]?.metadata,
-              lastModified: new Date().toISOString()
-            }
-          }
-        }
-      };
-
-      // Auto-save with debounce
-      setTimeout(() => saveConfiguration(updatedConfig), 1000);
-      return updatedConfig;
-    });
-  }, [saveConfiguration]);
-
-  // Handle class changes from EditorSidebar
-  const handleClassChange = useCallback((slotId, className, styles) => {
-    setCartLayoutConfig(prevConfig => {
-      const updatedConfig = {
-        ...prevConfig,
-        slots: {
-          ...prevConfig?.slots,
-          [slotId]: {
-            ...prevConfig?.slots?.[slotId],
-            className: className,
-            styles: styles || prevConfig?.slots?.[slotId]?.styles || {},
-            metadata: {
-              ...prevConfig?.slots?.[slotId]?.metadata,
-              lastModified: new Date().toISOString()
-            }
-          }
-        }
+        slots: updatedSlots
       };
 
       // Auto-save
-      setTimeout(() => saveConfiguration(updatedConfig), 500);
+      saveConfiguration(updatedConfig);
       return updatedConfig;
     });
   }, [saveConfiguration]);
 
-  // Debounced save ref
-  const saveTimeoutRef = useRef(null);
-  
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Handle grid resize changes
-  const handleGridResize = useCallback((slotId, newColSpan) => {
-    console.log('🔄 handleGridResize called:', { slotId, newColSpan });
-    
+  // Handle class changes from EditorSidebar for hierarchical slots
+  const handleClassChange = useCallback((slotId, className, styles) => {
     setCartLayoutConfig(prevConfig => {
-      console.log('📊 Previous microSlots:', prevConfig?.microSlots);
-      console.log('📊 Previous slot config:', prevConfig?.microSlots?.[slotId]);
-      
-      // Calculate scaling ratio for responsive element resizing
-      const previousColSpan = prevConfig?.microSlots?.[slotId]?.col || 12;
-      const scalingRatio = newColSpan / previousColSpan;
       const updatedSlots = { ...prevConfig?.slots };
       
-      console.log(`📐 Slot width scaling: ${previousColSpan} → ${newColSpan} cols (ratio: ${scalingRatio.toFixed(2)})`);
-      
-      // Responsively scale all elements within this slot container
-      Object.keys(updatedSlots).forEach(elementSlotId => {
-        if (elementSlotId.startsWith(slotId + '.') || elementSlotId === slotId) {
-          const currentSlot = updatedSlots[elementSlotId];
-          if (currentSlot?.styles) {
-            const updatedStyles = { ...currentSlot.styles };
-            
-            // Convert fixed width to responsive percentage or remove it for natural responsiveness
-            if (currentSlot.styles.width) {
-              // For smaller slots, remove fixed width to allow natural responsiveness
-              if (newColSpan <= 3) {
-                delete updatedStyles.width;
-                updatedStyles.maxWidth = '100%';
-                console.log(`🔄 Removing fixed width from ${elementSlotId} for natural responsiveness (slot width: ${newColSpan} cols)`);
-              } else {
-                // For larger slots, use percentage-based width
-                const widthPercentage = Math.min(100, Math.max(20, 80 / newColSpan * 12)); // Scale percentage based on col-span
-                updatedStyles.width = `${Math.round(widthPercentage)}%`;
-                console.log(`📏 Converting ${elementSlotId} to responsive width: ${widthPercentage.toFixed(1)}% (${newColSpan} cols)`);
-              }
-            }
-            
-            // Scale font-size proportionally if it exists
-            if (currentSlot.styles.fontSize) {
-              const currentFontSize = parseInt(currentSlot.styles.fontSize);
-              const newFontSize = Math.max(10, Math.round(currentFontSize * scalingRatio));
-              updatedStyles.fontSize = `${newFontSize}px`;
-              console.log(`🔤 Scaling element ${elementSlotId} font-size: ${currentFontSize}px → ${newFontSize}px (${scalingRatio.toFixed(2)}x)`);
-            }
-            
-            updatedSlots[elementSlotId] = {
-              ...currentSlot,
-              styles: updatedStyles
-            };
+      if (updatedSlots[slotId]) {
+        updatedSlots[slotId] = {
+          ...updatedSlots[slotId],
+          className: className,
+          styles: styles || updatedSlots[slotId].styles || {},
+          metadata: {
+            ...updatedSlots[slotId].metadata,
+            lastModified: new Date().toISOString()
           }
-        }
-      });
+        };
+      }
       
       const updatedConfig = {
         ...prevConfig,
-        microSlots: {
-          ...prevConfig?.microSlots,
-          [slotId]: {
-            ...prevConfig?.microSlots?.[slotId],
-            col: newColSpan
-          }
-        },
         slots: updatedSlots
       };
 
-      console.log('✅ Updated microSlots:', updatedConfig.microSlots);
-      console.log('✅ New slot config:', updatedConfig.microSlots[slotId]);
-
-      // Debounced auto-save - clear previous timeout and set new one
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      saveTimeoutRef.current = setTimeout(() => {
-        console.log('💾 Saving configuration after resize...');
-        saveConfiguration(updatedConfig);
-      }, 1000); // Wait 1 second after resize stops
-
+      // Auto-save
+      saveConfiguration(updatedConfig);
       return updatedConfig;
     });
   }, [saveConfiguration]);
 
-  // Handle slot container height resize changes (for GridColumn)
-  const handleSlotHeightResize = useCallback((slotId, newHeight) => {
-    console.log('📐 handleSlotHeightResize called:', { slotId, newHeight });
-    
-    setCartLayoutConfig(prevConfig => {
-      // Calculate row span based on height (rough approximation: 40px per row)
-      const estimatedRowSpan = Math.max(1, Math.round(newHeight / 40));
-      
-      console.log(`📏 Height ${newHeight}px ≈ ${estimatedRowSpan} row spans`);
-      
-      // Calculate scaling ratio for responsive element height resizing
-      const previousHeight = prevConfig?.microSlots?.[slotId]?.height || 80; // Default height
-      const scalingRatio = newHeight / previousHeight;
-      const updatedSlots = { ...prevConfig?.slots };
-      
-      console.log(`📐 Slot height scaling: ${previousHeight}px → ${newHeight}px (ratio: ${scalingRatio.toFixed(2)})`);
-      
-      // Responsively scale all elements within this slot container
-      Object.keys(updatedSlots).forEach(elementSlotId => {
-        if (elementSlotId.startsWith(slotId + '.') || elementSlotId === slotId) {
-          const currentSlot = updatedSlots[elementSlotId];
-          if (currentSlot?.styles) {
-            const updatedStyles = { ...currentSlot.styles };
-            
-            // Convert fixed height to responsive or constrain for slot fit
-            if (currentSlot.styles.height) {
-              // For very small slots, remove fixed height for natural flow
-              if (newHeight <= 60) {
-                delete updatedStyles.height;
-                updatedStyles.maxHeight = `${Math.max(20, newHeight - 8)}px`;
-                console.log(`🔄 Removing fixed height from ${elementSlotId} for natural flow (slot height: ${newHeight}px)`);
-              } else {
-                // For larger slots, use constrained height that fits within slot
-                const maxElementHeight = Math.max(20, newHeight - 16);
-                updatedStyles.height = `${maxElementHeight}px`;
-                updatedStyles.maxHeight = `${maxElementHeight}px`;
-                console.log(`📏 Constraining ${elementSlotId} height to fit slot: ${maxElementHeight}px (slot: ${newHeight}px)`);
-              }
-            }
-            
-            // Scale font-size proportionally for height changes too (for better proportion)
-            if (currentSlot.styles.fontSize) {
-              const currentFontSize = parseInt(currentSlot.styles.fontSize);
-              const newFontSize = Math.max(8, Math.round(currentFontSize * Math.sqrt(scalingRatio))); // Square root for more subtle scaling
-              updatedStyles.fontSize = `${newFontSize}px`;
-              console.log(`🔤 Scaling element ${elementSlotId} font-size for height: ${currentFontSize}px → ${newFontSize}px (√${scalingRatio.toFixed(2)}x)`);
-            }
-            
-            // Scale padding proportionally if it exists
-            if (currentSlot.styles.padding) {
-              const currentPadding = parseInt(currentSlot.styles.padding);
-              const newPadding = Math.max(2, Math.round(currentPadding * scalingRatio));
-              updatedStyles.padding = `${newPadding}px`;
-              console.log(`📦 Scaling element ${elementSlotId} padding: ${currentPadding}px → ${newPadding}px (${scalingRatio.toFixed(2)}x)`);
-            }
-            
-            updatedSlots[elementSlotId] = {
-              ...currentSlot,
-              styles: updatedStyles
-            };
-          }
-        }
-      });
-      
-      const updatedConfig = {
-        ...prevConfig,
-        microSlots: {
-          ...prevConfig?.microSlots,
-          [slotId]: {
-            ...prevConfig?.microSlots?.[slotId],
-            height: newHeight,
-            row: estimatedRowSpan // Add row span for CSS Grid
-          }
-        },
-        slots: updatedSlots
-      };
 
-      console.log('✅ Updated slot with height and row span:', updatedConfig.microSlots[slotId]);
 
-      // Debounced auto-save - clear previous timeout and set new one
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      saveTimeoutRef.current = setTimeout(() => {
-        console.log('💾 Saving configuration after slot height resize...');
-        saveConfiguration(updatedConfig);
-      }, 1000); // Wait 1 second after resize stops
 
-      return updatedConfig;
-    });
-  }, [saveConfiguration]);
-
-  // Handle element height resize changes  
-  const handleHeightResize = useCallback((slotId, newHeight) => {
-    console.log('📏 handleHeightResize called:', { slotId, newHeight });
-    
-    setCartLayoutConfig(prevConfig => {
-      const updatedConfig = {
-        ...prevConfig,
-        slots: {
-          ...prevConfig?.slots,
-          [slotId]: {
-            ...prevConfig?.slots?.[slotId],
-            styles: {
-              ...prevConfig?.slots?.[slotId]?.styles,
-              minHeight: `${newHeight}px`
-            }
-          }
-        }
-      };
-
-      // Debounced auto-save
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      saveTimeoutRef.current = setTimeout(() => {
-        console.log('💾 Saving configuration after height resize...');
-        saveConfiguration(updatedConfig);
-      }, 1000);
-
-      return updatedConfig;
-    });
-  }, [saveConfiguration]);
 
 
   if (isLoading) {
@@ -991,439 +637,25 @@ const CartSlotsEditor = ({
           </div>
         </div>
 
-        {/* Cart Layout - EXACT COPY of Cart.jsx structure */}
+        {/* Cart Layout - Pure Hierarchical Structure */}
         <div 
           className="bg-gray-50 cart-page"
           style={{ backgroundColor: '#f9fafb' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            
-            {/* Header Section with Grid Layout */}
-            <div className="header-section mb-8">
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots)
-                  .filter(slotId => slotId.startsWith('header.'))
-                  .map(slotId => {
-                    const positioning = getSlotPositioning(slotId);
-                    
-                    if (slotId === 'header.title') {
-                      const headerTitleStyling = getMicroSlotStyling('header.title');
-                      const defaultClasses = 'text-3xl font-bold text-gray-900 mb-4';
-                      const finalClasses = positioning.elementClasses || headerTitleStyling.elementClasses || defaultClasses;
-                      
-                      return (
-                        <GridColumn
-                          key={slotId}
-                          colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                          rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                          height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                          slotId={slotId}
-                          onGridResize={handleGridResize}
-                          onSlotHeightResize={handleSlotHeightResize}
-                          mode={mode}
-                          parentClassName={positioning.parentClassName}
-                        >
-                          <EditableElement
-                            slotId={slotId}
-                            mode={mode}
-                            onClick={(e) => handleElementClick(slotId, e.currentTarget)}
-                            className={finalClasses}
-                            style={positioning.elementStyles || headerTitleStyling.elementStyles}
-                            canResize={true}
-                            onHeightResize={(newHeight) => handleHeightResize(slotId, newHeight)}
-                            draggable={true}
-                          >
-                            {cartLayoutConfig.slots[slotId]?.content || "My Cart"}
-                          </EditableElement>
-                        </GridColumn>
-                      );
-                    }
-                    
-                    return null;
-                  })}
-              </div>
-            </div>
+            {/* Render main layout hierarchically */}
+            {cartLayoutConfig?.slots?.main_layout && (
+              renderHierarchicalSlot({
+                slot: cartLayoutConfig.slots.main_layout,
+                allSlots: cartLayoutConfig.slots,
+                depth: 0,
+                parentWidth: 12,
+                mode,
+                onElementClick: handleElementClick
+              })
+            )}
             
             <CmsBlockRenderer position="cart_above_items" />
-            
-            {/* Test Grid Resize - visible test slot */}
-            {mode === 'edit' && (
-              <div className="grid grid-cols-12 gap-4 mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
-                <GridColumn
-                  colSpan={cartLayoutConfig?.microSlots?.['test.slot']?.col || 6}
-                  rowSpan={cartLayoutConfig?.microSlots?.['test.slot']?.row || 1}
-                  height={cartLayoutConfig?.microSlots?.['test.slot']?.height}
-                  slotId="test.slot"
-                  onGridResize={handleGridResize}
-                  onSlotHeightResize={handleSlotHeightResize}
-                  mode={mode}
-                >
-                  <EditableElement
-                    slotId="test.slot"
-                    mode={mode}
-                    onClick={handleElementClick}
-                    className="bg-blue-100 p-4 text-center font-bold border-2 border-blue-300"
-                    canResize={true}
-                    onHeightResize={(newHeight) => handleHeightResize('test.slot', newHeight)}
-                  >
-                    TEST DUAL RESIZE (drag right: width, bottom: height)
-                  </EditableElement>
-                </GridColumn>
-                <div className="col-span-6 p-4 bg-gray-100 text-center text-gray-600">
-                  Other content
-                </div>
-              </div>
-            )}
-            
-            {/* Conditional rendering based on viewMode */}
-            {viewMode === 'empty' ? (
-              // Empty cart state with simple editable slots
-              <div className="emptyCart-section">
-                <div className="text-center py-12">
-                  <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                    {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots)
-                      .filter(slotId => slotId.startsWith('emptyCart.'))
-                      .map(slotId => {
-                        if (slotId === 'emptyCart.icon') {
-                          return (
-                            <div key={slotId} className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={handleElementClick}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                              </EditableElement>
-                            </div>
-                          );
-                        }
-                        
-                        if (slotId === 'emptyCart.title') {
-                          const titleStyling = getMicroSlotStyling('emptyCart.title');
-                          const positioning = getSlotPositioning(slotId);
-                          const defaultClasses = 'text-xl font-semibold text-gray-900 mb-2';
-                          const finalClasses = positioning.className || titleStyling.elementClasses || defaultClasses;
-                          
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                              parentClassName={positioning.parentClassName}
-                            >
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={handleElementClick}
-                                className={finalClasses}
-                                style={positioning.elementStyles || titleStyling.elementStyles}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                {cartLayoutConfig.slots[slotId]?.content || "Your cart is empty"}
-                              </EditableElement>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        if (slotId === 'emptyCart.text') {
-                          const textStyling = getMicroSlotStyling('emptyCart.text');
-                          const positioning = getSlotPositioning(slotId);
-                          const defaultClasses = 'text-gray-600 mb-6';
-                          const finalClasses = positioning.className || textStyling.elementClasses || defaultClasses;
-                          
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                              parentClassName={positioning.parentClassName}
-                            >
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={handleElementClick}
-                                className={finalClasses}
-                                style={positioning.elementStyles || textStyling.elementStyles}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                {cartLayoutConfig.slots[slotId]?.content || "Looks like you haven't added anything to your cart yet."}
-                              </EditableElement>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        if (slotId === 'emptyCart.button') {
-                          const buttonStyling = getMicroSlotStyling('emptyCart.button');
-                          const positioning = getSlotPositioning(slotId);
-                          
-                          return (
-                            <GridColumn
-                              key={slotId}
-                              colSpan={cartLayoutConfig?.microSlots?.[slotId]?.col || 12}
-                              rowSpan={cartLayoutConfig?.microSlots?.[slotId]?.row || 1}
-                              height={cartLayoutConfig?.microSlots?.[slotId]?.height}
-                              slotId={slotId}
-                              onGridResize={handleGridResize}
-                              onSlotHeightResize={handleSlotHeightResize}
-                              mode={mode}
-                              parentClassName={`flex justify-center ${positioning.parentClassName}`}
-                            >
-                              <EditableElement
-                                slotId={slotId}
-                                mode={mode}
-                                onClick={handleElementClick}
-                                canResize={true}
-                                draggable={true}
-                              >
-                                <Button 
-                                  className="bg-blue-600 hover:bg-blue-700 w-auto"
-                                  style={positioning.elementStyles || buttonStyling.elementStyles}
-                                >
-                                  {cartLayoutConfig.slots[slotId]?.content || "Continue Shopping"}
-                                </Button>
-                              </EditableElement>
-                            </GridColumn>
-                          );
-                        }
-                        
-                        return null;
-                      })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Cart with products view - Clean layout
-              <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                <div className="lg:col-span-2">
-                  <Card className="bg-white">
-                    <CardContent className="px-4 divide-y divide-gray-200">
-                      {/* Sample cart items */}
-                      <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                        <EditableElement
-                          slotId="cartItem.image"
-                          mode={mode}
-                          onClick={handleElementClick}
-                          canResize={true}
-                          draggable={true}
-                        >
-                          <img 
-                            src="https://placehold.co/100x100?text=Product" 
-                            alt="Sample Product"
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        </EditableElement>
-                        
-                        <div className="flex-1">
-                          <EditableElement
-                            slotId="cartItem.title"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="text-lg font-semibold"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            Sample Product
-                          </EditableElement>
-                          
-                          <EditableElement
-                            slotId="cartItem.price"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="text-gray-600"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            $29.99 each
-                          </EditableElement>
-                          
-                          <div className="flex items-center space-x-3 mt-3">
-                            <EditableElement
-                              slotId="cartItem.quantity"
-                              mode={mode}
-                              onClick={handleElementClick}
-                              canResize={true}
-                              draggable={true}
-                            >
-                              <div className="flex items-center space-x-2">
-                                <Button size="sm" variant="outline">
-                                  <Minus className="w-4 h-4" />
-                                </Button>
-                                <span className="text-lg font-semibold">1</span>
-                                <Button size="sm" variant="outline">
-                                  <Plus className="w-4 h-4" />
-                                </Button>
-                                <Button size="sm" variant="destructive" className="ml-auto">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </EditableElement>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <EditableElement
-                            slotId="cartItem.total"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="text-xl font-bold"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            $29.99
-                          </EditableElement>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <CmsBlockRenderer position="cart_below_items" />
-                </div>
-                
-                <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
-                  {/* Coupon Section */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <EditableElement
-                            slotId="coupon.title"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="text-lg font-semibold mb-4"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            Apply Coupon
-                          </EditableElement>
-                        </div>
-                        <GridColumn
-                          colSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.col || 8}
-                          rowSpan={cartLayoutConfig?.microSlots?.['coupon.input']?.row || 1}
-                          height={cartLayoutConfig?.microSlots?.['coupon.input']?.height}
-                          slotId="coupon.input"
-                          onGridResize={handleGridResize}
-                          onSlotHeightResize={handleSlotHeightResize}
-                          mode={mode}
-                          parentClassName={getSlotPositioning('coupon.input').parentClassName}
-                        >
-                          <EditableElement
-                            slotId="coupon.input"
-                            mode={mode}
-                            onClick={handleElementClick}
-                          >
-                            <Input placeholder="Enter coupon code" />
-                          </EditableElement>
-                        </GridColumn>
-                        <GridColumn
-                          colSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.col || 4}
-                          rowSpan={cartLayoutConfig?.microSlots?.['coupon.button']?.row || 1}
-                          height={cartLayoutConfig?.microSlots?.['coupon.button']?.height}
-                          slotId="coupon.button"
-                          onGridResize={handleGridResize}
-                          onSlotHeightResize={handleSlotHeightResize}
-                          mode={mode}
-                          parentClassName={getSlotPositioning('coupon.button').parentClassName}
-                        >
-                          <EditableElement
-                            slotId="coupon.button"
-                            mode={mode}
-                            onClick={handleElementClick}
-                          >
-                            <Button>
-                              <Tag className="w-4 h-4 mr-2" /> Apply
-                            </Button>
-                          </EditableElement>
-                        </GridColumn>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Order Summary */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <EditableElement
-                            slotId="orderSummary.title"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="text-lg font-semibold mb-4"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            Order Summary
-                          </EditableElement>
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <EditableElement
-                            slotId="orderSummary.subtotal"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="flex justify-between"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            <span>Subtotal</span><span>$79.97</span>
-                          </EditableElement>
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <EditableElement
-                            slotId="orderSummary.tax"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="flex justify-between"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            <span>Tax</span><span>$6.40</span>
-                          </EditableElement>
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <EditableElement
-                            slotId="orderSummary.total"
-                            mode={mode}
-                            onClick={handleElementClick}
-                            className="flex justify-between text-lg font-semibold border-t pt-4"
-                            canResize={true}
-                            draggable={true}
-                          >
-                            <span>Total</span><span>$81.37</span>
-                          </EditableElement>
-                        </div>
-                        <div className={`col-span-12 ${mode === 'edit' ? 'border border-dashed border-gray-300 rounded-md p-2' : ''}`}>
-                          <div className="border-t mt-6 pt-6">
-                            <EditableElement
-                              slotId="orderSummary.checkoutButton"
-                              mode={mode}
-                              onClick={handleElementClick}
-                              canResize={true}
-                              draggable={true}
-                            >
-                              <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
-                                Proceed to Checkout
-                              </Button>
-                            </EditableElement>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
