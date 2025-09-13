@@ -644,7 +644,7 @@ const EditorSidebar = ({
   if (!isVisible || !isSlotElement) return null;
 
   return (
-    <div className="h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col editor-sidebar">
+    <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col editor-sidebar" style={{ zIndex: 1000 }}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">

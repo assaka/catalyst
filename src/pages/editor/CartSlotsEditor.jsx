@@ -172,7 +172,7 @@ const GridColumn = ({
     <div 
       className={`${colSpanClass} ${rowSpanClass} ${
         mode === 'edit' 
-          ? `border border-dashed rounded-md p-2 overflow-hidden ${
+          ? `border border-dashed rounded-md overflow-hidden ${
               isHovered ? 'border-blue-400' : 'border-transparent'
             }` 
           : 'overflow-hidden'
@@ -180,23 +180,32 @@ const GridColumn = ({
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
-      onMouseEnter={(e) => {
-        if (mode === 'edit') {
-          e.stopPropagation();
-          setIsHovered(true);
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (mode === 'edit') {
-          e.stopPropagation();
-          setIsHovered(false);
-        }
-      }}
       style={{ 
         height: height ? `${height}px` : undefined,
         maxHeight: height ? `${height}px` : undefined
       }}
     >
+      {/* Hover detection overlay - only on the border area */}
+      {mode === 'edit' && (
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            setIsHovered(true);
+          }}
+          onMouseLeave={(e) => {
+            e.stopPropagation();
+            setIsHovered(false);
+          }}
+          style={{ 
+            pointerEvents: 'auto',
+            zIndex: 1
+          }}
+        />
+      )}
+      
+      {/* Content area with padding */}
+      <div className="p-2 relative" style={{ zIndex: 2 }}>
       {children}
       {/* Horizontal grid resize handle on the column itself */}
       {showHorizontalHandle && (
@@ -436,7 +445,14 @@ const CartSlotsEditor = ({
       if (!isMounted) return;
       
       try {
-        // Start with cart config as the single source of truth
+        console.log('🔄 CartSlotsEditor: Starting configuration initialization...');
+        console.log('🏪 Store context check:', {
+          selectedStore: selectedStore,
+          storeId: selectedStore?.id,
+          getSelectedStoreId: getSelectedStoreId ? getSelectedStoreId() : 'function not available'
+        });
+        
+        // First, load the static configuration as a template
         const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
         
         if (!cartConfig || !cartConfig.slots) {
@@ -777,7 +793,7 @@ const CartSlotsEditor = ({
   // Main render - Clean and maintainable  
   return (
     <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
+      isSidebarVisible ? 'pr-80' : ''
     }`}>
       {/* Main Editor Area */}
       <div className="flex flex-col">
