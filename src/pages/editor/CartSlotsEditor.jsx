@@ -208,16 +208,17 @@ const GridColumn = ({
   );
 };
 
-// Enhanced editable element with drag and element resize capabilities  
-const EditableElement = ({ 
-  slotId, 
-  children, 
-  className, 
-  style, 
-  onClick, 
+// Enhanced editable element with drag and element resize capabilities
+const EditableElement = ({
+  slotId,
+  children,
+  className,
+  style,
+  onClick,
   canResize = false,
-  draggable = false, 
-  mode = 'edit'
+  draggable = false,
+  mode = 'edit',
+  selectedElementId = null
 }) => {
   const handleClick = useCallback((e) => {
     // Don't handle clicks in preview mode
@@ -233,7 +234,7 @@ const EditableElement = ({
     <EditorInteractionWrapper
       mode={mode}
       draggable={draggable}
-      isSelected={false} // Will be set by parent component
+      isSelected={selectedElementId === slotId}
     >
       <div
         className={className || ''}
@@ -324,11 +325,21 @@ const HierarchicalSlotRenderer = ({
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={true}
           >
-          {slot.type === 'text' && <span>{slot.content || `Text: ${slot.id}`}</span>}
+          {slot.type === 'text' && (
+            <span 
+              dangerouslySetInnerHTML={{ 
+                __html: slot.content || `Text: ${slot.id}` 
+              }}
+            />
+          )}
           {slot.type === 'button' && (
-            <button className={slot.className} style={slot.styles}>
-              {slot.content || `Button: ${slot.id}`}
-            </button>
+            <button 
+              className={slot.className} 
+              style={slot.styles}
+              dangerouslySetInnerHTML={{ 
+                __html: slot.content || `Button: ${slot.id}` 
+              }}
+            />
           )}
           {slot.type === 'image' && (
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
