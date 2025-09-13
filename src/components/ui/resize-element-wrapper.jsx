@@ -184,12 +184,6 @@ const ResizeWrapper = ({
         const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
         widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
-        
-        console.log('📏 Width calculation:', {
-          newWidth,
-          parentWidth: parentRect.width,
-          percentage: widthPercentage.toFixed(1) + '%'
-        });
       }
 
       // Use min-height for more flexible vertical sizing

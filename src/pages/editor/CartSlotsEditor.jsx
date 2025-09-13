@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
+import EditorWrapper from '@/components/editor/EditorWrapper';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { SlotManager } from '@/utils/slotUtils';
 
@@ -616,72 +617,47 @@ const CartSlotsEditor = ({
     );
   }
 
-  // Main render - Clean and maintainable
+  // Create the additional view mode controls for the wrapper
+  const additionalControls = (
+    <div className="flex bg-gray-100 rounded-lg p-1">
+      <button
+        onClick={() => setViewMode('empty')}
+        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+          viewMode === 'empty'
+            ? 'bg-white text-gray-900 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+        }`}
+      >
+        <ShoppingCart className="w-4 h-4 inline mr-1.5" />
+        Empty Cart
+      </button>
+      <button
+        onClick={() => setViewMode('withProducts')}
+        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+          viewMode === 'withProducts'
+            ? 'bg-white text-gray-900 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+        }`}
+      >
+        <Package className="w-4 h-4 inline mr-1.5" />
+        With Products
+      </button>
+    </div>
+  );
+
+  // Main render - Clean and maintainable wrapped with EditorWrapper
   return (
-    <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
-    }`}>
-      {/* Main Editor Area */}
-      <div className="flex flex-col">
-        {/* Editor Header */}
-        <div className="bg-white border-b px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* View Mode Selector - matches Cart.jsx logic */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('empty')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'empty'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                <ShoppingCart className="w-4 h-4 inline mr-1.5" />
-                Empty Cart
-              </button>
-              <button
-                onClick={() => setViewMode('withProducts')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  viewMode === 'withProducts'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                <Package className="w-4 h-4 inline mr-1.5" />
-                With Products
-              </button>
-            </div>
-
-            {/* Only show controls in edit mode */}
-            {mode === 'edit' && (
-              <div className="flex items-center gap-2">
-                {/* Save Status */}
-                {saveStatus && (
-                  <div className={`flex items-center gap-2 text-sm ${
-                    saveStatus === 'saving' ? 'text-blue-600' : 
-                    saveStatus === 'saved' ? 'text-green-600' : 
-                    'text-red-600'
-                  }`}>
-                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {saveStatus === 'saved' && '✓ Saved'}
-                    {saveStatus === 'error' && '✗ Save Failed'}
-                  </div>
-                )}
-
-                <Button onClick={() => saveConfiguration()} disabled={saveStatus === 'saving'} variant="outline" size="sm">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-
-                <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
+    <EditorWrapper
+      title="Cart Editor"
+      onSave={() => saveConfiguration()}
+      saveStatus={saveStatus}
+      isSidebarVisible={isSidebarVisible}
+      onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
+      additionalControls={additionalControls}
+    >
+      <div className={`min-h-full bg-gray-50 ${
+        isSidebarVisible ? 'grid grid-cols-[calc(100%-320px)_320px]' : 'block'
+      }`}>
         {/* Cart Layout - Hierarchical Structure */}
         <div 
           className="bg-gray-50 cart-page"
@@ -725,7 +701,8 @@ const CartSlotsEditor = ({
           isVisible={true}
         />
       )}
-    </div>
+      </div>
+    </EditorWrapper>
   );
 };
 
