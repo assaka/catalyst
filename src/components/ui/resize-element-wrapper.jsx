@@ -137,16 +137,16 @@ const ResizeWrapper = ({
 
   const wrapperStyle = {
     // Allow wrapper to expand to full available space
-    width: 'auto',
+    width: '100%',
     height: 'auto',
     maxWidth: '100%',
-    display: 'inline-block'
+    display: 'block'
   };
 
   return (
     <div 
       ref={wrapperRef}
-      className={cn("relative inline-block group", className)}
+      className={cn("relative block group", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
       onMouseLeave={() => !disabled && setIsHovered(false)}
       style={wrapperStyle}
