@@ -568,11 +568,6 @@ const EditableElement = ({
   return content;
 };
 
-
-
-
-
-
 // Component to render hierarchical slots
 const HierarchicalSlotRenderer = ({
   slots,
@@ -630,28 +625,54 @@ const HierarchicalSlotRenderer = ({
         showBorders={showBorders}
       >
         <div className={slot.parentClassName || ''}>
-          {/* Simple text rendering without excessive wrappers */}
+          {/* Text rendering with ResizeWrapper for corner handle resizing */}
           {slot.type === 'text' && (
-            <span
-              className={slot.className}
-              style={{
-                ...slot.styles,
-                cursor: mode === 'edit' ? 'pointer' : 'default',
-                // Ensure italic is applied as inline style if class includes 'italic'
-                ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
-              }}
-              onClick={(e) => {
-                if (mode === 'edit' && onElementClick) {
-                  e.stopPropagation();
-                  onElementClick(slot.id, e.currentTarget);
-                }
-              }}
-              data-slot-id={slot.id}
-              data-editable={mode === 'edit'}
-              dangerouslySetInnerHTML={{
-                __html: String(slot.content || `Text: ${slot.id}`)
-              }}
-            />
+            <>
+              {mode === 'edit' ? (
+                <ResizeWrapper
+                  minWidth={20}
+                  minHeight={16}
+                >
+                  <div
+                    style={slot.styles}
+                    className="w-full h-full flex items-start"
+                  >
+                    <span
+                      className={slot.className}
+                      style={{
+                        cursor: 'pointer',
+                        // Ensure italic is applied as inline style if class includes 'italic'
+                        ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
+                        // Make text fill the resized container
+                        display: 'inline-block',
+                        width: '100%'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onElementClick(slot.id, e.currentTarget);
+                      }}
+                      data-slot-id={slot.id}
+                      data-editable="true"
+                      dangerouslySetInnerHTML={{
+                        __html: String(slot.content || `Text: ${slot.id}`)
+                      }}
+                    />
+                  </div>
+                </ResizeWrapper>
+              ) : (
+                <span
+                  className={slot.className}
+                  style={{
+                    ...slot.styles,
+                    // Ensure italic is applied as inline style if class includes 'italic'
+                    ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: String(slot.content || `Text: ${slot.id}`)
+                  }}
+                />
+              )}
+            </>
           )}
 
           {/* Use EditableElement for other types that need the full wrapper structure */}
@@ -661,22 +682,19 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={slot.type === 'button' ?
-                // For buttons only, exclude width/height from wrapper - apply only to button element
-                Object.fromEntries(
-                  Object.entries(slot.styles || {}).filter(([key]) =>
-                    !['width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight'].includes(key)
-                  )
-                ) :
-                (slot.styles || {})}
+              style={slot.styles || {}}
               canResize={!['container', 'grid', 'flex'].includes(slot.type)}
               draggable={false}  // Dragging is handled at GridColumn level
               selectedElementId={selectedElementId}
             >
           {slot.type === 'button' && (
             <button
-              className={slot.className}
-              style={slot.styles}
+              className={`w-full h-full ${slot.className}`}
+              style={{
+                // Don't override container dimensions - let ResizeWrapper control size
+                minWidth: 'auto',
+                minHeight: 'auto'
+              }}
               dangerouslySetInnerHTML={{
                 __html: String(slot.content || `Button: ${slot.id}`)
               }}
@@ -684,8 +702,12 @@ const HierarchicalSlotRenderer = ({
           )}
           {slot.type === 'input' && (
             <input
-              className={slot.className}
-              style={slot.styles}
+              className={`w-full h-full ${slot.className}`}
+              style={{
+                // Don't override container dimensions - let ResizeWrapper control size
+                minWidth: 'auto',
+                minHeight: 'auto'
+              }}
               placeholder={String(slot.content || '')}
               type="text"
             />
@@ -1607,7 +1629,7 @@ const CartSlotsEditor = ({
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-            <div className="flex mb-3">
+            <div className="flex mb-3 justify-between">
               <Button
                   onClick={() => setShowSlotBorders(!showSlotBorders)}
                   variant={showSlotBorders ? "default" : "outline"}
@@ -1622,7 +1644,7 @@ const CartSlotsEditor = ({
                 <Plus className="w-4 h-4 mr-2" />
                 Add New
               </Button>
-              </div>
+            </div>
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
