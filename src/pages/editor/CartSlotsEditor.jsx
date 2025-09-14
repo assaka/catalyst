@@ -828,6 +828,7 @@ const CartSlotsEditor = ({
 
   // Track if configuration has been loaded once
   const configurationLoadedRef = useRef(false);
+  const isDragOperationActiveRef = useRef(false);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -1102,9 +1103,10 @@ const CartSlotsEditor = ({
       }
 
       // Also call parent onSave callback if provided
-      if (onSave) {
-        await onSave(configToSave);
-      }
+      // TEMPORARILY DISABLED: This might be causing config reversion
+      // if (onSave) {
+      //   await onSave(configToSave);
+      // }
 
       setLocalSaveStatus('saved');
       setTimeout(() => setLocalSaveStatus(''), 3000);
@@ -1353,6 +1355,9 @@ const CartSlotsEditor = ({
       targetSlotCurrent: cartLayoutConfig?.slots?.[targetSlotId]
     });
 
+    // Mark drag operation as active to prevent config reloads
+    isDragOperationActiveRef.current = true;
+
 
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ Cannot drop slot on itself');
@@ -1565,21 +1570,18 @@ const CartSlotsEditor = ({
         await saveConfiguration(updatedConfig);
         console.log('✅ Configuration saved successfully');
 
-        // Verify the state after save
+        // Mark drag operation as complete after save
         setTimeout(() => {
-          console.log('🔍 State verification after save (100ms delay):', {
-            currentConfigSlots: Object.keys(cartLayoutConfig?.slots || {}),
-            draggedSlotCurrent: cartLayoutConfig?.slots?.[draggedSlotId],
-            expectedParent: updatedConfig.slots[draggedSlotId]?.parentId,
-            actualParent: cartLayoutConfig?.slots?.[draggedSlotId]?.parentId,
-            matches: cartLayoutConfig?.slots?.[draggedSlotId]?.parentId === updatedConfig.slots[draggedSlotId]?.parentId
-          });
-        }, 100);
+          isDragOperationActiveRef.current = false;
+          console.log('🏁 Drag operation protection ended');
+        }, 2000); // 2 second protection after save
       } catch (error) {
         console.error('❌ Failed to save configuration:', error);
+        isDragOperationActiveRef.current = false;
       }
     } else {
       console.warn('⚠️ No updated configuration to save - drag operation was cancelled');
+      isDragOperationActiveRef.current = false;
     }
 
   }, [saveConfiguration, validateSlotConfiguration]);
