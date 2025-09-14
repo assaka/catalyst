@@ -641,7 +641,45 @@ const CartSlotsEditor = ({
 }) => {
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
-  
+
+  // Validation function to ensure slot configuration integrity
+  const validateSlotConfiguration = (slots) => {
+    if (!slots || typeof slots !== 'object') return false;
+
+    // Check for required properties in each slot
+    for (const [slotId, slot] of Object.entries(slots)) {
+      if (!slot.id || slot.id !== slotId) {
+        console.error(`❌ Slot ${slotId} has invalid or missing id`);
+        return false;
+      }
+
+      if (!slot.type) {
+        console.error(`❌ Slot ${slotId} missing type`);
+        return false;
+      }
+
+      // Ensure viewMode is always an array
+      if (slot.viewMode && !Array.isArray(slot.viewMode)) {
+        console.error(`❌ Slot ${slotId} has invalid viewMode (not an array)`);
+        return false;
+      }
+
+      // Validate parentId references
+      if (slot.parentId && slot.parentId !== null && !slots[slot.parentId]) {
+        console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId}`);
+        return false;
+      }
+    }
+
+    // Ensure main_layout has null parentId
+    if (slots.main_layout && slots.main_layout.parentId !== null) {
+      console.error('❌ main_layout must have parentId: null');
+      return false;
+    }
+
+    return true;
+  };
+
   // State management - Initialize with empty config to avoid React error #130
   const [cartLayoutConfig, setCartLayoutConfig] = useState({
     page_name: 'Cart',
@@ -900,11 +938,29 @@ const CartSlotsEditor = ({
   const saveConfiguration = useCallback(async (configToSave = cartLayoutConfig) => {
     if (!configToSave) return;
 
+    // Validate configuration before saving
+    if (!validateSlotConfiguration(configToSave.slots)) {
+      console.error('❌ Cannot save invalid configuration');
+      setLocalSaveStatus('error');
+      setTimeout(() => setLocalSaveStatus(''), 5000);
+      return;
+    }
+
     setLocalSaveStatus('saving');
     try {
       const storeId = getSelectedStoreId();
       if (storeId) {
         console.log('💾 Saving configuration to database...');
+
+        // Log the configuration being saved for debugging
+        console.log('📋 Configuration to save:', {
+          slotsCount: Object.keys(configToSave.slots).length,
+          slots: Object.keys(configToSave.slots),
+          hasViewModes: Object.entries(configToSave.slots).every(([id, slot]) =>
+            slot.viewMode === undefined || Array.isArray(slot.viewMode)
+          )
+        });
+
         await slotConfigurationService.saveConfiguration(storeId, configToSave, 'cart');
         console.log('✅ Configuration saved successfully');
       }
@@ -921,7 +977,7 @@ const CartSlotsEditor = ({
       setLocalSaveStatus('error');
       setTimeout(() => setLocalSaveStatus(''), 5000);
     }
-  }, [cartLayoutConfig, onSave, getSelectedStoreId]);
+  }, [cartLayoutConfig, onSave, getSelectedStoreId, validateSlotConfiguration]);
 
 
   // Handle element selection for EditorSidebar
@@ -1172,8 +1228,9 @@ const CartSlotsEditor = ({
           return prevConfig;
         }
 
-        const updatedSlots = { ...prevConfig.slots };
-        const draggedSlot = { ...updatedSlots[draggedSlotId] };
+        // Create a deep clone to avoid mutations
+        const updatedSlots = JSON.parse(JSON.stringify(prevConfig.slots));
+        const draggedSlot = updatedSlots[draggedSlotId];
         const targetSlot = updatedSlots[targetSlotId];
 
         if (!draggedSlot || !targetSlot) {
@@ -1182,8 +1239,22 @@ const CartSlotsEditor = ({
           return prevConfig;
         }
 
-        // Store original viewMode to preserve it
-        const originalViewMode = draggedSlot.viewMode;
+        // Store ALL original properties to preserve them
+        const originalProperties = {
+          id: draggedSlot.id,
+          type: draggedSlot.type,
+          content: draggedSlot.content,
+          className: draggedSlot.className,
+          parentClassName: draggedSlot.parentClassName,
+          styles: draggedSlot.styles || {},
+          layout: draggedSlot.layout,
+          gridCols: draggedSlot.gridCols,
+          colSpan: draggedSlot.colSpan,
+          rowSpan: draggedSlot.rowSpan,
+          viewMode: draggedSlot.viewMode,
+          metadata: draggedSlot.metadata || {},
+          position: draggedSlot.position || {}
+        };
 
         // Calculate new position based on drop zone
         let newParentId, newOrder;
@@ -1213,46 +1284,71 @@ const CartSlotsEditor = ({
             return prevConfig;
         }
 
-        // Update dragged slot position while preserving essential properties
+        // Update dragged slot position while preserving ALL essential properties
         updatedSlots[draggedSlotId] = {
-          ...draggedSlot,
+          ...originalProperties,
           parentId: newParentId,
-          position: { order: newOrder },
-          // Preserve viewMode array
-          viewMode: originalViewMode || draggedSlot.viewMode,
-          // Preserve other important properties
-          colSpan: draggedSlot.colSpan || 12,
-          rowSpan: draggedSlot.rowSpan || 1,
+          position: {
+            ...originalProperties.position,
+            order: newOrder
+          },
           metadata: {
-            ...draggedSlot.metadata,
+            ...originalProperties.metadata,
             lastModified: new Date().toISOString()
           }
         };
 
+        // Ensure we preserve viewMode array properly
+        if (Array.isArray(originalProperties.viewMode)) {
+          updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
+        }
+
         // Shift other slots in the target parent to make room
-        Object.values(updatedSlots).forEach(slot => {
+        Object.keys(updatedSlots).forEach(slotId => {
+          const slot = updatedSlots[slotId];
           if (slot.id !== draggedSlotId &&
               slot.parentId === newParentId &&
               (slot.position?.order || 0) >= newOrder) {
-            slot.position = { order: (slot.position?.order || 0) + 1 };
+            updatedSlots[slotId] = {
+              ...slot,
+              position: {
+                ...slot.position,
+                order: (slot.position?.order || 0) + 1
+              }
+            };
           }
         });
 
         // Clean up old parent - shift slots down
-        Object.values(updatedSlots).forEach(slot => {
+        Object.keys(updatedSlots).forEach(slotId => {
+          const slot = updatedSlots[slotId];
           if (slot.id !== draggedSlotId &&
-              slot.parentId === draggedSlot.parentId &&
-              (slot.position?.order || 0) > (draggedSlot.position?.order || 0)) {
-            slot.position = { order: (slot.position?.order || 0) - 1 };
+              slot.parentId === originalProperties.parentId &&
+              (slot.position?.order || 0) > (originalProperties.position?.order || 0)) {
+            updatedSlots[slotId] = {
+              ...slot,
+              position: {
+                ...slot.position,
+                order: (slot.position?.order || 0) - 1
+              }
+            };
           }
         });
 
         console.log('✅ Repositioned slot:', {
           slot: draggedSlotId,
-          from: { parent: draggedSlot.parentId, order: draggedSlot.position?.order },
+          from: { parent: originalProperties.parentId, order: originalProperties.position?.order },
           to: { parent: newParentId, order: newOrder },
-          viewMode: updatedSlots[draggedSlotId].viewMode
+          preservedViewMode: updatedSlots[draggedSlotId].viewMode,
+          preservedProperties: Object.keys(originalProperties)
         });
+
+        // Validate the updated configuration before applying
+        if (!validateSlotConfiguration(updatedSlots)) {
+          console.error('❌ Configuration validation failed after drag, reverting changes');
+          resolve(null);
+          return prevConfig;
+        }
 
         const newConfig = {
           ...prevConfig,
