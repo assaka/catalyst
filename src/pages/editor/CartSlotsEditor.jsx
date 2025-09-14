@@ -236,6 +236,10 @@ const GridColumn = ({
   const handleDragEnd = useCallback((e) => {
     e.stopPropagation();
     setIsDragging(false);
+    setIsDragOver(false);
+    setIsDragActive(false);
+    setDropZone(null);
+
     // Clear drag info
     if (setCurrentDragInfo) {
       setCurrentDragInfo(null);
@@ -249,9 +253,17 @@ const GridColumn = ({
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
-    // For containers, stop propagation to ensure this element handles the drop
+    // For containers, only stop propagation if we're in the middle area (inside drop zone)
+    // This allows drag events to bubble up to parent containers when dragging near edges
     if (['container', 'grid', 'flex'].includes(slot?.type)) {
-      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const height = rect.height;
+
+      // Only stop propagation if we're in the middle area (inside zone)
+      if (y > height * 0.25 && y < height * 0.75) {
+        e.stopPropagation();
+      }
     }
 
     // Only set drag over if it's not the dragging element itself
@@ -420,13 +432,18 @@ const GridColumn = ({
       onDrop={handleDrop}
       onDragEnter={(e) => {
         e.preventDefault();
-        // For container types, ensure we can always receive drops even with children
-        if (['container', 'grid', 'flex'].includes(slot?.type)) {
-          e.stopPropagation();
-        }
+        // Don't stop propagation on dragEnter to allow bubbling to parent containers
       }}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        // Clear drag states when mouse leaves
+        if (!isDragging) {
+          setIsDragOver(false);
+          setIsDragActive(false);
+          setDropZone(null);
+        }
+      }}
       style={gridStyles}
     >
       {/* Drop Zone Indicators */}
@@ -1638,6 +1655,7 @@ const CartSlotsEditor = ({
             <Button
                 onClick={() => setShowSlotBorders(!showSlotBorders)}
                 variant={showSlotBorders ? "default" : "outline"}
+                className={"mb-3"}
                 size="sm"
                 title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
             >
