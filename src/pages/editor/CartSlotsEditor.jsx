@@ -234,15 +234,16 @@ const GridColumn = ({
 
     // Only set drag over if it's not the dragging element itself
     if (!isDragging) {
-      setIsDragOver(true);
-      setIsDragActive(true);
+      // Debounce drag over to prevent excessive re-renders
+      if (!isDragOver) {
+        setIsDragOver(true);
+        setIsDragActive(true);
+      }
 
       // Determine drop zone based on mouse position
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const height = rect.height;
-      const width = rect.width;
 
       // Calculate drop zones
       let newDropZone = 'after'; // default
@@ -257,9 +258,12 @@ const GridColumn = ({
         newDropZone = isContainer ? 'inside' : 'after';
       }
 
-      setDropZone(newDropZone);
+      // Only update dropZone if it's different to prevent unnecessary re-renders
+      if (newDropZone !== dropZone) {
+        setDropZone(newDropZone);
+      }
     }
-  }, [mode, isDragging, slot?.type]);
+  }, [mode, isDragging, slot?.type, isDragOver, dropZone]);
 
   const handleDragLeave = useCallback((e) => {
     // Only remove drag over if leaving the element entirely
@@ -707,6 +711,10 @@ const CartSlotsEditor = ({
     },
     cmsBlocks: []
   });
+
+  // Track if we're currently saving to prevent overrides
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const lastSaveTimestampRef = useRef(0);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -902,10 +910,17 @@ const CartSlotsEditor = ({
           console.warn('⚠️ No slots found in final configuration');
         }
 
-        // Defer state update to avoid React error #130
+        // Defer state update to avoid React error #130, but check if we're currently saving
         setTimeout(() => {
-          if (isMounted) {
-            setCartLayoutConfig(configToUse);
+          if (isMounted && !isSavingConfig) {
+            // Only update if we're not in the middle of a save operation
+            const timeSinceLastSave = Date.now() - lastSaveTimestampRef.current;
+            if (timeSinceLastSave > 2000) { // Wait at least 2 seconds after last save
+              console.log('🔄 Setting configuration from initialization');
+              setCartLayoutConfig(configToUse);
+            } else {
+              console.log('⏳ Skipping config update - recent save detected');
+            }
           }
         }, 0);
       } catch (error) {
@@ -937,7 +952,7 @@ const CartSlotsEditor = ({
     return () => {
       isMounted = false;
     };
-  }, [selectedStore, getSelectedStoreId]);
+  }, [selectedStore, getSelectedStoreId, isSavingConfig]);
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
@@ -960,7 +975,10 @@ const CartSlotsEditor = ({
       return;
     }
 
+    setIsSavingConfig(true);
+    lastSaveTimestampRef.current = Date.now();
     setLocalSaveStatus('saving');
+
     try {
       const storeId = getSelectedStoreId();
       if (storeId) {
@@ -990,6 +1008,11 @@ const CartSlotsEditor = ({
       console.error('❌ Save failed:', error);
       setLocalSaveStatus('error');
       setTimeout(() => setLocalSaveStatus(''), 5000);
+    } finally {
+      // Allow some time before allowing config reloads
+      setTimeout(() => {
+        setIsSavingConfig(false);
+      }, 1000); // Wait 1 second after save before allowing reloads
     }
   }, [cartLayoutConfig, onSave, getSelectedStoreId]);
 
