@@ -513,7 +513,7 @@ const HierarchicalSlotRenderer = ({
   // Filter slots based on their viewMode property from config
   const filteredSlots = childSlots.filter(slot => {
     // If slot doesn't have viewMode defined, show it always
-    if (!slot.viewMode || !Array.isArray(slot.viewMode)) {
+    if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
       return true;
     }
 
@@ -813,9 +813,33 @@ const CartSlotsEditor = ({
             }
           });
 
+          // Ensure sidebar_area is also a child of main_layout if it exists
+          if (repairedSlots.sidebar_area && repairedSlots.sidebar_area.parentId !== 'main_layout') {
+            console.log('🔧 Repairing sidebar_area parentId');
+            repairedSlots.sidebar_area = { ...repairedSlots.sidebar_area, parentId: 'main_layout' };
+            needsRepair = true;
+          }
+
+          // Load cart config to get original viewMode values
+          const { cartConfig: originalCartConfig } = await import('@/components/editor/slot/configs/cart-config');
+
+          // Ensure all slots have proper viewMode arrays from config if missing
+          Object.keys(repairedSlots).forEach(slotId => {
+            const slot = repairedSlots[slotId];
+            // If viewMode is undefined or not an array, preserve from cartConfig
+            if (!slot.viewMode || !Array.isArray(slot.viewMode)) {
+              const configSlot = originalCartConfig?.slots?.[slotId];
+              if (configSlot && configSlot.viewMode) {
+                repairedSlots[slotId] = { ...slot, viewMode: [...configSlot.viewMode] };
+                needsRepair = true;
+                console.log(`🔧 Repairing viewMode for ${slotId}:`, configSlot.viewMode);
+              }
+            }
+          });
+
           if (needsRepair) {
             configToUse = { ...configToUse, slots: repairedSlots };
-            console.log('✅ Hierarchy repaired');
+            console.log('✅ Hierarchy and viewMode repaired');
           }
         }
         } catch (e) {
@@ -1135,7 +1159,7 @@ const CartSlotsEditor = ({
     }
 
     // Also prevent moving other root containers into wrong places
-    if (['header_container', 'content_area'].includes(draggedSlotId) && dropPosition !== 'after' && dropPosition !== 'before') {
+    if (['header_container', 'content_area', 'sidebar_area'].includes(draggedSlotId) && dropPosition !== 'after' && dropPosition !== 'before') {
       console.log('⚠️ Cannot move root containers inside other elements');
       return;
     }
@@ -1157,6 +1181,9 @@ const CartSlotsEditor = ({
           resolve(null);
           return prevConfig;
         }
+
+        // Store original viewMode to preserve it
+        const originalViewMode = draggedSlot.viewMode;
 
         // Calculate new position based on drop zone
         let newParentId, newOrder;
@@ -1186,11 +1213,16 @@ const CartSlotsEditor = ({
             return prevConfig;
         }
 
-        // Update dragged slot position
+        // Update dragged slot position while preserving essential properties
         updatedSlots[draggedSlotId] = {
           ...draggedSlot,
           parentId: newParentId,
           position: { order: newOrder },
+          // Preserve viewMode array
+          viewMode: originalViewMode || draggedSlot.viewMode,
+          // Preserve other important properties
+          colSpan: draggedSlot.colSpan || 12,
+          rowSpan: draggedSlot.rowSpan || 1,
           metadata: {
             ...draggedSlot.metadata,
             lastModified: new Date().toISOString()
@@ -1218,7 +1250,8 @@ const CartSlotsEditor = ({
         console.log('✅ Repositioned slot:', {
           slot: draggedSlotId,
           from: { parent: draggedSlot.parentId, order: draggedSlot.position?.order },
-          to: { parent: newParentId, order: newOrder }
+          to: { parent: newParentId, order: newOrder },
+          viewMode: updatedSlots[draggedSlotId].viewMode
         });
 
         const newConfig = {
