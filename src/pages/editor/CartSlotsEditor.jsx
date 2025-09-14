@@ -236,7 +236,6 @@ const GridColumn = ({
       }
     }, 100);
 
-    console.log('🎯 Started dragging slot:', slotId);
   }, [slotId, mode]);
 
   const handleDragEnd = useCallback((e) => {
@@ -250,7 +249,6 @@ const GridColumn = ({
     if (setCurrentDragInfo) {
       setCurrentDragInfo(null);
     }
-    console.log('🎯 Finished dragging slot:', slotId);
   }, [slotId, setCurrentDragInfo]);
 
   const handleDragOver = useCallback((e) => {
@@ -318,19 +316,6 @@ const GridColumn = ({
           const canDropInside = draggedSlotParent !== targetSlotId &&
                                 draggedSlotId !== targetSlotId;
 
-          console.log('🎯 Drop inside check:', {
-            draggedSlotId,
-            draggedSlotParent,
-            targetSlotId,
-            targetSlotType: slot?.type,
-            targetSlotParent,
-            canDropInside,
-            isContainer,
-            reason: !canDropInside ?
-              (draggedSlotParent === targetSlotId ? 'already child of target' :
-               draggedSlotId === targetSlotId ? 'cannot drop on self' : 'other') : 'ok'
-          });
-
           if (canDropInside) {
             newDropZone = 'inside';
           } else {
@@ -338,13 +323,6 @@ const GridColumn = ({
             newDropZone = 'after';
           }
         } else {
-          console.log('🎯 No drop inside available:', {
-            targetSlotId: slot?.id,
-            targetSlotType: slot?.type,
-            isContainer,
-            hasCurrentDragInfo: !!currentDragInfo,
-            reason: !isContainer ? 'not a container' : 'no drag info'
-          });
           newDropZone = 'after';
         }
       }
@@ -388,7 +366,6 @@ const GridColumn = ({
 
     // Don't process drop if this is the element being dragged
     if (isDragging) {
-      console.log('⚠️ Ignoring drop on self');
       return;
     }
 
@@ -396,7 +373,6 @@ const GridColumn = ({
     const dropPosition = dropZone || 'after'; // Use current dropZone state
 
     if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
-      console.log('🎯 Dropping slot:', { from: draggedSlotId, to: slotId, position: dropPosition });
       onSlotDrop(draggedSlotId, slotId, dropPosition);
     }
 
@@ -616,24 +592,6 @@ const HierarchicalSlotRenderer = ({
 }) => {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
-  // Debug logging to see what's happening
-  if (parentId === null) {
-    console.log('🔍 Root slots debug:', {
-      totalSlots: Object.keys(slots || {}).length,
-      childSlots: childSlots.length,
-      childSlotIds: childSlots.map(s => s.id),
-      viewMode
-    });
-  } else {
-    // Debug child slots for any parent
-    console.log(`🔍 Child slots for ${parentId}:`, {
-      parentId,
-      childCount: childSlots.length,
-      childSlotIds: childSlots.map(s => s.id),
-      childSlots: childSlots.map(s => ({ id: s.id, parentId: s.parentId }))
-    });
-  }
-
   // Filter slots based on their viewMode property from config
   const filteredSlots = childSlots.filter(slot => {
     // If slot doesn't have viewMode defined, show it always
@@ -643,30 +601,12 @@ const HierarchicalSlotRenderer = ({
 
     // Show slot only if current viewMode is in its viewMode array
     const shouldShow = slot.viewMode.includes(viewMode);
-    if (parentId === null) {
-      console.log(`🔍 Slot ${slot.id} viewMode check:`, {
-        slotViewMode: slot.viewMode,
-        currentViewMode: viewMode,
-        shouldShow,
-        parentId: slot.parentId
-      });
-    }
     return shouldShow;
   });
-
-  if (parentId === null) {
-    console.log('🔍 After filtering:', {
-      filteredCount: filteredSlots.length,
-      filteredIds: filteredSlots.map(s => s.id)
-    });
-  }
   
   return filteredSlots.map(slot => {
     // Calculate dynamic colSpan based on viewMode for specific slots
     let colSpan = slot.colSpan || 12;
-    
-    // Note: Removed hardcoded colSpan override for content_area to allow proper resizing
-    // The colSpan should come from the slot data (which includes user resize changes)
     
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
@@ -994,12 +934,6 @@ const CartSlotsEditor = ({
           console.log('📦 Using static configuration as template');
         }
 
-        console.log('🔍 Final configuration to use:', {
-          source: configToUse && configToUse.metadata && configToUse.metadata.source === 'database' ? 'database' : 'static',
-          slotsCount: Object.keys(configToUse.slots || {}).length,
-          slots: Object.keys(configToUse.slots || {})
-        });
-
         // Verify the config is serializable
         try {
           JSON.stringify(configToUse);
@@ -1028,7 +962,6 @@ const CartSlotsEditor = ({
 
           // Ensure sidebar_area is also a child of main_layout if it exists
           if (repairedSlots.sidebar_area && repairedSlots.sidebar_area.parentId !== 'main_layout') {
-            console.log('🔧 Repairing sidebar_area parentId');
             repairedSlots.sidebar_area = { ...repairedSlots.sidebar_area, parentId: 'main_layout' };
             needsRepair = true;
           }
@@ -1065,7 +998,6 @@ const CartSlotsEditor = ({
 
         // Simple one-time initialization
         if (isMounted) {
-          console.log('🔄 Loading configuration (one time only)');
           setCartLayoutConfig(configToUse);
           configurationLoadedRef.current = true;
         }
@@ -1125,26 +1057,8 @@ const CartSlotsEditor = ({
     try {
       const storeId = getSelectedStoreId();
       if (storeId) {
-        console.log('💾 Saving configuration to database...');
-
-        // Log the configuration being saved for debugging
-        console.log('📋 Configuration to save:', {
-          slotsCount: Object.keys(configToSave.slots).length,
-          slots: Object.keys(configToSave.slots),
-          hasViewModes: Object.entries(configToSave.slots).every(([id, slot]) =>
-            slot.viewMode === undefined || Array.isArray(slot.viewMode)
-          )
-        });
-
         await slotConfigurationService.saveConfiguration(storeId, configToSave, 'cart');
-        console.log('✅ Configuration saved successfully');
       }
-
-      // Also call parent onSave callback if provided
-      // TEMPORARILY DISABLED: This might be causing config reversion
-      // if (onSave) {
-      //   await onSave(configToSave);
-      // }
 
       setLocalSaveStatus('saved');
       setTimeout(() => setLocalSaveStatus(''), 3000);
@@ -1176,15 +1090,6 @@ const CartSlotsEditor = ({
       // Use the most specific element found
       actualElement = button || svg || input || element;
     }
-    
-    console.log('🎯 Selected element for EditorSidebar:', {
-      slotId,
-      elementType: actualElement.tagName,
-      elementClasses: actualElement.className,
-      isWrapper: element !== actualElement,
-      outerHTML: actualElement.outerHTML.substring(0, 200) + '...',
-      textContent: actualElement.textContent
-    });
     
     setSelectedElement(actualElement);
     setIsSidebarVisible(true);
@@ -1219,7 +1124,6 @@ const CartSlotsEditor = ({
 
   // Handle class changes from EditorSidebar for hierarchical slots
   const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false) => {
-    console.log('🎨 handleClassChange called:', { slotId, className, styles, isAlignmentChange });
 
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
@@ -1308,7 +1212,6 @@ const CartSlotsEditor = ({
 
   // Handle grid resize changes for hierarchical slots
   const handleGridResize = useCallback((slotId, newColSpan) => {
-    console.log('🔄 handleGridResize called:', { slotId, newColSpan });
     
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
@@ -1326,14 +1229,11 @@ const CartSlotsEditor = ({
         slots: updatedSlots
       };
 
-      console.log('✅ Updated slot:', updatedConfig.slots[slotId]);
-
       // Debounced auto-save - clear previous timeout and set new one
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       saveTimeoutRef.current = setTimeout(() => {
-        console.log('💾 Saving configuration after resize...');
         saveConfiguration(updatedConfig);
       }, 500); // Wait 0.5 seconds after resize stops for more responsive feel
 
@@ -1343,7 +1243,6 @@ const CartSlotsEditor = ({
 
   // Handle slot container height resize changes
   const handleSlotHeightResize = useCallback((slotId, newHeight) => {
-    console.log('📐 handleSlotHeightResize called:', { slotId, newHeight });
     
     setCartLayoutConfig(prevConfig => {
       const updatedSlots = { ...prevConfig?.slots };
@@ -1351,7 +1250,6 @@ const CartSlotsEditor = ({
       if (updatedSlots[slotId]) {
         // Calculate row span based on height (rough approximation: 40px per row)
         const estimatedRowSpan = Math.max(1, Math.round(newHeight / 40));
-        console.log(`📏 Height ${newHeight}px ≈ ${estimatedRowSpan} row spans`);
         
         // Update the slot's height and rowSpan
         updatedSlots[slotId] = {
@@ -1369,14 +1267,11 @@ const CartSlotsEditor = ({
         slots: updatedSlots
       };
 
-      console.log('✅ Updated slot with height:', updatedConfig.slots[slotId]);
-
       // Debounced auto-save - clear previous timeout and set new one
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       saveTimeoutRef.current = setTimeout(() => {
-        console.log('💾 Saving configuration after slot height resize...');
         saveConfiguration(updatedConfig);
       }, 500); // Wait 0.5 seconds after resize stops for more responsive feel
 
@@ -1386,31 +1281,21 @@ const CartSlotsEditor = ({
 
   // Handle slot repositioning using drop zones
   const handleSlotDrop = useCallback(async (draggedSlotId, targetSlotId, dropPosition) => {
-    console.log('🎯 handleSlotDrop called:', { draggedSlotId, targetSlotId, dropPosition });
-    console.log('📊 Current state before drop:', {
-      totalSlots: Object.keys(cartLayoutConfig?.slots || {}).length,
-      draggedSlotCurrent: cartLayoutConfig?.slots?.[draggedSlotId],
-      targetSlotCurrent: cartLayoutConfig?.slots?.[targetSlotId]
-    });
 
     // Mark drag operation as active to prevent config reloads
     isDragOperationActiveRef.current = true;
 
-
     if (draggedSlotId === targetSlotId) {
-      console.log('⚠️ Cannot drop slot on itself');
       return;
     }
 
     // Prevent moving critical layout containers
     if (draggedSlotId === 'main_layout') {
-      console.log('⚠️ Cannot move main layout container');
       return;
     }
 
     // Also prevent moving other root containers into wrong places
     if (['header_container', 'content_area', 'sidebar_area'].includes(draggedSlotId) && dropPosition !== 'after' && dropPosition !== 'before') {
-      console.log('⚠️ Cannot move root containers inside other elements');
       return;
     }
 
@@ -1473,20 +1358,9 @@ const CartSlotsEditor = ({
           case 'inside':
             // Only allow dropping inside containers
             if (!['container', 'grid', 'flex'].includes(targetSlot.type)) {
-              console.log('⚠️ Cannot drop inside non-container slot:', {
-                targetSlotType: targetSlot.type,
-                targetSlotId
-              });
               resolve(null);
               return prevConfig;
             }
-            console.log('✅ Dropping inside container:', {
-              targetSlotId,
-              targetSlotType: targetSlot.type,
-              draggedSlotId,
-              draggedSlotCurrentParent: draggedSlot.parentId,
-              willChangeParentTo: targetSlotId
-            });
             newParentId = targetSlotId;
             newOrder = 0;
             break;
@@ -1547,23 +1421,6 @@ const CartSlotsEditor = ({
           }
         });
 
-        console.log('✅ Repositioned slot:', {
-          slot: draggedSlotId,
-          from: { parent: originalProperties.parentId, order: originalProperties.position?.order },
-          to: { parent: newParentId, order: newOrder },
-          dropPosition: dropPosition,
-          actualNewParent: updatedSlots[draggedSlotId].parentId,
-          preservedViewMode: updatedSlots[draggedSlotId].viewMode,
-          updatedSlot: updatedSlots[draggedSlotId]
-        });
-
-        // Debug: Log all affected slots
-        console.log('🔍 All affected slots after repositioning:', {
-          draggedSlot: { id: draggedSlotId, ...updatedSlots[draggedSlotId] },
-          siblingsInNewParent: Object.values(updatedSlots).filter(s => s.parentId === newParentId).map(s => ({ id: s.id, order: s.position?.order })),
-          siblingsInOldParent: Object.values(updatedSlots).filter(s => s.parentId === originalProperties.parentId).map(s => ({ id: s.id, order: s.position?.order }))
-        });
-
         // Validate the updated configuration before applying
         if (!validateSlotConfiguration(updatedSlots)) {
           console.error('❌ Configuration validation failed after drag, reverting changes');
@@ -1580,38 +1437,19 @@ const CartSlotsEditor = ({
           }
         };
 
-        console.log('📦 Final configuration to return:', {
-          configSlotsCount: Object.keys(newConfig.slots).length,
-          draggedSlotFinal: newConfig.slots[draggedSlotId],
-          willResolve: true
-        });
-
         resolve(newConfig);
         return newConfig;
       });
     });
 
-    console.log('🎬 After setCartLayoutConfig promise resolved:', {
-      hasUpdatedConfig: !!updatedConfig,
-      updatedConfigSlotsCount: updatedConfig ? Object.keys(updatedConfig.slots || {}).length : 0,
-      draggedSlotInUpdated: updatedConfig?.slots?.[draggedSlotId]
-    });
-
     if (updatedConfig) {
-      console.log('💾 About to save configuration...');
-      console.log('📋 Config to save details:', {
-        slots: Object.keys(updatedConfig.slots),
-        draggedSlot: updatedConfig.slots[draggedSlotId]
-      });
 
       try {
         await saveConfiguration(updatedConfig);
-        console.log('✅ Configuration saved successfully');
 
         // Mark drag operation as complete after save
         setTimeout(() => {
           isDragOperationActiveRef.current = false;
-          console.log('🏁 Drag operation protection ended');
         }, 2000); // 2 second protection after save
       } catch (error) {
         console.error('❌ Failed to save configuration:', error);
