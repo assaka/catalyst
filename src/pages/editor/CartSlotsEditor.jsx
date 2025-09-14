@@ -35,7 +35,6 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
   const startValueRef = useRef(currentValue);
 
   const handleMouseDown = useCallback((e) => {
-    console.log('🎯 Resize handle mousedown:', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -161,8 +160,6 @@ const GridColumn = ({
   const [isDragging, setIsDragging] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
-  
-  console.log('🔍 GridColumn render:', { slotId, showHorizontalHandle, showVerticalHandle, mode, colSpan, onGridResize: !!onGridResize });
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e) => {
@@ -277,15 +274,13 @@ const GridColumn = ({
               isHovered
                 ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40'
                 : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
-            } ${mode === 'edit' ? 'cursor-grab active:cursor-grabbing' : ''}`
+            }`
           : 'overflow-hidden'
       } relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
-      draggable={mode === 'edit'}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+      draggable={false}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -314,6 +309,28 @@ const GridColumn = ({
             zIndex: 1
           }}
         />
+      )}
+      
+      {/* Drag Handle - separate from content to not interfere with resize */}
+      {mode === 'edit' && (
+        <div
+          className="absolute top-1 left-1 w-8 h-8 bg-blue-500/20 hover:bg-blue-500/40 rounded cursor-move z-20 flex items-center justify-center transition-all duration-200 hover:scale-110"
+          draggable={true}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          title="Drag to reposition"
+        >
+          <div className="flex flex-col gap-0.5">
+            <div className="flex gap-0.5">
+              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
+              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
+            </div>
+            <div className="flex gap-0.5">
+              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
+              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Clean content area */}
