@@ -4,10 +4,68 @@
  */
 
 import { useCallback, useState, useRef } from 'react';
+import slotConfigurationService from '@/services/slotConfigurationService';
+
+// Helper function to dynamically load page-specific config
+async function loadPageConfig(pageType) {
+  let config;
+  switch (pageType) {
+    case 'cart':
+      const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+      config = cartConfig;
+      break;
+    case 'category':
+      const { categoryConfig } = await import('@/components/editor/slot/configs/category-config');
+      config = categoryConfig;
+      break;
+    case 'product':
+      const { productConfig } = await import('@/components/editor/slot/configs/product-config');
+      config = productConfig;
+      break;
+    case 'checkout':
+      const { checkoutConfig } = await import('@/components/editor/slot/configs/checkout-config');
+      config = checkoutConfig;
+      break;
+    case 'success':
+      const { successConfig } = await import('@/components/editor/slot/configs/success-config');
+      config = successConfig;
+      break;
+    default:
+      const { cartConfig: fallbackConfig } = await import('@/components/editor/slot/configs/cart-config');
+      config = fallbackConfig;
+  }
+  return config;
+}
+
+// Helper function to create clean slots from config
+function createCleanSlots(config) {
+  const cleanSlots = {};
+  if (config.slots) {
+    Object.entries(config.slots).forEach(([key, slot]) => {
+      // Only copy serializable properties, ensure no undefined values
+      cleanSlots[key] = {
+        id: slot.id || key,
+        type: slot.type || 'container',
+        content: slot.content || '',
+        className: slot.className || '',
+        parentClassName: slot.parentClassName || '',
+        styles: slot.styles ? { ...slot.styles } : {},
+        parentId: slot.parentId === undefined ? null : slot.parentId,
+        layout: slot.layout || null,
+        gridCols: slot.gridCols || null,
+        colSpan: slot.colSpan || 12,
+        rowSpan: slot.rowSpan || 1,
+        viewMode: slot.viewMode ? [...slot.viewMode] : [],
+        metadata: slot.metadata ? { ...slot.metadata } : {}
+      };
+    });
+  }
+  return cleanSlots;
+}
 
 export function useSlotConfiguration({
   pageType,
-  pageName, 
+  pageName,
   slotType,
   selectedStore,
   updateConfiguration,
@@ -15,6 +73,7 @@ export function useSlotConfiguration({
   microSlotDefinitions
 }) {
   const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved', 'error'
+  const [resetStatus, setResetStatus] = useState(''); // '', 'resetting', 'reset', 'error'
   const saveStatusTimeoutRef = useRef(null);
   const justSavedRef = useRef(false);
 
@@ -263,12 +322,126 @@ export function useSlotConfiguration({
     }));
   }, []);
 
+  // Generic reset layout function
+  const handleResetLayout = useCallback(async () => {
+    try {
+      setResetStatus('resetting');
+
+      // Clear the draft configuration from database
+      const storeId = selectedStore?.id;
+      if (storeId) {
+        await slotConfigurationService.clearDraftConfiguration(storeId, pageType);
+      }
+
+      // Load the clean static configuration for this page type
+      const config = await loadPageConfig(pageType);
+
+      if (!config || !config.slots) {
+        throw new Error(`${pageType} configuration is invalid or missing slots`);
+      }
+
+      // Create clean slots
+      const cleanSlots = createCleanSlots(config);
+
+      const cleanConfig = {
+        page_name: config.page_name || pageName,
+        slot_type: config.slot_type || slotType,
+        slots: cleanSlots,
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          version: '1.0',
+          pageType: pageType
+        },
+        cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
+      };
+
+      // Save the clean config to database
+      if (updateConfiguration) {
+        await updateConfiguration(cleanConfig);
+      }
+
+      setResetStatus('reset');
+      setTimeout(() => setResetStatus(''), 3000);
+
+      console.log(`✅ ${pageType} layout reset to clean configuration`);
+
+      return cleanConfig;
+    } catch (error) {
+      console.error(`❌ Failed to reset ${pageType} layout:`, error);
+      setResetStatus('error');
+      setTimeout(() => setResetStatus(''), 5000);
+      throw error;
+    }
+  }, [selectedStore, pageType, pageName, slotType, updateConfiguration]);
+
+  // Generic load static configuration function
+  const loadStaticConfiguration = useCallback(async () => {
+    console.log('📂 Loading static configuration as template...');
+
+    const config = await loadPageConfig(pageType);
+
+    if (!config || !config.slots) {
+      throw new Error(`${pageType} configuration is invalid or missing slots`);
+    }
+
+    const cleanSlots = createCleanSlots(config);
+
+    const configToUse = {
+      page_name: config.page_name || pageName,
+      slot_type: config.slot_type || slotType,
+      slots: cleanSlots,
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        version: '1.0',
+        pageType: pageType
+      },
+      cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
+    };
+
+    console.log(`📦 Using static ${pageType} configuration as template`);
+    return configToUse;
+  }, [pageType, pageName, slotType]);
+
+  // Generic get draft or static configuration
+  const getDraftOrStaticConfiguration = useCallback(async () => {
+    const storeId = selectedStore?.id;
+    let configToUse = null;
+
+    // Try to load from database first
+    if (storeId) {
+      try {
+        console.log('💾 Attempting to load saved configuration from database...');
+        const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+
+        if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
+          console.log('📄 Database configuration found:', savedConfig.data.configuration);
+          configToUse = savedConfig.data.configuration;
+        }
+      } catch (dbError) {
+        console.log('📝 No saved configuration found, will use static config as fallback:', dbError.message);
+      }
+    }
+
+    // If no saved config found, load the static configuration
+    if (!configToUse) {
+      configToUse = await loadStaticConfiguration();
+    }
+
+    return configToUse;
+  }, [selectedStore, pageType, loadStaticConfiguration]);
+
   return {
     saveConfiguration,
     loadConfiguration,
     applyDraftConfiguration,
     updateSlotsForViewMode,
+    handleResetLayout,
+    loadStaticConfiguration,
+    getDraftOrStaticConfiguration,
     saveStatus,
+    resetStatus,
     justSavedRef,
     cleanup
   };
