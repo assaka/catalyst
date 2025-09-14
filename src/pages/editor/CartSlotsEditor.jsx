@@ -173,7 +173,7 @@ const GridColumn = ({
   const dragOverTimeoutRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
-  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   
 
