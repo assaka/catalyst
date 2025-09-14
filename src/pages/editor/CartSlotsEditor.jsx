@@ -35,6 +35,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
   const startValueRef = useRef(currentValue);
 
   const handleMouseDown = useCallback((e) => {
+    console.log('🎯 GridResizeHandle mousedown:', { direction, currentValue, e });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -311,38 +312,31 @@ const GridColumn = ({
         />
       )}
       
-      {/* Drag Handle - separate from content to not interfere with resize */}
-      {mode === 'edit' && (
+      
+      {/* Drag Handle - only visible on hover */}
+      {mode === 'edit' && isHovered && (
         <div
-          className="absolute top-1 left-1 w-8 h-8 bg-blue-500/20 hover:bg-blue-500/40 rounded cursor-move z-20 flex items-center justify-center transition-all duration-200 hover:scale-110"
+          className="absolute top-1 left-1 w-6 h-6 bg-blue-500/80 hover:bg-blue-600 rounded cursor-move z-30 flex items-center justify-center transition-all duration-200"
           draggable={true}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           title="Drag to reposition"
         >
-          <div className="flex flex-col gap-0.5">
-            <div className="flex gap-0.5">
-              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
-              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
-            </div>
-            <div className="flex gap-0.5">
-              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
-              <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
-            </div>
-          </div>
+          <div className="w-2 h-2 bg-white rounded-full opacity-80"></div>
         </div>
       )}
       
       {/* Clean content area */}
       <div className={`p-2 relative transition-all duration-200 ${
-        mode === 'edit' 
-          ? `cursor-pointer rounded-md hover:bg-white/50 ${isHovered ? 'bg-white/30' : ''}` 
+        mode === 'edit'
+          ? `cursor-pointer rounded-md hover:bg-white/50 ${isHovered ? 'bg-white/30' : ''}`
           : ''
       }`} style={{ zIndex: 2 }}>
         {children}
       </div>
       
       {/* Resize handles at GridColumn level */}
+      {console.log(`🔍 ${slotId} resize handles:`, { showHorizontalHandle, showVerticalHandle, mode, colSpan, onGridResize: !!onGridResize })}
       {showHorizontalHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
