@@ -712,12 +712,8 @@ const CartSlotsEditor = ({
     cmsBlocks: []
   });
 
-  // Track if we're currently saving to prevent overrides
-  const [isSavingConfig, setIsSavingConfig] = useState(false);
-  const lastSaveTimestampRef = useRef(0);
-  const isInitializingRef = useRef(false);
+  // Track if configuration has been loaded once
   const configurationLoadedRef = useRef(false);
-  const isDragOperationInProgressRef = useRef(false);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -744,20 +740,12 @@ const CartSlotsEditor = ({
     onSave
   });
 
-  // Initialize cart configuration - first try to load from database, then fall back to static config
+  // Initialize cart configuration - ONCE on mount only
   useEffect(() => {
-    let isMounted = true; // Track if component is still mounted
+    let isMounted = true;
 
     const initializeConfig = async () => {
-      if (!isMounted) return;
-
-      // Prevent multiple simultaneous initializations
-      if (isInitializingRef.current) {
-        console.log('⏳ Initialization already in progress, skipping...');
-        return;
-      }
-
-      isInitializingRef.current = true;
+      if (!isMounted || configurationLoadedRef.current) return;
 
       try {
         console.log('🔄 CartSlotsEditor: Starting configuration initialization...');
@@ -921,31 +909,12 @@ const CartSlotsEditor = ({
           console.warn('⚠️ No slots found in final configuration');
         }
 
-        // Defer state update to avoid React error #130, but check if we're currently saving
-        setTimeout(() => {
-          if (isMounted && !isSavingConfig) {
-            // Only update if we're not in the middle of a save operation AND we haven't loaded config yet
-            const timeSinceLastSave = Date.now() - lastSaveTimestampRef.current;
-            const shouldSkipDueToRecentSave = timeSinceLastSave < 5000; // Increased to 5 seconds
-
-            if (isDragOperationInProgressRef.current) {
-              console.log('⏳ Skipping config update - drag operation in progress');
-            } else if (shouldSkipDueToRecentSave) {
-              console.log('⏳ Skipping config update - recent save detected', {
-                timeSinceLastSave,
-                isSavingConfig,
-                configurationLoadedRef: configurationLoadedRef.current
-              });
-            } else if (!configurationLoadedRef.current) {
-              console.log('🔄 Setting configuration from initialization (first load)');
-              setCartLayoutConfig(configToUse);
-              configurationLoadedRef.current = true;
-            } else {
-              console.log('⏳ Skipping config update - configuration already loaded');
-            }
-          }
-          isInitializingRef.current = false;
-        }, 0);
+        // Simple one-time initialization
+        if (isMounted) {
+          console.log('🔄 Loading configuration (one time only)');
+          setCartLayoutConfig(configToUse);
+          configurationLoadedRef.current = true;
+        }
       } catch (error) {
         console.error('❌ Failed to initialize cart configuration:', error);
         // Set a minimal fallback configuration
@@ -965,18 +934,16 @@ const CartSlotsEditor = ({
             cmsBlocks: []
           });
           }
-          isInitializingRef.current = false;
         }, 0);
       }
     };
 
     initializeConfig();
 
-    // Cleanup function to prevent state updates on unmounted component
     return () => {
       isMounted = false;
     };
-  }, [selectedStore, getSelectedStoreId, isSavingConfig]);
+  }, []); // Empty dependency array - run only once on mount
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
@@ -999,8 +966,6 @@ const CartSlotsEditor = ({
       return;
     }
 
-    setIsSavingConfig(true);
-    lastSaveTimestampRef.current = Date.now();
     setLocalSaveStatus('saving');
 
     try {
@@ -1032,12 +997,6 @@ const CartSlotsEditor = ({
       console.error('❌ Save failed:', error);
       setLocalSaveStatus('error');
       setTimeout(() => setLocalSaveStatus(''), 5000);
-    } finally {
-      // Allow some time before allowing config reloads
-      setTimeout(() => {
-        setIsSavingConfig(false);
-        console.log('🔓 Save protection period ended');
-      }, 2000); // Wait 2 seconds after save before allowing reloads
     }
   }, [cartLayoutConfig, onSave, getSelectedStoreId]);
 
@@ -1270,8 +1229,6 @@ const CartSlotsEditor = ({
       targetSlotCurrent: cartLayoutConfig?.slots?.[targetSlotId]
     });
 
-    // Mark drag operation as in progress
-    isDragOperationInProgressRef.current = true;
 
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ Cannot drop slot on itself');
@@ -1490,11 +1447,6 @@ const CartSlotsEditor = ({
       console.warn('⚠️ No updated configuration to save - drag operation was cancelled');
     }
 
-    // Mark drag operation as completed
-    setTimeout(() => {
-      isDragOperationInProgressRef.current = false;
-      console.log('🏁 Drag operation marked as completed');
-    }, 1000);
   }, [saveConfiguration, validateSlotConfiguration]);
 
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
