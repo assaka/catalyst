@@ -118,8 +118,6 @@ const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { getSelectedStoreId } = useStoreSelection();
   
-  console.log('🏪 [AIContextWindow] Using StoreSelectionContext for store ID resolution');
-  
   // State management
   const [selectedFile, setSelectedFile] = useState(null);
   const [sourceCode, setSourceCode] = useState('');
@@ -1196,8 +1194,6 @@ export default ExampleComponent;`;
                               fileName === 'CategorySlotEditor.jsx' ||
                               fileName === 'ProductSlotEditor.jsx' ||
                               fileName === 'HomepageSlotEditor.jsx';
-                            
-                            console.log('🎯 Mobile: Is slot file?', isSlotFile, { fileName, filePath });
                             
                             if (isSlotFile) {
                               // Determine slot type from filename

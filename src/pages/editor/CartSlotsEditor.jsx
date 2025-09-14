@@ -643,8 +643,8 @@ const CartSlotsEditor = ({
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
-  // Validation function to ensure slot configuration integrity
-  const validateSlotConfiguration = (slots) => {
+  // Validation function to ensure slot configuration integrity - defined early to avoid reference errors
+  const validateSlotConfiguration = useCallback((slots) => {
     if (!slots || typeof slots !== 'object') return false;
 
     // Check for required properties in each slot
@@ -679,7 +679,7 @@ const CartSlotsEditor = ({
     }
 
     return true;
-  };
+  }, []);
 
   // State management - Initialize with empty config to avoid React error #130
   const [cartLayoutConfig, setCartLayoutConfig] = useState({
@@ -719,19 +719,6 @@ const CartSlotsEditor = ({
     },
     onSave
   });
-
-  // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
-  useEffect(() => {
-    const handleKeyPress = async (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        console.log('🐛 Debug mode activated - Running drag and drop tests...');
-        await runDragDropTests(handleSlotDrop, validateSlotConfiguration, cartLayoutConfig);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [cartLayoutConfig, handleSlotDrop, validateSlotConfiguration]);
 
   // Initialize cart configuration - first try to load from database, then fall back to static config
   useEffect(() => {
@@ -991,7 +978,7 @@ const CartSlotsEditor = ({
       setLocalSaveStatus('error');
       setTimeout(() => setLocalSaveStatus(''), 5000);
     }
-  }, [cartLayoutConfig, onSave, getSelectedStoreId, validateSlotConfiguration]);
+  }, [cartLayoutConfig, onSave, getSelectedStoreId]);
 
 
   // Handle element selection for EditorSidebar
@@ -1438,7 +1425,20 @@ const CartSlotsEditor = ({
     } else {
       console.warn('⚠️ No updated configuration to save - drag operation was cancelled');
     }
-  }, [saveConfiguration]);
+  }, [saveConfiguration, validateSlotConfiguration]);
+
+  // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
+  useEffect(() => {
+    const handleKeyPress = async (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        console.log('🐛 Debug mode activated - Running drag and drop tests...');
+        await runDragDropTests(handleSlotDrop, validateSlotConfiguration, cartLayoutConfig);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [cartLayoutConfig, handleSlotDrop, validateSlotConfiguration]);
 
   // Main render - Clean and maintainable  
   return (
