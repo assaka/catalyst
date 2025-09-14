@@ -108,8 +108,8 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
     <div
       className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
         isHovered || isDragging || parentHovered
-          ? 'opacity-100' 
-          : 'opacity-60 hover:opacity-90'
+          ? 'opacity-100'
+          : 'opacity-0 hover:opacity-90'
       }`}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => {
@@ -338,11 +338,11 @@ const GridColumn = ({
                 ? 'border-green-500 bg-green-50/40 shadow-lg shadow-green-200/60 z-10 animate-pulse ring-2 ring-green-300' :
               isDragging
                 ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
-              isHovered && showBorders
-                ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40'
+              isHovered
+                ? 'border-blue-500 border-2 border-dashed bg-blue-50/30 shadow-md shadow-blue-200/40'
                 : showBorders
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
-                : 'hover:bg-blue-50/10'
+                : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
             }`
           : 'overflow-hidden'
       } relative responsive-slot`}
