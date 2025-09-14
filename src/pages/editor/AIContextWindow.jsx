@@ -252,16 +252,6 @@ const AIContextWindowPage = () => {
 
       if (data && data.success && data.data.hasBaseline) {
         const baselineCode = normalizeLineEndings(data.data.baselineCode);
-        
-        console.log(`📄 BASELINE CODE LOADED: ${baselineCode.length} characters for ${filePath}`);
-        console.log(`📄 BASELINE CODE PREVIEW:`, baselineCode.substring(0, 200) + '...');
-        
-        // Skip customizations loading - feature is obsolete  
-        console.log(`📄 Loading baseline code directly for: ${filePath}`);
-        
-        // Set the final code (baseline only)
-        console.log(`📝 SETTING EDITOR CODE: ${baselineCode.length} characters`);
-        console.log(`📝 SETTING ORIGINAL CODE: ${baselineCode.length} characters (for comparison)`);
         setSourceCode(baselineCode);
         
         // Keep original baseline code for comparison
@@ -272,7 +262,6 @@ const AIContextWindowPage = () => {
           type: 'file',
           isSupported: true
         };
-        console.log('📝 Setting selectedFile:', fileObj);
         setSelectedFile(fileObj);
         
         // Update URL
@@ -1113,12 +1102,6 @@ export default ExampleComponent;`;
                           </button>
                           <button
                             onClick={() => {
-                              console.log('🖱️ Customize tab clicked (mobile)!', {
-                                currentFile: selectedFile ? {
-                                  name: selectedFile.name,
-                                  path: selectedFile.path
-                                } : 'No file selected'
-                              });
                               setPreviewMode('hybrid');
                               handlePreviewModeChange('hybrid');
                             }}
@@ -1164,13 +1147,6 @@ export default ExampleComponent;`;
                         // Smart Editor Selection - UnifiedSlotEditor for slots files, CodeEditor for others
                         <div className="h-full overflow-y-auto">
                           {(() => {
-                            console.log('🚀 Mobile: Hybrid/Other mode rendering', {
-                              previewMode,
-                              selectedFile: selectedFile ? {
-                                name: selectedFile?.name,
-                                path: selectedFile?.path
-                              } : 'No file selected'
-                            });
                             
                             // Early return if no file is selected
                             if (!selectedFile) {

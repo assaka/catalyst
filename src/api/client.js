@@ -358,7 +358,6 @@ class ApiClient {
       
       // Special handling for extensions/baselines endpoint - don't transform, return full response
       if (endpoint.includes('extensions/baselines')) {
-        console.log('🌲 API Client: Extensions baselines endpoint detected, bypassing transformation', { endpoint, hasSuccess: !!result?.success });
         const duration = performance.now() - startTime;
         apiDebugger.debugAPICall('response', {
           debugId,

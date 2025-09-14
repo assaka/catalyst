@@ -176,6 +176,9 @@ const GridColumn = ({
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
 
+    // Stop propagation to prevent parent elements from also being dragged
+    e.stopPropagation();
+
     setIsDragging(true);
     e.dataTransfer.setData('text/plain', slotId);
     e.dataTransfer.effectAllowed = 'move';
@@ -218,6 +221,7 @@ const GridColumn = ({
   }, [slotId, mode]);
 
   const handleDragEnd = useCallback((e) => {
+    e.stopPropagation();
     setIsDragging(false);
     console.log('🎯 Finished dragging slot:', slotId);
   }, [slotId]);
@@ -267,11 +271,18 @@ const GridColumn = ({
   }, []);
 
   const handleDrop = useCallback((e) => {
-    if (mode !== 'edit' || isDragging) return;
+    if (mode !== 'edit') return;
 
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     setIsDragActive(false);
+
+    // Don't process drop if this is the element being dragged
+    if (isDragging) {
+      console.log('⚠️ Ignoring drop on self');
+      return;
+    }
 
     const draggedSlotId = e.dataTransfer.getData('text/plain');
     const dropPosition = dropZone || 'after'; // Use current dropZone state
@@ -327,6 +338,7 @@ const GridColumn = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onDragEnter={(e) => e.preventDefault()}
       style={gridStyles}
     >
       {/* Drop Zone Indicators */}
@@ -458,7 +470,8 @@ const EditableElement = ({
         onClick={handleClick}
         data-slot-id={slotId}
         data-editable={mode === 'edit'}
-        draggable={draggable && mode === 'edit'}
+        draggable={false}  // Explicitly prevent dragging at this level
+        onDragStart={(e) => e.preventDefault()}  // Prevent any drag initiation
       >
         {children}
       </div>
@@ -571,7 +584,7 @@ const HierarchicalSlotRenderer = ({
             className={slot.className || ''}
             style={slot.styles || {}}
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
-            draggable={true}
+            draggable={false}  // Dragging is handled at GridColumn level
             selectedElementId={selectedElementId}
           >
           {slot.type === 'text' && (
