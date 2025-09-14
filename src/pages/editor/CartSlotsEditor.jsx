@@ -998,65 +998,97 @@ const CartSlotsEditor = ({
   }, [saveConfiguration]);
 
   // Handle slot drag and drop repositioning
-  const handleSlotDrop = useCallback((draggedSlotId, targetSlotId) => {
+  const handleSlotDrop = useCallback(async (draggedSlotId, targetSlotId) => {
     console.log('🎯 handleSlotDrop called:', { draggedSlotId, targetSlotId });
 
-    setCartLayoutConfig(prevConfig => {
-      const updatedSlots = { ...prevConfig?.slots };
+    // Don't allow dropping on itself
+    if (draggedSlotId === targetSlotId) {
+      console.log('⚠️ Cannot drop slot on itself');
+      return;
+    }
 
-      if (updatedSlots[draggedSlotId] && updatedSlots[targetSlotId]) {
-        // Swap the grid positions of the two slots
-        const draggedSlot = updatedSlots[draggedSlotId];
-        const targetSlot = updatedSlots[targetSlotId];
+    // Create a new configuration with swapped positions
+    const updatedConfig = await new Promise((resolve) => {
+      setCartLayoutConfig(prevConfig => {
+        if (!prevConfig || !prevConfig.slots) {
+          console.error('❌ No valid configuration to update');
+          resolve(null);
+          return prevConfig;
+        }
 
-        // Store original positions
-        const draggedGridColumn = draggedSlot.styles?.gridColumn;
-        const draggedGridRow = draggedSlot.styles?.gridRow;
-        const targetGridColumn = targetSlot.styles?.gridColumn;
-        const targetGridRow = targetSlot.styles?.gridRow;
+        const updatedSlots = { ...prevConfig.slots };
 
-        // Swap positions
-        updatedSlots[draggedSlotId] = {
-          ...draggedSlot,
-          styles: {
-            ...draggedSlot.styles,
-            gridColumn: targetGridColumn,
-            gridRow: targetGridRow
-          },
+        if (updatedSlots[draggedSlotId] && updatedSlots[targetSlotId]) {
+          // Create new slot objects to ensure React detects changes
+          const draggedSlot = { ...updatedSlots[draggedSlotId] };
+          const targetSlot = { ...updatedSlots[targetSlotId] };
+
+          // Store original positions
+          const draggedGridColumn = draggedSlot.styles?.gridColumn;
+          const draggedGridRow = draggedSlot.styles?.gridRow;
+          const targetGridColumn = targetSlot.styles?.gridColumn;
+          const targetGridRow = targetSlot.styles?.gridRow;
+
+          // Swap positions - create new style objects
+          updatedSlots[draggedSlotId] = {
+            ...draggedSlot,
+            styles: {
+              ...draggedSlot.styles,
+              gridColumn: targetGridColumn,
+              gridRow: targetGridRow
+            },
+            metadata: {
+              ...draggedSlot.metadata,
+              lastModified: new Date().toISOString()
+            }
+          };
+
+          updatedSlots[targetSlotId] = {
+            ...targetSlot,
+            styles: {
+              ...targetSlot.styles,
+              gridColumn: draggedGridColumn,
+              gridRow: draggedGridRow
+            },
+            metadata: {
+              ...targetSlot.metadata,
+              lastModified: new Date().toISOString()
+            }
+          };
+
+          console.log('✅ Swapped slot positions:', {
+            [draggedSlotId]: {
+              from: { gridColumn: draggedGridColumn, gridRow: draggedGridRow },
+              to: { gridColumn: targetGridColumn, gridRow: targetGridRow }
+            },
+            [targetSlotId]: {
+              from: { gridColumn: targetGridColumn, gridRow: targetGridRow },
+              to: { gridColumn: draggedGridColumn, gridRow: draggedGridRow }
+            }
+          });
+        } else {
+          console.error('❌ One or both slots not found:', { draggedSlotId, targetSlotId });
+        }
+
+        const newConfig = {
+          ...prevConfig,
+          slots: updatedSlots,
           metadata: {
-            ...draggedSlot.metadata,
+            ...prevConfig.metadata,
             lastModified: new Date().toISOString()
           }
         };
 
-        updatedSlots[targetSlotId] = {
-          ...targetSlot,
-          styles: {
-            ...targetSlot.styles,
-            gridColumn: draggedGridColumn,
-            gridRow: draggedGridRow
-          },
-          metadata: {
-            ...targetSlot.metadata,
-            lastModified: new Date().toISOString()
-          }
-        };
-
-        console.log('✅ Swapped slot positions:', {
-          [draggedSlotId]: updatedSlots[draggedSlotId].styles,
-          [targetSlotId]: updatedSlots[targetSlotId].styles
-        });
-      }
-
-      const updatedConfig = {
-        ...prevConfig,
-        slots: updatedSlots
-      };
-
-      // Auto-save
-      saveConfiguration(updatedConfig);
-      return updatedConfig;
+        resolve(newConfig);
+        return newConfig;
+      });
     });
+
+    // Save the updated configuration if it was created successfully
+    if (updatedConfig) {
+      await saveConfiguration(updatedConfig);
+      console.log('💾 Configuration saved after drag and drop');
+    }
   }, [saveConfiguration]);
 
   // Main render - Clean and maintainable  
