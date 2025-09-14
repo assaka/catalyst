@@ -680,7 +680,14 @@ const HierarchicalSlotRenderer = ({
             mode={mode}
             onClick={onElementClick}
             className={''}  // Parent div should only have layout/structure classes, not text styling
-            style={slot.styles || {}}
+            style={slot.type === 'button' ?
+              // For buttons, exclude width/height from wrapper - apply only to button element
+              Object.fromEntries(
+                Object.entries(slot.styles || {}).filter(([key]) =>
+                  !['width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight'].includes(key)
+                )
+              ) :
+              (slot.styles || {})}
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={false}  // Dragging is handled at GridColumn level
             selectedElementId={selectedElementId}
