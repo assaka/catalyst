@@ -534,27 +534,24 @@ const EditableElement = ({
   }, [slotId, onClick, mode]);
 
   const content = (
-    <EditorInteractionWrapper
-      mode={mode}
-      draggable={draggable}
-      isSelected={selectedElementId === slotId}
+    <div
+      className={className || ''}
+      style={style}
+      onClick={handleClick}
+      data-slot-id={slotId}
+      data-editable={mode === 'edit'}
+      draggable={false}  // Explicitly prevent dragging at this level
+      onDragStart={(e) => e.preventDefault()}  // Prevent any drag initiation
     >
-      <div
-        className={className || ''}
-        style={style}
-        onClick={handleClick}
-        data-slot-id={slotId}
-        data-editable={mode === 'edit'}
-        draggable={false}  // Explicitly prevent dragging at this level
-        onDragStart={(e) => e.preventDefault()}  // Prevent any drag initiation
-      >
-        {children}
-      </div>
-    </EditorInteractionWrapper>
+      {children}
+    </div>
   );
 
   // Show resize wrapper only in edit mode when canResize is true
+  console.log('EditableElement debug:', { slotId, canResize, mode, slotType: slotId });
+
   if (canResize && mode === 'edit') {
+    console.log('Rendering ResizeWrapper for:', slotId);
     return (
       <ResizeWrapper
         minWidth={50}
@@ -682,7 +679,7 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={{}}  // No styles on wrapper - they should go on the actual element
+              style={slot.styles || {}}  // Apply slot styles to ResizeWrapper container
               canResize={!['container', 'grid', 'flex'].includes(slot.type)}
               draggable={false}  // Dragging is handled at GridColumn level
               selectedElementId={selectedElementId}
@@ -691,8 +688,7 @@ const HierarchicalSlotRenderer = ({
             <button
               className={`w-full h-full ${slot.className}`}
               style={{
-                ...slot.styles,  // Apply all styles to the button element
-                // Don't override container dimensions - let ResizeWrapper control size
+                // Don't duplicate styles - they're applied to ResizeWrapper container
                 minWidth: 'auto',
                 minHeight: 'auto'
               }}
@@ -705,8 +701,7 @@ const HierarchicalSlotRenderer = ({
             <input
               className={`w-full h-full ${slot.className}`}
               style={{
-                ...slot.styles,  // Apply all styles to the input element
-                // Don't override container dimensions - let ResizeWrapper control size
+                // Don't duplicate styles - they're applied to ResizeWrapper container
                 minWidth: 'auto',
                 minHeight: 'auto'
               }}
@@ -844,6 +839,7 @@ const CartSlotsEditor = ({
   const [isResizing, setIsResizing] = useState(false);
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const lastResizeEndTime = useRef(0);
   
   // Database configuration hook
@@ -1493,6 +1489,73 @@ const CartSlotsEditor = ({
 
   }, [saveConfiguration, validateSlotConfiguration]);
 
+  // Handle resetting layout to clean config
+  const handleResetLayout = useCallback(async () => {
+    try {
+      setLocalSaveStatus('saving');
+
+      // Clear the draft configuration from database
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        await slotConfigurationService.clearDraftConfiguration(storeId, 'cart');
+      }
+
+      // Load clean static configuration
+      const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+
+      // Create a deep clone to ensure no React components or functions are included
+      const cleanSlots = {};
+      if (cartConfig.slots) {
+        Object.entries(cartConfig.slots).forEach(([key, slot]) => {
+          // Only copy serializable properties, ensure no undefined values
+          cleanSlots[key] = {
+            id: slot.id || key,
+            type: slot.type || 'container',
+            content: slot.content || '',
+            className: slot.className || '',
+            parentClassName: slot.parentClassName || '',
+            styles: slot.styles ? { ...slot.styles } : {},
+            parentId: slot.parentId === undefined ? null : slot.parentId,
+            layout: slot.layout || null,
+            gridCols: slot.gridCols || null,
+            colSpan: slot.colSpan || 12,
+            rowSpan: slot.rowSpan || 1,
+            viewMode: slot.viewMode ? [...slot.viewMode] : [],
+            metadata: slot.metadata ? { ...slot.metadata } : {}
+          };
+        });
+      }
+
+      const cleanConfig = {
+        page_name: cartConfig.page_name || 'Cart',
+        slot_type: cartConfig.slot_type || 'cart_layout',
+        slots: cleanSlots,
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          version: '1.0',
+          pageType: 'cart'
+        },
+        cmsBlocks: cartConfig.cmsBlocks ? [...cartConfig.cmsBlocks] : []
+      };
+
+      // Update local state
+      setCartLayoutConfig(cleanConfig);
+
+      // Save the clean config
+      await saveConfiguration(cleanConfig);
+
+      setLocalSaveStatus('saved');
+      setTimeout(() => setLocalSaveStatus(''), 3000);
+
+      console.log('✅ Layout reset to clean configuration');
+    } catch (error) {
+      console.error('❌ Failed to reset layout:', error);
+      setLocalSaveStatus('error');
+      setTimeout(() => setLocalSaveStatus(''), 5000);
+    }
+  }, [saveConfiguration, getSelectedStoreId]);
+
   // Handle creating new slots
   const handleCreateSlot = useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}) => {
     const newSlotId = `new_${slotType}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -1642,10 +1705,17 @@ const CartSlotsEditor = ({
                 Borders
               </Button>
 
-              <Button onClick={() => setShowAddSlotModal(true)} variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add New
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowResetModal(true)} variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Reset Layout
+                </Button>
+
+                <Button onClick={() => setShowAddSlotModal(true)} variant="outline" size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
@@ -1788,6 +1858,63 @@ const CartSlotsEditor = ({
         }}
         fileType="image"
       />
+
+      {/* Reset Layout Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-red-600">Reset Layout</h3>
+              <Button
+                onClick={() => setShowResetModal(false)}
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded">
+                <div className="text-red-600">⚠️</div>
+                <div>
+                  <p className="font-medium text-red-800">This action cannot be undone</p>
+                  <p className="text-sm text-red-600">All current layout changes will be lost and replaced with the default configuration.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => setShowResetModal(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleResetLayout();
+                    setShowResetModal(false);
+                  }}
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={localSaveStatus === 'saving'}
+                >
+                  {localSaveStatus === 'saving' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Resetting...
+                    </>
+                  ) : (
+                    'Reset Layout'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

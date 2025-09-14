@@ -221,8 +221,11 @@ const ResizeWrapper = ({
     display: 'inline-block'
   };
 
+  // Debug logging
+  console.log('ResizeWrapper rendered:', { disabled, children: children?.type });
+
   return (
-    <div 
+    <div
       ref={wrapperRef}
       className={cn("relative inline-block group", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
@@ -285,17 +288,18 @@ const ResizeWrapper = ({
             "absolute cursor-se-resize z-20",
             "transition-opacity duration-200",
             "flex items-center justify-center",
-            isHovered || isResizing ? "opacity-100" : "opacity-0"
+"opacity-100"  // Always show for debugging
           )}
           onMouseDown={handleMouseDown}
           style={{
             bottom: '-2px',
             right: '-2px',
-            width: '12px',
-            height: '12px',
-            background: 'rgba(59, 130, 246, 0.8)',
+            width: '15px',
+            height: '15px',
+            background: 'rgba(255, 0, 0, 0.9)',  // Bright red for debugging
             borderRadius: '0 0 4px 0',
-            border: '1px solid rgba(59, 130, 246, 1)'
+            border: '2px solid red',
+            zIndex: 99999  // Very high z-index
           }}
         >
           {/* Small diagonal grip icon */}
