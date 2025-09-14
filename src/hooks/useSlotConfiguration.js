@@ -767,7 +767,7 @@ export function useSlotConfiguration({
 
       setSelectedElement(actualElement);
       setIsSidebarVisible(true);
-    }, [isResizing, slotId, element]);
+    }, [isResizing, lastResizeEndTime, setSelectedElement, setIsSidebarVisible]);
   }, []);
 
   // Generic handler factories that take page-specific dependencies
