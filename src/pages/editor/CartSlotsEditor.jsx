@@ -26,7 +26,7 @@ import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Advanced resize handle for horizontal (grid column) or vertical (height) resizing
-const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd }) => {
+const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
@@ -111,8 +111,14 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
           : 'opacity-60 hover:opacity-90'
       }`}
       onMouseDown={handleMouseDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        onHoverChange?.(true);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        onHoverChange?.(false);
+      }}
       style={{ zIndex: 9999 }}
       title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
@@ -161,6 +167,7 @@ const GridColumn = ({
   const [dropZone, setDropZone] = useState(null); // 'before', 'after', 'inside'
   const [isDragActive, setIsDragActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   
@@ -314,7 +321,9 @@ const GridColumn = ({
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
-      draggable={false}
+      draggable={mode === 'edit' && !isOverResizeHandle}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -365,23 +374,20 @@ const GridColumn = ({
       )}
       
       
-      {/* Drag Handle - only visible on hover */}
-      {mode === 'edit' && isHovered && (
+      {/* Drag indicator - only visible on hover and not over resize handle */}
+      {mode === 'edit' && isHovered && !isOverResizeHandle && (
         <div
-          className="absolute top-1 left-1 w-6 h-6 bg-blue-500/80 hover:bg-blue-600 rounded cursor-move z-30 flex items-center justify-center transition-all duration-200"
-          draggable={true}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
+          className="absolute top-1 right-1 text-blue-500 text-sm opacity-60 pointer-events-none z-30"
           title="Drag to reposition"
         >
-          <div className="w-2 h-2 bg-white rounded-full opacity-80"></div>
+          ⋮⋮
         </div>
       )}
       
       {/* Clean content area */}
       <div className={`p-2 relative transition-all duration-200 ${
         mode === 'edit'
-          ? `cursor-pointer rounded-md hover:bg-white/50 ${isHovered ? 'bg-white/30' : ''}`
+          ? `${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} rounded-md hover:bg-white/50 ${isHovered ? 'bg-white/30' : ''}`
           : ''
       }`} style={{ zIndex: 2 }}>
         {children}
@@ -399,6 +405,7 @@ const GridColumn = ({
           parentHovered={isHovered}
           onResizeStart={onResizeStart}
           onResizeEnd={onResizeEnd}
+          onHoverChange={setIsOverResizeHandle}
         />
       )}
       {showVerticalHandle && (
@@ -411,6 +418,7 @@ const GridColumn = ({
           parentHovered={isHovered}
           onResizeStart={onResizeStart}
           onResizeEnd={onResizeEnd}
+          onHoverChange={setIsOverResizeHandle}
         />
       )}
     </div>
@@ -510,10 +518,8 @@ const HierarchicalSlotRenderer = ({
     let colSpan = slot.colSpan || 12;
     console.log(`🔍 Rendering slot ${slot.id} with colSpan:`, colSpan, 'from slot data:', slot.colSpan);
     
-    // Make content_area responsive to viewMode
-    if (slot.id === 'content_area') {
-      colSpan = viewMode === 'empty' ? 12 : 8; // Full width when empty, 8 cols when with products
-    }
+    // Note: Removed hardcoded colSpan override for content_area to allow proper resizing
+    // The colSpan should come from the slot data (which includes user resize changes)
     
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
