@@ -422,8 +422,8 @@ const GridColumn = ({
         {children}
       </div>
       
-      {/* Resize handles at GridColumn level */}
-      {showHorizontalHandle && (
+      {/* Resize handles at GridColumn level - only show on slot hover */}
+      {showHorizontalHandle && isHovered && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
@@ -436,7 +436,7 @@ const GridColumn = ({
           onHoverChange={setIsOverResizeHandle}
         />
       )}
-      {showVerticalHandle && (
+      {showVerticalHandle && isHovered && (
         <GridResizeHandle
           onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
           currentValue={height || 80}
@@ -1553,27 +1553,9 @@ const CartSlotsEditor = ({
                     <Save className="w-4 h-4 mr-2" />
                     Save
                   </Button>
-
-                  <Button
-                    onClick={() => setShowSlotBorders(!showSlotBorders)}
-                    variant={showSlotBorders ? "default" : "outline"}
-                    size="sm"
-                    title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
-                  >
-                    <Square className="w-4 h-4 mr-2" />
-                    Borders
-                  </Button>
                 </>
               )}
             </div>
-
-            {/* Right side controls */}
-            {mode === 'edit' && (
-              <Button onClick={() => setIsSidebarVisible(!isSidebarVisible)} variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                {isSidebarVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
-            )}
           </div>
         </div>
         {/* Cart Layout - Hierarchical Structure */}
@@ -1582,6 +1564,17 @@ const CartSlotsEditor = ({
           style={{ backgroundColor: '#f9fafb' }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+            <Button
+                onClick={() => setShowSlotBorders(!showSlotBorders)}
+                variant={showSlotBorders ? "default" : "outline"}
+                size="sm"
+                title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
+            >
+              <Square className="w-4 h-4 mr-2" />
+              Borders
+            </Button>
+
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
                 <HierarchicalSlotRenderer
