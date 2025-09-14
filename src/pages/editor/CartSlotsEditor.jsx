@@ -162,6 +162,8 @@ const GridColumn = ({
   onSlotDrop,
   mode = 'edit',
   showBorders = true,
+  currentDragInfo,
+  setCurrentDragInfo,
   children
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -185,6 +187,14 @@ const GridColumn = ({
     setIsDragging(true);
     e.dataTransfer.setData('text/plain', slotId);
     e.dataTransfer.effectAllowed = 'move';
+
+    // Store drag info in parent component's state
+    if (setCurrentDragInfo) {
+      setCurrentDragInfo({
+        slotId: slotId,
+        parentId: slot?.parentId
+      });
+    }
 
     // Create a beautiful custom drag image instead of ugly default
     const dragImage = document.createElement('div');
@@ -226,8 +236,12 @@ const GridColumn = ({
   const handleDragEnd = useCallback((e) => {
     e.stopPropagation();
     setIsDragging(false);
+    // Clear drag info
+    if (setCurrentDragInfo) {
+      setCurrentDragInfo(null);
+    }
     console.log('🎯 Finished dragging slot:', slotId);
-  }, [slotId]);
+  }, [slotId, setCurrentDragInfo]);
 
   const handleDragOver = useCallback((e) => {
     if (mode !== 'edit') return;
@@ -261,9 +275,43 @@ const GridColumn = ({
       } else if (y > height * 0.75) {
         newDropZone = 'after';
       } else {
-        // Check if it's a container that can accept children
+        // Check if "Drop inside" should be available
+        // Only allow "inside" when:
+        // 1. Target is a container type
+        // 2. Dragged element is NOT already a sibling of this container
         const isContainer = ['container', 'grid', 'flex'].includes(slot?.type);
-        newDropZone = isContainer ? 'inside' : 'after';
+
+        if (isContainer && currentDragInfo) {
+          // Check if dragged slot and target slot are siblings (same parent)
+          const draggedSlotParent = currentDragInfo.parentId;
+          const draggedSlotId = currentDragInfo.slotId;
+          const targetSlotId = slot?.id;
+          const targetSlotParent = slot?.parentId;
+
+          // Show "Drop inside" only if:
+          // - Dragged slot's parent is NOT the target slot (not already inside)
+          // - Dragged slot and target slot are NOT siblings (different levels)
+          const canDropInside = draggedSlotParent !== targetSlotId &&
+                                draggedSlotParent !== targetSlotParent;
+
+          console.log('🎯 Drop inside check:', {
+            draggedSlotId,
+            draggedSlotParent,
+            targetSlotId,
+            targetSlotParent,
+            canDropInside,
+            isContainer
+          });
+
+          if (canDropInside) {
+            newDropZone = 'inside';
+          } else {
+            // If trying to drop into same parent or similar level, use 'after'
+            newDropZone = 'after';
+          }
+        } else {
+          newDropZone = 'after';
+        }
       }
 
       // Only update dropZone if it's different
@@ -522,6 +570,8 @@ const HierarchicalSlotRenderer = ({
   mode,
   viewMode = 'empty',
   showBorders = true,
+  currentDragInfo,
+  setCurrentDragInfo,
   onElementClick,
   onGridResize,
   onSlotHeightResize,
@@ -587,6 +637,8 @@ const HierarchicalSlotRenderer = ({
         height={height}
         slotId={slot.id}
         slot={slot}
+        currentDragInfo={currentDragInfo}
+        setCurrentDragInfo={setCurrentDragInfo}
         onGridResize={onGridResize}
         onSlotHeightResize={onSlotHeightResize}
         onSlotDrop={onSlotDrop}
@@ -658,6 +710,8 @@ const HierarchicalSlotRenderer = ({
                 mode={mode}
                 viewMode={viewMode}
                 showBorders={showBorders}
+                currentDragInfo={currentDragInfo}
+                setCurrentDragInfo={setCurrentDragInfo}
                 onElementClick={onElementClick}
                 onGridResize={onGridResize}
                 onSlotHeightResize={onSlotHeightResize}
@@ -676,13 +730,16 @@ const HierarchicalSlotRenderer = ({
 };
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
-const CartSlotsEditor = ({ 
-  mode = 'edit', 
+const CartSlotsEditor = ({
+  mode = 'edit',
   onSave,
   viewMode: propViewMode = 'empty'
 }) => {
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+
+  // Global state to track current drag operation
+  const [currentDragInfo, setCurrentDragInfo] = useState(null);
 
   // Validation function to ensure slot configuration integrity - defined early to avoid reference errors
   const validateSlotConfiguration = useCallback((slots) => {
@@ -1583,6 +1640,8 @@ const CartSlotsEditor = ({
                   mode={mode}
                   viewMode={viewMode}
                   showBorders={showSlotBorders}
+                  currentDragInfo={currentDragInfo}
+                  setCurrentDragInfo={setCurrentDragInfo}
                   onElementClick={handleElementClick}
                   onGridResize={handleGridResize}
                   onSlotHeightResize={handleSlotHeightResize}
