@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import apiClient from '@/api/client';
@@ -26,7 +25,6 @@ const SlotEnabledFileSelector = ({
   const { selectedStore } = useStoreSelection();
   const [slotFiles, setSlotFiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFiles, setSelectedFiles] = useState(new Set());
   const [loadingDraft, setLoadingDraft] = useState(null);
 
   // Define the slot-enabled files with their metadata
@@ -136,15 +134,6 @@ const SlotEnabledFileSelector = ({
     setLoading(false);
   };
 
-  const handleFileToggle = (fileId, checked) => {
-    const newSelected = new Set(selectedFiles);
-    if (checked) {
-      newSelected.add(fileId);
-    } else {
-      newSelected.delete(fileId);
-    }
-    setSelectedFiles(newSelected);
-  };
 
   const handleFileClick = async (file) => {
     if (!selectedStore?.id) {
@@ -212,13 +201,6 @@ const SlotEnabledFileSelector = ({
     }
   };
 
-  const handleSelectAll = () => {
-    if (selectedFiles.size === slotFiles.length) {
-      setSelectedFiles(new Set());
-    } else {
-      setSelectedFiles(new Set(slotFiles.map(f => f.id)));
-    }
-  };
 
   const handleRefresh = () => {
     loadSlotFiles();
@@ -241,27 +223,16 @@ const SlotEnabledFileSelector = ({
     <Card className={`h-full flex flex-col ${className}`}>
       {/* Header */}
       <div className="border-b p-4">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold">Slot-Enabled Pages</h3>
             <p className="text-xs text-muted-foreground">
-              Select pages that support slot customization
+              Select a page to customize its slots
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
           </Button>
-        </div>
-
-        {/* Select All Toggle */}
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            checked={selectedFiles.size === slotFiles.length && slotFiles.length > 0}
-            onCheckedChange={handleSelectAll}
-          />
-          <span className="text-sm font-medium">
-            Select All ({selectedFiles.size}/{slotFiles.length})
-          </span>
         </div>
       </div>
 
@@ -270,32 +241,23 @@ const SlotEnabledFileSelector = ({
         <div className="p-4 space-y-2">
           {slotFiles.map((file) => {
             const IconComponent = file.icon;
-            const isSelected = selectedFiles.has(file.id);
             const isCurrentFile = selectedFile?.path === file.path;
 
             return (
               <div
                 key={file.id}
-                className={`flex items-center space-x-3 p-3 rounded-lg border transition-all hover:bg-muted/50 ${
+                className={`flex items-center space-x-3 p-3 rounded-lg border transition-all hover:bg-muted/50 cursor-pointer ${
                   isCurrentFile ? 'bg-primary/10 border-primary' : 'border-border'
                 }`}
+                onClick={() => handleFileClick(file)}
               >
-                {/* Checkbox */}
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={(checked) => handleFileToggle(file.id, checked)}
-                />
-
                 {/* File Icon */}
                 <div className="flex-shrink-0">
                   <IconComponent className={`w-5 h-5 ${file.color}`} />
                 </div>
 
                 {/* File Info */}
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => handleFileClick(file)}
-                >
+                <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-sm">{file.name}</span>
 
@@ -331,7 +293,7 @@ const SlotEnabledFileSelector = ({
             {selectedFile ? `Selected: ${selectedFile.name}` : 'No file selected'}
           </span>
           <span>
-            {selectedFiles.size} of {slotFiles.length} files selected
+            {slotFiles.length} pages available
           </span>
         </div>
       </div>
