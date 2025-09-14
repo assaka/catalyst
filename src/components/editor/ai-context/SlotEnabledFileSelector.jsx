@@ -33,8 +33,8 @@ const SlotEnabledFileSelector = ({
   const slotEnabledFiles = [
     {
       id: 'cart',
-      name: 'Cart.jsx',
-      path: 'src/pages/storefront/Cart.jsx',
+      name: 'CartSlotsEditor.jsx',
+      path: 'src/pages/editor/CartSlotsEditor.jsx',
       pageType: 'cart',
       icon: ShoppingCart,
       description: 'Shopping cart page with slot customization',
@@ -42,8 +42,8 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'category',
-      name: 'Category.jsx',
-      path: 'src/pages/storefront/Category.jsx',
+      name: 'CategorySlotsEditor.jsx',
+      path: 'src/pages/editor/CategorySlotsEditor.jsx',
       pageType: 'category',
       icon: Grid3X3,
       description: 'Product category listing page',
@@ -51,8 +51,8 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'product',
-      name: 'ProductDetail.jsx',
-      path: 'src/pages/storefront/ProductDetail.jsx',
+      name: 'ProductSlotsEditor.jsx',
+      path: 'src/pages/editor/ProductSlotsEditor.jsx',
       pageType: 'product',
       icon: Package,
       description: 'Product detail page with customizable slots',
@@ -60,8 +60,8 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'checkout',
-      name: 'Checkout.jsx',
-      path: 'src/pages/storefront/Checkout.jsx',
+      name: 'CheckoutSlotsEditor.jsx',
+      path: 'src/pages/editor/CheckoutSlotsEditor.jsx',
       pageType: 'checkout',
       icon: CreditCard,
       description: 'Checkout flow with payment integration',
@@ -69,8 +69,8 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'success',
-      name: 'OrderSuccess.jsx',
-      path: 'src/pages/storefront/OrderSuccess.jsx',
+      name: 'SuccessSlotsEditor.jsx',
+      path: 'src/pages/editor/SuccessSlotsEditor.jsx',
       pageType: 'success',
       icon: CheckCircle,
       description: 'Order confirmation and success page',
