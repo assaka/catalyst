@@ -715,6 +715,9 @@ const CartSlotsEditor = ({
   // Track if we're currently saving to prevent overrides
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const lastSaveTimestampRef = useRef(0);
+  const isInitializingRef = useRef(false);
+  const configurationLoadedRef = useRef(false);
+  const isDragOperationInProgressRef = useRef(false);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -747,6 +750,14 @@ const CartSlotsEditor = ({
 
     const initializeConfig = async () => {
       if (!isMounted) return;
+
+      // Prevent multiple simultaneous initializations
+      if (isInitializingRef.current) {
+        console.log('⏳ Initialization already in progress, skipping...');
+        return;
+      }
+
+      isInitializingRef.current = true;
 
       try {
         console.log('🔄 CartSlotsEditor: Starting configuration initialization...');
@@ -913,15 +924,27 @@ const CartSlotsEditor = ({
         // Defer state update to avoid React error #130, but check if we're currently saving
         setTimeout(() => {
           if (isMounted && !isSavingConfig) {
-            // Only update if we're not in the middle of a save operation
+            // Only update if we're not in the middle of a save operation AND we haven't loaded config yet
             const timeSinceLastSave = Date.now() - lastSaveTimestampRef.current;
-            if (timeSinceLastSave > 2000) { // Wait at least 2 seconds after last save
-              console.log('🔄 Setting configuration from initialization');
+            const shouldSkipDueToRecentSave = timeSinceLastSave < 5000; // Increased to 5 seconds
+
+            if (isDragOperationInProgressRef.current) {
+              console.log('⏳ Skipping config update - drag operation in progress');
+            } else if (shouldSkipDueToRecentSave) {
+              console.log('⏳ Skipping config update - recent save detected', {
+                timeSinceLastSave,
+                isSavingConfig,
+                configurationLoadedRef: configurationLoadedRef.current
+              });
+            } else if (!configurationLoadedRef.current) {
+              console.log('🔄 Setting configuration from initialization (first load)');
               setCartLayoutConfig(configToUse);
+              configurationLoadedRef.current = true;
             } else {
-              console.log('⏳ Skipping config update - recent save detected');
+              console.log('⏳ Skipping config update - configuration already loaded');
             }
           }
+          isInitializingRef.current = false;
         }, 0);
       } catch (error) {
         console.error('❌ Failed to initialize cart configuration:', error);
@@ -942,6 +965,7 @@ const CartSlotsEditor = ({
             cmsBlocks: []
           });
           }
+          isInitializingRef.current = false;
         }, 0);
       }
     };
@@ -1012,7 +1036,8 @@ const CartSlotsEditor = ({
       // Allow some time before allowing config reloads
       setTimeout(() => {
         setIsSavingConfig(false);
-      }, 1000); // Wait 1 second after save before allowing reloads
+        console.log('🔓 Save protection period ended');
+      }, 2000); // Wait 2 seconds after save before allowing reloads
     }
   }, [cartLayoutConfig, onSave, getSelectedStoreId]);
 
@@ -1245,6 +1270,9 @@ const CartSlotsEditor = ({
       targetSlotCurrent: cartLayoutConfig?.slots?.[targetSlotId]
     });
 
+    // Mark drag operation as in progress
+    isDragOperationInProgressRef.current = true;
+
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ Cannot drop slot on itself');
       return;
@@ -1461,6 +1489,12 @@ const CartSlotsEditor = ({
     } else {
       console.warn('⚠️ No updated configuration to save - drag operation was cancelled');
     }
+
+    // Mark drag operation as completed
+    setTimeout(() => {
+      isDragOperationInProgressRef.current = false;
+      console.log('🏁 Drag operation marked as completed');
+    }, 1000);
   }, [saveConfiguration, validateSlotConfiguration]);
 
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
