@@ -606,6 +606,14 @@ const HierarchicalSlotRenderer = ({
       childSlotIds: childSlots.map(s => s.id),
       viewMode
     });
+  } else {
+    // Debug child slots for any parent
+    console.log(`🔍 Child slots for ${parentId}:`, {
+      parentId,
+      childCount: childSlots.length,
+      childSlotIds: childSlots.map(s => s.id),
+      childSlots: childSlots.map(s => ({ id: s.id, parentId: s.parentId }))
+    });
   }
 
   // Filter slots based on their viewMode property from config
@@ -1429,7 +1437,9 @@ const CartSlotsEditor = ({
             console.log('✅ Dropping inside container:', {
               targetSlotId,
               targetSlotType: targetSlot.type,
-              draggedSlotId
+              draggedSlotId,
+              draggedSlotCurrentParent: draggedSlot.parentId,
+              willChangeParentTo: targetSlotId
             });
             newParentId = targetSlotId;
             newOrder = 0;
@@ -1495,8 +1505,9 @@ const CartSlotsEditor = ({
           slot: draggedSlotId,
           from: { parent: originalProperties.parentId, order: originalProperties.position?.order },
           to: { parent: newParentId, order: newOrder },
+          dropPosition: dropPosition,
+          actualNewParent: updatedSlots[draggedSlotId].parentId,
           preservedViewMode: updatedSlots[draggedSlotId].viewMode,
-          preservedProperties: Object.keys(originalProperties),
           updatedSlot: updatedSlots[draggedSlotId]
         });
 
