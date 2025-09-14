@@ -35,6 +35,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
   const startValueRef = useRef(currentValue);
 
   const handleMouseDown = useCallback((e) => {
+    console.log('🎯 Resize handle mousedown:', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -160,6 +161,8 @@ const GridColumn = ({
   const [isDragging, setIsDragging] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
+  
+  console.log('🔍 GridColumn render:', { slotId, showHorizontalHandle, showVerticalHandle, mode, colSpan, onGridResize: !!onGridResize });
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e) => {
