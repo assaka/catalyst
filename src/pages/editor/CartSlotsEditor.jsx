@@ -661,8 +661,8 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={['button', 'image', 'input'].includes(slot.type) ?
-                // For buttons, images, and inputs, exclude width/height from wrapper - apply only to element
+              style={['button', 'image'].includes(slot.type) ?
+                // For buttons and images, exclude width/height from wrapper - apply only to element
                 Object.fromEntries(
                   Object.entries(slot.styles || {}).filter(([key]) =>
                     !['width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight'].includes(key)
@@ -696,12 +696,8 @@ const HierarchicalSlotRenderer = ({
                 <img
                   src={slot.content}
                   alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
-                  className={slot.className || "max-w-full"}
-                  style={{
-                    ...slot.styles,
-                    // Default to auto height to maintain aspect ratio unless explicitly set
-                    height: slot.styles?.height || 'auto'
-                  }}
+                  className="w-full h-auto max-w-full"
+                  style={slot.styles}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded">
@@ -737,7 +733,8 @@ const HierarchicalSlotRenderer = ({
               />
             </div>
           )}
-          </EditableElement>
+            </EditableElement>
+          )}
         </div>
       </GridColumn>
     );
