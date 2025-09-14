@@ -185,22 +185,95 @@ const EditorSidebar = ({
     return isSupported;
   }, [selectedElement]);
 
+  // Generate clean HTML div from database content and classes
+  const getCleanHtmlFromDatabase = useCallback((slotConfig) => {
+    if (!slotConfig) return '';
+
+    const content = slotConfig.content || '';
+    const className = slotConfig.className || '';
+    const styles = slotConfig.styles || {};
+
+    // Create a clean div structure with classes from database
+    const div = document.createElement('div');
+
+    // Apply classes from database (excluding editor-specific classes)
+    const cleanClasses = className
+      .split(' ')
+      .filter(cls =>
+        cls &&
+        !cls.includes('cursor-') &&
+        !cls.includes('hover:') &&
+        !cls.includes('border-') &&
+        !cls.includes('shadow-') &&
+        !cls.includes('ring-') &&
+        !cls.includes('focus:') &&
+        cls !== 'transition-all' &&
+        cls !== 'duration-200' &&
+        cls !== 'group' &&
+        cls !== 'relative'
+      )
+      .join(' ');
+
+    if (cleanClasses) {
+      div.className = cleanClasses;
+    }
+
+    // Apply styles from database (excluding editor-specific styles)
+    Object.entries(styles).forEach(([property, value]) => {
+      if (
+        property !== 'cursor' &&
+        property !== 'userSelect' &&
+        property !== 'outline' &&
+        property !== 'border' &&
+        property !== 'boxShadow' &&
+        value
+      ) {
+        try {
+          div.style[property] = value;
+        } catch (e) {
+          console.warn(`Could not apply style ${property}: ${value}`);
+        }
+      }
+    });
+
+    // Set content
+    div.innerHTML = content;
+
+    return div.outerHTML;
+  }, []);
+
   // Generate clean HTML without editor-specific classes and attributes
   const getCleanHtml = useCallback((element) => {
     if (!element) return '';
-    
+
     // Clone the element to avoid modifying the original
     const clonedElement = element.cloneNode(true);
-    
+
     // Remove editor-specific attributes
     const editorAttributes = ['data-editable', 'data-slot-id'];
     editorAttributes.forEach(attr => {
       clonedElement.removeAttribute(attr);
     });
-    
-    // Since we're now using EditorInteractionWrapper, the content elements
-    // should already be clean of editor-specific classes and styles.
-    // We only need to remove the data attributes that are editor-specific.
+
+    // Remove editor-specific classes
+    const cleanClasses = clonedElement.className
+      .split(' ')
+      .filter(cls =>
+        cls &&
+        !cls.includes('cursor-') &&
+        !cls.includes('hover:') &&
+        !cls.includes('border-') &&
+        !cls.includes('shadow-') &&
+        !cls.includes('ring-') &&
+        !cls.includes('focus:') &&
+        cls !== 'transition-all' &&
+        cls !== 'duration-200' &&
+        cls !== 'group' &&
+        cls !== 'relative'
+      )
+      .join(' ');
+
+    clonedElement.className = cleanClasses;
 
     return clonedElement.outerHTML;
   }, []);
@@ -246,15 +319,25 @@ const EditorSidebar = ({
         textContentRef.current.value = textContent;
       }
       
-      // Initialize local HTML content with clean HTML (no editor attributes/classes)
-      if (isHtmlElement && selectedElement) {
-        const htmlContent = getCleanHtml(selectedElement) || '';
+      // Initialize local HTML content with clean HTML from database
+      if (isHtmlElement && slotConfig) {
+        // Prefer database content over DOM element content
+        const htmlContent = getCleanHtmlFromDatabase(slotConfig) || getCleanHtml(selectedElement) || '';
         setLocalHtmlContent(htmlContent);
-        
+
         // Update HTML textarea ref value
         if (htmlContentRef.current) {
           htmlContentRef.current.value = htmlContent;
         }
+
+        console.log('🎨 EditorSidebar: Loaded clean HTML from database:', {
+          slotId,
+          htmlLength: htmlContent.length,
+          htmlPreview: htmlContent.substring(0, 200) + '...',
+          hasContent: !!slotConfig.content,
+          hasClasses: !!slotConfig.className,
+          hasStyles: Object.keys(slotConfig.styles || {}).length > 0
+        });
       }
       
       // Clear initialization flag after a short delay
