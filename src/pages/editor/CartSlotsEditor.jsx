@@ -309,27 +309,39 @@ const GridColumn = ({
           const targetSlotParent = slot?.parentId;
 
           // Show "Drop inside" only if:
-          // - Dragged slot's parent is NOT the target slot (not already inside)
-          // - Dragged slot and target slot are NOT siblings (different levels)
+          // - Target is actually a container (already checked above)
+          // - Dragged slot is NOT already a child of this target
+          // - Not trying to drop a slot into itself
           const canDropInside = draggedSlotParent !== targetSlotId &&
-                                draggedSlotParent !== targetSlotParent;
+                                draggedSlotId !== targetSlotId;
 
           console.log('🎯 Drop inside check:', {
             draggedSlotId,
             draggedSlotParent,
             targetSlotId,
+            targetSlotType: slot?.type,
             targetSlotParent,
             canDropInside,
-            isContainer
+            isContainer,
+            reason: !canDropInside ?
+              (draggedSlotParent === targetSlotId ? 'already child of target' :
+               draggedSlotId === targetSlotId ? 'cannot drop on self' : 'other') : 'ok'
           });
 
           if (canDropInside) {
             newDropZone = 'inside';
           } else {
-            // If trying to drop into same parent or similar level, use 'after'
+            // If trying to drop into same parent or itself, use 'after'
             newDropZone = 'after';
           }
         } else {
+          console.log('🎯 No drop inside available:', {
+            targetSlotId: slot?.id,
+            targetSlotType: slot?.type,
+            isContainer,
+            hasCurrentDragInfo: !!currentDragInfo,
+            reason: !isContainer ? 'not a container' : 'no drag info'
+          });
           newDropZone = 'after';
         }
       }
