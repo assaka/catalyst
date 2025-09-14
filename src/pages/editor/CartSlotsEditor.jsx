@@ -661,8 +661,8 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={['button', 'image'].includes(slot.type) ?
-                // For buttons and images, exclude width/height from wrapper - apply only to element
+              style={slot.type === 'button' ?
+                // For buttons only, exclude width/height from wrapper - apply only to button element
                 Object.fromEntries(
                   Object.entries(slot.styles || {}).filter(([key]) =>
                     !['width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight'].includes(key)
@@ -696,11 +696,15 @@ const HierarchicalSlotRenderer = ({
                 <img
                   src={slot.content}
                   alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
-                  className="w-full h-auto max-w-full"
-                  style={slot.styles}
+                  className="w-full h-full object-contain"
+                  style={{
+                    // Don't override container dimensions - let ResizeWrapper control size
+                    maxWidth: '100%',
+                    maxHeight: '100%'
+                  }}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded">
+                <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
                   <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
                   <span className="text-sm text-gray-500">No image selected</span>
                 </div>
