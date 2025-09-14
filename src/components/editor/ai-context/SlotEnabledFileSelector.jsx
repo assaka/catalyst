@@ -229,9 +229,6 @@ const SlotEnabledFileSelector = ({
             <p className="text-xs text-muted-foreground">
               Select a page to customize its slots
             </p>
-            <p className="text-xs text-amber-600 mt-1">
-              ⚠️ Changes affect only the selected page
-            </p>
           </div>
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
@@ -277,11 +274,6 @@ const SlotEnabledFileSelector = ({
 
                   <p className="text-xs text-muted-foreground">{file.description}</p>
                   <p className="text-xs text-muted-foreground font-mono">{file.path}</p>
-                  {isCurrentFile && (
-                    <p className="text-xs text-amber-600 mt-1 font-medium">
-                      Layout changes apply only to this page
-                    </p>
-                  )}
                 </div>
 
                 {/* Page Type Badge */}

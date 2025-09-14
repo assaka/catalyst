@@ -1905,6 +1905,7 @@ const CartSlotsEditor = ({
                 <div>
                   <p className="font-medium text-red-800">This action cannot be undone</p>
                   <p className="text-sm text-red-600">All current layout changes will be lost and replaced with the default configuration.</p>
+                  <p className="text-sm text-amber-600 font-medium mt-1">Only affects the current page - other pages remain unchanged.</p>
                 </div>
               </div>
 
