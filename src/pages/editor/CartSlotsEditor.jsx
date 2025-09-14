@@ -35,7 +35,6 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
   const startValueRef = useRef(currentValue);
 
   const handleMouseDown = useCallback((e) => {
-    console.log('🎯 GridResizeHandle mousedown:', { direction, currentValue, e });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -171,7 +170,6 @@ const GridColumn = ({
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   
-  console.log(`🔍 GridColumn ${slotId} received props:`, { colSpan, rowSpan, height });
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e) => {
@@ -255,9 +253,6 @@ const GridColumn = ({
       }
 
       setDropZone(newDropZone);
-
-      // Store drop position in dataTransfer for later use
-      e.dataTransfer.setData('application/drop-position', newDropZone);
     }
   }, [mode, isDragging, slot?.type]);
 
@@ -275,15 +270,19 @@ const GridColumn = ({
 
     e.preventDefault();
     setIsDragOver(false);
+    setIsDragActive(false);
 
     const draggedSlotId = e.dataTransfer.getData('text/plain');
-    const dropPosition = e.dataTransfer.getData('application/drop-position') || 'after';
+    const dropPosition = dropZone || 'after'; // Use current dropZone state
 
     if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
       console.log('🎯 Dropping slot:', { from: draggedSlotId, to: slotId, position: dropPosition });
       onSlotDrop(draggedSlotId, slotId, dropPosition);
     }
-  }, [slotId, onSlotDrop, mode, isDragging]);
+
+    // Reset drop zone
+    setDropZone(null);
+  }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
 
   // Use user-defined CSS Grid properties from slot.styles, fallback to colSpan/rowSpan
   const gridStyles = {
@@ -394,7 +393,6 @@ const GridColumn = ({
       </div>
       
       {/* Resize handles at GridColumn level */}
-      {console.log(`🔍 ${slotId} resize handles:`, { showHorizontalHandle, showVerticalHandle, mode, colSpan, onGridResize: !!onGridResize })}
       {showHorizontalHandle && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
@@ -516,7 +514,6 @@ const HierarchicalSlotRenderer = ({
   return filteredSlots.map(slot => {
     // Calculate dynamic colSpan based on viewMode for specific slots
     let colSpan = slot.colSpan || 12;
-    console.log(`🔍 Rendering slot ${slot.id} with colSpan:`, colSpan, 'from slot data:', slot.colSpan);
     
     // Note: Removed hardcoded colSpan override for content_area to allow proper resizing
     // The colSpan should come from the slot data (which includes user resize changes)
