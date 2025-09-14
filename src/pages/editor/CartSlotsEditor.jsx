@@ -173,8 +173,11 @@ const GridColumn = ({
   const dragOverTimeoutRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
-  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
-  const showVerticalHandle = onSlotHeightResize && mode === 'edit';
+  // Only show grid-level resize handles for container types
+  // Individual elements (button, text, image) should use element-level ResizeWrapper instead
+  const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1 && isContainerType;
+  const showVerticalHandle = onSlotHeightResize && mode === 'edit' && isContainerType;
   
 
   // Drag and drop handlers
@@ -414,7 +417,7 @@ const GridColumn = ({
               isDragging
                 ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
               isHovered
-                ? 'border-blue-500 border-2 border-dashed bg-blue-50/30 shadow-md shadow-blue-200/40'
+                ? 'border-blue-500 border-2 border-dashed shadow-md shadow-blue-200/40'
                 : showBorders
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
@@ -480,7 +483,7 @@ const GridColumn = ({
       {/* Clean content area */}
       <div className={`p-2 relative transition-all duration-200 ${
         mode === 'edit'
-          ? `${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} rounded-md hover:bg-white/50 ${isHovered ? 'bg-white/30' : ''}`
+          ? `${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} rounded-md`
           : ''
       }`} style={{ zIndex: 2 }}>
         {children}
