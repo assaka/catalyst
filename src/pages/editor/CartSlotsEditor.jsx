@@ -16,7 +16,9 @@ import {
   ShoppingCart,
   Package,
   Loader2,
-  Square
+  Square,
+  Plus,
+  Image
 } from "lucide-react";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
@@ -26,6 +28,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
+import FilePickerModal from '@/components/ui/FilePickerModal';
 
 // Advanced resize handle for horizontal (grid column) or vertical (height) resizing
 const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) => {
@@ -746,7 +749,21 @@ const HierarchicalSlotRenderer = ({
             />
           )}
           {slot.type === 'image' && (
-            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
+            <>
+              {slot.content ? (
+                <img
+                  src={slot.content}
+                  alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
+                  className="w-full h-auto max-w-full"
+                  style={slot.styles}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded">
+                  <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">No image selected</span>
+                </div>
+              )}
+            </>
           )}
           {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
             <div
@@ -854,6 +871,8 @@ const CartSlotsEditor = ({
   const [showSlotBorders, setShowSlotBorders] = useState(true);
   const [localSaveStatus, setLocalSaveStatus] = useState('');
   const [isResizing, setIsResizing] = useState(false);
+  const [showAddSlotModal, setShowAddSlotModal] = useState(false);
+  const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const lastResizeEndTime = useRef(0);
   
   // Database configuration hook
@@ -1605,6 +1624,61 @@ const CartSlotsEditor = ({
 
   }, [saveConfiguration, validateSlotConfiguration]);
 
+  // Handle creating new slots
+  const handleCreateSlot = useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}) => {
+    const newSlotId = `new_${slotType}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+    const newSlot = {
+      id: newSlotId,
+      type: slotType,
+      content: content,
+      className: slotType === 'container' ? 'p-4 border border-gray-200 rounded' :
+                slotType === 'text' ? 'text-base text-gray-900' :
+                slotType === 'image' ? 'w-full h-auto' : '',
+      parentClassName: '',
+      styles: slotType === 'container' ? { minHeight: '80px' } : {},
+      parentId: parentId,
+      position: { order: 0 },
+      colSpan: slotType === 'container' ? 12 : 6, // Containers full width, others half width
+      rowSpan: 1,
+      viewMode: ['empty', 'withProducts'], // Show in both modes by default
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        hierarchical: true,
+        // Include additional properties for images
+        ...additionalProps
+      }
+    };
+
+    setCartLayoutConfig(prevConfig => {
+      const updatedSlots = { ...prevConfig.slots };
+      updatedSlots[newSlotId] = newSlot;
+
+      // Update order of existing siblings
+      Object.values(updatedSlots).forEach(slot => {
+        if (slot.id !== newSlotId && slot.parentId === parentId) {
+          slot.position = { order: (slot.position?.order || 0) + 1 };
+        }
+      });
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots,
+        metadata: {
+          ...prevConfig.metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
+      // Auto-save the new slot
+      saveConfiguration(updatedConfig);
+      return updatedConfig;
+    });
+
+    console.log('✨ Created new slot:', { slotId: newSlotId, type: slotType, parentId });
+  }, [saveConfiguration]);
+
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
   useEffect(() => {
     const handleKeyPress = async (e) => {
@@ -1674,6 +1748,11 @@ const CartSlotsEditor = ({
                   <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
                     <Save className="w-4 h-4 mr-2" />
                     Save
+                  </Button>
+
+                  <Button onClick={() => setShowAddSlotModal(true)} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add New
                   </Button>
                 </>
               )}
@@ -1750,6 +1829,94 @@ const CartSlotsEditor = ({
           isVisible={true}
         />
       )}
+
+      {/* Add Slot Modal */}
+      {showAddSlotModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Add New Slot</h3>
+              <Button
+                onClick={() => setShowAddSlotModal(false)}
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={() => {
+                  handleCreateSlot('container');
+                  setShowAddSlotModal(false);
+                }}
+                variant="outline"
+                className="w-full justify-start text-left h-auto py-3"
+              >
+                <div className="flex items-center">
+                  <Square className="w-5 h-5 mr-3 text-blue-600" />
+                  <div>
+                    <div className="font-medium">Container</div>
+                    <div className="text-sm text-gray-500">A flexible container for other elements</div>
+                  </div>
+                </div>
+              </Button>
+
+              <Button
+                onClick={() => {
+                  handleCreateSlot('text', 'New text content');
+                  setShowAddSlotModal(false);
+                }}
+                variant="outline"
+                className="w-full justify-start text-left h-auto py-3"
+              >
+                <div className="flex items-center">
+                  <span className="w-5 h-5 mr-3 text-green-600 font-bold">T</span>
+                  <div>
+                    <div className="font-medium">Text</div>
+                    <div className="text-sm text-gray-500">Add text content</div>
+                  </div>
+                </div>
+              </Button>
+
+              <Button
+                onClick={() => {
+                  setShowAddSlotModal(false);
+                  setShowFilePickerModal(true);
+                }}
+                variant="outline"
+                className="w-full justify-start text-left h-auto py-3"
+              >
+                <div className="flex items-center">
+                  <span className="w-5 h-5 mr-3 text-purple-600">🖼️</span>
+                  <div>
+                    <div className="font-medium">Image</div>
+                    <div className="text-sm text-gray-500">Add an image from File Library</div>
+                  </div>
+                </div>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* File Picker Modal */}
+      <FilePickerModal
+        isOpen={showFilePickerModal}
+        onClose={() => setShowFilePickerModal(false)}
+        onSelect={(selectedFile) => {
+          // Create image slot with selected file
+          handleCreateSlot('image', selectedFile.url, 'main_layout', {
+            src: selectedFile.url,
+            alt: selectedFile.name,
+            fileName: selectedFile.name,
+            mimeType: selectedFile.mimeType
+          });
+        }}
+        fileType="image"
+      />
     </div>
   );
 };
