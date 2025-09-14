@@ -20,6 +20,12 @@ import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
+import {
+  GridResizeHandle,
+  GridColumn,
+  EditableElement,
+  HierarchicalSlotRenderer
+} from '@/components/editor/slot/SlotComponents';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
 import FilePickerModal from '@/components/ui/FilePickerModal';
@@ -67,7 +73,7 @@ const CartSlotsEditor = ({
   const [showResetModal, setShowResetModal] = useState(false);
   const lastResizeEndTime = useRef(0);
   
-  // Database configuration hook with generic functions and components
+  // Database configuration hook with generic functions and handler factories
   const {
     saveConfiguration: saveToDatabase,
     loadConfiguration: loadFromDatabase,
@@ -82,11 +88,6 @@ const CartSlotsEditor = ({
     handleSlotHeightResize: slotHeightResizeHandler,
     handleTextChange: textChangeHandler,
     handleClassChange: classChangeHandler,
-    // Generic UI components
-    GridResizeHandle,
-    GridColumn,
-    EditableElement,
-    HierarchicalSlotRenderer,
     // Generic handler factories
     createElementClickHandler,
     createSaveConfigurationHandler,
