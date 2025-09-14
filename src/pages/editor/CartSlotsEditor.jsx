@@ -791,6 +791,33 @@ const CartSlotsEditor = ({
         try {
           JSON.stringify(configToUse);
           console.log('✅ Configuration is serializable');
+
+        // Repair corrupted hierarchy if needed
+        if (configToUse.slots) {
+          let needsRepair = false;
+          const repairedSlots = { ...configToUse.slots };
+
+          // Ensure main_layout has correct parentId
+          if (repairedSlots.main_layout && repairedSlots.main_layout.parentId !== null) {
+            console.log('🔧 Repairing main_layout parentId');
+            repairedSlots.main_layout = { ...repairedSlots.main_layout, parentId: null };
+            needsRepair = true;
+          }
+
+          // Ensure header_container and content_area are children of main_layout
+          ['header_container', 'content_area'].forEach(slotId => {
+            if (repairedSlots[slotId] && repairedSlots[slotId].parentId !== 'main_layout') {
+              console.log(`🔧 Repairing ${slotId} parentId`);
+              repairedSlots[slotId] = { ...repairedSlots[slotId], parentId: 'main_layout' };
+              needsRepair = true;
+            }
+          });
+
+          if (needsRepair) {
+            configToUse = { ...configToUse, slots: repairedSlots };
+            console.log('✅ Hierarchy repaired');
+          }
+        }
         } catch (e) {
           console.error('❌ Configuration contains non-serializable data:', e);
         }
@@ -1098,6 +1125,18 @@ const CartSlotsEditor = ({
 
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ Cannot drop slot on itself');
+      return;
+    }
+
+    // Prevent moving critical layout containers
+    if (draggedSlotId === 'main_layout') {
+      console.log('⚠️ Cannot move main layout container');
+      return;
+    }
+
+    // Also prevent moving other root containers into wrong places
+    if (['header_container', 'content_area'].includes(draggedSlotId) && dropPosition !== 'after' && dropPosition !== 'before') {
+      console.log('⚠️ Cannot move root containers inside other elements');
       return;
     }
 
