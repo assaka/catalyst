@@ -1122,6 +1122,507 @@ export function useSlotConfiguration({
     return configToUse;
   }, [selectedStore, pageType, loadStaticConfiguration]);
 
+  // Generic validation function for slot configurations
+  const validateSlotConfiguration = useCallback((slots) => {
+    if (!slots || typeof slots !== 'object') return false;
+
+    // Check for required properties in each slot
+    for (const [slotId, slot] of Object.entries(slots)) {
+      if (!slot.id || slot.id !== slotId) {
+        console.error(`❌ Slot ${slotId} has invalid or missing id`);
+        return false;
+      }
+
+      if (!slot.type) {
+        console.error(`❌ Slot ${slotId} missing type`);
+        return false;
+      }
+
+      // Ensure viewMode is always an array
+      if (slot.viewMode && !Array.isArray(slot.viewMode)) {
+        console.error(`❌ Slot ${slotId} has invalid viewMode (not an array)`);
+        return false;
+      }
+
+      // Validate parentId references
+      if (slot.parentId && slot.parentId !== null && !slots[slot.parentId]) {
+        console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId}`);
+        return false;
+      }
+    }
+
+    // Ensure main_layout has null parentId
+    if (slots.main_layout && slots.main_layout.parentId !== null) {
+      console.error('❌ main_layout must have parentId: null');
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  // Generic slot creation function
+  const createSlot = useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}) => {
+    const newSlotId = `new_${slotType}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+    return {
+      id: newSlotId,
+      type: slotType,
+      content: content,
+      className: slotType === 'container' ? 'p-4 border border-gray-200 rounded' :
+                slotType === 'text' ? 'text-base text-gray-900' :
+                slotType === 'image' ? 'w-full h-auto' : '',
+      parentClassName: '',
+      styles: slotType === 'container' ? { minHeight: '80px' } : {},
+      parentId: parentId,
+      position: { order: 0 },
+      colSpan: slotType === 'container' ? 12 : 6, // Containers full width, others half width
+      rowSpan: 1,
+      viewMode: ['empty', 'withProducts'], // Show in both modes by default
+      metadata: {
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        hierarchical: true,
+        ...additionalProps
+      }
+    };
+  }, []);
+
+  // Generic slot drop handler
+  const handleSlotDrop = useCallback(async (draggedSlotId, targetSlotId, dropPosition, slots, updateSlots) => {
+    if (draggedSlotId === targetSlotId) {
+      return null;
+    }
+
+    // Prevent moving critical layout containers
+    if (draggedSlotId === 'main_layout') {
+      return null;
+    }
+
+    // Also prevent moving other root containers into wrong places
+    if (['header_container', 'content_area', 'sidebar_area'].includes(draggedSlotId) &&
+        dropPosition !== 'after' && dropPosition !== 'before') {
+      return null;
+    }
+
+    // Create a deep clone to avoid mutations
+    const updatedSlots = JSON.parse(JSON.stringify(slots));
+    const draggedSlot = updatedSlots[draggedSlotId];
+    const targetSlot = updatedSlots[targetSlotId];
+
+    if (!draggedSlot || !targetSlot) {
+      console.error('❌ Slot not found:', { draggedSlotId, targetSlotId });
+      return null;
+    }
+
+    // Store ALL original properties to preserve them
+    const originalProperties = {
+      id: draggedSlot.id,
+      type: draggedSlot.type,
+      content: draggedSlot.content,
+      className: draggedSlot.className,
+      parentClassName: draggedSlot.parentClassName,
+      styles: draggedSlot.styles || {},
+      layout: draggedSlot.layout,
+      gridCols: draggedSlot.gridCols,
+      colSpan: draggedSlot.colSpan,
+      rowSpan: draggedSlot.rowSpan,
+      viewMode: draggedSlot.viewMode,
+      metadata: draggedSlot.metadata || {},
+      position: draggedSlot.position || {}
+    };
+
+    // Calculate new position based on drop zone
+    let newParentId, newOrder;
+
+    switch (dropPosition) {
+      case 'before':
+        newParentId = targetSlot.parentId;
+        newOrder = (targetSlot.position?.order || 0);
+        break;
+      case 'after':
+        newParentId = targetSlot.parentId;
+        newOrder = (targetSlot.position?.order || 0) + 1;
+        break;
+      case 'inside':
+        // Only allow dropping inside containers
+        if (!['container', 'grid', 'flex'].includes(targetSlot.type)) {
+          return null;
+        }
+        newParentId = targetSlotId;
+        newOrder = 0;
+        break;
+      default:
+        console.error('❌ Invalid drop position:', dropPosition);
+        return null;
+    }
+
+    // Update dragged slot position while preserving ALL essential properties
+    updatedSlots[draggedSlotId] = {
+      ...originalProperties,
+      parentId: newParentId,
+      position: {
+        ...originalProperties.position,
+        order: newOrder
+      },
+      metadata: {
+        ...originalProperties.metadata,
+        lastModified: new Date().toISOString()
+      }
+    };
+
+    // Ensure we preserve viewMode array properly
+    if (Array.isArray(originalProperties.viewMode)) {
+      updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
+    }
+
+    // Shift other slots in the target parent to make room
+    Object.keys(updatedSlots).forEach(slotId => {
+      const slot = updatedSlots[slotId];
+      if (slot.id !== draggedSlotId &&
+          slot.parentId === newParentId &&
+          (slot.position?.order || 0) >= newOrder) {
+        updatedSlots[slotId] = {
+          ...slot,
+          position: {
+            ...slot.position,
+            order: (slot.position?.order || 0) + 1
+          }
+        };
+      }
+    });
+
+    // Clean up old parent - shift slots down
+    Object.keys(updatedSlots).forEach(slotId => {
+      const slot = updatedSlots[slotId];
+      if (slot.id !== draggedSlotId &&
+          slot.parentId === originalProperties.parentId &&
+          (slot.position?.order || 0) > (originalProperties.position?.order || 0)) {
+        updatedSlots[slotId] = {
+          ...slot,
+          position: {
+            ...slot.position,
+            order: (slot.position?.order || 0) - 1
+          }
+        };
+      }
+    });
+
+    // Validate the updated configuration before applying
+    if (!validateSlotConfiguration(updatedSlots)) {
+      console.error('❌ Configuration validation failed after drag, reverting changes');
+      return null;
+    }
+
+    return updatedSlots;
+  }, [validateSlotConfiguration]);
+
+  // Generic grid resize handler
+  const handleGridResize = useCallback((slotId, newColSpan, slots) => {
+    const updatedSlots = { ...slots };
+
+    if (updatedSlots[slotId]) {
+      // Update hierarchical slot colSpan
+      updatedSlots[slotId] = {
+        ...updatedSlots[slotId],
+        colSpan: newColSpan
+      };
+    }
+
+    return updatedSlots;
+  }, []);
+
+  // Generic slot height resize handler
+  const handleSlotHeightResize = useCallback((slotId, newHeight, slots) => {
+    const updatedSlots = { ...slots };
+
+    if (updatedSlots[slotId]) {
+      // Calculate row span based on height (rough approximation: 40px per row)
+      const estimatedRowSpan = Math.max(1, Math.round(newHeight / 40));
+
+      // Update the slot's height and rowSpan
+      updatedSlots[slotId] = {
+        ...updatedSlots[slotId],
+        rowSpan: estimatedRowSpan,
+        styles: {
+          ...updatedSlots[slotId].styles,
+          minHeight: `${newHeight}px`
+        }
+      };
+    }
+
+    return updatedSlots;
+  }, []);
+
+  // Generic text change handler
+  const handleTextChange = useCallback((slotId, newText, slots) => {
+    const updatedSlots = { ...slots };
+
+    if (updatedSlots[slotId]) {
+      updatedSlots[slotId] = {
+        ...updatedSlots[slotId],
+        content: newText,
+        metadata: {
+          ...updatedSlots[slotId].metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+    }
+
+    return updatedSlots;
+  }, []);
+
+  // Generic class change handler
+  const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false, slots) => {
+    const updatedSlots = { ...slots };
+
+    if (updatedSlots[slotId]) {
+      // Merge existing styles with new styles
+      const existingStyles = updatedSlots[slotId].styles || {};
+      const mergedStyles = { ...existingStyles, ...styles };
+
+      // Define categories of classes
+      const alignmentClasses = ['text-left', 'text-center', 'text-right'];
+      const allClasses = className.split(' ').filter(Boolean);
+
+      if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
+        // For alignment changes, only alignment goes to parent, everything else to element
+        const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
+        const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+
+        updatedSlots[slotId] = {
+          ...updatedSlots[slotId],
+          className: elementClassList.join(' '),
+          parentClassName: alignmentClassList.join(' '),
+          styles: mergedStyles,
+          metadata: {
+            ...updatedSlots[slotId].metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+      } else {
+        // For text styling (bold, italic, colors), keep existing parentClassName
+        // and only update className for the text element
+        updatedSlots[slotId] = {
+          ...updatedSlots[slotId],
+          className: className,
+          styles: mergedStyles,
+          metadata: {
+            ...updatedSlots[slotId].metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+      }
+    }
+
+    return updatedSlots;
+  }, []);
+
+  // Generic element click handler
+  const createElementClickHandler = useCallback((isResizing, lastResizeEndTime, setSelectedElement, setIsSidebarVisible) => {
+    return useCallback((slotId, element) => {
+      // Don't open sidebar if currently resizing or within 200ms of resize end
+      const timeSinceResize = Date.now() - lastResizeEndTime.current;
+      if (isResizing || timeSinceResize < 200) {
+        return;
+      }
+
+      // If element is a ResizeWrapper, find the actual content element inside
+      let actualElement = element;
+
+      if (element && element.classList && element.classList.contains('resize-none')) {
+        // This is a ResizeWrapper child, look for the actual content element
+        const button = element.querySelector('button');
+        const svg = element.querySelector('svg');
+        const input = element.querySelector('input');
+
+        // Use the most specific element found
+        actualElement = button || svg || input || element;
+      }
+
+      setSelectedElement(actualElement);
+      setIsSidebarVisible(true);
+    }, [isResizing, slotId, element]);
+  }, []);
+
+  // Generic handler factories that take page-specific dependencies
+  const createSaveConfigurationHandler = useCallback((pageConfig, setPageConfig, setLocalSaveStatus, getSelectedStoreId, slotType) => {
+    return useCallback(async (configToSave = pageConfig) => {
+      if (!configToSave) return;
+
+      // Validate configuration before saving
+      if (!validateSlotConfiguration(configToSave.slots)) {
+        console.error('❌ Cannot save invalid configuration');
+        setLocalSaveStatus('error');
+        setTimeout(() => setLocalSaveStatus(''), 5000);
+        return;
+      }
+
+      setLocalSaveStatus('saving');
+
+      try {
+        const storeId = getSelectedStoreId();
+        if (storeId) {
+          await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
+        }
+
+        setLocalSaveStatus('saved');
+        setTimeout(() => setLocalSaveStatus(''), 3000);
+      } catch (error) {
+        console.error('❌ Save failed:', error);
+        setLocalSaveStatus('error');
+        setTimeout(() => setLocalSaveStatus(''), 5000);
+      }
+    }, [pageConfig, setPageConfig, setLocalSaveStatus, getSelectedStoreId, slotType]);
+  }, [validateSlotConfiguration]);
+
+  const createHandlerFactory = useCallback((setPageConfig, saveConfigurationHandler) => {
+    return {
+      createTextChangeHandler: (textChangeHandler) =>
+        useCallback((slotId, newText) => {
+          setPageConfig(prevConfig => {
+            const updatedSlots = textChangeHandler(slotId, newText, prevConfig?.slots || {});
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots
+            };
+
+            // Auto-save
+            saveConfigurationHandler(updatedConfig);
+            return updatedConfig;
+          });
+        }, [textChangeHandler, saveConfigurationHandler]),
+
+      createClassChangeHandler: (classChangeHandler) =>
+        useCallback((slotId, className, styles, isAlignmentChange = false) => {
+          setPageConfig(prevConfig => {
+            const updatedSlots = classChangeHandler(slotId, className, styles, isAlignmentChange, prevConfig?.slots || {});
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots
+            };
+
+            // Auto-save
+            saveConfigurationHandler(updatedConfig);
+            return updatedConfig;
+          });
+        }, [classChangeHandler, saveConfigurationHandler]),
+
+      createGridResizeHandler: (gridResizeHandler, saveTimeoutRef) =>
+        useCallback((slotId, newColSpan) => {
+          setPageConfig(prevConfig => {
+            const updatedSlots = gridResizeHandler(slotId, newColSpan, prevConfig?.slots || {});
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots
+            };
+
+            // Debounced auto-save - clear previous timeout and set new one
+            if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
+            }
+            saveTimeoutRef.current = setTimeout(() => {
+              saveConfigurationHandler(updatedConfig);
+            }, 500); // Wait 0.5 seconds after resize stops for more responsive feel
+
+            return updatedConfig;
+          });
+        }, [gridResizeHandler, saveConfigurationHandler]),
+
+      createSlotHeightResizeHandler: (slotHeightResizeHandler, saveTimeoutRef) =>
+        useCallback((slotId, newHeight) => {
+          setPageConfig(prevConfig => {
+            const updatedSlots = slotHeightResizeHandler(slotId, newHeight, prevConfig?.slots || {});
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots
+            };
+
+            // Debounced auto-save - clear previous timeout and set new one
+            if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
+            }
+            saveTimeoutRef.current = setTimeout(() => {
+              saveConfigurationHandler(updatedConfig);
+            }, 500); // Wait 0.5 seconds after resize stops for more responsive feel
+
+            return updatedConfig;
+          });
+        }, [slotHeightResizeHandler, saveConfigurationHandler]),
+
+      createSlotDropHandler: (slotDropHandler, isDragOperationActiveRef) =>
+        useCallback(async (draggedSlotId, targetSlotId, dropPosition) => {
+          // Mark drag operation as active to prevent config reloads
+          isDragOperationActiveRef.current = true;
+
+          const updatedConfig = await new Promise((resolve) => {
+            setPageConfig(prevConfig => {
+              if (!prevConfig?.slots) {
+                console.error('❌ No valid configuration to update');
+                resolve(null);
+                return prevConfig;
+              }
+
+              // Use the hook function to handle the drop logic
+              const updatedSlots = slotDropHandler(draggedSlotId, targetSlotId, dropPosition, prevConfig.slots);
+
+              if (!updatedSlots) {
+                resolve(null);
+                return prevConfig;
+              }
+
+              const newConfig = {
+                ...prevConfig,
+                slots: updatedSlots,
+                metadata: {
+                  ...prevConfig.metadata,
+                  lastModified: new Date().toISOString()
+                }
+              };
+
+              resolve(newConfig);
+              return newConfig;
+            });
+          });
+
+          if (updatedConfig) {
+            try {
+              await saveConfigurationHandler(updatedConfig);
+              // Mark drag operation as complete after save
+              setTimeout(() => {
+                isDragOperationActiveRef.current = false;
+              }, 2000); // 2 second protection after save
+            } catch (error) {
+              console.error('❌ Failed to save configuration:', error);
+              isDragOperationActiveRef.current = false;
+            }
+          } else {
+            console.warn('⚠️ No updated configuration to save - drag operation was cancelled');
+            isDragOperationActiveRef.current = false;
+          }
+        }, [slotDropHandler, saveConfigurationHandler]),
+
+      createSlotCreateHandler: (createSlot) =>
+        useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}) => {
+          setPageConfig(prevConfig => {
+            const { updatedSlots, newSlotId } = createSlot(slotType, content, parentId, additionalProps, prevConfig?.slots || {});
+
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots,
+              metadata: {
+                ...prevConfig.metadata,
+                lastModified: new Date().toISOString()
+              }
+            };
+
+            // Auto-save the new slot
+            saveConfigurationHandler(updatedConfig);
+            return updatedConfig;
+          });
+        }, [createSlot, saveConfigurationHandler])
+    };
+  }, []);
+
   return {
     saveConfiguration,
     loadConfiguration,
@@ -1134,10 +1635,22 @@ export function useSlotConfiguration({
     resetStatus,
     justSavedRef,
     cleanup,
-    // Slot rendering components
+    // Generic slot management functions
+    validateSlotConfiguration,
+    createSlot,
+    handleSlotDrop,
+    handleGridResize,
+    handleSlotHeightResize,
+    handleTextChange,
+    handleClassChange,
+    // Generic UI components
     GridResizeHandle,
-    EditableElement,
     GridColumn,
-    HierarchicalSlotRenderer
+    EditableElement,
+    HierarchicalSlotRenderer,
+    // Generic handler factories
+    createElementClickHandler,
+    createSaveConfigurationHandler,
+    createHandlerFactory
   };
 }
