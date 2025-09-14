@@ -166,6 +166,7 @@ const GridColumn = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropZone, setDropZone] = useState(null); // 'before', 'after', 'inside'
   const [isDragActive, setIsDragActive] = useState(false);
+  const dragOverTimeoutRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
@@ -234,7 +235,12 @@ const GridColumn = ({
 
     // Only set drag over if it's not the dragging element itself
     if (!isDragging) {
-      // Debounce drag over to prevent excessive re-renders
+      // Clear any existing timeout
+      if (dragOverTimeoutRef.current) {
+        clearTimeout(dragOverTimeoutRef.current);
+      }
+
+      // Set drag state immediately if not already set
       if (!isDragOver) {
         setIsDragOver(true);
         setIsDragActive(true);
@@ -258,7 +264,7 @@ const GridColumn = ({
         newDropZone = isContainer ? 'inside' : 'after';
       }
 
-      // Only update dropZone if it's different to prevent unnecessary re-renders
+      // Only update dropZone if it's different
       if (newDropZone !== dropZone) {
         setDropZone(newDropZone);
       }
@@ -268,9 +274,12 @@ const GridColumn = ({
   const handleDragLeave = useCallback((e) => {
     // Only remove drag over if leaving the element entirely
     if (!e.currentTarget.contains(e.relatedTarget)) {
-      setIsDragOver(false);
-      setDropZone(null);
-      setIsDragActive(false);
+      // Use timeout to prevent rapid flickering
+      dragOverTimeoutRef.current = setTimeout(() => {
+        setIsDragOver(false);
+        setDropZone(null);
+        setIsDragActive(false);
+      }, 50); // Small delay to prevent flickering
     }
   }, []);
 
