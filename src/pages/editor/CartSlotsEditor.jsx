@@ -158,9 +158,13 @@ const GridColumn = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [dropZone, setDropZone] = useState(null); // 'before', 'after', 'inside'
+  const [isDragActive, setIsDragActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
+  
+  console.log(`🔍 GridColumn ${slotId} received props:`, { colSpan, rowSpan, height });
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e) => {
@@ -221,13 +225,41 @@ const GridColumn = ({
     // Only set drag over if it's not the dragging element itself
     if (!isDragging) {
       setIsDragOver(true);
+      setIsDragActive(true);
+
+      // Determine drop zone based on mouse position
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const height = rect.height;
+      const width = rect.width;
+
+      // Calculate drop zones
+      let newDropZone = 'after'; // default
+
+      if (y < height * 0.25) {
+        newDropZone = 'before';
+      } else if (y > height * 0.75) {
+        newDropZone = 'after';
+      } else {
+        // Check if it's a container that can accept children
+        const isContainer = ['container', 'grid', 'flex'].includes(slot?.type);
+        newDropZone = isContainer ? 'inside' : 'after';
+      }
+
+      setDropZone(newDropZone);
+
+      // Store drop position in dataTransfer for later use
+      e.dataTransfer.setData('application/drop-position', newDropZone);
     }
-  }, [mode, isDragging]);
+  }, [mode, isDragging, slot?.type]);
 
   const handleDragLeave = useCallback((e) => {
     // Only remove drag over if leaving the element entirely
     if (!e.currentTarget.contains(e.relatedTarget)) {
       setIsDragOver(false);
+      setDropZone(null);
+      setIsDragActive(false);
     }
   }, []);
 
@@ -238,10 +270,11 @@ const GridColumn = ({
     setIsDragOver(false);
 
     const draggedSlotId = e.dataTransfer.getData('text/plain');
+    const dropPosition = e.dataTransfer.getData('application/drop-position') || 'after';
 
     if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
-      console.log('🎯 Dropping slot:', { from: draggedSlotId, to: slotId });
-      onSlotDrop(draggedSlotId, slotId);
+      console.log('🎯 Dropping slot:', { from: draggedSlotId, to: slotId, position: dropPosition });
+      onSlotDrop(draggedSlotId, slotId, dropPosition);
     }
   }, [slotId, onSlotDrop, mode, isDragging]);
 
@@ -287,9 +320,28 @@ const GridColumn = ({
       onDrop={handleDrop}
       style={gridStyles}
     >
+      {/* Drop Zone Indicators */}
+      {mode === 'edit' && isDragActive && dropZone && (
+        <>
+          {dropZone === 'before' && (
+            <div className="absolute -top-1 left-0 right-0 h-1 bg-blue-500 rounded-full shadow-lg z-40 opacity-80" />
+          )}
+          {dropZone === 'after' && (
+            <div className="absolute -bottom-1 left-0 right-0 h-1 bg-blue-500 rounded-full shadow-lg z-40 opacity-80" />
+          )}
+          {dropZone === 'inside' && (
+            <div className="absolute inset-1 border-2 border-dashed border-blue-500 bg-blue-50/20 rounded z-40 opacity-80 flex items-center justify-center">
+              <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
+                Drop inside
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Hover detection for all elements */}
       {mode === 'edit' && (
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
           onMouseEnter={(e) => {
             e.stopPropagation();
@@ -305,7 +357,7 @@ const GridColumn = ({
               parentElement.style.border = 'none';
             }
           }}
-          style={{ 
+          style={{
             pointerEvents: 'auto',
             zIndex: 1
           }}
@@ -456,6 +508,7 @@ const HierarchicalSlotRenderer = ({
   return filteredSlots.map(slot => {
     // Calculate dynamic colSpan based on viewMode for specific slots
     let colSpan = slot.colSpan || 12;
+    console.log(`🔍 Rendering slot ${slot.id} with colSpan:`, colSpan, 'from slot data:', slot.colSpan);
     
     // Make content_area responsive to viewMode
     if (slot.id === 'content_area') {
@@ -1008,78 +1061,95 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
-  // Handle slot drag and drop repositioning
-  const handleSlotDrop = useCallback(async (draggedSlotId, targetSlotId) => {
-    console.log('🎯 handleSlotDrop called:', { draggedSlotId, targetSlotId });
+  // Handle slot repositioning using drop zones
+  const handleSlotDrop = useCallback(async (draggedSlotId, targetSlotId, dropPosition) => {
+    console.log('🎯 handleSlotDrop called:', { draggedSlotId, targetSlotId, dropPosition });
 
-    // Don't allow dropping on itself
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ Cannot drop slot on itself');
       return;
     }
 
-    // Create a new configuration with swapped positions
     const updatedConfig = await new Promise((resolve) => {
       setCartLayoutConfig(prevConfig => {
-        if (!prevConfig || !prevConfig.slots) {
+        if (!prevConfig?.slots) {
           console.error('❌ No valid configuration to update');
           resolve(null);
           return prevConfig;
         }
 
         const updatedSlots = { ...prevConfig.slots };
+        const draggedSlot = { ...updatedSlots[draggedSlotId] };
+        const targetSlot = updatedSlots[targetSlotId];
 
-        if (updatedSlots[draggedSlotId] && updatedSlots[targetSlotId]) {
-          // Create new slot objects to ensure React detects changes
-          const draggedSlot = { ...updatedSlots[draggedSlotId] };
-          const targetSlot = { ...updatedSlots[targetSlotId] };
-
-          // Store original positions
-          const draggedGridColumn = draggedSlot.styles?.gridColumn;
-          const draggedGridRow = draggedSlot.styles?.gridRow;
-          const targetGridColumn = targetSlot.styles?.gridColumn;
-          const targetGridRow = targetSlot.styles?.gridRow;
-
-          // Swap positions - create new style objects
-          updatedSlots[draggedSlotId] = {
-            ...draggedSlot,
-            styles: {
-              ...draggedSlot.styles,
-              gridColumn: targetGridColumn,
-              gridRow: targetGridRow
-            },
-            metadata: {
-              ...draggedSlot.metadata,
-              lastModified: new Date().toISOString()
-            }
-          };
-
-          updatedSlots[targetSlotId] = {
-            ...targetSlot,
-            styles: {
-              ...targetSlot.styles,
-              gridColumn: draggedGridColumn,
-              gridRow: draggedGridRow
-            },
-            metadata: {
-              ...targetSlot.metadata,
-              lastModified: new Date().toISOString()
-            }
-          };
-
-          console.log('✅ Swapped slot positions:', {
-            [draggedSlotId]: {
-              from: { gridColumn: draggedGridColumn, gridRow: draggedGridRow },
-              to: { gridColumn: targetGridColumn, gridRow: targetGridRow }
-            },
-            [targetSlotId]: {
-              from: { gridColumn: targetGridColumn, gridRow: targetGridRow },
-              to: { gridColumn: draggedGridColumn, gridRow: draggedGridRow }
-            }
-          });
-        } else {
-          console.error('❌ One or both slots not found:', { draggedSlotId, targetSlotId });
+        if (!draggedSlot || !targetSlot) {
+          console.error('❌ Slot not found:', { draggedSlotId, targetSlotId });
+          resolve(null);
+          return prevConfig;
         }
+
+        // Calculate new position based on drop zone
+        let newParentId, newOrder;
+
+        switch (dropPosition) {
+          case 'before':
+            newParentId = targetSlot.parentId;
+            newOrder = (targetSlot.position?.order || 0);
+            break;
+          case 'after':
+            newParentId = targetSlot.parentId;
+            newOrder = (targetSlot.position?.order || 0) + 1;
+            break;
+          case 'inside':
+            // Only allow dropping inside containers
+            if (!['container', 'grid', 'flex'].includes(targetSlot.type)) {
+              console.log('⚠️ Cannot drop inside non-container slot');
+              resolve(null);
+              return prevConfig;
+            }
+            newParentId = targetSlotId;
+            newOrder = 0;
+            break;
+          default:
+            console.error('❌ Invalid drop position:', dropPosition);
+            resolve(null);
+            return prevConfig;
+        }
+
+        // Update dragged slot position
+        updatedSlots[draggedSlotId] = {
+          ...draggedSlot,
+          parentId: newParentId,
+          position: { order: newOrder },
+          metadata: {
+            ...draggedSlot.metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+
+        // Shift other slots in the target parent to make room
+        Object.values(updatedSlots).forEach(slot => {
+          if (slot.id !== draggedSlotId &&
+              slot.parentId === newParentId &&
+              (slot.position?.order || 0) >= newOrder) {
+            slot.position = { order: (slot.position?.order || 0) + 1 };
+          }
+        });
+
+        // Clean up old parent - shift slots down
+        Object.values(updatedSlots).forEach(slot => {
+          if (slot.id !== draggedSlotId &&
+              slot.parentId === draggedSlot.parentId &&
+              (slot.position?.order || 0) > (draggedSlot.position?.order || 0)) {
+            slot.position = { order: (slot.position?.order || 0) - 1 };
+          }
+        });
+
+        console.log('✅ Repositioned slot:', {
+          slot: draggedSlotId,
+          from: { parent: draggedSlot.parentId, order: draggedSlot.position?.order },
+          to: { parent: newParentId, order: newOrder }
+        });
 
         const newConfig = {
           ...prevConfig,
@@ -1095,10 +1165,9 @@ const CartSlotsEditor = ({
       });
     });
 
-    // Save the updated configuration if it was created successfully
     if (updatedConfig) {
       await saveConfiguration(updatedConfig);
-      console.log('💾 Configuration saved after drag and drop');
+      console.log('💾 Configuration saved after repositioning');
     }
   }, [saveConfiguration]);
 

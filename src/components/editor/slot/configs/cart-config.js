@@ -73,6 +73,7 @@ export const cartConfig = {
       parentClassName: 'text-center',
       styles: {},
       parentId: 'header_container',
+      position: { order: 0 },
       viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
@@ -85,6 +86,7 @@ export const cartConfig = {
       className: 'empty-cart-container text-center',
       styles: {},
       parentId: 'content_area',
+      position: { order: 0 },
       layout: 'block',
       colSpan: 12,
       viewMode: ['empty'],
@@ -92,13 +94,14 @@ export const cartConfig = {
     },
     
     empty_cart_icon: {
-      id: 'empty_cart_icon', 
+      id: 'empty_cart_icon',
       type: 'image',
       content: 'shopping-cart-icon',
       className: 'w-16 h-16 mx-auto text-gray-400 mb-4',
       parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
+      position: { order: 0 },
       colSpan: 12,
       viewMode: ['empty'],
       metadata: { hierarchical: true }
@@ -106,12 +109,13 @@ export const cartConfig = {
     
     empty_cart_title: {
       id: 'empty_cart_title',
-      type: 'text', 
+      type: 'text',
       content: 'Your cart is empty',
       className: 'text-xl font-semibold text-gray-900 mb-2',
       parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
+      position: { order: 1 },
       colSpan: 12,
       viewMode: ['empty'],
       metadata: { hierarchical: true }
@@ -124,7 +128,8 @@ export const cartConfig = {
       className: 'text-gray-600 mb-6',
       parentClassName: '',
       styles: {},
-      parentId: 'empty_cart_container', 
+      parentId: 'empty_cart_container',
+      position: { order: 2 },
       colSpan: 12,
       viewMode: ['empty'],
       metadata: { hierarchical: true }
@@ -138,6 +143,7 @@ export const cartConfig = {
       parentClassName: 'text-center',
       styles: {},
       parentId: 'empty_cart_container',
+      position: { order: 3 },
       colSpan: 12,
       viewMode: ['empty'],
       metadata: { hierarchical: true }
