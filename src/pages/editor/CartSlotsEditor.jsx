@@ -8,14 +8,15 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
-import { 
-  Save, 
-  Settings, 
-  Eye, 
-  EyeOff, 
+import {
+  Save,
+  Settings,
+  Eye,
+  EyeOff,
   ShoppingCart,
   Package,
-  Loader2
+  Loader2,
+  Square
 } from "lucide-react";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
@@ -160,6 +161,7 @@ const GridColumn = ({
   onResizeEnd,
   onSlotDrop,
   mode = 'edit',
+  showBorders = true,
   children
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -331,14 +333,16 @@ const GridColumn = ({
     <div
       className={`${
         mode === 'edit'
-          ? `border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
+          ? `${showBorders ? 'border-2 border-dashed' : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
                 ? 'border-green-500 bg-green-50/40 shadow-lg shadow-green-200/60 z-10 animate-pulse ring-2 ring-green-300' :
               isDragging
                 ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
-              isHovered
+              isHovered && showBorders
                 ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40'
-                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
+                : showBorders
+                ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
+                : 'hover:bg-blue-50/10'
             }`
           : 'overflow-hidden'
       } relative responsive-slot`}
@@ -517,6 +521,7 @@ const HierarchicalSlotRenderer = ({
   parentId = null,
   mode,
   viewMode = 'empty',
+  showBorders = true,
   onElementClick,
   onGridResize,
   onSlotHeightResize,
@@ -588,6 +593,7 @@ const HierarchicalSlotRenderer = ({
         onResizeStart={onResizeStart}
         onResizeEnd={onResizeEnd}
         mode={mode}
+        showBorders={showBorders}
       >
         <div className={slot.parentClassName || ''}>
           <EditableElement
@@ -651,6 +657,7 @@ const HierarchicalSlotRenderer = ({
                 parentId={slot.id}
                 mode={mode}
                 viewMode={viewMode}
+                showBorders={showBorders}
                 onElementClick={onElementClick}
                 onGridResize={onGridResize}
                 onSlotHeightResize={onSlotHeightResize}
@@ -734,6 +741,7 @@ const CartSlotsEditor = ({
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [showSlotBorders, setShowSlotBorders] = useState(true);
   const [localSaveStatus, setLocalSaveStatus] = useState('');
   const [isResizing, setIsResizing] = useState(false);
   const lastResizeEndTime = useRef(0);
@@ -1545,6 +1553,16 @@ const CartSlotsEditor = ({
                     <Save className="w-4 h-4 mr-2" />
                     Save
                   </Button>
+
+                  <Button
+                    onClick={() => setShowSlotBorders(!showSlotBorders)}
+                    variant={showSlotBorders ? "default" : "outline"}
+                    size="sm"
+                    title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    Borders
+                  </Button>
                 </>
               )}
             </div>
@@ -1571,6 +1589,7 @@ const CartSlotsEditor = ({
                   parentId={null}
                   mode={mode}
                   viewMode={viewMode}
+                  showBorders={showSlotBorders}
                   onElementClick={handleElementClick}
                   onGridResize={handleGridResize}
                   onSlotHeightResize={handleSlotHeightResize}
