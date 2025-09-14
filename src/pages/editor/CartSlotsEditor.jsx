@@ -24,6 +24,7 @@ import { SlotManager } from '@/utils/slotUtils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { runDragDropTests } from '@/utils/dragDropTester';
 
 // Advanced resize handle for horizontal (grid column) or vertical (height) resizing
 const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) => {
@@ -719,6 +720,19 @@ const CartSlotsEditor = ({
     onSave
   });
 
+  // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
+  useEffect(() => {
+    const handleKeyPress = async (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        console.log('🐛 Debug mode activated - Running drag and drop tests...');
+        await runDragDropTests(handleSlotDrop, validateSlotConfiguration, cartLayoutConfig);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [cartLayoutConfig, handleSlotDrop, validateSlotConfiguration]);
+
   // Initialize cart configuration - first try to load from database, then fall back to static config
   useEffect(() => {
     let isMounted = true; // Track if component is still mounted
@@ -1202,6 +1216,11 @@ const CartSlotsEditor = ({
   // Handle slot repositioning using drop zones
   const handleSlotDrop = useCallback(async (draggedSlotId, targetSlotId, dropPosition) => {
     console.log('🎯 handleSlotDrop called:', { draggedSlotId, targetSlotId, dropPosition });
+    console.log('📊 Current state before drop:', {
+      totalSlots: Object.keys(cartLayoutConfig?.slots || {}).length,
+      draggedSlotCurrent: cartLayoutConfig?.slots?.[draggedSlotId],
+      targetSlotCurrent: cartLayoutConfig?.slots?.[targetSlotId]
+    });
 
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ Cannot drop slot on itself');
@@ -1222,6 +1241,14 @@ const CartSlotsEditor = ({
 
     const updatedConfig = await new Promise((resolve) => {
       setCartLayoutConfig(prevConfig => {
+        console.log('🔄 setCartLayoutConfig callback executed:', {
+          hasPrevConfig: !!prevConfig,
+          hasPrevSlots: !!prevConfig?.slots,
+          slotsCount: Object.keys(prevConfig?.slots || {}).length,
+          draggedExists: !!prevConfig?.slots?.[draggedSlotId],
+          targetExists: !!prevConfig?.slots?.[targetSlotId]
+        });
+
         if (!prevConfig?.slots) {
           console.error('❌ No valid configuration to update');
           resolve(null);
@@ -1340,7 +1367,15 @@ const CartSlotsEditor = ({
           from: { parent: originalProperties.parentId, order: originalProperties.position?.order },
           to: { parent: newParentId, order: newOrder },
           preservedViewMode: updatedSlots[draggedSlotId].viewMode,
-          preservedProperties: Object.keys(originalProperties)
+          preservedProperties: Object.keys(originalProperties),
+          updatedSlot: updatedSlots[draggedSlotId]
+        });
+
+        // Debug: Log all affected slots
+        console.log('🔍 All affected slots after repositioning:', {
+          draggedSlot: { id: draggedSlotId, ...updatedSlots[draggedSlotId] },
+          siblingsInNewParent: Object.values(updatedSlots).filter(s => s.parentId === newParentId).map(s => ({ id: s.id, order: s.position?.order })),
+          siblingsInOldParent: Object.values(updatedSlots).filter(s => s.parentId === originalProperties.parentId).map(s => ({ id: s.id, order: s.position?.order }))
         });
 
         // Validate the updated configuration before applying
@@ -1359,14 +1394,49 @@ const CartSlotsEditor = ({
           }
         };
 
+        console.log('📦 Final configuration to return:', {
+          configSlotsCount: Object.keys(newConfig.slots).length,
+          draggedSlotFinal: newConfig.slots[draggedSlotId],
+          willResolve: true
+        });
+
         resolve(newConfig);
         return newConfig;
       });
     });
 
+    console.log('🎬 After setCartLayoutConfig promise resolved:', {
+      hasUpdatedConfig: !!updatedConfig,
+      updatedConfigSlotsCount: updatedConfig ? Object.keys(updatedConfig.slots || {}).length : 0,
+      draggedSlotInUpdated: updatedConfig?.slots?.[draggedSlotId]
+    });
+
     if (updatedConfig) {
-      await saveConfiguration(updatedConfig);
-      console.log('💾 Configuration saved after repositioning');
+      console.log('💾 About to save configuration...');
+      console.log('📋 Config to save details:', {
+        slots: Object.keys(updatedConfig.slots),
+        draggedSlot: updatedConfig.slots[draggedSlotId]
+      });
+
+      try {
+        await saveConfiguration(updatedConfig);
+        console.log('✅ Configuration saved successfully');
+
+        // Verify the state after save
+        setTimeout(() => {
+          console.log('🔍 State verification after save (100ms delay):', {
+            currentConfigSlots: Object.keys(cartLayoutConfig?.slots || {}),
+            draggedSlotCurrent: cartLayoutConfig?.slots?.[draggedSlotId],
+            expectedParent: updatedConfig.slots[draggedSlotId]?.parentId,
+            actualParent: cartLayoutConfig?.slots?.[draggedSlotId]?.parentId,
+            matches: cartLayoutConfig?.slots?.[draggedSlotId]?.parentId === updatedConfig.slots[draggedSlotId]?.parentId
+          });
+        }, 100);
+      } catch (error) {
+        console.error('❌ Failed to save configuration:', error);
+      }
+    } else {
+      console.warn('⚠️ No updated configuration to save - drag operation was cancelled');
     }
   }, [saveConfiguration]);
 
