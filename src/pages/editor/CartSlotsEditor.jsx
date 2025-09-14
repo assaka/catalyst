@@ -61,19 +61,18 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
     
     if (direction === 'horizontal') {
       const deltaX = e.clientX - startX;
-      const sensitivity = 30; // pixels per col-span unit
+      const sensitivity = 50; // pixels per col-span unit (increased for smoother feel)
       const colSpanDelta = Math.round(deltaX / sensitivity);
       const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
       
-      if (newColSpan !== currentValue) {
-        onResize(newColSpan);
-      }
+      // Always call onResize for smooth horizontal resizing
+      onResize(newColSpan);
     } else if (direction === 'vertical') {
       const deltaY = e.clientY - startY;
-      const heightDelta = Math.round(deltaY / 2); // 2px increments for smoother resize
+      const heightDelta = Math.round(deltaY / 1); // 1px increments for smoothest resize
       const newHeight = Math.max(20, startValue + heightDelta); // Minimum 20px height
       
-      // Always call onResize for height changes since we want smooth updates
+      // Always call onResize for smooth height changes
       onResize(newHeight);
     }
   }, [currentValue, maxValue, minValue, onResize, direction]);
@@ -170,15 +169,45 @@ const GridColumn = ({
     e.dataTransfer.setData('text/plain', slotId);
     e.dataTransfer.effectAllowed = 'move';
 
-    // Add drag styling
-    e.currentTarget.style.opacity = '0.5';
+    // Create a beautiful custom drag image instead of ugly default
+    const dragImage = document.createElement('div');
+    dragImage.innerHTML = `
+      <div style="
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+        white-space: nowrap;
+        pointer-events: none;
+        transform: rotate(-2deg);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      ">
+        📦 ${slotId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+      </div>
+    `;
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    dragImage.style.left = '-1000px';
+    document.body.appendChild(dragImage);
+
+    // Set the custom drag image
+    e.dataTransfer.setDragImage(dragImage, 60, 20);
+
+    // Clean up the temporary element
+    setTimeout(() => {
+      if (document.body.contains(dragImage)) {
+        document.body.removeChild(dragImage);
+      }
+    }, 100);
 
     console.log('🎯 Started dragging slot:', slotId);
   }, [slotId, mode]);
 
   const handleDragEnd = useCallback((e) => {
     setIsDragging(false);
-    e.currentTarget.style.opacity = '1';
     console.log('🎯 Finished dragging slot:', slotId);
   }, [slotId]);
 
@@ -908,7 +937,7 @@ const CartSlotsEditor = ({
       saveTimeoutRef.current = setTimeout(() => {
         console.log('💾 Saving configuration after resize...');
         saveConfiguration(updatedConfig);
-      }, 1000); // Wait 1 second after resize stops
+      }, 500); // Wait 0.5 seconds after resize stops for more responsive feel
 
       return updatedConfig;
     });
@@ -951,7 +980,7 @@ const CartSlotsEditor = ({
       saveTimeoutRef.current = setTimeout(() => {
         console.log('💾 Saving configuration after slot height resize...');
         saveConfiguration(updatedConfig);
-      }, 1000); // Wait 1 second after resize stops
+      }, 500); // Wait 0.5 seconds after resize stops for more responsive feel
 
       return updatedConfig;
     });
