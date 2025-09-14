@@ -1170,7 +1170,6 @@ export default ExampleComponent;`;
                           })()}
                         </div>
                       </div>
-                    </div>
                   </>
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
