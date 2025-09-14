@@ -630,47 +630,49 @@ const HierarchicalSlotRenderer = ({
         showBorders={showBorders}
       >
         <div className={slot.parentClassName || ''}>
-          <EditableElement
-            slotId={slot.id}
-            mode={mode}
-            onClick={onElementClick}
-            className={''}  // Parent div should only have layout/structure classes, not text styling
-            style={slot.type === 'button' ?
-              // For buttons, exclude width/height from wrapper - apply only to button element
-              Object.fromEntries(
-                Object.entries(slot.styles || {}).filter(([key]) =>
-                  !['width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight'].includes(key)
-                )
-              ) :
-              (slot.styles || {})}
-            canResize={!['container', 'grid', 'flex'].includes(slot.type)}
-            draggable={false}  // Dragging is handled at GridColumn level
-            selectedElementId={selectedElementId}
-          >
+          {/* Simple text rendering without excessive wrappers */}
           {slot.type === 'text' && (
             <span
-              className={slot.className}  // Text styling goes only on the span
+              className={slot.className}
               style={{
                 ...slot.styles,
+                cursor: mode === 'edit' ? 'pointer' : 'default',
                 // Ensure italic is applied as inline style if class includes 'italic'
                 ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
               }}
+              onClick={(e) => {
+                if (mode === 'edit' && onElementClick) {
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }
+              }}
+              data-slot-id={slot.id}
+              data-editable={mode === 'edit'}
               dangerouslySetInnerHTML={{
                 __html: String(slot.content || `Text: ${slot.id}`)
               }}
-              ref={(el) => {
-                if (el && slot.id === 'header_title') {
-                  console.log(`🎨 Applying styles to ${slot.id}:`, {
-                    className: slot.className,
-                    computedStyle: window.getComputedStyle(el).fontStyle,
-                    hasItalic: slot.className?.includes('italic'),
-                    inlineStyle: el.style.fontStyle,
-                    element: el
-                  });
-                }
-              }}
             />
           )}
+
+          {/* Use EditableElement for other types that need the full wrapper structure */}
+          {slot.type !== 'text' && (
+            <EditableElement
+              slotId={slot.id}
+              mode={mode}
+              onClick={onElementClick}
+              className={''}  // Parent div should only have layout/structure classes, not text styling
+              style={slot.type === 'button' ?
+                // For buttons, exclude width/height from wrapper - apply only to button element
+                Object.fromEntries(
+                  Object.entries(slot.styles || {}).filter(([key]) =>
+                    !['width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight'].includes(key)
+                  )
+                ) :
+                (slot.styles || {})}
+              canResize={!['container', 'grid', 'flex'].includes(slot.type)}
+              draggable={false}  // Dragging is handled at GridColumn level
+              selectedElementId={selectedElementId}
+            >
           {slot.type === 'button' && (
             <button
               className={slot.className}
@@ -1588,10 +1590,6 @@ const CartSlotsEditor = ({
                     Save
                   </Button>
 
-                  <Button onClick={() => setShowAddSlotModal(true)} variant="outline" size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add New
-                  </Button>
                 </>
               )}
             </div>
@@ -1604,16 +1602,22 @@ const CartSlotsEditor = ({
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-            <Button
-                onClick={() => setShowSlotBorders(!showSlotBorders)}
-                variant={showSlotBorders ? "default" : "outline"}
-                className={"mb-3"}
-                size="sm"
-                title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
-            >
-              <Square className="w-4 h-4 mr-2" />
-              Borders
-            </Button>
+            <div className="flex mb-3">
+              <Button
+                  onClick={() => setShowSlotBorders(!showSlotBorders)}
+                  variant={showSlotBorders ? "default" : "outline"}
+                  size="sm"
+                  title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
+              >
+                <Square className="w-4 h-4 mr-2" />
+                Borders
+              </Button>
+
+              <Button onClick={() => setShowAddSlotModal(true)} variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add New
+              </Button>
+              </div>
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
