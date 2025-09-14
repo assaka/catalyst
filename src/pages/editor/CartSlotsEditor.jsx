@@ -585,7 +585,7 @@ const HierarchicalSlotRenderer = ({
             slotId={slot.id}
             mode={mode}
             onClick={onElementClick}
-            className={slot.className || ''}
+            className={''}  // Parent div should only have layout/structure classes, not text styling
             style={slot.styles || {}}
             canResize={!['container', 'grid', 'flex'].includes(slot.type)}
             draggable={false}  // Dragging is handled at GridColumn level
@@ -593,7 +593,7 @@ const HierarchicalSlotRenderer = ({
           >
           {slot.type === 'text' && (
             <span
-              className={slot.className}
+              className={slot.className}  // Text styling goes only on the span
               style={{
                 ...slot.styles,
                 // Ensure italic is applied as inline style if class includes 'italic'
@@ -616,12 +616,20 @@ const HierarchicalSlotRenderer = ({
             />
           )}
           {slot.type === 'button' && (
-            <button 
-              className={slot.className} 
+            <button
+              className={slot.className}
               style={slot.styles}
-              dangerouslySetInnerHTML={{ 
+              dangerouslySetInnerHTML={{
                 __html: String(slot.content || `Button: ${slot.id}`)
               }}
+            />
+          )}
+          {slot.type === 'input' && (
+            <input
+              className={slot.className}
+              style={slot.styles}
+              placeholder={String(slot.content || '')}
+              type="text"
             />
           )}
           {slot.type === 'image' && (
@@ -1074,11 +1082,18 @@ const CartSlotsEditor = ({
         const existingStyles = updatedSlots[slotId].styles || {};
         const mergedStyles = { ...existingStyles, ...styles };
 
-        if (isAlignmentChange) {
-          // For alignment changes, split classes between className and parentClassName
-          const alignmentClasses = ['text-left', 'text-center', 'text-right'];
-          const allClasses = className.split(' ').filter(Boolean);
+        // Define categories of classes
+        const alignmentClasses = ['text-left', 'text-center', 'text-right'];
+        const textStyleClasses = ['font-bold', 'font-semibold', 'font-medium', 'font-normal', 'font-light',
+                                  'italic', 'underline', 'line-through', 'uppercase', 'lowercase', 'capitalize'];
+        const colorClasses = className.split(' ').filter(cls =>
+          cls.startsWith('text-') && !alignmentClasses.includes(cls)
+        );
 
+        const allClasses = className.split(' ').filter(Boolean);
+
+        if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
+          // For alignment changes, only alignment goes to parent, everything else to element
           const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
           const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
 
@@ -1100,7 +1115,8 @@ const CartSlotsEditor = ({
             styles: mergedStyles
           });
         } else {
-          // For non-alignment changes, update className normally
+          // For text styling (bold, italic, colors), keep existing parentClassName
+          // and only update className for the text element
           updatedSlots[slotId] = {
             ...updatedSlots[slotId],
             className: className,
@@ -1111,9 +1127,10 @@ const CartSlotsEditor = ({
             }
           };
 
-          console.log('✅ Updated slot configuration (regular):', {
+          console.log('✅ Updated slot configuration (text styling):', {
             slotId,
             className,
+            preservedParentClassName: updatedSlots[slotId].parentClassName,
             styles: mergedStyles
           });
         }
