@@ -249,6 +249,11 @@ const GridColumn = ({
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
+    // For containers, stop propagation to ensure this element handles the drop
+    if (['container', 'grid', 'flex'].includes(slot?.type)) {
+      e.stopPropagation();
+    }
+
     // Only set drag over if it's not the dragging element itself
     if (!isDragging) {
       // Clear any existing timeout
@@ -322,14 +327,18 @@ const GridColumn = ({
   }, [mode, isDragging, slot?.type, isDragOver, dropZone]);
 
   const handleDragLeave = useCallback((e) => {
-    // Only remove drag over if leaving the element entirely
-    if (!e.currentTarget.contains(e.relatedTarget)) {
-      // Use timeout to prevent rapid flickering
+    // Only remove drag over if leaving the element entirely and moving to a non-child element
+    const relatedTarget = e.relatedTarget;
+    const currentTarget = e.currentTarget;
+
+    // Don't clear drag state if moving to a child element
+    if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
+      // Use longer timeout to prevent rapid flickering
       dragOverTimeoutRef.current = setTimeout(() => {
         setIsDragOver(false);
         setDropZone(null);
         setIsDragActive(false);
-      }, 100); // Increased delay to prevent flickering
+      }, 200); // Longer delay to prevent any flickering
     }
   }, []);
 
@@ -389,7 +398,7 @@ const GridColumn = ({
         mode === 'edit'
           ? `${showBorders ? 'border-2 border-dashed' : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
-                ? 'border-green-500 bg-green-50/40 shadow-lg shadow-green-200/60 z-10 animate-pulse ring-2 ring-green-300' :
+                ? 'border-blue-500 bg-blue-50/40 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
               isDragging
                 ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
               isHovered
@@ -409,7 +418,13 @@ const GridColumn = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onDragEnter={(e) => e.preventDefault()}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        // For container types, ensure we can always receive drops even with children
+        if (['container', 'grid', 'flex'].includes(slot?.type)) {
+          e.stopPropagation();
+        }
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={gridStyles}
@@ -687,7 +702,13 @@ const HierarchicalSlotRenderer = ({
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400" />
           )}
           {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
-            <div className={`w-full h-full grid grid-cols-12 gap-2 ${slot.className}`} style={slot.styles}>
+            <div
+              className={`w-full h-full grid grid-cols-12 gap-2 ${slot.className}`}
+              style={{
+                ...slot.styles,
+                minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight, // Minimum height for drop zones in edit mode
+              }}
+            >
               <HierarchicalSlotRenderer
                 slots={slots}
                 parentId={slot.id}
