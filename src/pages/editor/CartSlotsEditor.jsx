@@ -425,10 +425,10 @@ const GridColumn = ({
         </>
       )}
 
-      {/* Hover detection for all elements */}
+      {/* Hover detection for entire slot area - covers all content */}
       {mode === 'edit' && (
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0"
           onMouseEnter={(e) => {
             e.stopPropagation();
             setIsHovered(true);
@@ -444,7 +444,7 @@ const GridColumn = ({
             }
           }}
           style={{
-            pointerEvents: 'auto',
+            pointerEvents: 'none',
             zIndex: 1
           }}
         />
