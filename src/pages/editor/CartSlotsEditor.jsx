@@ -634,6 +634,7 @@ const CartSlotsEditor = ({
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [localSaveStatus, setLocalSaveStatus] = useState('');
   const [isResizing, setIsResizing] = useState(false);
+  const lastResizeEndTime = useRef(0);
   
   // Database configuration hook
   const {
@@ -848,8 +849,9 @@ const CartSlotsEditor = ({
 
   // Handle element selection for EditorSidebar
   const handleElementClick = useCallback((slotId, element) => {
-    // Don't open sidebar if currently resizing
-    if (isResizing) {
+    // Don't open sidebar if currently resizing or within 200ms of resize end
+    const timeSinceResize = Date.now() - lastResizeEndTime.current;
+    if (isResizing || timeSinceResize < 200) {
       return;
     }
     
@@ -1262,7 +1264,11 @@ const CartSlotsEditor = ({
                   onSlotHeightResize={handleSlotHeightResize}
                   onSlotDrop={handleSlotDrop}
                   onResizeStart={() => setIsResizing(true)}
-                  onResizeEnd={() => setIsResizing(false)}
+                  onResizeEnd={() => {
+                    lastResizeEndTime.current = Date.now();
+                    // Add a small delay to prevent click events from firing immediately after resize
+                    setTimeout(() => setIsResizing(false), 100);
+                  }}
                   selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
                 />
               ) : (
