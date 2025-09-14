@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Code, Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History} from 'lucide-react';
+import {Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator';
+import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
@@ -131,7 +131,7 @@ const AIContextWindowPage = () => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
-  const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
+  const [previewMode, setPreviewMode] = useState('hybrid'); // Track preview mode: 'hybrid' (Customize tab is default)
   
   // Slot configuration publishing state
   const [isPublishingConfig, setIsPublishingConfig] = useState(false);
@@ -808,21 +808,6 @@ export default ExampleComponent;`;
                       <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                         <button
                           onClick={() => {
-                            setPreviewMode('code');
-                            handlePreviewModeChange('code');
-                          }}
-                          className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                            previewMode === 'code' 
-                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                          )}
-                        >
-                          <Code className="w-4 h-4 mr-2" />
-                          Code
-                        </button>
-                        <button
-                          onClick={() => {
                             console.log('🖱️ Customize tab clicked!', {
                               currentFile: selectedFile ? {
                                 name: selectedFile.name,
@@ -834,9 +819,7 @@ export default ExampleComponent;`;
                           }}
                           className={cn(
                             "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                            previewMode === 'hybrid' 
-                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                            "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
                           )}
                         >
                           <Eye className="w-4 h-4 mr-2" />
@@ -862,138 +845,120 @@ export default ExampleComponent;`;
                         path: selectedFile.path,
                         type: selectedFile.type
                       } : null,
-                      isCodeMode: previewMode === 'code',
                       isHybridMode: previewMode === 'hybrid'
                     })}
-                    {previewMode === 'code' ? (
-                      // Advanced Code Editor with Database Persistence
-                      <CodeEditor
-                        value={sourceCode}
-                        onChange={handleCodeChange}
-                        fileName={selectedFile.name}
-                        onCursorPositionChange={setCursorPosition}
-                        onSelectionChange={setSelection}
-                        onManualEdit={handleManualEdit}
-                        originalCode={originalCode}
-                        initialContent={originalCode}
-                        enableDiffDetection={true}
-                        enableTabs={true}
-                        className="h-full"
-                      />
-                    ) : (
-                      // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
-                      <div className="h-full overflow-y-auto">
-                        {(() => {
-                          console.log('🚀 Hybrid/Other mode rendering', {
-                            previewMode,
-                            selectedFile: selectedFile ? {
-                              name: selectedFile?.name,
-                              path: selectedFile?.path
-                            } : 'No file selected'
-                          });
-                          
-                          // Early return if no file is selected
-                          if (!selectedFile) {
-                            console.log('⚠️ No file selected, showing placeholder');
-                            return <div className="p-8 text-center text-gray-500">Please select a file from the tree navigator</div>;
-                          }
-                          
-                          console.log('🔍 Checking file:', {
-                            name: selectedFile.name,
-                            path: selectedFile.path,
-                            includesSlots: selectedFile.name?.includes('Slots.jsx'),
-                            includesSlotsEditor: selectedFile.name?.includes('SlotsEditor.jsx'),
-                            includesSlotEditor: selectedFile.name?.includes('SlotEditor.jsx')
-                          });
-                          
-                          // Check both name and path, handle both forward and back slashes
-                          const fileName = selectedFile.name || '';
-                          const filePath = (selectedFile.path || '').replace(/\\/g, '/');
-                          
-                          const isSlotFile = 
-                            fileName.includes('Slots.jsx') || 
-                            fileName.includes('SlotsEditor.jsx') || 
-                            fileName.includes('SlotEditor.jsx') ||
-                            filePath.includes('Slots.jsx') || 
-                            filePath.includes('SlotsEditor.jsx') ||
-                            filePath.includes('SlotEditor.jsx') ||
-                            // Also check for Cart, Category, Product etc. editors
-                            fileName === 'CartSlotsEditor.jsx' ||
-                            fileName === 'CategorySlotEditor.jsx' ||
-                            fileName === 'ProductSlotEditor.jsx' ||
-                            fileName === 'HomepageSlotEditor.jsx';
-                          
-                          console.log('🎯 Is slot file?', isSlotFile);
-                          
-                          if (isSlotFile) {
-                            // Determine slot type from filename
-                            const getSlotTypeFromFilename = (filename) => {
-                              const name = filename.toLowerCase();
-                              if (name.includes('cart')) return 'cart';
-                              if (name.includes('category')) return 'category';
-                              if (name.includes('product')) return 'product';
-                              if (name.includes('homepage')) return 'homepage';
-                              if (name.includes('checkout')) return 'checkout';
-                              return null;
+                    {/* Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others */}
+                    <div className="h-full overflow-y-auto">
+                      {(() => {
+                        console.log('🚀 Hybrid mode rendering', {
+                          previewMode,
+                          selectedFile: selectedFile ? {
+                            name: selectedFile?.name,
+                            path: selectedFile?.path
+                          } : 'No file selected'
+                        });
+
+                        // Early return if no file is selected
+                        if (!selectedFile) {
+                          console.log('⚠️ No file selected, showing placeholder');
+                          return <div className="p-8 text-center text-gray-500">Please select a file from the tree navigator</div>;
+                        }
+
+                        console.log('🔍 Checking file:', {
+                          name: selectedFile.name,
+                          path: selectedFile.path,
+                          includesSlots: selectedFile.name?.includes('Slots.jsx'),
+                          includesSlotsEditor: selectedFile.name?.includes('SlotsEditor.jsx'),
+                          includesSlotEditor: selectedFile.name?.includes('SlotEditor.jsx')
+                        });
+
+                        // Check both name and path, handle both forward and back slashes
+                        const fileName = selectedFile.name || '';
+                        const filePath = (selectedFile.path || '').replace(/\\/g, '/');
+
+                        const isSlotFile =
+                          fileName.includes('Slots.jsx') ||
+                          fileName.includes('SlotsEditor.jsx') ||
+                          fileName.includes('SlotEditor.jsx') ||
+                          filePath.includes('Slots.jsx') ||
+                          filePath.includes('SlotsEditor.jsx') ||
+                          filePath.includes('SlotEditor.jsx') ||
+                          // Also check for Cart, Category, Product etc. editors
+                          fileName === 'CartSlotsEditor.jsx' ||
+                          fileName === 'CategorySlotEditor.jsx' ||
+                          fileName === 'ProductSlotEditor.jsx' ||
+                          fileName === 'HomepageSlotEditor.jsx';
+
+                        console.log('🎯 Is slot file?', isSlotFile);
+
+                        if (isSlotFile) {
+                          // Determine slot type from filename
+                          const getSlotTypeFromFilename = (filename) => {
+                            const name = filename.toLowerCase();
+                            if (name.includes('cart')) return 'cart';
+                            if (name.includes('category')) return 'category';
+                            if (name.includes('product')) return 'product';
+                            if (name.includes('homepage')) return 'homepage';
+                            if (name.includes('checkout')) return 'checkout';
+                            return null;
+                          };
+
+                          const slotType = getSlotTypeFromFilename(selectedFile.name);
+
+                          if (slotType) {
+                            const handleSave = async (configToSave) => {
+                              try {
+                                console.log(`💾 Saving ${slotType} configuration:`, configToSave);
+                                const storeId = getSelectedStoreId();
+                                const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
+                                console.log(`✅ ${slotType} configuration saved successfully:`, response);
+                                return response;
+                              } catch (error) {
+                                console.error(`❌ Failed to save ${slotType} configuration:`, error);
+                                throw error;
+                              }
                             };
-                            
-                            const slotType = getSlotTypeFromFilename(selectedFile.name);
-                            
-                            if (slotType) {
-                              const handleSave = async (configToSave) => {
-                                try {
-                                  console.log(`💾 Saving ${slotType} configuration:`, configToSave);
-                                  const storeId = getSelectedStoreId();
-                                  const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
-                                  console.log(`✅ ${slotType} configuration saved successfully:`, response);
-                                  return response;
-                                } catch (error) {
-                                  console.error(`❌ Failed to save ${slotType} configuration:`, error);
-                                  throw error;
-                                }
-                              };
-                              
-                              // Use CartSlotsEditor for all slot types for now (can be extended later)
-                              return (
-                                <CartSlotsEditor
-                                  mode="edit"
-                                  viewMode="empty"
-                                  slotType={slotType}
-                                  onSave={handleSave}
-                                />
-                              );
-                            } else {
-                              // For slot files without recognized type, use CodeEditor
-                              return (
-                                <CodeEditor
-                                  filePath={selectedFile.path}
-                                  fileName={selectedFile.name}
-                                  codeSnippet={selectedFile.content}
-                                />
-                              );
-                            }
+
+                            // Use CartSlotsEditor for all slot types for now (can be extended later)
+                            return (
+                              <CartSlotsEditor
+                                mode="edit"
+                                viewMode="empty"
+                                slotType={slotType}
+                                onSave={handleSave}
+                              />
+                            );
                           } else {
-                            // Regular file - use CodeEditor
+                            // For slot files without recognized type, use CodeEditor
                             return (
                               <CodeEditor
-                                value={sourceCode}
-                                onChange={handleCodeChange}
+                                filePath={selectedFile.path}
                                 fileName={selectedFile.name}
-                                language={getLanguageFromFileName(selectedFile.name)}
-                                onCursorPositionChange={setCursorPosition}
-                                onSelectionChange={setSelection}
-                                onManualEdit={handleManualEdit}
-                                originalCode={originalCode}
-                                initialContent={originalCode}
-                                enableDiffDetection={true}
-                                enableTabs={true}
-                                className="h-full"
+                                codeSnippet={selectedFile.content}
                               />
                             );
                           }
-                        })()}
-                      </div>
-                    )}
+                        } else {
+                          // Regular file - use CodeEditor
+                          return (
+                            <CodeEditor
+                              value={sourceCode}
+                              onChange={handleCodeChange}
+                              fileName={selectedFile.name}
+                              language={getLanguageFromFileName(selectedFile.name)}
+                              onCursorPositionChange={setCursorPosition}
+                              onSelectionChange={setSelection}
+                              onManualEdit={handleManualEdit}
+                              originalCode={originalCode}
+                              initialContent={originalCode}
+                              enableDiffDetection={true}
+                              enableTabs={true}
+                              className="h-full"
+                            />
+                          );
+                        }
+                      })()}
+                    </div>
                   </div>
                 </>
               ) : (
@@ -1061,11 +1026,9 @@ export default ExampleComponent;`;
               minSize={10}
               maxSize={15}
             >
-              <FileTreeNavigator
+              <SlotEnabledFileSelector
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedFile}
-                modifiedFiles={modifiedFiles}
-                onRefresh={handleFileTreeRefresh}
                 className="h-[calc(100vh-200px)]"
               />
             </ResizablePanel>
@@ -1087,29 +1050,12 @@ export default ExampleComponent;`;
                         <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                           <button
                             onClick={() => {
-                              setPreviewMode('code');
-                              handlePreviewModeChange('code');
-                            }}
-                            className={cn(
-                              "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                              previewMode === 'code' 
-                                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                            )}
-                          >
-                            <Code className="w-4 h-4 mr-2" />
-                            Code
-                          </button>
-                          <button
-                            onClick={() => {
                               setPreviewMode('hybrid');
                               handlePreviewModeChange('hybrid');
                             }}
                             className={cn(
                               "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                              previewMode === 'hybrid' 
-                                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                              "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
                             )}
                           >
                             <Eye className="w-4 h-4 mr-2" />
@@ -1128,25 +1074,9 @@ export default ExampleComponent;`;
 
                     {/* Single Content Area - Tab-based Content */}
                     <div className="flex-1 overflow-hidden">
-                      {previewMode === 'code' ? (
-                        // Advanced Code Editor with Database Persistence
-                        <CodeEditor
-                          value={sourceCode}
-                          onChange={handleCodeChange}
-                          fileName={selectedFile.name}
-                          onCursorPositionChange={setCursorPosition}
-                          onSelectionChange={setSelection}
-                          onManualEdit={handleManualEdit}
-                          originalCode={originalCode}
-                          initialContent={originalCode}
-                          enableDiffDetection={true}
-                          enableTabs={true}
-                          className="h-full"
-                        />
-                      ) : (
-                        // Smart Editor Selection - UnifiedSlotEditor for slots files, CodeEditor for others
-                        <div className="h-full overflow-y-auto">
-                          {(() => {
+                      {/* Smart Editor Selection - UnifiedSlotEditor for slots files, CodeEditor for others */}
+                      <div className="h-full overflow-y-auto">
+                        {(() => {
                             
                             // Early return if no file is selected
                             if (!selectedFile) {
@@ -1239,7 +1169,7 @@ export default ExampleComponent;`;
                             }
                           })()}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -1255,7 +1185,7 @@ export default ExampleComponent;`;
                           load a demo file
                         </button>
                       </p>
-                      
+
                       {!connectionStatus && (
                         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-700 mb-2">
