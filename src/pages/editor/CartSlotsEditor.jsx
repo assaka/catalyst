@@ -682,7 +682,7 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={slot.styles || {}}
+              style={{}}  // No styles on wrapper - they should go on the actual element
               canResize={!['container', 'grid', 'flex'].includes(slot.type)}
               draggable={false}  // Dragging is handled at GridColumn level
               selectedElementId={selectedElementId}
@@ -691,6 +691,7 @@ const HierarchicalSlotRenderer = ({
             <button
               className={`w-full h-full ${slot.className}`}
               style={{
+                ...slot.styles,  // Apply all styles to the button element
                 // Don't override container dimensions - let ResizeWrapper control size
                 minWidth: 'auto',
                 minHeight: 'auto'
@@ -704,6 +705,7 @@ const HierarchicalSlotRenderer = ({
             <input
               className={`w-full h-full ${slot.className}`}
               style={{
+                ...slot.styles,  // Apply all styles to the input element
                 // Don't override container dimensions - let ResizeWrapper control size
                 minWidth: 'auto',
                 minHeight: 'auto'
