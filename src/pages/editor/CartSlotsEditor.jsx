@@ -499,17 +499,43 @@ const HierarchicalSlotRenderer = ({
   selectedElementId = null
 }) => {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
-  
+
+  // Debug logging to see what's happening
+  if (parentId === null) {
+    console.log('🔍 Root slots debug:', {
+      totalSlots: Object.keys(slots || {}).length,
+      childSlots: childSlots.length,
+      childSlotIds: childSlots.map(s => s.id),
+      viewMode
+    });
+  }
+
   // Filter slots based on their viewMode property from config
   const filteredSlots = childSlots.filter(slot => {
     // If slot doesn't have viewMode defined, show it always
     if (!slot.viewMode || !Array.isArray(slot.viewMode)) {
       return true;
     }
-    
+
     // Show slot only if current viewMode is in its viewMode array
-    return slot.viewMode.includes(viewMode);
+    const shouldShow = slot.viewMode.includes(viewMode);
+    if (parentId === null) {
+      console.log(`🔍 Slot ${slot.id} viewMode check:`, {
+        slotViewMode: slot.viewMode,
+        currentViewMode: viewMode,
+        shouldShow,
+        parentId: slot.parentId
+      });
+    }
+    return shouldShow;
   });
+
+  if (parentId === null) {
+    console.log('🔍 After filtering:', {
+      filteredCount: filteredSlots.length,
+      filteredIds: filteredSlots.map(s => s.id)
+    });
+  }
   
   return filteredSlots.map(slot => {
     // Calculate dynamic colSpan based on viewMode for specific slots
