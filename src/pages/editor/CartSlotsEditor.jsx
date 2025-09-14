@@ -26,7 +26,7 @@ import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 // Advanced resize handle for horizontal (grid column) or vertical (height) resizing
-const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false }) => {
+const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isDraggingRef = useRef(false);
@@ -43,9 +43,14 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
     startYRef.current = e.clientY;
     startValueRef.current = currentValue;
     
+    // Notify parent that resize has started (to prevent sidebar opening)
+    if (onResizeStart) {
+      onResizeStart();
+    }
+    
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [currentValue, direction]);
+  }, [currentValue, direction, onResizeStart]);
 
   const handleMouseMove = useCallback((e) => {
     if (!isDraggingRef.current) return;
@@ -78,7 +83,12 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
     isDraggingRef.current = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove]);
+    
+    // Notify parent that resize has ended
+    if (onResizeEnd) {
+      onResizeEnd();
+    }
+  }, [handleMouseMove, onResizeEnd]);
 
   useEffect(() => {
     return () => {
@@ -131,62 +141,115 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
   );
 };
 
-// Grid column wrapper with resize handle
-const GridColumn = ({ 
-  colSpan = 12, 
+// Grid column wrapper - uses user-defined CSS Grid properties with drag & drop
+const GridColumn = ({
+  colSpan = 12,
   rowSpan = 1,
   height,
-  slotId, 
+  slotId,
+  slot,
   onGridResize,
   onSlotHeightResize,
-  mode = 'edit', 
-  children 
+  onResizeStart,
+  onResizeEnd,
+  onSlotDrop,
+  mode = 'edit',
+  children
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
-  
-  // Generate the col-span class dynamically to ensure Tailwind includes it
-  const getColSpanClass = (span) => {
-    const classes = {
-      1: 'col-span-1', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4',
-      5: 'col-span-5', 6: 'col-span-6', 7: 'col-span-7', 8: 'col-span-8',
-      9: 'col-span-9', 10: 'col-span-10', 11: 'col-span-11', 12: 'col-span-12'
-    };
-    return classes[span] || 'col-span-12';
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((e) => {
+    if (mode !== 'edit') return;
+
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', slotId);
+    e.dataTransfer.effectAllowed = 'move';
+
+    // Add drag styling
+    e.currentTarget.style.opacity = '0.5';
+
+    console.log('🎯 Started dragging slot:', slotId);
+  }, [slotId, mode]);
+
+  const handleDragEnd = useCallback((e) => {
+    setIsDragging(false);
+    e.currentTarget.style.opacity = '1';
+    console.log('🎯 Finished dragging slot:', slotId);
+  }, [slotId]);
+
+  const handleDragOver = useCallback((e) => {
+    if (mode !== 'edit') return;
+
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  }, [mode]);
+
+  const handleDragLeave = useCallback((e) => {
+    // Only remove drag over if leaving the element entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    if (mode !== 'edit') return;
+
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const draggedSlotId = e.dataTransfer.getData('text/plain');
+
+    if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
+      console.log('🎯 Dropping slot:', { from: draggedSlotId, to: slotId });
+      onSlotDrop(draggedSlotId, slotId);
+    }
+  }, [slotId, onSlotDrop, mode]);
+
+  // Use user-defined CSS Grid properties from slot.styles, fallback to colSpan/rowSpan
+  const gridStyles = {
+    // Use user's grid positioning if defined, otherwise calculate from colSpan
+    gridColumn: slot?.styles?.gridColumn || `span ${colSpan} / span ${colSpan}`,
+    gridRow: slot?.styles?.gridRow || (rowSpan > 1 ? `span ${rowSpan} / span ${rowSpan}` : undefined),
+
+    // Apply other user-defined styles
+    ...slot?.styles,
+
+    // Override with height if provided
+    height: height ? `${height}px` : slot?.styles?.height,
+    maxHeight: height ? `${height}px` : slot?.styles?.maxHeight
   };
 
-  // Generate the row-span class dynamically to ensure Tailwind includes it
-  const getRowSpanClass = (span) => {
-    const classes = {
-      1: 'row-span-1', 2: 'row-span-2', 3: 'row-span-3', 4: 'row-span-4',
-      5: 'row-span-5', 6: 'row-span-6', 7: 'row-span-7', 8: 'row-span-8',
-      9: 'row-span-9', 10: 'row-span-10', 11: 'row-span-11', 12: 'row-span-12'
-    };
-    return classes[span] || 'row-span-1';
-  };
-  
-  const colSpanClass = getColSpanClass(colSpan);
-  const rowSpanClass = getRowSpanClass(rowSpan);
-  
   return (
-    <div 
-      className={`${colSpanClass} ${rowSpanClass} ${
-        mode === 'edit' 
+    <div
+      className={`${
+        mode === 'edit'
           ? `border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
-              isHovered 
-                ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40' 
+              isDragOver
+                ? 'border-green-500 bg-green-50/30 shadow-lg shadow-green-200/40' :
+              isDragging
+                ? 'border-blue-600 bg-blue-100/50' :
+              isHovered
+                ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40'
                 : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
-            }` 
+            } ${mode === 'edit' ? 'cursor-grab active:cursor-grabbing' : ''}`
           : 'overflow-hidden'
       } relative responsive-slot`}
       data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
-      style={{ 
-        height: height ? `${height}px` : undefined,
-        maxHeight: height ? `${height}px` : undefined
-      }}
+      draggable={mode === 'edit'}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={gridStyles}
     >
       {/* Hover detection for all elements */}
       {mode === 'edit' && (
@@ -231,6 +294,8 @@ const GridColumn = ({
           minValue={1}
           direction="horizontal"
           parentHovered={isHovered}
+          onResizeStart={onResizeStart}
+          onResizeEnd={onResizeEnd}
         />
       )}
       {showVerticalHandle && (
@@ -241,6 +306,8 @@ const GridColumn = ({
           minValue={40}
           direction="vertical"
           parentHovered={isHovered}
+          onResizeStart={onResizeStart}
+          onResizeEnd={onResizeEnd}
         />
       )}
     </div>
@@ -317,6 +384,9 @@ const HierarchicalSlotRenderer = ({
   onElementClick,
   onGridResize,
   onSlotHeightResize,
+  onSlotDrop,
+  onResizeStart,
+  onResizeEnd,
   selectedElementId = null
 }) => {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
@@ -351,8 +421,12 @@ const HierarchicalSlotRenderer = ({
         rowSpan={rowSpan}
         height={height}
         slotId={slot.id}
+        slot={slot}
         onGridResize={onGridResize}
         onSlotHeightResize={onSlotHeightResize}
+        onSlotDrop={onSlotDrop}
+        onResizeStart={onResizeStart}
+        onResizeEnd={onResizeEnd}
         mode={mode}
       >
         <div className={slot.parentClassName || ''}>
@@ -412,6 +486,9 @@ const HierarchicalSlotRenderer = ({
                 onElementClick={onElementClick}
                 onGridResize={onGridResize}
                 onSlotHeightResize={onSlotHeightResize}
+                onSlotDrop={onSlotDrop}
+                onResizeStart={onResizeStart}
+                onResizeEnd={onResizeEnd}
                 selectedElementId={selectedElementId}
               />
             </div>
@@ -449,6 +526,7 @@ const CartSlotsEditor = ({
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [localSaveStatus, setLocalSaveStatus] = useState('');
+  const [isResizing, setIsResizing] = useState(false);
   
   // Database configuration hook
   const {
@@ -663,6 +741,11 @@ const CartSlotsEditor = ({
 
   // Handle element selection for EditorSidebar
   const handleElementClick = useCallback((slotId, element) => {
+    // Don't open sidebar if currently resizing
+    if (isResizing) {
+      return;
+    }
+    
     // If element is a ResizeWrapper, find the actual content element inside
     let actualElement = element;
     
@@ -687,7 +770,7 @@ const CartSlotsEditor = ({
     
     setSelectedElement(actualElement);
     setIsSidebarVisible(true);
-  }, []);
+  }, [isResizing]);
 
   // Handle text changes from EditorSidebar for hierarchical slots
   const handleTextChange = useCallback((slotId, newText) => {
@@ -874,6 +957,67 @@ const CartSlotsEditor = ({
     });
   }, [saveConfiguration]);
 
+  // Handle slot drag and drop repositioning
+  const handleSlotDrop = useCallback((draggedSlotId, targetSlotId) => {
+    console.log('🎯 handleSlotDrop called:', { draggedSlotId, targetSlotId });
+
+    setCartLayoutConfig(prevConfig => {
+      const updatedSlots = { ...prevConfig?.slots };
+
+      if (updatedSlots[draggedSlotId] && updatedSlots[targetSlotId]) {
+        // Swap the grid positions of the two slots
+        const draggedSlot = updatedSlots[draggedSlotId];
+        const targetSlot = updatedSlots[targetSlotId];
+
+        // Store original positions
+        const draggedGridColumn = draggedSlot.styles?.gridColumn;
+        const draggedGridRow = draggedSlot.styles?.gridRow;
+        const targetGridColumn = targetSlot.styles?.gridColumn;
+        const targetGridRow = targetSlot.styles?.gridRow;
+
+        // Swap positions
+        updatedSlots[draggedSlotId] = {
+          ...draggedSlot,
+          styles: {
+            ...draggedSlot.styles,
+            gridColumn: targetGridColumn,
+            gridRow: targetGridRow
+          },
+          metadata: {
+            ...draggedSlot.metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+
+        updatedSlots[targetSlotId] = {
+          ...targetSlot,
+          styles: {
+            ...targetSlot.styles,
+            gridColumn: draggedGridColumn,
+            gridRow: draggedGridRow
+          },
+          metadata: {
+            ...targetSlot.metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+
+        console.log('✅ Swapped slot positions:', {
+          [draggedSlotId]: updatedSlots[draggedSlotId].styles,
+          [targetSlotId]: updatedSlots[targetSlotId].styles
+        });
+      }
+
+      const updatedConfig = {
+        ...prevConfig,
+        slots: updatedSlots
+      };
+
+      // Auto-save
+      saveConfiguration(updatedConfig);
+      return updatedConfig;
+    });
+  }, [saveConfiguration]);
 
   // Main render - Clean and maintainable  
   return (
@@ -961,6 +1105,9 @@ const CartSlotsEditor = ({
                   onElementClick={handleElementClick}
                   onGridResize={handleGridResize}
                   onSlotHeightResize={handleSlotHeightResize}
+                  onSlotDrop={handleSlotDrop}
+                  onResizeStart={() => setIsResizing(true)}
+                  onResizeEnd={() => setIsResizing(false)}
                   selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
                 />
               ) : (

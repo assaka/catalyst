@@ -26,11 +26,11 @@ export const cartConfig = {
     },
     
     header_container: {
-      id: 'header_container', 
+      id: 'header_container',
       type: 'flex',
       content: '',
       className: 'header-container',
-      styles: {},
+      styles: { gridColumn: '1 / -1', gridRow: '1' },
       parentId: 'main_layout',
       layout: 'flex',
       colSpan: 12,
@@ -43,7 +43,7 @@ export const cartConfig = {
       type: 'container',
       content: '',
       className: 'content-area',
-      styles: {},
+      styles: { gridRow: '2' },
       parentId: 'main_layout',
       layout: 'block',
       colSpan: 12, // Will be dynamically adjusted to 8 in withProducts mode
@@ -55,8 +55,8 @@ export const cartConfig = {
       id: 'sidebar_area',
       type: 'flex',
       content: '',
-      className: 'sidebar-area', 
-      styles: { flexDirection: 'column' },
+      className: 'sidebar-area',
+      styles: { flexDirection: 'column', gridRow: '2' },
       parentId: 'main_layout',
       layout: 'flex',
       colSpan: 4,
