@@ -329,7 +329,7 @@ const GridColumn = ({
         setIsDragOver(false);
         setDropZone(null);
         setIsDragActive(false);
-      }, 50); // Small delay to prevent flickering
+      }, 100); // Increased delay to prevent flickering
     }
   }, []);
 
@@ -338,6 +338,12 @@ const GridColumn = ({
 
     e.preventDefault();
     e.stopPropagation();
+
+    // Clear any pending drag leave timeouts
+    if (dragOverTimeoutRef.current) {
+      clearTimeout(dragOverTimeoutRef.current);
+    }
+
     setIsDragOver(false);
     setIsDragActive(false);
 
@@ -404,6 +410,8 @@ const GridColumn = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onDragEnter={(e) => e.preventDefault()}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={gridStyles}
     >
       {/* Drop Zone Indicators */}
@@ -425,30 +433,6 @@ const GridColumn = ({
         </>
       )}
 
-      {/* Hover detection for entire slot area - covers all content */}
-      {mode === 'edit' && (
-        <div
-          className="absolute inset-0"
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            setIsHovered(true);
-          }}
-          onMouseLeave={(e) => {
-            e.stopPropagation();
-            setIsHovered(false);
-            // Remove all borders on mouseout
-            const parentElement = e.currentTarget.closest('[data-grid-slot-id]');
-            if (parentElement) {
-              parentElement.style.borderColor = '';
-              parentElement.style.border = 'none';
-            }
-          }}
-          style={{
-            pointerEvents: 'none',
-            zIndex: 1
-          }}
-        />
-      )}
       
       
       {/* Drag indicator - only visible on hover and not over resize handle */}
@@ -1397,10 +1381,18 @@ const CartSlotsEditor = ({
           case 'inside':
             // Only allow dropping inside containers
             if (!['container', 'grid', 'flex'].includes(targetSlot.type)) {
-              console.log('⚠️ Cannot drop inside non-container slot');
+              console.log('⚠️ Cannot drop inside non-container slot:', {
+                targetSlotType: targetSlot.type,
+                targetSlotId
+              });
               resolve(null);
               return prevConfig;
             }
+            console.log('✅ Dropping inside container:', {
+              targetSlotId,
+              targetSlotType: targetSlot.type,
+              draggedSlotId
+            });
             newParentId = targetSlotId;
             newOrder = 0;
             break;
