@@ -216,8 +216,12 @@ const GridColumn = ({
 
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setIsDragOver(true);
-  }, [mode]);
+
+    // Only set drag over if it's not the dragging element itself
+    if (!isDragging) {
+      setIsDragOver(true);
+    }
+  }, [mode, isDragging]);
 
   const handleDragLeave = useCallback((e) => {
     // Only remove drag over if leaving the element entirely
@@ -227,7 +231,7 @@ const GridColumn = ({
   }, []);
 
   const handleDrop = useCallback((e) => {
-    if (mode !== 'edit') return;
+    if (mode !== 'edit' || isDragging) return;
 
     e.preventDefault();
     setIsDragOver(false);
@@ -238,7 +242,7 @@ const GridColumn = ({
       console.log('🎯 Dropping slot:', { from: draggedSlotId, to: slotId });
       onSlotDrop(draggedSlotId, slotId);
     }
-  }, [slotId, onSlotDrop, mode]);
+  }, [slotId, onSlotDrop, mode, isDragging]);
 
   // Use user-defined CSS Grid properties from slot.styles, fallback to colSpan/rowSpan
   const gridStyles = {
@@ -260,9 +264,9 @@ const GridColumn = ({
         mode === 'edit'
           ? `border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
-                ? 'border-green-500 bg-green-50/30 shadow-lg shadow-green-200/40' :
+                ? 'border-green-500 bg-green-50/40 shadow-lg shadow-green-200/60 scale-105 z-10 animate-pulse' :
               isDragging
-                ? 'border-blue-600 bg-blue-100/50' :
+                ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 scale-95 ring-2 ring-blue-200' :
               isHovered
                 ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40'
                 : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
