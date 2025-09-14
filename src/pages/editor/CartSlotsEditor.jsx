@@ -61,7 +61,7 @@ const GridResizeHandle = ({ onResize, currentValue, maxValue = 12, minValue = 1,
     
     if (direction === 'horizontal') {
       const deltaX = e.clientX - startX;
-      const sensitivity = 50; // pixels per col-span unit (increased for smoother feel)
+      const sensitivity = 25; // pixels per col-span unit (reduced for more responsive feel)
       const colSpanDelta = Math.round(deltaX / sensitivity);
       const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
       
@@ -246,12 +246,16 @@ const GridColumn = ({
 
   // Use user-defined CSS Grid properties from slot.styles, fallback to colSpan/rowSpan
   const gridStyles = {
-    // Use user's grid positioning if defined, otherwise calculate from colSpan
-    gridColumn: slot?.styles?.gridColumn || `span ${colSpan} / span ${colSpan}`,
-    gridRow: slot?.styles?.gridRow || (rowSpan > 1 ? `span ${rowSpan} / span ${rowSpan}` : undefined),
+    // Always use the current colSpan prop for responsive resizing
+    gridColumn: `span ${colSpan}`,
+    gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
 
-    // Apply other user-defined styles
-    ...slot?.styles,
+    // Apply other user-defined styles (but not gridColumn/gridRow to avoid conflicts)
+    ...Object.fromEntries(
+      Object.entries(slot?.styles || {}).filter(([key]) => 
+        !['gridColumn', 'gridRow'].includes(key)
+      )
+    ),
 
     // Override with height if provided
     height: height ? `${height}px` : slot?.styles?.height,
@@ -264,9 +268,9 @@ const GridColumn = ({
         mode === 'edit'
           ? `border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
-                ? 'border-green-500 bg-green-50/40 shadow-lg shadow-green-200/60 scale-105 z-10 animate-pulse' :
+                ? 'border-green-500 bg-green-50/40 shadow-lg shadow-green-200/60 z-10 animate-pulse ring-2 ring-green-300' :
               isDragging
-                ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 scale-95 ring-2 ring-blue-200' :
+                ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
               isHovered
                 ? 'border-blue-500 bg-blue-50/30 shadow-md shadow-blue-200/40'
                 : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
