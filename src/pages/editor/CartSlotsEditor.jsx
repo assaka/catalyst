@@ -176,11 +176,11 @@ const GridColumn = ({
   const dragOverTimeoutRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
-  // Only show grid-level resize handles for container types
-  // Individual elements (button, text, image) should use element-level ResizeWrapper instead
+  // Show grid-level resize handles for all slot types to control grid positioning
+  // Individual elements also have ResizeWrapper for corner handles (element-level resizing)
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
-  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1 && isContainerType;
-  const showVerticalHandle = onSlotHeightResize && mode === 'edit' && isContainerType;
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1; // Show for all types
+  const showVerticalHandle = onSlotHeightResize && mode === 'edit' && isContainerType; // Keep height resize only for containers
   
 
   // Drag and drop handlers
@@ -521,7 +521,8 @@ const EditableElement = ({
   canResize = false,
   draggable = false,
   mode = 'edit',
-  selectedElementId = null
+  selectedElementId = null,
+  onElementResize = null
 }) => {
   const handleClick = useCallback((e) => {
     // Don't handle clicks in preview mode
@@ -534,28 +535,32 @@ const EditableElement = ({
   }, [slotId, onClick, mode]);
 
   const content = (
-    <div
-      className={className || ''}
-      style={style}
-      onClick={handleClick}
-      data-slot-id={slotId}
-      data-editable={mode === 'edit'}
-      draggable={false}  // Explicitly prevent dragging at this level
-      onDragStart={(e) => e.preventDefault()}  // Prevent any drag initiation
+    <EditorInteractionWrapper
+      mode={mode}
+      draggable={draggable}
+      isSelected={selectedElementId === slotId}
     >
-      {children}
-    </div>
+      <div
+        className={className || ''}
+        style={style}
+        onClick={handleClick}
+        data-slot-id={slotId}
+        data-editable={mode === 'edit'}
+        draggable={false}  // Explicitly prevent dragging at this level
+        onDragStart={(e) => e.preventDefault()}  // Prevent any drag initiation
+      >
+        {children}
+      </div>
+    </EditorInteractionWrapper>
   );
 
   // Show resize wrapper only in edit mode when canResize is true
-  console.log('EditableElement debug:', { slotId, canResize, mode, slotType: slotId });
-
   if (canResize && mode === 'edit') {
-    console.log('Rendering ResizeWrapper for:', slotId);
     return (
       <ResizeWrapper
         minWidth={50}
         minHeight={20}
+        onResize={onElementResize}
       >
         {content}
       </ResizeWrapper>
@@ -679,16 +684,35 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={slot.styles || {}}  // Apply slot styles to ResizeWrapper container
+              style={slot.type === 'button' ? {} : (slot.styles || {})}  // Don't apply styles to ResizeWrapper for buttons
               canResize={!['container', 'grid', 'flex'].includes(slot.type)}
               draggable={false}  // Dragging is handled at GridColumn level
               selectedElementId={selectedElementId}
+              onElementResize={slot.type === 'button' ? (newSize) => {
+                // For buttons, update the slot styles directly
+                setCartLayoutConfig(prevConfig => {
+                  const updatedSlots = { ...prevConfig?.slots };
+                  if (updatedSlots[slot.id]) {
+                    updatedSlots[slot.id] = {
+                      ...updatedSlots[slot.id],
+                      styles: {
+                        ...updatedSlots[slot.id].styles,
+                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                      }
+                    };
+                  }
+                  return { ...prevConfig, slots: updatedSlots };
+                });
+              } : undefined}
             >
           {slot.type === 'button' && (
             <button
-              className={`w-full h-full ${slot.className}`}
+              className={`${slot.className}`}
               style={{
-                // Don't duplicate styles - they're applied to ResizeWrapper container
+                ...slot.styles,  // Apply all styles to the button element directly
+                width: '100%',   // Fill ResizeWrapper container
+                height: '100%',  // Fill ResizeWrapper container
                 minWidth: 'auto',
                 minHeight: 'auto'
               }}
