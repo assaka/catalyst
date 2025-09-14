@@ -636,12 +636,12 @@ const HierarchicalSlotRenderer = ({
                   minHeight={16}
                 >
                   <div
-                    style={slot.styles}
                     className="w-full h-full flex items-start"
                   >
                     <span
                       className={slot.className}
                       style={{
+                        ...slot.styles,  // Apply all styles (including colors) to the span element
                         cursor: 'pointer',
                         // Ensure italic is applied as inline style if class includes 'italic'
                         ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
@@ -684,7 +684,7 @@ const HierarchicalSlotRenderer = ({
               mode={mode}
               onClick={onElementClick}
               className={''}  // Parent div should only have layout/structure classes, not text styling
-              style={slot.type === 'button' ? {} : (slot.styles || {})}  // Don't apply styles to ResizeWrapper for buttons
+              style={['button', 'input'].includes(slot.type) ? {} : (slot.styles || {})}  // Don't apply styles to ResizeWrapper for buttons and inputs
               canResize={!['container', 'grid', 'flex'].includes(slot.type)}
               draggable={false}  // Dragging is handled at GridColumn level
               selectedElementId={selectedElementId}
@@ -725,7 +725,7 @@ const HierarchicalSlotRenderer = ({
             <input
               className={`w-full h-full ${slot.className}`}
               style={{
-                // Don't duplicate styles - they're applied to ResizeWrapper container
+                ...slot.styles,  // Apply all styles (including colors) to the input element
                 minWidth: 'auto',
                 minHeight: 'auto'
               }}
