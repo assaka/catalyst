@@ -169,6 +169,12 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
     },
     comment: 'Reference to the parent version this was based on'
   },
+  has_unpublished_changes: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: 'Whether this draft has unpublished changes compared to the latest published version'
+  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,

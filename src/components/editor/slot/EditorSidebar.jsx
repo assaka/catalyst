@@ -493,12 +493,19 @@ const EditorSidebar = ({
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
     console.log('🟠 handleAlignmentChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
-    if (!selectedElement || property !== 'textAlign') return;
+    if (!selectedElement || property !== 'textAlign') {
+      console.log('🟠 Early return: selectedElement or property check failed');
+      return;
+    }
 
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
     console.log('🟠 handleAlignmentChange elementSlotId:', elementSlotId);
-    if (!elementSlotId) return;
-    
+    if (!elementSlotId) {
+      console.log('🟠 Early return: no elementSlotId');
+      return;
+    }
+
+    console.log('🟠 Passed initial checks, proceeding with alignment change');
     // Preserve existing inline styles and Tailwind color classes on the selected element before alignment change
     const currentInlineStyles = {};
     const currentColorClasses = [];
@@ -527,13 +534,16 @@ const EditorSidebar = ({
     });
     
     // Find the correct target element for alignment classes
+    console.log('🟠 Finding target element for:', elementSlotId);
     let targetElement;
     if (elementSlotId.includes('.button')) {
       // Find the button-slot-container (the outer div with col-span-12)
       targetElement = selectedElement.closest('.button-slot-container');
+      console.log('🟠 Button slot - target element:', targetElement);
     } else {
       // For text slots, traverse up to find grid cell with col-span
       targetElement = selectedElement.parentElement;
+      console.log('🟠 Text slot - starting from parent:', targetElement);
       while (targetElement && !targetElement.className.includes('col-span')) {
         targetElement = targetElement.parentElement;
         if (targetElement === document.body) {
@@ -541,9 +551,12 @@ const EditorSidebar = ({
           break;
         }
       }
+      console.log('🟠 Text slot - final target element:', targetElement);
     }
     
+    console.log('🟠 Target element check:', { targetElement, hasTargetElement: !!targetElement });
     if (targetElement) {
+      console.log('🟠 Processing alignment with target element');
       // Remove existing text alignment classes from target
       const currentClasses = targetElement.className.split(' ').filter(Boolean);
       const newClasses = currentClasses.filter(cls => 
