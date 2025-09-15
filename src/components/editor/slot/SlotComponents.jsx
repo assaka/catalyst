@@ -720,7 +720,7 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onPublish, showSlotBorders, onToggleBorders }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, onPublish, showSlotBorders, onToggleBorders, hasChanges = false }) {
   return (
     <div className="flex mb-3 justify-between">
       <BorderToggleButton
@@ -729,7 +729,14 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onPublish, showSlotBor
       />
 
       <div className="flex gap-2">
-        <Button onClick={onPublish} variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
+        <Button
+          onClick={onPublish}
+          variant="default"
+          size="sm"
+          className={hasChanges ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}
+          disabled={!hasChanges}
+          title={hasChanges ? "Publish changes to make them live" : "No changes to publish"}
+        >
           <Upload className="w-4 h-4 mr-2" />
           Publish
         </Button>

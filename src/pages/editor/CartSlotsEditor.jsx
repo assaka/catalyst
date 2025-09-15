@@ -71,7 +71,9 @@ const CartSlotsEditor = ({
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const lastResizeEndTime = useRef(0);
+  const lastSavedConfigRef = useRef(null);
   
   // Database configuration hook with generic functions and handler factories
   const {
@@ -169,6 +171,20 @@ const CartSlotsEditor = ({
     };
   }, []); // Empty dependency array - run only once on mount
 
+  // Detect changes in configuration
+  useEffect(() => {
+    if (configurationLoadedRef.current && cartLayoutConfig) {
+      const currentConfig = JSON.stringify(cartLayoutConfig);
+      if (lastSavedConfigRef.current === null) {
+        // Initial load - save the initial state
+        lastSavedConfigRef.current = currentConfig;
+      } else if (currentConfig !== lastSavedConfigRef.current) {
+        // Configuration has changed
+        setHasUnsavedChanges(true);
+      }
+    }
+  }, [cartLayoutConfig]);
+
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
     const slotConfig = cartLayoutConfig && cartLayoutConfig.slots ? cartLayoutConfig.slots[slotId] : null;
@@ -179,13 +195,23 @@ const CartSlotsEditor = ({
   }, [cartLayoutConfig]);
 
   // Save configuration using the generic factory
-  const saveConfiguration = createSaveConfigurationHandler(
+  const baseSaveConfiguration = createSaveConfigurationHandler(
     cartLayoutConfig,
     setCartLayoutConfig,
     setLocalSaveStatus,
     getSelectedStoreId,
     'cart'
   );
+
+  // Wrap save configuration to track saved state
+  const saveConfiguration = useCallback(async (...args) => {
+    const result = await baseSaveConfiguration(...args);
+    if (result !== false) {
+      setHasUnsavedChanges(false);
+      lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
+    }
+    return result;
+  }, [baseSaveConfiguration, cartLayoutConfig]);
 
 
   // Handle element selection using generic factory
@@ -219,7 +245,15 @@ const CartSlotsEditor = ({
   const handleGridResize = handlerFactory.createGridResizeHandler(gridResizeHandler, saveTimeoutRef);
   const handleSlotHeightResize = handlerFactory.createSlotHeightResizeHandler(slotHeightResizeHandler, saveTimeoutRef);
   const handleSlotDrop = handlerFactory.createSlotDropHandler(slotDropHandler, isDragOperationActiveRef);
-  const handleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
+  const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
+
+  // Wrap reset layout to also reset unsaved changes flag
+  const handleResetLayout = useCallback(async () => {
+    const result = await baseHandleResetLayout();
+    setHasUnsavedChanges(false);
+    lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
+    return result;
+  }, [baseHandleResetLayout, cartLayoutConfig]);
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
   // Publish status state
@@ -232,13 +266,15 @@ const CartSlotsEditor = ({
     try {
       await handlePublishConfiguration();
       setPublishStatus('published');
+      setHasUnsavedChanges(false);  // Mark as saved after successful publish
+      lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
       setTimeout(() => setPublishStatus(''), 3000);
     } catch (error) {
       console.error('❌ Failed to publish configuration:', error);
       setPublishStatus('error');
       setTimeout(() => setPublishStatus(''), 5000);
     }
-  }, [handlePublishConfiguration]);
+  }, [handlePublishConfiguration, cartLayoutConfig]);
 
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
   useEffect(() => {
@@ -342,6 +378,7 @@ const CartSlotsEditor = ({
               onPublish={handlePublish}
               onResetLayout={() => setShowResetModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
+              hasChanges={hasUnsavedChanges}
             />
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">

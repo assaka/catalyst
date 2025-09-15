@@ -134,8 +134,6 @@ const AIContextWindowPage = () => {
   const [previewMode, setPreviewMode] = useState('hybrid'); // Track preview mode: 'hybrid' (Customize tab is default)
   
   // Slot configuration publishing state
-  const [isPublishingConfig, setIsPublishingConfig] = useState(false);
-  const [configPublishSuccess, setConfigPublishSuccess] = useState(null);
   // Version history functionality integrated into UnifiedSlotEditor
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -178,46 +176,6 @@ const AIContextWindowPage = () => {
     };
   }, []);
 
-
-
-  // Publish slot configuration
-  const publishSlotConfiguration = useCallback(async () => {
-    setIsPublishingConfig(true);
-    
-    try {
-      const storeId = getSelectedStoreId();
-      if (!storeId) {
-        throw new Error('Store ID not found. Please select a store first.');
-      }
-      
-      // Get the current draft
-      const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
-      
-      if (!draftResponse.success || !draftResponse.data) {
-        throw new Error('No draft configuration found to publish');
-      }
-      
-      // Publish the draft
-      const publishResponse = await slotConfigurationService.publishDraft(draftResponse.data.id);
-      
-      if (publishResponse.success) {
-        setConfigPublishSuccess({
-          versionName: `v${publishResponse.data.version_number}`,
-          publishedAt: publishResponse.data.published_at
-        });
-        
-        // Clear success message after 5 seconds
-        setTimeout(() => setConfigPublishSuccess(null), 5000);
-      } else {
-        throw new Error(publishResponse.error || 'Failed to publish configuration');
-      }
-    } catch (error) {
-      console.error('Error publishing slot configuration:', error);
-      alert(`Failed to publish configuration: ${error.message}`);
-    } finally {
-      setIsPublishingConfig(false);
-    }
-  }, [getSelectedStoreId]);
 
 
   // Helper function to fetch baseline code from database
@@ -710,20 +668,6 @@ export default ExampleComponent;`;
         <div className="flex items-center space-x-4">
 
 
-          {/* Slot Configuration Publish Success */}
-          {configPublishSuccess && (
-            <div className="p-2 rounded-md text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-              <div className="font-medium flex items-center">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Configuration Published Successfully
-              </div>
-              <div className="text-xs mt-1">
-                Version {configPublishSuccess.versionName} at {new Date(configPublishSuccess.publishedAt).toLocaleTimeString()}
-              </div>
-            </div>
-          )}
-
-
           {/* Manual Edit Status */}
           {manualEditResult && manualEditResult.hasChanges && (
             <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
@@ -768,27 +712,7 @@ export default ExampleComponent;`;
               )}
             </div>
           )}
-          
-          <button
-            onClick={publishSlotConfiguration}
-            disabled={isPublishingConfig}
-            className={cn(
-              "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
-              "bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed",
-              "text-white disabled:text-gray-500"
-            )}
-            title="Publish current slot configuration to make changes live"
-          >
-            {isPublishingConfig ? (
-              <RefreshCw className="w-3 h-3 animate-spin" />
-            ) : (
-              <>
-                <Upload className="w-3 h-3" />
-                Publish Config
-              </>
-            )}
-          </button>
-          
+
           {/* Version history integrated into UnifiedSlotEditor */}
           
         </div>
