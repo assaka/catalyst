@@ -4,10 +4,12 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { SlotManager } from '@/utils/slotUtils';
+import FilePickerModal from '@/components/ui/FilePickerModal';
 
 // GridResizeHandle Component
 export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
@@ -689,4 +691,216 @@ export function HierarchicalSlotRenderer({
       </GridColumn>
     );
   });
+}
+
+// BorderToggleButton Component
+export function BorderToggleButton({ showSlotBorders, onToggle }) {
+  return (
+    <Button
+      onClick={onToggle}
+      variant={showSlotBorders ? "default" : "outline"}
+      size="sm"
+      title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
+    >
+      <Square className="w-4 h-4 mr-2" />
+      Borders
+    </Button>
+  );
+}
+
+// EditorToolbar Component
+export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onToggleBorders }) {
+  return (
+    <div className="flex mb-3 justify-between">
+      <BorderToggleButton
+        showSlotBorders={showSlotBorders}
+        onToggle={onToggleBorders}
+      />
+
+      <div className="flex gap-2">
+        <Button onClick={onResetLayout} variant="outline" size="sm">
+          <Settings className="w-4 h-4 mr-2" />
+          Reset Layout
+        </Button>
+
+        <Button onClick={onAddSlot} variant="outline" size="sm">
+          <Plus className="w-4 h-4 mr-2" />
+          Add New
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// AddSlotModal Component
+export function AddSlotModal({
+  isOpen,
+  onClose,
+  onCreateSlot,
+  onShowFilePicker
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Add New Slot</h3>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+          >
+            ×
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          <Button
+            onClick={() => {
+              onCreateSlot('container');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <Square className="w-5 h-5 mr-3 text-blue-600" />
+              <div>
+                <div className="font-medium">Container</div>
+                <div className="text-sm text-gray-500">A flexible container for other elements</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onCreateSlot('text', 'New text content');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-green-600 font-bold">T</span>
+              <div>
+                <div className="font-medium">Text</div>
+                <div className="text-sm text-gray-500">Add text content</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onClose();
+              onShowFilePicker();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-purple-600">🖼️</span>
+              <div>
+                <div className="font-medium">Image</div>
+                <div className="text-sm text-gray-500">Add an image from File Library</div>
+              </div>
+            </div>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ResetLayoutModal Component
+export function ResetLayoutModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isResetting = false
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-red-600">Reset Layout</h3>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+          >
+            ×
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded">
+            <div className="text-red-600">⚠️</div>
+            <div>
+              <p className="font-medium text-red-800">This action cannot be undone</p>
+              <p className="text-sm text-red-600">All current layout changes will be lost and replaced with the default configuration.</p>
+              <p className="text-sm text-amber-600 font-medium mt-1">Only affects the current page - other pages remain unchanged.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              variant="destructive"
+              className="flex-1"
+              disabled={isResetting}
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                'Reset Layout'
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// FilePickerModalWrapper Component
+export function FilePickerModalWrapper({
+  isOpen,
+  onClose,
+  onCreateSlot,
+  fileType = "image"
+}) {
+  return (
+    <FilePickerModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSelect={(selectedFile) => {
+        // Create image slot with selected file
+        onCreateSlot('image', selectedFile.url, 'main_layout', {
+          src: selectedFile.url,
+          alt: selectedFile.name,
+          fileName: selectedFile.name,
+          mimeType: selectedFile.mimeType
+        });
+      }}
+      fileType={fileType}
+    />
+  );
 }

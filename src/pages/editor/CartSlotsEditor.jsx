@@ -9,12 +9,9 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Save,
-  Settings,
   ShoppingCart,
   Package,
-  Loader2,
-  Square,
-  Plus
+  Loader2
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
@@ -24,11 +21,14 @@ import {
   GridResizeHandle,
   GridColumn,
   EditableElement,
-  HierarchicalSlotRenderer
+  HierarchicalSlotRenderer,
+  EditorToolbar,
+  AddSlotModal,
+  ResetLayoutModal,
+  FilePickerModalWrapper
 } from '@/components/editor/slot/SlotComponents';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
-import FilePickerModal from '@/components/ui/FilePickerModal';
 
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
@@ -304,29 +304,12 @@ const CartSlotsEditor = ({
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-            <div className="flex mb-3 justify-between">
-              <Button
-                  onClick={() => setShowSlotBorders(!showSlotBorders)}
-                  variant={showSlotBorders ? "default" : "outline"}
-                  size="sm"
-                  title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
-              >
-                <Square className="w-4 h-4 mr-2" />
-                Borders
-              </Button>
-
-              <div className="flex gap-2">
-                <Button onClick={() => setShowResetModal(true)} variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Reset Layout
-                </Button>
-
-                <Button onClick={() => setShowAddSlotModal(true)} variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New
-                </Button>
-              </div>
-            </div>
+            <EditorToolbar
+              showSlotBorders={showSlotBorders}
+              onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+              onResetLayout={() => setShowResetModal(true)}
+              onAddSlot={() => setShowAddSlotModal(true)}
+            />
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
@@ -382,150 +365,28 @@ const CartSlotsEditor = ({
       )}
 
       {/* Add Slot Modal */}
-      {showAddSlotModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Add New Slot</h3>
-              <Button
-                onClick={() => setShowAddSlotModal(false)}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                ×
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              <Button
-                onClick={() => {
-                  handleCreateSlot('container');
-                  setShowAddSlotModal(false);
-                }}
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-              >
-                <div className="flex items-center">
-                  <Square className="w-5 h-5 mr-3 text-blue-600" />
-                  <div>
-                    <div className="font-medium">Container</div>
-                    <div className="text-sm text-gray-500">A flexible container for other elements</div>
-                  </div>
-                </div>
-              </Button>
-
-              <Button
-                onClick={() => {
-                  handleCreateSlot('text', 'New text content');
-                  setShowAddSlotModal(false);
-                }}
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-              >
-                <div className="flex items-center">
-                  <span className="w-5 h-5 mr-3 text-green-600 font-bold">T</span>
-                  <div>
-                    <div className="font-medium">Text</div>
-                    <div className="text-sm text-gray-500">Add text content</div>
-                  </div>
-                </div>
-              </Button>
-
-              <Button
-                onClick={() => {
-                  setShowAddSlotModal(false);
-                  setShowFilePickerModal(true);
-                }}
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-              >
-                <div className="flex items-center">
-                  <span className="w-5 h-5 mr-3 text-purple-600">🖼️</span>
-                  <div>
-                    <div className="font-medium">Image</div>
-                    <div className="text-sm text-gray-500">Add an image from File Library</div>
-                  </div>
-                </div>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddSlotModal
+        isOpen={showAddSlotModal}
+        onClose={() => setShowAddSlotModal(false)}
+        onCreateSlot={handleCreateSlot}
+        onShowFilePicker={() => setShowFilePickerModal(true)}
+      />
 
       {/* File Picker Modal */}
-      <FilePickerModal
+      <FilePickerModalWrapper
         isOpen={showFilePickerModal}
         onClose={() => setShowFilePickerModal(false)}
-        onSelect={(selectedFile) => {
-          // Create image slot with selected file
-          handleCreateSlot('image', selectedFile.url, 'main_layout', {
-            src: selectedFile.url,
-            alt: selectedFile.name,
-            fileName: selectedFile.name,
-            mimeType: selectedFile.mimeType
-          });
-        }}
+        onCreateSlot={handleCreateSlot}
         fileType="image"
       />
 
       {/* Reset Layout Confirmation Modal */}
-      {showResetModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-red-600">Reset Layout</h3>
-              <Button
-                onClick={() => setShowResetModal(false)}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                ×
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded">
-                <div className="text-red-600">⚠️</div>
-                <div>
-                  <p className="font-medium text-red-800">This action cannot be undone</p>
-                  <p className="text-sm text-red-600">All current layout changes will be lost and replaced with the default configuration.</p>
-                  <p className="text-sm text-amber-600 font-medium mt-1">Only affects the current page - other pages remain unchanged.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={() => setShowResetModal(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleResetLayout();
-                    setShowResetModal(false);
-                  }}
-                  variant="destructive"
-                  className="flex-1"
-                  disabled={localSaveStatus === 'saving'}
-                >
-                  {localSaveStatus === 'saving' ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Resetting...
-                    </>
-                  ) : (
-                    'Reset Layout'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ResetLayoutModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleResetLayout}
+        isResetting={localSaveStatus === 'saving'}
+      />
     </div>
   );
 };
