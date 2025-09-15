@@ -760,70 +760,24 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onToggleBorders, draftConfig, latestPublished }) {
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatTimeAgo = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return formatDate(dateString);
-  };
-
+export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onToggleBorders }) {
   return (
-    <div className="mb-3">
-      {/* Timestamps Row */}
-      <div className="flex justify-between items-center mb-2 text-xs text-gray-500">
-        <div className="flex items-center">
-          {draftConfig?.updated_at && (
-            <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
-          )}
-        </div>
-        <div className="flex items-center">
-          {latestPublished?.published_at && (
-            <span>Last published: {formatTimeAgo(latestPublished.published_at)}</span>
-          )}
-        </div>
-      </div>
+    <div className="flex mb-3 justify-between">
+      <BorderToggleButton
+        showSlotBorders={showSlotBorders}
+        onToggle={onToggleBorders}
+      />
 
-      {/* Controls Row */}
-      <div className="flex justify-between">
-        <BorderToggleButton
-          showSlotBorders={showSlotBorders}
-          onToggle={onToggleBorders}
-        />
+      <div className="flex gap-2">
+        <Button onClick={onResetLayout} variant="outline" size="sm">
+          <Settings className="w-4 h-4 mr-2" />
+          Reset Layout
+        </Button>
 
-        <div className="flex gap-2">
-          <Button onClick={onResetLayout} variant="outline" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Reset Layout
-          </Button>
-
-          <Button onClick={onAddSlot} variant="outline" size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New
-          </Button>
-        </div>
+        <Button onClick={onAddSlot} variant="outline" size="sm">
+          <Plus className="w-4 h-4 mr-2" />
+          Add New
+        </Button>
       </div>
     </div>
   );

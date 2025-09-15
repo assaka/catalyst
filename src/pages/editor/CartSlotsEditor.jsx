@@ -226,6 +226,36 @@ const CartSlotsEditor = ({
   // Only enable if there are actual unsaved changes to publish
   const canPublish = hasUnsavedChanges;
 
+  // Timestamp formatting functions
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    return formatDate(dateString);
+  };
+
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
     const slotConfig = cartLayoutConfig && cartLayoutConfig.slots ? cartLayoutConfig.slots[slotId] : null;
@@ -510,15 +540,29 @@ const CartSlotsEditor = ({
           className="bg-gray-50 cart-page"
           style={{ backgroundColor: '#f9fafb' }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Timestamps Row */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              <div className="flex items-center">
+                {draftConfig?.updated_at && (
+                  <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
+                )}
+              </div>
+              <div className="flex items-center">
+                {latestPublished?.published_at && (
+                  <span>Last published: {formatTimeAgo(latestPublished.published_at)}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <EditorToolbar
               showSlotBorders={showSlotBorders}
               onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
               onResetLayout={() => setShowResetModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
-              draftConfig={draftConfig}
-              latestPublished={latestPublished}
             />
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">

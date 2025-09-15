@@ -421,13 +421,32 @@ SlotConfiguration.createRevertDraft = async function(versionId, userId, storeId)
       transaction
     });
 
+    let revertMetadata = null;
+
     if (existingDraft) {
+      // Store metadata about what we're replacing (for potential undo)
+      revertMetadata = {
+        replacedDraftId: existingDraft.id,
+        originalConfiguration: existingDraft.configuration,
+        originalParentVersionId: existingDraft.parent_version_id,
+        originalCurrentEditId: existingDraft.current_edit_id,
+        originalHasUnpublishedChanges: existingDraft.has_unpublished_changes
+      };
+
       // Update existing draft with the reverted configuration
       existingDraft.configuration = targetVersion.configuration;
       existingDraft.updated_at = new Date();
       existingDraft.has_unpublished_changes = true; // Mark as having unpublished changes
       existingDraft.parent_version_id = targetVersion.id; // Track source of revert
       existingDraft.current_edit_id = targetVersion.id; // Track that this is based on the reverted version
+
+      // Store revert metadata for potential undo
+      if (!existingDraft.metadata) existingDraft.metadata = {};
+      existingDraft.metadata = {
+        ...existingDraft.metadata,
+        revertMetadata
+      };
+
       await existingDraft.save({ transaction });
 
       await transaction.commit();
@@ -453,7 +472,12 @@ SlotConfiguration.createRevertDraft = async function(versionId, userId, storeId)
         page_type: targetVersion.page_type,
         parent_version_id: targetVersion.id,
         current_edit_id: targetVersion.id, // Track that this is based on the reverted version
-        has_unpublished_changes: true // Mark as having unpublished changes (revert needs to be published)
+        has_unpublished_changes: true, // Mark as having unpublished changes (revert needs to be published)
+        metadata: {
+          revertMetadata: {
+            noPreviousDraft: true // Indicates no draft existed before revert
+          }
+        }
       }, { transaction });
 
       await transaction.commit();
