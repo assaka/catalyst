@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import {
   ShoppingCart,
   Package,
-  Loader2
+  Loader2,
+  Rocket
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
+import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
+import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import {
   GridResizeHandle,
   GridColumn,
@@ -73,6 +76,8 @@ const CartSlotsEditor = ({
   const [showResetModal, setShowResetModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
+  const [showPublishPanel, setShowPublishPanel] = useState(false);
+  const [draftConfig, setDraftConfig] = useState(null);
   const lastResizeEndTime = useRef(0);
   const lastSavedConfigRef = useRef(null);
   
@@ -133,6 +138,7 @@ const CartSlotsEditor = ({
           if (storeId) {
             const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
             if (draftResponse && draftResponse.success && draftResponse.data) {
+              setDraftConfig(draftResponse.data); // Store the full draft config
               setConfigurationStatus(draftResponse.data.status);
               // Set hasUnsavedChanges based on database field
               setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
@@ -302,6 +308,50 @@ const CartSlotsEditor = ({
     }
   }, [handlePublishConfiguration, cartLayoutConfig]);
 
+  // Handle publish panel callbacks
+  const handlePublishPanelPublished = useCallback(async (publishedConfig) => {
+    // Reload draft configuration to get updated state
+    try {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+        if (draftResponse && draftResponse.success && draftResponse.data) {
+          setDraftConfig(draftResponse.data);
+          setConfigurationStatus(draftResponse.data.status);
+          setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to reload draft after publish:', error);
+    }
+  }, [getSelectedStoreId]);
+
+  const handlePublishPanelReverted = useCallback(async (revertedConfig) => {
+    // Reload the entire configuration after revert
+    try {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        // Reload draft configuration
+        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+        if (draftResponse && draftResponse.success && draftResponse.data) {
+          setDraftConfig(draftResponse.data);
+          setConfigurationStatus(draftResponse.data.status);
+          setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+
+          // Also reload the cart layout configuration
+          const configToUse = await getDraftOrStaticConfiguration();
+          if (configToUse) {
+            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+            setCartLayoutConfig(finalConfig);
+            lastSavedConfigRef.current = JSON.stringify(finalConfig);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to reload configuration after revert:', error);
+    }
+  }, [getSelectedStoreId, getDraftOrStaticConfiguration]);
+
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
   useEffect(() => {
     const handleKeyPress = async (e) => {
@@ -315,7 +365,7 @@ const CartSlotsEditor = ({
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [cartLayoutConfig, handleSlotDrop, validateSlotConfiguration]);
 
-  // Main render - Clean and maintainable  
+  // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
       isSidebarVisible ? 'pr-80' : ''
@@ -362,6 +412,19 @@ const CartSlotsEditor = ({
                   hasChanges={canPublish}
                 />
               )}
+            </div>
+
+            {/* Publish Panel Toggle - Far Right */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPublishPanel(!showPublishPanel)}
+                className={`${showPublishPanel ? 'bg-blue-50 border-blue-200' : ''}`}
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Publish
+              </Button>
             </div>
           </div>
         </div>
@@ -460,6 +523,20 @@ const CartSlotsEditor = ({
         onConfirm={handleResetLayout}
         isResetting={localSaveStatus === 'saving'}
       />
+
+      {/* Floating Publish Panel */}
+      {showPublishPanel && (
+        <div className="fixed top-20 right-6 z-50 w-80">
+          <PublishPanel
+            draftConfig={draftConfig}
+            storeId={getSelectedStoreId()}
+            pageType="cart"
+            onPublished={handlePublishPanelPublished}
+            onReverted={handlePublishPanelReverted}
+            hasUnsavedChanges={hasUnsavedChanges}
+          />
+        </div>
+      )}
     </div>
   );
 };

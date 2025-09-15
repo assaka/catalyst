@@ -400,7 +400,7 @@ export function useSlotConfiguration({
         // Create a new draft based on the published configuration
         try {
           const publishedConfig = draftConfig.configuration; // The configuration that was just published
-          await slotConfigurationService.saveConfiguration(storeId, publishedConfig, pageType);
+          await slotConfigurationService.createDraftFromPublished(storeId, publishedConfig, pageType);
           console.log(`✅ New draft created based on published ${pageType} configuration`);
         } catch (draftError) {
           console.warn(`⚠️ Failed to create new draft after publish:`, draftError);

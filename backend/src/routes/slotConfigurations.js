@@ -384,6 +384,28 @@ router.get('/current-edit/:storeId/:pageType?', authMiddleware, async (req, res)
   }
 });
 
+// Create a draft from published configuration (with has_unpublished_changes = false)
+router.post('/create-draft-from-published', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType = 'cart', configuration } = req.body;
+    const userId = req.user.id;
+
+    // Use upsert with isNewChanges = false since this is a copy of published content
+    const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType, configuration, false);
+
+    res.json({
+      success: true,
+      data: draft
+    });
+  } catch (error) {
+    console.error('Error creating draft from published:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Delete a draft
 router.delete('/draft/:configId', authMiddleware, async (req, res) => {
   try {

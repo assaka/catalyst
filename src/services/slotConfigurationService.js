@@ -146,15 +146,30 @@ class SlotConfigurationService {
       // First get or create a draft
       const draftResponse = await this.getDraftConfiguration(storeId, pageType);
       const draftConfig = draftResponse.data;
-      
+
       // Transform CartSlotsEditor format to SlotConfiguration API format
       const apiConfiguration = this.transformToSlotConfigFormat(configuration);
-      
+
       // Update the draft with new configuration
       const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration);
       return updateResponse;
     } catch (error) {
       console.error('Error saving configuration:', error);
+      throw error;
+    }
+  }
+
+  // Create a new draft based on published configuration (after publish)
+  async createDraftFromPublished(storeId, configuration, pageType = 'cart') {
+    try {
+      const response = await apiClient.post(`${API_BASE}/create-draft-from-published`, {
+        storeId,
+        pageType,
+        configuration
+      });
+      return response;
+    } catch (error) {
+      console.error('Error creating draft from published:', error);
       throw error;
     }
   }
