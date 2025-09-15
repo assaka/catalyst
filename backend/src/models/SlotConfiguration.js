@@ -488,26 +488,90 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
     }
   });
 
-  // Use hierarchical configuration - no legacy flat structure
-  const getDefaultConfig = () => {
-    // Use hierarchical configuration - no more legacy fallback
-    console.log('📦 Backend: Using hierarchical cart configuration');
+  // Dynamic configuration loader based on page type
+  const getDefaultConfig = (pageType) => {
+    let config;
+    let pageName;
+    let slotType;
+
+    switch (pageType) {
+      case 'cart':
+        config = cartConfig;
+        pageName = 'Cart';
+        slotType = 'cart_layout';
+        break;
+      case 'category':
+        // For now, use cart config as fallback for category
+        // TODO: Import category-specific config when needed
+        config = cartConfig;
+        pageName = 'Category';
+        slotType = 'category_layout';
+        console.log('⚠️ Using cart config as fallback for category page type');
+        break;
+      case 'product':
+        // For now, use cart config as fallback for product
+        // TODO: Import product-specific config when needed
+        config = cartConfig;
+        pageName = 'Product';
+        slotType = 'product_layout';
+        console.log('⚠️ Using cart config as fallback for product page type');
+        break;
+      case 'checkout':
+        // For now, use cart config as fallback for checkout
+        // TODO: Import checkout-specific config when needed
+        config = cartConfig;
+        pageName = 'Checkout';
+        slotType = 'checkout_layout';
+        console.log('⚠️ Using cart config as fallback for checkout page type');
+        break;
+      case 'success':
+        // For now, use cart config as fallback for success
+        // TODO: Import success-specific config when needed
+        config = cartConfig;
+        pageName = 'Success';
+        slotType = 'success_layout';
+        console.log('⚠️ Using cart config as fallback for success page type');
+        break;
+      default:
+        config = cartConfig;
+        pageName = 'Cart';
+        slotType = 'cart_layout';
+        console.log(`⚠️ Unknown page type '${pageType}', using cart config as fallback`);
+    }
+
+    console.log(`📦 Backend: Using configuration for page type: ${pageType}`);
     return {
-      page_name: cartConfig.page_name || 'Cart',
-      slot_type: cartConfig.slot_type || 'cart_layout',
-      slots: cartConfig.slots || {},
+      page_name: pageName,
+      slot_type: slotType,
+      slots: config.slots || {},
       metadata: {
         created: new Date().toISOString(),
         lastModified: new Date().toISOString(),
-        ...cartConfig.metadata
+        ...config.metadata
       }
     };
   };
 
-  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : getDefaultConfig());
-        parentClassName: 'text-center',
-        metadata: { lastModified: new Date().toISOString() }
-      },
+  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : getDefaultConfig(pageType));
+
+  const newDraft = await this.create({
+    user_id: userId,
+    store_id: storeId,
+    configuration: baseConfig,
+    version: latestPublished ? latestPublished.version : '1.0',
+    is_active: true,
+    status: 'draft',
+    version_number: (maxVersion || 0) + 1,
+    page_type: pageType,
+    parent_version_id: latestPublished ? latestPublished.id : null,
+    has_unpublished_changes: false // New drafts start with no changes
+  });
+
+  return newDraft;
+};
+
+// Legacy slot content for backward compatibility (this should be moved/removed)
+const legacySlotContent = {
       'emptyCart.text': {
         content: "Looks like you haven't added anything to your cart yet.",
         styles: {},
@@ -637,7 +701,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
         created: new Date().toISOString(),
         lastModified: new Date().toISOString(),
         ...cartConfig.metadata
-      }
+      }by
     };
   };
 
