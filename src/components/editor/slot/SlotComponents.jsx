@@ -12,7 +12,7 @@ import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
 
 // EditModeControls Component
-export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration }) {
+export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration, onPublish, hasChanges = false }) {
   return (
     <>
       {/* Save Status */}
@@ -770,7 +770,7 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onPublish, showSlotBorders, onToggleBorders, hasChanges = false }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onToggleBorders }) {
   return (
     <div className="flex mb-3 justify-between">
       <BorderToggleButton
