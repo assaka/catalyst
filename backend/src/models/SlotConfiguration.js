@@ -2,18 +2,55 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
 const path = require('path');
 
-// Helper function to load cart configuration from the frontend config file
-async function loadCartConfig() {
+// Helper functions to load configuration files from the frontend config directory
+async function loadPageConfig(pageType) {
   try {
-    const configPath = path.resolve(__dirname, '../../../src/components/editor/slot/configs/cart-config.js');
-    const { cartConfig } = await import(configPath);
-    return cartConfig;
+    const configsDir = path.resolve(__dirname, '../../../src/components/editor/slot/configs');
+    let configPath, configExport;
+
+    switch (pageType) {
+      case 'cart':
+        configPath = path.join(configsDir, 'cart-config.js');
+        configExport = 'cartConfig';
+        break;
+      case 'category':
+        configPath = path.join(configsDir, 'category-config.js');
+        configExport = 'categoryConfig';
+        break;
+      case 'product':
+        configPath = path.join(configsDir, 'product-config.js');
+        configExport = 'productConfig';
+        break;
+      case 'checkout':
+        configPath = path.join(configsDir, 'checkout-config.js');
+        configExport = 'checkoutConfig';
+        break;
+      case 'success':
+        configPath = path.join(configsDir, 'success-config.js');
+        configExport = 'successConfig';
+        break;
+      default:
+        // Default to cart config for unknown types
+        configPath = path.join(configsDir, 'cart-config.js');
+        configExport = 'cartConfig';
+        console.log(`⚠️ Unknown page type '${pageType}', defaulting to cart config`);
+    }
+
+    const configModule = await import(configPath);
+    const config = configModule[configExport];
+
+    if (!config) {
+      throw new Error(`Config export '${configExport}' not found in ${configPath}`);
+    }
+
+    console.log(`📦 Backend: Successfully loaded ${pageType} configuration`);
+    return config;
   } catch (error) {
-    console.error('Failed to load cart-config.js:', error);
+    console.error(`Failed to load ${pageType}-config.js:`, error);
     // Fallback to minimal config if import fails
     return {
-      page_name: 'Cart',
-      slot_type: 'cart_layout',
+      page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
+      slot_type: `${pageType}_layout`,
       slots: {},
       metadata: {}
     };
@@ -173,25 +210,6 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
   ]
 });
 
-// Instance methods
-SlotConfiguration.prototype.getSlotConfig = function(slotId) {
-  return this.configuration?.slots?.[slotId] || null;
-};
-
-SlotConfiguration.prototype.updateSlotConfig = function(slotId, config) {
-  if (!this.configuration.slots) {
-    this.configuration.slots = {};
-  }
-  this.configuration.slots[slotId] = config;
-  this.changed('configuration', true); // Mark as changed for Sequelize
-};
-
-SlotConfiguration.prototype.removeSlot = function(slotId) {
-  if (this.configuration?.slots?.[slotId]) {
-    delete this.configuration.slots[slotId];
-    this.changed('configuration', true);
-  }
-};
 
 // Class methods
 SlotConfiguration.findActiveByUserStore = async function(userId, storeId) {
@@ -276,78 +294,11 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
 
   // Dynamic configuration loader based on page type
   const getDefaultConfig = async (pageType) => {
-    let config;
-    let pageName;
-    let slotType;
+    const config = await loadPageConfig(pageType);
 
-    switch (pageType) {
-      case 'cart':
-        // Load cart config dynamically if not already loaded
-        if (!cartConfig) {
-          cartConfig = await loadCartConfig();
-        }
-        config = cartConfig;
-        pageName = 'Cart';
-        slotType = 'cart_layout';
-        break;
-      case 'category':
-        // For now, use cart config as fallback for category
-        // TODO: Import category-specific config when needed
-        if (!cartConfig) {
-          cartConfig = await loadCartConfig();
-        }
-        config = cartConfig;
-        pageName = 'Category';
-        slotType = 'category_layout';
-        console.log('⚠️ Using cart config as fallback for category page type');
-        break;
-      case 'product':
-        // For now, use cart config as fallback for product
-        // TODO: Import product-specific config when needed
-        if (!cartConfig) {
-          cartConfig = await loadCartConfig();
-        }
-        config = cartConfig;
-        pageName = 'Product';
-        slotType = 'product_layout';
-        console.log('⚠️ Using cart config as fallback for product page type');
-        break;
-      case 'checkout':
-        // For now, use cart config as fallback for checkout
-        // TODO: Import checkout-specific config when needed
-        if (!cartConfig) {
-          cartConfig = await loadCartConfig();
-        }
-        config = cartConfig;
-        pageName = 'Checkout';
-        slotType = 'checkout_layout';
-        console.log('⚠️ Using cart config as fallback for checkout page type');
-        break;
-      case 'success':
-        // For now, use cart config as fallback for success
-        // TODO: Import success-specific config when needed
-        if (!cartConfig) {
-          cartConfig = await loadCartConfig();
-        }
-        config = cartConfig;
-        pageName = 'Success';
-        slotType = 'success_layout';
-        console.log('⚠️ Using cart config as fallback for success page type');
-        break;
-      default:
-        if (!cartConfig) {
-          cartConfig = await loadCartConfig();
-        }
-        config = cartConfig;
-        pageName = 'Cart';
-        slotType = 'cart_layout';
-        console.log(`⚠️ Unknown page type '${pageType}', using cart config as fallback`);
-    }
-
-    console.log(`📦 Backend: Using configuration for page type: ${pageType}`);
     return {
-      page_name: pageName,
-      slot_type: slotType,
+      page_name: config.page_name,
+      slot_type: config.slot_type,
       slots: config.slots || {},
       metadata: {
         created: new Date().toISOString(),
@@ -375,8 +326,10 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
   return newDraft;
 };
 
-// Legacy slot content for backward compatibility (this should be moved/removed)
-const legacySlotContent = {
+// Create draft - uses upsert logic
+SlotConfiguration.createDraft = async function(userId, storeId, pageType = 'cart') {
+  return this.upsertDraft(userId, storeId, pageType);
+};
       'emptyCart.text': {
         content: "Looks like you haven't added anything to your cart yet.",
         styles: {},
