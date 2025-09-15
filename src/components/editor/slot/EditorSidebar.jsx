@@ -492,9 +492,11 @@ const EditorSidebar = ({
 
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
+    console.log('🟠 handleAlignmentChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
     if (!selectedElement || property !== 'textAlign') return;
-    
+
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
+    console.log('🟠 handleAlignmentChange elementSlotId:', elementSlotId);
     if (!elementSlotId) return;
     
     // Preserve existing inline styles and Tailwind color classes on the selected element before alignment change
@@ -606,13 +608,16 @@ const EditorSidebar = ({
 
   // Simple property change handler - direct DOM updates and immediate saves
   const handlePropertyChange = useCallback((property, value) => {
+    console.log('🟡 handlePropertyChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
     if (!selectedElement) return;
 
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
+    console.log('🟡 elementSlotId:', elementSlotId);
     if (!elementSlotId) return;
 
     // Handle textAlign specially - always apply to parent
     if (property === 'textAlign') {
+      console.log('🟡 Calling handleAlignmentChange for textAlign');
       handleAlignmentChange(property, value);
       return;
     }
