@@ -558,7 +558,7 @@ export function HierarchicalSlotRenderer({
                   minWidth={20}
                   minHeight={16}
                 >
-                  <div className="w-full h-full flex items-start">
+                  <div className="w-full h-full">
                     <span
                       className={slot.className}
                       style={{

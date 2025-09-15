@@ -72,6 +72,7 @@ const CartSlotsEditor = ({
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const lastResizeEndTime = useRef(0);
   const lastSavedConfigRef = useRef(null);
   
@@ -124,6 +125,20 @@ const CartSlotsEditor = ({
 
         if (!configToUse) {
           throw new Error('Failed to load cart configuration');
+        }
+
+        // Try to get the status from draft configuration
+        try {
+          const storeId = getSelectedStoreId();
+          if (storeId) {
+            const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+            if (draftResponse && draftResponse.success && draftResponse.data) {
+              setConfigurationStatus(draftResponse.data.status);
+            }
+          }
+        } catch (error) {
+          console.log('Could not determine configuration status:', error);
+          setConfigurationStatus('published'); // Default to published if we can't determine
         }
 
         // Transform database config if needed
@@ -185,6 +200,9 @@ const CartSlotsEditor = ({
     }
   }, [cartLayoutConfig]);
 
+  // Compute when Publish button should be enabled
+  const canPublish = hasUnsavedChanges || (configurationStatus === 'draft');
+
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
     const slotConfig = cartLayoutConfig && cartLayoutConfig.slots ? cartLayoutConfig.slots[slotId] : null;
@@ -208,6 +226,7 @@ const CartSlotsEditor = ({
     const result = await baseSaveConfiguration(...args);
     if (result !== false) {
       setHasUnsavedChanges(false);
+      setConfigurationStatus('draft'); // Saving creates a draft
       lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
     }
     return result;
@@ -251,6 +270,7 @@ const CartSlotsEditor = ({
   const handleResetLayout = useCallback(async () => {
     const result = await baseHandleResetLayout();
     setHasUnsavedChanges(false);
+    setConfigurationStatus('draft'); // Reset creates a draft
     lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
     return result;
   }, [baseHandleResetLayout, cartLayoutConfig]);
@@ -267,6 +287,7 @@ const CartSlotsEditor = ({
       await handlePublishConfiguration();
       setPublishStatus('published');
       setHasUnsavedChanges(false);  // Mark as saved after successful publish
+      setConfigurationStatus('published'); // Update status to published
       lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
       setTimeout(() => setPublishStatus(''), 3000);
     } catch (error) {
@@ -378,7 +399,7 @@ const CartSlotsEditor = ({
               onPublish={handlePublish}
               onResetLayout={() => setShowResetModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
-              hasChanges={hasUnsavedChanges}
+              hasChanges={canPublish}
             />
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
