@@ -374,6 +374,38 @@ export function useSlotConfiguration({
     }
   }, [selectedStore, pageType, pageName, slotType]);
 
+  // Generic publish configuration function
+  const handlePublishConfiguration = useCallback(async () => {
+    try {
+      const storeId = selectedStore?.id;
+      if (!storeId) {
+        throw new Error('No store selected');
+      }
+
+      // Get the current draft configuration
+      const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+
+      if (!draftResponse.success || !draftResponse.data) {
+        throw new Error('No draft configuration found to publish');
+      }
+
+      const draftConfig = draftResponse.data;
+
+      // Publish the draft configuration
+      const publishResponse = await slotConfigurationService.publishDraft(draftConfig.id);
+
+      if (publishResponse.success) {
+        console.log(`✅ ${pageType} configuration published successfully`);
+        return publishResponse;
+      } else {
+        throw new Error('Failed to publish configuration');
+      }
+    } catch (error) {
+      console.error(`❌ Failed to publish ${pageType} configuration:`, error);
+      throw error;
+    }
+  }, [selectedStore, pageType]);
+
   // Generic load static configuration function
   const loadStaticConfiguration = useCallback(async () => {
     console.log('📂 Loading static configuration as template...');
@@ -1009,6 +1041,7 @@ export function useSlotConfiguration({
     applyDraftConfiguration,
     updateSlotsForViewMode,
     handleResetLayout,
+    handlePublishConfiguration,
     loadStaticConfiguration,
     getDraftOrStaticConfiguration,
     saveStatus,

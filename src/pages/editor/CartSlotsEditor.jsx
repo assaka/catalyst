@@ -79,6 +79,7 @@ const CartSlotsEditor = ({
     loadConfiguration: loadFromDatabase,
     saveStatus,
     handleResetLayout: resetLayoutFromHook,
+    handlePublishConfiguration,
     getDraftOrStaticConfiguration,
     resetStatus,
     validateSlotConfiguration,
@@ -221,6 +222,24 @@ const CartSlotsEditor = ({
   const handleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
+  // Publish status state
+  const [publishStatus, setPublishStatus] = useState('');
+
+  // Handle publish configuration
+  const handlePublish = useCallback(async () => {
+    setPublishStatus('publishing');
+
+    try {
+      await handlePublishConfiguration();
+      setPublishStatus('published');
+      setTimeout(() => setPublishStatus(''), 3000);
+    } catch (error) {
+      console.error('❌ Failed to publish configuration:', error);
+      setPublishStatus('error');
+      setTimeout(() => setPublishStatus(''), 5000);
+    }
+  }, [handlePublishConfiguration]);
+
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
   useEffect(() => {
     const handleKeyPress = async (e) => {
@@ -287,6 +306,19 @@ const CartSlotsEditor = ({
                     </div>
                   )}
 
+                  {/* Publish Status */}
+                  {publishStatus && (
+                    <div className={`flex items-center gap-2 text-sm ${
+                      publishStatus === 'publishing' ? 'text-blue-600' :
+                      publishStatus === 'published' ? 'text-green-600' :
+                      'text-red-600'
+                    }`}>
+                      {publishStatus === 'publishing' && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {publishStatus === 'published' && '🚀 Published'}
+                      {publishStatus === 'error' && '✗ Publish Failed'}
+                    </div>
+                  )}
+
                   <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
                     <Save className="w-4 h-4 mr-2" />
                     Save
@@ -307,6 +339,7 @@ const CartSlotsEditor = ({
             <EditorToolbar
               showSlotBorders={showSlotBorders}
               onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+              onPublish={handlePublish}
               onResetLayout={() => setShowResetModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
             />

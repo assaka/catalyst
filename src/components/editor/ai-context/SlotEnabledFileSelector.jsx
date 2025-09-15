@@ -31,7 +31,7 @@ const SlotEnabledFileSelector = ({
   const slotEnabledFiles = [
     {
       id: 'cart',
-      name: 'CartSlotsEditor.jsx',
+      name: 'Shopping cart',
       path: 'src/pages/editor/CartSlotsEditor.jsx',
       pageType: 'cart',
       icon: ShoppingCart,
@@ -40,7 +40,7 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'category',
-      name: 'CategorySlotsEditor.jsx',
+      name: 'Category',
       path: 'src/pages/editor/CategorySlotsEditor.jsx',
       pageType: 'category',
       icon: Grid3X3,
@@ -49,7 +49,7 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'product',
-      name: 'ProductSlotsEditor.jsx',
+      name: 'Product',
       path: 'src/pages/editor/ProductSlotsEditor.jsx',
       pageType: 'product',
       icon: Package,
@@ -58,7 +58,7 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'checkout',
-      name: 'CheckoutSlotsEditor.jsx',
+      name: 'Checkout',
       path: 'src/pages/editor/CheckoutSlotsEditor.jsx',
       pageType: 'checkout',
       icon: CreditCard,
@@ -67,7 +67,7 @@ const SlotEnabledFileSelector = ({
     },
     {
       id: 'success',
-      name: 'SuccessSlotsEditor.jsx',
+      name: 'Success',
       path: 'src/pages/editor/SuccessSlotsEditor.jsx',
       pageType: 'success',
       icon: CheckCircle,
@@ -265,38 +265,13 @@ const SlotEnabledFileSelector = ({
                     {loadingDraft === file.id && (
                       <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                     )}
-
-                    {/* Slot configuration status */}
-                    {file.hasSlotConfig && (
-                      <Settings className="w-3 h-3 text-green-500" title="Has slot configuration" />
-                    )}
                   </div>
-
-                  <p className="text-xs text-muted-foreground">{file.description}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{file.path}</p>
                 </div>
-
-                {/* Page Type Badge */}
-                <Badge variant="secondary" className="text-xs">
-                  {file.pageType}
-                </Badge>
               </div>
             );
           })}
         </div>
       </ScrollArea>
-
-      {/* Footer */}
-      <div className="border-t p-3 text-xs text-muted-foreground">
-        <div className="flex items-center justify-between">
-          <span>
-            {selectedFile ? `Selected: ${selectedFile.name}` : 'No file selected'}
-          </span>
-          <span>
-            {slotFiles.length} pages available
-          </span>
-        </div>
-      </div>
     </Card>
   );
 };

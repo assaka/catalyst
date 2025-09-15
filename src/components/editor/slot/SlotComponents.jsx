@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2 } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
@@ -720,7 +720,7 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onToggleBorders }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, onPublish, showSlotBorders, onToggleBorders }) {
   return (
     <div className="flex mb-3 justify-between">
       <BorderToggleButton
@@ -729,6 +729,11 @@ export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onTog
       />
 
       <div className="flex gap-2">
+        <Button onClick={onPublish} variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
+          <Upload className="w-4 h-4 mr-2" />
+          Publish
+        </Button>
+
         <Button onClick={onResetLayout} variant="outline" size="sm">
           <Settings className="w-4 h-4 mr-2" />
           Reset Layout
