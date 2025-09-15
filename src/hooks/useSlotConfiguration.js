@@ -413,7 +413,10 @@ export function useSlotConfiguration({
     const storeId = selectedStore?.id;
     let configToUse = null;
 
-    // Try to load from database first
+    // Always load the static configuration first to get the base structure
+    const staticConfig = await loadStaticConfiguration();
+
+    // Try to load from database and merge with static config
     if (storeId) {
       try {
         console.log('💾 Attempting to load saved configuration from database...');
@@ -421,16 +424,55 @@ export function useSlotConfiguration({
 
         if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
           console.log('📄 Database configuration found:', savedConfig.data.configuration);
-          configToUse = savedConfig.data.configuration;
+          const dbConfig = savedConfig.data.configuration;
+
+          // Merge saved config with static config, preserving viewMode and metadata from static
+          const mergedSlots = {};
+
+          // Start with static config slots to ensure all viewMode arrays are preserved
+          Object.entries(staticConfig.slots).forEach(([slotId, staticSlot]) => {
+            const savedSlot = dbConfig.slots?.[slotId];
+
+            mergedSlots[slotId] = {
+              ...staticSlot, // Start with static slot (includes viewMode, metadata, etc.)
+              ...(savedSlot ? {
+                // Only override with saved properties that should be persisted
+                content: savedSlot.content !== undefined ? savedSlot.content : staticSlot.content,
+                className: savedSlot.className !== undefined ? savedSlot.className : staticSlot.className,
+                parentClassName: savedSlot.parentClassName !== undefined ? savedSlot.parentClassName : staticSlot.parentClassName,
+                styles: savedSlot.styles ? { ...staticSlot.styles, ...savedSlot.styles } : staticSlot.styles,
+                colSpan: savedSlot.colSpan !== undefined ? savedSlot.colSpan : staticSlot.colSpan,
+                rowSpan: savedSlot.rowSpan !== undefined ? savedSlot.rowSpan : staticSlot.rowSpan,
+                position: savedSlot.position ? { ...staticSlot.position, ...savedSlot.position } : staticSlot.position
+              } : {})
+            };
+          });
+
+          // Add any new slots that exist in database but not in static config
+          if (dbConfig.slots) {
+            Object.entries(dbConfig.slots).forEach(([slotId, savedSlot]) => {
+              if (!staticConfig.slots[slotId]) {
+                mergedSlots[slotId] = savedSlot;
+              }
+            });
+          }
+
+          configToUse = {
+            ...staticConfig,
+            ...dbConfig,
+            slots: mergedSlots
+          };
+
+          console.log('🔄 Merged database config with static config to preserve viewMode arrays');
         }
       } catch (dbError) {
         console.log('📝 No saved configuration found, will use static config as fallback:', dbError.message);
       }
     }
 
-    // If no saved config found, load the static configuration
+    // If no saved config found or merging failed, use the static configuration
     if (!configToUse) {
-      configToUse = await loadStaticConfiguration();
+      configToUse = staticConfig;
     }
 
     return configToUse;

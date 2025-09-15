@@ -509,12 +509,9 @@ export function HierarchicalSlotRenderer({
 
   const filteredSlots = childSlots.filter(slot => {
     if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
-      console.log(`Slot ${slot.id} has no viewMode, showing by default`);
       return true;
     }
-    const shouldShow = slot.viewMode.includes(viewMode);
-    console.log(`Slot ${slot.id} viewMode: ${JSON.stringify(slot.viewMode)}, current: ${viewMode}, showing: ${shouldShow}`);
-    return shouldShow;
+    return slot.viewMode.includes(viewMode);
   });
 
   return filteredSlots.map(slot => {
