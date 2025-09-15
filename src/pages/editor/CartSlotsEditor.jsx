@@ -287,7 +287,7 @@ const CartSlotsEditor = ({
       await handlePublishConfiguration();
       setPublishStatus('published');
       setHasUnsavedChanges(false);  // Mark as saved after successful publish
-      setConfigurationStatus('published'); // Update status to published
+      setConfigurationStatus('draft'); // Set to draft since new draft was created based on published
       lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
       setTimeout(() => setPublishStatus(''), 3000);
     } catch (error) {

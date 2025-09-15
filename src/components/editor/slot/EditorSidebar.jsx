@@ -588,6 +588,13 @@ const EditorSidebar = ({
       
       // Save immediately using parent callback with preserved styles
       if (onInlineClassChange) {
+        console.log('🎯 EditorSidebar: Calling onInlineClassChange for alignment:', {
+          elementSlotId,
+          combinedClasses,
+          currentInlineStyles,
+          isAlignmentChange: true,
+          targetAlignmentClasses
+        });
         onInlineClassChange(elementSlotId, combinedClasses, currentInlineStyles, true);
       }
     }
