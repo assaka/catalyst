@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2, Upload, Save } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
@@ -45,6 +45,17 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
         <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
           <Save className="w-4 h-4 mr-2" />
           Save
+        </Button>
+        <Button
+          onClick={onPublish}
+          variant="default"
+          size="sm"
+          className={hasChanges ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}
+          disabled={!hasChanges}
+          title={hasChanges ? "Publish changes to make them live" : "No changes to publish"}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Publish
         </Button>
       </div>
     </>
@@ -760,7 +771,7 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onToggleBorders }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
   return (
     <div className="flex mb-3 justify-between">
       <BorderToggleButton
@@ -772,6 +783,11 @@ export function EditorToolbar({ onResetLayout, onAddSlot, showSlotBorders, onTog
         <Button onClick={onResetLayout} variant="outline" size="sm">
           <Settings className="w-4 h-4 mr-2" />
           Reset Layout
+        </Button>
+
+        <Button onClick={onShowCode} variant="outline" size="sm">
+          <Code className="w-4 h-4 mr-2" />
+          Code
         </Button>
 
         <Button onClick={onAddSlot} variant="outline" size="sm">

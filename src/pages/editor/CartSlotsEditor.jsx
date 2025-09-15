@@ -335,6 +335,7 @@ const CartSlotsEditor = ({
 
   // Handle publish configuration
   const handlePublish = useCallback(async () => {
+    console.log('🚀 handlePublish called - closing sidebar');
     setPublishStatus('publishing');
 
     // Close sidebar when publishing
@@ -357,6 +358,7 @@ const CartSlotsEditor = ({
 
   // Handle publish panel callbacks
   const handlePublishPanelPublished = useCallback(async (publishedConfig) => {
+    console.log('📋 handlePublishPanelPublished called - closing sidebar');
     // Close sidebar when publishing from panel
     setIsSidebarVisible(false);
     setSelectedElement(null);
