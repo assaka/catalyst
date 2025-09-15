@@ -93,7 +93,18 @@ class SlotConfigurationService {
     }
   }
 
-  // Revert to a specific version
+  // Create a revert draft (new approach - creates draft instead of publishing)
+  async createRevertDraft(versionId) {
+    try {
+      const response = await apiClient.post(`${API_BASE}/revert-draft/${versionId}`);
+      return response;
+    } catch (error) {
+      console.error('Error creating revert draft:', error);
+      throw error;
+    }
+  }
+
+  // Revert to a specific version (DEPRECATED - use createRevertDraft instead)
   async revertToVersion(versionId) {
     try {
       const response = await apiClient.post(`${API_BASE}/revert/${versionId}`);

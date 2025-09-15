@@ -346,34 +346,65 @@ const CartSlotsEditor = ({
   }, [getSelectedStoreId]);
 
   const handlePublishPanelReverted = useCallback(async (revertedConfig) => {
-    // Reload the entire configuration after revert
+    // Handle revert or undo revert
     try {
       const storeId = getSelectedStoreId();
       if (storeId) {
-        // Reload draft configuration
-        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
-        if (draftResponse && draftResponse.success && draftResponse.data) {
-          setDraftConfig(draftResponse.data);
-          setConfigurationStatus(draftResponse.data.status);
-          setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+        if (revertedConfig === null) {
+          // Null indicates draft was deleted (undo revert)
+          // Try to get draft configuration (may not exist after delete)
+          try {
+            const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+            if (draftResponse && draftResponse.success && draftResponse.data) {
+              setDraftConfig(draftResponse.data);
+              setConfigurationStatus(draftResponse.data.status);
+              setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+            } else {
+              // No draft exists after undo
+              setDraftConfig(null);
+              setConfigurationStatus('published');
+              setHasUnsavedChanges(false);
+            }
+          } catch (draftError) {
+            // Draft doesn't exist, clear state
+            setDraftConfig(null);
+            setConfigurationStatus('published');
+            setHasUnsavedChanges(false);
+          }
 
-          // Also reload the cart layout configuration
+          // Reload from latest published configuration
           const configToUse = await getDraftOrStaticConfiguration();
           if (configToUse) {
             const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
             setCartLayoutConfig(finalConfig);
             lastSavedConfigRef.current = JSON.stringify(finalConfig);
           }
+        } else {
+          // Normal revert draft creation
+          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
+          if (draftResponse && draftResponse.success && draftResponse.data) {
+            setDraftConfig(draftResponse.data);
+            setConfigurationStatus(draftResponse.data.status);
+            setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+
+            // Also reload the cart layout configuration
+            const configToUse = await getDraftOrStaticConfiguration();
+            if (configToUse) {
+              const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+              setCartLayoutConfig(finalConfig);
+              lastSavedConfigRef.current = JSON.stringify(finalConfig);
+            }
+          }
         }
 
-        // Update latest published after revert
+        // Update latest published after revert/undo
         const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
         if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
           setLatestPublished(publishedResponse.data[0]);
         }
       }
     } catch (error) {
-      console.error('Failed to reload configuration after revert:', error);
+      console.error('Failed to reload configuration after revert/undo:', error);
     }
   }, [getSelectedStoreId, getDraftOrStaticConfiguration]);
 
@@ -470,11 +501,6 @@ const CartSlotsEditor = ({
               >
                 <Rocket className="w-4 h-4 mr-2" />
                 Publish
-                {hasUnsavedChanges && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-green-400 text-green-900 text-xs rounded-full">
-                    •
-                  </span>
-                )}
               </Button>
             </div>
           </div>

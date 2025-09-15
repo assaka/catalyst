@@ -304,28 +304,68 @@ router.get('/history/:storeId/:pageType?', authMiddleware, async (req, res) => {
   }
 });
 
-// Revert to a specific version
-router.post('/revert/:versionId', authMiddleware, async (req, res) => {
+// Create a revert draft (new approach - creates draft instead of publishing)
+router.post('/revert-draft/:versionId', authMiddleware, async (req, res) => {
   try {
     const { versionId } = req.params;
     const userId = req.user.id;
-    
+
     // Get the version to revert to
     const targetVersion = await SlotConfiguration.findByPk(versionId);
-    
+
     if (!targetVersion) {
       return res.status(404).json({
         success: false,
         error: 'Version not found'
       });
     }
-    
-    const newVersion = await SlotConfiguration.revertToVersion(
-      versionId, 
-      userId, 
+
+    const revertDraft = await SlotConfiguration.createRevertDraft(
+      versionId,
+      userId,
       targetVersion.store_id
     );
-    
+
+    res.json({
+      success: true,
+      data: revertDraft,
+      message: 'Revert draft created successfully. Publish to apply changes.',
+      revertedFrom: {
+        versionId: targetVersion.id,
+        versionNumber: targetVersion.version_number
+      }
+    });
+  } catch (error) {
+    console.error('Error creating revert draft:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Revert to a specific version (DEPRECATED - use /revert-draft instead)
+router.post('/revert/:versionId', authMiddleware, async (req, res) => {
+  try {
+    const { versionId } = req.params;
+    const userId = req.user.id;
+
+    // Get the version to revert to
+    const targetVersion = await SlotConfiguration.findByPk(versionId);
+
+    if (!targetVersion) {
+      return res.status(404).json({
+        success: false,
+        error: 'Version not found'
+      });
+    }
+
+    const newVersion = await SlotConfiguration.revertToVersion(
+      versionId,
+      userId,
+      targetVersion.store_id
+    );
+
     res.json({
       success: true,
       data: newVersion,

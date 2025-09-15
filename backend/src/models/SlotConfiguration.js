@@ -400,19 +400,84 @@ SlotConfiguration.getVersionHistory = async function(storeId, pageType, limit = 
   });
 };
 
-// Revert to a specific version with proper tracking
+// Create a draft from a specific version (for revert functionality)
+SlotConfiguration.createRevertDraft = async function(versionId, userId, storeId) {
+  const targetVersion = await this.findByPk(versionId);
+  if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
+    throw new Error('Version not found or not in a revertible status');
+  }
+
+  const transaction = await this.sequelize.transaction();
+
+  try {
+    // Check if there's an existing draft for this user/store/page
+    const existingDraft = await this.findOne({
+      where: {
+        user_id: userId,
+        store_id: storeId,
+        page_type: targetVersion.page_type,
+        status: 'draft'
+      },
+      transaction
+    });
+
+    if (existingDraft) {
+      // Update existing draft with the reverted configuration
+      existingDraft.configuration = targetVersion.configuration;
+      existingDraft.updated_at = new Date();
+      existingDraft.has_unpublished_changes = true; // Mark as having unpublished changes
+      existingDraft.parent_version_id = targetVersion.id; // Track source of revert
+      existingDraft.current_edit_id = targetVersion.id; // Track that this is based on the reverted version
+      await existingDraft.save({ transaction });
+
+      await transaction.commit();
+      return existingDraft;
+    } else {
+      // Create new draft with the reverted configuration
+      const maxVersion = await this.max('version_number', {
+        where: {
+          store_id: storeId,
+          page_type: targetVersion.page_type
+        },
+        transaction
+      });
+
+      const newDraft = await this.create({
+        user_id: userId,
+        store_id: storeId,
+        configuration: targetVersion.configuration,
+        version: targetVersion.version,
+        is_active: true,
+        status: 'draft',
+        version_number: (maxVersion || 0) + 1,
+        page_type: targetVersion.page_type,
+        parent_version_id: targetVersion.id,
+        current_edit_id: targetVersion.id, // Track that this is based on the reverted version
+        has_unpublished_changes: true // Mark as having unpublished changes (revert needs to be published)
+      }, { transaction });
+
+      await transaction.commit();
+      return newDraft;
+    }
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+
+// Revert to a specific version with proper tracking (DEPRECATED - use createRevertDraft instead)
 SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
   const targetVersion = await this.findByPk(versionId);
   if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
     throw new Error('Version not found or not in a revertible status');
   }
-  
+
   const transaction = await this.sequelize.transaction();
-  
+
   try {
     // Mark all versions after this one as reverted
     await this.update(
-      { 
+      {
         status: 'reverted',
         current_edit_id: null // Clear current edit tracking for reverted versions
       },
@@ -430,7 +495,7 @@ SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
         transaction
       }
     );
-    
+
     // Get the next version number
     const maxVersion = await this.max('version_number', {
       where: {
@@ -439,7 +504,7 @@ SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
       },
       transaction
     });
-    
+
     // Create a new published version based on the target version
     const newVersion = await this.create({
       user_id: userId,
@@ -455,7 +520,7 @@ SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
       published_at: new Date(),
       published_by: userId
     }, { transaction });
-    
+
     await transaction.commit();
     return newVersion;
   } catch (error) {

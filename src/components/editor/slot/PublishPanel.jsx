@@ -10,7 +10,9 @@ import {
   AlertCircle,
   Loader2,
   History,
-  Eye
+  Eye,
+  X,
+  Undo
 } from 'lucide-react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { toast } from 'sonner';
@@ -30,6 +32,7 @@ const PublishPanel = ({
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [revertingVersionId, setRevertingVersionId] = useState(null);
   const [latestPublished, setLatestPublished] = useState(null);
+  const [undoingRevert, setUndoingRevert] = useState(false);
 
   // Load version history
   const loadVersionHistory = async () => {
@@ -91,15 +94,15 @@ const PublishPanel = ({
     }
   };
 
-  // Revert to a specific version
+  // Create revert draft
   const handleRevert = async (versionId, versionNumber) => {
     if (!versionId) return;
 
     setRevertingVersionId(versionId);
     try {
-      const response = await slotConfigurationService.revertToVersion(versionId);
+      const response = await slotConfigurationService.createRevertDraft(versionId);
       if (response.success) {
-        toast.success(`Reverted to version ${versionNumber}`);
+        toast.success(`Created revert draft from version ${versionNumber}. Publish to apply changes.`);
 
         // Reload version history
         await loadVersionHistory();
@@ -109,13 +112,47 @@ const PublishPanel = ({
           onReverted(response.data);
         }
       } else {
-        toast.error(response.error || 'Failed to revert version');
+        toast.error(response.error || 'Failed to create revert draft');
       }
     } catch (error) {
-      console.error('Error reverting version:', error);
-      toast.error('Failed to revert to selected version');
+      console.error('Error creating revert draft:', error);
+      toast.error('Failed to create revert draft');
     } finally {
       setRevertingVersionId(null);
+    }
+  };
+
+  // Undo revert by deleting the current draft
+  const handleUndoRevert = async () => {
+    if (!draftConfig?.id) return;
+
+    // Only allow undo if this is a revert draft (has current_edit_id pointing to a version)
+    if (!draftConfig.current_edit_id) {
+      toast.error('No revert to undo');
+      return;
+    }
+
+    setUndoingRevert(true);
+    try {
+      const response = await slotConfigurationService.deleteDraft(draftConfig.id);
+      if (response.success) {
+        toast.success('Revert undone successfully');
+
+        // Reload version history
+        await loadVersionHistory();
+
+        // Notify parent component to reload draft
+        if (onReverted) {
+          onReverted(null); // null indicates draft was deleted
+        }
+      } else {
+        toast.error(response.error || 'Failed to undo revert');
+      }
+    } catch (error) {
+      console.error('Error undoing revert:', error);
+      toast.error('Failed to undo revert');
+    } finally {
+      setUndoingRevert(false);
     }
   };
 
@@ -130,6 +167,16 @@ const PublishPanel = ({
     }
 
     if (draftConfig.status === 'draft') {
+      // Check if this is a revert draft
+      if (draftConfig.current_edit_id) {
+        return {
+          label: 'Revert draft - ready to publish',
+          color: 'text-orange-600',
+          icon: <RotateCcw className="w-4 h-4" />,
+          isRevertDraft: true
+        };
+      }
+
       if (hasUnsavedChanges || draftConfig.has_unpublished_changes) {
         return {
           label: 'Draft with unpublished changes',
@@ -191,28 +238,70 @@ const PublishPanel = ({
 
       {/* Publish Button */}
       <div className="p-4 border-b border-gray-200">
-        <Button
-          onClick={handlePublish}
-          disabled={!canPublish || isPublishing}
-          className="w-full"
-          variant={canPublish ? "default" : "secondary"}
-        >
-          {isPublishing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Publishing...
-            </>
-          ) : (
-            <>
-              <Rocket className="w-4 h-4 mr-2" />
-              {canPublish ? 'Publish Changes' : 'No Changes to Publish'}
-            </>
-          )}
-        </Button>
+        {status.isRevertDraft && (
+          <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+            <div className="flex items-start gap-2">
+              <RotateCcw className="w-4 h-4 text-orange-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-orange-900">
+                  Revert Draft Ready
+                </p>
+                <p className="text-xs text-orange-700 mt-1">
+                  Configuration reverted to previous version. Publish to apply or undo to cancel.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {canPublish && (
+        <div className="flex gap-2">
+          <Button
+            onClick={handlePublish}
+            disabled={!canPublish || isPublishing}
+            className="flex-1"
+            variant={canPublish ? "default" : "secondary"}
+          >
+            {isPublishing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Publishing...
+              </>
+            ) : (
+              <>
+                <Rocket className="w-4 h-4 mr-2" />
+                {canPublish ? 'Publish Changes' : 'No Changes to Publish'}
+              </>
+            )}
+          </Button>
+
+          {status.isRevertDraft && (
+            <Button
+              onClick={handleUndoRevert}
+              disabled={undoingRevert}
+              variant="outline"
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+            >
+              {undoingRevert ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Undo className="w-4 h-4 mr-1" />
+                  Undo
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+
+        {canPublish && !status.isRevertDraft && (
           <p className="text-xs text-gray-500 mt-2 text-center">
             This will make your changes live on the storefront
+          </p>
+        )}
+
+        {status.isRevertDraft && (
+          <p className="text-xs text-orange-600 mt-2 text-center">
+            Publish to apply revert or click Undo to cancel
           </p>
         )}
       </div>
