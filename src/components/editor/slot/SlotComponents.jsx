@@ -375,13 +375,24 @@ export function GridColumn({
   const gridStyles = {
     gridColumn: `span ${colSpan}`,
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
+    // Only apply layout-related styles to grid wrapper using whitelist approach
+    // All other styles (colors, fonts, etc.) should go to the actual elements
     ...Object.fromEntries(
-      Object.entries(slot?.styles || {}).filter(([key]) =>
-        !['gridColumn', 'gridRow'].includes(key)
-      )
-    ),
-    height: height ? `${height}px` : slot?.styles?.height,
-    maxHeight: height ? `${height}px` : slot?.styles?.maxHeight
+      Object.entries(slot?.styles || {}).filter(([key]) => {
+        // Whitelist of layout-only styles that are safe for grid wrapper
+        const layoutStyles = [
+          'width', 'minWidth', 'maxWidth',
+          'height', 'minHeight', 'maxHeight',
+          'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+          'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+          'display', 'position', 'top', 'right', 'bottom', 'left',
+          'zIndex', 'overflow', 'overflowX', 'overflowY',
+          'flexBasis', 'flexGrow', 'flexShrink',
+          'textAlign' // Allow textAlign - can work alongside parentClassName (text-center, etc.)
+        ];
+        return layoutStyles.includes(key);
+      })
+    )
   };
 
   return (
