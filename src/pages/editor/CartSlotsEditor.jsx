@@ -80,6 +80,7 @@ const CartSlotsEditor = ({
   const [draftConfig, setDraftConfig] = useState(null);
   const lastResizeEndTime = useRef(0);
   const lastSavedConfigRef = useRef(null);
+  const publishPanelRef = useRef(null);
   
   // Database configuration hook with generic functions and handler factories
   const {
@@ -352,6 +353,24 @@ const CartSlotsEditor = ({
     }
   }, [getSelectedStoreId, getDraftOrStaticConfiguration]);
 
+  // Handle click outside to close publish panel
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPublishPanel && publishPanelRef.current && !publishPanelRef.current.contains(event.target)) {
+        // Check if the click is on the publish button itself
+        const publishButton = event.target.closest('button');
+        const isPublishButton = publishButton && publishButton.textContent.includes('Publish');
+
+        if (!isPublishButton) {
+          setShowPublishPanel(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPublishPanel]);
+
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
   useEffect(() => {
     const handleKeyPress = async (e) => {
@@ -417,13 +436,21 @@ const CartSlotsEditor = ({
             {/* Publish Panel Toggle - Far Right */}
             <div className="flex items-center gap-4">
               <Button
-                variant="outline"
+                variant={hasUnsavedChanges ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowPublishPanel(!showPublishPanel)}
-                className={`${showPublishPanel ? 'bg-blue-50 border-blue-200' : ''}`}
+                className={`${showPublishPanel ?
+                  (hasUnsavedChanges ? 'bg-green-600 border-green-600 hover:bg-green-700' : 'bg-blue-50 border-blue-200') :
+                  (hasUnsavedChanges ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' : '')
+                }`}
               >
                 <Rocket className="w-4 h-4 mr-2" />
                 Publish
+                {hasUnsavedChanges && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-green-400 text-green-900 text-xs rounded-full">
+                    •
+                  </span>
+                )}
               </Button>
             </div>
           </div>
@@ -526,7 +553,7 @@ const CartSlotsEditor = ({
 
       {/* Floating Publish Panel */}
       {showPublishPanel && (
-        <div className="fixed top-20 right-6 z-50 w-80">
+        <div ref={publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
           <PublishPanel
             draftConfig={draftConfig}
             storeId={getSelectedStoreId()}
