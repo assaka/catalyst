@@ -779,6 +779,7 @@ export function useSlotConfiguration({
 
   // Generic class change handler
   const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false, slots) => {
+    console.log('📋 handleClassChange called:', { slotId, className, styles, isAlignmentChange, slots });
     const updatedSlots = { ...slots };
 
     if (updatedSlots[slotId]) {
@@ -789,11 +790,13 @@ export function useSlotConfiguration({
       // Define categories of classes
       const alignmentClasses = ['text-left', 'text-center', 'text-right'];
       const allClasses = className.split(' ').filter(Boolean);
+      console.log('📋 Processing classes:', { alignmentClasses, allClasses, isAlignmentChange });
 
       if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
         // For alignment changes, only alignment goes to parent, everything else to element
         const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
         const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+        console.log('📋 Alignment change detected:', { alignmentClassList, elementClassList });
 
         updatedSlots[slotId] = {
           ...updatedSlots[slotId],
@@ -805,6 +808,7 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
+        console.log('📋 Updated slot for alignment:', updatedSlots[slotId]);
       } else {
         // For text styling (bold, italic, colors), keep existing parentClassName
         // and only update className for the text element
@@ -900,12 +904,15 @@ export function useSlotConfiguration({
 
       createClassChangeHandler: (classChangeHandler) =>
         useCallback((slotId, className, styles, isAlignmentChange = false) => {
+          console.log('🔧 createClassChangeHandler called:', { slotId, className, styles, isAlignmentChange });
           setPageConfig(prevConfig => {
+            console.log('🔧 Previous config before classChangeHandler:', prevConfig);
             const updatedSlots = classChangeHandler(slotId, className, styles, isAlignmentChange, prevConfig?.slots || {});
             const updatedConfig = {
               ...prevConfig,
               slots: updatedSlots
             };
+            console.log('🔧 Updated config after classChangeHandler:', updatedConfig);
 
             // Auto-save
             saveConfigurationHandler(updatedConfig);

@@ -8,7 +8,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Save,
   ShoppingCart,
   Package,
   Loader2
@@ -25,7 +24,8 @@ import {
   EditorToolbar,
   AddSlotModal,
   ResetLayoutModal,
-  FilePickerModalWrapper
+  FilePickerModalWrapper,
+  EditModeControls
 } from '@/components/editor/slot/SlotComponents';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
@@ -226,7 +226,8 @@ const CartSlotsEditor = ({
   const saveConfiguration = useCallback(async (...args) => {
     const result = await baseSaveConfiguration(...args);
     if (result !== false) {
-      setHasUnsavedChanges(false);
+      // Don't clear hasUnsavedChanges when saving to draft - the draft still needs to be published
+      // hasUnsavedChanges should only be cleared after successful publish, not save
       setConfigurationStatus('draft'); // Saving creates a draft
       lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
     }
@@ -350,39 +351,11 @@ const CartSlotsEditor = ({
 
               {/* Edit mode controls */}
               {mode === 'edit' && (
-                <>
-                  {/* Save Status */}
-                  {localSaveStatus && (
-                    <div className={`flex items-center gap-2 text-sm ${
-                      localSaveStatus === 'saving' ? 'text-blue-600' :
-                      localSaveStatus === 'saved' ? 'text-green-600' :
-                      'text-red-600'
-                    }`}>
-                      {localSaveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {localSaveStatus === 'saved' && '✓ Saved'}
-                      {localSaveStatus === 'error' && '✗ Save Failed'}
-                    </div>
-                  )}
-
-                  {/* Publish Status */}
-                  {publishStatus && (
-                    <div className={`flex items-center gap-2 text-sm ${
-                      publishStatus === 'publishing' ? 'text-blue-600' :
-                      publishStatus === 'published' ? 'text-green-600' :
-                      'text-red-600'
-                    }`}>
-                      {publishStatus === 'publishing' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {publishStatus === 'published' && '🚀 Published'}
-                      {publishStatus === 'error' && '✗ Publish Failed'}
-                    </div>
-                  )}
-
-                  <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save
-                  </Button>
-
-                </>
+                <EditModeControls
+                  localSaveStatus={localSaveStatus}
+                  publishStatus={publishStatus}
+                  saveConfiguration={saveConfiguration}
+                />
               )}
             </div>
           </div>

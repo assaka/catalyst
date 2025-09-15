@@ -4,12 +4,50 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2, Upload } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload, Save } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
+
+// EditModeControls Component
+export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration }) {
+  return (
+    <>
+      {/* Save Status */}
+      {localSaveStatus && (
+        <div className={`flex items-center gap-2 text-sm ${
+          localSaveStatus === 'saving' ? 'text-blue-600' :
+          localSaveStatus === 'saved' ? 'text-green-600' :
+          'text-red-600'
+        }`}>
+          {localSaveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
+          {localSaveStatus === 'saved' && '✓ Saved'}
+          {localSaveStatus === 'error' && '✗ Save Failed'}
+        </div>
+      )}
+
+      {/* Publish Status */}
+      {publishStatus && (
+        <div className={`flex items-center gap-2 text-sm ${
+          publishStatus === 'publishing' ? 'text-blue-600' :
+          publishStatus === 'published' ? 'text-green-600' :
+          'text-red-600'
+        }`}>
+          {publishStatus === 'publishing' && <Loader2 className="w-4 h-4 animate-spin" />}
+          {publishStatus === 'published' && '🚀 Published'}
+          {publishStatus === 'error' && '✗ Publish Failed'}
+        </div>
+      )}
+
+      <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
+        <Save className="w-4 h-4 mr-2" />
+        Save
+      </Button>
+    </>
+  );
+}
 
 // GridResizeHandle Component
 export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
