@@ -78,6 +78,7 @@ const CartSlotsEditor = ({
   const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [draftConfig, setDraftConfig] = useState(null);
+  const [latestPublished, setLatestPublished] = useState(null);
   const lastResizeEndTime = useRef(0);
   const lastSavedConfigRef = useRef(null);
   const publishPanelRef = useRef(null);
@@ -137,12 +138,23 @@ const CartSlotsEditor = ({
         try {
           const storeId = getSelectedStoreId();
           if (storeId) {
+            // Get draft configuration
             const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
             if (draftResponse && draftResponse.success && draftResponse.data) {
               setDraftConfig(draftResponse.data); // Store the full draft config
               setConfigurationStatus(draftResponse.data.status);
               // Set hasUnsavedChanges based on database field
               setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+            }
+
+            // Get latest published configuration for timestamp
+            try {
+              const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
+              if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
+                setLatestPublished(publishedResponse.data[0]);
+              }
+            } catch (publishedError) {
+              console.log('Could not get latest published version:', publishedError);
             }
           }
         } catch (error) {
@@ -321,6 +333,12 @@ const CartSlotsEditor = ({
           setConfigurationStatus(draftResponse.data.status);
           setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
         }
+
+        // Update latest published
+        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
+        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
+          setLatestPublished(publishedResponse.data[0]);
+        }
       }
     } catch (error) {
       console.error('Failed to reload draft after publish:', error);
@@ -346,6 +364,12 @@ const CartSlotsEditor = ({
             setCartLayoutConfig(finalConfig);
             lastSavedConfigRef.current = JSON.stringify(finalConfig);
           }
+        }
+
+        // Update latest published after revert
+        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
+        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
+          setLatestPublished(publishedResponse.data[0]);
         }
       }
     } catch (error) {
@@ -467,6 +491,8 @@ const CartSlotsEditor = ({
               onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
               onResetLayout={() => setShowResetModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
+              draftConfig={draftConfig}
+              latestPublished={latestPublished}
             />
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
