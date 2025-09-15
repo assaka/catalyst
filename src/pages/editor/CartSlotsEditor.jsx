@@ -337,6 +337,10 @@ const CartSlotsEditor = ({
   const handlePublish = useCallback(async () => {
     setPublishStatus('publishing');
 
+    // Close sidebar when publishing
+    setIsSidebarVisible(false);
+    setSelectedElement(null);
+
     try {
       await handlePublishConfiguration();
       setPublishStatus('published');
@@ -353,6 +357,10 @@ const CartSlotsEditor = ({
 
   // Handle publish panel callbacks
   const handlePublishPanelPublished = useCallback(async (publishedConfig) => {
+    // Close sidebar when publishing from panel
+    setIsSidebarVisible(false);
+    setSelectedElement(null);
+
     // Reload draft configuration to get updated state
     try {
       const storeId = getSelectedStoreId();
@@ -538,8 +546,8 @@ const CartSlotsEditor = ({
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-            <div className="flex justify-between items-center text-xs text-gray-500">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
+            <div className="flex justify-between items-center text-xs text-gray-500 pb-6">
               <div className="flex items-center">
                 {draftConfig?.updated_at && (
                   <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
