@@ -1130,9 +1130,9 @@ export function CodeModal({
         )}
 
         {/* Monaco Editor */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden" style={{ minHeight: '500px', height: '500px' }}>
           <Editor
-            height="100%"
+            height="500px"
             defaultLanguage="json"
             value={editorValue}
             onChange={handleEditorChange}
