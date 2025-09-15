@@ -987,7 +987,24 @@ export function useSlotConfiguration({
             saveConfigurationHandler(updatedConfig);
             return updatedConfig;
           });
-        }, [createSlot, saveConfigurationHandler])
+        }, [createSlot, saveConfigurationHandler]),
+
+      createResetLayoutHandler: (resetLayoutFromHook, setLocalSaveStatus) =>
+        useCallback(async () => {
+          setLocalSaveStatus('saving');
+
+          try {
+            const newConfig = await resetLayoutFromHook();
+            setPageConfig(newConfig);
+
+            setLocalSaveStatus('saved');
+            setTimeout(() => setLocalSaveStatus(''), 3000);
+          } catch (error) {
+            console.error('❌ Failed to reset layout:', error);
+            setLocalSaveStatus('error');
+            setTimeout(() => setLocalSaveStatus(''), 5000);
+          }
+        }, [resetLayoutFromHook, setLocalSaveStatus])
     };
   }, []);
 

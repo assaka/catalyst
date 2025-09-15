@@ -214,29 +214,11 @@ const CartSlotsEditor = ({
     };
   }, []);
 
-  // Create resize and drop handlers using the factory
+  // Create all handlers using the factory
   const handleGridResize = handlerFactory.createGridResizeHandler(gridResizeHandler, saveTimeoutRef);
   const handleSlotHeightResize = handlerFactory.createSlotHeightResizeHandler(slotHeightResizeHandler, saveTimeoutRef);
   const handleSlotDrop = handlerFactory.createSlotDropHandler(slotDropHandler, isDragOperationActiveRef);
-
-  // Handle resetting layout using hook function
-  const handleResetLayout = useCallback(async () => {
-    setLocalSaveStatus('saving');
-
-    try {
-      const newConfig = await resetLayoutFromHook();
-      setCartLayoutConfig(newConfig);
-
-      setLocalSaveStatus('saved');
-      setTimeout(() => setLocalSaveStatus(''), 3000);
-    } catch (error) {
-      console.error('❌ Failed to reset layout:', error);
-      setLocalSaveStatus('error');
-      setTimeout(() => setLocalSaveStatus(''), 5000);
-    }
-  }, [resetLayoutFromHook]);
-
-  // Handle creating new slots using factory
+  const handleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
   // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
