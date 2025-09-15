@@ -478,6 +478,27 @@ const CartSlotsEditor = ({
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [cartLayoutConfig, handleSlotDrop, validateSlotConfiguration]);
 
+  // Dynamically adjust content area colSpan based on view mode
+  useEffect(() => {
+    if (cartLayoutConfig && cartLayoutConfig.slots && cartLayoutConfig.slots.content_area) {
+      const newColSpan = viewMode === 'withProducts' ? 8 : 12;
+      const currentColSpan = cartLayoutConfig.slots.content_area.colSpan;
+
+      if (currentColSpan !== newColSpan) {
+        setCartLayoutConfig(prevConfig => ({
+          ...prevConfig,
+          slots: {
+            ...prevConfig.slots,
+            content_area: {
+              ...prevConfig.slots.content_area,
+              colSpan: newColSpan
+            }
+          }
+        }));
+      }
+    }
+  }, [viewMode, cartLayoutConfig]);
+
   // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
