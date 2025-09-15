@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
@@ -969,5 +969,65 @@ export function FilePickerModalWrapper({
       }}
       fileType={fileType}
     />
+  );
+}
+
+// CodeModal Component
+export function CodeModal({
+  isOpen,
+  onClose,
+  configuration = {}
+}) {
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
+
+  const jsonString = JSON.stringify(configuration, null, 2);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(jsonString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] m-4 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Configuration JSON</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleCopy}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              <Copy className="w-3 h-3 mr-1" />
+              {copied ? 'Copied!' : 'Copy'}
+            </Button>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+              className="p-1"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-4">
+          <pre className="bg-gray-50 rounded-md p-4 text-sm font-mono text-gray-800 whitespace-pre-wrap break-words">
+            {jsonString}
+          </pre>
+        </div>
+      </div>
+    </div>
   );
 }

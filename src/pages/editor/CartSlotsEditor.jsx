@@ -28,7 +28,8 @@ import {
   AddSlotModal,
   ResetLayoutModal,
   FilePickerModalWrapper,
-  EditModeControls
+  EditModeControls,
+  CodeModal
 } from '@/components/editor/slot/SlotComponents';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
@@ -74,6 +75,7 @@ const CartSlotsEditor = ({
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const [showPublishPanel, setShowPublishPanel] = useState(false);
@@ -569,6 +571,7 @@ const CartSlotsEditor = ({
               showSlotBorders={showSlotBorders}
               onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
               onResetLayout={() => setShowResetModal(true)}
+              onShowCode={() => setShowCodeModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
             />
 
@@ -667,6 +670,13 @@ const CartSlotsEditor = ({
           />
         </div>
       )}
+
+      {/* Code Modal */}
+      <CodeModal
+        isOpen={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+        configuration={cartLayoutConfig}
+      />
     </div>
   );
 };
