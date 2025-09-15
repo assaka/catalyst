@@ -355,6 +355,8 @@ const CartSlotsEditor = ({
                   localSaveStatus={localSaveStatus}
                   publishStatus={publishStatus}
                   saveConfiguration={saveConfiguration}
+                  onPublish={handlePublish}
+                  hasChanges={canPublish}
                 />
               )}
             </div>
@@ -370,10 +372,8 @@ const CartSlotsEditor = ({
             <EditorToolbar
               showSlotBorders={showSlotBorders}
               onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
-              onPublish={handlePublish}
               onResetLayout={() => setShowResetModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
-              hasChanges={canPublish}
             />
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">

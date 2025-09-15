@@ -52,16 +52,17 @@ function getCurrentFontSize(className) {
   return found ? found.replace('text-', '') : 'base';
 }
 
-const EditorSidebar = ({ 
-  selectedElement, 
+const EditorSidebar = ({
+  selectedElement,
   onClearSelection,
   onClassChange,  // New prop for class changes
   onInlineClassChange, // Prop for inline class changes (alignment, etc.)
   onTextChange,   // New prop for text content changes
   slotId,        // Current slot ID
   slotConfig,    // Current slot configuration from database
-  isVisible = true 
+  isVisible = true
 }) => {
+  console.log('🔵 EditorSidebar rendered with:', { selectedElement, slotId, slotConfig, isVisible });
   // Set up database save callback for SimpleStyleManager
   useEffect(() => {
     if (onClassChange) {
@@ -1054,7 +1055,10 @@ const EditorSidebar = ({
                   <Button
                     variant={currentAlignment === 'left' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('textAlign', 'left')}
+                    onClick={() => {
+                      console.log('🔴 ALIGN LEFT BUTTON CLICKED');
+                      handlePropertyChange('textAlign', 'left');
+                    }}
                     className="h-7 px-2"
                   >
                     <AlignLeft className="w-3 h-3" />
@@ -1062,7 +1066,10 @@ const EditorSidebar = ({
                   <Button
                     variant={currentAlignment === 'center' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('textAlign', 'center')}
+                    onClick={() => {
+                      console.log('🔴 ALIGN CENTER BUTTON CLICKED');
+                      handlePropertyChange('textAlign', 'center');
+                    }}
                     className="h-7 px-2"
                   >
                     <AlignCenter className="w-3 h-3" />
@@ -1070,7 +1077,10 @@ const EditorSidebar = ({
                   <Button
                     variant={currentAlignment === 'right' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('textAlign', 'right')}
+                    onClick={() => {
+                      console.log('🔴 ALIGN RIGHT BUTTON CLICKED');
+                      handlePropertyChange('textAlign', 'right');
+                    }}
                     className="h-7 px-2"
                   >
                     <AlignRight className="w-3 h-3" />
