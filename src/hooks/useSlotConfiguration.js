@@ -331,12 +331,6 @@ export function useSlotConfiguration({
     try {
       setResetStatus('resetting');
 
-      // Clear the draft configuration from database
-      const storeId = selectedStore?.id;
-      if (storeId) {
-        await slotConfigurationService.clearDraftConfiguration(storeId, pageType);
-      }
-
       // Load the clean static configuration for this page type
       const config = await loadPageConfig(pageType);
 
@@ -360,15 +354,16 @@ export function useSlotConfiguration({
         cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
       };
 
-      // Save the clean config to database
-      if (updateConfiguration) {
-        await updateConfiguration(cleanConfig);
+      // Save the clean config to database (this will overwrite any existing draft)
+      const storeId = selectedStore?.id;
+      if (storeId) {
+        await slotConfigurationService.saveConfiguration(storeId, cleanConfig, pageType);
       }
 
       setResetStatus('reset');
       setTimeout(() => setResetStatus(''), 3000);
 
-      console.log(`✅ ${pageType} layout reset to clean configuration`);
+      console.log(`✅ ${pageType} layout reset to clean configuration from ${pageType}-config.js`);
 
       return cleanConfig;
     } catch (error) {
@@ -377,7 +372,7 @@ export function useSlotConfiguration({
       setTimeout(() => setResetStatus(''), 5000);
       throw error;
     }
-  }, [selectedStore, pageType, pageName, slotType, updateConfiguration]);
+  }, [selectedStore, pageType, pageName, slotType]);
 
   // Generic load static configuration function
   const loadStaticConfiguration = useCallback(async () => {
