@@ -40,11 +40,23 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
           {publishStatus === 'error' && '✗ Publish Failed'}
         </div>
       )}
-
-      <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
-        <Save className="w-4 h-4 mr-2" />
-        Save
-      </Button>
+      <div className="flex justify-between">
+        <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
+          <Save className="w-4 h-4 mr-2" />
+          Save
+        </Button>
+        <Button
+            onClick={onPublish}
+            variant="default"
+            size="sm"
+            className={hasChanges ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}
+            disabled={!hasChanges}
+            title={hasChanges ? "Publish changes to make them live" : "No changes to publish"}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Publish
+        </Button>
+      </div>
     </>
   );
 }
@@ -767,18 +779,6 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onPublish, showSlotBor
       />
 
       <div className="flex gap-2">
-        <Button
-          onClick={onPublish}
-          variant="default"
-          size="sm"
-          className={hasChanges ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 cursor-not-allowed"}
-          disabled={!hasChanges}
-          title={hasChanges ? "Publish changes to make them live" : "No changes to publish"}
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Publish
-        </Button>
-
         <Button onClick={onResetLayout} variant="outline" size="sm">
           <Settings className="w-4 h-4 mr-2" />
           Reset Layout

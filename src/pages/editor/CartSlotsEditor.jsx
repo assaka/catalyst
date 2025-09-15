@@ -417,7 +417,12 @@ const CartSlotsEditor = ({
         <EditorSidebar
           selectedElement={selectedElement}
           slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
-          slotConfig={cartLayoutConfig && cartLayoutConfig.slots && selectedElement?.getAttribute ? cartLayoutConfig.slots[selectedElement.getAttribute('data-slot-id')] : null}
+          slotConfig={(() => {
+            const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
+            const config = cartLayoutConfig && cartLayoutConfig.slots && slotId ? cartLayoutConfig.slots[slotId] : null;
+            console.log('🏗️ CartSlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, cartLayoutConfig });
+            return config;
+          })()}
           onTextChange={handleTextChange}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}
