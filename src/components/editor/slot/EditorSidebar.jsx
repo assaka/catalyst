@@ -613,10 +613,14 @@ const EditorSidebar = ({
         });
         onInlineClassChange(elementSlotId, combinedClasses, currentInlineStyles, true);
       }
+    } else {
+      console.log('🟠 No target element found - alignment change aborted');
     }
-    
-    // Trigger alignment update for button state
-    setAlignmentUpdate(prev => prev + 1);
+
+    // Trigger alignment update for button state - do this after a delay to avoid interrupting the callback
+    setTimeout(() => {
+      setAlignmentUpdate(prev => prev + 1);
+    }, 0);
   }, [selectedElement, onInlineClassChange]);
 
   // Simple property change handler - direct DOM updates and immediate saves

@@ -281,6 +281,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     if (configuration) {
       existingDraft.configuration = configuration;
       existingDraft.updated_at = new Date();
+      existingDraft.has_unpublished_changes = true; // Mark as having unpublished changes
       await existingDraft.save();
     }
     return existingDraft;
