@@ -197,6 +197,7 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
     
     draft.configuration = configuration;
     draft.updated_at = new Date();
+    draft.has_unpublished_changes = true; // Mark as having unpublished changes
     await draft.save();
     
     res.json({

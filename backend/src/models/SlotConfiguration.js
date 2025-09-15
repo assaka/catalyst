@@ -706,6 +706,7 @@ SlotConfiguration.publishDraft = async function(draftId, publishedByUserId) {
   draft.status = 'published';
   draft.published_at = new Date();
   draft.published_by = publishedByUserId;
+  draft.has_unpublished_changes = false; // Clear unpublished changes flag
   await draft.save();
   
   return draft;

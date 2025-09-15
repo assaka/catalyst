@@ -127,18 +127,21 @@ const CartSlotsEditor = ({
           throw new Error('Failed to load cart configuration');
         }
 
-        // Try to get the status from draft configuration
+        // Try to get the status and unpublished changes from draft configuration
         try {
           const storeId = getSelectedStoreId();
           if (storeId) {
             const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
             if (draftResponse && draftResponse.success && draftResponse.data) {
               setConfigurationStatus(draftResponse.data.status);
+              // Set hasUnsavedChanges based on database field
+              setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
             }
           }
         } catch (error) {
           console.log('Could not determine configuration status:', error);
           setConfigurationStatus('published'); // Default to published if we can't determine
+          setHasUnsavedChanges(false);
         }
 
         // Transform database config if needed
