@@ -29,11 +29,11 @@ async function loadPageConfig(pageType) {
         configPath = path.join(configsDir, 'success-config.js');
         configExport = 'successConfig';
         break;
+      case null:
+      case undefined:
+        throw new Error('pageType is required but was not provided');
       default:
-        // Default to cart config for unknown types
-        configPath = path.join(configsDir, 'cart-config.js');
-        configExport = 'cartConfig';
-        console.log(`⚠️ Unknown page type '${pageType}', defaulting to cart config`);
+        throw new Error(`Unknown page type '${pageType}'. Supported types: cart, category, product, checkout, success`);
     }
 
     const configModule = await import(configPath);
@@ -120,9 +120,8 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
   },
   page_type: {
     type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: 'cart',
-    comment: 'Type of page this configuration applies to'
+    allowNull: false,
+    comment: 'Type of page this configuration applies to (required: cart, category, product, checkout, success)'
   },
   published_at: {
     type: DataTypes.DATE,
@@ -223,7 +222,7 @@ SlotConfiguration.findActiveByUserStore = async function(userId, storeId) {
 };
 
 // Find the latest draft for editing
-SlotConfiguration.findLatestDraft = async function(userId, storeId, pageType = 'cart') {
+SlotConfiguration.findLatestDraft = async function(userId, storeId, pageType) {
   return this.findOne({
     where: {
       user_id: userId,
@@ -236,7 +235,7 @@ SlotConfiguration.findLatestDraft = async function(userId, storeId, pageType = '
 };
 
 // Find the latest published version for display
-SlotConfiguration.findLatestPublished = async function(storeId, pageType = 'cart') {
+SlotConfiguration.findLatestPublished = async function(storeId, pageType) {
   return this.findOne({
     where: {
       store_id: storeId,
@@ -248,7 +247,7 @@ SlotConfiguration.findLatestPublished = async function(storeId, pageType = 'cart
 };
 
 // Find the latest acceptance version for preview
-SlotConfiguration.findLatestAcceptance = async function(storeId, pageType = 'cart') {
+SlotConfiguration.findLatestAcceptance = async function(storeId, pageType) {
   return this.findOne({
     where: {
       store_id: storeId,
@@ -260,7 +259,7 @@ SlotConfiguration.findLatestAcceptance = async function(storeId, pageType = 'car
 };
 
 // Create or update a draft - proper upsert logic
-SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart', configuration = null) {
+SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, configuration = null) {
   // Try to find existing draft
   const existingDraft = await this.findOne({
     where: {
@@ -327,7 +326,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType = 'cart
 };
 
 // Create draft - uses upsert logic
-SlotConfiguration.createDraft = async function(userId, storeId, pageType = 'cart') {
+SlotConfiguration.createDraft = async function(userId, storeId, pageType) {
   return this.upsertDraft(userId, storeId, pageType);
 };
 
@@ -381,7 +380,7 @@ SlotConfiguration.publishDraft = async function(draftId, publishedByUserId) {
 };
 
 // Get version history for a store and page
-SlotConfiguration.getVersionHistory = async function(storeId, pageType = 'cart', limit = 20) {
+SlotConfiguration.getVersionHistory = async function(storeId, pageType, limit = 20) {
   return this.findAll({
     where: {
       store_id: storeId,
@@ -458,7 +457,7 @@ SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
 };
 
 // Set current editing configuration
-SlotConfiguration.setCurrentEdit = async function(configId, userId, storeId, pageType = 'cart') {
+SlotConfiguration.setCurrentEdit = async function(configId, userId, storeId, pageType) {
   // Clear any existing current_edit_id for this user/store/page
   await this.update(
     { current_edit_id: null },
@@ -482,7 +481,7 @@ SlotConfiguration.setCurrentEdit = async function(configId, userId, storeId, pag
 };
 
 // Get current editing configuration
-SlotConfiguration.getCurrentEdit = async function(userId, storeId, pageType = 'cart') {
+SlotConfiguration.getCurrentEdit = async function(userId, storeId, pageType) {
   return this.findOne({
     where: {
       user_id: userId,
