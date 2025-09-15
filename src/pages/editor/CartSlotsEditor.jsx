@@ -710,6 +710,10 @@ const CartSlotsEditor = ({
         isOpen={showCodeModal}
         onClose={() => setShowCodeModal(false)}
         configuration={cartLayoutConfig}
+        onSave={(newConfiguration) => {
+          setCartLayoutConfig(newConfiguration);
+          setHasUnsavedChanges(true);
+        }}
       />
     </div>
   );
