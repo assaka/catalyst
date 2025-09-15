@@ -553,6 +553,54 @@ SlotConfiguration.revertToVersion = async function(versionId, userId, storeId) {
   }
 };
 
+// Undo revert by either deleting draft or restoring previous draft state
+SlotConfiguration.undoRevert = async function(draftId, userId, storeId) {
+  const revertDraft = await this.findByPk(draftId);
+  if (!revertDraft || revertDraft.status !== 'draft' || !revertDraft.current_edit_id) {
+    throw new Error('No revert draft found or draft is not a revert');
+  }
+
+  const transaction = await this.sequelize.transaction();
+
+  try {
+    const revertMetadata = revertDraft.metadata?.revertMetadata;
+
+    if (revertMetadata?.noPreviousDraft) {
+      // No draft existed before revert - just delete the revert draft
+      await revertDraft.destroy({ transaction });
+      await transaction.commit();
+      return { restored: false, message: 'Revert draft deleted - no previous draft to restore' };
+    } else if (revertMetadata) {
+      // Restore the original draft state
+      revertDraft.configuration = revertMetadata.originalConfiguration;
+      revertDraft.parent_version_id = revertMetadata.originalParentVersionId;
+      revertDraft.current_edit_id = revertMetadata.originalCurrentEditId;
+      revertDraft.has_unpublished_changes = revertMetadata.originalHasUnpublishedChanges;
+      revertDraft.updated_at = new Date();
+
+      // Clear revert metadata
+      if (revertDraft.metadata) {
+        delete revertDraft.metadata.revertMetadata;
+        if (Object.keys(revertDraft.metadata).length === 0) {
+          revertDraft.metadata = null;
+        }
+      }
+
+      await revertDraft.save({ transaction });
+      await transaction.commit();
+      return { restored: true, draft: revertDraft, message: 'Previous draft state restored' };
+    } else {
+      // No metadata available - just delete the revert draft (fallback)
+      await revertDraft.destroy({ transaction });
+      await transaction.commit();
+      return { restored: false, message: 'Revert draft deleted - no restoration metadata available' };
+    }
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+
 // Set current editing configuration
 SlotConfiguration.setCurrentEdit = async function(configId, userId, storeId, pageType) {
   // Clear any existing current_edit_id for this user/store/page
@@ -566,14 +614,14 @@ SlotConfiguration.setCurrentEdit = async function(configId, userId, storeId, pag
       }
     }
   );
-  
+
   // Set the new current_edit_id
   const config = await this.findByPk(configId);
   if (config) {
     config.current_edit_id = configId;
     await config.save();
   }
-  
+
   return config;
 };
 

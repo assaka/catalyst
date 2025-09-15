@@ -381,28 +381,25 @@ const CartSlotsEditor = ({
       const storeId = getSelectedStoreId();
       if (storeId) {
         if (revertedConfig === null) {
-          // Null indicates draft was deleted (undo revert)
-          // Try to get draft configuration (may not exist after delete)
-          try {
-            const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
-            if (draftResponse && draftResponse.success && draftResponse.data) {
-              setDraftConfig(draftResponse.data);
-              setConfigurationStatus(draftResponse.data.status);
-              setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-            } else {
-              // No draft exists after undo
-              setDraftConfig(null);
-              setConfigurationStatus('published');
-              setHasUnsavedChanges(false);
-            }
-          } catch (draftError) {
-            // Draft doesn't exist, clear state
-            setDraftConfig(null);
-            setConfigurationStatus('published');
-            setHasUnsavedChanges(false);
-          }
+          // Draft was completely deleted (no previous draft to restore)
+          setDraftConfig(null);
+          setConfigurationStatus('published');
+          setHasUnsavedChanges(false);
 
           // Reload from latest published configuration
+          const configToUse = await getDraftOrStaticConfiguration();
+          if (configToUse) {
+            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+            setCartLayoutConfig(finalConfig);
+            lastSavedConfigRef.current = JSON.stringify(finalConfig);
+          }
+        } else if (revertedConfig && revertedConfig.status === 'draft' && !revertedConfig.current_edit_id) {
+          // Previous draft state was restored
+          setDraftConfig(revertedConfig);
+          setConfigurationStatus(revertedConfig.status);
+          setHasUnsavedChanges(revertedConfig.has_unpublished_changes || false);
+
+          // Reload the cart layout configuration from the restored draft
           const configToUse = await getDraftOrStaticConfiguration();
           if (configToUse) {
             const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);

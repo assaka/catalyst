@@ -424,6 +424,46 @@ router.get('/current-edit/:storeId/:pageType?', authMiddleware, async (req, res)
   }
 });
 
+// Undo revert with smart restoration of previous draft state
+router.post('/undo-revert/:draftId', authMiddleware, async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user.id;
+
+    // Get the draft to check ownership
+    const draft = await SlotConfiguration.findByPk(draftId);
+
+    if (!draft) {
+      return res.status(404).json({
+        success: false,
+        error: 'Draft not found'
+      });
+    }
+
+    if (draft.user_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to undo this revert'
+      });
+    }
+
+    const result = await SlotConfiguration.undoRevert(draftId, userId, draft.store_id);
+
+    res.json({
+      success: true,
+      data: result.draft || null,
+      message: result.message,
+      restored: result.restored
+    });
+  } catch (error) {
+    console.error('Error undoing revert:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Create a draft from published configuration (with has_unpublished_changes = false)
 router.post('/create-draft-from-published', authMiddleware, async (req, res) => {
   try {

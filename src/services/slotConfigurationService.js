@@ -115,6 +115,17 @@ class SlotConfigurationService {
     }
   }
 
+  // Undo revert with smart restoration of previous draft state
+  async undoRevert(draftId) {
+    try {
+      const response = await apiClient.post(`${API_BASE}/undo-revert/${draftId}`);
+      return response;
+    } catch (error) {
+      console.error('Error undoing revert:', error);
+      throw error;
+    }
+  }
+
   // Delete a draft
   async deleteDraft(configId) {
     try {

@@ -122,7 +122,7 @@ const PublishPanel = ({
     }
   };
 
-  // Undo revert by deleting the current draft
+  // Smart undo revert - either deletes draft or restores previous draft state
   const handleUndoRevert = async () => {
     if (!draftConfig?.id) return;
 
@@ -134,16 +134,20 @@ const PublishPanel = ({
 
     setUndoingRevert(true);
     try {
-      const response = await slotConfigurationService.deleteDraft(draftConfig.id);
+      const response = await slotConfigurationService.undoRevert(draftConfig.id);
       if (response.success) {
-        toast.success('Revert undone successfully');
+        if (response.restored) {
+          toast.success('Previous draft state restored');
+        } else {
+          toast.success('Revert undone - no previous draft to restore');
+        }
 
         // Reload version history
         await loadVersionHistory();
 
         // Notify parent component to reload draft
         if (onReverted) {
-          onReverted(null); // null indicates draft was deleted
+          onReverted(response.data); // Pass the restored draft or null
         }
       } else {
         toast.error(response.error || 'Failed to undo revert');
