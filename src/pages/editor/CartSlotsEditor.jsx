@@ -554,18 +554,11 @@ const CartSlotsEditor = ({
                 variant={hasUnsavedChanges ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
-                  // Close sidebar when opening publish panel or publishing
+                  // Close sidebar when opening publish panel
                   setIsSidebarVisible(false);
                   setSelectedElement(null);
-
-                  // If user has changes, publish directly instead of just opening panel
-                  if (hasUnsavedChanges) {
-                    console.log('🚀 Rocket Publish button clicked - publishing directly');
-                    handlePublish();
-                  } else {
-                    // No changes, just toggle the panel
-                    setShowPublishPanel(!showPublishPanel);
-                  }
+                  // Toggle the publish panel
+                  setShowPublishPanel(!showPublishPanel);
                 }}
                 className={`${showPublishPanel ?
                   (hasUnsavedChanges ? 'bg-green-600 border-green-600 hover:bg-green-700' : 'bg-blue-50 border-blue-200') :
