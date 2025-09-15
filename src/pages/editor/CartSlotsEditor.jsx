@@ -201,7 +201,8 @@ const CartSlotsEditor = ({
   }, [cartLayoutConfig]);
 
   // Compute when Publish button should be enabled
-  const canPublish = hasUnsavedChanges || (configurationStatus === 'draft');
+  // Only enable if there are actual unsaved changes to publish
+  const canPublish = hasUnsavedChanges;
 
   // Helper functions for slot styling
   const getSlotStyling = useCallback((slotId) => {
