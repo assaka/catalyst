@@ -4,14 +4,14 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
-import CodeEditor from '@/components/editor/ai-context/CodeEditor';
+import Editor from '@monaco-editor/react';
 
 // EditModeControls Component
 export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration, onPublish, hasChanges = false }) {
@@ -960,7 +960,7 @@ export function FilePickerModalWrapper({
   );
 }
 
-// CodeModal Component
+// CodeModal Component - Simple Monaco Editor with Undo/Redo
 export function CodeModal({
   isOpen,
   onClose,
@@ -970,7 +970,11 @@ export function CodeModal({
   const [editorValue, setEditorValue] = useState('');
   const [originalValue, setOriginalValue] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
-  const [editorKey, setEditorKey] = useState(0);
+  const [jsonError, setJsonError] = useState(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
 
   // Initialize editor value when modal opens
   useEffect(() => {
@@ -979,16 +983,66 @@ export function CodeModal({
       setEditorValue(jsonString);
       setOriginalValue(jsonString);
       setHasChanges(false);
-      // Force remount of CodeEditor to properly initialize
-      setEditorKey(prev => prev + 1);
+      setJsonError(null);
     }
   }, [isOpen, configuration]);
 
   if (!isOpen) return null;
 
+  const handleEditorMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // Set up undo/redo state tracking
+    const updateUndoRedoState = () => {
+      const model = editor.getModel();
+      if (model) {
+        setCanUndo(model.canUndo());
+        setCanRedo(model.canRedo());
+      }
+    };
+
+    // Update states on content change
+    editor.onDidChangeModelContent(() => {
+      updateUndoRedoState();
+    });
+
+    // Initial state
+    updateUndoRedoState();
+
+    // Focus the editor
+    editor.focus();
+  };
+
   const handleEditorChange = (value) => {
-    setEditorValue(value);
+    setEditorValue(value || '');
     setHasChanges(value !== originalValue);
+
+    // Validate JSON
+    try {
+      if (value) JSON.parse(value);
+      setJsonError(null);
+    } catch (err) {
+      setJsonError(err.message);
+    }
+  };
+
+  const handleUndo = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'undo');
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'redo');
+    }
+  };
+
+  const handleFormat = () => {
+    if (editorRef.current && !jsonError) {
+      editorRef.current.trigger('keyboard', 'editor.action.formatDocument');
+    }
   };
 
   const handleSave = () => {
@@ -996,32 +1050,71 @@ export function CodeModal({
       const parsedConfig = JSON.parse(editorValue);
       if (onSave) {
         onSave(parsedConfig);
-        setOriginalValue(editorValue); // Update the original to current
+        setOriginalValue(editorValue);
         setHasChanges(false);
       }
     } catch (err) {
       console.error('Invalid JSON:', err);
-      // The CodeEditor component will handle showing JSON validation errors
+      setJsonError(err.message);
     }
   };
 
   const handleRevert = () => {
     setEditorValue(originalValue);
     setHasChanges(false);
+    setJsonError(null);
+    if (editorRef.current) {
+      editorRef.current.setValue(originalValue);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full h-full flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900">Configuration JSON Editor</h2>
             {hasChanges && (
-              <Badge className="bg-yellow-100 text-yellow-800">Unsaved Changes</Badge>
+              <Badge className="bg-yellow-100 text-yellow-800">Modified</Badge>
+            )}
+            {jsonError && (
+              <Badge className="bg-red-100 text-red-800">Invalid JSON</Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
+            {/* Undo/Redo buttons */}
+            <Button
+              onClick={handleUndo}
+              variant="ghost"
+              size="sm"
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={handleRedo}
+              variant="ghost"
+              size="sm"
+              disabled={!canRedo}
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo className="w-4 h-4" />
+            </Button>
+
+            <div className="w-px h-6 bg-gray-300 mx-1" />
+
+            <Button
+              onClick={handleFormat}
+              variant="outline"
+              size="sm"
+              disabled={!!jsonError}
+              title="Format JSON (Shift+Alt+F)"
+            >
+              <Code className="w-3 h-3 mr-1" />
+              Format
+            </Button>
             <Button
               onClick={handleRevert}
               variant="outline"
@@ -1036,10 +1129,10 @@ export function CodeModal({
               onClick={handleSave}
               variant={hasChanges ? "default" : "outline"}
               size="sm"
-              disabled={!hasChanges}
+              disabled={!hasChanges || !!jsonError}
             >
               <Save className="w-3 h-3 mr-1" />
-              Save Changes
+              Save
             </Button>
             <Button
               onClick={onClose}
@@ -1052,27 +1145,53 @@ export function CodeModal({
           </div>
         </div>
 
-        {/* Advanced CodeEditor with diff capabilities */}
+        {/* JSON Error Display */}
+        {jsonError && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex-shrink-0">
+            <p className="text-sm text-red-700">
+              <span className="font-semibold">JSON Error:</span> {jsonError}
+            </p>
+          </div>
+        )}
+
+        {/* Monaco Editor */}
         <div className="flex-1 overflow-hidden">
-          <CodeEditor
-            key={editorKey}
+          <Editor
+            height="100%"
+            defaultLanguage="json"
             value={editorValue}
             onChange={handleEditorChange}
-            language="json"
-            fileName="slot-configuration.json"
-            enableDiffDetection={true}
-            originalCode={originalValue}
-            initialContent={originalValue}
-            readOnly={false}
-            className="h-full"
-            onManualEdit={() => setHasChanges(true)}
+            onMount={handleEditorMount}
+            theme="vs-light"
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              wordWrap: 'on',
+              lineNumbers: 'on',
+              renderLineHighlight: 'all',
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              formatOnPaste: true,
+              formatOnType: true,
+              tabSize: 2,
+              insertSpaces: true,
+              folding: true,
+              foldingStrategy: 'indentation',
+              showFoldingControls: 'always',
+              bracketPairColorization: {
+                enabled: true
+              },
+              guides: {
+                indentation: true,
+                bracketPairs: true
+              }
+            }}
           />
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex justify-between flex-shrink-0">
-          <span>Advanced JSON Editor with diff detection, version history, and revert capabilities</span>
-          <span>Tip: Use the diff view to see changes • Collapse unchanged sections • Version history available</span>
+        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex-shrink-0">
+          <span>Keyboard shortcuts: Ctrl+Z (Undo) • Ctrl+Y (Redo) • Ctrl+F (Find) • Shift+Alt+F (Format)</span>
         </div>
       </div>
     </div>
