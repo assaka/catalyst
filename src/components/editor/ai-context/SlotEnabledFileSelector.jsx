@@ -124,6 +124,11 @@ const SlotEnabledFileSelector = ({
                   file.pageType
                 );
                 file.hasUnpublishedChanges = draftResponse?.data?.has_unpublished_changes || false;
+                console.log(`📊 ${file.pageType} unpublished changes:`, {
+                  hasConfig,
+                  hasUnpublishedChanges: file.hasUnpublishedChanges,
+                  draftData: draftResponse?.data
+                });
               } catch (error) {
                 console.warn(`Could not check unpublished changes for ${file.pageType}:`, error);
                 file.hasUnpublishedChanges = false;
@@ -291,6 +296,13 @@ const SlotEnabledFileSelector = ({
                       >
                         Unpublished
                       </Badge>
+                    )}
+
+                    {/* Debug: Show unpublished status */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <span className="text-xs text-gray-400">
+                        {file.hasUnpublishedChanges ? '🟠' : '⚪'}
+                      </span>
                     )}
 
                     {/* Loading indicator */}

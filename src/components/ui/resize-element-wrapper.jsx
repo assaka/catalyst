@@ -214,11 +214,12 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const wrapperStyle = {
-    // Use calculated size or natural fit-content
-    width: size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'fit-content',
-    height: 'auto',
+    // Wrapper should always be fit-content to not affect parent layout
+    width: 'fit-content',
+    height: 'fit-content',
     maxWidth: '100%',
-    display: 'inline-block'
+    display: 'inline-block',
+    position: 'relative'
   };
 
   return (
@@ -244,32 +245,25 @@ const ResizeWrapper = ({
           // Clean conflicting classes for better control
           cleanConflictingClasses(children.props.className, children),
           "resize-none select-none",
-          isResizing && "cursor-se-resize",
-          // Add our desired size classes
-          isButtonElement(children) && "w-full",
-          isSvgElement(children) && "w-full h-full"
+          isResizing && "cursor-se-resize"
         ),
         style: {
           ...children.props.style,
-          // Don't set width on child since it's set on wrapper
-          ...(size.height !== 'auto' && size.height && { 
+          // Apply size directly to the child element
+          width: size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto',
+          ...(size.height !== 'auto' && size.height && {
             minHeight: `${size.height}${size.heightUnit || 'px'}`,
-            height: isSvgElement(children) ? '100%' : undefined
+            height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
           }),
-          width: '100%', // Child takes full width of wrapper
-          minWidth: '100%', // Force elements to respect full width
-          maxWidth: '100%', // Prevent elements from shrinking
           boxSizing: 'border-box',
-          display: 'block',
+          display: isButtonElement(children) ? 'inline-flex' : children.props.style?.display || 'block',
           border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
           borderRadius: '4px',
           transition: 'border-color 0.2s ease-in-out',
           position: 'relative',
           // Special handling for SVG elements
           ...(isSvgElement(children) ? {
-            objectFit: 'contain',
-            width: '100%',
-            height: '100%'
+            objectFit: 'contain'
           } : {})
         },
         // Add preserveAspectRatio for SVGs to maintain proper scaling

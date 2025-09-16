@@ -162,6 +162,17 @@ class SlotConfigurationService {
     }
   }
 
+  // Check if a draft configuration exists for a store/page type
+  async hasDraftConfiguration(storeId, pageType = 'cart') {
+    try {
+      const response = await this.getDraftConfiguration(storeId, pageType);
+      return response.success && response.data;
+    } catch (error) {
+      console.warn('No draft configuration found:', error);
+      return false;
+    }
+  }
+
   // Helper method to save configuration with auto-draft creation
   async saveConfiguration(storeId, configuration, pageType = 'cart') {
     try {
