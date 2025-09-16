@@ -79,7 +79,7 @@ const SlotEnabledFileSelector = ({
 
   useEffect(() => {
     loadSlotFiles();
-  }, [selectedStore?.id]);
+  }, [selectedStore?.id, refreshTrigger]);
 
   const loadSlotFiles = async () => {
     setLoading(true);
@@ -233,6 +233,49 @@ const SlotEnabledFileSelector = ({
   const handleRefresh = () => {
     loadSlotFiles();
   };
+
+  // Method to refresh unpublished status for a specific page type
+  const refreshPageStatus = async (pageType) => {
+    if (!selectedStore?.id) return;
+
+    try {
+      const draftResponse = await slotConfigurationService.getDraftConfiguration(
+        selectedStore.id,
+        pageType
+      );
+      const hasUnpublishedChanges = draftResponse?.data?.has_unpublished_changes || false;
+
+      console.log(`🔄 Refreshing ${pageType} status:`, { hasUnpublishedChanges });
+
+      // Update the specific file's status
+      setSlotFiles(prevFiles =>
+        prevFiles.map(file =>
+          file.pageType === pageType
+            ? { ...file, hasUnpublishedChanges }
+            : file
+        )
+      );
+    } catch (error) {
+      console.warn(`Could not refresh status for ${pageType}:`, error);
+      // Set to false if we can't fetch the status
+      setSlotFiles(prevFiles =>
+        prevFiles.map(file =>
+          file.pageType === pageType
+            ? { ...file, hasUnpublishedChanges: false }
+            : file
+        )
+      );
+    }
+  };
+
+  // Expose the refresh function to parent components
+  React.useEffect(() => {
+    if (window.slotFileSelectorRefresh) {
+      window.slotFileSelectorRefresh = refreshPageStatus;
+    } else {
+      window.slotFileSelectorRefresh = refreshPageStatus;
+    }
+  }, [selectedStore?.id]);
 
   if (loading) {
     return (

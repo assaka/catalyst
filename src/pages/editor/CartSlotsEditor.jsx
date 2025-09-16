@@ -350,6 +350,12 @@ const CartSlotsEditor = ({
       setHasUnsavedChanges(false);  // Mark as saved after successful publish
       setConfigurationStatus('draft'); // Set to draft since new draft was created based on published
       lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
+
+      // Refresh the SlotEnabledFileSelector badge status
+      if (window.slotFileSelectorRefresh) {
+        window.slotFileSelectorRefresh('cart');
+      }
+
       setTimeout(() => setPublishStatus(''), 3000);
     } catch (error) {
       console.error('❌ Failed to publish configuration:', error);
@@ -380,6 +386,11 @@ const CartSlotsEditor = ({
         const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
         if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
           setLatestPublished(publishedResponse.data[0]);
+        }
+
+        // Refresh the SlotEnabledFileSelector badge status
+        if (window.slotFileSelectorRefresh) {
+          window.slotFileSelectorRefresh('cart');
         }
       }
     } catch (error) {
