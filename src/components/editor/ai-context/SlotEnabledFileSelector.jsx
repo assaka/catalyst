@@ -20,7 +20,8 @@ import {
 const SlotEnabledFileSelector = ({
   onFileSelect,
   selectedFile = null,
-  className = ''
+  className = '',
+  refreshTrigger = 0 // Add refresh trigger prop
 }) => {
   const { selectedStore } = useStoreSelection();
   const [slotFiles, setSlotFiles] = useState([]);

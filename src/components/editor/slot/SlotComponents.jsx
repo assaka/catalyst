@@ -970,6 +970,7 @@ export function CodeModal({
   const [editorValue, setEditorValue] = useState('');
   const [originalValue, setOriginalValue] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
 
   // Initialize editor value when modal opens
   useEffect(() => {
@@ -978,6 +979,8 @@ export function CodeModal({
       setEditorValue(jsonString);
       setOriginalValue(jsonString);
       setHasChanges(false);
+      // Force remount of CodeEditor to properly initialize
+      setEditorKey(prev => prev + 1);
     }
   }, [isOpen, configuration]);
 
@@ -1052,13 +1055,17 @@ export function CodeModal({
         {/* Advanced CodeEditor with diff capabilities */}
         <div className="flex-1 overflow-hidden">
           <CodeEditor
+            key={editorKey}
             value={editorValue}
             onChange={handleEditorChange}
             language="json"
             fileName="slot-configuration.json"
             enableDiffDetection={true}
             originalCode={originalValue}
+            initialContent={originalValue}
+            readOnly={false}
             className="h-full"
+            onManualEdit={() => setHasChanges(true)}
           />
         </div>
 
