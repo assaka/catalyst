@@ -224,6 +224,19 @@ const CartSlotsEditor = ({
     }
   }, [cartLayoutConfig]);
 
+  // Refresh badge status when hasUnsavedChanges changes
+  useEffect(() => {
+    if (configurationLoadedRef.current && hasUnsavedChanges) {
+      // When user makes changes, refresh the badge to show "Unpublished"
+      if (window.slotFileSelectorRefresh) {
+        // Small delay to ensure the database is updated first
+        setTimeout(() => {
+          window.slotFileSelectorRefresh('cart');
+        }, 500);
+      }
+    }
+  }, [hasUnsavedChanges]);
+
   // Compute when Publish button should be enabled
   // Only enable if there are actual unsaved changes to publish
   const canPublish = hasUnsavedChanges;
@@ -284,6 +297,11 @@ const CartSlotsEditor = ({
       // hasUnsavedChanges should only be cleared after successful publish, not save
       setConfigurationStatus('draft'); // Saving creates a draft
       lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
+
+      // Refresh the SlotEnabledFileSelector badge status after saving changes
+      if (window.slotFileSelectorRefresh) {
+        window.slotFileSelectorRefresh('cart');
+      }
     }
     return result;
   }, [baseSaveConfiguration, cartLayoutConfig]);
