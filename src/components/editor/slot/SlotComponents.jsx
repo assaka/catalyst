@@ -1008,10 +1008,10 @@ export function CodeModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[95vh] m-4 flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900">Configuration JSON Editor</h2>
             {hasChanges && (
@@ -1063,7 +1063,7 @@ export function CodeModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex justify-between">
+        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex justify-between flex-shrink-0">
           <span>Advanced JSON Editor with diff detection, version history, and revert capabilities</span>
           <span>Tip: Use the diff view to see changes • Collapse unchanged sections • Version history available</span>
         </div>
