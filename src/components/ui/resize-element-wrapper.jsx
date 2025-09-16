@@ -222,6 +222,100 @@ const ResizeWrapper = ({
     position: 'relative'
   };
 
+  // For button elements, apply sizing and resize functionality directly to the button
+  // without creating an extra wrapper div
+  if (isButtonElement(children)) {
+    return React.cloneElement(children, {
+      ref: wrapperRef,
+      className: cn(
+        children.props.className,
+        "resize-none select-none relative group",
+        isResizing && "cursor-se-resize"
+      ),
+      style: {
+        ...children.props.style,
+        // Apply size directly to the button element
+        width: size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto',
+        ...(size.height !== 'auto' && size.height && {
+          minHeight: `${size.height}${size.heightUnit || 'px'}`,
+          height: `${size.height}${size.heightUnit || 'px'}`
+        }),
+        boxSizing: 'border-box',
+        border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : children.props.style?.border || 'none',
+        transition: 'border-color 0.2s ease-in-out',
+        position: 'relative'
+      },
+      onMouseEnter: (e) => {
+        if (!disabled) {
+          setIsHovered(true);
+        }
+        // Call original onMouseEnter if it exists
+        if (children.props.onMouseEnter) {
+          children.props.onMouseEnter(e);
+        }
+      },
+      onMouseLeave: (e) => {
+        if (!disabled) {
+          setIsHovered(false);
+        }
+        // Call original onMouseLeave if it exists
+        if (children.props.onMouseLeave) {
+          children.props.onMouseLeave(e);
+        }
+      },
+      children: [
+        children.props.children,
+        // Resize handle
+        !disabled && (
+          <div
+            key="resize-handle"
+            className={cn(
+              "absolute cursor-se-resize z-20",
+              "transition-opacity duration-200",
+              "flex items-center justify-center",
+              isHovered || isResizing ? "opacity-100" : "opacity-0"
+            )}
+            onMouseDown={handleMouseDown}
+            style={{
+              bottom: '-2px',
+              right: '-2px',
+              width: '12px',
+              height: '12px',
+              background: 'rgba(59, 130, 246, 0.8)',
+              borderRadius: '0 0 4px 0',
+              border: '1px solid rgba(59, 130, 246, 1)'
+            }}
+          >
+            <svg
+              width="8"
+              height="8"
+              viewBox="0 0 8 8"
+              className="text-white"
+            >
+              <path
+                d="M1,7 L7,1 M3,7 L7,3 M5,7 L7,5"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+          </div>
+        ),
+        // Size feedback tooltip during resize
+        isResizing && !disabled && (
+          <div
+            key="resize-tooltip"
+            className="fixed top-4 right-4 bg-black/80 text-white text-xs font-medium px-3 py-1.5 rounded shadow-lg z-50 pointer-events-none"
+          >
+            {Math.round(size.width)}{size.widthUnit || 'px'} × {size.height === 'auto' ? 'auto' : Math.round(size.height) + (size.heightUnit || 'px')}
+          </div>
+        )
+      ].filter(Boolean)
+    });
+  }
+
+  // For non-button elements, use the wrapper div approach
   return (
     <div
       ref={wrapperRef}
@@ -256,7 +350,7 @@ const ResizeWrapper = ({
             height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
           }),
           boxSizing: 'border-box',
-          display: isButtonElement(children) ? 'inline-flex' : children.props.style?.display || 'block',
+          display: children.props.style?.display || 'block',
           border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
           borderRadius: '4px',
           transition: 'border-color 0.2s ease-in-out',

@@ -635,108 +635,124 @@ export function HierarchicalSlotRenderer({
           )}
 
           {slot.type !== 'text' && (
-            <EditableElement
-              slotId={slot.id}
-              mode={mode}
-              onClick={onElementClick}
-              className={''}
-              style={['button', 'input'].includes(slot.type) ? {} : (slot.styles || {})}
-              canResize={!['container', 'grid', 'flex'].includes(slot.type)}
-              draggable={false}
-              selectedElementId={selectedElementId}
-              onElementResize={slot.type === 'button' ? (newSize) => {
-                setPageConfig(prevConfig => {
-                  const updatedSlots = { ...prevConfig?.slots };
-                  if (updatedSlots[slot.id]) {
-                    updatedSlots[slot.id] = {
-                      ...updatedSlots[slot.id],
-                      styles: {
-                        ...updatedSlots[slot.id].styles,
-                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                      }
-                    };
-                  }
-                  return { ...prevConfig, slots: updatedSlots };
-                });
-              } : undefined}
-            >
-              {slot.type === 'button' && (
-                <button
-                  className={`${slot.className}`}
-                  style={{
-                    ...slot.styles,
-                    width: '100%',
-                    height: '100%',
-                    minWidth: 'auto',
-                    minHeight: 'auto'
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: String(slot.content || `Button: ${slot.id}`)
-                  }}
-                />
-              )}
-              {slot.type === 'input' && (
-                <input
-                  className={`w-full h-full ${slot.className}`}
-                  style={{
-                    ...slot.styles,
-                    minWidth: 'auto',
-                    minHeight: 'auto'
-                  }}
-                  placeholder={String(slot.content || '')}
-                  type="text"
-                />
-              )}
-              {slot.type === 'image' && (
-                <>
-                  {slot.content ? (
-                    <img
-                      src={slot.content}
-                      alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
-                      className="w-full h-full object-contain"
+            <>
+              {slot.type === 'button' ? (
+                <EditableElement
+                  slotId={slot.id}
+                  mode={mode}
+                  onClick={onElementClick}
+                  className={''}
+                  style={{}}
+                  canResize={false}
+                  draggable={false}
+                  selectedElementId={selectedElementId}
+                >
+                  <ResizeWrapper
+                    minWidth={50}
+                    minHeight={20}
+                    onResize={(newSize) => {
+                      setPageConfig(prevConfig => {
+                        const updatedSlots = { ...prevConfig?.slots };
+                        if (updatedSlots[slot.id]) {
+                          updatedSlots[slot.id] = {
+                            ...updatedSlots[slot.id],
+                            styles: {
+                              ...updatedSlots[slot.id].styles,
+                              width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                              height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                            }
+                          };
+                        }
+                        return { ...prevConfig, slots: updatedSlots };
+                      });
+                    }}
+                  >
+                    <button
+                      className={`${slot.className}`}
                       style={{
-                        maxWidth: '100%',
-                        maxHeight: '100%'
+                        ...slot.styles,
+                        minWidth: 'auto',
+                        minHeight: 'auto'
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: String(slot.content || `Button: ${slot.id}`)
                       }}
                     />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
-                      <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-500">No image selected</span>
+                  </ResizeWrapper>
+                </EditableElement>
+              ) : (
+                <EditableElement
+                  slotId={slot.id}
+                  mode={mode}
+                  onClick={onElementClick}
+                  className={''}
+                  style={['input'].includes(slot.type) ? {} : (slot.styles || {})}
+                  canResize={!['container', 'grid', 'flex'].includes(slot.type)}
+                  draggable={false}
+                  selectedElementId={selectedElementId}
+                >
+                  {slot.type === 'input' && (
+                    <input
+                      className={`w-full h-full ${slot.className}`}
+                      style={{
+                        ...slot.styles,
+                        minWidth: 'auto',
+                        minHeight: 'auto'
+                      }}
+                      placeholder={String(slot.content || '')}
+                      type="text"
+                    />
+                  )}
+                  {slot.type === 'image' && (
+                    <>
+                      {slot.content ? (
+                        <img
+                          src={slot.content}
+                          alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
+                          className="w-full h-full object-contain"
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '100%'
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
+                          <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+                          <span className="text-sm text-gray-500">No image selected</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
+                    <div
+                      className={`w-full h-full grid grid-cols-12 gap-2 ${slot.className}`}
+                      style={{
+                        ...slot.styles,
+                        minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
+                      }}
+                    >
+                      <HierarchicalSlotRenderer
+                        slots={slots}
+                        parentId={slot.id}
+                        mode={mode}
+                        viewMode={viewMode}
+                        showBorders={showBorders}
+                        currentDragInfo={currentDragInfo}
+                        setCurrentDragInfo={setCurrentDragInfo}
+                        onElementClick={onElementClick}
+                        onGridResize={onGridResize}
+                        onSlotHeightResize={onSlotHeightResize}
+                        onSlotDrop={onSlotDrop}
+                        onResizeStart={onResizeStart}
+                        onResizeEnd={onResizeEnd}
+                        selectedElementId={selectedElementId}
+                        setPageConfig={setPageConfig}
+                      />
                     </div>
                   )}
-                </>
+                </EditableElement>
               )}
-              {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
-                <div
-                  className={`w-full h-full grid grid-cols-12 gap-2 ${slot.className}`}
-                  style={{
-                    ...slot.styles,
-                    minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
-                  }}
-                >
-                  <HierarchicalSlotRenderer
-                    slots={slots}
-                    parentId={slot.id}
-                    mode={mode}
-                    viewMode={viewMode}
-                    showBorders={showBorders}
-                    currentDragInfo={currentDragInfo}
-                    setCurrentDragInfo={setCurrentDragInfo}
-                    onElementClick={onElementClick}
-                    onGridResize={onGridResize}
-                    onSlotHeightResize={onSlotHeightResize}
-                    onSlotDrop={onSlotDrop}
-                    onResizeStart={onResizeStart}
-                    onResizeEnd={onResizeEnd}
-                    selectedElementId={selectedElementId}
-                    setPageConfig={setPageConfig}
-                  />
-                </div>
-              )}
-            </EditableElement>
-          )}
+            </>
         </div>
       </GridColumn>
     );
