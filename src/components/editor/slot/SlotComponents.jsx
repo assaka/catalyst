@@ -11,7 +11,7 @@ import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
-import Editor from '@monaco-editor/react';
+import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 
 // EditModeControls Component
 export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration, onPublish, hasChanges = false }) {
@@ -967,54 +967,25 @@ export function CodeModal({
   configuration = {},
   onSave
 }) {
-  const [copied, setCopied] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [editorValue, setEditorValue] = useState('');
+  const [originalValue, setOriginalValue] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
-  const [jsonError, setJsonError] = useState(null);
-  const editorRef = useRef(null);
 
   // Initialize editor value when modal opens
   useEffect(() => {
     if (isOpen) {
       const jsonString = JSON.stringify(configuration, null, 2);
       setEditorValue(jsonString);
+      setOriginalValue(jsonString);
       setHasChanges(false);
-      setJsonError(null);
-      setSaved(false);
     }
   }, [isOpen, configuration]);
 
   if (!isOpen) return null;
 
-  const handleEditorMount = (editor) => {
-    editorRef.current = editor;
-    // Focus the editor when mounted
-    editor.focus();
-  };
-
   const handleEditorChange = (value) => {
     setEditorValue(value);
-    setHasChanges(true);
-    setSaved(false);
-
-    // Validate JSON
-    try {
-      JSON.parse(value);
-      setJsonError(null);
-    } catch (err) {
-      setJsonError(err.message);
-    }
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(editorValue);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
+    setHasChanges(value !== originalValue);
   };
 
   const handleSave = () => {
@@ -1022,32 +993,23 @@ export function CodeModal({
       const parsedConfig = JSON.parse(editorValue);
       if (onSave) {
         onSave(parsedConfig);
-        setSaved(true);
+        setOriginalValue(editorValue); // Update the original to current
         setHasChanges(false);
-        setTimeout(() => setSaved(false), 2000);
       }
     } catch (err) {
       console.error('Invalid JSON:', err);
-      setJsonError(err.message);
+      // The CodeEditor component will handle showing JSON validation errors
     }
   };
 
-  const handleFormat = () => {
-    try {
-      const parsed = JSON.parse(editorValue);
-      const formatted = JSON.stringify(parsed, null, 2);
-      setEditorValue(formatted);
-      if (editorRef.current) {
-        editorRef.current.setValue(formatted);
-      }
-    } catch (err) {
-      console.error('Cannot format invalid JSON:', err);
-    }
+  const handleRevert = () => {
+    setEditorValue(originalValue);
+    setHasChanges(false);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] m-4 flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[95vh] m-4 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -1055,46 +1017,26 @@ export function CodeModal({
             {hasChanges && (
               <Badge className="bg-yellow-100 text-yellow-800">Unsaved Changes</Badge>
             )}
-            {jsonError && (
-              <Badge className="bg-red-100 text-red-800">Invalid JSON</Badge>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={handleFormat}
+              onClick={handleRevert}
               variant="outline"
               size="sm"
-              disabled={!!jsonError}
-              title="Format JSON"
+              disabled={!hasChanges}
+              title="Revert all changes"
             >
-              <Code className="w-3 h-3 mr-1" />
-              Format
-            </Button>
-            <Button
-              onClick={handleCopy}
-              variant="outline"
-              size="sm"
-            >
-              <Copy className="w-3 h-3 mr-1" />
-              {copied ? 'Copied!' : 'Copy'}
+              <X className="w-3 h-3 mr-1" />
+              Revert
             </Button>
             <Button
               onClick={handleSave}
               variant={hasChanges ? "default" : "outline"}
               size="sm"
-              disabled={!!jsonError || !hasChanges}
+              disabled={!hasChanges}
             >
-              {saved ? (
-                <>
-                  <Check className="w-3 h-3 mr-1" />
-                  Saved
-                </>
-              ) : (
-                <>
-                  <Save className="w-3 h-3 mr-1" />
-                  Save
-                </>
-              )}
+              <Save className="w-3 h-3 mr-1" />
+              Save Changes
             </Button>
             <Button
               onClick={onClose}
@@ -1107,53 +1049,23 @@ export function CodeModal({
           </div>
         </div>
 
-        {/* JSON Error Display */}
-        {jsonError && (
-          <div className="bg-red-50 border-b border-red-200 px-4 py-2">
-            <p className="text-sm text-red-700">
-              <span className="font-semibold">JSON Error:</span> {jsonError}
-            </p>
-          </div>
-        )}
-
-        {/* Monaco Editor */}
-        <div className="flex-1 overflow-hidden" style={{ minHeight: '500px', height: '500px' }}>
-          <Editor
-            height="500px"
-            defaultLanguage="json"
+        {/* Advanced CodeEditor with diff capabilities */}
+        <div className="flex-1 overflow-hidden">
+          <CodeEditor
             value={editorValue}
             onChange={handleEditorChange}
-            onMount={handleEditorMount}
-            theme="vs-light"
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              wordWrap: 'on',
-              lineNumbers: 'on',
-              renderLineHighlight: 'all',
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              formatOnPaste: true,
-              formatOnType: true,
-              tabSize: 2,
-              insertSpaces: true,
-              folding: true,
-              foldingStrategy: 'indentation',
-              showFoldingControls: 'always',
-              bracketPairColorization: {
-                enabled: true
-              },
-              guides: {
-                indentation: true,
-                bracketPairs: true
-              }
-            }}
+            language="json"
+            fileName="slot-configuration.json"
+            enableDiffDetection={true}
+            originalCode={originalValue}
+            className="h-full"
           />
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500">
-          <span>Tip: Use Ctrl+Space for autocomplete • Ctrl+F to search • Ctrl+A then Shift+Alt+F to format</span>
+        <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex justify-between">
+          <span>Advanced JSON Editor with diff detection, version history, and revert capabilities</span>
+          <span>Tip: Use the diff view to see changes • Collapse unchanged sections • Version history available</span>
         </div>
       </div>
     </div>
