@@ -115,8 +115,25 @@ const SlotEnabledFileSelector = ({
               file.pageType
             );
             file.hasSlotConfig = hasConfig;
+
+            // Check for unpublished changes
+            if (hasConfig) {
+              try {
+                const draftResponse = await slotConfigurationService.getDraftConfiguration(
+                  selectedStore.id,
+                  file.pageType
+                );
+                file.hasUnpublishedChanges = draftResponse?.data?.has_unpublished_changes || false;
+              } catch (error) {
+                console.warn(`Could not check unpublished changes for ${file.pageType}:`, error);
+                file.hasUnpublishedChanges = false;
+              }
+            } else {
+              file.hasUnpublishedChanges = false;
+            }
           } catch (error) {
             console.warn(`Could not check slot config for ${file.pageType}:`, error);
+            file.hasUnpublishedChanges = false;
           }
         }
       }
@@ -128,7 +145,8 @@ const SlotEnabledFileSelector = ({
       setSlotFiles(slotEnabledFiles.map(file => ({
         ...file,
         exists: true,
-        hasSlotConfig: false
+        hasSlotConfig: false,
+        hasUnpublishedChanges: false
       })));
     }
     setLoading(false);
@@ -178,7 +196,11 @@ const SlotEnabledFileSelector = ({
       // Update the slot config status in our local state
       setSlotFiles(prevFiles =>
         prevFiles.map(f =>
-          f.id === file.id ? { ...f, hasSlotConfig: true } : f
+          f.id === file.id ? {
+            ...f,
+            hasSlotConfig: true,
+            hasUnpublishedChanges: draftResult.draft.has_unpublished_changes || false
+          } : f
         )
       );
 
@@ -261,11 +283,22 @@ const SlotEnabledFileSelector = ({
                   <div className="flex items-center space-x-2">
                     <span className="font-medium text-sm">{file.name}</span>
 
+                    {/* Unpublished Changes Indicator */}
+                    {file.hasUnpublishedChanges && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5"
+                      >
+                        Unpublished
+                      </Badge>
+                    )}
+
                     {/* Loading indicator */}
                     {loadingDraft === file.id && (
                       <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                     )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{file.description}</p>
                 </div>
               </div>
             );
