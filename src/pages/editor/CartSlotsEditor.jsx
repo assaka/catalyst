@@ -734,9 +734,12 @@ const CartSlotsEditor = ({
         configuration={cartLayoutConfig}
         localSaveStatus={localSaveStatus}
         onSave={async (newConfiguration) => {
+          console.log('🎯 CodeModal onSave called with configuration:', newConfiguration);
           setCartLayoutConfig(newConfiguration);
           setHasUnsavedChanges(true);
-          await saveConfiguration();
+          console.log('🚀 Calling saveConfiguration...');
+          await saveConfiguration(newConfiguration);
+          console.log('✅ Save completed, closing modal');
           setShowCodeModal(false);
         }}
       />

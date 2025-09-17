@@ -176,18 +176,27 @@ class SlotConfigurationService {
   // Helper method to save configuration with auto-draft creation
   async saveConfiguration(storeId, configuration, pageType = 'cart') {
     try {
+      console.log('🔧 SlotConfigurationService.saveConfiguration called:', {
+        storeId,
+        pageType,
+        configuration: configuration
+      });
+
       // First get or create a draft
       const draftResponse = await this.getDraftConfiguration(storeId, pageType);
       const draftConfig = draftResponse.data;
+      console.log('📝 Draft config retrieved:', draftConfig);
 
       // Transform CartSlotsEditor format to SlotConfiguration API format
       const apiConfiguration = this.transformToSlotConfigFormat(configuration);
+      console.log('🔄 Transformed configuration:', apiConfiguration);
 
       // Update the draft with new configuration
       const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration);
+      console.log('✅ Update response:', updateResponse);
       return updateResponse;
     } catch (error) {
-      console.error('Error saving configuration:', error);
+      console.error('❌ Error saving configuration:', error);
       throw error;
     }
   }
