@@ -177,18 +177,19 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
                     ? 'bg-red-100 text-red-700 border border-red-200'
                     : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                 }`}>
-            )})()}
-              <div className={`w-2 h-2 rounded-full ${
-                connectionStatus === 'connected'
-                  ? 'bg-green-500'
-                  : connectionStatus === 'failed'
-                  ? 'bg-red-500'
-                  : 'bg-yellow-500 animate-pulse'
-              }`}></div>
-              {connectionStatus === 'connected' && 'Connected'}
-              {connectionStatus === 'failed' && 'Failed'}
-              {connectionStatus === 'checking' && 'Checking...'}
-            </div>
+                  <div className={`w-2 h-2 rounded-full ${
+                    connectionStatus === 'connected'
+                      ? 'bg-green-500'
+                      : connectionStatus === 'failed'
+                      ? 'bg-red-500'
+                      : 'bg-yellow-500 animate-pulse'
+                  }`}></div>
+                  {connectionStatus === 'connected' && 'Connected'}
+                  {connectionStatus === 'failed' && 'Failed'}
+                  {connectionStatus === 'checking' && 'Checking...'}
+                </div>
+              );
+            })()}
           </div>
 
           <Button onClick={onClose} variant="ghost" size="sm" className="h-6 w-6 p-0">
