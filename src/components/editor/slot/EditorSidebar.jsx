@@ -450,16 +450,16 @@ const EditorSidebar = ({
     // This eliminates React re-render lag completely
   }, []);
 
-  // Secure HTML content change handler with XSS prevention
-  const handleHtmlContentChange = useCallback((e) => {
+  // HTML content change handler for real-time editing
+  const handleHtmlContentInput = useCallback((e) => {
+    // Allow typing but don't save until blur
     const newHtml = e.target.value;
-    
-    // Validate HTML in real-time for security feedback
+
+    // Update validation in real-time for immediate feedback
     if (newHtml.trim()) {
       const validation = validateEditorHtml(newHtml);
       setHtmlValidation(validation);
     } else {
-      // Clear validation for empty input
       setHtmlValidation({
         error: null,
         isValid: true,
@@ -469,6 +469,7 @@ const EditorSidebar = ({
       });
     }
   }, []);
+
 
   // Save text content when user stops typing (onBlur)
   const handleTextContentSave = useCallback(() => {
@@ -481,12 +482,14 @@ const EditorSidebar = ({
 
   // Save HTML content when user stops typing (onBlur) with XSS prevention
   const handleHtmlContentSave = useCallback(() => {
-    if (slotId && onTextChange && !isInitializing && htmlContentRef.current) {
+    if (slotId && !isInitializing && htmlContentRef.current) {
       const currentHtml = htmlContentRef.current.value;
 
-      // If HTML is empty, save empty string
+      // If HTML is empty, clear content
       if (!currentHtml || currentHtml.trim() === '') {
-        onTextChange(slotId, '');
+        if (onTextChange) {
+          onTextChange(slotId, '');
+        }
         setLocalHtmlContent('');
         setHtmlValidation({
           error: null,
@@ -501,40 +504,101 @@ const EditorSidebar = ({
       // Parse and sanitize HTML securely
       const parsed = parseEditorHtml(currentHtml);
 
-      // Always save something - either sanitized HTML or plain text fallback
       if (parsed.sanitizedHtml) {
-        // Save the sanitized HTML (XSS-safe)
-        onTextChange(slotId, parsed.sanitizedHtml);
-        setLocalHtmlContent(parsed.sanitizedHtml); // Update with sanitized version
+        try {
+          // Parse the sanitized HTML to extract element structure
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = parsed.sanitizedHtml;
+          const element = tempDiv.firstElementChild;
 
-        // Update validation state
-        setHtmlValidation({
-          error: parsed.error,
-          isValid: parsed.isValid,
-          isSafe: true, // parseEditorHtml ensures safety
-          wasModified: parsed.wasModified,
-          warnings: parsed.wasModified ? ['HTML was sanitized for security'] : []
-        });
+          if (element) {
+            // Extract text content for the text field
+            const textContent = element.textContent || element.innerText || '';
 
-        // Update the textarea with sanitized content if it was modified
-        if (parsed.wasModified && htmlContentRef.current) {
-          htmlContentRef.current.value = parsed.sanitizedHtml;
+            // Extract classes and styles for onClassChange
+            const elementClasses = element.className || '';
+            const elementStyles = {};
+
+            // Get inline styles
+            if (element.style) {
+              for (let i = 0; i < element.style.length; i++) {
+                const property = element.style[i];
+                elementStyles[property] = element.style.getPropertyValue(property);
+              }
+            }
+
+            // Extract attributes for links, buttons, etc.
+            const attributes = {};
+            if (element.tagName === 'A') {
+              attributes.href = element.href || '#';
+              attributes.target = element.target || '_self';
+              attributes.rel = element.rel || 'noopener noreferrer';
+            }
+
+            // Save text content separately
+            if (onTextChange) {
+              onTextChange(slotId, textContent);
+            }
+
+            // Save classes and styles
+            if (onClassChange) {
+              onClassChange(slotId, elementClasses, elementStyles);
+            }
+
+            // Update local HTML content display
+            setLocalHtmlContent(parsed.sanitizedHtml);
+
+            console.log('🎨 HTML Content parsed and saved:', {
+              textContent,
+              elementClasses,
+              elementStyles,
+              attributes,
+              sanitizedHtml: parsed.sanitizedHtml
+            });
+
+          } else {
+            // No element found, treat as plain text
+            if (onTextChange) {
+              onTextChange(slotId, parsed.textContent);
+            }
+            setLocalHtmlContent(parsed.textContent);
+          }
+
+          // Update validation state
+          setHtmlValidation({
+            error: parsed.error,
+            isValid: parsed.isValid,
+            isSafe: true,
+            wasModified: parsed.wasModified,
+            warnings: parsed.wasModified ? ['HTML was sanitized for security'] : []
+          });
+
+          // Update the textarea with sanitized content if it was modified
+          if (parsed.wasModified && htmlContentRef.current) {
+            htmlContentRef.current.value = parsed.sanitizedHtml;
+          }
+
+        } catch (parseError) {
+          console.error('Failed to parse HTML element:', parseError);
+          // Fallback to plain text
+          if (onTextChange) {
+            onTextChange(slotId, parsed.textContent);
+          }
+          setLocalHtmlContent(parsed.textContent);
+
+          setHtmlValidation({
+            error: 'HTML structure parsing failed, saved as text',
+            isValid: false,
+            isSafe: true,
+            wasModified: true,
+            warnings: ['Content saved as plain text due to parsing errors']
+          });
         }
-      } else if (parsed.textContent) {
-        // Fallback: save as plain text if HTML parsing completely failed
-        onTextChange(slotId, parsed.textContent);
-        setLocalHtmlContent(parsed.textContent);
-
-        setHtmlValidation({
-          error: 'HTML parsing failed, saved as plain text',
-          isValid: false,
-          isSafe: true,
-          wasModified: true,
-          warnings: ['Content saved as plain text due to HTML errors']
-        });
       } else {
-        // Last resort: save the original content but show error
-        onTextChange(slotId, currentHtml);
+        // Parsing completely failed, save original but show error
+        if (onTextChange) {
+          onTextChange(slotId, currentHtml);
+        }
         setLocalHtmlContent(currentHtml);
 
         setHtmlValidation({
@@ -546,7 +610,7 @@ const EditorSidebar = ({
         });
       }
     }
-  }, [slotId, onTextChange, isInitializing]);
+  }, [slotId, onTextChange, onClassChange, isInitializing]);
 
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
@@ -982,7 +1046,7 @@ const EditorSidebar = ({
                   ref={htmlContentRef}
                   id="htmlContent"
                   defaultValue={localHtmlContent}
-                  onChange={handleHtmlContentChange}
+                  onInput={handleHtmlContentInput}
                   onBlur={handleHtmlContentSave}
                   className={`w-full mt-1 text-xs font-mono border rounded-md p-2 h-32 resize-none ${
                     htmlValidation.error 
