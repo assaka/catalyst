@@ -454,7 +454,7 @@ export function GridColumn({
   return (
     <div
       className={`${
-        mode === 'edit' && !isNested
+        mode === 'edit'
           ? `${showBorders ? 'border-2 border-dashed' : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
                 ? 'border-blue-500 bg-blue-50/40 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
@@ -465,10 +465,8 @@ export function GridColumn({
                 : showBorders
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
-            } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
-          : isNested
-            ? '' // Minimal styling for nested slots
-            : 'overflow-hidden'
+            } ${isNested ? '' : 'p-2'} ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
+          : 'overflow-hidden'
       } relative responsive-slot ${
         ['container', 'grid', 'flex'].includes(slot?.type)
           ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
