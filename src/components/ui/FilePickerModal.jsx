@@ -18,52 +18,14 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setLoading(true);
       setError(null);
 
-      // Use direct fetch instead of problematic API client
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      // Use apiClient like MediaStorage does - it handles authentication properly
+      console.log('🔍 Making request using apiClient...');
+      const response = await apiClient.get('/storage/list?folder=library');
+      console.log('🔍 apiClient response received:', response);
 
-      // Get authentication token from localStorage
-      const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
-
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-
-      // Add authorization header if token exists
-      if (storeOwnerToken) {
-        headers['Authorization'] = `Bearer ${storeOwnerToken}`;
-      }
-
-      console.log('🔍 Making authenticated request with headers:', headers);
-
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      try {
-        const response = await fetch(`${apiUrl}/api/storage/list?folder=library`, {
-          method: 'GET',
-          headers,
-          credentials: 'include',
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-      console.log('🔍 Response received:', response.status, response.statusText);
-
-      if (!response.ok) {
-        // Handle HTTP errors
-        const errorData = await response.json();
-        const error = new Error(errorData.message || `HTTP ${response.status}`);
-        error.status = response.status;
-        error.data = errorData;
-        throw error;
-      }
-
-        const responseData = await response.json();
-
-        if (responseData && responseData.success && responseData.data) {
-        const rawFiles = responseData.data.files || [];
+      // apiClient returns the response directly, not wrapped in .data
+      if (response && response.success && response.data) {
+        const rawFiles = response.data.files || [];
 
         // Transform to consistent format
         const transformedFiles = rawFiles.map(file => ({
@@ -81,21 +43,13 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           : transformedFiles;
 
         setFiles(filteredFiles);
-      } else if (responseData && responseData.success && responseData.data && responseData.data.files === undefined) {
+      } else if (response && response.success && response.data && response.data.files === undefined) {
         // Handle case where API returns success but no files structure
         setFiles([]);
       } else {
-          // If response doesn't have expected structure, treat as no files
-          setFiles([]);
-          setError('Unable to load files. Please try again.');
-        }
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-
-        if (fetchError.name === 'AbortError') {
-          throw new Error('Request timeout - server took too long to respond');
-        }
-        throw fetchError;
+        // If response doesn't have expected structure, treat as no files
+        setFiles([]);
+        setError('Unable to load files. Please try again.');
       }
     } catch (error) {
       console.error('Error loading files:', error);
