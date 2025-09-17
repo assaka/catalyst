@@ -627,7 +627,7 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
+                  <div className={`${slot.parentClassName || ''} ${slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}`}>
                     <span
                       className={slot.className}
                       style={{
@@ -651,16 +651,18 @@ export function HierarchicalSlotRenderer({
                   </div>
                 </ResizeWrapper>
               ) : (
-                <span
-                  className={slot.className}
-                  style={{
-                    ...slot.styles,
-                    ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: String(slot.content || `Text: ${slot.id}`)
-                  }}
-                />
+                <div className={slot.parentClassName || ''}>
+                  <span
+                    className={slot.className}
+                    style={{
+                      ...slot.styles,
+                      ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: String(slot.content || `Text: ${slot.id}`)
+                    }}
+                  />
+                </div>
               )}
             </>
           )}
@@ -902,7 +904,6 @@ export function HierarchicalSlotRenderer({
               )}
             </>
           )}
-        </div>
       </GridColumn>
     );
   });
