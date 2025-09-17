@@ -253,18 +253,10 @@ const EditorSidebar = ({
         element.textContent = content;
       }
 
-      // Add href attribute for links
-      if (type === 'link' && slotConfig.href) {
-        element.href = slotConfig.href;
-      }
-
-      // Add target attribute for links
-      if (type === 'link' && slotConfig.target) {
-        element.target = slotConfig.target;
-      }
-
-      // Add rel attribute for security when target is _blank
-      if (type === 'link' && slotConfig.target === '_blank') {
+      // Add attributes for links (always include defaults)
+      if (type === 'link') {
+        element.href = slotConfig.href || '#';
+        element.target = slotConfig.target || '_self';
         element.rel = 'noopener noreferrer';
       }
     } else {
