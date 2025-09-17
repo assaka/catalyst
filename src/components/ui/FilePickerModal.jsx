@@ -20,7 +20,15 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
       // Use apiClient like MediaStorage does - it handles authentication properly
       console.log('🔍 Making request using apiClient...');
-      const response = await apiClient.get('/storage/list?folder=library');
+
+      // Add timeout to handle hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Storage service timeout - this may indicate the storage provider is not properly configured')), 8000);
+      });
+
+      const responsePromise = apiClient.get('/storage/list?folder=library');
+      const response = await Promise.race([responsePromise, timeoutPromise]);
+
       console.log('🔍 apiClient response received:', response);
 
       // apiClient returns the response directly, not wrapped in .data
@@ -62,8 +70,10 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         setError('Please log in to access your files');
       } else if (error.message.includes('Network error') || error.message.includes('fetch')) {
         setError('Unable to connect to server. Please check your connection.');
-      } else if (error.message.includes('No storage provider')) {
-        setError('Storage not configured. Please contact administrator.');
+      } else if (error.message.includes('No storage provider') ||
+                 error.message.includes('Storage service timeout') ||
+                 error.message.includes('storage provider is not properly configured')) {
+        setError('Storage not configured. You can still upload files using the "Upload New" button below.');
       } else {
         setError(`Failed to load files: ${error.message || 'Please try again.'}`);
       }
