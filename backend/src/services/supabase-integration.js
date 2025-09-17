@@ -245,7 +245,7 @@ class SupabaseIntegration {
       // Update connection status to success
       if (integrationConfig) {
         await integrationConfig.update({
-          connection_status: 'connected',
+          connection_status: 'success',
           is_active: true
         });
       }
@@ -463,7 +463,7 @@ class SupabaseIntegration {
             if (config) {
               await config.update({
                 is_active: false,
-                connection_status: 'disconnected',
+                connection_status: 'failed',
                 config_data: {
                   ...config.config_data,
                   connected: false,
@@ -648,16 +648,24 @@ class SupabaseIntegration {
         console.log('No OAuth token found to delete');
       }
 
+      // Delete all stored project keys for this store
+      const deletedKeysCount = await SupabaseProjectKeys.deleteAllForStore(storeId);
+      if (deletedKeysCount > 0) {
+        console.log(`Deleted ${deletedKeysCount} stored project key(s) from database`);
+      } else {
+        console.log('No stored project keys found to delete');
+      }
+
       // Update IntegrationConfig - preserve userEmail to detect orphaned authorizations
       if (config) {
         console.log('Updating IntegrationConfig to disconnected state');
         
         // Check if this was a revoked connection
-        const wasRevoked = config.connection_status === 'revoked';
+        const wasRevoked = config.connection_status === 'failed';
         
         await config.update({
           is_active: false,
-          connection_status: 'disconnected',
+          connection_status: 'failed',
           config_data: {
             connected: false,
             disconnectedAt: new Date(),
@@ -907,7 +915,7 @@ class SupabaseIntegration {
       }
 
       // Check if authorization was revoked
-      if (config && config.connection_status === 'revoked' && config.config_data?.revokedDetected) {
+      if (config && config.connection_status === 'failed' && config.config_data?.revokedDetected) {
         // Automatically disconnect invalid connection
         console.log('Auto-disconnecting revoked authorization for store:', storeId);
         
@@ -919,7 +927,7 @@ class SupabaseIntegration {
         // Update config to show disconnected with revocation history
         await config.update({
           is_active: false,
-          connection_status: 'disconnected',
+          connection_status: 'failed',
           config_data: {
             ...config.config_data,
             connected: false,
@@ -975,7 +983,7 @@ class SupabaseIntegration {
             if (config) {
               await config.update({
                 is_active: false,
-                connection_status: 'disconnected',
+                connection_status: 'failed',
                 config_data: {
                   ...config.config_data,
                   connected: false,

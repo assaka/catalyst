@@ -80,12 +80,22 @@ SupabaseProjectKeys.upsertKeys = async function(storeId, projectId, projectUrl, 
 SupabaseProjectKeys.getKeysForProject = async function(storeId, projectId) {
   const keys = await this.findByStoreAndProject(storeId, projectId);
   if (!keys) return null;
-  
+
   return {
     anonKey: keys.anon_key,
     serviceRoleKey: keys.service_role_key,
     projectUrl: keys.project_url
   };
+};
+
+SupabaseProjectKeys.deleteAllForStore = async function(storeId) {
+  const deletedCount = await this.destroy({
+    where: {
+      store_id: storeId
+    }
+  });
+
+  return deletedCount;
 };
 
 module.exports = SupabaseProjectKeys;
