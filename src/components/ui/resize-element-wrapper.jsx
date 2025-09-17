@@ -245,8 +245,9 @@ const ResizeWrapper = ({
       ),
       style: {
         ...children.props.style,
-        // Apply size directly to the button element
-        width: size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto',
+        // Apply size directly to the button element, but respect w-fit classes
+        width: hasWFitClass ? 'fit-content' :
+               (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto'),
         ...(size.height !== 'auto' && size.height && {
           minHeight: `${size.height}${size.heightUnit || 'px'}`,
           height: `${size.height}${size.heightUnit || 'px'}`
@@ -356,8 +357,9 @@ const ResizeWrapper = ({
         ),
         style: {
           ...children.props.style,
-          // Apply size directly to the child element
-          width: size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto',
+          // Apply size directly to the child element, but respect w-fit classes
+          width: hasWFitClass ? 'fit-content' :
+                 (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto'),
           ...(size.height !== 'auto' && size.height && {
             minHeight: `${size.height}${size.heightUnit || 'px'}`,
             height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined

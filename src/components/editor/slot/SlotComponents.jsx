@@ -607,7 +607,7 @@ export function HierarchicalSlotRenderer({
                   minWidth={20}
                   minHeight={16}
                 >
-                  <div className="w-full h-full">
+                  <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
                     <span
                       className={slot.className}
                       style={{
@@ -615,7 +615,8 @@ export function HierarchicalSlotRenderer({
                         cursor: 'pointer',
                         ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
                         display: 'inline-block',
-                        width: '100%'
+                        // Use fit-content for w-fit elements, otherwise 100%
+                        width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
