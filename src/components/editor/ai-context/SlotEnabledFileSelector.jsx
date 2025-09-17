@@ -28,7 +28,7 @@ const UNPUBLISHED_ICONS = {
 };
 
 // Choose your preferred icon here
-const UnpublishedIcon = UNPUBLISHED_ICONS.alert; // Change to 'edit' or 'dot'
+const UnpublishedIcon = UNPUBLISHED_ICONS.edit; // Change to 'edit' or 'dot'
 
 const SlotEnabledFileSelector = ({
   onFileSelect,
@@ -345,12 +345,23 @@ const SlotEnabledFileSelector = ({
                   <span className="font-medium text-sm">{file.name}</span>
                   {/* Unpublished Changes Indicator */}
                   {file.hasUnpublishedChanges && (
-                      <Badge
-                          variant="secondary"
-                          className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5 flex items-center gap-1"
-                      >
-                        <UnpublishedIcon className="w-3 h-3" />
-                      </Badge>
+                      <div className="flex gap-1">
+                        {/* Current selected icon */}
+                        <Badge
+                            variant="secondary"
+                            className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5 flex items-center gap-1"
+                        >
+                          <UnpublishedIcon className={`${UnpublishedIcon === Dot ? 'w-2 h-2' : 'w-3 h-3'}`} />
+                        </Badge>
+
+                        {/* Temporary: Show all icons for comparison */}
+                        <div className="flex gap-1 text-xs text-gray-500 items-center">
+                          <span className="text-[10px]">Icons:</span>
+                          <AlertCircle className="w-3 h-3 text-orange-600" title="AlertCircle" />
+                          <Edit3 className="w-3 h-3 text-blue-600" title="Edit3" />
+                          <Dot className="w-2 h-2 text-green-600" title="Dot" />
+                        </div>
+                      </div>
                   )}
                   {/* Loading indicator */}
                   {loadingDraft === file.id && (

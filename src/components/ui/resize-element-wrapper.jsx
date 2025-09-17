@@ -397,7 +397,7 @@ const ResizeWrapper = ({
             "absolute cursor-se-resize z-20",
             "transition-opacity duration-200",
             "flex items-center justify-center",
-            isHovered || isResizing ? "opacity-100" : "opacity-30"
+            isHovered || isResizing ? "opacity-100" : "opacity-0"
           )}
           onMouseDown={handleMouseDown}
           style={{
