@@ -732,15 +732,15 @@ export function HierarchicalSlotRenderer({
                     }}
                   >
                     <a
-                      href={slot.metadata?.href || '#'}
+                      href={slot.href || '#'}
                       className={`${slot.className}`}
                       style={{
                         ...slot.styles,
                         minWidth: 'auto',
                         minHeight: 'auto'
                       }}
-                      target={slot.metadata?.target || '_self'}
-                      rel={slot.metadata?.target === '_blank' ? 'noopener noreferrer' : undefined}
+                      target={slot.target || '_self'}
+                      rel={slot.target === '_blank' ? 'noopener noreferrer' : undefined}
                     >
                       {(() => {
                         // For links, extract text content only (no HTML wrappers)
