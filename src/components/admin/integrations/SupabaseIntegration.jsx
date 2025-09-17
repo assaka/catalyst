@@ -115,8 +115,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       const response = await apiClient.get('/supabase/storage/stats');
 
       if (response.success) {
-        console.log('Storage stats response:', response);
-        console.log('Storage stats summary:', response.summary);
         setStorageStats(response.summary);
       }
     } catch (error) {
@@ -1005,9 +1003,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 ) : storageStats ? (
-                  <>
-                    {console.log('Rendering storage stats:', storageStats)}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Storage Overview */}
                       <div className="space-y-4">
                         <h5 className="font-medium text-gray-900">Storage Overview</h5>
@@ -1123,7 +1119,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                       </div>
                     </div>
                   </div>
-                  </>
                 ) : (
                   <div className="text-center py-8">
                     <Cloud className="w-12 h-12 text-gray-400 mx-auto mb-3" />
