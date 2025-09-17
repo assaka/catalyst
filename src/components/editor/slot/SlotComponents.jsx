@@ -903,7 +903,7 @@ export function HierarchicalSlotRenderer({
                     </div>
                   )}
                 </EditableElement>
-              )}
+              )
             </>
           )}
         </div>
