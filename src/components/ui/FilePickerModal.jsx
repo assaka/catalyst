@@ -151,23 +151,38 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
   // Handle file upload
   const handleFileUpload = async (fileList) => {
-    if (!fileList.length) return;
+    // Convert FileList to array if needed
+    const files = Array.from(fileList || []);
+    if (!files.length) {
+      console.log('📤 FilePickerModal: No files to upload');
+      return;
+    }
 
     setUploading(true);
-    console.log('📤 FilePickerModal: Starting upload for', fileList.length, 'files');
+    console.log('📤 FilePickerModal: Starting upload for', files.length, 'files:', files.map(f => f.name));
 
     try {
       const uploadedFiles = [];
 
       // Upload files one by one to Supabase storage
-      for (const file of fileList) {
-        console.log('📤 FilePickerModal: Uploading file:', file.name);
+      for (const file of files) {
+        console.log('📤 FilePickerModal: Uploading file:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
 
         const formData = new FormData();
         formData.append('file', file); // Use 'file' not 'files'
         formData.append('folder', 'library');
         formData.append('public', 'true');
         formData.append('type', 'general');
+
+        // Debug FormData contents
+        console.log('📤 FilePickerModal: FormData contents:');
+        for (const [key, value] of formData.entries()) {
+          console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}bytes)` : value);
+        }
 
         const response = await apiClient.post('/supabase/storage/upload', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
