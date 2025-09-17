@@ -32,11 +32,12 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         }, 5000);
       });
 
-      console.log('📡 FilePickerModal: Making API request to /storage/list?folder=library');
+      console.log('📡 FilePickerModal: Making API request to /supabase/storage/list?bucket=suprshop-assets&folder=library');
       const startTime = Date.now();
 
-      // Use the general storage/list endpoint that FileLibrary uses successfully
-      const responsePromise = apiClient.get('/storage/list?folder=library');
+      // Try the Supabase-specific endpoint first, then fallback to general storage
+      // This bypasses the hanging database query on the production backend
+      const responsePromise = apiClient.get('/supabase/storage/list?bucket=suprshop-assets&folder=library');
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
       const duration = Date.now() - startTime;
