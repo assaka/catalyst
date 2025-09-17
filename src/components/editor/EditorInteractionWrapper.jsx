@@ -17,51 +17,23 @@ const EditorInteractionWrapper = ({
     return children;
   }
 
-  // Clean, stable editor classes and styles
+  // Minimal wrapper - let GridColumn handle all visual styling
   const editorClasses = [
-    'relative',
-    'cursor-pointer',
-    'transition-all',
-    'duration-200',
-    draggable ? 'cursor-move' : '',
-    'group',
-    'rounded-md',
-    // Simple hover effects
-    'hover:bg-blue-50/30',
-    // Selected styles with clear visual feedback
-    isSelected ? 'bg-blue-50/40' : ''
+    // Only essential classes for functionality
+    ...(className ? [className] : [])
   ].filter(Boolean).join(' ');
 
   const editorStyles = {
-    // Clean inline styles without problematic effects
-    border: isSelected
-      ? '2px solid rgba(59, 130, 246, 0.7)'
-      : '2px solid transparent',
-    borderRadius: '6px',
-    transition: 'border-color 0.2s ease-in-out, background-color 0.2s ease-in-out',
-    ...(isSelected && {
-      borderColor: 'rgba(59, 130, 246, 0.7)',
-      boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.2)'
-    }),
-    // Merge any additional styles from parent
+    // Only merge styles from parent, no additional visual styling
     ...style
   };
 
-  const handleMouseLeave = (e) => {
-    // Remove all borders on mouseout
-    if (e.currentTarget) {
-      e.currentTarget.style.borderColor = '';
-      e.currentTarget.style.border = 'none';
-      e.currentTarget.style.outline = 'none';
-    }
-  };
 
   return (
     <div
-      className={`${editorClasses} ${className}`}
+      className={editorClasses}
       style={editorStyles}
       onClick={onClick}
-      onMouseLeave={handleMouseLeave}
       data-slot-id={dataSlotId}
       data-editable={dataEditable}
       draggable={false}
