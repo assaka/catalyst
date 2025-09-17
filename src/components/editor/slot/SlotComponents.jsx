@@ -937,17 +937,32 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBo
       />
 
       <div className="flex gap-2">
-        <Button onClick={onResetLayout} variant="outline" size="sm">
+        <Button
+          onClick={onResetLayout}
+          variant="outline"
+          size="sm"
+          className="hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
+        >
           <Settings className="w-4 h-4 mr-2" />
           Reset Layout
         </Button>
 
-        <Button onClick={onShowCode} variant="outline" size="sm">
+        <Button
+          onClick={onShowCode}
+          variant="outline"
+          size="sm"
+          className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors duration-200"
+        >
           <Code className="w-4 h-4 mr-2" />
           Code
         </Button>
 
-        <Button onClick={onAddSlot} variant="outline" size="sm">
+        <Button
+          onClick={onAddSlot}
+          variant="outline"
+          size="sm"
+          className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors duration-200"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add New
         </Button>
