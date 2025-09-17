@@ -26,8 +26,8 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         setTimeout(() => reject(new Error('Storage service timeout - this may indicate the storage provider is not properly configured')), 8000);
       });
 
-      // Use the Supabase storage/list endpoint that MediaStorage uses successfully
-      const responsePromise = apiClient.get('/supabase/storage/list?bucket=suprshop-assets&folder=library');
+      // Use the general storage/list endpoint that FileLibrary uses successfully
+      const responsePromise = apiClient.get('/storage/list?folder=library');
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
       console.log('🔍 apiClient response received:', response);
