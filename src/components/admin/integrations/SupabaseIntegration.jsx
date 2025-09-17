@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
-import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload } from 'lucide-react';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   // Helper function to format storage sizes (handles both string and number values)
@@ -32,6 +32,8 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const [savingKeys, setSavingKeys] = useState(false);
   const [buckets, setBuckets] = useState([]);
   const [loadingBuckets, setLoadingBuckets] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   // Removed manual bucket creation/deletion states as buckets are auto-generated
 
   // Check for and clear logout flags on component mount
@@ -319,7 +321,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           description: 'Please disconnect and reconnect to Supabase to enable all features.',
           action: {
             label: 'Disconnect Now',
-            onClick: () => handleDisconnect()
+            onClick: () => handleDisconnectClick()
           }
         });
       } else if (error.message?.includes('revoked') || error.message?.includes('Authorization has been revoked')) {
@@ -328,7 +330,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           description: 'You need to disconnect the invalid connection first.',
           action: {
             label: 'Disconnect Now',
-            onClick: () => handleDisconnect()
+            onClick: () => handleDisconnectClick()
           }
         });
         // Reload status to show revoked authorization UI
@@ -343,12 +345,13 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     }
   };
 
-  const handleDisconnect = async () => {
-    if (!confirm('Are you sure you want to disconnect Supabase? This will remove access to your project.')) {
-      return;
-    }
+  const handleDisconnectClick = () => {
+    setShowDisconnectModal(true);
+  };
 
+  const handleDisconnectConfirm = async () => {
     try {
+      setDisconnecting(true);
       const response = await apiClient.post('/supabase/disconnect', { store_id: storeId });
 
       if (response.success) {
@@ -359,13 +362,20 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         // Reload status to show orphaned authorization warning if applicable
         loadStatus();
         setStorageStats(null);
+        setShowDisconnectModal(false);
       } else {
         throw new Error(response.message || 'Failed to disconnect');
       }
     } catch (error) {
       console.error('Error disconnecting:', error);
       toast.error(error.message || 'Failed to disconnect');
+    } finally {
+      setDisconnecting(false);
     }
+  };
+
+  const handleDisconnectCancel = () => {
+    setShowDisconnectModal(false);
   };
 
   const handleTestUpload = async () => {
@@ -731,7 +741,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                     <li>Click the button below to reconnect</li>
                   </ol>
                   <button
-                    onClick={handleDisconnect}
+                    onClick={handleDisconnectClick}
                     className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm font-medium"
                   >
                     Disconnect and Reconnect
@@ -751,7 +761,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                     Connected to Supabase Project
                   </h4>
                   <button
-                    onClick={handleDisconnect}
+                    onClick={handleDisconnectClick}
                     className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                     title="Disconnect from Supabase and delete all API details"
                   >
@@ -1181,6 +1191,99 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                 <ExternalLink className="w-4 h-4 text-gray-400" />
                 <span>Access to Supabase dashboard</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disconnect Confirmation Modal */}
+      {showDisconnectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Disconnect Supabase</h3>
+              <button
+                onClick={handleDisconnectCancel}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={disconnecting}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-start space-x-3 mb-4">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-base font-medium text-gray-900 mb-2">
+                    Are you sure you want to disconnect?
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    This action will permanently remove all Supabase connection details including:
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                    <li className="flex items-center space-x-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <span>OAuth access tokens and refresh tokens</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <span>Service role and anonymous API keys</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <span>Project URLs and configuration data</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <span>Storage access and file management capabilities</span>
+                    </li>
+                  </ul>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm text-amber-800">
+                      <strong>Note:</strong> You may also need to revoke access in your{' '}
+                      <a
+                        href="https://supabase.com/dashboard/account/apps"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-amber-900"
+                      >
+                        Supabase account settings
+                      </a>{' '}
+                      to completely remove authorization.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={handleDisconnectCancel}
+                disabled={disconnecting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDisconnectConfirm}
+                disabled={disconnecting}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {disconnecting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Disconnecting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Disconnect Supabase
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
