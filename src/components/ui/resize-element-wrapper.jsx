@@ -225,7 +225,7 @@ const ResizeWrapper = ({
   // For button elements, apply sizing and resize functionality directly to the button
   // without creating an extra wrapper div
   if (isButtonElement(children)) {
-    return React.cloneElement(children, {
+    const buttonElement = React.cloneElement(children, {
       ref: wrapperRef,
       className: cn(
         children.props.className,
@@ -262,13 +262,16 @@ const ResizeWrapper = ({
         if (children.props.onMouseLeave) {
           children.props.onMouseLeave(e);
         }
-      },
-      children: [
-        children.props.children,
-        // Resize handle
-        !disabled && (
+      }
+      // Note: Don't override children or dangerouslySetInnerHTML - let them be handled by the original element
+    });
+
+    return (
+      <div className="relative inline-block" style={wrapperStyle}>
+        {buttonElement}
+        {/* Resize handle positioned relative to container */}
+        {!disabled && (
           <div
-            key="resize-handle"
             className={cn(
               "absolute cursor-se-resize z-20",
               "transition-opacity duration-200",
@@ -301,18 +304,17 @@ const ResizeWrapper = ({
               />
             </svg>
           </div>
-        ),
-        // Size feedback tooltip during resize
-        isResizing && !disabled && (
+        )}
+        {/* Size feedback tooltip during resize */}
+        {isResizing && !disabled && (
           <div
-            key="resize-tooltip"
             className="fixed top-4 right-4 bg-black/80 text-white text-xs font-medium px-3 py-1.5 rounded shadow-lg z-50 pointer-events-none"
           >
             {Math.round(size.width)}{size.widthUnit || 'px'} × {size.height === 'auto' ? 'auto' : Math.round(size.height) + (size.heightUnit || 'px')}
           </div>
-        )
-      ].filter(Boolean)
-    });
+        )}
+      </div>
+    );
   }
 
   // For non-button elements, use the wrapper div approach
