@@ -722,39 +722,68 @@ export function HierarchicalSlotRenderer({
                   </ResizeWrapper>
                 </EditableElement>
               ) : slot.type === 'link' ? (
-                <EditableElement
-                  slotId={slot.id}
-                  mode={mode}
-                  onClick={onElementClick}
-                  className={''}
-                  style={{}}
-                  canResize={false}
-                  draggable={false}
-                  selectedElementId={selectedElementId}
-                >
-                  <ResizeWrapper
-                    minWidth={50}
-                    minHeight={20}
-                    onResize={(newSize) => {
-                      setPageConfig(prevConfig => {
-                        const updatedSlots = { ...prevConfig?.slots };
-                        if (updatedSlots[slot.id]) {
-                          updatedSlots[slot.id] = {
-                            ...updatedSlots[slot.id],
-                            styles: {
-                              ...updatedSlots[slot.id].styles,
-                              width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                              height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                <>
+                  {mode === 'edit' ? (
+                    <ResizeWrapper
+                      minWidth={50}
+                      minHeight={20}
+                      onResize={(newSize) => {
+                        setPageConfig(prevConfig => {
+                          const updatedSlots = { ...prevConfig?.slots };
+                          if (updatedSlots[slot.id]) {
+                            updatedSlots[slot.id] = {
+                              ...updatedSlots[slot.id],
+                              styles: {
+                                ...updatedSlots[slot.id].styles,
+                                width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                                height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                              }
+                            };
+                          }
+                          return { ...prevConfig, slots: updatedSlots };
+                        });
+                      }}
+                    >
+                      <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
+                        <a
+                          href={slot.href || '#'}
+                          className={slot.className}
+                          style={{
+                            ...slot.styles,
+                            cursor: 'pointer',
+                            minWidth: 'auto',
+                            minHeight: 'auto',
+                            display: 'inline-block',
+                            width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+                          }}
+                          target={slot.target || '_self'}
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onElementClick(slot.id, e.currentTarget);
+                          }}
+                          data-slot-id={slot.id}
+                          data-editable="true"
+                        >
+                          {(() => {
+                            // For links, extract text content only (no HTML wrappers)
+                            const content = String(slot.content || `Link: ${slot.id}`);
+                            if (content.includes('<')) {
+                              // If content contains HTML, extract just the text
+                              const tempDiv = document.createElement('div');
+                              tempDiv.innerHTML = content;
+                              return tempDiv.textContent || tempDiv.innerText || content;
                             }
-                          };
-                        }
-                        return { ...prevConfig, slots: updatedSlots };
-                      });
-                    }}
-                  >
+                            return content;
+                          })()}
+                        </a>
+                      </div>
+                    </ResizeWrapper>
+                  ) : (
                     <a
                       href={slot.href || '#'}
-                      className={`${slot.className}`}
+                      className={slot.className}
                       style={{
                         ...slot.styles,
                         minWidth: 'auto',
@@ -775,8 +804,9 @@ export function HierarchicalSlotRenderer({
                         return content;
                       })()}
                     </a>
-                  </ResizeWrapper>
-                </EditableElement>
+                  )}
+                </>
+              }
               ) : (
                 <EditableElement
                   slotId={slot.id}
