@@ -234,13 +234,11 @@ const ResizeWrapper = ({
 
       let maxAllowedWidth;
       if (isButton && hasWFitClass) {
-        // For w-fit buttons, allow expansion but respect viewport limits
-        const preferredMax = parentRect ? Math.max(parentRect.width * 1.5, 400) : 400;
-        maxAllowedWidth = Math.min(preferredMax, maxWidthFromViewport);
+        // For w-fit buttons, only constrain by viewport - ignore container limits
+        maxAllowedWidth = maxWidthFromViewport;
       } else if (isButton) {
-        // For regular buttons, allow expansion but respect viewport limits
-        const preferredMax = parentRect ? parentRect.width * 2 : maxWidthFromViewport; // Allow 2x expansion
-        maxAllowedWidth = Math.min(preferredMax, maxWidthFromViewport);
+        // For regular buttons, allow generous expansion up to viewport
+        maxAllowedWidth = maxWidthFromViewport;
       } else {
         // For non-buttons, use more restrictive bounds
         maxAllowedWidth = parentRect ? Math.min(parentRect.width - 4, maxWidthFromViewport) : maxWidthFromViewport;
@@ -248,6 +246,21 @@ const ResizeWrapper = ({
 
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+
+      // Debug logging for buttons
+      if (children?.props?.['data-slot-id']?.includes('button')) {
+        console.log('🎯 Width calculation:', {
+          isButton,
+          hasWFitClass,
+          maxWidthFromViewport,
+          maxAllowedWidth,
+          startWidth,
+          deltaX,
+          newWidth,
+          elementLeft,
+          maxAllowableRight
+        });
+      }
 
       // Calculate width units based on element type and classes
       let widthValue = newWidth;

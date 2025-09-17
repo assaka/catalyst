@@ -649,18 +649,16 @@ export function HierarchicalSlotRenderer({
                     />
                 </ResizeWrapper>
               ) : (
-                <div className={slot.parentClassName || ''}>
-                  <span
-                    className={slot.className}
-                    style={{
-                      ...slot.styles,
-                      ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: String(slot.content || `Text: ${slot.id}`)
-                    }}
-                  />
-                </div>
+                <span
+                  className={`${slot.parentClassName || ''} ${slot.className}`}
+                  style={{
+                    ...slot.styles,
+                    ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: String(slot.content || `Text: ${slot.id}`)
+                  }}
+                />
               )}
             </>
           )}

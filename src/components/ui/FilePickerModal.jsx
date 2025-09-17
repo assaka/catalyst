@@ -24,12 +24,12 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       console.log('🔐 FilePickerModal: User role:', apiClient.getCurrentUserRole());
       console.log('🌐 FilePickerModal: API base URL:', apiClient.baseURL);
 
-      // Add timeout to handle hanging requests
+      // Add timeout to handle hanging requests - reduced to 5 seconds for faster response
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
-          console.log('⏰ FilePickerModal: Request timed out after 8 seconds');
+          console.log('⏰ FilePickerModal: Request timed out after 5 seconds');
           reject(new Error('Storage service timeout - this may indicate the storage provider is not properly configured'));
-        }, 8000);
+        }, 5000);
       });
 
       console.log('📡 FilePickerModal: Making API request to /storage/list?folder=library');
