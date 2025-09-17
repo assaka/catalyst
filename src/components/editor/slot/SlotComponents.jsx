@@ -671,79 +671,57 @@ export function HierarchicalSlotRenderer({
           )}
 
           {slot.type === 'button' && mode === 'edit' && (
-                    <ResizeWrapper
-                      minWidth={50}
-                      minHeight={20}
-                      onResize={(newSize) => {
-                        setPageConfig(prevConfig => {
-                          const updatedSlots = { ...prevConfig?.slots };
-                          if (updatedSlots[slot.id]) {
-                            updatedSlots[slot.id] = {
-                              ...updatedSlots[slot.id],
-                              styles: {
-                                ...updatedSlots[slot.id].styles,
-                                width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                                height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                              }
-                            };
-                          }
-                          return { ...prevConfig, slots: updatedSlots };
-                        });
-                      }}
-                    >
-                      <button
-                        className={`${slot.parentClassName || ''} ${slot.className}`}
-                        style={{
-                          ...slot.styles,
-                          cursor: 'pointer',
-                          minWidth: 'auto',
-                          minHeight: 'auto',
-                          display: 'inline-block'
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onElementClick(slot.id, e.currentTarget);
-                        }}
-                        data-slot-id={slot.id}
-                        data-editable="true"
-                      >
-                        {(() => {
-                          // For buttons, extract text content only (no HTML wrappers)
-                          const content = String(slot.content || `Button: ${slot.id}`);
-                          if (content.includes('<')) {
-                            // If content contains HTML, extract just the text
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = content;
-                            return tempDiv.textContent || tempDiv.innerText || content;
-                          }
-                          return content;
-                        })()}
-                      </button>
-                    </ResizeWrapper>
-                  ) : (
-                    <button
-                      className={`${slot.parentClassName || ''} ${slot.className}`}
-                      style={{
-                        ...slot.styles,
-                        minWidth: 'auto',
-                        minHeight: 'auto'
-                      }}
-                    >
-                      {(() => {
-                        // For buttons, extract text content only (no HTML wrappers)
-                        const content = String(slot.content || `Button: ${slot.id}`);
-                        if (content.includes('<')) {
-                          // If content contains HTML, extract just the text
-                          const tempDiv = document.createElement('div');
-                          tempDiv.innerHTML = content;
-                          return tempDiv.textContent || tempDiv.innerText || content;
-                        }
-                        return content;
-                      })()}
-                    </button>
-                </ResizeWrapper>
-              )}
+            <ResizeWrapper
+              minWidth={50}
+              minHeight={20}
+              onResize={(newSize) => {
+                setPageConfig(prevConfig => {
+                  const updatedSlots = { ...prevConfig?.slots };
+                  if (updatedSlots[slot.id]) {
+                    updatedSlots[slot.id] = {
+                      ...updatedSlots[slot.id],
+                      styles: {
+                        ...updatedSlots[slot.id].styles,
+                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                      }
+                    };
+                  }
+                  return { ...prevConfig, slots: updatedSlots };
+                });
+              }}
+            >
+              <button
+                className={`${slot.parentClassName || ''} ${slot.className}`}
+                style={{
+                  ...slot.styles,
+                  cursor: 'pointer',
+                  minWidth: 'auto',
+                  minHeight: 'auto',
+                  display: 'inline-block'
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+                data-editable="true"
+              >
+                {(() => {
+                  // For buttons, extract text content only (no HTML wrappers)
+                  const content = String(slot.content || `Button: ${slot.id}`);
+                  if (content.includes('<')) {
+                    // If content contains HTML, extract just the text
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = content;
+                    return tempDiv.textContent || tempDiv.innerText || content;
+                  }
+                  return content;
+                })()}
+              </button>
+            </ResizeWrapper>
+          )}
 
               {slot.type === 'button' && mode !== 'edit' && (
                 <button
