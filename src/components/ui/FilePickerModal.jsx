@@ -35,7 +35,33 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setError(null);
 
       console.log('🔍 FilePickerModal: Making API call to /storage/list?folder=library');
-      const response = await apiClient.get('/storage/list?folder=library');
+
+      // Test with direct fetch first to see if it's an API client issue
+      console.log('🔍 FilePickerModal: Testing with direct fetch...');
+      try {
+        const directResponse = await fetch('https://catalyst-backend-fzhu.onrender.com/api/storage/list?folder=library', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        });
+        console.log('🔍 FilePickerModal: Direct fetch response status:', directResponse.status);
+        const directData = await directResponse.json();
+        console.log('🔍 FilePickerModal: Direct fetch response data:', directData);
+      } catch (directError) {
+        console.log('🔍 FilePickerModal: Direct fetch error:', directError);
+      }
+
+      // Add timeout to prevent hanging indefinitely
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
+      });
+
+      const apiPromise = apiClient.get('/storage/list?folder=library');
+
+      console.log('🔍 FilePickerModal: Now testing with API client...');
+      const response = await Promise.race([apiPromise, timeoutPromise]);
       console.log('🔍 FilePickerModal: API Response received:', response);
       console.log('🔍 FilePickerModal: Response type:', typeof response);
       console.log('🔍 FilePickerModal: Response keys:', response ? Object.keys(response) : 'null response');
