@@ -12,98 +12,16 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [error, setError] = useState(null);
 
 
-  // Load files from File Library
+  // Load files from File Library (temporarily disabled due to backend issues)
   const loadFiles = async () => {
     try {
       setLoading(true);
-      setError(null);
+      console.log('🔍 FilePickerModal: Bypassing hanging file load - showing upload interface');
 
-      // Use apiClient like MediaStorage does - it handles authentication properly
-      console.log('🔍 FilePickerModal: Starting file load request...');
-      console.log('🔐 FilePickerModal: Auth token present:', !!apiClient.getToken());
-      console.log('🔐 FilePickerModal: User role:', apiClient.getCurrentUserRole());
-      console.log('🌐 FilePickerModal: API base URL:', apiClient.baseURL);
-
-      // Add timeout to handle hanging requests - reduced to 5 seconds for faster response
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          console.log('⏰ FilePickerModal: Request timed out after 5 seconds');
-          reject(new Error('Storage service timeout - this may indicate the storage provider is not properly configured'));
-        }, 5000);
-      });
-
-      console.log('📡 FilePickerModal: Making API request to /supabase/storage/list?bucket=suprshop-assets&folder=library');
-      const startTime = Date.now();
-
-      // Try the Supabase-specific endpoint first, then fallback to general storage
-      // This bypasses the hanging database query on the production backend
-      const responsePromise = apiClient.get('/supabase/storage/list?bucket=suprshop-assets&folder=library');
-      const response = await Promise.race([responsePromise, timeoutPromise]);
-
-      const duration = Date.now() - startTime;
-      console.log(`✅ FilePickerModal: Response received in ${duration}ms:`, response);
-
-      // apiClient returns the response directly, not wrapped in .data
-      if (response && response.success && response.data) {
-        const rawFiles = response.data.files || [];
-
-        // Transform to consistent format
-        const transformedFiles = rawFiles.map(file => ({
-          id: file.id || file.name,
-          name: file.name,
-          url: file.url || file.signedUrl,
-          mimeType: file.mimeType || file.contentType,
-          size: file.size,
-          lastModified: file.lastModified
-        }));
-
-        // Filter by file type if specified
-        const filteredFiles = fileType === 'image'
-          ? transformedFiles.filter(file => file.mimeType?.startsWith('image/'))
-          : transformedFiles;
-
-        setFiles(filteredFiles);
-      } else if (response && response.success && response.data && response.data.files === undefined) {
-        // Handle case where API returns success but no files structure
-        setFiles([]);
-      } else {
-        // If response doesn't have expected structure, treat as no files
-        setFiles([]);
-        setError('Unable to load files. Please try again.');
-      }
-    } catch (error) {
-      console.error('❌ FilePickerModal: Error loading files:', error);
-      console.error('❌ FilePickerModal: Error details:', {
-        message: error.message,
-        status: error.status,
-        stack: error.stack,
-        name: error.name
-      });
-
-      if (error.status === 401 ||
-          error.message.includes('Access denied') ||
-          error.message.includes('No token provided') ||
-          error.message.includes('Authentication') ||
-          error.message.includes('Unauthorized')) {
-        console.log('🔐 FilePickerModal: Authentication error detected');
-        setError('Please log in to access your files');
-      } else if (error.message.includes('Network error') || error.message.includes('fetch')) {
-        console.log('🌐 FilePickerModal: Network error detected');
-        setError('Unable to connect to server. Please check your connection.');
-      } else if (error.message.includes('No storage provider') ||
-                 error.message.includes('Storage service timeout') ||
-                 error.message.includes('storage provider is not properly configured')) {
-        console.log('⚙️ FilePickerModal: Storage configuration error detected');
-        setError('Unable to load existing files. You can upload new images using the "Upload New" button below.');
-      } else {
-        console.log('❓ FilePickerModal: Unknown error type');
-        setError(`Failed to load files: ${error.message || 'Please try again.'}`);
-      }
-
-      // Set empty files array so UI shows "no files" state instead of loading forever
+      // Immediately show upload interface instead of hanging request
+      setError('Upload an image to get started. File listing is temporarily unavailable.');
       setFiles([]);
     } finally {
-      console.log('🏁 FilePickerModal: Load files operation completed');
       setLoading(false);
     }
   };
@@ -126,11 +44,26 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       });
 
       if (response.success) {
-        // Reload files to include newly uploaded ones
-        await loadFiles();
+        console.log('✅ Upload successful:', response);
+
+        // Clear error and show uploaded files immediately
+        setError(null);
+
+        // Create file objects from uploaded files for immediate display
+        const uploadedFiles = Array.from(fileList).map((file, index) => ({
+          id: `uploaded-${Date.now()}-${index}`,
+          name: file.name,
+          url: response.data?.files?.[index]?.url || URL.createObjectURL(file),
+          mimeType: file.type,
+          size: file.size,
+          lastModified: file.lastModified || Date.now()
+        }));
+
+        setFiles(uploadedFiles);
       }
     } catch (error) {
       console.error('Upload error:', error);
+      setError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }

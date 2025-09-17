@@ -56,16 +56,6 @@ const ResizeWrapper = ({
              element.props.className.includes('justify-center')
            ));
 
-    // Debug logging
-    if (element.props?.['data-slot-id']?.includes('button')) {
-      console.log('🔍 Button detection for', element.props['data-slot-id'], {
-        elementType: element.type,
-        isButton,
-        className: element.props?.className,
-        hasDataSlotId: !!element.props?.['data-slot-id']
-      });
-    }
-
     return isButton;
   };
 
@@ -346,41 +336,15 @@ const ResizeWrapper = ({
     position: 'relative'
   };
 
-  // Debug logging for buttons
-  if (children?.props?.['data-slot-id']?.includes('button')) {
-    console.log('🎯 ResizeWrapper style for', children.props['data-slot-id'], {
-      isButton,
-      wrapperStyle,
-      hasMaxWidth: 'maxWidth' in wrapperStyle
-    });
-  }
-
   // For button elements, apply sizing and resize functionality directly to the button
   // without creating an extra wrapper div
   if (isButton) {
-    const appliedWidth = hasWFitClass ? 'fit-content' :
-                        (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto');
-
-    const actualAppliedWidth = isResizing ?
-                                 (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'auto') :
-                                 (hasWFitClass ? 'fit-content' :
-                                 (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto'));
-
-    // Debug button style application
-    if (children?.props?.['data-slot-id']?.includes('button')) {
-      console.log('🎨 Button style application:', {
-        hasWFitClass,
-        currentSize: size,
-        isResizing,
-        actualAppliedWidth,
-        originalChildrenStyle: children.props.style
-      });
-    }
 
     const buttonElement = React.cloneElement(children, {
       ref: wrapperRef,
       className: cn(
-        children.props.className,
+        // Remove w-fit class during resize to allow width override
+        isResizing ? children.props.className?.replace(/\bw-fit\b/g, '').trim() : children.props.className,
         "resize-none select-none relative group",
         isResizing && "cursor-se-resize"
       ),
