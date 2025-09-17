@@ -11,18 +11,6 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState(null);
 
-  // Debug state changes
-  useEffect(() => {
-    console.log('🔍 FilePickerModal: State changed - loading:', loading);
-  }, [loading]);
-
-  useEffect(() => {
-    console.log('🔍 FilePickerModal: State changed - error:', error);
-  }, [error]);
-
-  useEffect(() => {
-    console.log('🔍 FilePickerModal: State changed - files count:', files.length);
-  }, [files]);
 
   // Load files from File Library
   const loadFiles = async () => {
@@ -137,13 +125,9 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
   // Load files when modal opens
   useEffect(() => {
-    console.log('🔍 FilePickerModal: useEffect triggered. isOpen:', isOpen);
     if (isOpen) {
-      console.log('🔍 FilePickerModal: Modal is open, clearing errors and loading files');
       setError(null); // Clear any previous errors
       loadFiles();
-    } else {
-      console.log('🔍 FilePickerModal: Modal is closed, not loading files');
     }
   }, [isOpen]);
 
@@ -197,80 +181,64 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
         {/* Files Grid */}
         <div className="flex-1 p-6 overflow-y-auto">
-          {(() => {
-            console.log('🔍 FilePickerModal: Rendering UI. State:', { loading, error, filesCount: files.length, filteredCount: filteredFiles.length });
-
-            if (loading) {
-              console.log('🔍 FilePickerModal: Showing loading state');
-              return (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading files...</p>
-                </div>
-              );
-            } else if (error) {
-              console.log('🔍 FilePickerModal: Showing error state. Error:', error);
-              return (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto text-red-300 mb-4 flex items-center justify-center">
-                    <X className="w-8 h-8" />
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading files...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto text-red-300 mb-4 flex items-center justify-center">
+                <X className="w-8 h-8" />
+              </div>
+              <p className="text-red-500 font-medium">{error}</p>
+              <p className="text-sm text-gray-400 mt-2">Please try uploading a new image below</p>
+              <Button
+                onClick={loadFiles}
+                variant="outline"
+                className="mt-4"
+                disabled={loading}
+              >
+                {loading ? 'Retrying...' : 'Try Again'}
+              </Button>
+            </div>
+          ) : filteredFiles.length === 0 ? (
+            <div className="text-center py-12">
+              <Image className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No images found</p>
+              <p className="text-sm text-gray-400 mt-2">Upload some images to get started</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-4">
+              {filteredFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
+                    selectedFile?.id === file.id
+                      ? 'ring-2 ring-blue-500 border-blue-500'
+                      : 'hover:shadow-lg border-gray-200'
+                  }`}
+                  onClick={() => setSelectedFile(file)}
+                >
+                  <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                    {file.mimeType?.startsWith('image/') ? (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <File className="w-8 h-8 text-gray-400" />
+                    )}
                   </div>
-                  <p className="text-red-500 font-medium">{error}</p>
-                  <p className="text-sm text-gray-400 mt-2">Please try uploading a new image below</p>
-                  <Button
-                    onClick={loadFiles}
-                    variant="outline"
-                    className="mt-4"
-                    disabled={loading}
-                  >
-                    {loading ? 'Retrying...' : 'Try Again'}
-                  </Button>
+                  <div className="p-2">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                  </div>
                 </div>
-              );
-            } else if (filteredFiles.length === 0) {
-              console.log('🔍 FilePickerModal: Showing no files state');
-              return (
-                <div className="text-center py-12">
-                  <Image className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">No images found</p>
-                  <p className="text-sm text-gray-400 mt-2">Upload some images to get started</p>
-                </div>
-              );
-            } else {
-              console.log('🔍 FilePickerModal: Showing files grid. Files:', filteredFiles);
-              return (
-                <div className="grid grid-cols-4 gap-4">
-                  {filteredFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                        selectedFile?.id === file.id
-                          ? 'ring-2 ring-blue-500 border-blue-500'
-                          : 'hover:shadow-lg border-gray-200'
-                      }`}
-                      onClick={() => setSelectedFile(file)}
-                    >
-                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                        {file.mimeType?.startsWith('image/') ? (
-                          <img
-                            src={file.url}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <File className="w-8 h-8 text-gray-400" />
-                        )}
-                      </div>
-                      <div className="p-2">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            }
-          })()}
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
