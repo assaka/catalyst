@@ -126,39 +126,44 @@ const ResizeWrapper = ({
     
     const rect = wrapperRef.current.getBoundingClientRect();
     
-    // Find the closest slot container for relative sizing
-    // Look for the immediate container that represents the slot bounds
-    let slotContainer = wrapperRef.current.parentElement;
-    let searchDepth = 0;
-    const maxSearchDepth = 5; // Prevent infinite loops
-    
-    while (slotContainer && searchDepth < maxSearchDepth) {
-      // Check if this is a slot container (has slot identifier or grid column class)
-      const isSlotContainer = slotContainer.hasAttribute('data-grid-slot-id') ||
-                              slotContainer.hasAttribute('data-slot-id') ||
-                              slotContainer.className.includes('col-span-') ||
-                              slotContainer.className.includes('responsive-slot');
-      
-      if (isSlotContainer) {
-        break;
-      }
-      
-      slotContainer = slotContainer.parentElement;
-      searchDepth++;
-      
-      if (slotContainer === document.body) {
-        slotContainer = null;
-        break;
+    // Find the grid slot container for resize bounds
+    // Priority: look for the actual grid slot container (data-grid-slot-id)
+    let slotContainer = wrapperRef.current.closest('[data-grid-slot-id]');
+
+    // Fallback to searching for other slot indicators if grid slot not found
+    if (!slotContainer) {
+      let searchElement = wrapperRef.current.parentElement;
+      let searchDepth = 0;
+      const maxSearchDepth = 8; // Increased search depth for nested structures
+
+      while (searchElement && searchDepth < maxSearchDepth) {
+        const isSlotContainer = searchElement.hasAttribute('data-slot-id') ||
+                                searchElement.className.includes('col-span-') ||
+                                searchElement.className.includes('responsive-slot') ||
+                                searchElement.className.includes('grid-cols-');
+
+        if (isSlotContainer) {
+          slotContainer = searchElement;
+          break;
+        }
+
+        searchElement = searchElement.parentElement;
+        searchDepth++;
+
+        if (searchElement === document.body) {
+          break;
+        }
       }
     }
     
     // Use slot container or fall back to immediate parent
     const parentRect = slotContainer?.getBoundingClientRect() || wrapperRef.current.parentElement?.getBoundingClientRect();
-    
+
     console.log('🎯 Resize container detection:', {
       slotContainerFound: !!slotContainer,
       slotContainerClasses: slotContainer?.className || 'none',
       slotContainerWidth: parentRect?.width || 0,
+      hasDataGridSlotId: slotContainer?.hasAttribute('data-grid-slot-id') || false,
       elementWidth: rect.width
     });
     
@@ -177,8 +182,8 @@ const ResizeWrapper = ({
       const hasSignificantMovement = Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3;
       if (!hasSignificantMovement) return;
 
-      // Allow full width expansion up to parent container
-      const maxAllowedWidth = parentRect ? parentRect.width - 20 : Infinity; // 20px padding
+      // Allow wider expansion - use full slot width with minimal padding
+      const maxAllowedWidth = parentRect ? parentRect.width - 4 : Infinity; // Minimal 4px padding for visual breathing room
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
