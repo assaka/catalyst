@@ -93,8 +93,10 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         }
       ];
 
+      console.log('🧪 FilePickerModal: Created test files:', testFiles);
       setFiles(testFiles);
       setError('Showing test image. Upload functionality coming next.');
+      console.log('🧪 FilePickerModal: State updated with test files');
     } finally {
       setLoading(false);
     }
@@ -215,46 +217,67 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
         {/* Files Grid */}
         <div className="flex-1 p-6 overflow-y-auto">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading files...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto text-orange-300 mb-4 flex items-center justify-center">
-                <Upload className="w-8 h-8" />
-              </div>
-              <p className="text-orange-600 font-medium">{error}</p>
-              <p className="text-sm text-gray-500 mt-2">Use the "Upload New" button above to add images</p>
-              <div className="flex gap-3 justify-center mt-4">
-                <Button
-                  onClick={loadFiles}
-                  variant="outline"
-                  size="sm"
-                  disabled={loading}
-                >
-                  {loading ? 'Retrying...' : 'Try Again'}
-                </Button>
-                <Button
-                  onClick={() => document.getElementById('file-upload-picker').click()}
-                  className="bg-blue-600 hover:bg-blue-700"
-                  size="sm"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Image
-                </Button>
-              </div>
-            </div>
-          ) : filteredFiles.length === 0 ? (
-            <div className="text-center py-12">
-              <Image className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">No images found</p>
-              <p className="text-sm text-gray-400 mt-2">Upload some images to get started</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 gap-4">
-              {filteredFiles.map((file) => (
+          {(() => {
+            console.log('🎨 FilePickerModal: Rendering files grid. loading:', loading, 'error:', error, 'filteredFiles.length:', filteredFiles.length);
+
+            if (loading) {
+              console.log('🔄 FilePickerModal: Showing loading state');
+              return (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading files...</p>
+                </div>
+              );
+            }
+
+            if (error) {
+              console.log('❌ FilePickerModal: Showing error state:', error);
+              return (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto text-orange-300 mb-4 flex items-center justify-center">
+                    <Upload className="w-8 h-8" />
+                  </div>
+                  <p className="text-orange-600 font-medium">{error}</p>
+                  <p className="text-sm text-gray-500 mt-2">Use the "Upload New" button above to add images</p>
+                  <div className="flex gap-3 justify-center mt-4">
+                    <Button
+                      onClick={loadFiles}
+                      variant="outline"
+                      size="sm"
+                      disabled={loading}
+                    >
+                      {loading ? 'Retrying...' : 'Try Again'}
+                    </Button>
+                    <Button
+                      onClick={() => document.getElementById('file-upload-picker').click()}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      size="sm"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Image
+                    </Button>
+                  </div>
+                </div>
+              );
+            }
+
+            if (filteredFiles.length === 0) {
+              console.log('📭 FilePickerModal: No files to show');
+              return (
+                <div className="text-center py-12">
+                  <Image className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">No images found</p>
+                  <p className="text-sm text-gray-400 mt-2">Upload some images to get started</p>
+                </div>
+              );
+            }
+
+            console.log('🖼️ FilePickerModal: Showing files grid with', filteredFiles.length, 'files');
+            return (
+              <div className="grid grid-cols-4 gap-4">
+                {filteredFiles.map((file, index) => {
+                  console.log(`🖼️ FilePickerModal: Rendering file ${index}:`, file);
+                  return (
                 <div
                   key={file.id}
                   className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
@@ -280,9 +303,11 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
                     <p className="text-sm font-medium truncate">{file.name}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Footer */}
