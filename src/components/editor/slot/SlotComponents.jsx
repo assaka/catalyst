@@ -455,13 +455,13 @@ export function GridColumn({
     <div
       className={`${
         mode === 'edit'
-          ? `${showBorders ? 'border-2 border-dashed' : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
+          ? `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
                 ? 'border-blue-500 bg-blue-50/40 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
               isDragging
                 ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
               isHovered
-                ? 'border-blue-500 border-2 border-dashed shadow-md shadow-blue-200/40'
+                ? `border-blue-500 ${isNested ? 'border' : 'border-2'} border-dashed shadow-md shadow-blue-200/40`
                 : showBorders
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
