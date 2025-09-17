@@ -173,19 +173,14 @@ const ResizeWrapper = ({
     // Use slot container or fall back to immediate parent
     const parentRect = slotContainer?.getBoundingClientRect() || wrapperRef.current.parentElement?.getBoundingClientRect();
 
-    // Account for sidebar and viewport constraints
+    // Keep viewport calculation for non-button elements
     const viewportWidth = window.innerWidth;
-    const viewportRect = { left: 0, right: viewportWidth, width: viewportWidth };
-
-    // Check if main container has sidebar padding (pr-80 = 320px)
     const mainContainer = document.querySelector('.min-h-screen');
     const hasSidebarPadding = mainContainer?.classList.contains('pr-80');
     const sidebarWidth = hasSidebarPadding ? 320 : 0;
-
-    // Calculate effective available width considering sidebar
     const effectiveViewportWidth = viewportWidth - sidebarWidth;
     const elementLeft = rect.left;
-    const maxAllowableRight = effectiveViewportWidth - 20; // 20px margin from edge
+    const maxAllowableRight = effectiveViewportWidth - 20;
 
     
     const startX = e.clientX;
@@ -214,11 +209,11 @@ const ResizeWrapper = ({
 
       let maxAllowedWidth;
       if (isButton && hasWFitClass) {
-        // For w-fit buttons, only constrain by viewport - ignore container limits
-        maxAllowedWidth = maxWidthFromViewport;
+        // For w-fit buttons, constrain to slot container with generous padding
+        maxAllowedWidth = parentRect ? parentRect.width - 8 : maxWidthFromViewport;
       } else if (isButton) {
-        // For regular buttons, allow generous expansion up to viewport
-        maxAllowedWidth = maxWidthFromViewport;
+        // For regular buttons, constrain to slot container with minimal padding
+        maxAllowedWidth = parentRect ? parentRect.width - 4 : maxWidthFromViewport;
       } else {
         // For non-buttons, use more restrictive bounds
         maxAllowedWidth = parentRect ? Math.min(parentRect.width - 4, maxWidthFromViewport) : maxWidthFromViewport;

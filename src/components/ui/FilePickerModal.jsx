@@ -11,6 +11,21 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState(null);
 
+  console.log('🔵 FilePickerModal: Component rendered with props:', {
+    isOpen,
+    fileType,
+    hasOnClose: !!onClose,
+    hasOnSelect: !!onSelect
+  });
+
+  console.log('🔵 FilePickerModal: Current state:', {
+    filesCount: files.length,
+    loading,
+    uploading,
+    error,
+    selectedFile: selectedFile?.name
+  });
+
 
   // Load files from File Library
   const loadFiles = async () => {
@@ -135,13 +150,22 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
   // Load files when modal opens
   useEffect(() => {
+    console.log('🟡 FilePickerModal: useEffect triggered with isOpen:', isOpen);
     if (isOpen) {
+      console.log('🟡 FilePickerModal: Modal is open, loading files...');
       setError(null); // Clear any previous errors
       loadFiles();
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  console.log('🟢 FilePickerModal: About to render. isOpen:', isOpen);
+
+  if (!isOpen) {
+    console.log('🔴 FilePickerModal: Modal not open, returning null');
+    return null;
+  }
+
+  console.log('🟢 FilePickerModal: Rendering modal with files:', files.length, 'loading:', loading, 'error:', error);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
