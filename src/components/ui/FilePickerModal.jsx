@@ -154,39 +154,54 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
     if (!fileList.length) return;
 
     setUploading(true);
+    console.log('📤 FilePickerModal: Starting upload for', fileList.length, 'files');
 
     try {
-      const formData = new FormData();
-      Array.from(fileList).forEach(file => {
-        formData.append('files', file);
-      });
-      formData.append('folder', 'library');
+      const uploadedFiles = [];
 
-      const response = await apiClient.post('/storage/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Upload files one by one to Supabase storage
+      for (const file of fileList) {
+        console.log('📤 FilePickerModal: Uploading file:', file.name);
 
-      if (response.success) {
-        console.log('✅ Upload successful:', response);
+        const formData = new FormData();
+        formData.append('file', file); // Use 'file' not 'files'
+        formData.append('folder', 'library');
+        formData.append('public', 'true');
+        formData.append('type', 'general');
 
-        // Clear error and show uploaded files immediately
-        setError(null);
+        const response = await apiClient.post('/supabase/storage/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
 
-        // Create file objects from uploaded files for immediate display
-        const uploadedFiles = Array.from(fileList).map((file, index) => ({
-          id: `uploaded-${Date.now()}-${index}`,
-          name: file.name,
-          url: response.data?.files?.[index]?.url || URL.createObjectURL(file),
-          mimeType: file.type,
-          size: file.size,
-          lastModified: file.lastModified || Date.now()
-        }));
+        if (response.success) {
+          console.log('✅ FilePickerModal: Upload successful for', file.name, ':', response);
 
-        setFiles(uploadedFiles);
+          // Add uploaded file to our list
+          uploadedFiles.push({
+            id: response.id || `uploaded-${Date.now()}-${uploadedFiles.length}`,
+            name: response.filename || file.name,
+            url: response.url || response.publicUrl,
+            mimeType: file.type,
+            size: file.size,
+            lastModified: Date.now()
+          });
+        } else {
+          throw new Error(`Upload failed for ${file.name}: ${response.message || 'Unknown error'}`);
+        }
       }
+
+      if (uploadedFiles.length > 0) {
+        // Clear error and refresh file list
+        setError(null);
+        console.log('📤 FilePickerModal: All uploads successful, refreshing file list...');
+
+        // Refresh the file list to show all files including newly uploaded ones
+        await loadFiles();
+      }
+
     } catch (error) {
-      console.error('Upload error:', error);
-      setError('Upload failed. Please try again.');
+      console.error('❌ FilePickerModal: Upload error:', error);
+      setError(`Upload failed: ${error.message}`);
     } finally {
       setUploading(false);
     }
