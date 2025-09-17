@@ -45,10 +45,11 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         }, 3000);
       });
 
-      console.log('📡 FilePickerModal: Making API request to /supabase/storage/list?bucket=suprshop-assets&folder=library');
+      // First test with a simple working endpoint like MediaStorage uses
+      console.log('📡 FilePickerModal: Testing connection with /supabase/storage/stats');
       const startTime = Date.now();
 
-      const responsePromise = apiClient.get('/supabase/storage/list?bucket=suprshop-assets&folder=library');
+      const responsePromise = apiClient.get('/supabase/storage/stats');
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
       const duration = Date.now() - startTime;
