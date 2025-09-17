@@ -24,7 +24,8 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
     loading,
     uploading,
     error,
-    selectedFile: selectedFile?.name
+    selectedFile: selectedFile?.name,
+    connectionStatus
   });
 
 
@@ -166,13 +167,17 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
             <h3 className="text-lg font-semibold">Select Image</h3>
 
             {/* Connection Status Badge */}
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-              connectionStatus === 'connected'
-                ? 'bg-green-100 text-green-700 border border-green-200'
-                : connectionStatus === 'failed'
-                ? 'bg-red-100 text-red-700 border border-red-200'
-                : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-            }`}>
+            {(() => {
+              console.log('🎨 FilePickerModal: Rendering badge with connectionStatus:', connectionStatus);
+              return (
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  connectionStatus === 'connected'
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : connectionStatus === 'failed'
+                    ? 'bg-red-100 text-red-700 border border-red-200'
+                    : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                }`}>
+            )})()}
               <div className={`w-2 h-2 rounded-full ${
                 connectionStatus === 'connected'
                   ? 'bg-green-500'

@@ -290,18 +290,19 @@ const ResizeWrapper = ({
     const buttonElement = React.cloneElement(children, {
       ref: wrapperRef,
       className: cn(
-        // Remove w-fit class during resize to allow width override
-        isResizing ? children.props.className?.replace(/\bw-fit\b/g, '').trim() : children.props.className,
+        // Remove w-fit class when we have a calculated width to allow width override
+        (size.width !== 'auto' && size.widthUnit !== 'auto') ?
+          children.props.className?.replace(/\bw-fit\b/g, '').trim() :
+          children.props.className,
         "resize-none select-none relative group",
         isResizing && "cursor-se-resize"
       ),
       style: {
         ...children.props.style,
-        // Apply size directly to the button element - use calculated width during resize
-        width: isResizing ?
-               (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'auto') :
-               (hasWFitClass ? 'fit-content' :
-               (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto')),
+        // Apply size directly to the button element - always use calculated width if available
+        width: (size.width !== 'auto' && size.widthUnit !== 'auto') ?
+               `${size.width}${size.widthUnit || 'px'}` :
+               (hasWFitClass ? 'fit-content' : children.props.style?.width || 'auto'),
         ...(size.height !== 'auto' && size.height && {
           minHeight: `${size.height}${size.heightUnit || 'px'}`,
           height: `${size.height}${size.heightUnit || 'px'}`
