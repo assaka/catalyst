@@ -625,7 +625,20 @@ export function HierarchicalSlotRenderer({
                       }
                     };
                   }
-                  return { ...prevConfig, slots: updatedSlots };
+
+                  const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                  // Debounced auto-save - clear previous timeout and set new one
+                  if (saveTimeoutRef && saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current);
+                  }
+                  if (saveTimeoutRef && saveConfiguration) {
+                    saveTimeoutRef.current = setTimeout(() => {
+                      saveConfiguration(updatedConfig);
+                    }, 500); // Wait 0.5 seconds after resize stops
+                  }
+
+                  return updatedConfig;
                 });
               }}
             >
@@ -682,7 +695,20 @@ export function HierarchicalSlotRenderer({
                       }
                     };
                   }
-                  return { ...prevConfig, slots: updatedSlots };
+
+                  const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                  // Debounced auto-save - clear previous timeout and set new one
+                  if (saveTimeoutRef && saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current);
+                  }
+                  if (saveTimeoutRef && saveConfiguration) {
+                    saveTimeoutRef.current = setTimeout(() => {
+                      saveConfiguration(updatedConfig);
+                    }, 500); // Wait 0.5 seconds after resize stops
+                  }
+
+                  return updatedConfig;
                 });
               }}
             >
@@ -758,7 +784,20 @@ export function HierarchicalSlotRenderer({
                               }
                             };
                           }
-                          return { ...prevConfig, slots: updatedSlots };
+
+                          const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                          // Debounced auto-save - clear previous timeout and set new one
+                          if (saveTimeoutRef && saveTimeoutRef.current) {
+                            clearTimeout(saveTimeoutRef.current);
+                          }
+                          if (saveTimeoutRef && saveConfiguration) {
+                            saveTimeoutRef.current = setTimeout(() => {
+                              saveConfiguration(updatedConfig);
+                            }, 500); // Wait 0.5 seconds after resize stops
+                          }
+
+                          return updatedConfig;
                         });
                       }}
                     >
@@ -843,6 +882,8 @@ export function HierarchicalSlotRenderer({
                   onResizeEnd={onResizeEnd}
                   selectedElementId={selectedElementId}
                   setPageConfig={setPageConfig}
+                  saveConfiguration={saveConfiguration}
+                  saveTimeoutRef={saveTimeoutRef}
                 />
               )}
 
@@ -906,6 +947,8 @@ export function HierarchicalSlotRenderer({
                       onResizeEnd={onResizeEnd}
                       selectedElementId={selectedElementId}
                       setPageConfig={setPageConfig}
+                      saveConfiguration={saveConfiguration}
+                      saveTimeoutRef={saveTimeoutRef}
                     />
                   )}
                 </EditableElement>

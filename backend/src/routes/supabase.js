@@ -606,6 +606,8 @@ router.get('/storage/list', authMiddleware, storeResolver(), async (req, res) =>
 router.get('/storage/list/:bucketName', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { bucketName } = req.params;
+    console.log(`📂 Listing files from bucket: ${bucketName}`);
+
     const result = await supabaseStorage.listImages(req.storeId, req.query.folder, {
       limit: parseInt(req.query.limit) || 100,
       offset: parseInt(req.query.offset) || 0,
