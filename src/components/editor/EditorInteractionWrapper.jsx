@@ -5,7 +5,12 @@ const EditorInteractionWrapper = ({
   mode,
   draggable = false,
   isSelected = false,
-  className = ''
+  className = '',
+  style = {},
+  onClick,
+  'data-slot-id': dataSlotId,
+  'data-editable': dataEditable,
+  onDragStart
 }) => {
   // Only apply editor styles in edit mode
   if (mode !== 'edit') {
@@ -29,15 +34,17 @@ const EditorInteractionWrapper = ({
 
   const editorStyles = {
     // Clean inline styles without problematic effects
-    border: isSelected 
-      ? '2px solid rgba(59, 130, 246, 0.7)' 
+    border: isSelected
+      ? '2px solid rgba(59, 130, 246, 0.7)'
       : '2px solid transparent',
     borderRadius: '6px',
     transition: 'border-color 0.2s ease-in-out, background-color 0.2s ease-in-out',
     ...(isSelected && {
       borderColor: 'rgba(59, 130, 246, 0.7)',
       boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.2)'
-    })
+    }),
+    // Merge any additional styles from parent
+    ...style
   };
 
   const handleMouseLeave = (e) => {
@@ -53,7 +60,12 @@ const EditorInteractionWrapper = ({
     <div
       className={`${editorClasses} ${className}`}
       style={editorStyles}
+      onClick={onClick}
       onMouseLeave={handleMouseLeave}
+      data-slot-id={dataSlotId}
+      data-editable={dataEditable}
+      draggable={false}
+      onDragStart={onDragStart}
     >
       {children}
     </div>

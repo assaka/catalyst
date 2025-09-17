@@ -224,6 +224,19 @@ const ResizeWrapper = ({
       const hasSignificantMovement = Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3;
       if (!hasSignificantMovement) return;
 
+      // Debug logging for buttons during resize
+      if (children?.props?.['data-slot-id']?.includes('button')) {
+        console.log('🔄 Resize move event:', {
+          deltaX,
+          deltaY,
+          startX,
+          startY,
+          currentX: moveEvent.clientX,
+          currentY: moveEvent.clientY,
+          hasSignificantMovement
+        });
+      }
+
       // For buttons, allow more generous horizontal expansion
       // Check if this is a button element that should have flexible width
       const isButton = isButtonElement(children);

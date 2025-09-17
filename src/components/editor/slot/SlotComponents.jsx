@@ -189,18 +189,14 @@ export function EditableElement({
       mode={mode}
       draggable={draggable}
       isSelected={selectedElementId === slotId}
+      className={className || ''}
+      style={style}
+      onClick={handleClick}
+      data-slot-id={slotId}
+      data-editable={mode === 'edit'}
+      onDragStart={(e) => e.preventDefault()}
     >
-      <div
-        className={className || ''}
-        style={style}
-        onClick={handleClick}
-        data-slot-id={slotId}
-        data-editable={mode === 'edit'}
-        draggable={false}
-        onDragStart={(e) => e.preventDefault()}
-      >
-        {children}
-      </div>
+      {children}
     </EditorInteractionWrapper>
   );
 
