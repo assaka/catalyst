@@ -925,7 +925,17 @@ export default function Cart() {
     // Helper function to get slot content from configuration
     const getSlotContent = (slotId, fallback = '') => {
         const slotConfig = cartLayoutConfig?.slots?.[slotId] || cartLayoutConfig?.[slotId];
-        return slotConfig?.content || fallback;
+        let content = slotConfig?.content || fallback;
+
+        // Clean up HTML content for direct button usage (remove nested divs from resize)
+        if (typeof content === 'string' && content.includes('<div')) {
+            // Extract text content from nested divs
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            content = tempDiv.textContent || tempDiv.innerText || fallback;
+        }
+
+        return content;
     };
 
     // Render the default cart layout (when no custom configuration)

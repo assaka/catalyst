@@ -419,6 +419,7 @@ export function GridColumn({
     ...Object.fromEntries(
       Object.entries(slot?.styles || {}).filter(([key]) => {
         // Whitelist of layout-only styles that are safe for grid wrapper
+        // Explicitly exclude color/appearance styles so they go to the actual element
         const layoutStyles = [
           'width', 'minWidth', 'maxWidth',
           'height', 'minHeight', 'maxHeight',
@@ -429,7 +430,16 @@ export function GridColumn({
           'flexBasis', 'flexGrow', 'flexShrink',
           'textAlign' // Allow textAlign - can work alongside parentClassName (text-center, etc.)
         ];
-        return layoutStyles.includes(key);
+
+        // Exclude color and appearance styles from grid wrapper
+        const colorStyles = [
+          'color', 'backgroundColor', 'background', 'borderColor', 'border',
+          'borderTop', 'borderRight', 'borderBottom', 'borderLeft',
+          'borderRadius', 'borderStyle', 'borderWidth',
+          'fontSize', 'fontWeight', 'fontFamily', 'lineHeight',
+          'boxShadow', 'textShadow', 'opacity', 'transform'
+        ];
+        return layoutStyles.includes(key) && !colorStyles.includes(key);
       })
     )
   };
@@ -982,7 +992,8 @@ export function CodeModal({
   isOpen,
   onClose,
   configuration = {},
-  onSave
+  onSave,
+  localSaveStatus
 }) {
   const [editorValue, setEditorValue] = useState('');
   const [originalValue, setOriginalValue] = useState('');
