@@ -602,6 +602,26 @@ router.get('/storage/list', authMiddleware, storeResolver(), async (req, res) =>
   }
 });
 
+// List files from specific bucket
+router.get('/storage/list/:bucketName', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const { bucketName } = req.params;
+    const result = await supabaseStorage.listImages(req.storeId, req.query.folder, {
+      limit: parseInt(req.query.limit) || 100,
+      offset: parseInt(req.query.offset) || 0,
+      bucket: bucketName
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error listing files from bucket:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Delete image
 router.delete('/storage/delete', authMiddleware, storeResolver(), async (req, res) => {
   try {

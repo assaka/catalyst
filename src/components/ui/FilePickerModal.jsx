@@ -109,10 +109,10 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
             if (assetsBucket) {
               setFiles([]);
-              setError('✅ Connected to storage, but unable to list files. You can upload new images.');
+              setError(`✅ Connected to storage, but unable to list files from bucket: ${assetsBucket.name}. Endpoint: /supabase/storage/list/suprshop-assets. You can upload new images.`);
             } else {
               setFiles([]);
-              setError('Storage bucket not found. You can upload new images.');
+              setError(`Storage bucket 'suprshop-assets' not found. Available buckets: ${bucketsResponse.buckets.map(b => b.name).join(', ')}. You can upload new images.`);
             }
           } else {
             throw new Error('Unable to access storage');
@@ -120,7 +120,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         } catch (bucketsError) {
           console.error('❌ FilePickerModal: Error with buckets fallback:', bucketsError);
           setFiles([]);
-          setError('✅ Connected, but unable to list files. You can upload new images.');
+          setError('✅ Connected, but unable to list files or buckets. Endpoint: /supabase/storage/list/suprshop-assets. You can upload new images.');
         }
       }
     } catch (error) {
