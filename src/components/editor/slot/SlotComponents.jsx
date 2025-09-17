@@ -410,6 +410,7 @@ export function GridColumn({
   const gridStyles = {
     gridColumn: `span ${colSpan}`,
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
+    zIndex: 2,
     // Only apply layout-related styles to grid wrapper using whitelist approach
     // All other styles (colors, fonts, etc.) should go to the actual elements
     ...Object.fromEntries(
@@ -459,7 +460,7 @@ export function GridColumn({
                 : showBorders
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
-            }`
+            } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
       } relative responsive-slot`}
       data-col-span={colSpan}
@@ -511,13 +512,7 @@ export function GridColumn({
         </div>
       )}
 
-      <div className={`p-2 relative transition-all duration-200 ${
-        mode === 'edit'
-          ? `${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} rounded-md`
-          : ''
-      }`} style={{ zIndex: 2 }}>
-        {children}
-      </div>
+      {children}
 
       {showHorizontalHandle && isHovered && (
         <GridResizeHandle
