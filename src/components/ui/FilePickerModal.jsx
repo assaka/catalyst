@@ -9,11 +9,13 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [error, setError] = useState(null);
 
   // Load files from File Library
   const loadFiles = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await apiClient.get('/storage/list?folder=library');
 
       if (response.success && response.data) {
@@ -35,9 +37,26 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           : transformedFiles;
 
         setFiles(filteredFiles);
+      } else if (response.success && response.data && response.data.files === undefined) {
+        // Handle case where API returns success but no files structure
+        setFiles([]);
       }
     } catch (error) {
       console.error('Error loading files:', error);
+
+      // Set user-friendly error messages based on error type
+      if (error.message.includes('Access denied') || error.message.includes('No token provided')) {
+        setError('Please log in to access your files');
+      } else if (error.message.includes('Network error')) {
+        setError('Unable to connect to server. Please check your connection.');
+      } else if (error.message.includes('No storage provider')) {
+        setError('Storage not configured. Please contact administrator.');
+      } else {
+        setError('Failed to load files. Please try again.');
+      }
+
+      // Set empty files array so UI shows "no files" state instead of loading forever
+      setFiles([]);
     } finally {
       setLoading(false);
     }
@@ -79,6 +98,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   // Load files when modal opens
   useEffect(() => {
     if (isOpen) {
+      setError(null); // Clear any previous errors
       loadFiles();
     }
   }, [isOpen]);
@@ -137,6 +157,22 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading files...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto text-red-300 mb-4 flex items-center justify-center">
+                <X className="w-8 h-8" />
+              </div>
+              <p className="text-red-500 font-medium">{error}</p>
+              <p className="text-sm text-gray-400 mt-2">Please try uploading a new image below</p>
+              <Button
+                onClick={loadFiles}
+                variant="outline"
+                className="mt-4"
+                disabled={loading}
+              >
+                {loading ? 'Retrying...' : 'Try Again'}
+              </Button>
             </div>
           ) : filteredFiles.length === 0 ? (
             <div className="text-center py-12">
