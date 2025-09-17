@@ -246,7 +246,7 @@ export function GridColumn({
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
-  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1 && !['button', 'text', 'image'].includes(slot?.type);
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1 && !['button', 'link', 'text', 'image'].includes(slot?.type);
   const showVerticalHandle = onSlotHeightResize && mode === 'edit' && isContainerType;
 
   const handleDragStart = useCallback((e) => {
@@ -700,6 +700,62 @@ export function HierarchicalSlotRenderer({
                     </button>
                   </ResizeWrapper>
                 </EditableElement>
+              ) : slot.type === 'link' ? (
+                <EditableElement
+                  slotId={slot.id}
+                  mode={mode}
+                  onClick={onElementClick}
+                  className={''}
+                  style={{}}
+                  canResize={false}
+                  draggable={false}
+                  selectedElementId={selectedElementId}
+                >
+                  <ResizeWrapper
+                    minWidth={50}
+                    minHeight={20}
+                    onResize={(newSize) => {
+                      setPageConfig(prevConfig => {
+                        const updatedSlots = { ...prevConfig?.slots };
+                        if (updatedSlots[slot.id]) {
+                          updatedSlots[slot.id] = {
+                            ...updatedSlots[slot.id],
+                            styles: {
+                              ...updatedSlots[slot.id].styles,
+                              width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                              height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                            }
+                          };
+                        }
+                        return { ...prevConfig, slots: updatedSlots };
+                      });
+                    }}
+                  >
+                    <a
+                      href={slot.metadata?.href || '#'}
+                      className={`${slot.className}`}
+                      style={{
+                        ...slot.styles,
+                        minWidth: 'auto',
+                        minHeight: 'auto'
+                      }}
+                      target={slot.metadata?.target || '_self'}
+                      rel={slot.metadata?.target === '_blank' ? 'noopener noreferrer' : undefined}
+                    >
+                      {(() => {
+                        // For links, extract text content only (no HTML wrappers)
+                        const content = String(slot.content || `Link: ${slot.id}`);
+                        if (content.includes('<')) {
+                          // If content contains HTML, extract just the text
+                          const tempDiv = document.createElement('div');
+                          tempDiv.innerHTML = content;
+                          return tempDiv.textContent || tempDiv.innerText || content;
+                        }
+                        return content;
+                      })()}
+                    </a>
+                  </ResizeWrapper>
+                </EditableElement>
               ) : (
                 <EditableElement
                   slotId={slot.id}
@@ -879,6 +935,40 @@ export function AddSlotModal({
               <div>
                 <div className="font-medium">Text</div>
                 <div className="text-sm text-gray-500">Add text content</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onCreateSlot('button', 'Click me');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-blue-600 font-bold">B</span>
+              <div>
+                <div className="font-medium">Button</div>
+                <div className="text-sm text-gray-500">Add a clickable button</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onCreateSlot('link', 'Link text');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-indigo-600 font-bold">🔗</span>
+              <div>
+                <div className="font-medium">Link</div>
+                <div className="text-sm text-gray-500">Add a clickable link</div>
               </div>
             </div>
           </Button>
