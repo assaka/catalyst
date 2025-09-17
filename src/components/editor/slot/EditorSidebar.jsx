@@ -483,15 +483,30 @@ const EditorSidebar = ({
   const handleHtmlContentSave = useCallback(() => {
     if (slotId && onTextChange && !isInitializing && htmlContentRef.current) {
       const currentHtml = htmlContentRef.current.value;
-      
+
+      // If HTML is empty, save empty string
+      if (!currentHtml || currentHtml.trim() === '') {
+        onTextChange(slotId, '');
+        setLocalHtmlContent('');
+        setHtmlValidation({
+          error: null,
+          isValid: true,
+          isSafe: true,
+          wasModified: false,
+          warnings: []
+        });
+        return;
+      }
+
       // Parse and sanitize HTML securely
       const parsed = parseEditorHtml(currentHtml);
-      
-      if (parsed.isValid && parsed.sanitizedHtml) {
+
+      // Always save something - either sanitized HTML or plain text fallback
+      if (parsed.sanitizedHtml) {
         // Save the sanitized HTML (XSS-safe)
         onTextChange(slotId, parsed.sanitizedHtml);
-        setLocalHtmlContent(currentHtml); // Update state for consistency
-        
+        setLocalHtmlContent(parsed.sanitizedHtml); // Update with sanitized version
+
         // Update validation state
         setHtmlValidation({
           error: parsed.error,
@@ -500,14 +515,34 @@ const EditorSidebar = ({
           wasModified: parsed.wasModified,
           warnings: parsed.wasModified ? ['HTML was sanitized for security'] : []
         });
+
+        // Update the textarea with sanitized content if it was modified
+        if (parsed.wasModified && htmlContentRef.current) {
+          htmlContentRef.current.value = parsed.sanitizedHtml;
+        }
+      } else if (parsed.textContent) {
+        // Fallback: save as plain text if HTML parsing completely failed
+        onTextChange(slotId, parsed.textContent);
+        setLocalHtmlContent(parsed.textContent);
+
+        setHtmlValidation({
+          error: 'HTML parsing failed, saved as plain text',
+          isValid: false,
+          isSafe: true,
+          wasModified: true,
+          warnings: ['Content saved as plain text due to HTML errors']
+        });
       } else {
-        // Handle invalid HTML
+        // Last resort: save the original content but show error
+        onTextChange(slotId, currentHtml);
+        setLocalHtmlContent(currentHtml);
+
         setHtmlValidation({
           error: parsed.error || 'Invalid HTML content',
           isValid: false,
           isSafe: false,
           wasModified: false,
-          warnings: ['HTML content could not be processed safely']
+          warnings: ['HTML may contain errors but was saved as-is']
         });
       }
     }

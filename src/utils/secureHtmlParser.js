@@ -31,13 +31,26 @@ const SECURITY_CONFIGS = {
       // Links (href will be sanitized)
       'a',
       // Interactive elements (with restrictions)
-      'button',
+      'button', 'input',
       // Containers
-      'section', 'article'
+      'section', 'article', 'header', 'footer', 'nav', 'main', 'aside',
+      // Media
+      'img', 'picture', 'figure', 'figcaption',
+      // Table elements
+      'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+      // Form elements
+      'form', 'label', 'select', 'option', 'textarea', 'fieldset', 'legend',
+      // Other common elements
+      'blockquote', 'code', 'pre', 'small', 'sub', 'sup', 'mark', 'del', 'ins'
     ],
     ALLOWED_ATTR: [
-      'class', 'id', 'style', 'href', 'target', 'rel',
-      'data-slot-id', 'data-editable' // Allow editor-specific attributes
+      'class', 'id', 'style', 'href', 'target', 'rel', 'src', 'alt', 'title',
+      'width', 'height', 'type', 'name', 'value', 'placeholder', 'disabled',
+      'checked', 'selected', 'readonly', 'required', 'multiple', 'min', 'max',
+      'step', 'pattern', 'maxlength', 'minlength', 'autocomplete', 'autofocus',
+      'for', 'colspan', 'rowspan', 'scope', 'headers',
+      'data-slot-id', 'data-editable', 'data-*', // Allow all data attributes
+      'aria-*', 'role' // Allow accessibility attributes
     ],
     ALLOW_DATA_ATTR: true,
     FORBID_CONTENTS: ['script', 'object', 'embed', 'base', 'link'],
