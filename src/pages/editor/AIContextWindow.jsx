@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History} from 'lucide-react';
+import {Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History, ShoppingCart, Package, Home, CreditCard, CheckCheck} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
@@ -114,6 +114,62 @@ const createSimpleHash = (content) => {
  * Main interface for natural language code editing with AST-aware intelligence
  * Integrates file navigation, code editing, AI processing, and live preview
  */
+// Function to get user-friendly display name and icon based on filename
+const getFileDisplayInfo = (filename) => {
+  if (!filename) return { name: '', icon: null };
+
+  const name = filename.toLowerCase();
+
+  // Map filenames to user-friendly names and icons
+  if (name.includes('cart')) {
+    return {
+      name: 'Shopping cart',
+      icon: ShoppingCart
+    };
+  }
+
+  if (name.includes('product')) {
+    return {
+      name: 'Product page',
+      icon: Package
+    };
+  }
+
+  if (name.includes('category')) {
+    return {
+      name: 'Category page',
+      icon: Package
+    };
+  }
+
+  if (name.includes('homepage') || name.includes('home')) {
+    return {
+      name: 'Homepage',
+      icon: Home
+    };
+  }
+
+  if (name.includes('checkout')) {
+    return {
+      name: 'Checkout page',
+      icon: CreditCard
+    };
+  }
+
+  if (name.includes('success')) {
+    return {
+      name: 'Success page',
+      icon: CheckCheck
+    };
+  }
+
+  // Default fallback
+  return {
+    name: filename,
+    icon: null
+  };
+};
+
 const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { getSelectedStoreId } = useStoreSelection();
@@ -746,8 +802,18 @@ export default ExampleComponent;`;
                             "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
                           )}
                         >
-                          <Eye className="w-4 h-4 mr-2" />
-                          {selectedFile.name}
+                          {(() => {
+                            const displayInfo = getFileDisplayInfo(selectedFile.name);
+                            const IconComponent = displayInfo.icon;
+                            return (
+                              <>
+                                {IconComponent && (
+                                  <IconComponent className="w-4 h-4 mr-2" />
+                                )}
+                                {displayInfo.name}
+                              </>
+                            );
+                          })()}
                         </button>
                       </div>
                       <button
@@ -957,10 +1023,18 @@ export default ExampleComponent;`;
                               "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
                             )}
                           >
-                            {selectedFile.icon && (
-                              <selectedFile.icon className="w-4 h-4 mr-2" />
-                            )}
-                            {selectedFile.name}
+                            {(() => {
+                              const displayInfo = getFileDisplayInfo(selectedFile.name);
+                              const IconComponent = displayInfo.icon;
+                              return (
+                                <>
+                                  {IconComponent && (
+                                    <IconComponent className="w-4 h-4 mr-2" />
+                                  )}
+                                  {displayInfo.name}
+                                </>
+                              );
+                            })()}
                           </button>
                         </div>
                         <button
