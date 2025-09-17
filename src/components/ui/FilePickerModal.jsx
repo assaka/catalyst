@@ -36,40 +36,38 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
       console.log('🔍 FilePickerModal: Making API call to /storage/list?folder=library');
 
-      // Test with direct fetch first to see if it's an API client issue
-      console.log('🔍 FilePickerModal: Testing with direct fetch...');
-      try {
-        const directResponse = await fetch('https://catalyst-backend-fzhu.onrender.com/api/storage/list?folder=library', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        });
-        console.log('🔍 FilePickerModal: Direct fetch response status:', directResponse.status);
-        const directData = await directResponse.json();
-        console.log('🔍 FilePickerModal: Direct fetch response data:', directData);
-      } catch (directError) {
-        console.log('🔍 FilePickerModal: Direct fetch error:', directError);
-      }
-
-      // Add timeout to prevent hanging indefinitely
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000);
+      // Use direct fetch instead of problematic API client
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      const response = await fetch(`${apiUrl}/api/storage/list?folder=library`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
 
-      const apiPromise = apiClient.get('/storage/list?folder=library');
+      console.log('🔍 FilePickerModal: Response status:', response.status);
 
-      console.log('🔍 FilePickerModal: Now testing with API client...');
-      const response = await Promise.race([apiPromise, timeoutPromise]);
-      console.log('🔍 FilePickerModal: API Response received:', response);
-      console.log('🔍 FilePickerModal: Response type:', typeof response);
-      console.log('🔍 FilePickerModal: Response keys:', response ? Object.keys(response) : 'null response');
+      if (!response.ok) {
+        // Handle HTTP errors
+        const errorData = await response.json();
+        console.log('🔍 FilePickerModal: Error response data:', errorData);
 
-      if (response && response.success && response.data) {
+        const error = new Error(errorData.message || `HTTP ${response.status}`);
+        error.status = response.status;
+        error.data = errorData;
+        throw error;
+      }
+
+      const responseData = await response.json();
+      console.log('🔍 FilePickerModal: API Response data received:', responseData);
+      console.log('🔍 FilePickerModal: Response data type:', typeof responseData);
+      console.log('🔍 FilePickerModal: Response data keys:', responseData ? Object.keys(responseData) : 'null response');
+
+      if (responseData && responseData.success && responseData.data) {
         console.log('🔍 FilePickerModal: Response has success=true and data');
-        console.log('🔍 FilePickerModal: response.data:', response.data);
-        const rawFiles = response.data.files || [];
+        console.log('🔍 FilePickerModal: responseData.data:', responseData.data);
+        const rawFiles = responseData.data.files || [];
         console.log('🔍 FilePickerModal: Raw files array:', rawFiles);
         console.log('🔍 FilePickerModal: Raw files count:', rawFiles.length);
 
@@ -92,14 +90,14 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         console.log('🔍 FilePickerModal: Setting files state with:', filteredFiles);
 
         setFiles(filteredFiles);
-      } else if (response && response.success && response.data && response.data.files === undefined) {
+      } else if (responseData && responseData.success && responseData.data && responseData.data.files === undefined) {
         // Handle case where API returns success but no files structure
         console.log('🔍 FilePickerModal: Response success but no files property');
         setFiles([]);
       } else {
         // If response doesn't have expected structure, treat as no files
         console.log('🔍 FilePickerModal: Unexpected response structure');
-        console.log('🔍 FilePickerModal: Full response object:', JSON.stringify(response, null, 2));
+        console.log('🔍 FilePickerModal: Full response object:', JSON.stringify(responseData, null, 2));
         setFiles([]);
         setError('Unable to load files. Please try again.');
       }

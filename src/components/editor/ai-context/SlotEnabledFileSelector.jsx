@@ -14,7 +14,8 @@ import {
   Grid3X3,
   RefreshCw,
   Loader2,
-  Settings
+  Settings,
+  AlertCircle
 } from 'lucide-react';
 
 const SlotEnabledFileSelector = ({
@@ -334,9 +335,9 @@ const SlotEnabledFileSelector = ({
                   {file.hasUnpublishedChanges && (
                       <Badge
                           variant="secondary"
-                          className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5"
+                          className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5 flex items-center gap-1"
                       >
-                        Unpublished
+                        <AlertCircle className="w-3 h-3" />
                       </Badge>
                   )}
                   {/* Loading indicator */}
