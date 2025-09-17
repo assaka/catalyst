@@ -231,7 +231,8 @@ export function GridColumn({
   showBorders = true,
   currentDragInfo,
   setCurrentDragInfo,
-  children
+  children,
+  isNested = false
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -453,7 +454,7 @@ export function GridColumn({
   return (
     <div
       className={`${
-        mode === 'edit'
+        mode === 'edit' && !isNested
           ? `${showBorders ? 'border-2 border-dashed' : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
                 ? 'border-blue-500 bg-blue-50/40 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
@@ -465,7 +466,9 @@ export function GridColumn({
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
             } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
-          : 'overflow-hidden'
+          : isNested
+            ? '' // Minimal styling for nested slots
+            : 'overflow-hidden'
       } relative responsive-slot ${
         ['container', 'grid', 'flex'].includes(slot?.type)
           ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
@@ -568,7 +571,9 @@ export function HierarchicalSlotRenderer({
   onResizeStart,
   onResizeEnd,
   selectedElementId = null,
-  setPageConfig
+  setPageConfig,
+  saveConfiguration,
+  saveTimeoutRef
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -601,6 +606,7 @@ export function HierarchicalSlotRenderer({
         onResizeEnd={onResizeEnd}
         mode={mode}
         showBorders={showBorders}
+        isNested={true}
       >
           {slot.type === 'text' && mode === 'edit' && (
             <ResizeWrapper

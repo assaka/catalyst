@@ -641,6 +641,8 @@ const CartSlotsEditor = ({
                   }}
                   selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
                   setPageConfig={setCartLayoutConfig}
+                  saveConfiguration={saveConfiguration}
+                  saveTimeoutRef={saveTimeoutRef}
                 />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
