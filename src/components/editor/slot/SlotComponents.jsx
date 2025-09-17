@@ -832,7 +832,6 @@ export function HierarchicalSlotRenderer({
                     </a>
                   )}
                 </>
-              }
               ) : (
                 <EditableElement
                   slotId={slot.id}
