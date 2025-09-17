@@ -827,8 +827,21 @@ export function HierarchicalSlotRenderer({
                   slotId={slot.id}
                   mode={mode}
                   onClick={onElementClick}
-                  className={slot.parentClassName || ''}
-                  style={['input'].includes(slot.type) ? {} : (slot.styles || {})}
+                  className={
+                    ['container', 'grid', 'flex'].includes(slot.type)
+                      ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
+                      : slot.parentClassName || ''
+                  }
+                  style={
+                    ['input'].includes(slot.type)
+                      ? {}
+                      : ['container', 'grid', 'flex'].includes(slot.type)
+                        ? {
+                            ...slot.styles,
+                            minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
+                          }
+                        : (slot.styles || {})
+                  }
                   canResize={!['container', 'grid', 'flex'].includes(slot.type)}
                   draggable={false}
                   selectedElementId={selectedElementId}
@@ -866,31 +879,23 @@ export function HierarchicalSlotRenderer({
                     </>
                   )}
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
-                    <div
-                      className={`w-full h-full grid grid-cols-12 gap-2 ${slot.className}`}
-                      style={{
-                        ...slot.styles,
-                        minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
-                      }}
-                    >
-                      <HierarchicalSlotRenderer
-                        slots={slots}
-                        parentId={slot.id}
-                        mode={mode}
-                        viewMode={viewMode}
-                        showBorders={showBorders}
-                        currentDragInfo={currentDragInfo}
-                        setCurrentDragInfo={setCurrentDragInfo}
-                        onElementClick={onElementClick}
-                        onGridResize={onGridResize}
-                        onSlotHeightResize={onSlotHeightResize}
-                        onSlotDrop={onSlotDrop}
-                        onResizeStart={onResizeStart}
-                        onResizeEnd={onResizeEnd}
-                        selectedElementId={selectedElementId}
-                        setPageConfig={setPageConfig}
-                      />
-                    </div>
+                    <HierarchicalSlotRenderer
+                      slots={slots}
+                      parentId={slot.id}
+                      mode={mode}
+                      viewMode={viewMode}
+                      showBorders={showBorders}
+                      currentDragInfo={currentDragInfo}
+                      setCurrentDragInfo={setCurrentDragInfo}
+                      onElementClick={onElementClick}
+                      onGridResize={onGridResize}
+                      onSlotHeightResize={onSlotHeightResize}
+                      onSlotDrop={onSlotDrop}
+                      onResizeStart={onResizeStart}
+                      onResizeEnd={onResizeEnd}
+                      selectedElementId={selectedElementId}
+                      setPageConfig={setPageConfig}
+                    />
                   )}
                 </EditableElement>
               )}
