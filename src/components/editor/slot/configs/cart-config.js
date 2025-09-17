@@ -24,7 +24,7 @@ export const cartConfig = {
       viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
-    
+
     header_container: {
       id: 'header_container',
       type: 'flex',
@@ -37,7 +37,7 @@ export const cartConfig = {
       viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
-    
+
     content_area: {
       id: 'content_area',
       type: 'container',
@@ -50,7 +50,7 @@ export const cartConfig = {
       viewMode: ['empty', 'withProducts'],
       metadata: { hierarchical: true }
     },
-    
+
     sidebar_area: {
       id: 'sidebar_area',
       type: 'flex',
@@ -63,7 +63,7 @@ export const cartConfig = {
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
-    
+
     // Header slot
     header_title: {
       id: 'header_title',

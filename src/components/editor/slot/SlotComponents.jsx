@@ -604,7 +604,6 @@ export function HierarchicalSlotRenderer({
         mode={mode}
         showBorders={showBorders}
       >
-        <div className={slot.parentClassName || ''}>
           {slot.type === 'text' && (
             <>
               {mode === 'edit' ? (
