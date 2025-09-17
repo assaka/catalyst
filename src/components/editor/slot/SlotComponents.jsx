@@ -803,7 +803,7 @@ export function HierarchicalSlotRenderer({
                   ) : (
                     <a
                       href={slot.href || '#'}
-                      className={slot.className}
+                      className={`${slot.parentClassName || ''} ${slot.className}`}
                       style={{
                         ...slot.styles,
                         minWidth: 'auto',

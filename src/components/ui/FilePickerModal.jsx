@@ -93,7 +93,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
                  error.message.includes('Storage service timeout') ||
                  error.message.includes('storage provider is not properly configured')) {
         console.log('⚙️ FilePickerModal: Storage configuration error detected');
-        setError('Storage not configured. You can still upload files using the "Upload New" button below.');
+        setError('Unable to load existing files. You can upload new images using the "Upload New" button below.');
       } else {
         console.log('❓ FilePickerModal: Unknown error type');
         setError(`Failed to load files: ${error.message || 'Please try again.'}`);
@@ -205,19 +205,29 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto text-red-300 mb-4 flex items-center justify-center">
-                <X className="w-8 h-8" />
+              <div className="w-16 h-16 mx-auto text-orange-300 mb-4 flex items-center justify-center">
+                <Upload className="w-8 h-8" />
               </div>
-              <p className="text-red-500 font-medium">{error}</p>
-              <p className="text-sm text-gray-400 mt-2">Please try uploading a new image below</p>
-              <Button
-                onClick={loadFiles}
-                variant="outline"
-                className="mt-4"
-                disabled={loading}
-              >
-                {loading ? 'Retrying...' : 'Try Again'}
-              </Button>
+              <p className="text-orange-600 font-medium">{error}</p>
+              <p className="text-sm text-gray-500 mt-2">Use the "Upload New" button above to add images</p>
+              <div className="flex gap-3 justify-center mt-4">
+                <Button
+                  onClick={loadFiles}
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                >
+                  {loading ? 'Retrying...' : 'Try Again'}
+                </Button>
+                <Button
+                  onClick={() => document.getElementById('file-upload-picker').click()}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  size="sm"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Image
+                </Button>
+              </div>
             </div>
           ) : filteredFiles.length === 0 ? (
             <div className="text-center py-12">
