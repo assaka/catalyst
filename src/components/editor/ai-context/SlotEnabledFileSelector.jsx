@@ -15,8 +15,20 @@ import {
   RefreshCw,
   Loader2,
   Settings,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  Dot
 } from 'lucide-react';
+
+// Icon options for unpublished status - easily switch between them
+const UNPUBLISHED_ICONS = {
+  alert: AlertCircle,    // Current: Warning/alert style
+  edit: Edit3,          // Alternative: Edit pencil style
+  dot: Dot              // Alternative: Simple dot style
+};
+
+// Choose your preferred icon here
+const UnpublishedIcon = UNPUBLISHED_ICONS.alert; // Change to 'edit' or 'dot'
 
 const SlotEnabledFileSelector = ({
   onFileSelect,
@@ -337,7 +349,7 @@ const SlotEnabledFileSelector = ({
                           variant="secondary"
                           className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5 flex items-center gap-1"
                       >
-                        <AlertCircle className="w-3 h-3" />
+                        <UnpublishedIcon className="w-3 h-3" />
                       </Badge>
                   )}
                   {/* Loading indicator */}
