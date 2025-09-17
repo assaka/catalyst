@@ -361,14 +361,19 @@ const ResizeWrapper = ({
     const appliedWidth = hasWFitClass ? 'fit-content' :
                         (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto');
 
+    const actualAppliedWidth = isResizing ?
+                                 (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'auto') :
+                                 (hasWFitClass ? 'fit-content' :
+                                 (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto'));
+
     // Debug button style application
     if (children?.props?.['data-slot-id']?.includes('button')) {
       console.log('🎨 Button style application:', {
         hasWFitClass,
         currentSize: size,
-        appliedWidth,
-        originalChildrenStyle: children.props.style,
-        isResizing
+        isResizing,
+        actualAppliedWidth,
+        originalChildrenStyle: children.props.style
       });
     }
 
@@ -381,9 +386,11 @@ const ResizeWrapper = ({
       ),
       style: {
         ...children.props.style,
-        // Apply size directly to the button element, but respect w-fit classes
-        width: hasWFitClass ? 'fit-content' :
-               (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto'),
+        // Apply size directly to the button element - use calculated width during resize
+        width: isResizing ?
+               (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : 'auto') :
+               (hasWFitClass ? 'fit-content' :
+               (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto')),
         ...(size.height !== 'auto' && size.height && {
           minHeight: `${size.height}${size.heightUnit || 'px'}`,
           height: `${size.height}${size.heightUnit || 'px'}`
