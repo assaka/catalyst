@@ -761,7 +761,7 @@ export function HierarchicalSlotRenderer({
                         minHeight: 'auto'
                       }}
                       target={slot.target || '_self'}
-                      rel={slot.target === '_blank' ? 'noopener noreferrer' : undefined}
+                      rel="noopener noreferrer"
                     >
                       {(() => {
                         // For links, extract text content only (no HTML wrappers)
