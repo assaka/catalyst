@@ -46,21 +46,38 @@ class SupabaseStorageProvider extends StorageInterface {
 
       console.log('🗃️ Querying MediaAsset table with where:', where);
 
-      // Get files from database
-      const startTime = Date.now();
-      const mediaAssets = await MediaAsset.findAll({
+      // Add timeout for database query to prevent hanging
+      const dbQueryPromise = MediaAsset.findAll({
         where,
         order: [['created_at', 'DESC']],
         limit: options.limit || 100,
         offset: options.offset || 0
       });
-      const duration = Date.now() - startTime;
 
-      console.log(`📊 MediaAsset query completed in ${duration}ms:`, {
-        found: mediaAssets.length,
-        storeId,
-        folder
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database query timeout')), 3000);
       });
+
+      let mediaAssets = [];
+      let queryDuration = 0;
+
+      try {
+        const startTime = Date.now();
+        mediaAssets = await Promise.race([dbQueryPromise, timeoutPromise]);
+        queryDuration = Date.now() - startTime;
+
+        console.log(`📊 MediaAsset query completed in ${queryDuration}ms:`, {
+          found: mediaAssets.length,
+          storeId,
+          folder
+        });
+      } catch (error) {
+        const startTime = Date.now();
+        queryDuration = Date.now() - startTime;
+        console.log(`⚠️ MediaAsset query failed/timed out in ${queryDuration}ms:`, error.message);
+        // Continue to fallback - don't throw here
+        mediaAssets = [];
+      }
       
       // If we have results from database, use those
       if (mediaAssets && mediaAssets.length > 0) {
@@ -92,8 +109,17 @@ class SupabaseStorageProvider extends StorageInterface {
       
       // If no results from database, fall back to direct Supabase query
       // This ensures backward compatibility and handles files not yet in media_assets
-      console.log('No files found in media_assets table, querying Supabase directly');
+      console.log('🔄 No files found in media_assets table, querying Supabase directly');
+      console.log('📡 Calling supabaseService.listImages with:', { storeId, folder, options });
+
+      const supabaseStartTime = Date.now();
       const supabaseResult = await this.supabaseService.listImages(storeId, folder, options);
+      const supabaseDuration = Date.now() - supabaseStartTime;
+
+      console.log(`✅ Supabase direct query completed in ${supabaseDuration}ms:`, {
+        success: supabaseResult?.success,
+        filesCount: supabaseResult?.files?.length || 0
+      });
       
       // Optionally sync these files to media_assets table for future queries
       if (supabaseResult.success && supabaseResult.files && supabaseResult.files.length > 0) {

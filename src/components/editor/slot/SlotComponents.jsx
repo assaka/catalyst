@@ -627,9 +627,8 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  <div className={`${slot.parentClassName || ''} ${slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}`}>
                     <span
-                      className={slot.className}
+                      className={`${slot.parentClassName || ''} ${slot.className || ''}`}
                       style={{
                         ...slot.styles,
                         cursor: 'pointer',
@@ -648,7 +647,6 @@ export function HierarchicalSlotRenderer({
                         __html: String(slot.content || `Text: ${slot.id}`)
                       }}
                     />
-                  </div>
                 </ResizeWrapper>
               ) : (
                 <div className={slot.parentClassName || ''}>
