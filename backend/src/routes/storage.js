@@ -151,13 +151,36 @@ router.post('/upload-multiple', upload.array('images', 10), async (req, res) => 
  * List images from current storage provider
  */
 router.get('/list', async (req, res) => {
+  console.log('🔍 Storage list endpoint hit:', {
+    storeId: req.storeId,
+    folder: req.query.folder,
+    limit: req.query.limit,
+    offset: req.query.offset,
+    userId: req.user?.id,
+    userRole: req.user?.role
+  });
+
   try {
     const { storeId } = req;
     const { folder, limit = 50, offset = 0 } = req.query;
 
+    console.log('📁 Calling storageManager.listFiles with:', {
+      storeId,
+      folder,
+      options: { limit: parseInt(limit), offset: parseInt(offset) }
+    });
+
+    const startTime = Date.now();
     const result = await storageManager.listFiles(storeId, folder, {
       limit: parseInt(limit),
       offset: parseInt(offset)
+    });
+    const duration = Date.now() - startTime;
+
+    console.log(`✅ StorageManager.listFiles completed in ${duration}ms:`, {
+      filesCount: result?.files?.length || 0,
+      provider: result?.provider,
+      total: result?.total
     });
 
     res.json({

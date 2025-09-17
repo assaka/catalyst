@@ -344,9 +344,20 @@ class StorageManager {
    * @returns {Promise<Object>} File list
    */
   async listFiles(storeId, folder = null, options = {}) {
+    console.log('🔍 StorageManager.listFiles called with:', { storeId, folder, options });
+
     const storeProvider = await this.getStorageProvider(storeId);
+    console.log('📦 Using storage provider:', { type: storeProvider.type, config: !!storeProvider.provider });
+
+    const startTime = Date.now();
     const result = await storeProvider.provider.listFiles(storeId, folder, options);
-    
+    const duration = Date.now() - startTime;
+
+    console.log(`✅ Provider.listFiles completed in ${duration}ms:`, {
+      filesCount: result?.files?.length || 0,
+      resultKeys: Object.keys(result || {})
+    });
+
     // Add provider info to the response
     return {
       ...result,

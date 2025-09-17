@@ -31,23 +31,35 @@ class SupabaseStorageProvider extends StorageInterface {
    * First checks media_assets table, then falls back to direct Supabase query
    */
   async listFiles(storeId, folder = null, options = {}) {
+    console.log('🔍 SupabaseStorageProvider.listFiles called with:', { storeId, folder, options });
+
     try {
       // First try to get files from media_assets table
       const { MediaAsset } = require('../models');
-      
+
       const where = { store_id: storeId };
-      
+
       // Filter by folder if specified
       if (folder) {
         where.folder = folder;
       }
-      
+
+      console.log('🗃️ Querying MediaAsset table with where:', where);
+
       // Get files from database
+      const startTime = Date.now();
       const mediaAssets = await MediaAsset.findAll({
         where,
         order: [['created_at', 'DESC']],
         limit: options.limit || 100,
         offset: options.offset || 0
+      });
+      const duration = Date.now() - startTime;
+
+      console.log(`📊 MediaAsset query completed in ${duration}ms:`, {
+        found: mediaAssets.length,
+        storeId,
+        folder
       });
       
       // If we have results from database, use those

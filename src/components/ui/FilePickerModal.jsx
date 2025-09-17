@@ -19,18 +19,28 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setError(null);
 
       // Use apiClient like MediaStorage does - it handles authentication properly
-      console.log('🔍 Making request using apiClient...');
+      console.log('🔍 FilePickerModal: Starting file load request...');
+      console.log('🔐 FilePickerModal: Auth token present:', !!apiClient.getToken());
+      console.log('🔐 FilePickerModal: User role:', apiClient.getCurrentUserRole());
+      console.log('🌐 FilePickerModal: API base URL:', apiClient.baseURL);
 
       // Add timeout to handle hanging requests
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Storage service timeout - this may indicate the storage provider is not properly configured')), 8000);
+        setTimeout(() => {
+          console.log('⏰ FilePickerModal: Request timed out after 8 seconds');
+          reject(new Error('Storage service timeout - this may indicate the storage provider is not properly configured'));
+        }, 8000);
       });
+
+      console.log('📡 FilePickerModal: Making API request to /storage/list?folder=library');
+      const startTime = Date.now();
 
       // Use the general storage/list endpoint that FileLibrary uses successfully
       const responsePromise = apiClient.get('/storage/list?folder=library');
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
-      console.log('🔍 apiClient response received:', response);
+      const duration = Date.now() - startTime;
+      console.log(`✅ FilePickerModal: Response received in ${duration}ms:`, response);
 
       // apiClient returns the response directly, not wrapped in .data
       if (response && response.success && response.data) {
@@ -61,27 +71,38 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         setError('Unable to load files. Please try again.');
       }
     } catch (error) {
-      console.error('Error loading files:', error);
+      console.error('❌ FilePickerModal: Error loading files:', error);
+      console.error('❌ FilePickerModal: Error details:', {
+        message: error.message,
+        status: error.status,
+        stack: error.stack,
+        name: error.name
+      });
 
       if (error.status === 401 ||
           error.message.includes('Access denied') ||
           error.message.includes('No token provided') ||
           error.message.includes('Authentication') ||
           error.message.includes('Unauthorized')) {
+        console.log('🔐 FilePickerModal: Authentication error detected');
         setError('Please log in to access your files');
       } else if (error.message.includes('Network error') || error.message.includes('fetch')) {
+        console.log('🌐 FilePickerModal: Network error detected');
         setError('Unable to connect to server. Please check your connection.');
       } else if (error.message.includes('No storage provider') ||
                  error.message.includes('Storage service timeout') ||
                  error.message.includes('storage provider is not properly configured')) {
+        console.log('⚙️ FilePickerModal: Storage configuration error detected');
         setError('Storage not configured. You can still upload files using the "Upload New" button below.');
       } else {
+        console.log('❓ FilePickerModal: Unknown error type');
         setError(`Failed to load files: ${error.message || 'Please try again.'}`);
       }
 
       // Set empty files array so UI shows "no files" state instead of loading forever
       setFiles([]);
     } finally {
+      console.log('🏁 FilePickerModal: Load files operation completed');
       setLoading(false);
     }
   };
