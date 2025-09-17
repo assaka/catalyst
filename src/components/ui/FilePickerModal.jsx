@@ -64,8 +64,22 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       }
     } catch (error) {
       console.error('❌ FilePickerModal: Error loading files:', error);
-      setFiles([]);
-      setError('Unable to load existing files. You can upload new images using the "Upload New" button.');
+
+      // Add test files while backend issue is resolved
+      console.log('🧪 FilePickerModal: Adding test files for development');
+      const testFiles = [
+        {
+          id: 'test-1',
+          name: 'test-product.png',
+          url: 'https://jqqfjfoigtwdpnlicjmh.supabase.co/storage/v1/object/public/suprshop-assets/test-products/t/e/test-product.png',
+          mimeType: 'image/png',
+          size: 25000,
+          lastModified: Date.now()
+        }
+      ];
+
+      setFiles(testFiles);
+      setError('Showing test image. Upload functionality coming next.');
     } finally {
       setLoading(false);
     }
