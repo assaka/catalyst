@@ -431,6 +431,11 @@ export function GridColumn({
           'textAlign' // Allow textAlign - can work alongside parentClassName (text-center, etc.)
         ];
 
+        // For content slots (button, text, image, link), exclude width/height from grid wrapper
+        // These should only be applied to the actual content element
+        const isContentSlot = ['button', 'text', 'image', 'link'].includes(slot?.type);
+        const contentExclusionStyles = isContentSlot ? ['width', 'height'] : [];
+
         // Exclude color and appearance styles from grid wrapper
         const colorStyles = [
           'color', 'backgroundColor', 'background', 'borderColor', 'border',
@@ -439,7 +444,7 @@ export function GridColumn({
           'fontSize', 'fontWeight', 'fontFamily', 'lineHeight',
           'boxShadow', 'textShadow', 'opacity', 'transform'
         ];
-        return layoutStyles.includes(key) && !colorStyles.includes(key);
+        return layoutStyles.includes(key) && !colorStyles.includes(key) && !contentExclusionStyles.includes(key);
       })
     )
   };
