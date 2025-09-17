@@ -411,6 +411,10 @@ export function GridColumn({
     gridColumn: `span ${colSpan}`,
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
     zIndex: 2,
+    // Add container-specific styles when it's a container type
+    ...(['container', 'grid', 'flex'].includes(slot?.type) ? {
+      minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
+    } : {}),
     // Only apply layout-related styles to grid wrapper using whitelist approach
     // All other styles (colors, fonts, etc.) should go to the actual elements
     ...Object.fromEntries(
@@ -462,7 +466,11 @@ export function GridColumn({
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
             } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot`}
+      } relative responsive-slot ${
+        ['container', 'grid', 'flex'].includes(slot?.type)
+          ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
+          : ''
+      }`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       draggable={mode === 'edit' && !isOverResizeHandle}
@@ -845,27 +853,34 @@ export function HierarchicalSlotRenderer({
                 </a>
               )}
 
-              {slot.type !== 'button' && slot.type !== 'link' && (
+              {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
+                <HierarchicalSlotRenderer
+                  slots={slots}
+                  parentId={slot.id}
+                  mode={mode}
+                  viewMode={viewMode}
+                  showBorders={showBorders}
+                  currentDragInfo={currentDragInfo}
+                  setCurrentDragInfo={setCurrentDragInfo}
+                  onElementClick={onElementClick}
+                  onGridResize={onGridResize}
+                  onSlotHeightResize={onSlotHeightResize}
+                  onSlotDrop={onSlotDrop}
+                  onResizeStart={onResizeStart}
+                  onResizeEnd={onResizeEnd}
+                  selectedElementId={selectedElementId}
+                  setPageConfig={setPageConfig}
+                />
+              )}
+
+              {slot.type !== 'button' && slot.type !== 'link' && slot.type !== 'container' && slot.type !== 'grid' && slot.type !== 'flex' && (
                 <EditableElement
                   slotId={slot.id}
                   mode={mode}
                   onClick={onElementClick}
-                  className={
-                    ['container', 'grid', 'flex'].includes(slot.type)
-                      ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
-                      : slot.parentClassName || ''
-                  }
-                  style={
-                    ['input'].includes(slot.type)
-                      ? {}
-                      : ['container', 'grid', 'flex'].includes(slot.type)
-                        ? {
-                            ...slot.styles,
-                            minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
-                          }
-                        : (slot.styles || {})
-                  }
-                  canResize={!['container', 'grid', 'flex'].includes(slot.type)}
+                  className={slot.parentClassName || ''}
+                  style={['input'].includes(slot.type) ? {} : (slot.styles || {})}
+                  canResize={true}
                   draggable={false}
                   selectedElementId={selectedElementId}
                 >
