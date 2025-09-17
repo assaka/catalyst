@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
-import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X } from 'lucide-react';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload, X, Folder, FolderOpen, Package } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   // Helper function to format storage sizes (handles both string and number values)
@@ -996,6 +996,65 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                       </>
                     )}
                   </button>
+                </div>
+
+                {/* Folder Structure Info */}
+                <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <Folder className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h5 className="text-sm font-medium text-gray-900 mb-2">Storage Folder Structure</h5>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Files are organized in the following directories within the <code className="bg-white px-1 py-0.5 rounded">suprshop-assets</code> bucket:
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="bg-white rounded p-2 border border-blue-100">
+                          <div className="flex items-center space-x-2">
+                            <FolderOpen className="w-4 h-4 text-blue-500" />
+                            <code className="text-xs font-mono">library/</code>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 ml-6">General media files</p>
+                        </div>
+                        <div className="bg-white rounded p-2 border border-blue-100">
+                          <div className="flex items-center space-x-2">
+                            <FolderOpen className="w-4 h-4 text-green-500" />
+                            <code className="text-xs font-mono">product/images/</code>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 ml-6">Product images</p>
+                        </div>
+                        <div className="bg-white rounded p-2 border border-blue-100">
+                          <div className="flex items-center space-x-2">
+                            <FolderOpen className="w-4 h-4 text-green-500" />
+                            <code className="text-xs font-mono">product/files/</code>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 ml-6">Product documents</p>
+                        </div>
+                        <div className="bg-white rounded p-2 border border-blue-100">
+                          <div className="flex items-center space-x-2">
+                            <FolderOpen className="w-4 h-4 text-purple-500" />
+                            <code className="text-xs font-mono">category/images/</code>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 ml-6">Category images</p>
+                        </div>
+                        <div className="bg-white rounded p-2 border border-blue-100">
+                          <div className="flex items-center space-x-2">
+                            <FolderOpen className="w-4 h-4 text-orange-500" />
+                            <code className="text-xs font-mono">test-products/</code>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 ml-6">Test uploads</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded">
+                        <div className="flex items-start space-x-2">
+                          <Info className="w-4 h-4 text-amber-600 mt-0.5" />
+                          <p className="text-xs text-amber-800">
+                            <strong>Note:</strong> Files are further organized into subdirectories (a/, b/, c/...) based on filename for optimal performance.
+                            Only files in these specific folders will be counted in statistics.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {loadingStats && !storageStats ? (
