@@ -40,12 +40,21 @@ const ResizeWrapper = ({
 
   // Helper to check if element is a button component
   const isButtonElement = (element) => {
-    return element.type === 'button' || 
+    if (!element || !element.type) return false;
+
+    return element.type === 'button' ||
            element.props?.type === 'button' ||
            element.type?.displayName === 'Button' ||
            element.type?.name === 'Button' ||
-           (element.props?.className && element.props.className.includes('justify-center')) || // Common button pattern
-           (element.props?.role === 'button');
+           (element.props?.role === 'button') ||
+           // Check if element has data-slot-id and is a button-like element
+           (element.props?.['data-slot-id'] && element.type === 'button') ||
+           // Check for common button CSS patterns
+           (element.props?.className && (
+             element.props.className.includes('btn') ||
+             element.props.className.includes('button') ||
+             element.props.className.includes('justify-center')
+           ));
   };
 
   // Helper to clean conflicting size classes

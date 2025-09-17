@@ -691,38 +691,35 @@ export function HierarchicalSlotRenderer({
                         });
                       }}
                     >
-                      <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
-                        <button
-                          className={slot.className}
-                          style={{
-                            ...slot.styles,
-                            cursor: 'pointer',
-                            minWidth: 'auto',
-                            minHeight: 'auto',
-                            display: 'inline-block',
-                            width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
-                          }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onElementClick(slot.id, e.currentTarget);
-                          }}
-                          data-slot-id={slot.id}
-                          data-editable="true"
-                        >
-                          {(() => {
-                            // For buttons, extract text content only (no HTML wrappers)
-                            const content = String(slot.content || `Button: ${slot.id}`);
-                            if (content.includes('<')) {
-                              // If content contains HTML, extract just the text
-                              const tempDiv = document.createElement('div');
-                              tempDiv.innerHTML = content;
-                              return tempDiv.textContent || tempDiv.innerText || content;
-                            }
-                            return content;
-                          })()}
-                        </button>
-                      </div>
+                      <button
+                        className={slot.className}
+                        style={{
+                          ...slot.styles,
+                          cursor: 'pointer',
+                          minWidth: 'auto',
+                          minHeight: 'auto',
+                          display: 'inline-block'
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onElementClick(slot.id, e.currentTarget);
+                        }}
+                        data-slot-id={slot.id}
+                        data-editable="true"
+                      >
+                        {(() => {
+                          // For buttons, extract text content only (no HTML wrappers)
+                          const content = String(slot.content || `Button: ${slot.id}`);
+                          if (content.includes('<')) {
+                            // If content contains HTML, extract just the text
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = content;
+                            return tempDiv.textContent || tempDiv.innerText || content;
+                          }
+                          return content;
+                        })()}
+                      </button>
                     </ResizeWrapper>
                   ) : (
                     <button

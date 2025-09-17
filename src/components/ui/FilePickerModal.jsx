@@ -33,11 +33,23 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         headers['Authorization'] = `Bearer ${storeOwnerToken}`;
       }
 
-      const response = await fetch(`${apiUrl}/api/storage/list?folder=library`, {
-        method: 'GET',
-        headers,
-        credentials: 'include'
-      });
+      console.log('🔍 Making authenticated request with headers:', headers);
+
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        const response = await fetch(`${apiUrl}/api/storage/list?folder=library`, {
+          method: 'GET',
+          headers,
+          credentials: 'include',
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+      console.log('🔍 Response received:', response.status, response.statusText);
 
       if (!response.ok) {
         // Handle HTTP errors
@@ -48,9 +60,9 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         throw error;
       }
 
-      const responseData = await response.json();
+        const responseData = await response.json();
 
-      if (responseData && responseData.success && responseData.data) {
+        if (responseData && responseData.success && responseData.data) {
         const rawFiles = responseData.data.files || [];
 
         // Transform to consistent format
@@ -73,9 +85,17 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         // Handle case where API returns success but no files structure
         setFiles([]);
       } else {
-        // If response doesn't have expected structure, treat as no files
-        setFiles([]);
-        setError('Unable to load files. Please try again.');
+          // If response doesn't have expected structure, treat as no files
+          setFiles([]);
+          setError('Unable to load files. Please try again.');
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - server took too long to respond');
+        }
+        throw fetchError;
       }
     } catch (error) {
       console.error('Error loading files:', error);
