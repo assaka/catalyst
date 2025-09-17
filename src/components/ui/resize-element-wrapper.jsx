@@ -143,13 +143,16 @@ const ResizeWrapper = ({
     if (!slotContainer) {
       let searchElement = wrapperRef.current.parentElement;
       let searchDepth = 0;
-      const maxSearchDepth = 8; // Increased search depth for nested structures
+      const maxSearchDepth = 10; // Increased search depth for nested structures
 
       while (searchElement && searchDepth < maxSearchDepth) {
         const isSlotContainer = searchElement.hasAttribute('data-slot-id') ||
                                 searchElement.className.includes('col-span-') ||
                                 searchElement.className.includes('responsive-slot') ||
-                                searchElement.className.includes('grid-cols-');
+                                searchElement.className.includes('grid-cols-') ||
+                                // Additional patterns for button containers
+                                searchElement.className.includes('grid') ||
+                                searchElement.id?.includes('slot');
 
         if (isSlotContainer) {
           slotContainer = searchElement;
@@ -273,7 +276,9 @@ const ResizeWrapper = ({
         boxSizing: 'border-box',
         border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
         transition: 'border-color 0.2s ease-in-out',
-        position: 'relative'
+        position: 'relative',
+        // Ensure button displays properly during resize
+        display: children.props.style?.display || 'inline-block'
       },
       onMouseEnter: (e) => {
         if (!disabled) {
