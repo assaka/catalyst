@@ -580,7 +580,7 @@ class SupabaseStorageService extends StorageInterface {
         const allFiles = [];
         
         // List files from all organized folders in assets bucket
-        const foldersToCheck = ['library', 'category/images', 'product/images', 'product/files'];
+        const foldersToCheck = ['library', 'category/images', 'product/images', 'product/files', 'test-products'];
         
         for (const folderPath of foldersToCheck) {
           try {
@@ -1044,8 +1044,8 @@ class SupabaseStorageService extends StorageInterface {
             let totalSize = 0;
             let fileCount = 0;
             
-            // Check organized folders: library, category/images, product/images, product/files
-            const organizedFolders = ['library', 'category/images', 'product/images', 'product/files'];
+            // Check organized folders: library, category/images, product/images, product/files, test-products
+            const organizedFolders = ['library', 'category/images', 'product/images', 'product/files', 'test-products'];
 
             for (const folderPath of organizedFolders) {
               try {
