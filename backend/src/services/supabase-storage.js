@@ -116,14 +116,16 @@ class SupabaseStorageService extends StorageInterface {
           const { data: urlData } = client.storage
             .from(bucketName)
             .getPublicUrl(fullPath);
-          
+
           allFiles.push({
             ...file,
             url: urlData.publicUrl,
             publicUrl: urlData.publicUrl,
-            fullPath: fullPath
+            fullPath: fullPath,
+            // Extract size from metadata if available
+            size: file.metadata?.size || 0
           });
-          
+
           if (allFiles.length >= limit) break;
         }
         
@@ -1044,18 +1046,23 @@ class SupabaseStorageService extends StorageInterface {
             
             // Check organized folders: library, category/images, product/images, product/files
             const organizedFolders = ['library', 'category/images', 'product/images', 'product/files'];
-            
+
             for (const folderPath of organizedFolders) {
               try {
-                const { data: folderFiles, error: folderError } = await client.storage
-                  .from(bucket.name)
-                  .list(folderPath, { limit: 1000 });
-                
-                if (!folderError && folderFiles) {
-                  // Filter files only (items with 'id' property)
-                  const files = folderFiles.filter(f => f.id && f.name);
-                  allFiles = allFiles.concat(files);
-                  console.log(`Found ${files.length} files in ${bucket.name}/${folderPath}`);
+                // Use the recursive listing function to get all files including subdirectories
+                const folderFiles = await this.listFilesRecursively(client, bucket.name, folderPath, 10000);
+
+                if (folderFiles && folderFiles.length > 0) {
+                  // Add size information from metadata if available
+                  for (const file of folderFiles) {
+                    const fileWithSize = {
+                      ...file,
+                      size: file.metadata?.size || 0,
+                      fullPath: file.fullPath || `${folderPath}/${file.name}`
+                    };
+                    allFiles.push(fileWithSize);
+                  }
+                  console.log(`Found ${folderFiles.length} files in ${bucket.name}/${folderPath} (including subdirectories)`);
                 }
               } catch (folderErr) {
                 console.log(`Error accessing folder ${folderPath} in bucket ${bucket.name}:`, folderErr.message);
@@ -1066,11 +1073,23 @@ class SupabaseStorageService extends StorageInterface {
             try {
               const { data: rootFiles, error: rootError } = await client.storage
                 .from(bucket.name)
-                .list('', { limit: 1000 });
-              
+                .list('', {
+                  limit: 1000,
+                  sortBy: { column: 'name', order: 'asc' }
+                });
+
               if (!rootError && rootFiles) {
                 const directRootFiles = rootFiles.filter(f => f.id && f.name);
-                allFiles = allFiles.concat(directRootFiles);
+
+                // Add root files with size information
+                for (const file of directRootFiles) {
+                  const fileWithSize = {
+                    ...file,
+                    size: file.metadata?.size || 0,
+                    fullPath: file.name
+                  };
+                  allFiles.push(fileWithSize);
+                }
                 console.log(`Found ${directRootFiles.length} files at root of bucket ${bucket.name}`);
               }
             } catch (rootErr) {
@@ -1085,11 +1104,24 @@ class SupabaseStorageService extends StorageInterface {
             
             fileCount = uniqueFiles.length;
             totalSize = uniqueFiles.reduce((sum, file) => {
-              const size = file.metadata?.size || 0;
-              return sum + size;
+              // Use the size we extracted from metadata
+              const fileSize = file.size || 0;
+              return sum + fileSize;
             }, 0);
-            
+
             console.log(`Bucket ${bucket.name}: Found ${fileCount} unique files, total size: ${totalSize} bytes`);
+
+            // Debug: log some file details to understand the structure
+            if (uniqueFiles.length > 0) {
+              const sampleFile = uniqueFiles[0];
+              console.log(`Sample file structure:`, {
+                name: sampleFile.name,
+                size: sampleFile.size,
+                metadata: sampleFile.metadata,
+                created_at: sampleFile.created_at,
+                updated_at: sampleFile.updated_at
+              });
+            }
 
             return {
               bucket: bucket.name,
