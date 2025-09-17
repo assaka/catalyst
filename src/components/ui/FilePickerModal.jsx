@@ -12,15 +12,60 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [error, setError] = useState(null);
 
 
-  // Load files from File Library (temporarily disabled due to backend issues)
+  // Load files from File Library
   const loadFiles = async () => {
     try {
       setLoading(true);
-      console.log('🔍 FilePickerModal: Bypassing hanging file load - showing upload interface');
+      setError(null);
 
-      // Immediately show upload interface instead of hanging request
-      setError('Upload an image to get started. File listing is temporarily unavailable.');
+      console.log('🔍 FilePickerModal: Starting file load request...');
+      console.log('🔐 FilePickerModal: Auth token present:', !!apiClient.getToken());
+      console.log('🔐 FilePickerModal: User role:', apiClient.getCurrentUserRole());
+
+      // Very aggressive timeout - 3 seconds max
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          console.log('⏰ FilePickerModal: Request timed out after 3 seconds');
+          reject(new Error('Request timeout'));
+        }, 3000);
+      });
+
+      console.log('📡 FilePickerModal: Making API request to /supabase/storage/list?bucket=suprshop-assets&folder=library');
+      const startTime = Date.now();
+
+      const responsePromise = apiClient.get('/supabase/storage/list?bucket=suprshop-assets&folder=library');
+      const response = await Promise.race([responsePromise, timeoutPromise]);
+
+      const duration = Date.now() - startTime;
+      console.log(`✅ FilePickerModal: Response received in ${duration}ms:`, response);
+
+      // Process successful response
+      if (response && response.success && response.data) {
+        const rawFiles = response.data.files || [];
+
+        const transformedFiles = rawFiles.map(file => ({
+          id: file.id || file.name,
+          name: file.name,
+          url: file.url || file.signedUrl,
+          mimeType: file.mimeType || file.contentType,
+          size: file.size,
+          lastModified: file.lastModified
+        }));
+
+        const filteredFiles = fileType === 'image'
+          ? transformedFiles.filter(file => file.mimeType?.startsWith('image/'))
+          : transformedFiles;
+
+        setFiles(filteredFiles);
+        console.log(`📂 FilePickerModal: Loaded ${filteredFiles.length} files`);
+      } else {
+        setFiles([]);
+        setError('No files found. Upload images to get started.');
+      }
+    } catch (error) {
+      console.error('❌ FilePickerModal: Error loading files:', error);
       setFiles([]);
+      setError('Unable to load existing files. You can upload new images using the "Upload New" button.');
     } finally {
       setLoading(false);
     }

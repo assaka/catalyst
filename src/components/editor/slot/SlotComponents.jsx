@@ -594,9 +594,7 @@ export function HierarchicalSlotRenderer({
         mode={mode}
         showBorders={showBorders}
       >
-          {slot.type === 'text' && (
-            <>
-              {mode === 'edit' ? (
+          {slot.type === 'text' && mode === 'edit' && (
                 <ResizeWrapper
                   minWidth={20}
                   minHeight={16}
@@ -649,15 +647,24 @@ export function HierarchicalSlotRenderer({
                     __html: String(slot.content || `Text: ${slot.id}`)
                   }}
                 />
-              )}
-            </>
+          )}
+
+          {slot.type === 'text' && mode !== 'edit' && (
+            <span
+              className={`${slot.parentClassName || ''} ${slot.className}`}
+              style={{
+                ...slot.styles,
+                ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+              }}
+              dangerouslySetInnerHTML={{
+                __html: String(slot.content || `Text: ${slot.id}`)
+              }}
+            />
           )}
 
           {slot.type !== 'text' && (
             <>
-              {slot.type === 'button' ? (
-                <>
-                  {mode === 'edit' ? (
+              {slot.type === 'button' && mode === 'edit' && (
                     <ResizeWrapper
                       minWidth={50}
                       minHeight={20}
@@ -729,9 +736,33 @@ export function HierarchicalSlotRenderer({
                         return content;
                       })()}
                     </button>
-                  )}
-                </>
-              ) : slot.type === 'link' ? (
+                </ResizeWrapper>
+              )}
+
+              {slot.type === 'button' && mode !== 'edit' && (
+                <button
+                  className={`${slot.parentClassName || ''} ${slot.className}`}
+                  style={{
+                    ...slot.styles,
+                    minWidth: 'auto',
+                    minHeight: 'auto'
+                  }}
+                >
+                  {(() => {
+                    // For buttons, extract text content only (no HTML wrappers)
+                    const content = String(slot.content || `Button: ${slot.id}`);
+                    if (content.includes('<')) {
+                      // If content contains HTML, extract just the text
+                      const tempDiv = document.createElement('div');
+                      tempDiv.innerHTML = content;
+                      return tempDiv.textContent || tempDiv.innerText || content;
+                    }
+                    return content;
+                  })()}
+                </button>
+              )}
+
+              {slot.type === 'link' && mode === 'edit' && (
                 <>
                   {mode === 'edit' ? (
                     <ResizeWrapper
