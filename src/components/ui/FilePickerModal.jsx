@@ -26,15 +26,9 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
   // Load files from File Library
   const loadFiles = async () => {
-    console.log('🔍 FilePickerModal: loadFiles() called');
-    console.log('🔍 FilePickerModal: Current state before loading:', { loading, error, filesCount: files.length });
-
     try {
-      console.log('🔍 FilePickerModal: Setting loading to true');
       setLoading(true);
       setError(null);
-
-      console.log('🔍 FilePickerModal: Making API call to /storage/list?folder=library');
 
       // Use direct fetch instead of problematic API client
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
@@ -46,13 +40,9 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         credentials: 'include'
       });
 
-      console.log('🔍 FilePickerModal: Response status:', response.status);
-
       if (!response.ok) {
         // Handle HTTP errors
         const errorData = await response.json();
-        console.log('🔍 FilePickerModal: Error response data:', errorData);
-
         const error = new Error(errorData.message || `HTTP ${response.status}`);
         error.status = response.status;
         error.data = errorData;
@@ -60,16 +50,9 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       }
 
       const responseData = await response.json();
-      console.log('🔍 FilePickerModal: API Response data received:', responseData);
-      console.log('🔍 FilePickerModal: Response data type:', typeof responseData);
-      console.log('🔍 FilePickerModal: Response data keys:', responseData ? Object.keys(responseData) : 'null response');
 
       if (responseData && responseData.success && responseData.data) {
-        console.log('🔍 FilePickerModal: Response has success=true and data');
-        console.log('🔍 FilePickerModal: responseData.data:', responseData.data);
         const rawFiles = responseData.data.files || [];
-        console.log('🔍 FilePickerModal: Raw files array:', rawFiles);
-        console.log('🔍 FilePickerModal: Raw files count:', rawFiles.length);
 
         // Transform to consistent format
         const transformedFiles = rawFiles.map(file => ({
@@ -80,60 +63,42 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           size: file.size,
           lastModified: file.lastModified
         }));
-        console.log('🔍 FilePickerModal: Transformed files:', transformedFiles);
 
         // Filter by file type if specified
         const filteredFiles = fileType === 'image'
           ? transformedFiles.filter(file => file.mimeType?.startsWith('image/'))
           : transformedFiles;
-        console.log('🔍 FilePickerModal: Filtered files count:', filteredFiles.length);
-        console.log('🔍 FilePickerModal: Setting files state with:', filteredFiles);
 
         setFiles(filteredFiles);
       } else if (responseData && responseData.success && responseData.data && responseData.data.files === undefined) {
         // Handle case where API returns success but no files structure
-        console.log('🔍 FilePickerModal: Response success but no files property');
         setFiles([]);
       } else {
         // If response doesn't have expected structure, treat as no files
-        console.log('🔍 FilePickerModal: Unexpected response structure');
-        console.log('🔍 FilePickerModal: Full response object:', JSON.stringify(responseData, null, 2));
         setFiles([]);
         setError('Unable to load files. Please try again.');
       }
     } catch (error) {
-      console.error('❌ FilePickerModal: Error caught in loadFiles:', error);
-      console.log('❌ FilePickerModal: Error type:', error.constructor.name);
-      console.log('❌ FilePickerModal: Error message:', error.message);
-      console.log('❌ FilePickerModal: Error status:', error.status);
-      console.log('❌ FilePickerModal: Error data:', error.data);
-      console.log('❌ FilePickerModal: Full error object:', error);
+      console.error('Error loading files:', error);
 
       if (error.status === 401 ||
           error.message.includes('Access denied') ||
           error.message.includes('No token provided') ||
           error.message.includes('Authentication') ||
           error.message.includes('Unauthorized')) {
-        console.log('❌ FilePickerModal: Detected as authentication error');
         setError('Please log in to access your files');
       } else if (error.message.includes('Network error') || error.message.includes('fetch')) {
-        console.log('❌ FilePickerModal: Detected as network error');
         setError('Unable to connect to server. Please check your connection.');
       } else if (error.message.includes('No storage provider')) {
-        console.log('❌ FilePickerModal: Detected as storage configuration error');
         setError('Storage not configured. Please contact administrator.');
       } else {
-        console.log('❌ FilePickerModal: Generic error');
         setError(`Failed to load files: ${error.message || 'Please try again.'}`);
       }
 
       // Set empty files array so UI shows "no files" state instead of loading forever
-      console.log('❌ FilePickerModal: Setting files to empty array');
       setFiles([]);
     } finally {
-      console.log('🔍 FilePickerModal: Finally block - setting loading to false');
       setLoading(false);
-      console.log('🔍 FilePickerModal: loadFiles() completed');
     }
   };
 
