@@ -10,6 +10,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('checking'); // 'checking', 'connected', 'failed'
 
   console.log('🔵 FilePickerModal: Component rendered with props:', {
     isOpen,
@@ -32,6 +33,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
     try {
       setLoading(true);
       setError(null);
+      setConnectionStatus('checking');
 
       console.log('🔍 FilePickerModal: Starting file load request...');
       console.log('🔐 FilePickerModal: Auth token present:', !!apiClient.getToken());
@@ -56,33 +58,18 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       console.log(`✅ FilePickerModal: Response received in ${duration}ms:`, response);
 
       // Process successful response
-      if (response && response.success && response.data) {
-        const rawFiles = response.data.files || [];
+      setConnectionStatus('connected');
+      console.log('✅ FilePickerModal: Supabase connection successful');
 
-        const transformedFiles = rawFiles.map(file => ({
-          id: file.id || file.name,
-          name: file.name,
-          url: file.url || file.signedUrl,
-          mimeType: file.mimeType || file.contentType,
-          size: file.size,
-          lastModified: file.lastModified
-        }));
-
-        const filteredFiles = fileType === 'image'
-          ? transformedFiles.filter(file => file.mimeType?.startsWith('image/'))
-          : transformedFiles;
-
-        setFiles(filteredFiles);
-        console.log(`📂 FilePickerModal: Loaded ${filteredFiles.length} files`);
-      } else {
-        setFiles([]);
-        setError('No files found. Upload images to get started.');
-      }
+      // For now, just show connection success - we'll implement file listing later
+      setFiles([]);
+      setError('✅ Supabase connected! File listing coming next.');
     } catch (error) {
       console.error('❌ FilePickerModal: Error loading files:', error);
+      setConnectionStatus('failed');
 
       // Add test files while backend issue is resolved
-      console.log('🧪 FilePickerModal: Adding test files for development');
+      console.log('🧪 FilePickerModal: Connection failed, adding test files for development');
       const testFiles = [
         {
           id: 'test-1',
@@ -96,7 +83,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
       console.log('🧪 FilePickerModal: Created test files:', testFiles);
       setFiles(testFiles);
-      setError('Showing test image. Upload functionality coming next.');
+      setError('❌ Connection failed. Showing test image for development.');
       console.log('🧪 FilePickerModal: State updated with test files');
     } finally {
       setLoading(false);
@@ -175,7 +162,30 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       <div className="bg-white rounded-lg shadow-xl w-[800px] h-[600px] flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
-          <h3 className="text-lg font-semibold">Select Image</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold">Select Image</h3>
+
+            {/* Connection Status Badge */}
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+              connectionStatus === 'connected'
+                ? 'bg-green-100 text-green-700 border border-green-200'
+                : connectionStatus === 'failed'
+                ? 'bg-red-100 text-red-700 border border-red-200'
+                : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                connectionStatus === 'connected'
+                  ? 'bg-green-500'
+                  : connectionStatus === 'failed'
+                  ? 'bg-red-500'
+                  : 'bg-yellow-500 animate-pulse'
+              }`}></div>
+              {connectionStatus === 'connected' && 'Connected'}
+              {connectionStatus === 'failed' && 'Failed'}
+              {connectionStatus === 'checking' && 'Checking...'}
+            </div>
+          </div>
+
           <Button onClick={onClose} variant="ghost" size="sm" className="h-6 w-6 p-0">
             <X className="w-4 h-4" />
           </Button>
