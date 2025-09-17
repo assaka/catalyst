@@ -1260,7 +1260,7 @@ const EditorSidebar = ({
                 {/* Border Controls */}
                 <div>
                   <Label className="text-xs font-medium mb-2 block">Border</Label>
-                  <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="grid grid-cols-3 gap-2 mb-2">
                     <div>
                       <Label htmlFor="borderWidth" className="text-xs">Width</Label>
                       <Input
@@ -1273,6 +1273,25 @@ const EditorSidebar = ({
                         min="0"
                         max="10"
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="borderStyle" className="text-xs">Style</Label>
+                      <select
+                        id="borderStyle"
+                        value={elementProperties.styles.borderStyle || 'solid'}
+                        onChange={(e) => handlePropertyChange('borderStyle', e.target.value)}
+                        className="w-full mt-1 h-6 text-xs border border-gray-300 rounded-md"
+                      >
+                        <option value="none">None</option>
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                        <option value="double">Double</option>
+                        <option value="groove">Groove</option>
+                        <option value="ridge">Ridge</option>
+                        <option value="inset">Inset</option>
+                        <option value="outset">Outset</option>
+                      </select>
                     </div>
                     <div>
                       <Label htmlFor="borderRadius" className="text-xs">Radius</Label>
