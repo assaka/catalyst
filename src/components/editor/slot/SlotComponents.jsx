@@ -689,7 +689,7 @@ export function HierarchicalSlotRenderer({
                       }}
                     >
                       <button
-                        className={slot.className}
+                        className={`${slot.parentClassName || ''} ${slot.className}`}
                         style={{
                           ...slot.styles,
                           cursor: 'pointer',
@@ -720,7 +720,7 @@ export function HierarchicalSlotRenderer({
                     </ResizeWrapper>
                   ) : (
                     <button
-                      className={slot.className}
+                      className={`${slot.parentClassName || ''} ${slot.className}`}
                       style={{
                         ...slot.styles,
                         minWidth: 'auto',
@@ -767,7 +767,7 @@ export function HierarchicalSlotRenderer({
                       <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
                         <a
                           href={slot.href || '#'}
-                          className={slot.className}
+                          className={`${slot.parentClassName || ''} ${slot.className}`}
                           style={{
                             ...slot.styles,
                             cursor: 'pointer',
@@ -831,7 +831,7 @@ export function HierarchicalSlotRenderer({
                   slotId={slot.id}
                   mode={mode}
                   onClick={onElementClick}
-                  className={''}
+                  className={slot.parentClassName || ''}
                   style={['input'].includes(slot.type) ? {} : (slot.styles || {})}
                   canResize={!['container', 'grid', 'flex'].includes(slot.type)}
                   draggable={false}
