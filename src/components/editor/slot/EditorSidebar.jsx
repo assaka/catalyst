@@ -186,16 +186,17 @@ const EditorSidebar = ({
     return isSupported;
   }, [selectedElement]);
 
-  // Generate clean HTML div from database content and classes
+  // Generate clean HTML from database content and classes
   const getCleanHtmlFromDatabase = useCallback((slotConfig) => {
     if (!slotConfig) return '';
 
     const content = slotConfig.content || '';
     const className = slotConfig.className || '';
     const styles = slotConfig.styles || {};
+    const type = slotConfig.type || 'div';
 
-    // Create a clean div structure with classes from database
-    const div = document.createElement('div');
+    // Create the correct element type based on slot type
+    const element = document.createElement(type === 'button' ? 'button' : 'div');
 
     // Apply classes from database (excluding editor-specific classes)
     const cleanClasses = className
@@ -216,7 +217,7 @@ const EditorSidebar = ({
       .join(' ');
 
     if (cleanClasses) {
-      div.className = cleanClasses;
+      element.className = cleanClasses;
     }
 
     // Apply styles from database (excluding editor-specific styles)
@@ -230,17 +231,28 @@ const EditorSidebar = ({
         value
       ) {
         try {
-          div.style[property] = value;
+          element.style[property] = value;
         } catch (e) {
           console.warn(`Could not apply style ${property}: ${value}`);
         }
       }
     });
 
-    // Set content
-    div.innerHTML = content;
+    // Set content (for buttons, extract text only to avoid nested divs)
+    if (type === 'button') {
+      if (content.includes('<')) {
+        // If content contains HTML, extract just the text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        element.textContent = tempDiv.textContent || tempDiv.innerText || content;
+      } else {
+        element.textContent = content;
+      }
+    } else {
+      element.innerHTML = content;
+    }
 
-    return div.outerHTML;
+    return element.outerHTML;
   }, []);
 
   // Generate clean HTML without editor-specific classes and attributes

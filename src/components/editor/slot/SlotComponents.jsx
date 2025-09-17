@@ -684,10 +684,19 @@ export function HierarchicalSlotRenderer({
                         minWidth: 'auto',
                         minHeight: 'auto'
                       }}
-                      dangerouslySetInnerHTML={{
-                        __html: String(slot.content || `Button: ${slot.id}`)
-                      }}
-                    />
+                    >
+                      {(() => {
+                        // For buttons, extract text content only (no HTML wrappers)
+                        const content = String(slot.content || `Button: ${slot.id}`);
+                        if (content.includes('<')) {
+                          // If content contains HTML, extract just the text
+                          const tempDiv = document.createElement('div');
+                          tempDiv.innerHTML = content;
+                          return tempDiv.textContent || tempDiv.innerText || content;
+                        }
+                        return content;
+                      })()}
+                    </button>
                   </ResizeWrapper>
                 </EditableElement>
               ) : (
