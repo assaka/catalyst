@@ -42,7 +42,7 @@ const ResizeWrapper = ({
   const isButtonElement = (element) => {
     if (!element || !element.type) return false;
 
-    return element.type === 'button' ||
+    const isButton = element.type === 'button' ||
            element.props?.type === 'button' ||
            element.type?.displayName === 'Button' ||
            element.type?.name === 'Button' ||
@@ -55,6 +55,18 @@ const ResizeWrapper = ({
              element.props.className.includes('button') ||
              element.props.className.includes('justify-center')
            ));
+
+    // Debug logging
+    if (element.props?.['data-slot-id']?.includes('button')) {
+      console.log('🔍 Button detection for', element.props['data-slot-id'], {
+        elementType: element.type,
+        isButton,
+        className: element.props?.className,
+        hasDataSlotId: !!element.props?.['data-slot-id']
+      });
+    }
+
+    return isButton;
   };
 
   // Helper to clean conflicting size classes
@@ -286,19 +298,29 @@ const ResizeWrapper = ({
     document.addEventListener('mouseup', handleMouseUp);
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
+  const isButton = isButtonElement(children);
   const wrapperStyle = {
     // Wrapper should always be fit-content to not affect parent layout
     width: 'fit-content',
     height: 'fit-content',
     // Only apply maxWidth constraint for non-button elements
-    ...(isButtonElement(children) ? {} : { maxWidth: '100%' }),
+    ...(isButton ? {} : { maxWidth: '100%' }),
     display: 'inline-block',
     position: 'relative'
   };
 
+  // Debug logging for buttons
+  if (children?.props?.['data-slot-id']?.includes('button')) {
+    console.log('🎯 ResizeWrapper style for', children.props['data-slot-id'], {
+      isButton,
+      wrapperStyle,
+      hasMaxWidth: 'maxWidth' in wrapperStyle
+    });
+  }
+
   // For button elements, apply sizing and resize functionality directly to the button
   // without creating an extra wrapper div
-  if (isButtonElement(children)) {
+  if (isButton) {
     const buttonElement = React.cloneElement(children, {
       ref: wrapperRef,
       className: cn(
