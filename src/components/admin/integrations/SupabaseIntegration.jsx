@@ -115,6 +115,8 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       const response = await apiClient.get('/supabase/storage/stats');
 
       if (response.success) {
+        console.log('Storage stats response:', response);
+        console.log('Storage stats summary:', response.summary);
         setStorageStats(response.summary);
       }
     } catch (error) {
@@ -968,21 +970,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
           )}
 
 
-          {/* Debug info for troubleshooting */}
-          {status?.connected && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Debug Info:</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <p>Connected: {status.connected ? 'Yes' : 'No'}</p>
-                <p>Has Service Role Key: {status.hasServiceRoleKey ? 'Yes' : 'No'}</p>
-                <p>Context: {context}</p>
-                <p>Storage Stats Loaded: {storageStats ? 'Yes' : 'No'}</p>
-                <p>Loading Stats: {loadingStats ? 'Yes' : 'No'}</p>
-                <p>Storage Ready: {status.storageReady ? 'Yes' : 'No'}</p>
-                <p>Limited Scope: {status.limitedScope ? 'Yes' : 'No'}</p>
-              </div>
-            </div>
-          )}
 
           {/* Storage Management - Show if connected and in storage context */}
           {(context === 'full' || context === 'storage') && (
@@ -1018,30 +1005,32 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 ) : storageStats ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Storage Overview */}
-                    <div className="space-y-4">
-                      <h5 className="font-medium text-gray-900">Storage Overview</h5>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                          <div className="flex items-center">
-                            <FileText className="w-5 h-5 text-blue-500 mr-2" />
-                            <div>
-                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Files</p>
-                              <p className="text-2xl font-bold text-gray-900">{storageStats.totalFiles || 0}</p>
+                  <>
+                    {console.log('Rendering storage stats:', storageStats)}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Storage Overview */}
+                      <div className="space-y-4">
+                        <h5 className="font-medium text-gray-900">Storage Overview</h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <div className="flex items-center">
+                              <FileText className="w-5 h-5 text-blue-500 mr-2" />
+                              <div>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Files</p>
+                                <p className="text-2xl font-bold text-gray-900">{storageStats.totalFiles || 0}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <div className="flex items-center">
+                              <HardDrive className="w-5 h-5 text-green-500 mr-2" />
+                              <div>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Size</p>
+                                <p className="text-2xl font-bold text-gray-900">{storageStats.totalSizeMB || '0.00'} MB</p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                          <div className="flex items-center">
-                            <HardDrive className="w-5 h-5 text-green-500 mr-2" />
-                            <div>
-                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Size</p>
-                              <p className="text-2xl font-bold text-gray-900">{storageStats.totalSizeMB || '0.00'} MB</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Storage Usage Bar */}
                       <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
@@ -1134,6 +1123,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                       </div>
                     </div>
                   </div>
+                  </>
                 ) : (
                   <div className="text-center py-8">
                     <Cloud className="w-12 h-12 text-gray-400 mx-auto mb-3" />
