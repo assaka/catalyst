@@ -579,9 +579,20 @@ const EditorSidebar = ({
       newClasses.push(`text-${value}`);
       targetElement.className = newClasses.join(' ');
       
-      // Restore preserved inline styles on the selected element
+      // Restore preserved inline styles on the correct target element
+      let styleTarget = selectedElement;
+      if (selectedElement.hasAttribute('data-slot-id')) {
+        const button = selectedElement.querySelector('button');
+        const textElement = selectedElement.querySelector('span[data-editable="true"]');
+        const inputElement = selectedElement.querySelector('input');
+
+        if (button) styleTarget = button;
+        else if (textElement) styleTarget = textElement;
+        else if (inputElement) styleTarget = inputElement;
+      }
+
       Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
-        selectedElement.style.setProperty(styleProp, styleValue);
+        styleTarget.style.setProperty(styleProp, styleValue);
       });
       
       // Restore preserved Tailwind color classes on the selected element
@@ -685,8 +696,19 @@ const EditorSidebar = ({
       const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
         // Restore preserved inline styles after class change
+        let styleTargetElem = selectedElement;
+        if (selectedElement.hasAttribute('data-slot-id')) {
+          const button = selectedElement.querySelector('button');
+          const textElement = selectedElement.querySelector('span[data-editable="true"]');
+          const inputElement = selectedElement.querySelector('input');
+
+          if (button) styleTargetElem = button;
+          else if (textElement) styleTargetElem = textElement;
+          else if (inputElement) styleTargetElem = inputElement;
+        }
+
         Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
-          selectedElement.style.setProperty(styleProp, styleValue);
+          styleTargetElem.style.setProperty(styleProp, styleValue);
         });
         
         // Restore preserved Tailwind color classes after class change
@@ -728,7 +750,27 @@ const EditorSidebar = ({
     } else {
       // Handle inline style properties - apply immediately
       const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
-      selectedElement.style[property] = formattedValue;
+
+      // For button/input/text slots, apply styles to the actual element, not the wrapper
+      let targetElement = selectedElement;
+      if (selectedElement.hasAttribute('data-slot-id')) {
+        const button = selectedElement.querySelector('button');
+        const textElement = selectedElement.querySelector('span[data-editable="true"]');
+        const inputElement = selectedElement.querySelector('input');
+
+        if (button) {
+          targetElement = button;
+          console.log('🎨 Applying style to button element instead of wrapper');
+        } else if (textElement) {
+          targetElement = textElement;
+          console.log('🎨 Applying style to text element instead of wrapper');
+        } else if (inputElement) {
+          targetElement = inputElement;
+          console.log('🎨 Applying style to input element instead of wrapper');
+        }
+      }
+
+      targetElement.style[property] = formattedValue;
       
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
