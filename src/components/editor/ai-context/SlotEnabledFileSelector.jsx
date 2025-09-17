@@ -328,33 +328,21 @@ const SlotEnabledFileSelector = ({
                 </div>
 
                 {/* File Info */}
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-sm">{file.name}</span>
-
-                    {/* Unpublished Changes Indicator */}
-                    {file.hasUnpublishedChanges && (
+                <div>
+                  <span className="font-medium text-sm">{file.name}</span>
+                  {/* Unpublished Changes Indicator */}
+                  {file.hasUnpublishedChanges && (
                       <Badge
-                        variant="secondary"
-                        className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5"
+                          variant="secondary"
+                          className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5"
                       >
                         Unpublished
                       </Badge>
-                    )}
-
-                    {/* Debug: Show unpublished status */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <span className="text-xs text-gray-400">
-                        {file.hasUnpublishedChanges ? '🟠' : '⚪'}
-                      </span>
-                    )}
-
-                    {/* Loading indicator */}
-                    {loadingDraft === file.id && (
+                  )}
+                  {/* Loading indicator */}
+                  {loadingDraft === file.id && (
                       <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{file.description}</p>
+                  )}
                 </div>
               </div>
             );
