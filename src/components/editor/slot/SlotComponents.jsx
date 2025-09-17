@@ -904,6 +904,7 @@ export function HierarchicalSlotRenderer({
                   )}
                 </EditableElement>
               )}
+            </>
           )}
         </div>
       </GridColumn>
