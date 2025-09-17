@@ -262,7 +262,7 @@ const ResizeWrapper = ({
           height: `${size.height}${size.heightUnit || 'px'}`
         }),
         boxSizing: 'border-box',
-        border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : children.props.style?.border || 'none',
+        border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
         transition: 'border-color 0.2s ease-in-out',
         position: 'relative'
       },
