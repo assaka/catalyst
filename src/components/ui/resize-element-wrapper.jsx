@@ -301,14 +301,25 @@ const ResizeWrapper = ({
         heightUnit = '';
       }
 
-      const newSize = { 
-        width: widthValue, 
+      const newSize = {
+        width: widthValue,
         height: heightValue,
         widthUnit,
         heightUnit
       };
       setSize(newSize);
-      
+
+      // Debug size application for buttons
+      if (children?.props?.['data-slot-id']?.includes('button')) {
+        console.log('📏 Setting new size:', newSize);
+        console.log('🎯 Element current computed style:', {
+          currentWidth: wrapperRef.current?.style.width,
+          currentMaxWidth: wrapperRef.current?.style.maxWidth,
+          computedWidth: window.getComputedStyle(wrapperRef.current || document.body).width,
+          computedMaxWidth: window.getComputedStyle(wrapperRef.current || document.body).maxWidth
+        });
+      }
+
       if (onResize) {
         onResize(newSize);
       }
@@ -347,6 +358,20 @@ const ResizeWrapper = ({
   // For button elements, apply sizing and resize functionality directly to the button
   // without creating an extra wrapper div
   if (isButton) {
+    const appliedWidth = hasWFitClass ? 'fit-content' :
+                        (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto');
+
+    // Debug button style application
+    if (children?.props?.['data-slot-id']?.includes('button')) {
+      console.log('🎨 Button style application:', {
+        hasWFitClass,
+        currentSize: size,
+        appliedWidth,
+        originalChildrenStyle: children.props.style,
+        isResizing
+      });
+    }
+
     const buttonElement = React.cloneElement(children, {
       ref: wrapperRef,
       className: cn(
