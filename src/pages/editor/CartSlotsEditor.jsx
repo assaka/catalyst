@@ -29,7 +29,9 @@ import {
   ResetLayoutModal,
   FilePickerModalWrapper,
   EditModeControls,
-  CodeModal
+  CodeModal,
+  PublishPanelToggle,
+  TimestampsRow
 } from '@/components/editor/slot/SlotComponents';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
@@ -584,26 +586,15 @@ const CartSlotsEditor = ({
             </div>
 
             {/* Publish Panel Toggle - Far Right */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant={hasUnsavedChanges ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  // Close sidebar when opening publish panel
-                  setIsSidebarVisible(false);
-                  setSelectedElement(null);
-                  // Toggle the publish panel
-                  setShowPublishPanel(!showPublishPanel);
-                }}
-                className={`${showPublishPanel ?
-                  (hasUnsavedChanges ? 'bg-green-600 border-green-600 hover:bg-green-700' : 'bg-blue-50 border-blue-200') :
-                  (hasUnsavedChanges ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' : '')
-                }`}
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Publish
-              </Button>
-            </div>
+            <PublishPanelToggle
+              hasUnsavedChanges={hasUnsavedChanges}
+              showPublishPanel={showPublishPanel}
+              onTogglePublishPanel={setShowPublishPanel}
+              onClosePublishPanel={() => {
+                setIsSidebarVisible(false);
+                setSelectedElement(null);
+              }}
+            />
           </div>
         </div>
         {/* Cart Layout - Hierarchical Structure */}
@@ -612,20 +603,11 @@ const CartSlotsEditor = ({
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
-            <div className="flex justify-between items-center text-xs text-gray-500 pb-6">
-              <div className="flex items-center">
-                {draftConfig?.updated_at && (
-                  <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
-                )}
-              </div>
-              <div className="flex items-center">
-                {latestPublished?.published_at && (
-                  <span>Last published: {formatTimeAgo(latestPublished.published_at)}</span>
-                )}
-              </div>
-            </div>
-          </div>
+          <TimestampsRow
+            draftConfig={draftConfig}
+            latestPublished={latestPublished}
+            formatTimeAgo={formatTimeAgo}
+          />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo, Rocket } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
@@ -936,7 +936,7 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBo
         onToggle={onToggleBorders}
       />
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 ml-3">
         <Button
           onClick={onResetLayout}
           variant="outline"
@@ -1175,6 +1175,58 @@ export function FilePickerModalWrapper({
       }}
       fileType={fileType}
     />
+  );
+}
+
+// TimestampsRow Component
+export function TimestampsRow({ draftConfig, latestPublished, formatTimeAgo }) {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
+      <div className="flex justify-between items-center text-xs text-gray-500 pb-6">
+        <div className="flex items-center">
+          {draftConfig?.updated_at && (
+            <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
+          )}
+        </div>
+        <div className="flex items-center">
+          {latestPublished?.published_at && (
+            <span>Last published: {formatTimeAgo(latestPublished.published_at)}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// PublishPanelToggle Component
+export function PublishPanelToggle({
+  hasUnsavedChanges = false,
+  showPublishPanel = false,
+  onTogglePublishPanel,
+  onClosePublishPanel
+}) {
+  return (
+    <div className="flex items-center gap-4">
+      <Button
+        variant={hasUnsavedChanges ? "default" : "outline"}
+        size="sm"
+        onClick={() => {
+          if (onClosePublishPanel) {
+            onClosePublishPanel();
+          }
+          if (onTogglePublishPanel) {
+            onTogglePublishPanel(!showPublishPanel);
+          }
+        }}
+        className={`${showPublishPanel ?
+          (hasUnsavedChanges ? 'bg-green-600 border-green-600 hover:bg-green-700 ml-3' : 'bg-blue-50 border-blue-200 ml-3') :
+          (hasUnsavedChanges ? 'bg-green-500 hover:bg-green-600 text-white border-green-500 ml-3' : '')
+        }`}
+      >
+        <Rocket className="w-4 h-4 mr-2" />
+        Publish
+      </Button>
+    </div>
   );
 }
 
