@@ -798,6 +798,7 @@ export default ExampleComponent;`;
                             if (name.includes('product')) return 'product';
                             if (name.includes('homepage')) return 'homepage';
                             if (name.includes('checkout')) return 'checkout';
+                            if (name.includes('success')) return 'success';
                             return null;
                           };
 
