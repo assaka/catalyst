@@ -18,7 +18,7 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setError(null);
       const response = await apiClient.get('/storage/list?folder=library');
 
-      if (response.success && response.data) {
+      if (response && response.success && response.data) {
         const rawFiles = response.data.files || [];
 
         // Transform to consistent format
@@ -37,22 +37,29 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           : transformedFiles;
 
         setFiles(filteredFiles);
-      } else if (response.success && response.data && response.data.files === undefined) {
+      } else if (response && response.success && response.data && response.data.files === undefined) {
         // Handle case where API returns success but no files structure
         setFiles([]);
+      } else {
+        // If response doesn't have expected structure, treat as no files
+        setFiles([]);
+        setError('Unable to load files. Please try again.');
       }
     } catch (error) {
       console.error('Error loading files:', error);
 
-      // Set user-friendly error messages based on error type
-      if (error.message.includes('Access denied') || error.message.includes('No token provided')) {
+      if (error.status === 401 ||
+          error.message.includes('Access denied') ||
+          error.message.includes('No token provided') ||
+          error.message.includes('Authentication') ||
+          error.message.includes('Unauthorized')) {
         setError('Please log in to access your files');
-      } else if (error.message.includes('Network error')) {
+      } else if (error.message.includes('Network error') || error.message.includes('fetch')) {
         setError('Unable to connect to server. Please check your connection.');
       } else if (error.message.includes('No storage provider')) {
         setError('Storage not configured. Please contact administrator.');
       } else {
-        setError('Failed to load files. Please try again.');
+        setError(`Failed to load files: ${error.message || 'Please try again.'}`);
       }
 
       // Set empty files array so UI shows "no files" state instead of loading forever

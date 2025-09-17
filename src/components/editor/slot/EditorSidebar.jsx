@@ -794,13 +794,30 @@ const EditorSidebar = ({
       }
 
       targetElement.style[property] = formattedValue;
-      
+
+      // Special handling for border properties to ensure visibility
+      if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
+        // Automatically set border style to solid if not already set
+        if (!targetElement.style.borderStyle || targetElement.style.borderStyle === 'none') {
+          targetElement.style.borderStyle = 'solid';
+        }
+        // Set default border color if not already set
+        if (!targetElement.style.borderColor) {
+          targetElement.style.borderColor = '#e5e7eb'; // Default gray color
+        }
+      }
+
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
         ...prev,
         styles: {
           ...prev.styles,
-          [property]: formattedValue
+          [property]: formattedValue,
+          // Include auto-set border properties in state
+          ...(property === 'borderWidth' && parseInt(formattedValue) > 0 ? {
+            borderStyle: targetElement.style.borderStyle,
+            borderColor: targetElement.style.borderColor
+          } : {})
         }
       }));
       
@@ -813,7 +830,13 @@ const EditorSidebar = ({
           className: selectedElement.className,
           inlineStyles: { [property]: formattedValue }
         });
-        onInlineClassChange(elementSlotId, selectedElement.className, { [property]: formattedValue });
+        // Include auto-set border properties in save data
+        const saveStyles = { [property]: formattedValue };
+        if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
+          saveStyles.borderStyle = targetElement.style.borderStyle;
+          saveStyles.borderColor = targetElement.style.borderColor;
+        }
+        onInlineClassChange(elementSlotId, selectedElement.className, saveStyles);
       }
     }
   }, [selectedElement, handleAlignmentChange, onInlineClassChange]);

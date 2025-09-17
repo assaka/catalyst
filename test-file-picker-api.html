@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test File Picker API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .success { background: #e8f5e9; border-left: 4px solid #4caf50; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>File Picker API Test</h1>
+    <button onclick="testFilePickerAPI()">Test /storage/list API</button>
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'log') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            logsDiv.appendChild(logDiv);
+            console.log(message);
+        }
+
+        async function testFilePickerAPI() {
+            log('Starting File Picker API test...');
+
+            try {
+                log('Making request to /storage/list?folder=library...');
+
+                const response = await fetch('https://catalyst-backend-fzhu.onrender.com/api/storage/list?folder=library', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`);
+
+                const data = await response.json();
+                log(`Response data: ${JSON.stringify(data, null, 2)}`);
+
+                if (!response.ok) {
+                    log(`HTTP Error: ${response.status} - ${data.message || data.error}`, 'error');
+                    return;
+                }
+
+                if (data.success && data.data) {
+                    const files = data.data.files || [];
+                    log(`Files found: ${files.length}`, 'success');
+                } else {
+                    log('Unexpected response format', 'error');
+                }
+
+            } catch (error) {
+                log(`Network/Fetch Error: ${error.message}`, 'error');
+                log(`Error details: ${JSON.stringify({
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                }, null, 2)}`);
+            }
+        }
+
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testFilePickerAPI, 1000);
+        });
+    </script>
+</body>
+</html>
