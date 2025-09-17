@@ -16,10 +16,13 @@ const ResizeWrapper = ({
   disabled = false,
   ...props 
 }) => {
-  const [size, setSize] = useState({ 
-    width: initialWidth || 'auto', 
+  // Check if element has w-fit class to determine initial units
+  const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
+
+  const [size, setSize] = useState({
+    width: initialWidth || 'auto',
     height: initialHeight || 'auto',
-    widthUnit: initialWidth ? '%' : 'auto',
+    widthUnit: initialWidth ? (hasWFitClass ? 'px' : '%') : 'auto',
     heightUnit: 'px'
   });
   const [naturalSize, setNaturalSize] = useState({ width: null, height: null });
@@ -48,12 +51,14 @@ const ResizeWrapper = ({
   // Helper to clean conflicting size classes
   const cleanConflictingClasses = (className, element) => {
     if (!className) return className;
-    
+
     let cleanedClasses = className;
-    
+
     if (isButtonElement(element)) {
-      // Remove width classes (w-auto, w-fit, w-max, etc.)
-      cleanedClasses = cleanedClasses.replace(/\bw-\w+\b/g, '').trim();
+      // Only remove width classes if w-fit is NOT present (preserve w-fit for natural sizing)
+      if (!className.includes('w-fit')) {
+        cleanedClasses = cleanedClasses.replace(/\bw-\w+\b/g, '').trim();
+      }
     }
     
     if (isSvgElement(element)) {
@@ -99,12 +104,15 @@ const ResizeWrapper = ({
       
       if (parentRect && parentRect.width > 0 && rect.width > 0) {
         const naturalPercentage = Math.min(100, (rect.width / parentRect.width) * 100);
-        
+
+        // Check if element has w-fit class (should use pixels for natural sizing)
+        const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
+
         setNaturalSize({ width: rect.width, height: rect.height });
         setSize(prev => ({
           ...prev,
-          width: Math.round(naturalPercentage * 10) / 10,
-          widthUnit: '%'
+          width: hasWFitClass ? rect.width : Math.round(naturalPercentage * 10) / 10,
+          widthUnit: hasWFitClass ? 'px' : '%'
         }));
       }
     }
@@ -170,11 +178,14 @@ const ResizeWrapper = ({
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
-      // Calculate percentage width based on parent container
+      // Calculate width units based on element type and classes
       let widthValue = newWidth;
       let widthUnit = 'px';
-      
-      if (parentRect && parentRect.width > 0) {
+
+      // Check if element has w-fit class (should use pixels for natural sizing)
+      const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
+
+      if (parentRect && parentRect.width > 0 && !hasWFitClass) {
         const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
         widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
