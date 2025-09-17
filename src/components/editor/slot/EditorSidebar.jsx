@@ -349,9 +349,24 @@ const EditorSidebar = ({
         const htmlContent = getCleanHtmlFromDatabase(slotConfig) || getCleanHtml(selectedElement) || '';
         setLocalHtmlContent(htmlContent);
 
-        // Update HTML textarea ref value
+        // Update HTML textarea ref value (but not if user is actively editing)
         if (htmlContentRef.current) {
-          htmlContentRef.current.value = htmlContent;
+          const currentValue = htmlContentRef.current.value;
+          const shouldUpdate = currentValue === localHtmlContent || !currentValue;
+
+          console.log('🔄 HTML textarea update check:', {
+            previousValue: currentValue,
+            newValue: htmlContent,
+            localHtmlContent,
+            shouldUpdate,
+            slotId
+          });
+
+          if (shouldUpdate) {
+            htmlContentRef.current.value = htmlContent;
+          } else {
+            console.log('⏭️ Skipping textarea reset - user may be editing');
+          }
         }
 
         console.log('🎨 EditorSidebar: Loaded clean HTML from database:', {
@@ -452,14 +467,23 @@ const EditorSidebar = ({
 
   // HTML content change handler for real-time editing
   const handleHtmlContentInput = useCallback((e) => {
+    console.log('🔤 HTML Content Input Event:', {
+      eventType: e.type,
+      value: e.target.value,
+      valueLength: e.target.value.length,
+      timestamp: new Date().toISOString()
+    });
+
     // Allow typing but don't save until blur
     const newHtml = e.target.value;
 
     // Update validation in real-time for immediate feedback
     if (newHtml.trim()) {
       const validation = validateEditorHtml(newHtml);
+      console.log('🔍 HTML Validation Result:', validation);
       setHtmlValidation(validation);
     } else {
+      console.log('🔍 HTML Content is empty, clearing validation');
       setHtmlValidation({
         error: null,
         isValid: true,
@@ -482,6 +506,13 @@ const EditorSidebar = ({
 
   // Save HTML content when user stops typing (onBlur) with XSS prevention
   const handleHtmlContentSave = useCallback(() => {
+    console.log('💾 HTML Content Save triggered:', {
+      slotId,
+      isInitializing,
+      hasRef: !!htmlContentRef.current,
+      currentValue: htmlContentRef.current?.value || 'NO REF'
+    });
+
     if (slotId && !isInitializing && htmlContentRef.current) {
       const currentHtml = htmlContentRef.current.value;
 
