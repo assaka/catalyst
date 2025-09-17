@@ -462,7 +462,6 @@ export function GridColumn({
             }`
           : 'overflow-hidden'
       } relative responsive-slot`}
-      data-grid-slot-id={slotId}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       draggable={mode === 'edit' && !isOverResizeHandle}

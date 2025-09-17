@@ -680,13 +680,13 @@ const EditorSidebar = ({
       targetElement = selectedElement.closest('.button-slot-container');
       console.log('🟠 Button slot - target element:', targetElement);
     } else {
-      // For text slots, traverse up to find grid cell with gridColumn style or data-grid-slot-id
+      // For text slots, traverse up to find grid cell with gridColumn style or data-slot-id
       targetElement = selectedElement.parentElement;
       console.log('🟠 Text slot - starting from parent:', targetElement);
       while (targetElement &&
              !targetElement.className.includes('col-span') &&
              !targetElement.style.gridColumn &&
-             !targetElement.getAttribute('data-grid-slot-id')) {
+             !targetElement.getAttribute('data-slot-id')) {
         targetElement = targetElement.parentElement;
         if (targetElement === document.body) {
           targetElement = null;
@@ -698,7 +698,7 @@ const EditorSidebar = ({
         console.log('🟠 Target element details:', {
           hasColSpan: targetElement.className.includes('col-span'),
           hasGridColumn: !!targetElement.style.gridColumn,
-          hasDataGridSlotId: !!targetElement.getAttribute('data-grid-slot-id'),
+          hasDataSlotId: !!targetElement.getAttribute('data-slot-id'),
           className: targetElement.className,
           gridColumn: targetElement.style.gridColumn
         });
