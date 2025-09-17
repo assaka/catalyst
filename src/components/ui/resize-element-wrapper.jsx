@@ -19,12 +19,38 @@ const ResizeWrapper = ({
   // Check if element has w-fit class to determine initial units
   const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
-  const [size, setSize] = useState({
-    width: initialWidth || 'auto',
-    height: initialHeight || 'auto',
-    widthUnit: initialWidth ? (hasWFitClass ? 'px' : '%') : 'auto',
-    heightUnit: 'px'
-  });
+  // Extract initial dimensions from existing styles
+  const getInitialDimensions = () => {
+    const existingWidth = children?.props?.style?.width;
+    const existingHeight = children?.props?.style?.height;
+
+    let width = initialWidth || 'auto';
+    let widthUnit = 'auto';
+    let height = initialHeight || 'auto';
+    let heightUnit = 'px';
+
+    if (existingWidth && existingWidth !== 'auto') {
+      const match = existingWidth.match(/^(\d+(?:\.\d+)?)(.*)/);
+      if (match) {
+        width = parseFloat(match[1]);
+        widthUnit = match[2] || 'px';
+      }
+    } else if (initialWidth) {
+      widthUnit = hasWFitClass ? 'px' : '%';
+    }
+
+    if (existingHeight && existingHeight !== 'auto') {
+      const match = existingHeight.match(/^(\d+(?:\.\d+)?)(.*)/);
+      if (match) {
+        height = parseFloat(match[1]);
+        heightUnit = match[2] || 'px';
+      }
+    }
+
+    return { width, height, widthUnit, heightUnit };
+  };
+
+  const [size, setSize] = useState(getInitialDimensions());
   const [naturalSize, setNaturalSize] = useState({ width: null, height: null });
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -209,14 +235,14 @@ const ResizeWrapper = ({
 
       let maxAllowedWidth;
       if (isButton && hasWFitClass) {
-        // For w-fit buttons, constrain to slot container with generous padding
-        maxAllowedWidth = parentRect ? parentRect.width - 8 : maxWidthFromViewport;
+        // For w-fit buttons, constrain to slot container with margin for slot borders
+        maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
       } else if (isButton) {
-        // For regular buttons, constrain to slot container with minimal padding
-        maxAllowedWidth = parentRect ? parentRect.width - 4 : maxWidthFromViewport;
+        // For regular buttons, constrain to slot container with margin for slot borders
+        maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
       } else {
-        // For non-buttons, use more restrictive bounds
-        maxAllowedWidth = parentRect ? Math.min(parentRect.width - 4, maxWidthFromViewport) : maxWidthFromViewport;
+        // For non-buttons, use more restrictive bounds with margin for slot borders
+        maxAllowedWidth = parentRect ? Math.min(parentRect.width - 10, maxWidthFromViewport) : maxWidthFromViewport;
       }
 
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));

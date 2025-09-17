@@ -62,9 +62,67 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setConnectionStatus('connected');
       console.log('✅ FilePickerModal: Supabase connection successful');
 
-      // For now, just show connection success - we'll implement file listing later
-      setFiles([]);
-      setError('✅ Supabase connected! File listing coming next.');
+      // Now try to get actual files using the storage/list endpoint
+      try {
+        console.log('📁 FilePickerModal: Now fetching files from storage...');
+        const filesResponse = await apiClient.get('/supabase/storage/list/suprshop-assets');
+
+        if (filesResponse.success && filesResponse.files) {
+          console.log('📂 FilePickerModal: Found files:', filesResponse.files);
+
+          // Convert files to our format
+          const formattedFiles = filesResponse.files.map(file => ({
+            id: file.id || `file-${file.name}`,
+            name: file.name,
+            url: `https://jqqfjfoigtwdpnlicjmh.supabase.co/storage/v1/object/public/suprshop-assets/${file.name}`,
+            mimeType: file.metadata?.mimetype || 'application/octet-stream',
+            size: file.metadata?.size || 0,
+            lastModified: new Date(file.updated_at || file.created_at).getTime()
+          }));
+
+          // Filter to only show image files if fileType is 'image'
+          const filteredFiles = fileType === 'image'
+            ? formattedFiles.filter(file => file.mimeType.startsWith('image/'))
+            : formattedFiles;
+
+          setFiles(filteredFiles);
+          setError(null);
+          console.log('✅ FilePickerModal: Successfully loaded files:', filteredFiles.length);
+        } else if (filesResponse.files && filesResponse.files.length === 0) {
+          setFiles([]);
+          setError('No files found in storage. Upload some images to get started.');
+        } else {
+          setFiles([]);
+          setError('Unable to access storage files.');
+        }
+      } catch (filesError) {
+        console.error('❌ FilePickerModal: Error fetching files:', filesError);
+
+        // Fallback: try to list buckets and show available structure
+        try {
+          console.log('🔄 FilePickerModal: Trying buckets endpoint as fallback...');
+          const bucketsResponse = await apiClient.get('/supabase/storage/buckets');
+
+          if (bucketsResponse.success && bucketsResponse.buckets) {
+            console.log('📦 FilePickerModal: Found buckets:', bucketsResponse.buckets);
+            const assetsBucket = bucketsResponse.buckets.find(b => b.name === 'suprshop-assets');
+
+            if (assetsBucket) {
+              setFiles([]);
+              setError('✅ Connected to storage, but unable to list files. You can upload new images.');
+            } else {
+              setFiles([]);
+              setError('Storage bucket not found. You can upload new images.');
+            }
+          } else {
+            throw new Error('Unable to access storage');
+          }
+        } catch (bucketsError) {
+          console.error('❌ FilePickerModal: Error with buckets fallback:', bucketsError);
+          setFiles([]);
+          setError('✅ Connected, but unable to list files. You can upload new images.');
+        }
+      }
     } catch (error) {
       console.error('❌ FilePickerModal: Error loading files:', error);
       setConnectionStatus('failed');
