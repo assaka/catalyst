@@ -194,8 +194,24 @@ const ResizeWrapper = ({
       const hasSignificantMovement = Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3;
       if (!hasSignificantMovement) return;
 
-      // Allow wider expansion - use full slot width with minimal padding
-      const maxAllowedWidth = parentRect ? parentRect.width - 4 : Infinity; // Minimal 4px padding for visual breathing room
+      // For buttons, allow more generous horizontal expansion
+      // Check if this is a button element that should have flexible width
+      const isButton = isButtonElement(children);
+      const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
+
+      // Allow wider expansion - different strategies for buttons vs other elements
+      let maxAllowedWidth;
+      if (isButton && hasWFitClass) {
+        // For w-fit buttons, allow expansion up to a reasonable limit
+        maxAllowedWidth = parentRect ? Math.max(parentRect.width * 1.5, 400) : Infinity;
+      } else if (isButton) {
+        // For regular buttons, allow expansion beyond container with generous padding
+        maxAllowedWidth = parentRect ? parentRect.width - 2 : Infinity; // Minimal 2px padding
+      } else {
+        // For non-buttons, use more restrictive bounds
+        maxAllowedWidth = parentRect ? parentRect.width - 4 : Infinity; // 4px padding for visual breathing room
+      }
+
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
@@ -203,10 +219,13 @@ const ResizeWrapper = ({
       let widthValue = newWidth;
       let widthUnit = 'px';
 
-      // Check if element has w-fit class (should use pixels for natural sizing)
-      const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
-
-      if (parentRect && parentRect.width > 0 && !hasWFitClass) {
+      // For buttons, prefer pixel units to allow unrestricted horizontal resizing
+      if (isButton || hasWFitClass) {
+        // Use pixels for buttons and w-fit elements to allow flexible sizing
+        widthValue = newWidth;
+        widthUnit = 'px';
+      } else if (parentRect && parentRect.width > 0) {
+        // For non-button elements, use percentage-based sizing
         const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
         widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
@@ -249,7 +268,8 @@ const ResizeWrapper = ({
     // Wrapper should always be fit-content to not affect parent layout
     width: 'fit-content',
     height: 'fit-content',
-    maxWidth: '100%',
+    // Only apply maxWidth constraint for non-button elements
+    ...(isButtonElement(children) ? {} : { maxWidth: '100%' }),
     display: 'inline-block',
     position: 'relative'
   };
