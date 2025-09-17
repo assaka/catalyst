@@ -18,15 +18,38 @@ class SimpleStyleManager {
         console.warn('❌ No element provided to applyStyle');
         return false;
       }
-      
+
+      // For button slots (type: 'button'), apply styles to the actual button element, not the wrapper
+      let targetElement = element;
+      if (element.hasAttribute('data-slot-id')) {
+        // Check for button element (for slots with type: 'button')
+        const button = element.querySelector('button');
+        // Also check for text elements (span with data-editable)
+        const textElement = element.querySelector('span[data-editable="true"]');
+        // Also check for input elements
+        const inputElement = element.querySelector('input');
+
+        if (button) {
+          targetElement = button;
+          console.log(`🎨 Applying style to button element instead of wrapper`);
+        } else if (textElement) {
+          targetElement = textElement;
+          console.log(`🎨 Applying style to text element instead of wrapper`);
+        } else if (inputElement) {
+          targetElement = inputElement;
+          console.log(`🎨 Applying style to input element instead of wrapper`);
+        }
+        // For other types (image, container, etc.), keep using the wrapper element
+      }
+
       // Direct DOM manipulation
       if (property.startsWith('class_')) {
         // Handle class-based changes (Tailwind)
         const actualProperty = property.replace('class_', '');
-        this.updateClassName(element, actualProperty, value);
+        this.updateClassName(targetElement, actualProperty, value);
       } else {
         // Handle inline style changes
-        element.style[property] = value;
+        targetElement.style[property] = value;
       }
       
       // Track the change for persistence
@@ -199,12 +222,13 @@ class SimpleStyleManager {
     const saved = this.loadChanges();
     
     Object.entries(saved).forEach(([elementId, changes]) => {
-      const element = document.querySelector(`[data-slot-id="${elementId}"]`) || 
+      const element = document.querySelector(`[data-slot-id="${elementId}"]`) ||
                      document.getElementById(elementId);
-      
+
       if (element && changes) {
         Object.entries(changes).forEach(([property, value]) => {
           if (property !== 'lastModified') {
+            // The applyStyle method will now handle finding the correct target element
             this.applyStyle(element, property, value);
           }
         });
