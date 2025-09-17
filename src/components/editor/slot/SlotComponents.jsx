@@ -1109,6 +1109,24 @@ export function CodeModal({
             {jsonError && (
               <Badge className="bg-red-100 text-red-800">Invalid JSON</Badge>
             )}
+            {localSaveStatus === 'saving' && (
+              <div className="flex items-center gap-2 text-sm text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving...</span>
+              </div>
+            )}
+            {localSaveStatus === 'saved' && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Check className="w-4 h-4" />
+                <span>Saved</span>
+              </div>
+            )}
+            {localSaveStatus === 'error' && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <X className="w-4 h-4" />
+                <span>Save Failed</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Undo/Redo buttons */}
@@ -1157,10 +1175,19 @@ export function CodeModal({
               onClick={handleSave}
               variant={hasChanges ? "default" : "outline"}
               size="sm"
-              disabled={!hasChanges || !!jsonError}
+              disabled={!hasChanges || !!jsonError || localSaveStatus === 'saving'}
             >
-              <Save className="w-3 h-3 mr-1" />
-              Save
+              {localSaveStatus === 'saving' ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </>
+              )}
             </Button>
             <Button
               onClick={onClose}
