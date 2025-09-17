@@ -187,17 +187,6 @@ const ResizeWrapper = ({
     const elementLeft = rect.left;
     const maxAllowableRight = effectiveViewportWidth - 20; // 20px margin from edge
 
-    console.log('🎯 Resize container detection:', {
-      slotContainerFound: !!slotContainer,
-      slotContainerClasses: slotContainer?.className || 'none',
-      slotContainerWidth: parentRect?.width || 0,
-      hasDataGridSlotId: slotContainer?.hasAttribute('data-grid-slot-id') || false,
-      elementWidth: rect.width,
-      hasSidebarPadding,
-      effectiveViewportWidth,
-      maxAllowableRight,
-      elementLeft
-    });
     
     const startX = e.clientX;
     const startY = e.clientY;
@@ -214,18 +203,6 @@ const ResizeWrapper = ({
       const hasSignificantMovement = Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3;
       if (!hasSignificantMovement) return;
 
-      // Debug logging for buttons during resize
-      if (children?.props?.['data-slot-id']?.includes('button')) {
-        console.log('🔄 Resize move event:', {
-          deltaX,
-          deltaY,
-          startX,
-          startY,
-          currentX: moveEvent.clientX,
-          currentY: moveEvent.clientY,
-          hasSignificantMovement
-        });
-      }
 
       // For buttons, allow more generous horizontal expansion
       // Check if this is a button element that should have flexible width
@@ -250,20 +227,6 @@ const ResizeWrapper = ({
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
-      // Debug logging for buttons
-      if (children?.props?.['data-slot-id']?.includes('button')) {
-        console.log('🎯 Width calculation:', {
-          isButton,
-          hasWFitClass,
-          maxWidthFromViewport,
-          maxAllowedWidth,
-          startWidth,
-          deltaX,
-          newWidth,
-          elementLeft,
-          maxAllowableRight
-        });
-      }
 
       // Calculate width units based on element type and classes
       let widthValue = newWidth;
@@ -298,17 +261,6 @@ const ResizeWrapper = ({
         heightUnit
       };
       setSize(newSize);
-
-      // Debug size application for buttons
-      if (children?.props?.['data-slot-id']?.includes('button')) {
-        console.log('📏 Setting new size:', newSize);
-        console.log('🎯 Element current computed style:', {
-          currentWidth: wrapperRef.current?.style.width,
-          currentMaxWidth: wrapperRef.current?.style.maxWidth,
-          computedWidth: window.getComputedStyle(wrapperRef.current || document.body).width,
-          computedMaxWidth: window.getComputedStyle(wrapperRef.current || document.body).maxWidth
-        });
-      }
 
       if (onResize) {
         onResize(newSize);
