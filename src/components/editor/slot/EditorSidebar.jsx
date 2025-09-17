@@ -196,7 +196,11 @@ const EditorSidebar = ({
     const type = slotConfig.type || 'div';
 
     // Create the correct element type based on slot type
-    const element = document.createElement(type === 'button' ? 'button' : 'div');
+    const element = document.createElement(
+      type === 'button' ? 'button' :
+      type === 'link' ? 'a' :
+      'div'
+    );
 
     // Apply classes from database (excluding editor-specific classes)
     const cleanClasses = className
@@ -238,8 +242,8 @@ const EditorSidebar = ({
       }
     });
 
-    // Set content (for buttons, extract text only to avoid nested divs)
-    if (type === 'button') {
+    // Set content (for buttons and links, extract text only to avoid nested divs)
+    if (type === 'button' || type === 'link') {
       if (content.includes('<')) {
         // If content contains HTML, extract just the text
         const tempDiv = document.createElement('div');
@@ -247,6 +251,21 @@ const EditorSidebar = ({
         element.textContent = tempDiv.textContent || tempDiv.innerText || content;
       } else {
         element.textContent = content;
+      }
+
+      // Add href attribute for links
+      if (type === 'link' && slotConfig.href) {
+        element.href = slotConfig.href;
+      }
+
+      // Add target attribute for links
+      if (type === 'link' && slotConfig.target) {
+        element.target = slotConfig.target;
+      }
+
+      // Add rel attribute for security when target is _blank
+      if (type === 'link' && slotConfig.target === '_blank') {
+        element.rel = 'noopener noreferrer';
       }
     } else {
       element.innerHTML = content;

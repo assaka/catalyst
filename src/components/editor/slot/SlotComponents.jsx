@@ -606,6 +606,22 @@ export function HierarchicalSlotRenderer({
                 <ResizeWrapper
                   minWidth={20}
                   minHeight={16}
+                  onResize={(newSize) => {
+                    setPageConfig(prevConfig => {
+                      const updatedSlots = { ...prevConfig?.slots };
+                      if (updatedSlots[slot.id]) {
+                        updatedSlots[slot.id] = {
+                          ...updatedSlots[slot.id],
+                          styles: {
+                            ...updatedSlots[slot.id].styles,
+                            width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                            height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                          }
+                        };
+                      }
+                      return { ...prevConfig, slots: updatedSlots };
+                    });
+                  }}
                 >
                   <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
                     <span

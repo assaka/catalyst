@@ -173,6 +173,10 @@ const ResizeWrapper = ({
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
+      // Only apply sizing if there's significant movement (prevents jumping on click)
+      const hasSignificantMovement = Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3;
+      if (!hasSignificantMovement) return;
+
       // Allow full width expansion up to parent container
       const maxAllowedWidth = parentRect ? parentRect.width - 20 : Infinity; // 20px padding
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
@@ -288,7 +292,7 @@ const ResizeWrapper = ({
               "absolute cursor-se-resize z-20",
               "transition-opacity duration-200",
               "flex items-center justify-center",
-              isHovered || isResizing ? "opacity-100" : "opacity-30"
+              isHovered || isResizing ? "opacity-100" : "opacity-0"
             )}
             onMouseDown={handleMouseDown}
             style={{
