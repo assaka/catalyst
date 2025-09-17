@@ -26,10 +26,11 @@ class SlotConfigurationService {
   }
 
   // Update draft configuration
-  async updateDraftConfiguration(configId, configuration) {
+  async updateDraftConfiguration(configId, configuration, isReset = false) {
     try {
       const response = await apiClient.put(`${API_BASE}/draft/${configId}`, {
-        configuration
+        configuration,
+        isReset
       });
       return response;
     } catch (error) {
@@ -174,12 +175,13 @@ class SlotConfigurationService {
   }
 
   // Helper method to save configuration with auto-draft creation
-  async saveConfiguration(storeId, configuration, pageType = 'cart') {
+  async saveConfiguration(storeId, configuration, pageType = 'cart', isReset = false) {
     try {
       console.log('🔧 SlotConfigurationService.saveConfiguration called:', {
         storeId,
         pageType,
-        configuration: configuration
+        configuration: configuration,
+        isReset
       });
 
       // First get or create a draft
@@ -192,7 +194,7 @@ class SlotConfigurationService {
       console.log('🔄 Transformed configuration:', apiConfiguration);
 
       // Update the draft with new configuration
-      const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration);
+      const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration, isReset);
       console.log('✅ Update response:', updateResponse);
       return updateResponse;
     } catch (error) {

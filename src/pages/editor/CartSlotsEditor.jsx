@@ -343,9 +343,15 @@ const CartSlotsEditor = ({
   // Wrap reset layout to also reset unsaved changes flag
   const handleResetLayout = useCallback(async () => {
     const result = await baseHandleResetLayout();
-    setHasUnsavedChanges(false);
+    setHasUnsavedChanges(false); // Reset should clear unsaved changes flag
     setConfigurationStatus('draft'); // Reset creates a draft
     lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
+
+    // Refresh the SlotEnabledFileSelector badge status after reset
+    if (window.slotFileSelectorRefresh) {
+      window.slotFileSelectorRefresh('cart');
+    }
+
     return result;
   }, [baseHandleResetLayout, cartLayoutConfig]);
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);

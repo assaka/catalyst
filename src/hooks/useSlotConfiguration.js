@@ -355,9 +355,10 @@ export function useSlotConfiguration({
       };
 
       // Save the clean config to database (this will overwrite any existing draft)
+      // Pass isReset=true to set has_unpublished_changes = false
       const storeId = selectedStore?.id;
       if (storeId) {
-        await slotConfigurationService.saveConfiguration(storeId, cleanConfig, pageType);
+        await slotConfigurationService.saveConfiguration(storeId, cleanConfig, pageType, true);
       }
 
       setResetStatus('reset');

@@ -170,36 +170,38 @@ router.get('/acceptance/:storeId/:pageType?', async (req, res) => {
 router.put('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
-    const { configuration } = req.body;
-    
+    const { configuration, isReset = false } = req.body;
+
     const draft = await SlotConfiguration.findByPk(configId);
-    
+
     if (!draft) {
       return res.status(404).json({
         success: false,
         error: 'Draft not found'
       });
     }
-    
+
     if (draft.status !== 'draft') {
       return res.status(400).json({
         success: false,
         error: 'Can only update draft configurations'
       });
     }
-    
+
     if (draft.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized to edit this draft'
       });
     }
-    
+
     draft.configuration = configuration;
     draft.updated_at = new Date();
-    draft.has_unpublished_changes = true; // Mark as having unpublished changes
+    // For reset operations, set has_unpublished_changes = false
+    // For normal edits, set has_unpublished_changes = true
+    draft.has_unpublished_changes = isReset ? false : true;
     await draft.save();
-    
+
     res.json({
       success: true,
       data: draft

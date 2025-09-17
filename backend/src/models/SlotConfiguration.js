@@ -265,7 +265,7 @@ SlotConfiguration.findLatestAcceptance = async function(storeId, pageType) {
 };
 
 // Create or update a draft - proper upsert logic
-SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, configuration = null, isNewChanges = true) {
+SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, configuration = null, isNewChanges = true, isReset = false) {
   // Try to find existing draft
   const existingDraft = await this.findOne({
     where: {
@@ -281,8 +281,9 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     if (configuration) {
       existingDraft.configuration = configuration;
       existingDraft.updated_at = new Date();
-      // Only mark as having changes if this is actual new content, not a copy of published
-      existingDraft.has_unpublished_changes = isNewChanges;
+      // For reset operations, always set has_unpublished_changes = false
+      // For other operations, use isNewChanges parameter
+      existingDraft.has_unpublished_changes = isReset ? false : isNewChanges;
       await existingDraft.save();
     }
     return existingDraft;
@@ -327,7 +328,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     version_number: (maxVersion || 0) + 1,
     page_type: pageType,
     parent_version_id: latestPublished ? latestPublished.id : null,
-    has_unpublished_changes: false // New drafts start with no changes
+    has_unpublished_changes: isReset ? false : false // New drafts start with no changes, reset operations explicitly false
   });
 
   return newDraft;
