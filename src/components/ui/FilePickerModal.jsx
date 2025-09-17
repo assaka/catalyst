@@ -20,11 +20,22 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
       // Use direct fetch instead of problematic API client
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
+
+      // Get authentication token from localStorage
+      const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      // Add authorization header if token exists
+      if (storeOwnerToken) {
+        headers['Authorization'] = `Bearer ${storeOwnerToken}`;
+      }
+
       const response = await fetch(`${apiUrl}/api/storage/list?folder=library`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         credentials: 'include'
       });
 
