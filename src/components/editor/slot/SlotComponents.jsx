@@ -603,58 +603,47 @@ export function HierarchicalSlotRenderer({
         showBorders={showBorders}
       >
           {slot.type === 'text' && mode === 'edit' && (
-                <ResizeWrapper
-                  minWidth={20}
-                  minHeight={16}
-                  onResize={(newSize) => {
-                    setPageConfig(prevConfig => {
-                      const updatedSlots = { ...prevConfig?.slots };
-                      if (updatedSlots[slot.id]) {
-                        updatedSlots[slot.id] = {
-                          ...updatedSlots[slot.id],
-                          styles: {
-                            ...updatedSlots[slot.id].styles,
-                            width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                            height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                          }
-                        };
+            <ResizeWrapper
+              minWidth={20}
+              minHeight={16}
+              onResize={(newSize) => {
+                setPageConfig(prevConfig => {
+                  const updatedSlots = { ...prevConfig?.slots };
+                  if (updatedSlots[slot.id]) {
+                    updatedSlots[slot.id] = {
+                      ...updatedSlots[slot.id],
+                      styles: {
+                        ...updatedSlots[slot.id].styles,
+                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
                       }
-                      return { ...prevConfig, slots: updatedSlots };
-                    });
-                  }}
-                >
-                    <span
-                      className={`${slot.parentClassName || ''} ${slot.className || ''}`}
-                      style={{
-                        ...slot.styles,
-                        cursor: 'pointer',
-                        ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
-                        display: 'inline-block',
-                        // Use fit-content for w-fit elements, otherwise 100%
-                        width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onElementClick(slot.id, e.currentTarget);
-                      }}
-                      data-slot-id={slot.id}
-                      data-editable="true"
-                      dangerouslySetInnerHTML={{
-                        __html: String(slot.content || `Text: ${slot.id}`)
-                      }}
-                    />
-                </ResizeWrapper>
-              ) : (
-                <span
-                  className={`${slot.parentClassName || ''} ${slot.className}`}
-                  style={{
-                    ...slot.styles,
-                    ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: String(slot.content || `Text: ${slot.id}`)
-                  }}
-                />
+                    };
+                  }
+                  return { ...prevConfig, slots: updatedSlots };
+                });
+              }}
+            >
+              <span
+                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+                style={{
+                  ...slot.styles,
+                  cursor: 'pointer',
+                  ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
+                  display: 'inline-block',
+                  // Use fit-content for w-fit elements, otherwise 100%
+                  width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+                data-editable="true"
+                dangerouslySetInnerHTML={{
+                  __html: String(slot.content || `Text: ${slot.id}`)
+                }}
+              />
+            </ResizeWrapper>
           )}
 
           {slot.type === 'text' && mode !== 'edit' && (
