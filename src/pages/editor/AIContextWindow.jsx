@@ -956,8 +956,10 @@ export default ExampleComponent;`;
                               "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
                             )}
                           >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Customize
+                            {selectedFile.icon && (
+                              <selectedFile.icon className="w-4 h-4 mr-2" />
+                            )}
+                            {selectedFile.name}
                           </button>
                         </div>
                         <button
@@ -997,6 +999,7 @@ export default ExampleComponent;`;
                               fileName === 'CartSlotsEditor.jsx' ||
                               fileName === 'CategorySlotEditor.jsx' ||
                               fileName === 'ProductSlotEditor.jsx' ||
+                              fileName === 'SuccessSlotEditor.jsx' ||
                               fileName === 'HomepageSlotEditor.jsx';
                             
                             if (isSlotFile) {
@@ -1008,6 +1011,7 @@ export default ExampleComponent;`;
                                 if (name.includes('product')) return 'product';
                                 if (name.includes('homepage')) return 'homepage';
                                 if (name.includes('checkout')) return 'checkout';
+                                if (name.includes('success')) return 'success';
                                 return null;
                               };
                               
