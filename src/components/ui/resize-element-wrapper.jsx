@@ -171,12 +171,30 @@ const ResizeWrapper = ({
     // Use slot container or fall back to immediate parent
     const parentRect = slotContainer?.getBoundingClientRect() || wrapperRef.current.parentElement?.getBoundingClientRect();
 
+    // Account for sidebar and viewport constraints
+    const viewportWidth = window.innerWidth;
+    const viewportRect = { left: 0, right: viewportWidth, width: viewportWidth };
+
+    // Check if main container has sidebar padding (pr-80 = 320px)
+    const mainContainer = document.querySelector('.min-h-screen');
+    const hasSidebarPadding = mainContainer?.classList.contains('pr-80');
+    const sidebarWidth = hasSidebarPadding ? 320 : 0;
+
+    // Calculate effective available width considering sidebar
+    const effectiveViewportWidth = viewportWidth - sidebarWidth;
+    const elementLeft = rect.left;
+    const maxAllowableRight = effectiveViewportWidth - 20; // 20px margin from edge
+
     console.log('🎯 Resize container detection:', {
       slotContainerFound: !!slotContainer,
       slotContainerClasses: slotContainer?.className || 'none',
       slotContainerWidth: parentRect?.width || 0,
       hasDataGridSlotId: slotContainer?.hasAttribute('data-grid-slot-id') || false,
-      elementWidth: rect.width
+      elementWidth: rect.width,
+      hasSidebarPadding,
+      effectiveViewportWidth,
+      maxAllowableRight,
+      elementLeft
     });
     
     const startX = e.clientX;
@@ -199,17 +217,21 @@ const ResizeWrapper = ({
       const isButton = isButtonElement(children);
       const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
-      // Allow wider expansion - different strategies for buttons vs other elements
+      // Calculate maximum allowed width considering viewport and sidebar constraints
+      const maxWidthFromViewport = maxAllowableRight - elementLeft;
+
       let maxAllowedWidth;
       if (isButton && hasWFitClass) {
-        // For w-fit buttons, allow expansion up to a reasonable limit
-        maxAllowedWidth = parentRect ? Math.max(parentRect.width * 1.5, 400) : Infinity;
+        // For w-fit buttons, allow expansion but respect viewport limits
+        const preferredMax = parentRect ? Math.max(parentRect.width * 1.5, 400) : 400;
+        maxAllowedWidth = Math.min(preferredMax, maxWidthFromViewport);
       } else if (isButton) {
-        // For regular buttons, allow expansion beyond container with generous padding
-        maxAllowedWidth = parentRect ? parentRect.width - 2 : Infinity; // Minimal 2px padding
+        // For regular buttons, allow expansion but respect viewport limits
+        const preferredMax = parentRect ? parentRect.width * 2 : maxWidthFromViewport; // Allow 2x expansion
+        maxAllowedWidth = Math.min(preferredMax, maxWidthFromViewport);
       } else {
         // For non-buttons, use more restrictive bounds
-        maxAllowedWidth = parentRect ? parentRect.width - 4 : Infinity; // 4px padding for visual breathing room
+        maxAllowedWidth = parentRect ? Math.min(parentRect.width - 4, maxWidthFromViewport) : maxWidthFromViewport;
       }
 
       const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
