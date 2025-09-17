@@ -747,7 +747,6 @@ export function HierarchicalSlotRenderer({
                     </button>
                   )}
                 </>
-              }
               ) : slot.type === 'link' ? (
                 <>
                   {mode === 'edit' ? (
