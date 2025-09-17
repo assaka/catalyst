@@ -474,24 +474,9 @@ const EditorSidebar = ({
       timestamp: new Date().toISOString()
     });
 
-    // Allow typing but don't save until blur
-    const newHtml = e.target.value;
-
-    // Update validation in real-time for immediate feedback
-    if (newHtml.trim()) {
-      const validation = validateEditorHtml(newHtml);
-      console.log('🔍 HTML Validation Result:', validation);
-      setHtmlValidation(validation);
-    } else {
-      console.log('🔍 HTML Content is empty, clearing validation');
-      setHtmlValidation({
-        error: null,
-        isValid: true,
-        isSafe: true,
-        wasModified: false,
-        warnings: []
-      });
-    }
+    // DON'T update validation state during typing to prevent re-renders
+    // Only validate on blur to avoid resetting textarea value
+    console.log('⚡ Skipping validation during typing to prevent re-renders');
   }, []);
 
 
@@ -534,6 +519,7 @@ const EditorSidebar = ({
 
       // Parse and sanitize HTML securely
       const parsed = parseEditorHtml(currentHtml);
+      console.log('🔍 HTML Validation on Save:', parsed);
 
       if (parsed.sanitizedHtml) {
         try {
