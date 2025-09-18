@@ -153,7 +153,7 @@ export default function Cart() {
                         setCartLayoutConfig(publishedConfig.configuration);
                         setConfigLoaded(true);
                         console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
-                        console.log('🔍 Empty cart title config:', publishedConfig.configuration['emptyCart.title']);
+                        console.log('🔍 Empty cart title config:', publishedConfig.configuration['empty_cart_title']);
                     } else {
                         console.warn('⚠️ Published configuration has no configuration data');
                         // Fallback to cart-config.js
@@ -1027,10 +1027,10 @@ export default function Cart() {
                                         </div>
                                         <div className="col-span-12">
                                             {(() => {
-                                                const titleStyling = getSlotStyling('emptyCart.title');
-                                                const titleContent = getSlotContent('emptyCart.title', 'Your cart is empty');
+                                                const titleStyling = getSlotStyling('empty_cart_title');
+                                                const titleContent = getSlotContent('empty_cart_title', 'Your cart is empty');
                                                 return (
-                                                    <h2 
+                                                    <h2
                                                         className={titleStyling.elementClasses || "text-xl font-semibold text-gray-900 mb-2"}
                                                         style={titleStyling.elementStyles}
                                                     >
@@ -1041,10 +1041,10 @@ export default function Cart() {
                                         </div>
                                         <div className="col-span-12">
                                             {(() => {
-                                                const textStyling = getSlotStyling('emptyCart.text');
-                                                const textContent = getSlotContent('emptyCart.text', "Looks like you haven't added anything to your cart yet.");
+                                                const textStyling = getSlotStyling('empty_cart_text');
+                                                const textContent = getSlotContent('empty_cart_text', "Looks like you haven't added anything to your cart yet.");
                                                 return (
-                                                    <p 
+                                                    <p
                                                         className={textStyling.elementClasses || "text-gray-600 mb-6"}
                                                         style={textStyling.elementStyles}
                                                     >
@@ -1055,8 +1055,8 @@ export default function Cart() {
                                         </div>
                                         <div className="col-span-12 flex justify-center">
                                             {(() => {
-                                                const buttonStyling = getSlotStyling('emptyCart.button');
-                                                const buttonContent = getSlotContent('emptyCart.button', 'Continue Shopping');
+                                                const buttonStyling = getSlotStyling('empty_cart_button');
+                                                const buttonContent = getSlotContent('empty_cart_button', 'Continue Shopping');
                                                 return (
                                                     <Button
                                                         onClick={() => navigate(getStoreBaseUrl(store))}
@@ -1077,7 +1077,7 @@ export default function Cart() {
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                         <div className="lg:col-span-2">
                             {(() => {
-                                const cartItemsStyling = getSlotStyling('cartItems');
+                                const cartItemsStyling = getSlotStyling('cart_items_container');
                                 return (
                                     <Card className={cartItemsStyling.elementClasses} style={cartItemsStyling.elementStyles}>
                                         <CardContent className="px-4 divide-y divide-gray-200">
@@ -1166,7 +1166,7 @@ export default function Cart() {
                         </div>
                         <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
                             {(() => {
-                                const couponStyling = getSlotStyling('coupon');
+                                const couponStyling = getSlotStyling('coupon_container');
                                 return (
                                     <Card className={couponStyling.elementClasses} style={couponStyling.elementStyles}>
                                         <CardContent className="p-4">
@@ -1229,7 +1229,7 @@ export default function Cart() {
                                 );
                             })()}
                             {(() => {
-                                const orderSummaryStyling = getSlotStyling('orderSummary');
+                                const orderSummaryStyling = getSlotStyling('order_summary_container');
                                 return (
                                     <Card className={orderSummaryStyling.elementClasses} style={orderSummaryStyling.elementStyles}>
                                         <CardContent className="p-4">
