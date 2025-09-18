@@ -989,7 +989,18 @@ export default function Cart() {
                 <div className="header-section mb-8">
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
                         <div className="col-span-12">
-                            <h1 className="text-3xl font-bold text-gray-900 mb-4">{store?.name || 'My Cart'}</h1>
+                            {(() => {
+                                const titleStyling = getSlotStyling('header_title');
+                                const titleContent = getSlotContent('header_title', 'My Cart');
+                                return (
+                                    <h1
+                                        className={titleStyling.elementClasses || "text-3xl font-bold text-gray-900 mb-4"}
+                                        style={titleStyling.elementStyles}
+                                    >
+                                        {titleContent}
+                                    </h1>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
