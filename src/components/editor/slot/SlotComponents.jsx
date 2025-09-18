@@ -1675,18 +1675,14 @@ export function CodeModal({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button
+            <button
               onClick={handleSave}
-              variant="ghost"
-              size="sm"
               disabled={!!jsonError || localSaveStatus === 'saving'}
-              className={hasChanges ? "!bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600 shadow-lg font-semibold" : "!bg-gray-400 hover:!bg-gray-500 !text-white !border-gray-400"}
-              style={{
-                backgroundColor: hasChanges ? '#1d4ed8' : '#9ca3af',
-                color: 'white',
-                border: `1px solid ${hasChanges ? '#1d4ed8' : '#9ca3af'}`,
-                opacity: hasChanges ? 1 : 0.7
-              }}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
+                hasChanges
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-lg font-semibold'
+                  : 'bg-gray-400 hover:bg-gray-500 text-white border border-gray-400 opacity-70'
+              }`}
             >
               {localSaveStatus === 'saving' ? (
                 <>
@@ -1699,7 +1695,7 @@ export function CodeModal({
                   Save
                 </>
               )}
-            </Button>
+            </button>
             <Button
               onClick={onClose}
               variant="ghost"
