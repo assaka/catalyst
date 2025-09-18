@@ -320,7 +320,7 @@ const SlotEnabledFileSelector = ({
                 onClick={() => handleFileClick(file)}
               >
                 {/* File Icon */}
-                <div className="fle gap-2">
+                <div className="flex gap-2">
                   <IconComponent className={`w-5 h-5 ${file.color}`} />
                   <span className="font-medium text-sm">{file.name}</span>
                 </div>
