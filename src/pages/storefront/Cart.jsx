@@ -121,17 +121,26 @@ export default function Cart() {
                 return;
             }
             console.log('✅ Store ID found, loading published slot configuration for store:', store.id);
-            
+            console.log('🔍 Current timestamp:', new Date().toISOString());
+
             try {
                 // Load published configuration using the new versioning API
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
-                
+
                 console.log('📡 Published config response:', response);
+                console.log('📡 Response data structure:', response?.data);
+                console.log('📡 Configuration content:', response?.data?.configuration);
+                console.log('📡 Configuration status:', response?.data?.status);
+                console.log('📡 Published at:', response?.data?.published_at);
+                console.log('📡 Version number:', response?.data?.version_number);
                 
                 if (response.success && response.data) {
                     const publishedConfig = response.data;
                     
                     if (publishedConfig.configuration) {
+                        console.log('🔧 Setting cart layout config with published data...');
+                        console.log('🔧 Published config slots:', Object.keys(publishedConfig.configuration.slots || {}));
+                        console.log('🔧 Published config metadata:', publishedConfig.configuration.metadata);
                         setCartLayoutConfig(publishedConfig.configuration);
                         console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
                         console.log('🔍 Empty cart title config:', publishedConfig.configuration['emptyCart.title']);
@@ -149,6 +158,8 @@ export default function Cart() {
                     }
                 } else {
                     console.warn('⚠️ No published configuration found, using default');
+                    console.warn('⚠️ Response success:', response?.success);
+                    console.warn('⚠️ Response data exists:', !!response?.data);
                     // Set default configuration
                     setCartLayoutConfig({
                         slots: {},
