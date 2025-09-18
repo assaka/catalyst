@@ -123,7 +123,7 @@ const getFileDisplayInfo = (filename) => {
   // Map filenames to user-friendly names and icons
   if (name.includes('cart')) {
     return {
-      name: 'Shopping cart',
+      name: 'Cart',
       icon: ShoppingCart
     };
   }
