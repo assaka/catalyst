@@ -1577,6 +1577,7 @@ export function CodeModal({
   const [originalValue, setOriginalValue] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
   const [jsonError, setJsonError] = useState(null);
+  const [key, setKey] = useState(0); // Force re-render of CodeEditor
 
   // Initialize editor value when modal opens
   useEffect(() => {
@@ -1586,6 +1587,7 @@ export function CodeModal({
       setOriginalValue(jsonString);
       setHasChanges(false);
       setJsonError(null);
+      setKey(prev => prev + 1); // Force CodeEditor to re-initialize
     }
   }, [isOpen, configuration]);
 
@@ -1692,16 +1694,21 @@ export function CodeModal({
         {/* CodeEditor with Split Review */}
         <div className="flex-1 overflow-hidden">
           <CodeEditor
+            key={key}
             value={editorValue}
             onChange={handleEditorChange}
             language="json"
             fileName="configuration.json"
             originalCode={originalValue}
+            initialContent={originalValue}
             enableDiffDetection={true}
             className="h-full"
-            onManualEdit={(newCode, oldCode) => {
-              // Handle manual edits if needed
-              console.log('Manual edit detected in CodeModal');
+            onManualEdit={(newCode, oldCode, context) => {
+              // Handle manual edits - this enables diff detection
+              console.log('Manual edit detected in CodeModal:', {
+                hasChanges: newCode !== oldCode,
+                diffDetectionEnabled: context?.enableDiffDetection
+              });
             }}
           />
         </div>
