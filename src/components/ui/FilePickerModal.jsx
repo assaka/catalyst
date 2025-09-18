@@ -181,7 +181,11 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         // Debug FormData contents
         console.log('📤 FilePickerModal: FormData contents:');
         for (const [key, value] of formData.entries()) {
-          console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}bytes)` : value);
+          if (value && typeof value === 'object' && value.name && value.size !== undefined) {
+            console.log(`  ${key}: File(${value.name}, ${value.size}bytes)`);
+          } else {
+            console.log(`  ${key}:`, value);
+          }
         }
 
         const response = await apiClient.post('/supabase/storage/upload', formData, {
