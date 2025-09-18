@@ -866,57 +866,118 @@ export function HierarchicalSlotRenderer({
                 });
               }}
             >
-              <span
+              <a
+                href={slot.href || '#'}
                 className={`${slot.parentClassName || ''} ${slot.className || ''}`}
                 style={{
                   ...slot.styles,
                   cursor: 'pointer',
-                  ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
+                  minWidth: 'auto',
+                  minHeight: 'auto',
                   display: 'inline-block',
-                  // Use fit-content for w-fit elements, otherwise 100%
                   width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
                 }}
+                target={slot.target || '_self'}
+                rel="noopener noreferrer"
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onElementClick(slot.id, e.currentTarget);
                 }}
                 data-slot-id={slot.id}
                 data-editable="true"
-                dangerouslySetInnerHTML={{
-                  __html: String(slot.content || `Text: ${slot.id}`)
-                }}
-              />
+              >
+                {(() => {
+                  const content = String(slot.content || `Link: ${slot.id}`);
+                  if (content.includes('<')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = content;
+                    return tempDiv.textContent || tempDiv.innerText || content;
+                  }
+                  return content;
+                })()}
+              </a>
             </ResizeWrapper>
-          )}
-
-          {slot.type === 'text' && mode !== 'edit' && (
-            <span
+          ) : (
+            <a
+              href={slot.href || '#'}
               className={`${slot.parentClassName || ''} ${slot.className}`}
               style={{
                 ...slot.styles,
-                ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+                minWidth: 'auto',
+                minHeight: 'auto'
               }}
-              dangerouslySetInnerHTML={{
-                __html: String(slot.content || `Text: ${slot.id}`)
+              target={slot.target || '_self'}
+              rel="noopener noreferrer"
+            >
+              {(() => {
+                const content = String(slot.content || `Link: ${slot.id}`);
+                if (content.includes('<')) {
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = content;
+                  return tempDiv.textContent || tempDiv.innerText || content;
+                }
+                return content;
+              })()}
+            </a>
+          )
+        )}
+
+        {/* IMAGE SLOTS */}
+        {slot.type === 'image' && (
+          slot.content ? (
+            <img
+              src={slot.content}
+              alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
+              className="w-full h-full object-contain"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%'
               }}
             />
-          )}
+          ) : (
+            <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
+              <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+              <span className="text-sm text-gray-500">No image selected</span>
+            </div>
+          )
+        )}
 
-          {slot.type === 'button' && mode === 'edit' && (
-            <ResizeWrapper
-              minWidth={50}
-              minHeight={20}
-              onResize={(newSize) => {
-                setPageConfig(prevConfig => {
-                  const updatedSlots = { ...prevConfig?.slots };
-                  if (updatedSlots[slot.id]) {
-                    updatedSlots[slot.id] = {
-                      ...updatedSlots[slot.id],
-                      styles: {
-                        ...updatedSlots[slot.id].styles,
-                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                      }
+        {/* INPUT SLOTS */}
+        {slot.type === 'input' && (
+          <input
+            className={`w-full h-full ${slot.className}`}
+            style={{
+              ...slot.styles,
+              minWidth: 'auto',
+              minHeight: 'auto'
+            }}
+            placeholder={String(slot.content || '')}
+            type="text"
+          />
+        )}
+      </div>
+    );
+  });
+}
+
+// BorderToggleButton Component
+export function BorderToggleButton({ showSlotBorders, onToggle }) {
+  return (
+    <Button
+      onClick={onToggle}
+      variant={showSlotBorders ? "default" : "outline"}
+      size="sm"
+      title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
+    >
+      <Square className="w-4 h-4 mr-2" />
+      Borders
+    </Button>
+  );
+}
+
+// EditorToolbar Component
+export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
                     };
                   }
 
