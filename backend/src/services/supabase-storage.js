@@ -18,15 +18,34 @@ class SupabaseStorageService extends StorageInterface {
     try {
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
       if (tokenInfo && tokenInfo.project_url && (tokenInfo.service_role_key || tokenInfo.anon_key)) {
-        return await supabaseIntegration.getSupabaseAdminClient(storeId);
+        console.log('Found OAuth integration, attempting to use it...');
+        const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+
+        // Test the client with a simple operation to catch invalid keys early
+        try {
+          await client.storage.listBuckets();
+          console.log('OAuth Supabase client validation successful');
+          return client;
+        } catch (validationError) {
+          console.error('OAuth Supabase client validation failed:', validationError.message);
+          // Check if it's a JWT/authentication error
+          if (validationError.message && (validationError.message.includes('JWT') || validationError.message.includes('JWS') || validationError.message.includes('invalid') || validationError.message.includes('malformed'))) {
+            throw new Error('Invalid service role key: The provided service role key appears to be invalid or malformed. Please check your Supabase integration settings.');
+          }
+          throw validationError;
+        }
       }
     } catch (error) {
-      console.log('OAuth Supabase client failed, trying environment variables:', error.message);
+      console.log('OAuth Supabase client failed:', error.message);
+      // If the error is about invalid service role key, don't fall back to env vars
+      if (error.message && error.message.includes('Invalid service role key')) {
+        throw error;
+      }
     }
 
     // Fallback: Use environment variables (Render.com configuration)
     if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-      console.log('Using Supabase environment variables');
+      console.log('Using Supabase environment variables as fallback');
       const { createClient } = require('@supabase/supabase-js');
       return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
     }
@@ -569,9 +588,13 @@ class SupabaseStorageService extends StorageInterface {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
       try {
-        client = await supabaseIntegration.getSupabaseClient(storeId);
+        client = await this.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed:', error.message);
+        console.log('Client creation failed:', error.message);
+        // Pass through specific service role key errors
+        if (error.message && error.message.includes('Invalid service role key')) {
+          throw error;
+        }
         throw new Error('Storage operations require API keys to be configured');
       }
       
