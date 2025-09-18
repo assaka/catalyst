@@ -373,11 +373,6 @@ const CodeEditor = ({
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [versionHistory, setVersionHistory] = useState([]);
-  const [selectedVersion, setSelectedVersion] = useState(null);
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
-  const [showPreviewFrame, setShowPreviewFrame] = useState(false);
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
@@ -1482,124 +1477,6 @@ const CodeEditor = ({
               </div>
             </div>
           </div>
-        ) : showPreviewFrame ? (
-          /* Preview Frame View */
-          <div className="h-full flex flex-col">
-            <div className="border-b bg-muted p-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Eye className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium">Live Preview</span>
-                  <Badge variant="secondary" className="text-xs">
-                    Production Ready
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-muted-foreground">
-                    Changes applied automatically
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPreviewFrame(false)}
-                    title="Close Preview"
-                  >
-                    <Minimize2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1">
-              <PreviewFrame 
-                sourceCode={localCode}
-                originalCode={originalCode}
-                fileName={fileName}
-                language={language}
-              />
-            </div>
-          </div>
-        ) : showVersionHistory ? (
-          /* Version History View */
-          <div className="h-full flex">
-            {/* Version List */}
-            <div className="w-80 border-r bg-muted/50">
-              <div className="p-3 border-b bg-muted">
-                <h3 className="font-medium">Version History</h3>
-                <p className="text-xs text-muted-foreground">{versionHistory.length} versions</p>
-              </div>
-              <div className="overflow-y-auto">
-                {versionHistory.map((version) => (
-                  <div
-                    key={version.id}
-                    className={`p-3 border-b cursor-pointer hover:bg-background transition-colors ${
-                      selectedVersion?.id === version.id ? 'bg-primary/10 border-primary' : ''
-                    }`}
-                    onClick={() => setSelectedVersion(version)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{version.description}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {version.changeStats.changes} changes
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {version.timestamp.toLocaleString()}
-                    </div>
-                    <div className="flex items-center space-x-2 mt-2 text-xs">
-                      <span className="text-green-600">+{version.changeStats.additions}</span>
-                      <span className="text-red-600">-{version.changeStats.deletions}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Version Preview */}
-            <div className="flex-1 flex flex-col">
-              {selectedVersion ? (
-                <>
-                  <div className="p-3 border-b bg-muted flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{selectedVersion.description}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {selectedVersion.timestamp.toLocaleString()}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleRestoreVersion(selectedVersion)}
-                      title="Restore this version"
-                    >
-                      <RotateCcw className="w-4 h-4 mr-1" />
-                      Restore
-                    </Button>
-                  </div>
-                  <Editor
-                    height="100%"
-                    language={getMonacoLanguage()}
-                    value={selectedVersion.content}
-                    options={{
-                      readOnly: true,
-                      minimap: { enabled: false },
-                      scrollBeyondLastLine: false,
-                      fontSize: 14,
-                      automaticLayout: true
-                    }}
-                    theme="vs-dark"
-                  />
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <History className="w-8 h-8 mx-auto mb-2" />
-                    <p>Select a version to preview</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         ) : (
           /* Monaco Editor */
           <Editor
@@ -1664,16 +1541,6 @@ const CodeEditor = ({
                 </span>
                 <span>{fullFileDisplayLines.length} lines in diff</span>
               </>
-            ) : showPreviewFrame ? (
-              <>
-                <span>Preview Frame</span>
-                <span>Live preview active</span>
-              </>
-            ) : showVersionHistory ? (
-              <>
-                <span>Version History</span>
-                <span>{versionHistory.length} versions</span>
-              </>
             ) : (
               <>
                 <span>Line {cursorPosition.line}, Column {cursorPosition.column}</span>
@@ -1694,18 +1561,6 @@ const CodeEditor = ({
               <Badge variant="outline" className="text-xs">
                 <Diff className="w-3 h-3 mr-1" />
                 Diff View
-              </Badge>
-            )}
-            {showPreviewFrame && (
-              <Badge variant="outline" className="text-xs">
-                <Eye className="w-3 h-3 mr-1" />
-                Preview
-              </Badge>
-            )}
-            {showVersionHistory && (
-              <Badge variant="outline" className="text-xs">
-                <History className="w-3 h-3 mr-1" />
-                History
               </Badge>
             )}
             {isModified && <span className="text-orange-600">Unsaved changes</span>}
