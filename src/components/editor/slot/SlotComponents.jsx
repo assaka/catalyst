@@ -242,6 +242,7 @@ export function GridColumn({
   const dragOverTimeoutRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
@@ -521,11 +522,9 @@ export function GridColumn({
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                if (window.confirm(`Are you sure you want to delete this ${slot?.type || 'slot'}?`)) {
-                  onSlotDelete(slotId);
-                }
+                setShowDeleteModal(true);
               }}
-              className="absolute top-1 left-1 bg-red-500 hover:bg-red-600 text-white rounded p-1 z-30 transition-colors duration-200"
+              className="absolute bottom-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded p-1 z-30 transition-colors duration-200"
               title="Delete slot"
             >
               <Trash2 className="w-3 h-3" />
@@ -567,6 +566,65 @@ export function GridColumn({
           onResizeEnd={onResizeEnd}
           onHoverChange={setIsOverResizeHandle}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-red-600">Delete Slot</h3>
+              <Button
+                onClick={() => setShowDeleteModal(false)}
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded">
+                <div className="text-red-600">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-red-800">This action cannot be undone</p>
+                  <p className="text-sm text-red-600">
+                    Are you sure you want to delete this {slot?.type || 'slot'}?
+                    {slot?.content && (
+                      <span className="block mt-1 font-mono text-xs bg-red-100 p-1 rounded">
+                        "{slot.content.substring(0, 50)}{slot.content.length > 50 ? '...' : ''}"
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => setShowDeleteModal(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    onSlotDelete(slotId);
+                    setShowDeleteModal(false);
+                  }}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
