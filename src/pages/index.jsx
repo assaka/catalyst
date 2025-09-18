@@ -17,7 +17,6 @@ export { default as DeliverySettings } from './admin/DeliverySettings';
 export { default as StockSettings } from './admin/StockSettings';
 export { default as CmsBlocks } from './admin/CmsBlocks';
 export { default as CmsPages } from './admin/CmsPages';
-export { default as FileManager } from './admin/FileManager';
 export { default as FileLibrary } from './admin/FileLibrary';
 export { default as MediaStorage } from './admin/MediaStorage';
 export { default as Stores } from './admin/Stores';
