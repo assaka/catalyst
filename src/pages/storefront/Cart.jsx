@@ -122,8 +122,12 @@ export default function Cart() {
             }
             console.log('✅ Store ID found, loading published slot configuration for store:', store.id);
             console.log('🔍 Current timestamp:', new Date().toISOString());
+            console.log('🌐 Backend URL:', process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com');
 
             try {
+                // Test backend connectivity first
+                console.log('🔌 Testing backend connectivity...');
+
                 // Load published configuration using the new versioning API
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
 
@@ -170,7 +174,16 @@ export default function Cart() {
                     });
                 }
             } catch (error) {
-                console.warn('⚠️ Could not load published slot configuration:', error);
+                console.error('❌ Error loading published slot configuration:', error);
+                console.error('❌ Error type:', error.constructor.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Network status:', navigator.onLine ? 'Online' : 'Offline');
+
+                if (error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
+                    console.error('🔌 Backend connectivity issue detected');
+                }
+
+                console.warn('⚠️ Falling back to cart-config.js due to error');
                 // Fallback to cart-config.js
                 const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
                 setCartLayoutConfig({
