@@ -29,6 +29,48 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   });
 
 
+  // Validate service role key format and basic properties
+  const validateServiceRoleKey = (token) => {
+    if (!token) {
+      return { valid: false, reason: 'No token provided' };
+    }
+
+    // Service role keys should be JWTs starting with 'eyJ'
+    if (!token.startsWith('eyJ')) {
+      return { valid: false, reason: 'Invalid token format - should start with "eyJ"' };
+    }
+
+    try {
+      // Try to decode the JWT header and payload (without verification)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return { valid: false, reason: 'Invalid JWT format - should have 3 parts' };
+      }
+
+      // Decode header
+      const header = JSON.parse(atob(parts[0]));
+      const payload = JSON.parse(atob(parts[1]));
+
+      console.log('🔍 Token header:', header);
+      console.log('🔍 Token payload:', payload);
+
+      // Check if it's a service role token (usually has role: 'service_role')
+      if (payload.role && payload.role !== 'service_role') {
+        return { valid: false, reason: `Token role is "${payload.role}" - should be "service_role" for storage operations` };
+      }
+
+      // Check expiration
+      if (payload.exp && payload.exp < Date.now() / 1000) {
+        return { valid: false, reason: 'Token has expired' };
+      }
+
+      return { valid: true, payload };
+
+    } catch (error) {
+      return { valid: false, reason: `Invalid JWT format: ${error.message}` };
+    }
+  };
+
   // Load files from File Library
   const loadFiles = async () => {
     try {
@@ -37,8 +79,20 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setConnectionStatus('checking');
 
       console.log('🔍 FilePickerModal: Starting file load request...');
-      console.log('🔐 FilePickerModal: Auth token present:', !!apiClient.getToken());
+
+      const token = apiClient.getToken();
+      console.log('🔐 FilePickerModal: Auth token present:', !!token);
       console.log('🔐 FilePickerModal: User role:', apiClient.getCurrentUserRole());
+
+      // Validate the token format first
+      if (token) {
+        const validation = validateServiceRoleKey(token);
+        console.log('🔍 FilePickerModal: Token validation:', validation);
+
+        if (!validation.valid) {
+          throw new Error(`Invalid service role key: ${validation.reason}`);
+        }
+      }
 
       // Very aggressive timeout - 3 seconds max
       const timeoutPromise = new Promise((_, reject) => {
@@ -123,8 +177,28 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
         console.log('🔍 FilePickerModal: Processing error message:', errorMessage);
 
-        // Check for specific HTTP error responses
-        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
+        // Check for token validation errors first
+        if (errorMessage.includes('Invalid service role key')) {
+          userFriendlyError = `🔑 Service Role Key Problem
+
+${errorMessage.replace('Invalid service role key: ', '')}
+
+**Common issues:**
+• Using anon key instead of service_role key
+• Key copied incorrectly (missing characters)
+• Key has expired or been regenerated
+• Wrong key format
+
+**How to get the correct key:**
+1. Go to your Supabase project dashboard
+2. Navigate to **Settings → API**
+3. Copy the **service_role** key (not anon key)
+4. Make sure to copy the entire key
+5. Paste it in **Admin → Integrations → Supabase**
+
+**Service role key format:** Should start with "eyJ" and be quite long.`;
+
+        } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
           userFriendlyError = `🔑 Invalid Service Role Key
 
 Your Supabase service role key appears to be invalid or expired.
