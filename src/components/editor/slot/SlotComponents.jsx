@@ -587,10 +587,10 @@ export function HierarchicalSlotRenderer({
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
-    // For nested containers that are direct children, render them without GridColumn wrapper
+    // For nested containers, render with minimal wrapper styling
     if (['container', 'grid', 'flex'].includes(slot?.type) && slot?.parentId && parentId) {
       return (
-        <div key={slot.id} className={slot.className || ''}>
+        <div key={slot.id} className={`${slot.className || ''} relative`}>
           {/* Render child slots */}
           <HierarchicalSlotRenderer
             slots={slots}
