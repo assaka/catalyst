@@ -17,7 +17,7 @@ import {
   Settings,
   AlertCircle,
   Edit3,
-  Dot
+  Dot, Minimize2, Maximize2
 } from 'lucide-react';
 
 // Icon options for unpublished status - easily switch between them
@@ -290,6 +290,19 @@ const SlotEnabledFileSelector = ({
   return (
     <Card className={`h-full flex flex-col ${className}`}>
       {/* Header */}
+
+      <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 p-3">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          Editable Pages
+        </h3>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Button variant="ghost" size="sm" onClick={handleRefresh}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+
       <div className="px-3 py-2">
         <div className="flex justify-between">
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 border-b">
@@ -299,8 +312,8 @@ const SlotEnabledFileSelector = ({
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
-        <div className="flex items-center justify-between">
-            Select a page to customize
+        <div className="flex items-center justify-between text-xs">
+
         </div>
       </div>
 
@@ -314,7 +327,7 @@ const SlotEnabledFileSelector = ({
             return (
               <div
                 key={file.id}
-                className={`flex justify-between items-center rounded-lg border transition-all hover:bg-muted/50 cursor-pointer ${
+                className={`flex justify-between items-center rounded-lg border transition-all hover:bg-muted/50 cursor-pointer p-2 ${
                   isCurrentFile ? 'bg-primary/10 border-primary' : 'border-border'
                 }`}
                 onClick={() => handleFileClick(file)}
@@ -329,7 +342,7 @@ const SlotEnabledFileSelector = ({
                 <div className="flex justify-between">
                   {/* Unpublished Changes Indicator */}
                   {file.hasUnpublishedChanges && (
-                      <Dot className="w-12 h-12 text-yellow-600" title="Dot" />
+                      <span className="flex w-3 h-3 me-3 bg-yellow-300 rounded-full" title="Dot"></span>
                   )}
                   {/* Loading indicator */}
                   {loadingDraft === file.id && (
