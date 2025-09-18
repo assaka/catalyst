@@ -1004,7 +1004,7 @@ export default ExampleComponent;`;
             <ResizablePanel 
               defaultSize={60}
               minSize={40}
-              maxSize={85}
+              maxSize={60}
             >
               <div className="h-[calc(100vh-200px)] flex flex-col">
                 {selectedFile ? (
