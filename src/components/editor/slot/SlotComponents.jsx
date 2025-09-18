@@ -516,7 +516,7 @@ export function GridColumn({
       {mode === 'edit' && isHovered && !isOverResizeHandle && (
         <>
           {/* Delete button - only show for custom slots (not default ones) */}
-          {slot?.isCustom !== false && onSlotDelete && (
+          {slot?.isCustom === true && onSlotDelete && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
