@@ -593,9 +593,9 @@ export function HierarchicalSlotRenderer({
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
-    // Check how many children this slot has
-    const childSlots = slots.filter(s => s.parentId === slot.id);
-    const hasMultipleChildren = childSlots.length > 1;
+    // Check how many children this slot has (use SlotManager for consistency)
+    const slotChildSlots = SlotManager.getChildSlots(slots, slot.id);
+    const hasMultipleChildren = slotChildSlots.length > 1;
 
     // For nested containers, only add wrapper if there are multiple children
     if (['container', 'grid', 'flex'].includes(slot?.type) && slot?.parentId && parentId) {
