@@ -161,11 +161,9 @@ const AIContextWindow = ({
     )}>
       {/* Header */}
       <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 p-3">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            AI Context Widndow
-          </h3>
-        </div>
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          AI Context Widndow
+        </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={clearState}

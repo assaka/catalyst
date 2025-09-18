@@ -290,15 +290,17 @@ const SlotEnabledFileSelector = ({
   return (
     <Card className={`h-full flex flex-col ${className}`}>
       {/* Header */}
-      <div className="border-b p-4">
-        <h3 className="font-semibold">Editable Pages</h3>
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            Select a page to customize
-          </p>
+      <div className="px-3 py-2">
+        <div className="flex justify-between">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 border-b">
+            Editable Pages
+          </h3>
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
           </Button>
+        </div>
+        <div className="flex items-center justify-between">
+            Select a page to customize
         </div>
       </div>
 
@@ -312,7 +314,7 @@ const SlotEnabledFileSelector = ({
             return (
               <div
                 key={file.id}
-                className={`flex justify-between items-center space-x-3 p-3 rounded-lg border transition-all hover:bg-muted/50 cursor-pointer ${
+                className={`flex justify-between items-center rounded-lg border transition-all hover:bg-muted/50 cursor-pointer ${
                   isCurrentFile ? 'bg-primary/10 border-primary' : 'border-border'
                 }`}
                 onClick={() => handleFileClick(file)}
