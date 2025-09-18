@@ -293,9 +293,9 @@ const SlotEnabledFileSelector = ({
       <div className="border-b p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">Slot-Enabled Pages</h3>
+            <h3 className="font-semibold">Editable Pages</h3>
             <p className="text-xs text-muted-foreground">
-              Select a page to customize its slots
+              Select a page to customize
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
