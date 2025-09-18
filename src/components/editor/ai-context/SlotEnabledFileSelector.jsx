@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import apiClient from '@/api/client';
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -13,22 +12,8 @@ import {
   CheckCircle,
   Grid3X3,
   RefreshCw,
-  Loader2,
-  Settings,
-  AlertCircle,
-  Edit3,
-  Dot, Minimize2, Maximize2
+  Loader2
 } from 'lucide-react';
-
-// Icon options for unpublished status - easily switch between them
-const UNPUBLISHED_ICONS = {
-  alert: AlertCircle,    // Current: Warning/alert style
-  edit: Edit3,          // Alternative: Edit pencil style
-  dot: Dot              // Alternative: Simple dot style
-};
-
-// Choose your preferred icon here
-const UnpublishedIcon = UNPUBLISHED_ICONS.edit; // Change to 'edit' or 'dot'
 
 const SlotEnabledFileSelector = ({
   onFileSelect,
@@ -296,7 +281,7 @@ const SlotEnabledFileSelector = ({
           Editable Pages
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <Button size="sm" onClick={handleRefresh}>
+          <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>

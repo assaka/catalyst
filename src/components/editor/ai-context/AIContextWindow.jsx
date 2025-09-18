@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
+import { Button } from "@/components/ui/button";
 
 /**
  * AI Context Window Component
@@ -165,13 +166,13 @@ const AIContextWindow = ({
           AI Context Widdow
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
+          <Button
             onClick={clearState}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            variant="ghost"
             title="Clear"
           >
             <RefreshCw className="w-4 h-4" />
-          </button>
+          </Button>
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

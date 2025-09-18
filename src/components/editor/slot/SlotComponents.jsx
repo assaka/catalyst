@@ -1830,17 +1830,33 @@ export function ResponsiveContainer({
       default:
         return {
           width: '100%',
+          maxWidth: 'none',
           minHeight: 'auto'
         };
     }
   };
 
+  // For desktop, don't apply any container constraints - use full width
+  if (viewport === 'desktop') {
+    return (
+      <div
+        className={`responsive-container ${className}`}
+        style={getViewportStyles()}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  // For mobile and tablet, center the container
   return (
-    <div
-      className={`responsive-container ${className}`}
-      style={getViewportStyles()}
-    >
-      {children}
+    <div className="w-full bg-gray-50 py-4">
+      <div
+        className={`responsive-container ${className}`}
+        style={getViewportStyles()}
+      >
+        {children}
+      </div>
     </div>
   );
 }
