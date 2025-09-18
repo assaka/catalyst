@@ -488,29 +488,7 @@ const CodeEditor = ({
     };
   }, [collapseUnchanged]);
   
-  // Handle version restoration
-  const handleRestoreVersion = useCallback((version) => {
-    setLocalCode(version.content);
-    setSelectedVersion(version);
-    
-    // Apply hooks
-    hookSystem.do('codeEditor.versionRestored', {
-      fileName,
-      version,
-      restoredCode: version.content
-    });
-    
-    // Emit event
-    eventSystem.emit('codeEditor.versionRestored', {
-      fileName,
-      version,
-      restoredCode: version.content
-    });
-    
-    if (onChange) {
-      onChange(version.content);
-    }
-  }, [fileName, onChange]);
+  // Version restoration removed for simplicity
   
   // Handle line-specific reverts
   const handleRevertLine = useCallback((lineIndex) => {
@@ -919,17 +897,7 @@ const CodeEditor = ({
       language
     });
     
-    // Add to version history
-    if (processedCode !== value) {
-      const historyEntry = {
-        id: Date.now(),
-        timestamp: new Date(),
-        content: processedCode,
-        description: 'Code modification',
-        changeStats: getDiffStats(value, processedCode)
-      };
-      setVersionHistory(prev => [historyEntry, ...prev.slice(0, 19)]); // Keep last 20 versions
-    }
+    // Version history removed for simplicity
     
     // Always call onManualEdit to let the parent handle change detection
     if (onManualEdit) {
