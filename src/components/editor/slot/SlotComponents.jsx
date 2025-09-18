@@ -1283,16 +1283,6 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBo
         </Button>
 
         <Button
-          onClick={onResetLayout}
-          variant="outline"
-          size="sm"
-          className="hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Reset Layout
-        </Button>
-
-        <Button
           onClick={onShowCode}
           variant="outline"
           size="sm"
@@ -1301,6 +1291,19 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBo
           <Code className="w-4 h-4 mr-2" />
           Code
         </Button>
+
+        <Button
+            onClick={onResetLayout}
+            variant="outline"
+            size="sm"
+            className="hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Reset Layout
+        </Button>
+
+
+
       </div>
     </div>
   );
@@ -1787,7 +1790,6 @@ export function ViewportModeSelector({
             title={mode.description}
           >
             <Icon className="w-4 h-4 mr-1.5" />
-            {mode.label}
           </button>
         );
       })}
