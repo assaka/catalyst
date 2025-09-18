@@ -1679,6 +1679,7 @@ export function CodeModal({
               variant={hasChanges ? "default" : "outline"}
               size="sm"
               disabled={!hasChanges || !!jsonError || localSaveStatus === 'saving'}
+              className={hasChanges ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" : "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors duration-200"}
             >
               {localSaveStatus === 'saving' ? (
                 <>
