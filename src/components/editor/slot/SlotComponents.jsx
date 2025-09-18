@@ -593,12 +593,42 @@ export function HierarchicalSlotRenderer({
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
-    // For nested containers, render with minimal wrapper styling
+    // Check how many children this slot has
+    const childSlots = slots.filter(s => s.parentId === slot.id);
+    const hasMultipleChildren = childSlots.length > 1;
+
+    // For nested containers, only add wrapper if there are multiple children
     if (['container', 'grid', 'flex'].includes(slot?.type) && slot?.parentId && parentId) {
-      return (
-        <div key={slot.id} className={`${slot.className || ''} relative`}>
-          {/* Render child slots */}
+      if (hasMultipleChildren) {
+        return (
+          <div key={slot.id} className={`${slot.className || ''} relative`}>
+            {/* Render child slots */}
+            <HierarchicalSlotRenderer
+              slots={slots}
+              parentId={slot.id}
+              mode={mode}
+              viewMode={viewMode}
+              showBorders={showBorders}
+              currentDragInfo={currentDragInfo}
+              setCurrentDragInfo={setCurrentDragInfo}
+              onElementClick={onElementClick}
+              onGridResize={onGridResize}
+              onSlotHeightResize={onSlotHeightResize}
+              onSlotDrop={onSlotDrop}
+              onResizeStart={onResizeStart}
+              onResizeEnd={onResizeEnd}
+              selectedElementId={selectedElementId}
+              setPageConfig={setPageConfig}
+              saveConfiguration={saveConfiguration}
+              saveTimeoutRef={saveTimeoutRef}
+            />
+          </div>
+        );
+      } else {
+        // Single child or no children - render directly without wrapper
+        return (
           <HierarchicalSlotRenderer
+            key={slot.id}
             slots={slots}
             parentId={slot.id}
             mode={mode}
@@ -617,8 +647,8 @@ export function HierarchicalSlotRenderer({
             saveConfiguration={saveConfiguration}
             saveTimeoutRef={saveTimeoutRef}
           />
-        </div>
-      );
+        );
+      }
     }
 
     // For nested individual slots (non-containers), render with simple wrapper
