@@ -653,6 +653,15 @@ class SupabaseStorageService extends StorageInterface {
         });
 
       if (error) {
+        // Check if it's a JWT/authentication error
+        if (error.message && (error.message.includes('JWT') || error.message.includes('JWS') || error.message.includes('invalid') || error.message.includes('malformed'))) {
+          console.error('Service role key validation failed:', error.message);
+          throw new Error('Invalid service role key: The provided service role key appears to be invalid or malformed. Please check your Supabase integration settings.');
+        }
+        // Check for permission errors
+        if (error.message && (error.message.includes('permission') || error.message.includes('authorized'))) {
+          throw new Error('Storage permission denied: Please ensure the service role key has storage access permissions.');
+        }
         throw error;
       }
 
@@ -681,6 +690,10 @@ class SupabaseStorageService extends StorageInterface {
       };
     } catch (error) {
       console.error('Error listing images:', error);
+      // Preserve specific error messages for authentication issues
+      if (error.message && (error.message.includes('Invalid service role key') || error.message.includes('Storage permission denied'))) {
+        throw error; // Pass through the specific error message
+      }
       throw new Error('Failed to list images: ' + error.message);
     }
   }

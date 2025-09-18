@@ -170,13 +170,15 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         console.log('🔍 FilePickerModal: Error object:', JSON.stringify(filesError, Object.getOwnPropertyNames(filesError), 2));
         console.log('🔍 FilePickerModal: Error name:', filesError.name);
         console.log('🔍 FilePickerModal: Error message:', filesError.message);
+        console.log('🔍 FilePickerModal: Error status:', filesError.status);
         console.log('🔍 FilePickerModal: Error stack:', filesError.stack);
 
         // Parse error message to provide helpful feedback
         const errorMessage = filesError.message || 'Unknown error';
+        const errorStatus = filesError.status;
         let userFriendlyError = '';
 
-        console.log('🔍 FilePickerModal: Processing error message:', errorMessage);
+        console.log('🔍 FilePickerModal: Processing error message:', errorMessage, 'status:', errorStatus);
 
         // Check for token validation errors first
         if (errorMessage.includes('Invalid service role key')) {
@@ -199,7 +201,7 @@ ${errorMessage.replace('Invalid service role key: ', '')}
 
 **Service role key format:** Should start with "eyJ" and be quite long.`;
 
-        } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
+        } else if (errorStatus === 401 || errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
           userFriendlyError = `🔑 Invalid Service Role Key
 
 Your Supabase service role key appears to be invalid or expired.
@@ -220,7 +222,7 @@ Your Supabase service role key appears to be invalid or expired.
 
 **Important:** Use the service_role key, not the anon key for storage operations.`;
 
-        } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+        } else if (errorStatus === 403 || errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
           userFriendlyError = `🚫 Storage Access Forbidden
 
 Your service role key doesn't have permission to access storage.
@@ -392,9 +394,10 @@ Error: ${errorMessage}`;
 
       // Check if this is an authentication error that should be handled properly
       const errorMessage = error.message || 'Unknown error';
-      console.log('🔍 FilePickerModal: Outer error message:', errorMessage);
+      const errorStatus = error.status;
+      console.log('🔍 FilePickerModal: Outer error message:', errorMessage, 'status:', errorStatus);
 
-      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
+      if (errorStatus === 401 || errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied') || errorMessage.includes('Invalid service role key')) {
         setFiles([]);
         setError(`🔑 Invalid Service Role Key
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo, Rocket } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo, Rocket, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
@@ -227,6 +227,7 @@ export function GridColumn({
   onResizeStart,
   onResizeEnd,
   onSlotDrop,
+  onSlotDelete, // Add delete handler prop
   mode = 'edit',
   showBorders = true,
   currentDragInfo,
@@ -513,12 +514,30 @@ export function GridColumn({
       )}
 
       {mode === 'edit' && isHovered && !isOverResizeHandle && (
-        <div
-          className="absolute top-1 right-1 text-blue-500 text-sm opacity-60 pointer-events-none z-30"
-          title="Drag to reposition"
-        >
-          ⋮⋮
-        </div>
+        <>
+          {/* Delete button - only show for custom slots (not default ones) */}
+          {slot?.isCustom !== false && onSlotDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (window.confirm(`Are you sure you want to delete this ${slot?.type || 'slot'}?`)) {
+                  onSlotDelete(slotId);
+                }
+              }}
+              className="absolute top-1 left-1 bg-red-500 hover:bg-red-600 text-white rounded p-1 z-30 transition-colors duration-200"
+              title="Delete slot"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+          <div
+            className="absolute top-1 right-1 text-blue-500 text-sm opacity-60 pointer-events-none z-30"
+            title="Drag to reposition"
+          >
+            ⋮⋮
+          </div>
+        </>
       )}
 
       {children}
@@ -566,6 +585,7 @@ export function HierarchicalSlotRenderer({
   onGridResize,
   onSlotHeightResize,
   onSlotDrop,
+  onSlotDelete, // Add delete handler prop
   onResizeStart,
   onResizeEnd,
   selectedElementId = null,
@@ -600,6 +620,7 @@ export function HierarchicalSlotRenderer({
         onGridResize={onGridResize}
         onSlotHeightResize={onSlotHeightResize}
         onSlotDrop={onSlotDrop}
+        onSlotDelete={onSlotDelete}
         onResizeStart={onResizeStart}
         onResizeEnd={onResizeEnd}
         mode={mode}
@@ -903,6 +924,7 @@ export function HierarchicalSlotRenderer({
                   onGridResize={onGridResize}
                   onSlotHeightResize={onSlotHeightResize}
                   onSlotDrop={onSlotDrop}
+                  onSlotDelete={onSlotDelete}
                   onResizeStart={onResizeStart}
                   onResizeEnd={onResizeEnd}
                   selectedElementId={selectedElementId}
@@ -1149,6 +1171,7 @@ export function HierarchicalSlotRenderer({
                       onGridResize={onGridResize}
                       onSlotHeightResize={onSlotHeightResize}
                       onSlotDrop={onSlotDrop}
+                      onSlotDelete={onSlotDelete}
                       onResizeStart={onResizeStart}
                       onResizeEnd={onResizeEnd}
                       selectedElementId={selectedElementId}

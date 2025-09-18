@@ -617,6 +617,25 @@ router.get('/storage/list/:bucketName', authMiddleware, storeResolver(), async (
     res.json(result);
   } catch (error) {
     console.error('Error listing files from bucket:', error);
+
+    // Check for specific authentication/service role key errors
+    if (error.message && (error.message.includes('Invalid service role key') || error.message.includes('JWT') || error.message.includes('malformed'))) {
+      return res.status(401).json({
+        success: false,
+        message: error.message,
+        errorType: 'INVALID_SERVICE_KEY'
+      });
+    }
+
+    // Check for permission errors
+    if (error.message && error.message.includes('permission')) {
+      return res.status(403).json({
+        success: false,
+        message: error.message,
+        errorType: 'PERMISSION_DENIED'
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message

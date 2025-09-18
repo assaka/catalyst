@@ -5,6 +5,7 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { SlotManager } from '@/utils/slotUtils';
 import {
   GridResizeHandle,
   GridColumn,
@@ -723,6 +724,23 @@ export function useSlotConfiguration({
     return updatedSlots;
   }, [validateSlotConfiguration]);
 
+  // Generic slot delete handler
+  const handleSlotDelete = useCallback((slotId, slots) => {
+    console.log('🗑️ Deleting slot:', slotId);
+
+    // Don't allow deleting critical layout containers
+    if (['main_layout', 'header_container', 'content_area', 'sidebar_area'].includes(slotId)) {
+      console.warn('⚠️ Cannot delete critical layout container:', slotId);
+      return null;
+    }
+
+    // Use SlotManager to delete the slot and its children
+    const updatedSlots = SlotManager.deleteSlot(slots, slotId);
+
+    console.log('✅ Slot deleted successfully');
+    return updatedSlots;
+  }, []);
+
   // Generic grid resize handler
   const handleGridResize = useCallback((slotId, newColSpan, slots) => {
     const updatedSlots = { ...slots };
@@ -1035,6 +1053,31 @@ export function useSlotConfiguration({
           });
         }, [createSlot, saveConfigurationHandler]),
 
+      createSlotDeleteHandler: (handleSlotDelete) =>
+        useCallback((slotId) => {
+          setPageConfig(prevConfig => {
+            const updatedSlots = handleSlotDelete(slotId, prevConfig?.slots || {});
+
+            if (!updatedSlots) {
+              console.warn('⚠️ Slot deletion was cancelled');
+              return prevConfig;
+            }
+
+            const updatedConfig = {
+              ...prevConfig,
+              slots: updatedSlots,
+              metadata: {
+                ...prevConfig.metadata,
+                lastModified: new Date().toISOString()
+              }
+            };
+
+            // Auto-save the updated configuration
+            saveConfigurationHandler(updatedConfig);
+            return updatedConfig;
+          });
+        }, [handleSlotDelete, saveConfigurationHandler]),
+
       createResetLayoutHandler: (resetLayoutFromHook, setLocalSaveStatus) =>
         useCallback(async () => {
           setLocalSaveStatus('saving');
@@ -1071,6 +1114,7 @@ export function useSlotConfiguration({
     validateSlotConfiguration,
     createSlot,
     handleSlotDrop,
+    handleSlotDelete,
     handleGridResize,
     handleSlotHeightResize,
     handleTextChange,
