@@ -30,6 +30,7 @@ import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-element-wrapper';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
+import { HierarchicalSlotRenderer } from '@/components/editor/slot/SlotComponents';
 
 
 
@@ -1004,7 +1005,58 @@ export default function Cart() {
                         </div>
                     </div>
                 </div>
-                
+
+                {/* Dynamic Custom Slots Rendering */}
+                {cartLayoutConfig?.slots && (
+                    <div className="custom-slots-section mb-8">
+                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                            {/* Render root level custom slots */}
+                            <HierarchicalSlotRenderer
+                                slots={cartLayoutConfig.slots}
+                                parentId={null}
+                                mode="view"
+                                viewMode="live"
+                                showBorders={false}
+                                currentDragInfo={null}
+                                setCurrentDragInfo={null}
+                                onElementClick={null}
+                                onGridResize={null}
+                                onSlotHeightResize={null}
+                                onSlotDrop={null}
+                                onSlotDelete={null}
+                                onResizeStart={null}
+                                onResizeEnd={null}
+                                selectedElementId={null}
+                                setPageConfig={null}
+                                saveConfiguration={null}
+                                saveTimeoutRef={null}
+                            />
+
+                            {/* Render main_layout child slots */}
+                            <HierarchicalSlotRenderer
+                                slots={cartLayoutConfig.slots}
+                                parentId="main_layout"
+                                mode="view"
+                                viewMode="live"
+                                showBorders={false}
+                                currentDragInfo={null}
+                                setCurrentDragInfo={null}
+                                onElementClick={null}
+                                onGridResize={null}
+                                onSlotHeightResize={null}
+                                onSlotDrop={null}
+                                onSlotDelete={null}
+                                onResizeStart={null}
+                                onResizeEnd={null}
+                                selectedElementId={null}
+                                setPageConfig={null}
+                                saveConfiguration={null}
+                                saveTimeoutRef={null}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
                     // Empty cart state with micro-slots in custom order
