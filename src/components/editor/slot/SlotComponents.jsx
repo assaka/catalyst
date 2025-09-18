@@ -525,7 +525,7 @@ export function GridColumn({
                 e.preventDefault();
                 setShowDeleteModal(true);
               }}
-              className="absolute bottom-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded p-1 z-30 transition-colors duration-200"
+              className="absolute bottom-1 left-1 bg-red-500 hover:bg-red-600 text-white rounded p-1 z-30 transition-colors duration-200"
               title="Delete slot"
             >
               <Trash2 className="w-3 h-3" />
