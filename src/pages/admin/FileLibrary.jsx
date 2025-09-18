@@ -44,10 +44,11 @@ const FileLibrary = () => {
   // Check for storage provider and connection status
   const checkStorageProvider = async () => {
     try {
-      // Check storage providers and their availability
-      const response = await apiClient.get('/storage/providers');
-      
-      if (response.success && response.data) {
+      // Use the same endpoint as FilePickerModal for consistency
+      console.log('🔍 FileLibrary: Checking storage connection...');
+      const response = await apiClient.get('/supabase/storage/stats');
+
+      if (response.success) {
         const currentProvider = response.data.current;
         const providerName = currentProvider?.name || 'Unknown Provider';
         
@@ -83,38 +84,41 @@ const FileLibrary = () => {
       console.log('🔐 FileLibrary: Auth token present:', !!apiClient.getToken());
       console.log('🔐 FileLibrary: User role:', apiClient.getCurrentUserRole());
       
-      // Get files using the provider-agnostic storage API
-      const response = await apiClient.get('/storage/list?folder=library');
+      // Use the same API as FilePickerModal for consistency
+      const response = await apiClient.get('/supabase/storage/list/suprshop-assets');
       
       console.log('📡 FileLibrary: API response:', response);
       
-      // Check if we have valid storage data
-      if (response.success && response.data) {
-        // Set provider name based on response data
-        const providerName = response.data.provider || response.provider || storageProvider || 'Storage Provider';
-        if (!storageProvider && providerName !== 'Storage Provider') {
-          setStorageProvider(providerName);
-        }
-        
-        // Transform response to FileLibrary format
-        const rawFiles = response.data.files || [];
+      // Check if we have valid storage data (same format as FilePickerModal)
+      if (response.success && response.files) {
+        // Set provider name for Supabase
+        setStorageProvider('Supabase');
+
+        // Transform response to FileLibrary format (same as FilePickerModal)
+        const rawFiles = response.files || [];
         console.log('📋 FileLibrary: Raw files from API:', rawFiles);
-        
-        const transformedFiles = rawFiles.map(file => ({
-          id: file.id || file.name,
-          name: file.name,
-          url: file.url,
-          size: file.metadata?.size || file.size || 0,
-          mimeType: file.metadata?.mimetype || file.mimetype || 'application/octet-stream',
-          uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
-        }));
-        
+
+        const transformedFiles = rawFiles.map(file => {
+          const imageUrl = file.url || file.publicUrl || file.name;
+          return {
+            id: file.id || file.name,
+            name: file.name,
+            url: imageUrl,
+            size: file.metadata?.size || file.size || 0,
+            mimeType: file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
+            uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
+          };
+        });
+
         console.log('✨ FileLibrary: Transformed files:', transformedFiles);
-        
+
         setFiles(transformedFiles);
       } else {
         setFiles([]);
-        // Don't clear storage provider if it was already set from default
+        // If no files but successful response, still set provider
+        if (response.success) {
+          setStorageProvider('Supabase');
+        }
       }
     } catch (error) {
       console.error('❌ FileLibrary: Error loading files:', error);
