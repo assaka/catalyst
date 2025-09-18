@@ -45,7 +45,7 @@ const SlotEnabledFileSelector = ({
   const slotEnabledFiles = [
     {
       id: 'cart',
-      name: 'Shopping cart',
+      name: 'Cart',
       path: 'src/pages/editor/CartSlotsEditor.jsx',
       pageType: 'cart',
       icon: ShoppingCart,
@@ -341,27 +341,11 @@ const SlotEnabledFileSelector = ({
                 </div>
 
                 {/* File Info */}
-                <div>
+                <div className=Name"flex justify-between">
                   <span className="font-medium text-sm">{file.name}</span>
                   {/* Unpublished Changes Indicator */}
                   {file.hasUnpublishedChanges && (
-                      <div className="flex gap-1">
-                        {/* Current selected icon */}
-                        <Badge
-                            variant="secondary"
-                            className="bg-orange-100 text-orange-800 border-orange-200 text-xs px-1.5 py-0.5 flex items-center gap-1"
-                        >
-                          <UnpublishedIcon className={`${UnpublishedIcon === Dot ? 'w-2 h-2' : 'w-3 h-3'}`} />
-                        </Badge>
-
-                        {/* Temporary: Show all icons for comparison */}
-                        <div className="flex gap-1 text-xs text-gray-500 items-center">
-                          <span className="text-[10px]">Icons:</span>
-                          <AlertCircle className="w-3 h-3 text-orange-600" title="AlertCircle" />
-                          <Edit3 className="w-3 h-3 text-blue-600" title="Edit3" />
-                          <Dot className="w-2 h-2 text-green-600" title="Dot" />
-                        </div>
-                      </div>
+                      <Dot className="w-12 h-12 text-orange-600" title="Dot" />
                   )}
                   {/* Loading indicator */}
                   {loadingDraft === file.id && (

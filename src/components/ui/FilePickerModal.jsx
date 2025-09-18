@@ -54,9 +54,10 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       console.log('🔍 Token header:', header);
       console.log('🔍 Token payload:', payload);
 
-      // Check if it's a service role token (usually has role: 'service_role')
-      if (payload.role && payload.role !== 'service_role') {
-        return { valid: false, reason: `Token role is "${payload.role}" - should be "service_role" for storage operations` };
+      // Check if it's a valid role for storage operations
+      const validStorageRoles = ['service_role', 'store_owner', 'admin'];
+      if (payload.role && !validStorageRoles.includes(payload.role)) {
+        return { valid: false, reason: `Token role is "${payload.role}" - should be one of: ${validStorageRoles.join(', ')} for storage operations` };
       }
 
       // Check expiration
@@ -415,23 +416,42 @@ Your Supabase service role key appears to be invalid or expired.
 
 **Important:** Use the service_role key, not the anon key for storage operations.`);
       } else {
-        // Add test files while backend issue is resolved
-        console.log('🧪 FilePickerModal: Connection failed, adding test files for development');
-        const testFiles = [
-          {
-            id: 'test-1',
-            name: 'test-product.png',
-            url: 'https://jqqfjfoigtwdpnlicjmh.supabase.co/storage/v1/object/public/suprshop-assets/test-products/t/e/test-product.png',
-            mimeType: 'image/png',
-            size: 25000,
-            lastModified: Date.now()
-          }
-        ];
+        // Provide detailed error information instead of generic message
+        console.log('🧪 FilePickerModal: Connection failed, providing detailed error info');
 
-        console.log('🧪 FilePickerModal: Created test files:', testFiles);
-        setFiles(testFiles);
-        setError('❌ Connection failed. Showing test image for development.');
-        console.log('🧪 FilePickerModal: State updated with test files');
+        let detailedError = `🚫 Storage System Connection Failed
+
+Unable to connect to the Supabase storage system.
+
+**Error details:**
+${errorMessage}
+
+**This could be caused by:**
+• Network connectivity issues
+• Supabase project is down or suspended
+• Invalid project URL configuration
+• Firewall blocking requests to Supabase
+• API rate limits exceeded
+• Supabase storage service temporarily unavailable
+
+**How to troubleshoot:**
+1. **Check Project Status:** Go to your Supabase dashboard and verify project is active
+2. **Test Network:** Try accessing your Supabase project directly in browser
+3. **Verify Configuration:** Admin → Integrations → Supabase (check project URL)
+4. **Check Logs:** Look for more specific errors in browser console
+5. **Try Again:** Sometimes temporary network issues resolve themselves
+
+**Need help?**
+• Check Supabase status page: status.supabase.com
+• Verify your project URL format: https://[project-id].supabase.co
+• Contact support if the issue persists
+
+**Technical details:**
+Endpoint: /supabase/storage/stats
+Error: ${errorMessage}`;
+
+        setFiles([]);
+        setError(detailedError);
       }
     } finally {
       setLoading(false);
