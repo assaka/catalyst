@@ -67,10 +67,17 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         console.log('📁 FilePickerModal: Now fetching files from storage...');
         const filesResponse = await apiClient.get('/supabase/storage/list/suprshop-assets');
 
+        // Debug: Log the complete response to understand its structure
+        console.log('🔍 FilePickerModal: Full API response:', JSON.stringify(filesResponse, null, 2));
+        console.log('🔍 FilePickerModal: Response type:', typeof filesResponse);
+        console.log('🔍 FilePickerModal: Response success field:', filesResponse?.success);
+        console.log('🔍 FilePickerModal: Response keys:', Object.keys(filesResponse || {}));
+
         // Check for authentication/authorization errors first
         if (!filesResponse.success) {
           // API returned error - throw to trigger error handling
           const errorMsg = filesResponse.message || filesResponse.error || 'Failed to list files';
+          console.log('🚨 FilePickerModal: API returned success=false, throwing error:', errorMsg);
           throw new Error(errorMsg);
         }
 
@@ -105,10 +112,16 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         }
       } catch (filesError) {
         console.error('❌ FilePickerModal: Error fetching files:', filesError);
+        console.log('🔍 FilePickerModal: Error object:', JSON.stringify(filesError, Object.getOwnPropertyNames(filesError), 2));
+        console.log('🔍 FilePickerModal: Error name:', filesError.name);
+        console.log('🔍 FilePickerModal: Error message:', filesError.message);
+        console.log('🔍 FilePickerModal: Error stack:', filesError.stack);
 
         // Parse error message to provide helpful feedback
         const errorMessage = filesError.message || 'Unknown error';
         let userFriendlyError = '';
+
+        console.log('🔍 FilePickerModal: Processing error message:', errorMessage);
 
         // Check for specific HTTP error responses
         if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
@@ -298,26 +311,54 @@ Error: ${errorMessage}`;
         setError(userFriendlyError);
       }
     } catch (error) {
-      console.error('❌ FilePickerModal: Error loading files:', error);
+      console.error('❌ FilePickerModal: Error loading files (outer catch):', error);
+      console.log('🔍 FilePickerModal: Outer error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       setConnectionStatus('failed');
 
-      // Add test files while backend issue is resolved
-      console.log('🧪 FilePickerModal: Connection failed, adding test files for development');
-      const testFiles = [
-        {
-          id: 'test-1',
-          name: 'test-product.png',
-          url: 'https://jqqfjfoigtwdpnlicjmh.supabase.co/storage/v1/object/public/suprshop-assets/test-products/t/e/test-product.png',
-          mimeType: 'image/png',
-          size: 25000,
-          lastModified: Date.now()
-        }
-      ];
+      // Check if this is an authentication error that should be handled properly
+      const errorMessage = error.message || 'Unknown error';
+      console.log('🔍 FilePickerModal: Outer error message:', errorMessage);
 
-      console.log('🧪 FilePickerModal: Created test files:', testFiles);
-      setFiles(testFiles);
-      setError('❌ Connection failed. Showing test image for development.');
-      console.log('🧪 FilePickerModal: State updated with test files');
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
+        setFiles([]);
+        setError(`🔑 Invalid Service Role Key
+
+Your Supabase service role key appears to be invalid or expired.
+
+**This happens when:**
+• Service role key is incorrect or mistyped
+• Service role key has been regenerated in Supabase
+• Using anon key instead of service role key
+• Key doesn't have storage permissions
+
+**How to fix:**
+1. Go to **Admin → Integrations → Supabase**
+2. Check your service role key is correct
+3. Go to your Supabase project → Settings → API
+4. Copy the **service_role** key (starts with 'eyJ...')
+5. Paste the correct key in the integration settings
+6. Save and test the connection
+
+**Important:** Use the service_role key, not the anon key for storage operations.`);
+      } else {
+        // Add test files while backend issue is resolved
+        console.log('🧪 FilePickerModal: Connection failed, adding test files for development');
+        const testFiles = [
+          {
+            id: 'test-1',
+            name: 'test-product.png',
+            url: 'https://jqqfjfoigtwdpnlicjmh.supabase.co/storage/v1/object/public/suprshop-assets/test-products/t/e/test-product.png',
+            mimeType: 'image/png',
+            size: 25000,
+            lastModified: Date.now()
+          }
+        ];
+
+        console.log('🧪 FilePickerModal: Created test files:', testFiles);
+        setFiles(testFiles);
+        setError('❌ Connection failed. Showing test image for development.');
+        console.log('🧪 FilePickerModal: State updated with test files');
+      }
     } finally {
       setLoading(false);
     }
