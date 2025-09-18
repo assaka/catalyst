@@ -52,15 +52,24 @@ export default function FileManager() {
   const [copiedUrl, setCopiedUrl] = useState(null);
 
   useEffect(() => {
+    console.log('📂 FileManager: useEffect triggered, selectedStore:', selectedStore);
     if (selectedStore) {
+      console.log('📂 FileManager: Store selected, loading assets...');
       loadAssets();
+    } else {
+      console.log('📂 FileManager: No store selected, clearing assets');
+      setAssets([]);
+      setLoading(false);
     }
   }, [selectedStore]);
 
   // Listen for store changes
   useEffect(() => {
+    console.log('📂 FileManager: Setting up store change listener');
     const handleStoreChange = () => {
+      console.log('📂 FileManager: Store change detected');
       if (selectedStore) {
+        console.log('📂 FileManager: Reloading assets after store change');
         loadAssets();
       }
     };
@@ -83,8 +92,14 @@ export default function FileManager() {
       setLoading(true);
       console.log('📂 FileManager: Loading files from Supabase storage...');
 
+      // Add timeout protection like FilePickerModal
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
       // Use the same API as FilePickerModal for consistency
-      const filesResponse = await apiClient.get('/supabase/storage/list/suprshop-assets');
+      const responsePromise = apiClient.get('/supabase/storage/list/suprshop-assets');
+      const filesResponse = await Promise.race([responsePromise, timeoutPromise]);
 
       console.log('📂 FileManager: Full API response:', filesResponse);
 
@@ -123,7 +138,9 @@ export default function FileManager() {
       const errorMessage = error.message || 'Unknown error';
       let userFriendlyError = 'Failed to load images.';
 
-      if (errorMessage.includes('Invalid service role key')) {
+      if (errorMessage.includes('Request timeout')) {
+        userFriendlyError = 'Request timed out: Please check your connection and try again.';
+      } else if (errorMessage.includes('Invalid service role key')) {
         userFriendlyError = 'Invalid service role key: Please check your Supabase integration settings.';
       } else if (errorMessage.includes('Storage operations require API keys')) {
         userFriendlyError = 'Storage not configured: Please configure Supabase integration in Admin → Integrations.';
@@ -131,13 +148,17 @@ export default function FileManager() {
         userFriendlyError = 'Authentication failed: Please check your Supabase service role key.';
       } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
         userFriendlyError = 'Access denied: Service role key lacks storage permissions.';
+      } else if (errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
+        userFriendlyError = 'Network error: Unable to connect to storage service.';
       } else {
         userFriendlyError = `Error loading files: ${errorMessage}`;
       }
 
+      console.log('📂 FileManager: Setting error message:', userFriendlyError);
       setFlashMessage({ type: 'error', message: userFriendlyError });
       setAssets([]);
     } finally {
+      console.log('📂 FileManager: Clearing loading state');
       setLoading(false);
     }
   };
