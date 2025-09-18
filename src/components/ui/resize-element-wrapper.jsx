@@ -365,6 +365,8 @@ const ResizeWrapper = ({
       <div
         className={cn("relative inline-block", isHovered && "ring-2 ring-blue-300")}
         style={wrapperStyle}
+        onMouseEnter={() => !disabled && setIsHovered(true)}
+        onMouseLeave={() => !disabled && setIsHovered(false)}
       >
         {buttonElement}
         {/* Resize handle positioned relative to container */}
@@ -374,7 +376,7 @@ const ResizeWrapper = ({
               "absolute cursor-se-resize z-50",
               "transition-opacity duration-200",
               "flex items-center justify-center",
-              isHovered || isResizing ? "opacity-100" : "opacity-60 hover:opacity-100"
+              isHovered || isResizing ? "opacity-100" : "opacity-80 hover:opacity-100"
             )}
             onMouseDown={handleMouseDown}
             style={{
@@ -475,7 +477,7 @@ const ResizeWrapper = ({
             "absolute cursor-se-resize z-20",
             "transition-opacity duration-200",
             "flex items-center justify-center",
-            isHovered || isResizing ? "opacity-100" : "opacity-0"
+            isHovered || isResizing ? "opacity-100" : "opacity-80 hover:opacity-100"
           )}
           onMouseDown={handleMouseDown}
           style={{

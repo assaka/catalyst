@@ -67,6 +67,13 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         console.log('📁 FilePickerModal: Now fetching files from storage...');
         const filesResponse = await apiClient.get('/supabase/storage/list/suprshop-assets');
 
+        // Check for authentication/authorization errors first
+        if (!filesResponse.success) {
+          // API returned error - throw to trigger error handling
+          const errorMsg = filesResponse.message || filesResponse.error || 'Failed to list files';
+          throw new Error(errorMsg);
+        }
+
         if (filesResponse.success && filesResponse.files) {
           console.log('📂 FilePickerModal: Found files:', filesResponse.files);
 
@@ -89,11 +96,12 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           setError(null);
           console.log('✅ FilePickerModal: Successfully loaded files:', filteredFiles.length);
         } else if (filesResponse.files && filesResponse.files.length === 0) {
+          // Only show "no files" if we're sure authentication worked
           setFiles([]);
           setError('No files found in storage. Upload some images to get started.');
         } else {
-          setFiles([]);
-          setError('Unable to access storage files.');
+          // Ambiguous response - could be auth issue
+          throw new Error('Unable to access storage files - check your configuration');
         }
       } catch (filesError) {
         console.error('❌ FilePickerModal: Error fetching files:', filesError);
@@ -101,6 +109,66 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         // Parse error message to provide helpful feedback
         const errorMessage = filesError.message || 'Unknown error';
         let userFriendlyError = '';
+
+        // Check for specific HTTP error responses
+        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied')) {
+          userFriendlyError = `🔑 Invalid Service Role Key
+
+Your Supabase service role key appears to be invalid or expired.
+
+**This happens when:**
+• Service role key is incorrect or mistyped
+• Service role key has been regenerated in Supabase
+• Using anon key instead of service role key
+• Key doesn't have storage permissions
+
+**How to fix:**
+1. Go to **Admin → Integrations → Supabase**
+2. Check your service role key is correct
+3. Go to your Supabase project → Settings → API
+4. Copy the **service_role** key (starts with 'eyJ...')
+5. Paste the correct key in the integration settings
+6. Save and test the connection
+
+**Important:** Use the service_role key, not the anon key for storage operations.`;
+
+        } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+          userFriendlyError = `🚫 Storage Access Forbidden
+
+Your service role key doesn't have permission to access storage.
+
+**Possible causes:**
+• Service role key lacks storage permissions
+• Row Level Security (RLS) policies blocking access
+• Bucket permissions not configured correctly
+
+**How to fix:**
+1. **Check Service Role Key:** Admin → Integrations → Supabase
+2. **Verify Permissions:** Ensure service role key has storage admin rights
+3. **Check RLS Policies:** Review bucket policies in Supabase dashboard
+4. **Bucket Settings:** Ensure bucket allows your service role to list files
+
+The service role key should have full storage permissions by default.`;
+
+        } else if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+          userFriendlyError = `🔍 Storage Endpoint Not Found
+
+The storage endpoint couldn't be found.
+
+**Possible causes:**
+• Supabase project URL is incorrect
+• Storage API is not enabled
+• Network connectivity issues
+
+**How to fix:**
+1. **Check Project URL:** Admin → Integrations → Supabase
+2. **Verify URL Format:** Should be https://[project-id].supabase.co
+3. **Test Connection:** Use the test button in integration settings
+4. **Check Storage:** Ensure Storage is enabled in your Supabase project
+
+Make sure your Supabase project URL is correct and storage is enabled.`;
+
+        } else
 
         if (errorMessage.includes('Storage operations require API keys to be configured')) {
           userFriendlyError = `🔧 Storage Configuration Required
