@@ -961,10 +961,25 @@ const CodeEditor = ({
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
-    
+
     // Store disposables for cleanup
     const disposables = [];
-    
+
+    // Set up undo/redo state tracking
+    const updateUndoRedoState = () => {
+      const model = editor.getModel();
+      if (model) {
+        setCanUndo(model.canUndo());
+        setCanRedo(model.canRedo());
+      }
+    };
+
+    // Track content changes for undo/redo states
+    const contentDisposable = editor.onDidChangeModelContent(() => {
+      updateUndoRedoState();
+    });
+    disposables.push(contentDisposable);
+
     // Set up cursor position tracking
     const cursorDisposable = editor.onDidChangeCursorPosition((e) => {
       const position = { line: e.position.lineNumber, column: e.position.column };
@@ -974,7 +989,7 @@ const CodeEditor = ({
       }
     });
     disposables.push(cursorDisposable);
-    
+
     // Set up selection change tracking
     const selectionDisposable = editor.onDidChangeCursorSelection((e) => {
       if (onSelectionChange) {
@@ -987,9 +1002,12 @@ const CodeEditor = ({
       }
     });
     disposables.push(selectionDisposable);
-    
+
     // Store disposables for cleanup
     editorRef.current._disposables = disposables;
+
+    // Initial undo/redo state
+    updateUndoRedoState();
   };
 
   const handleSave = () => {

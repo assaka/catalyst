@@ -1679,11 +1679,12 @@ export function CodeModal({
               variant="ghost"
               size="sm"
               disabled={!!jsonError || localSaveStatus === 'saving'}
-              className={hasChanges ? "!bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600 shadow-md" : "!bg-blue-500 hover:!bg-blue-600 !text-white !border-blue-500 opacity-75"}
+              className={hasChanges ? "!bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600 shadow-lg font-semibold" : "!bg-gray-400 hover:!bg-gray-500 !text-white !border-gray-400"}
               style={{
-                backgroundColor: hasChanges ? '#2563eb' : '#3b82f6',
+                backgroundColor: hasChanges ? '#1d4ed8' : '#9ca3af',
                 color: 'white',
-                border: `1px solid ${hasChanges ? '#2563eb' : '#3b82f6'}`
+                border: `1px solid ${hasChanges ? '#1d4ed8' : '#9ca3af'}`,
+                opacity: hasChanges ? 1 : 0.7
               }}
             >
               {localSaveStatus === 'saving' ? (
