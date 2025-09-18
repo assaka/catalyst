@@ -172,7 +172,15 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           type: file.type
         });
 
+        // Validate file before creating FormData
+        if (!file || !file.name || file.size === 0) {
+          throw new Error(`Invalid file: ${file?.name || 'Unknown'}`);
+        }
+
         const formData = new FormData();
+
+        // Make sure we're appending the actual file object
+        console.log('📤 FilePickerModal: Appending file to FormData:', file);
         formData.append('file', file); // Use 'file' not 'files'
         formData.append('folder', 'library');
         formData.append('public', 'true');
@@ -182,15 +190,21 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         console.log('📤 FilePickerModal: FormData contents:');
         for (const [key, value] of formData.entries()) {
           if (value && typeof value === 'object' && value.name && value.size !== undefined) {
-            console.log(`  ${key}: File(${value.name}, ${value.size}bytes)`);
+            console.log(`  ${key}: File(${value.name}, ${value.size}bytes, type: ${value.type})`);
           } else {
             console.log(`  ${key}:`, value);
           }
         }
 
-        const response = await apiClient.post('/supabase/storage/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        // Additional validation - check if FormData has the file
+        const fileFromFormData = formData.get('file');
+        console.log('📤 FilePickerModal: File retrieved from FormData:', fileFromFormData);
+        if (!fileFromFormData) {
+          throw new Error('File not found in FormData after append');
+        }
+
+        // Don't set Content-Type header - let browser set it with boundary
+        const response = await apiClient.post('/supabase/storage/upload', formData);
 
         if (response.success) {
           console.log('✅ FilePickerModal: Upload successful for', file.name, ':', response);

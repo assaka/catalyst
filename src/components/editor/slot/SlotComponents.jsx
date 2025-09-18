@@ -553,6 +553,60 @@ export function GridColumn({
   );
 }
 
+// Helper function to generate grid styles for direct application to slot elements
+const getGridStyles = (slot, colSpan = 12, rowSpan = 1, mode = 'edit') => ({
+  gridColumn: `span ${colSpan}`,
+  gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
+  // Add container-specific styles when it's a container type
+  ...(['container', 'grid', 'flex'].includes(slot?.type) ? {
+    minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
+  } : {}),
+  // Apply slot styles
+  ...slot.styles
+});
+
+// Helper function to generate grid classes for direct application to slot elements
+const getGridClasses = (slot, colSpan = 12, showBorders = true, mode = 'edit', isNested = false) => {
+  const baseClasses = [
+    'relative',
+    'responsive-slot'
+  ];
+
+  // Add container-specific classes
+  if (['container', 'grid', 'flex'].includes(slot?.type)) {
+    baseClasses.push('w-full', 'h-full', 'grid', 'grid-cols-12', 'gap-2');
+    if (slot.className) baseClasses.push(slot.className);
+  }
+
+  // Add edit mode styling
+  if (mode === 'edit') {
+    baseClasses.push(
+      showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent',
+      'rounded-lg',
+      'overflow-hidden',
+      'transition-all',
+      'duration-200',
+      'border-gray-300',
+      'hover:border-blue-400',
+      'hover:bg-blue-50/20',
+      'cursor-grab',
+      'active:cursor-grabbing'
+    );
+
+    // Add padding only for non-nested slots
+    if (!isNested) {
+      baseClasses.push('p-2');
+    }
+
+    // Add margin for nested slots
+    if (isNested) {
+      baseClasses.push('m-1');
+    }
+  }
+
+  return baseClasses.join(' ');
+};
+
 // HierarchicalSlotRenderer Component
 export function HierarchicalSlotRenderer({
   slots,
@@ -585,31 +639,203 @@ export function HierarchicalSlotRenderer({
   return filteredSlots.map(slot => {
     let colSpan = slot.colSpan || 12;
     const rowSpan = slot.rowSpan || 1;
-    const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
+    const isNested = parentId !== null; // We're nested if we have a parent
 
+    const gridStyles = getGridStyles(slot, colSpan, rowSpan, mode);
+    const gridClasses = getGridClasses(slot, colSpan, showBorders, mode, isNested);
+
+    // TEXT SLOTS - Apply grid styles directly to span
+    if (slot.type === 'text') {
+      if (mode === 'edit') {
+        return (
+          <ResizeWrapper
+            key={slot.id}
+            minWidth={20}
+            minHeight={16}
+            onResize={(newSize) => {
+              setPageConfig(prevConfig => {
+                const updatedSlots = { ...prevConfig?.slots };
+                if (updatedSlots[slot.id]) {
+                  updatedSlots[slot.id] = {
+                    ...updatedSlots[slot.id],
+                    styles: {
+                      ...updatedSlots[slot.id].styles,
+                      width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                      height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                    }
+                  };
+                }
+                return { ...prevConfig, slots: updatedSlots };
+              });
+            }}
+            className={gridClasses}
+            style={gridStyles}
+          >
+            <span
+              className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+              style={{
+                cursor: 'pointer',
+                ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
+                display: 'inline-block',
+                width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onElementClick(slot.id, e.currentTarget);
+              }}
+              data-slot-id={slot.id}
+              data-editable="true"
+              dangerouslySetInnerHTML={{
+                __html: String(slot.content || `Text: ${slot.id}`)
+              }}
+            />
+          </ResizeWrapper>
+        );
+      } else {
+        return (
+          <span
+            key={slot.id}
+            className={`${slot.parentClassName || ''} ${slot.className} ${gridClasses}`}
+            style={{
+              ...gridStyles,
+              ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+            }}
+            dangerouslySetInnerHTML={{
+              __html: String(slot.content || `Text: ${slot.id}`)
+            }}
+          />
+        );
+      }
+    }
+
+    // BUTTON SLOTS - Apply grid styles directly to button or ResizeWrapper
+    if (slot.type === 'button') {
+      if (mode === 'edit') {
+        return (
+          <ResizeWrapper
+            key={slot.id}
+            minWidth={50}
+            minHeight={20}
+            onResize={(newSize) => {
+              setPageConfig(prevConfig => {
+                const updatedSlots = { ...prevConfig?.slots };
+                if (updatedSlots[slot.id]) {
+                  updatedSlots[slot.id] = {
+                    ...updatedSlots[slot.id],
+                    styles: {
+                      ...updatedSlots[slot.id].styles,
+                      width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                      height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                    }
+                  };
+                }
+                return { ...prevConfig, slots: updatedSlots };
+              });
+            }}
+            className={gridClasses}
+            style={gridStyles}
+          >
+            <button
+              className={`${slot.parentClassName || ''} ${slot.className}`}
+              style={{
+                cursor: 'pointer',
+                minWidth: 'auto',
+                minHeight: 'auto',
+                display: 'inline-block'
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onElementClick(slot.id, e.currentTarget);
+              }}
+              data-slot-id={slot.id}
+              data-editable="true"
+            >
+              {(() => {
+                const content = String(slot.content || `Button: ${slot.id}`);
+                if (content.includes('<')) {
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = content;
+                  return tempDiv.textContent || tempDiv.innerText || content;
+                }
+                return content;
+              })()}
+            </button>
+          </ResizeWrapper>
+        );
+      } else {
+        return (
+          <button
+            key={slot.id}
+            className={`${slot.parentClassName || ''} ${slot.className} ${gridClasses}`}
+            style={{
+              ...gridStyles,
+              minWidth: 'auto',
+              minHeight: 'auto'
+            }}
+          >
+            {(() => {
+              const content = String(slot.content || `Button: ${slot.id}`);
+              if (content.includes('<')) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                return tempDiv.textContent || tempDiv.innerText || content;
+              }
+              return content;
+            })()}
+          </button>
+        );
+      }
+    }
+
+    // CONTAINER SLOTS - Apply grid styles directly to container div
+    if (['container', 'grid', 'flex'].includes(slot.type)) {
+      return (
+        <div
+          key={slot.id}
+          className={gridClasses}
+          style={gridStyles}
+          data-col-span={colSpan}
+          data-row-span={rowSpan}
+        >
+          <HierarchicalSlotRenderer
+            slots={slots}
+            parentId={slot.id}
+            mode={mode}
+            viewMode={viewMode}
+            showBorders={showBorders}
+            currentDragInfo={currentDragInfo}
+            setCurrentDragInfo={setCurrentDragInfo}
+            onElementClick={onElementClick}
+            onGridResize={onGridResize}
+            onSlotHeightResize={onSlotHeightResize}
+            onSlotDrop={onSlotDrop}
+            onResizeStart={onResizeStart}
+            onResizeEnd={onResizeEnd}
+            selectedElementId={selectedElementId}
+            setPageConfig={setPageConfig}
+            saveConfiguration={saveConfiguration}
+            saveTimeoutRef={saveTimeoutRef}
+          />
+        </div>
+      );
+    }
+
+    // OTHER SLOT TYPES (link, image, input, etc.) - Apply grid styles directly
     return (
-      <GridColumn
+      <div
         key={slot.id}
-        colSpan={colSpan}
-        rowSpan={rowSpan}
-        height={height}
-        slotId={slot.id}
-        slot={slot}
-        currentDragInfo={currentDragInfo}
-        setCurrentDragInfo={setCurrentDragInfo}
-        onGridResize={onGridResize}
-        onSlotHeightResize={onSlotHeightResize}
-        onSlotDrop={onSlotDrop}
-        onResizeStart={onResizeStart}
-        onResizeEnd={onResizeEnd}
-        mode={mode}
-        showBorders={showBorders}
-        isNested={true}
+        className={gridClasses}
+        style={gridStyles}
+        data-col-span={colSpan}
+        data-row-span={rowSpan}
       >
-          {slot.type === 'text' && mode === 'edit' && (
+        {/* LINK SLOTS */}
+        {slot.type === 'link' && (
+          mode === 'edit' ? (
             <ResizeWrapper
-              minWidth={20}
-              minHeight={16}
+              minWidth={50}
+              minHeight={20}
               onResize={(newSize) => {
                 setPageConfig(prevConfig => {
                   const updatedSlots = { ...prevConfig?.slots };
