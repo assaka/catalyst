@@ -291,13 +291,11 @@ const SlotEnabledFileSelector = ({
     <Card className={`h-full flex flex-col ${className}`}>
       {/* Header */}
       <div className="border-b p-4">
+        <h3 className="font-semibold">Editable Pages</h3>
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold">Editable Pages</h3>
-            <p className="text-xs text-muted-foreground">
-              Select a page to customize
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Select a page to customize
+          </p>
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
           </Button>

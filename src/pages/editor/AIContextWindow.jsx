@@ -245,10 +245,8 @@ const AIContextWindowPage = () => {
     try {
       const baselineData = await apiClient.get(`extensions/baseline/${encodeURIComponent(filePath)}`);
       if (baselineData && baselineData.success && baselineData.data.hasBaseline) {
-        console.log(`📋 Using database baseline for ${filePath} (${baselineData.data.baselineCode.length} chars)`);
         return normalizeLineEndings(baselineData.data.baselineCode);
       } else {
-        console.log(`📋 No database baseline found for ${filePath}, using current content as baseline`);
         return normalizeLineEndings(fallbackContent);
       }
     } catch (baselineError) {
@@ -281,7 +279,6 @@ const AIContextWindowPage = () => {
         // Update URL
         setSearchParams({ file: filePath });
       } else if (data && data.success && !data.data.hasBaseline) {
-        console.log('No baseline found for file:', filePath);
       } else {
         console.error('Failed to load file:', data?.message || 'Unknown error');
         // Provide detailed diagnostic information
@@ -400,11 +397,11 @@ const ExampleComponent = () => {
 };
 
 export default ExampleComponent;`;
-      
+
       setSourceCode(normalizeLineEndings(fallbackContent));
       const baselineCode = await fetchBaselineCode(filePath, fallbackContent);
       setOriginalCode(baselineCode); // Set baseline for diff detection
-      
+
       setSelectedFile({
         path: filePath,
         name: filePath.split('/').pop() || 'demo.jsx',
@@ -418,11 +415,6 @@ export default ExampleComponent;`;
 
   // Handle file selection from tree navigator
   const handleFileSelect = useCallback((file) => {
-    console.log('🎯 AIContextWindow: handleFileSelect called', {
-      newFile: file,
-      currentFile: selectedFile,
-      isDifferent: file.path !== selectedFile?.path
-    });
     if (file.path !== selectedFile?.path) {
       // Reset manual edit result when switching files
       setManualEditResult(null);
@@ -434,7 +426,7 @@ export default ExampleComponent;`;
   // Handle code changes in editor
   const handleCodeChange = useCallback((newCode) => {
     setSourceCode(newCode);
-    
+
     // Track modified files - compare against original baseline, not just previous sourceCode
     if (selectedFile) {
       setModifiedFiles(prev => {
@@ -442,7 +434,7 @@ export default ExampleComponent;`;
         const normalizedOriginalCode = normalizeLineEndings(originalCode);
         const hasChanges = normalizedNewCode !== normalizedOriginalCode;
         const isCurrentlyModified = prev.includes(selectedFile.path);
-        
+
         if (hasChanges && !isCurrentlyModified) {
           // File has changes from original and is not yet in the modified list - add it
           return [...prev, selectedFile.path];
@@ -450,12 +442,12 @@ export default ExampleComponent;`;
           // File has no changes from original but is in the modified list - remove it
           return prev.filter(path => path !== selectedFile.path);
         }
-        
+
         // No change needed
         return prev;
       });
     }
-    
+
     // Update manual edit result when code changes (e.g., from line revert)
     if (manualEditResult) {
       const normalizedNewCode = normalizeLineEndings(newCode);
@@ -546,73 +538,6 @@ export default ExampleComponent;`;
     }
   }, [selectedFile?.name, selectedFile?.path, baselineCode, normalizeLineEndings]);
 
-  // Handle diff stats changes from DiffPreviewSystem
-  const handleDiffStatsChange = useCallback((diffStats) => {
-    if (!selectedFile) return;
-    
-    // Check if there are any actual changes Rin the diff stats
-    // Note: DiffService returns 'additions', 'deletions', 'modifications' (not addedLines, etc.)
-    console.log('🔍 DiffStats for', selectedFile.name, ':', {
-      additions: diffStats?.additions,
-      deletions: diffStats?.deletions,
-      modifications: diffStats?.modifications,
-      unchanged: diffStats?.unchanged
-    });
-    
-    const hasChanges = diffStats && (
-      diffStats.additions > 0 ||
-      diffStats.deletions > 0 ||
-      diffStats.modifications > 0
-    );
-    
-    console.log('🎯 HasChanges:', hasChanges, 'for', selectedFile.name);
-    
-    setModifiedFiles(prev => {
-      const isCurrentlyModified = prev.includes(selectedFile.path);
-      
-      if (hasChanges && !isCurrentlyModified) {
-        // File has changes and is not yet in the modified list - add it
-        return [...prev, selectedFile.path];
-      } else if (!hasChanges && isCurrentlyModified) {
-        // File has no changes but is in the modified list - remove it
-        console.log(`✅ Removing ${selectedFile.name} from modified files - all changes reverted`);
-        return prev.filter(path => path !== selectedFile.path);
-      }
-      
-      // No change needed
-      return prev;
-    });
-  }, [selectedFile]);
-
-  // Handle download in Preview mode
-  const handleDownload = useCallback(() => {
-    if (!selectedFile || previewMode !== 'live') return;
-    
-    try {
-      // Create a blob with the current source code
-      const blob = new Blob([sourceCode], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create a download link
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = selectedFile.name;
-      link.style.display = 'none';
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up
-      URL.revokeObjectURL(url);
-      
-      console.log(`📥 Downloaded ${selectedFile.name}`);
-    } catch (error) {
-      console.error('Failed to download file:', error);
-    }
-  }, [selectedFile, sourceCode, previewMode]);
-
   // Handle preview mode changes - simplified
   const handlePreviewModeChange = useCallback(async (mode) => {
     // Don't set preview mode here as it's already set by the caller
@@ -627,85 +552,6 @@ export default ExampleComponent;`;
     console.log('File tree refreshed');
   }, []);
 
-  // Test API connection
-  const testConnection = useCallback(async () => {
-    setConnectionStatus({ status: 'testing', message: 'Testing connection...' });
-    
-    try {
-      // Test authentication and basic API access
-      const authToken = localStorage.getItem('store_owner_auth_token');
-      
-      if (!authToken) {
-        setConnectionStatus({
-          status: 'error',
-          message: 'No authentication token found. Please log in as a store owner.',
-          details: 'The AI Context Window requires store owner authentication to access source files.'
-        });
-        return;
-      }
-
-      // Test the baselines endpoint first using API client
-      const listData = await apiClient.get('extensions/baselines');
-      
-      if (!listData.success) {
-        setConnectionStatus({
-          status: 'error',
-          message: 'API responded but failed to list files',
-          details: listData.message || 'Unknown API error'
-        });
-        return;
-      }
-
-      // Test loading a specific file
-      const testFilePath = 'src/pages/AIContextWindow.jsx';
-      try {
-        const contentData = await apiClient.get(`extensions/baseline/${encodeURIComponent(testFilePath)}`);
-        if (contentData.success && contentData.data.hasBaseline) {
-          setConnectionStatus({
-            status: 'success',
-            message: 'Connection successful!',
-            details: `Successfully connected to backend at ${import.meta.env.VITE_API_BASE_URL}. Found ${listData.files?.length || 0} files in baselines.`
-          });
-        } else {
-          setConnectionStatus({
-            status: 'warning',
-            message: 'API connected but file access limited',
-            details: `Can list files but cannot read content: ${contentData.message}`
-          });
-        }
-      } catch (contentError) {
-        setConnectionStatus({
-          status: 'warning',
-          message: 'Partial connection success',
-          details: `Can list files but file content access failed: ${contentError.message}`
-        });
-      }
-    } catch (error) {
-      // Enhanced error detection for API client errors
-      let errorMessage = 'Connection test failed';
-      let errorDetails = '';
-      
-      if (error.message.includes('Network error: Unable to connect to server')) {
-        errorMessage = 'Backend server offline';
-        errorDetails = `Cannot connect to backend at ${import.meta.env.VITE_API_BASE_URL}. Check Render deployment status.`;
-      } else if (error.status === 401) {
-        errorMessage = 'Authentication failed';
-        errorDetails = 'Please refresh and log in again as a store owner.';
-      } else if (error.status === 403) {
-        errorMessage = 'Access denied';
-        errorDetails = 'Verify you have store owner permissions.';
-      } else {
-        errorDetails = `Error: ${error.message}. Backend: ${import.meta.env.VITE_API_BASE_URL}`;
-      }
-      
-      setConnectionStatus({
-        status: 'error',
-        message: errorMessage,
-        details: errorDetails
-      });
-    }
-  }, []);
-
   return (
     <div className={`min-h-[calc(100vh-100px)] flex flex-col bg-gray-50 dark:bg-gray-900 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       
@@ -715,15 +561,10 @@ export default ExampleComponent;`;
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             AI Context Window
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Natural language code editing with AST-aware intelligence
-          </p>
         </div>
 
         {/* Connection Status */}
         <div className="flex items-center space-x-4">
-
-
           {/* Manual Edit Status */}
           {manualEditResult && manualEditResult.hasChanges && (
             <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
@@ -788,12 +629,6 @@ export default ExampleComponent;`;
                       <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                         <button
                           onClick={() => {
-                            console.log('🖱️ Customize tab clicked!', {
-                              currentFile: selectedFile ? {
-                                name: selectedFile.name,
-                                path: selectedFile.path
-                              } : 'No file selected'
-                            });
                             setPreviewMode('hybrid');
                             handlePreviewModeChange('hybrid');
                           }}
@@ -853,8 +688,6 @@ export default ExampleComponent;`;
                           fileName === 'ProductSlotEditor.jsx' ||
                           fileName === 'HomepageSlotEditor.jsx';
 
-                        console.log('🎯 Is slot file?', isSlotFile);
-
                         if (isSlotFile) {
                           // Determine slot type from filename
                           const getSlotTypeFromFilename = (filename) => {
@@ -873,10 +706,8 @@ export default ExampleComponent;`;
                           if (slotType) {
                             const handleSave = async (configToSave) => {
                               try {
-                                console.log(`💾 Saving ${slotType} configuration:`, configToSave);
                                 const storeId = getSelectedStoreId();
                                 const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
-                                console.log(`✅ ${slotType} configuration saved successfully:`, response);
                                 return response;
                               } catch (error) {
                                 console.error(`❌ Failed to save ${slotType} configuration:`, error);
@@ -931,31 +762,8 @@ export default ExampleComponent;`;
                   <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
                     <p className="text-lg mb-2">Select a file to begin editing</p>
                     <p className="text-sm mb-4">
-                      Choose a file from the navigator or{' '}
-                      <button
-                        onClick={() => loadFileContent('/demo/example.jsx')}
-                        className="text-blue-500 hover:text-blue-600 underline"
-                      >
-                        load a demo file
-                      </button>
+                      Choose an Editable page
                     </p>
-                    
-                    {!connectionStatus && (
-                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-700 mb-2">
-                          <strong>Having trouble loading files?</strong>
-                        </p>
-                        <p className="text-xs text-blue-600 mb-3">
-                          Click "Test Connection" in the header to diagnose API access issues.
-                        </p>
-                        <button
-                          onClick={testConnection}
-                          className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                          Test API Connection
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -1055,7 +863,6 @@ export default ExampleComponent;`;
                             
                             // Early return if no file is selected
                             if (!selectedFile) {
-                              console.log('⚠️ Mobile: No file selected, showing placeholder');
                               return <div className="p-8 text-center text-gray-500">Please select a file from the tree navigator</div>;
                             }
                             
@@ -1095,13 +902,10 @@ export default ExampleComponent;`;
                               if (slotType) {
                                 const handleSave = async (configToSave) => {
                                   try {
-                                    console.log(`💾 Mobile: Saving ${slotType} configuration:`, configToSave);
                                     const storeId = getSelectedStoreId();
                                     const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
-                                    console.log(`✅ Mobile: ${slotType} configuration saved successfully:`, response);
                                     return response;
                                   } catch (error) {
-                                    console.error(`❌ Mobile: Failed to save ${slotType} configuration:`, error);
                                     throw error;
                                   }
                                 };
@@ -1151,33 +955,7 @@ export default ExampleComponent;`;
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
                     <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
-                      <p className="text-lg mb-2">Select a file to begin editing</p>
-                      <p className="text-sm mb-4">
-                        Choose a file from the navigator or{' '}
-                        <button
-                          onClick={() => loadFileContent('/demo/example.jsx')}
-                          className="text-blue-500 hover:text-blue-600 underline"
-                        >
-                          load a demo file
-                        </button>
-                      </p>
-
-                      {!connectionStatus && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-700 mb-2">
-                            <strong>Having trouble loading files?</strong>
-                          </p>
-                          <p className="text-xs text-blue-600 mb-3">
-                            Click "Test Connection" in the header to diagnose API access issues.
-                          </p>
-                          <button
-                            onClick={testConnection}
-                            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                          >
-                            Test API Connection
-                          </button>
-                        </div>
-                      )}
+                      <p className="text-sm mb-2">Select a file to begin editing</p>
                     </div>
                   </div>
                 )}
