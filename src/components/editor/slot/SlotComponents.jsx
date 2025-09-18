@@ -215,12 +215,6 @@ export function EditableElement({
   return content;
 }
 
-// Helper function to determine if a slot should have borders
-function shouldShowBorders(slotId, showBorders) {
-  const borderedSlots = ['main_layout', 'header_container', 'header_title', 'empty_cart_container', 'empty_cart_icon'];
-  return showBorders && borderedSlots.includes(slotId);
-}
-
 // GridColumn Component
 export function GridColumn({
   colSpan = 12,
@@ -461,22 +455,22 @@ export function GridColumn({
     <div
       className={`${
         mode === 'edit'
-          ? `${shouldShowBorders(slotId, showBorders) ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
+          ? `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
               isDragOver
                 ? 'border-blue-500 bg-blue-50/40 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
               isDragging
                 ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
               isHovered
                 ? `border-blue-500 ${isNested ? 'border' : 'border-2'} border-dashed shadow-md shadow-blue-200/40`
-                : shouldShowBorders(slotId, showBorders)
+                : showBorders
                 ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
-            } ${isNested ? '' : 'p-2'} ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
+            } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
       } relative responsive-slot ${
-        ['container', 'grid', 'flex'].includes(slot?.type) && !slot?.parentId
+        ['container', 'grid', 'flex'].includes(slot?.type)
           ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
-          : slot?.className || ''
+          : ''
       } ${isNested ? 'm-1' : ''}`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
@@ -592,132 +586,6 @@ export function HierarchicalSlotRenderer({
     let colSpan = slot.colSpan || 12;
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
-
-    // Check how many children this slot has (use SlotManager for consistency)
-    const slotChildSlots = SlotManager.getChildSlots(slots, slot.id);
-    const hasMultipleChildren = slotChildSlots.length > 1;
-
-    // For nested containers, only add wrapper if there are multiple children
-    if (['container', 'grid', 'flex'].includes(slot?.type) && slot?.parentId && parentId) {
-      if (hasMultipleChildren) {
-        return (
-          <div key={slot.id} className={`${slot.className || ''} relative`}>
-            {/* Render child slots */}
-            <HierarchicalSlotRenderer
-              slots={slots}
-              parentId={slot.id}
-              mode={mode}
-              viewMode={viewMode}
-              showBorders={showBorders}
-              currentDragInfo={currentDragInfo}
-              setCurrentDragInfo={setCurrentDragInfo}
-              onElementClick={onElementClick}
-              onGridResize={onGridResize}
-              onSlotHeightResize={onSlotHeightResize}
-              onSlotDrop={onSlotDrop}
-              onResizeStart={onResizeStart}
-              onResizeEnd={onResizeEnd}
-              selectedElementId={selectedElementId}
-              setPageConfig={setPageConfig}
-              saveConfiguration={saveConfiguration}
-              saveTimeoutRef={saveTimeoutRef}
-            />
-          </div>
-        );
-      } else {
-        // Single child or no children - render directly without wrapper
-        return (
-          <HierarchicalSlotRenderer
-            key={slot.id}
-            slots={slots}
-            parentId={slot.id}
-            mode={mode}
-            viewMode={viewMode}
-            showBorders={showBorders}
-            currentDragInfo={currentDragInfo}
-            setCurrentDragInfo={setCurrentDragInfo}
-            onElementClick={onElementClick}
-            onGridResize={onGridResize}
-            onSlotHeightResize={onSlotHeightResize}
-            onSlotDrop={onSlotDrop}
-            onResizeStart={onResizeStart}
-            onResizeEnd={onResizeEnd}
-            selectedElementId={selectedElementId}
-            setPageConfig={setPageConfig}
-            saveConfiguration={saveConfiguration}
-            saveTimeoutRef={saveTimeoutRef}
-          />
-        );
-      }
-    }
-
-    // For nested individual slots (non-containers), render with simple wrapper
-    if (slot?.parentId && parentId) {
-      return (
-        <div key={slot.id} className={`slot-wrapper relative`}>
-          <GridColumn
-            colSpan={colSpan}
-            rowSpan={rowSpan}
-            height={height}
-            slotId={slot.id}
-            slot={slot}
-            currentDragInfo={currentDragInfo}
-            setCurrentDragInfo={setCurrentDragInfo}
-            onGridResize={onGridResize}
-            onSlotHeightResize={onSlotHeightResize}
-            onSlotDrop={onSlotDrop}
-            onResizeStart={onResizeStart}
-            onResizeEnd={onResizeEnd}
-            mode={mode}
-            showBorders={showBorders}
-            isNested={true}
-          >
-            {slot.type === 'text' && (
-              <span
-                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
-                style={slot.styles || {}}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onElementClick(slot.id, e.currentTarget);
-                }}
-                data-slot-id={slot.id}
-                data-editable="true"
-                dangerouslySetInnerHTML={{
-                  __html: String(slot.content || `Text: ${slot.id}`)
-                }}
-              />
-            )}
-            {slot.type === 'image' && (
-              <img
-                src={slot.content}
-                alt={slot.metadata?.alt || 'Slot image'}
-                className={slot.className || ''}
-                style={slot.styles || {}}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onElementClick(slot.id, e.currentTarget);
-                }}
-                data-slot-id={slot.id}
-              />
-            )}
-            {slot.type === 'button' && (
-              <button
-                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
-                style={slot.styles || {}}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onElementClick(slot.id, e.currentTarget);
-                }}
-                data-slot-id={slot.id}
-              >
-                {slot.content || `Button: ${slot.id}`}
-              </button>
-            )}
-          </GridColumn>
-        </div>
-      );
-    }
 
     return (
       <GridColumn
