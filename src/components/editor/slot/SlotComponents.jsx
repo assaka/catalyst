@@ -1676,10 +1676,10 @@ export function CodeModal({
           <div className="flex items-center gap-2">
             <Button
               onClick={handleSave}
-              variant={hasChanges ? "default" : "outline"}
+              variant="default"
               size="sm"
-              disabled={!hasChanges || !!jsonError || localSaveStatus === 'saving'}
-              className={hasChanges ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" : "hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors duration-200"}
+              disabled={!!jsonError || localSaveStatus === 'saving'}
+              className={hasChanges ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-md" : "bg-blue-500 hover:bg-blue-600 text-white border-blue-500 opacity-75"}
             >
               {localSaveStatus === 'saving' ? (
                 <>
