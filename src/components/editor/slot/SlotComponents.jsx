@@ -243,8 +243,8 @@ export function GridColumn({
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
-  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1 && !['button', 'link', 'text', 'image'].includes(slot?.type);
-  const showVerticalHandle = onSlotHeightResize && mode === 'edit' && isContainerType;
+  const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
+  const showVerticalHandle = onSlotHeightResize && mode === 'edit';
 
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
