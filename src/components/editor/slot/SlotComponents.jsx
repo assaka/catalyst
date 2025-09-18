@@ -607,10 +607,18 @@ export function HierarchicalSlotRenderer({
         isNested={true}
       >
           {slot.type === 'text' && mode === 'edit' && (
-            <ResizeWrapper
-              minWidth={20}
-              minHeight={16}
-              onResize={(newSize) => {
+            <div
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', slot.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              style={{ display: 'inline-block' }}
+            >
+              <ResizeWrapper
+                minWidth={20}
+                minHeight={16}
+                onResize={(newSize) => {
                 setPageConfig(prevConfig => {
                   const updatedSlots = { ...prevConfig?.slots };
                   if (updatedSlots[slot.id]) {
@@ -661,6 +669,7 @@ export function HierarchicalSlotRenderer({
                 }}
               />
             </ResizeWrapper>
+            </div>
           )}
 
           {slot.type === 'text' && mode !== 'edit' && (
@@ -677,7 +686,15 @@ export function HierarchicalSlotRenderer({
           )}
 
           {slot.type === 'button' && mode === 'edit' && (
-            <ResizeWrapper
+            <div
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', slot.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              style={{ display: 'inline-block' }}
+            >
+              <ResizeWrapper
               minWidth={50}
               minHeight={20}
               onResize={(newSize) => {
@@ -740,6 +757,7 @@ export function HierarchicalSlotRenderer({
                 })()}
               </button>
             </ResizeWrapper>
+            </div>
           )}
 
               {slot.type === 'button' && mode !== 'edit' && (
@@ -766,7 +784,15 @@ export function HierarchicalSlotRenderer({
               )}
 
               {slot.type === 'link' && mode === 'edit' && (
-                    <ResizeWrapper
+                <div
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', slot.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  style={{ display: 'inline-block' }}
+                >
+                  <ResizeWrapper
                       minWidth={50}
                       minHeight={20}
                       onResize={(newSize) => {
@@ -835,6 +861,7 @@ export function HierarchicalSlotRenderer({
                         </a>
                       </div>
                     </ResizeWrapper>
+                </div>
               )}
 
               {slot.type === 'link' && mode !== 'edit' && (
@@ -885,49 +912,230 @@ export function HierarchicalSlotRenderer({
                 />
               )}
 
-              {slot.type !== 'button' && slot.type !== 'link' && slot.type !== 'container' && slot.type !== 'grid' && slot.type !== 'flex' && (
+          {slot.type === 'image' && mode === 'edit' && (
+            <div
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', slot.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              style={{ display: 'inline-block' }}
+            >
+              <ResizeWrapper
+              minWidth={50}
+              minHeight={50}
+              onResize={(newSize) => {
+                setPageConfig(prevConfig => {
+                  const updatedSlots = { ...prevConfig?.slots };
+                  if (updatedSlots[slot.id]) {
+                    updatedSlots[slot.id] = {
+                      ...updatedSlots[slot.id],
+                      styles: {
+                        ...updatedSlots[slot.id].styles,
+                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                      }
+                    };
+                  }
+
+                  const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                  // Debounced auto-save - clear previous timeout and set new one
+                  if (saveTimeoutRef && saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current);
+                  }
+                  if (saveTimeoutRef && saveConfiguration) {
+                    saveTimeoutRef.current = setTimeout(() => {
+                      saveConfiguration(updatedConfig);
+                    }, 500); // Wait 0.5 seconds after resize stops
+                  }
+
+                  return updatedConfig;
+                });
+              }}
+            >
+              <div
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+                data-editable="true"
+                style={{
+                  ...slot.styles,
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                  width: '100%',
+                  height: '100%'
+                }}
+              >
+                {slot.content ? (
+                  <img
+                    src={slot.content}
+                    alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
+                    className="w-full h-full object-contain"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%'
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
+                    <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">No image selected</span>
+                  </div>
+                )}
+              </div>
+            </ResizeWrapper>
+            </div>
+          )}
+
+          {slot.type === 'input' && mode === 'edit' && (
+            <div
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', slot.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              style={{ display: 'inline-block' }}
+            >
+              <ResizeWrapper
+              minWidth={100}
+              minHeight={30}
+              onResize={(newSize) => {
+                setPageConfig(prevConfig => {
+                  const updatedSlots = { ...prevConfig?.slots };
+                  if (updatedSlots[slot.id]) {
+                    updatedSlots[slot.id] = {
+                      ...updatedSlots[slot.id],
+                      styles: {
+                        ...updatedSlots[slot.id].styles,
+                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                      }
+                    };
+                  }
+
+                  const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                  // Debounced auto-save - clear previous timeout and set new one
+                  if (saveTimeoutRef && saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current);
+                  }
+                  if (saveTimeoutRef && saveConfiguration) {
+                    saveTimeoutRef.current = setTimeout(() => {
+                      saveConfiguration(updatedConfig);
+                    }, 500); // Wait 0.5 seconds after resize stops
+                  }
+
+                  return updatedConfig;
+                });
+              }}
+            >
+              <input
+                className={`w-full h-full ${slot.className}`}
+                style={{
+                  ...slot.styles,
+                  minWidth: 'auto',
+                  minHeight: 'auto',
+                  cursor: 'pointer'
+                }}
+                placeholder={String(slot.content || '')}
+                type="text"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+                data-editable="true"
+              />
+            </ResizeWrapper>
+            </div>
+          )}
+
+          {slot.type === 'image' && mode !== 'edit' && (
+            <div
+              style={{
+                ...slot.styles,
+                display: 'inline-block',
+                width: '100%',
+                height: '100%'
+              }}
+            >
+              {slot.content ? (
+                <img
+                  src={slot.content}
+                  alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
+                  className="w-full h-full object-contain"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%'
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
+                  <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">No image selected</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {slot.type === 'input' && mode !== 'edit' && (
+            <input
+              className={`w-full h-full ${slot.className}`}
+              style={{
+                ...slot.styles,
+                minWidth: 'auto',
+                minHeight: 'auto'
+              }}
+              placeholder={String(slot.content || '')}
+              type="text"
+            />
+          )}
+
+          {slot.type !== 'button' && slot.type !== 'link' && slot.type !== 'text' && slot.type !== 'image' && slot.type !== 'input' && slot.type !== 'container' && slot.type !== 'grid' && slot.type !== 'flex' && (
                 <EditableElement
                   slotId={slot.id}
                   mode={mode}
                   onClick={onElementClick}
                   className={slot.parentClassName || ''}
-                  style={['input'].includes(slot.type) ? {} : (slot.styles || {})}
+                  style={slot.styles || {}}
                   canResize={true}
-                  draggable={false}
+                  draggable={true}
                   selectedElementId={selectedElementId}
+                  onElementResize={(newSize) => {
+                    setPageConfig(prevConfig => {
+                      const updatedSlots = { ...prevConfig?.slots };
+                      if (updatedSlots[slot.id]) {
+                        updatedSlots[slot.id] = {
+                          ...updatedSlots[slot.id],
+                          styles: {
+                            ...updatedSlots[slot.id].styles,
+                            width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                            height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                          }
+                        };
+                      }
+
+                      const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                      // Debounced auto-save - clear previous timeout and set new one
+                      if (saveTimeoutRef && saveTimeoutRef.current) {
+                        clearTimeout(saveTimeoutRef.current);
+                      }
+                      if (saveTimeoutRef && saveConfiguration) {
+                        saveTimeoutRef.current = setTimeout(() => {
+                          saveConfiguration(updatedConfig);
+                        }, 500); // Wait 0.5 seconds after resize stops
+                      }
+
+                      return updatedConfig;
+                    });
+                  }}
                 >
-                  {slot.type === 'input' && (
-                    <input
-                      className={`w-full h-full ${slot.className}`}
-                      style={{
-                        ...slot.styles,
-                        minWidth: 'auto',
-                        minHeight: 'auto'
-                      }}
-                      placeholder={String(slot.content || '')}
-                      type="text"
-                    />
-                  )}
-                  {slot.type === 'image' && (
-                    <>
-                      {slot.content ? (
-                        <img
-                          src={slot.content}
-                          alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
-                          className="w-full h-full object-contain"
-                          style={{
-                            maxWidth: '100%',
-                            maxHeight: '100%'
-                          }}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
-                          <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
-                          <span className="text-sm text-gray-500">No image selected</span>
-                        </div>
-                      )}
-                    </>
-                  )}
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
                     <HierarchicalSlotRenderer
                       slots={slots}

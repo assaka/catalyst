@@ -98,30 +98,136 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       } catch (filesError) {
         console.error('❌ FilePickerModal: Error fetching files:', filesError);
 
-        // Fallback: try to list buckets and show available structure
-        try {
-          console.log('🔄 FilePickerModal: Trying buckets endpoint as fallback...');
-          const bucketsResponse = await apiClient.get('/supabase/storage/buckets');
+        // Parse error message to provide helpful feedback
+        const errorMessage = filesError.message || 'Unknown error';
+        let userFriendlyError = '';
 
-          if (bucketsResponse.success && bucketsResponse.buckets) {
-            console.log('📦 FilePickerModal: Found buckets:', bucketsResponse.buckets);
-            const assetsBucket = bucketsResponse.buckets.find(b => b.name === 'suprshop-assets');
+        if (errorMessage.includes('Storage operations require API keys to be configured')) {
+          userFriendlyError = `🔧 Storage Configuration Required
 
-            if (assetsBucket) {
-              setFiles([]);
-              setError(`✅ Connected to storage, but unable to list files from bucket: ${assetsBucket.name}. Endpoint: /supabase/storage/list/suprshop-assets. You can upload new images.`);
+The Supabase storage system needs to be configured with API keys.
+
+**How to fix this:**
+1. Go to **Admin → Integrations → Supabase**
+2. Make sure your Supabase project is connected
+3. Ensure your service role key is properly configured
+4. The service role key should have storage permissions
+
+**What you need:**
+• Supabase project URL
+• Service role key (starts with 'eyJ...')
+
+Once configured, file storage will work properly.`;
+
+        } else if (errorMessage.includes('Service role key not available') || errorMessage.includes('admin permissions')) {
+          userFriendlyError = `🔑 Admin Permissions Required
+
+Your Supabase connection needs admin-level permissions for storage operations.
+
+**How to fix this:**
+1. Go to **Admin → Integrations → Supabase**
+2. Click "Reconnect" or "Update Config"
+3. Use a service role key (not anon key)
+4. Service role key has full admin permissions
+
+**Finding your service role key:**
+• Go to your Supabase project dashboard
+• Navigate to Settings → API
+• Copy the "service_role" key (not "anon" key)
+• Paste it in the Supabase integration settings
+
+The service role key is needed for file upload/management operations.`;
+
+        } else if (errorMessage.includes('bucket') || errorMessage.includes('suprshop-assets')) {
+          userFriendlyError = `📦 Storage Bucket Issue
+
+There's an issue with the storage bucket configuration.
+
+**Checking bucket availability...**`;
+
+          // Try to get more specific bucket information
+          try {
+            console.log('🔄 FilePickerModal: Trying buckets endpoint for detailed error...');
+            const bucketsResponse = await apiClient.get('/supabase/storage/buckets');
+
+            if (bucketsResponse.success && bucketsResponse.buckets) {
+              console.log('📦 FilePickerModal: Found buckets:', bucketsResponse.buckets);
+              const assetsBucket = bucketsResponse.buckets.find(b => b.name === 'suprshop-assets');
+
+              if (assetsBucket) {
+                userFriendlyError = `📦 Bucket Found, Files Not Accessible
+
+The 'suprshop-assets' bucket exists but files cannot be listed.
+
+**Possible causes:**
+• Row Level Security (RLS) policies too restrictive
+• Service role key lacks storage permissions
+• Bucket permissions not configured for your user role
+
+**How to fix:**
+1. Check bucket policies in Supabase dashboard
+2. Ensure service role key has storage admin permissions
+3. Verify RLS policies allow file listing
+
+You can still try uploading new files.`;
+              } else {
+                const availableBuckets = bucketsResponse.buckets.map(b => b.name).join(', ');
+                userFriendlyError = `📦 Bucket Not Found
+
+The required 'suprshop-assets' storage bucket doesn't exist.
+
+**Available buckets:** ${availableBuckets || 'None'}
+
+**How to fix:**
+1. Go to your Supabase project dashboard
+2. Navigate to Storage
+3. Create a bucket named 'suprshop-assets'
+4. Set it to public if you want public file access
+5. Or ask an admin to create the bucket
+
+Alternatively, you can upload files which may auto-create the bucket.`;
+              }
             } else {
-              setFiles([]);
-              setError(`Storage bucket 'suprshop-assets' not found. Available buckets: ${bucketsResponse.buckets.map(b => b.name).join(', ')}. You can upload new images.`);
+              throw new Error('Cannot access buckets');
             }
-          } else {
-            throw new Error('Unable to access storage');
+          } catch (bucketsError) {
+            console.error('❌ FilePickerModal: Error with buckets fallback:', bucketsError);
+            userFriendlyError = `🚫 Storage System Unavailable
+
+Cannot access the Supabase storage system at all.
+
+**Possible causes:**
+• Supabase integration not configured
+• API keys missing or invalid
+• Network connectivity issues
+• Service temporarily unavailable
+
+**How to fix:**
+1. **Check Supabase Integration:** Admin → Integrations → Supabase
+2. **Verify API Keys:** Ensure project URL and service role key are set
+3. **Test Connection:** Use the "Test Connection" button
+4. **Check Network:** Ensure you can reach your Supabase project
+
+Contact your admin if the integration needs to be set up.`;
           }
-        } catch (bucketsError) {
-          console.error('❌ FilePickerModal: Error with buckets fallback:', bucketsError);
-          setFiles([]);
-          setError('✅ Connected, but unable to list files or buckets. Endpoint: /supabase/storage/list/suprshop-assets. You can upload new images.');
+        } else {
+          userFriendlyError = `❌ Storage Error
+
+An unexpected error occurred: ${errorMessage}
+
+**Try these steps:**
+1. Refresh the page and try again
+2. Check your internet connection
+3. Verify Supabase integration in Admin → Integrations
+4. Contact support if the issue persists
+
+**Technical details:**
+Endpoint: /supabase/storage/list/suprshop-assets
+Error: ${errorMessage}`;
         }
+
+        setFiles([]);
+        setError(userFriendlyError);
       }
     } catch (error) {
       console.error('❌ FilePickerModal: Error loading files:', error);
@@ -177,34 +283,18 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
           throw new Error(`Invalid file: ${file?.name || 'Unknown'}`);
         }
 
-        const formData = new FormData();
+        // Use apiClient's uploadFile method which handles auth and FormData properly
+        console.log('📤 FilePickerModal: Using apiClient.uploadFile with auth...');
 
-        // Make sure we're appending the actual file object
-        console.log('📤 FilePickerModal: Appending file to FormData:', file);
-        formData.append('file', file); // Use 'file' not 'files'
-        formData.append('folder', 'library');
-        formData.append('public', 'true');
-        formData.append('type', 'general');
+        const additionalData = {
+          folder: 'library',
+          public: 'true',
+          type: 'general'
+        };
 
-        // Debug FormData contents
-        console.log('📤 FilePickerModal: FormData contents:');
-        for (const [key, value] of formData.entries()) {
-          if (value && typeof value === 'object' && value.name && value.size !== undefined) {
-            console.log(`  ${key}: File(${value.name}, ${value.size}bytes, type: ${value.type})`);
-          } else {
-            console.log(`  ${key}:`, value);
-          }
-        }
+        console.log('📤 FilePickerModal: Upload data:', { file: file.name, ...additionalData });
 
-        // Additional validation - check if FormData has the file
-        const fileFromFormData = formData.get('file');
-        console.log('📤 FilePickerModal: File retrieved from FormData:', fileFromFormData);
-        if (!fileFromFormData) {
-          throw new Error('File not found in FormData after append');
-        }
-
-        // Don't set Content-Type header - let browser set it with boundary
-        const response = await apiClient.post('/supabase/storage/upload', formData);
+        const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
 
         if (response.success) {
           console.log('✅ FilePickerModal: Upload successful for', file.name, ':', response);
@@ -234,7 +324,92 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
     } catch (error) {
       console.error('❌ FilePickerModal: Upload error:', error);
-      setError(`Upload failed: ${error.message}`);
+
+      // Parse upload error and provide helpful feedback
+      const errorMessage = error.message || 'Unknown upload error';
+      let uploadErrorMessage = '';
+
+      if (errorMessage.includes('No file provided')) {
+        uploadErrorMessage = `📁 File Upload Issue
+
+The server didn't receive the file properly.
+
+**This usually happens when:**
+• File is too large (check size limits)
+• File type not supported
+• Network connection interrupted during upload
+
+**Try these steps:**
+1. Check file size (should be under 50MB)
+2. Use supported file types (JPG, PNG, GIF, WebP)
+3. Try a smaller file first
+4. Check your internet connection`;
+
+      } else if (errorMessage.includes('Storage operations require API keys')) {
+        uploadErrorMessage = `🔧 Storage Not Configured
+
+File uploads require Supabase storage to be properly configured.
+
+**Setup required:**
+1. Go to **Admin → Integrations → Supabase**
+2. Configure your Supabase project connection
+3. Add the service role key for storage permissions
+4. Test the connection
+
+**You need:**
+• Supabase project URL
+• Service role key (for uploads)
+
+Contact your admin to set up storage integration.`;
+
+      } else if (errorMessage.includes('Authentication') || errorMessage.includes('token') || errorMessage.includes('unauthorized')) {
+        uploadErrorMessage = `🔑 Authentication Issue
+
+You need to be logged in to upload files.
+
+**Try these steps:**
+1. Make sure you're logged into your account
+2. Refresh the page if session expired
+3. Check if you have upload permissions
+
+If you're logged in and still see this error, contact support.`;
+
+      } else if (errorMessage.includes('bucket') || errorMessage.includes('storage')) {
+        uploadErrorMessage = `📦 Storage Bucket Issue
+
+There's a problem with the storage bucket configuration.
+
+**Possible causes:**
+• Storage bucket doesn't exist
+• Bucket permissions not set correctly
+• Storage integration misconfigured
+
+**How to fix:**
+1. **Admin Setup:** Go to Admin → Integrations → Supabase
+2. **Bucket Setup:** Ensure 'suprshop-assets' bucket exists
+3. **Permissions:** Check bucket is configured for uploads
+
+Contact your admin if you can't access integration settings.`;
+
+      } else {
+        uploadErrorMessage = `❌ Upload Failed
+
+${errorMessage}
+
+**Try these steps:**
+1. Check your file is a valid image (JPG, PNG, GIF, WebP)
+2. Ensure file size is reasonable (under 50MB)
+3. Check your internet connection
+4. Try refreshing the page
+5. Contact support if problem persists
+
+**File requirements:**
+• Supported: JPG, PNG, GIF, WebP, SVG
+• Max size: 50MB
+• Valid file format`;
+      }
+
+      setError(uploadErrorMessage);
     } finally {
       setUploading(false);
     }
@@ -356,29 +531,74 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
             if (error) {
               console.log('❌ FilePickerModal: Showing error state:', error);
               return (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto text-orange-300 mb-4 flex items-center justify-center">
-                    <Upload className="w-8 h-8" />
-                  </div>
-                  <p className="text-orange-600 font-medium">{error}</p>
-                  <p className="text-sm text-gray-500 mt-2">Use the "Upload New" button above to add images</p>
-                  <div className="flex gap-3 justify-center mt-4">
-                    <Button
-                      onClick={loadFiles}
-                      variant="outline"
-                      size="sm"
-                      disabled={loading}
-                    >
-                      {loading ? 'Retrying...' : 'Try Again'}
-                    </Button>
-                    <Button
-                      onClick={() => document.getElementById('file-upload-picker').click()}
-                      className="bg-blue-600 hover:bg-blue-700"
-                      size="sm"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Image
-                    </Button>
+                <div className="py-8 px-4">
+                  <div className="max-w-lg mx-auto">
+                    {/* Error Icon */}
+                    <div className="w-16 h-16 mx-auto text-orange-400 mb-4 flex items-center justify-center">
+                      <Upload className="w-8 h-8" />
+                    </div>
+
+                    {/* Error Message with proper formatting */}
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                      <div className="text-left space-y-2">
+                        {error.split('\n').map((line, index) => {
+                          // Handle different line types
+                          if (line.startsWith('**') && line.endsWith('**')) {
+                            // Bold headers
+                            return (
+                              <h4 key={index} className="font-semibold text-orange-800 mt-3 first:mt-0">
+                                {line.replace(/\*\*/g, '')}
+                              </h4>
+                            );
+                          } else if (line.startsWith('•')) {
+                            // Bullet points
+                            return (
+                              <li key={index} className="text-orange-700 ml-4">
+                                {line.substring(1).trim()}
+                              </li>
+                            );
+                          } else if (line.match(/^\d+\./)) {
+                            // Numbered lists
+                            return (
+                              <li key={index} className="text-orange-700 ml-4">
+                                {line}
+                              </li>
+                            );
+                          } else if (line.trim() === '') {
+                            // Empty lines for spacing
+                            return <div key={index} className="h-2"></div>;
+                          } else {
+                            // Regular text
+                            return (
+                              <p key={index} className="text-orange-700">
+                                {line}
+                              </p>
+                            );
+                          }
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        onClick={loadFiles}
+                        variant="outline"
+                        size="sm"
+                        disabled={loading}
+                        className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                      >
+                        {loading ? 'Retrying...' : 'Try Again'}
+                      </Button>
+                      <Button
+                        onClick={() => document.getElementById('file-upload-picker').click()}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        size="sm"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Image
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );

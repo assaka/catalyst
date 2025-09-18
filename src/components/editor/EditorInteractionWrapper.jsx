@@ -36,7 +36,7 @@ const EditorInteractionWrapper = ({
       onClick={onClick}
       data-slot-id={dataSlotId}
       data-editable={dataEditable}
-      draggable={false}
+      draggable={draggable}
       onDragStart={onDragStart}
     >
       {children}
