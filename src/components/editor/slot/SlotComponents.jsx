@@ -978,28 +978,173 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 
 // EditorToolbar Component
 export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
-                    };
-                  }
+  return (
+    <div className="flex mb-3 justify-between">
+      <BorderToggleButton
+        showSlotBorders={showSlotBorders}
+        onToggle={onToggleBorders}
+      />
 
-                  const updatedConfig = { ...prevConfig, slots: updatedSlots };
+      <div className="flex gap-2 ml-3">
+        <Button
+          onClick={onResetLayout}
+          variant="outline"
+          size="sm"
+          className="hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Reset Layout
+        </Button>
 
-                  // Debounced auto-save - clear previous timeout and set new one
-                  if (saveTimeoutRef && saveTimeoutRef.current) {
-                    clearTimeout(saveTimeoutRef.current);
-                  }
-                  if (saveTimeoutRef && saveConfiguration) {
-                    saveTimeoutRef.current = setTimeout(() => {
-                      saveConfiguration(updatedConfig);
-                    }, 500); // Wait 0.5 seconds after resize stops
-                  }
+        <Button
+          onClick={onShowCode}
+          variant="outline"
+          size="sm"
+          className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors duration-200"
+        >
+          <Code className="w-4 h-4 mr-2" />
+          Code
+        </Button>
 
-                  return updatedConfig;
-                });
-              }}
-            >
-              <button
-                className={`${slot.parentClassName || ''} ${slot.className}`}
-                style={{
+        <Button
+          onClick={onAddSlot}
+          variant="outline"
+          size="sm"
+          className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors duration-200"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add New
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// AddSlotModal Component
+export function AddSlotModal({
+  isOpen,
+  onClose,
+  onCreateSlot,
+  onShowFilePicker
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Add New Slot</h3>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+          >
+            ×
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          <Button
+            onClick={() => {
+              onCreateSlot('container');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <Square className="w-5 h-5 mr-3 text-blue-600" />
+              <div>
+                <div className="font-medium">Container</div>
+                <div className="text-sm text-gray-500">A flexible container for other elements</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onCreateSlot('text', 'New text content');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-green-600 font-bold">T</span>
+              <div>
+                <div className="font-medium">Text</div>
+                <div className="text-sm text-gray-500">Add text content</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onCreateSlot('button', 'Click me');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-blue-600 font-bold">B</span>
+              <div>
+                <div className="font-medium">Button</div>
+                <div className="text-sm text-gray-500">Add a clickable button</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onCreateSlot('link', 'Link text');
+              onClose();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-indigo-600 font-bold">🔗</span>
+              <div>
+                <div className="font-medium">Link</div>
+                <div className="text-sm text-gray-500">Add a clickable link</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => {
+              onClose();
+              onShowFilePicker();
+            }}
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-purple-600">🖼️</span>
+              <div>
+                <div className="font-medium">Image</div>
+                <div className="text-sm text-gray-500">Add an image from File Library</div>
+              </div>
+            </div>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ResetLayoutModal Component
+export function ResetLayoutModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isResetting = false
+}) {
+  if (!isOpen) return null;
+
+  return (
                   ...slot.styles,
                   cursor: 'pointer',
                   minWidth: 'auto',
