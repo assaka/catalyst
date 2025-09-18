@@ -1006,6 +1006,8 @@ export function HierarchicalSlotRenderer({
               <ResizeWrapper
               minWidth={50}
               minHeight={50}
+              initialWidth={slot.styles?.width}
+              initialHeight={slot.styles?.height}
               onResize={(newSize) => {
                 setPageConfig(prevConfig => {
                   const updatedSlots = { ...prevConfig?.slots };
@@ -1045,11 +1047,10 @@ export function HierarchicalSlotRenderer({
                 data-slot-id={slot.id}
                 data-editable="true"
                 style={{
-                  ...slot.styles,
                   cursor: 'pointer',
                   display: 'inline-block',
-                  width: '100%',
-                  height: '100%'
+                  width: slot.styles?.width || '100%',
+                  height: slot.styles?.height || '100%'
                 }}
               >
                 {slot.content ? (
@@ -1142,8 +1143,8 @@ export function HierarchicalSlotRenderer({
               style={{
                 ...slot.styles,
                 display: 'inline-block',
-                width: '100%',
-                height: '100%'
+                width: slot.styles?.width || '100%',
+                height: slot.styles?.height || '100%'
               }}
             >
               {slot.content ? (
