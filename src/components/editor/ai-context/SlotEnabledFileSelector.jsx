@@ -138,11 +138,6 @@ const SlotEnabledFileSelector = ({
                   file.pageType
                 );
                 file.hasUnpublishedChanges = draftResponse?.data?.has_unpublished_changes || false;
-                console.log(`📊 ${file.pageType} unpublished changes:`, {
-                  hasConfig,
-                  hasUnpublishedChanges: file.hasUnpublishedChanges,
-                  draftData: draftResponse?.data
-                });
               } catch (error) {
                 console.warn(`Could not check unpublished changes for ${file.pageType}:`, error);
                 file.hasUnpublishedChanges = false;
@@ -181,7 +176,6 @@ const SlotEnabledFileSelector = ({
     setLoadingDraft(file.id);
 
     try {
-      console.log('🎯 Handling slot-enabled file click:', file.name);
 
       // Ensure draft exists for this file
       const draftResult = await slotConfigurationService.ensureDraftExists(
@@ -189,14 +183,6 @@ const SlotEnabledFileSelector = ({
         file.pageType,
         file.name
       );
-
-      console.log('📋 Draft check result:', {
-        exists: draftResult.exists,
-        created: draftResult.created,
-        draftId: draftResult.draft?.id,
-        fileName: file.name,
-        pageType: file.pageType
-      });
 
       // Create enhanced file object with slot configuration
       const fileWithDraft = {
@@ -257,8 +243,6 @@ const SlotEnabledFileSelector = ({
         pageType
       );
       const hasUnpublishedChanges = draftResponse?.data?.has_unpublished_changes || false;
-
-      console.log(`🔄 Refreshing ${pageType} status:`, { hasUnpublishedChanges });
 
       // Update the specific file's status
       setSlotFiles(prevFiles =>
@@ -330,7 +314,7 @@ const SlotEnabledFileSelector = ({
             return (
               <div
                 key={file.id}
-                className={`flex items-center space-x-3 p-3 rounded-lg border transition-all hover:bg-muted/50 cursor-pointer ${
+                className={`flex justify-between items-center space-x-3 p-3 rounded-lg border transition-all hover:bg-muted/50 cursor-pointer ${
                   isCurrentFile ? 'bg-primary/10 border-primary' : 'border-border'
                 }`}
                 onClick={() => handleFileClick(file)}
@@ -338,11 +322,11 @@ const SlotEnabledFileSelector = ({
                 {/* File Icon */}
                 <div className="flex-shrink-0">
                   <IconComponent className={`w-5 h-5 ${file.color}`} />
+                  <span className="font-medium text-sm">{file.name}</span>
                 </div>
 
                 {/* File Info */}
                 <div className="flex justify-between">
-                  <span className="font-medium text-sm">{file.name}</span>
                   {/* Unpublished Changes Indicator */}
                   {file.hasUnpublishedChanges && (
                       <Dot className="w-12 h-12 text-orange-600" title="Dot" />
