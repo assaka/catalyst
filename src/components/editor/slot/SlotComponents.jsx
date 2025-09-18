@@ -471,7 +471,7 @@ export function GridColumn({
         ['container', 'grid', 'flex'].includes(slot?.type)
           ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
           : ''
-      } ${isNested ? 'm-1' : ''}`}
+      }`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       draggable={mode === 'edit' && !isOverResizeHandle}
