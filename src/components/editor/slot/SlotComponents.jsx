@@ -587,6 +587,34 @@ export function HierarchicalSlotRenderer({
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
+    // For nested containers that are direct children, render them without GridColumn wrapper
+    if (['container', 'grid', 'flex'].includes(slot?.type) && slot?.parentId && parentId) {
+      return (
+        <div key={slot.id} className={slot.className || ''}>
+          {/* Render child slots */}
+          <HierarchicalSlotRenderer
+            slots={slots}
+            parentId={slot.id}
+            mode={mode}
+            viewMode={viewMode}
+            showBorders={showBorders}
+            currentDragInfo={currentDragInfo}
+            setCurrentDragInfo={setCurrentDragInfo}
+            onElementClick={onElementClick}
+            onGridResize={onGridResize}
+            onSlotHeightResize={onSlotHeightResize}
+            onSlotDrop={onSlotDrop}
+            onResizeStart={onResizeStart}
+            onResizeEnd={onResizeEnd}
+            selectedElementId={selectedElementId}
+            setPageConfig={setPageConfig}
+            saveConfiguration={saveConfiguration}
+            saveTimeoutRef={saveTimeoutRef}
+          />
+        </div>
+      );
+    }
+
     return (
       <GridColumn
         key={slot.id}
