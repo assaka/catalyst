@@ -18,11 +18,7 @@ import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
-import useDraftConfiguration from '@/hooks/useDraftConfiguration';
 import {
-  GridResizeHandle,
-  GridColumn,
-  EditableElement,
   HierarchicalSlotRenderer,
   EditorToolbar,
   AddSlotModal,
@@ -31,7 +27,9 @@ import {
   EditModeControls,
   CodeModal,
   PublishPanelToggle,
-  TimestampsRow
+  TimestampsRow,
+  ViewportModeSelector,
+  ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
@@ -73,6 +71,7 @@ const CartSlotsEditor = ({
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [showSlotBorders, setShowSlotBorders] = useState(true);
   const [localSaveStatus, setLocalSaveStatus] = useState('');
+  const [currentViewport, setCurrentViewport] = useState('desktop');
   const [isResizing, setIsResizing] = useState(false);
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
@@ -575,6 +574,13 @@ const CartSlotsEditor = ({
                 </button>
               </div>
 
+              {/* Viewport Mode Selector */}
+              <ViewportModeSelector
+                currentViewport={currentViewport}
+                onViewportChange={setCurrentViewport}
+                className="ml-4"
+              />
+
               {/* Edit mode controls */}
               {mode === 'edit' && (
                 <EditModeControls
@@ -611,7 +617,11 @@ const CartSlotsEditor = ({
             formatTimeAgo={formatTimeAgo}
           />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          <ResponsiveContainer
+            viewport={currentViewport}
+            className="bg-white"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <EditorToolbar
               showSlotBorders={showSlotBorders}
@@ -657,7 +667,8 @@ const CartSlotsEditor = ({
             <CmsBlockRenderer position="cart_above_items" />
 
             <CmsBlockRenderer position="cart_below_items" />
-          </div>
+            </div>
+          </ResponsiveContainer>
         </div>
       </div>
 

@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo, Rocket, Trash2 } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Save, Code, X, Check, Rocket, Trash2, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
@@ -1713,5 +1713,106 @@ export function CodeModal({
       </div>
     </div>,
     document.body
+  );
+}
+
+// ViewportModeSelector Component
+export function ViewportModeSelector({
+  currentViewport = 'desktop',
+  onViewportChange,
+  className = ''
+}) {
+  const viewportModes = [
+    {
+      key: 'mobile',
+      label: 'Mobile',
+      icon: Smartphone,
+      width: '375px',
+      description: 'Mobile view (375px)'
+    },
+    {
+      key: 'tablet',
+      label: 'Tablet',
+      icon: Tablet,
+      width: '768px',
+      description: 'Tablet view (768px)'
+    },
+    {
+      key: 'desktop',
+      label: 'Desktop',
+      icon: Monitor,
+      width: '100%',
+      description: 'Desktop view (100%)'
+    }
+  ];
+
+  return (
+    <div className={`flex bg-gray-100 rounded-lg p-1 ${className}`}>
+      {viewportModes.map((mode) => {
+        const Icon = mode.icon;
+        return (
+          <button
+            key={mode.key}
+            onClick={() => onViewportChange(mode.key)}
+            className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+              currentViewport === mode.key
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+            }`}
+            title={mode.description}
+          >
+            <Icon className="w-4 h-4 mr-1.5" />
+            {mode.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ResponsiveContainer Component - Wraps content with responsive viewport sizing
+export function ResponsiveContainer({
+  viewport = 'desktop',
+  children,
+  className = ''
+}) {
+  const getViewportStyles = () => {
+    switch (viewport) {
+      case 'mobile':
+        return {
+          width: '375px',
+          minHeight: '667px',
+          margin: '0 auto',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        };
+      case 'tablet':
+        return {
+          width: '768px',
+          minHeight: '1024px',
+          margin: '0 auto',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        };
+      case 'desktop':
+      default:
+        return {
+          width: '100%',
+          minHeight: 'auto'
+        };
+    }
+  };
+
+  return (
+    <div
+      className={`responsive-container ${className}`}
+      style={getViewportStyles()}
+    >
+      {children}
+    </div>
   );
 }
