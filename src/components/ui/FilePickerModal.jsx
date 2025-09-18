@@ -139,15 +139,20 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         if (filesResponse.success && filesResponse.files) {
           console.log('📂 FilePickerModal: Found files:', filesResponse.files);
 
-          // Convert files to our format
-          const formattedFiles = filesResponse.files.map(file => ({
-            id: file.id || `file-${file.name}`,
-            name: file.name,
-            url: `https://jqqfjfoigtwdpnlicjmh.supabase.co/storage/v1/object/public/suprshop-assets/${file.name}`,
-            mimeType: file.metadata?.mimetype || 'application/octet-stream',
-            size: file.metadata?.size || 0,
-            lastModified: new Date(file.updated_at || file.created_at).getTime()
-          }));
+          // Convert files to our format, using URLs from backend
+          const formattedFiles = filesResponse.files.map(file => {
+            const imageUrl = file.url || file.publicUrl || file.name;
+            console.log(`🖼️ FilePickerModal: Processing file ${file.name}, URL: ${imageUrl}`);
+
+            return {
+              id: file.id || `file-${file.name}`,
+              name: file.name,
+              url: imageUrl, // Use backend-generated URLs
+              mimeType: file.metadata?.mimetype || file.mimeType || 'application/octet-stream',
+              size: file.metadata?.size || file.size || 0,
+              lastModified: new Date(file.updated_at || file.created_at).getTime()
+            };
+          });
 
           // Filter to only show image files if fileType is 'image'
           const filteredFiles = fileType === 'image'
