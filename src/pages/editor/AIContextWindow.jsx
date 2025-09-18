@@ -185,6 +185,7 @@ const AIContextWindowPage = () => {
   const [astDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [setPreviewMode] = useState('hybrid'); // Track preview mode: 'hybrid' (Customize tab is default)
+  const [isFileLoading, setIsFileLoading] = useState(false);
   
   // Slot configuration publishing state
   // Version history functionality integrated into UnifiedSlotEditor
