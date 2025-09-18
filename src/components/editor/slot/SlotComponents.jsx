@@ -615,6 +615,74 @@ export function HierarchicalSlotRenderer({
       );
     }
 
+    // For nested individual slots (non-containers), render with simple wrapper
+    if (slot?.parentId && parentId) {
+      return (
+        <div key={slot.id} className={`slot-wrapper relative`}>
+          <GridColumn
+            colSpan={colSpan}
+            rowSpan={rowSpan}
+            height={height}
+            slotId={slot.id}
+            slot={slot}
+            currentDragInfo={currentDragInfo}
+            setCurrentDragInfo={setCurrentDragInfo}
+            onGridResize={onGridResize}
+            onSlotHeightResize={onSlotHeightResize}
+            onSlotDrop={onSlotDrop}
+            onResizeStart={onResizeStart}
+            onResizeEnd={onResizeEnd}
+            mode={mode}
+            showBorders={showBorders}
+            isNested={true}
+          >
+            {slot.type === 'text' && (
+              <span
+                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+                style={slot.styles || {}}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+                data-editable="true"
+                dangerouslySetInnerHTML={{
+                  __html: String(slot.content || `Text: ${slot.id}`)
+                }}
+              />
+            )}
+            {slot.type === 'image' && (
+              <img
+                src={slot.content}
+                alt={slot.metadata?.alt || 'Slot image'}
+                className={slot.className || ''}
+                style={slot.styles || {}}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+              />
+            )}
+            {slot.type === 'button' && (
+              <button
+                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+                style={slot.styles || {}}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+              >
+                {slot.content || `Button: ${slot.id}`}
+              </button>
+            )}
+          </GridColumn>
+        </div>
+      );
+    }
+
     return (
       <GridColumn
         key={slot.id}
