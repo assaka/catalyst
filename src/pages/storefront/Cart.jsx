@@ -111,13 +111,18 @@ export default function Cart() {
     
     // State for cart layout configuration
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
-    
+    const [configLoaded, setConfigLoaded] = useState(false);
+
     // Load cart layout configuration directly
     useEffect(() => {
         console.log('🔄 loadCartLayoutConfig useEffect triggered, store:', store);
         const loadCartLayoutConfig = async () => {
             if (!store?.id) {
                 console.log('❌ No store.id found, skipping slot config loading');
+                return;
+            }
+            if (configLoaded && cartLayoutConfig) {
+                console.log('✅ Configuration already loaded, skipping reload');
                 return;
             }
             console.log('✅ Store ID found, loading published slot configuration for store:', store.id);
@@ -146,6 +151,7 @@ export default function Cart() {
                         console.log('🔧 Published config slots:', Object.keys(publishedConfig.configuration.slots || {}));
                         console.log('🔧 Published config metadata:', publishedConfig.configuration.metadata);
                         setCartLayoutConfig(publishedConfig.configuration);
+                        setConfigLoaded(true);
                         console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
                         console.log('🔍 Empty cart title config:', publishedConfig.configuration['emptyCart.title']);
                     } else {
