@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Image, Square, Settings, Plus, Loader2, Upload, Save, Code, X, Copy, Check, Undo, Redo, Rocket, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -569,9 +570,9 @@ export function GridColumn({
       )}
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96 relative z-[10000]">
+      {showDeleteModal && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" style={{ zIndex: 99999 }}>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96 relative z-[10000]" style={{ zIndex: 100000 }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-red-600">Delete Slot</h3>
               <Button
@@ -624,7 +625,8 @@ export function GridColumn({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
