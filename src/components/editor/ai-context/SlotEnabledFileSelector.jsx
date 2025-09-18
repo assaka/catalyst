@@ -301,20 +301,8 @@ const SlotEnabledFileSelector = ({
           </Button>
         </div>
       </div>
-
-
-      <div className="px-3 py-2">
-        <div className="flex justify-between">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 border-b">
-            Editable Pages
-          </h3>
-          <Button variant="ghost" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="flex items-center justify-between text-xs">
-
-        </div>
+      <div className="text-xs px-3 py-2">
+        Select to customize
       </div>
 
       {/* File List */}
