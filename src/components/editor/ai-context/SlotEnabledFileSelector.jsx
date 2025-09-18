@@ -288,10 +288,10 @@ const SlotEnabledFileSelector = ({
   }
 
   return (
-    <Card className={`h-full flex flex-col ${className}`}>
+    <div className={`h-full flex flex-col ${className}`}>
       {/* Header */}
 
-      <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 p-3">
+      <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 px-3 py-2">
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
           Editable Pages
         </h3>
@@ -342,7 +342,7 @@ const SlotEnabledFileSelector = ({
           })}
         </div>
       </ScrollArea>
-    </Card>
+    </div>
   );
 };
 

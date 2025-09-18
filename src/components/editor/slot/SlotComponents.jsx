@@ -1263,45 +1263,18 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
+export function EditorToolbar({ onAddSlot }) {
   return (
-    <div className="flex mb-3 justify-between">
-      <BorderToggleButton
-        showSlotBorders={showSlotBorders}
-        onToggle={onToggleBorders}
-      />
-
-      <div className="flex gap-2 ml-3">
-        <Button
-          onClick={onResetLayout}
-          variant="outline"
-          size="sm"
-          className="hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Reset Layout
-        </Button>
-
-        <Button
-          onClick={onShowCode}
-          variant="outline"
-          size="sm"
-          className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors duration-200"
-        >
-          <Code className="w-4 h-4 mr-2" />
-          Code
-        </Button>
-
-        <Button
-          onClick={onAddSlot}
-          variant="outline"
-          size="sm"
-          className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors duration-200"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add New
-        </Button>
-      </div>
+    <div className="flex mb-3 justify-end">
+      <Button
+        onClick={onAddSlot}
+        variant="outline"
+        size="sm"
+        className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors duration-200"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Add New
+      </Button>
     </div>
   );
 }
@@ -1514,7 +1487,13 @@ export function FilePickerModalWrapper({
 }
 
 // TimestampsRow Component
-export function TimestampsRow({ draftConfig, latestPublished, formatTimeAgo }) {
+export function TimestampsRow({
+  draftConfig,
+  latestPublished,
+  formatTimeAgo,
+  currentViewport,
+  onViewportChange
+}) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
       <div className="flex justify-between items-center text-xs text-gray-500 pb-6">
@@ -1523,6 +1502,18 @@ export function TimestampsRow({ draftConfig, latestPublished, formatTimeAgo }) {
             <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
           )}
         </div>
+
+        {/* Centered Viewport Mode Selector */}
+        <div className="flex items-center">
+          {currentViewport && onViewportChange && (
+            <ViewportModeSelector
+              currentViewport={currentViewport}
+              onViewportChange={onViewportChange}
+              className=""
+            />
+          )}
+        </div>
+
         <div className="flex items-center">
           {latestPublished?.published_at && (
             <span>Last published: {formatTimeAgo(latestPublished.published_at)}</span>
