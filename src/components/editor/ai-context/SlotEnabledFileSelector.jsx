@@ -296,7 +296,7 @@ const SlotEnabledFileSelector = ({
           Editable Pages
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleRefresh}>
+          <Button size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>

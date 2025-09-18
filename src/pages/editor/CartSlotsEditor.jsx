@@ -22,8 +22,10 @@ import {
   HierarchicalSlotRenderer,
   EditorToolbar,
   AddSlotModal,
+  ResetLayoutModal,
   FilePickerModalWrapper,
   EditModeControls,
+  CodeModal,
   PublishPanelToggle,
   TimestampsRow,
   ResponsiveContainer
@@ -72,6 +74,8 @@ const CartSlotsEditor = ({
   const [isResizing, setIsResizing] = useState(false);
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const [showPublishPanel, setShowPublishPanel] = useState(false);
@@ -614,6 +618,10 @@ const CartSlotsEditor = ({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <EditorToolbar
+              showSlotBorders={showSlotBorders}
+              onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+              onResetLayout={() => setShowResetModal(true)}
+              onShowCode={() => setShowCodeModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
             />
 
@@ -696,6 +704,14 @@ const CartSlotsEditor = ({
         fileType="image"
       />
 
+      {/* Reset Layout Confirmation Modal */}
+      <ResetLayoutModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleResetLayout}
+        isResetting={localSaveStatus === 'saving'}
+      />
+
       {/* Floating Publish Panel */}
       {showPublishPanel && (
         <div ref={publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
@@ -710,6 +726,22 @@ const CartSlotsEditor = ({
         </div>
       )}
 
+      {/* Code Modal */}
+      <CodeModal
+        isOpen={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+        configuration={cartLayoutConfig}
+        localSaveStatus={localSaveStatus}
+        onSave={async (newConfiguration) => {
+          console.log('🎯 CodeModal onSave called with configuration:', newConfiguration);
+          setCartLayoutConfig(newConfiguration);
+          setHasUnsavedChanges(true);
+          console.log('🚀 Calling saveConfiguration...');
+          await saveConfiguration(newConfiguration);
+          console.log('✅ Save completed, closing modal');
+          setShowCodeModal(false);
+        }}
+      />
     </div>
   );
 };
