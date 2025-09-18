@@ -12,7 +12,7 @@ import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
-import Editor from '@monaco-editor/react';
+import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 
 // EditModeControls Component
 export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration, onPublish, hasChanges = false }) {
@@ -1565,7 +1565,7 @@ export function PublishPanelToggle({
   );
 }
 
-// CodeModal Component - Simple Monaco Editor with Undo/Redo
+// CodeModal Component - Using advanced CodeEditor with split review
 export function CodeModal({
   isOpen,
   onClose,
@@ -1577,12 +1577,6 @@ export function CodeModal({
   const [originalValue, setOriginalValue] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
   const [jsonError, setJsonError] = useState(null);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const [splitView, setSplitView] = useState(false);
-  const editorRef = useRef(null);
-  const originalEditorRef = useRef(null);
-  const monacoRef = useRef(null);
 
   // Initialize editor value when modal opens
   useEffect(() => {
@@ -1595,57 +1589,7 @@ export function CodeModal({
     }
   }, [isOpen, configuration]);
 
-  // Synchronized scrolling for split view
-  useEffect(() => {
-    if (splitView && editorRef.current && originalEditorRef.current) {
-      const editor = editorRef.current;
-      const originalEditor = originalEditorRef.current;
-
-      const syncScroll = (sourceEditor, targetEditor) => {
-        return sourceEditor.onDidScrollChange((e) => {
-          if (targetEditor) {
-            targetEditor.setScrollTop(e.scrollTop);
-            targetEditor.setScrollLeft(e.scrollLeft);
-          }
-        });
-      };
-
-      const disposable1 = syncScroll(editor, originalEditor);
-      const disposable2 = syncScroll(originalEditor, editor);
-
-      return () => {
-        disposable1?.dispose();
-        disposable2?.dispose();
-      };
-    }
-  }, [splitView, editorRef.current, originalEditorRef.current]);
-
   if (!isOpen) return null;
-
-  const handleEditorMount = (editor, monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-
-    // Set up undo/redo state tracking
-    const updateUndoRedoState = () => {
-      const model = editor.getModel();
-      if (model) {
-        setCanUndo(model.canUndo());
-        setCanRedo(model.canRedo());
-      }
-    };
-
-    // Update states on content change
-    editor.onDidChangeModelContent(() => {
-      updateUndoRedoState();
-    });
-
-    // Initial state
-    updateUndoRedoState();
-
-    // Focus the editor
-    editor.focus();
-  };
 
   const handleEditorChange = (value) => {
     setEditorValue(value || '');
@@ -1657,24 +1601,6 @@ export function CodeModal({
       setJsonError(null);
     } catch (err) {
       setJsonError(err.message);
-    }
-  };
-
-  const handleUndo = () => {
-    if (editorRef.current) {
-      editorRef.current.trigger('keyboard', 'undo');
-    }
-  };
-
-  const handleRedo = () => {
-    if (editorRef.current) {
-      editorRef.current.trigger('keyboard', 'redo');
-    }
-  };
-
-  const handleFormat = () => {
-    if (editorRef.current && !jsonError) {
-      editorRef.current.trigger('keyboard', 'editor.action.formatDocument');
     }
   };
 
@@ -1692,18 +1618,9 @@ export function CodeModal({
     }
   };
 
-  const handleRevert = () => {
-    setEditorValue(originalValue);
-    setHasChanges(false);
-    setJsonError(null);
-    if (editorRef.current) {
-      editorRef.current.setValue(originalValue);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
+  return createPortal(
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[95vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -1734,57 +1651,6 @@ export function CodeModal({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Undo/Redo buttons */}
-            <Button
-              onClick={handleUndo}
-              variant="ghost"
-              size="sm"
-              disabled={!canUndo}
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo className="w-4 h-4" />
-            </Button>
-            <Button
-              onClick={handleRedo}
-              variant="ghost"
-              size="sm"
-              disabled={!canRedo}
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo className="w-4 h-4" />
-            </Button>
-
-            <div className="w-px h-6 bg-gray-300 mx-1" />
-
-            <Button
-              onClick={() => setSplitView(!splitView)}
-              variant={splitView ? "default" : "outline"}
-              size="sm"
-              title="Toggle split view comparison"
-            >
-              <Copy className="w-3 h-3 mr-1" />
-              {splitView ? 'Single' : 'Split'}
-            </Button>
-            <Button
-              onClick={handleFormat}
-              variant="outline"
-              size="sm"
-              disabled={!!jsonError}
-              title="Format JSON (Shift+Alt+F)"
-            >
-              <Code className="w-3 h-3 mr-1" />
-              Format
-            </Button>
-            <Button
-              onClick={handleRevert}
-              variant="outline"
-              size="sm"
-              disabled={!hasChanges}
-              title="Revert all changes"
-            >
-              <X className="w-3 h-3 mr-1" />
-              Revert
-            </Button>
             <Button
               onClick={handleSave}
               variant={hasChanges ? "default" : "outline"}
@@ -1823,126 +1689,29 @@ export function CodeModal({
           </div>
         )}
 
-        {/* Monaco Editor */}
+        {/* CodeEditor with Split Review */}
         <div className="flex-1 overflow-hidden">
-          {splitView ? (
-            <div className="flex h-full">
-              {/* Original/Base Configuration */}
-              <div className="flex-1 border-r border-gray-200">
-                <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 text-sm font-medium text-gray-700">
-                  Original Configuration
-                </div>
-                <Editor
-                  height="calc(100% - 40px)"
-                  defaultLanguage="json"
-                  value={originalValue}
-                  theme="vs-light"
-                  onMount={(editor, monaco) => {
-                    originalEditorRef.current = editor;
-                  }}
-                  options={{
-                    readOnly: true,
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    wordWrap: 'on',
-                    lineNumbers: 'on',
-                    renderLineHighlight: 'none',
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    tabSize: 2,
-                    insertSpaces: true,
-                    folding: true,
-                    foldingStrategy: 'indentation',
-                    showFoldingControls: 'always',
-                    bracketPairColorization: {
-                      enabled: true
-                    },
-                    guides: {
-                      indentation: true,
-                      bracketPairs: true
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Current/Modified Configuration */}
-              <div className="flex-1">
-                <div className="bg-blue-50 px-3 py-2 border-b border-gray-200 text-sm font-medium text-blue-700">
-                  Current Configuration {hasChanges && <span className="text-orange-600">• Modified</span>}
-                </div>
-                <Editor
-                  height="calc(100% - 40px)"
-                  defaultLanguage="json"
-                  value={editorValue}
-                  onChange={handleEditorChange}
-                  onMount={handleEditorMount}
-                  theme="vs-light"
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    wordWrap: 'on',
-                    lineNumbers: 'on',
-                    renderLineHighlight: 'all',
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    formatOnPaste: true,
-                    formatOnType: true,
-                    tabSize: 2,
-                    insertSpaces: true,
-                    folding: true,
-                    foldingStrategy: 'indentation',
-                    showFoldingControls: 'always',
-                    bracketPairColorization: {
-                      enabled: true
-                    },
-                    guides: {
-                      indentation: true,
-                      bracketPairs: true
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          ) : (
-            <Editor
-              height="100%"
-              defaultLanguage="json"
-              value={editorValue}
-              onChange={handleEditorChange}
-              onMount={handleEditorMount}
-              theme="vs-light"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                wordWrap: 'on',
-                lineNumbers: 'on',
-                renderLineHighlight: 'all',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                formatOnPaste: true,
-                formatOnType: true,
-                tabSize: 2,
-                insertSpaces: true,
-                folding: true,
-                foldingStrategy: 'indentation',
-                showFoldingControls: 'always',
-                bracketPairColorization: {
-                  enabled: true
-                },
-                guides: {
-                  indentation: true,
-                  bracketPairs: true
-                }
-              }}
-            />
-          )}
+          <CodeEditor
+            value={editorValue}
+            onChange={handleEditorChange}
+            language="json"
+            fileName="configuration.json"
+            originalCode={originalValue}
+            enableDiffDetection={true}
+            className="h-full"
+            onManualEdit={(newCode, oldCode) => {
+              // Handle manual edits if needed
+              console.log('Manual edit detected in CodeModal');
+            }}
+          />
         </div>
 
         {/* Footer */}
         <div className="px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex-shrink-0">
-          <span>Keyboard shortcuts: Ctrl+Z (Undo) • Ctrl+Y (Redo) • Ctrl+F (Find) • Shift+Alt+F (Format)</span>
+          <span>Use the toolbar above to switch between Editor, Split View, Diff View, and Preview modes</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
