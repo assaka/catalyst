@@ -11,7 +11,8 @@ import {
   ShoppingCart,
   Package,
   Loader2,
-  Rocket
+  Rocket,
+  Eye
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
@@ -79,6 +80,7 @@ const CartSlotsEditor = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const [showPublishPanel, setShowPublishPanel] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [draftConfig, setDraftConfig] = useState(null);
   const [latestPublished, setLatestPublished] = useState(null);
   const lastResizeEndTime = useRef(0);
@@ -536,6 +538,15 @@ const CartSlotsEditor = ({
     }
   }, [viewMode, cartLayoutConfig]);
 
+  // Close sidebar and panels when entering preview mode
+  useEffect(() => {
+    if (showPreview) {
+      setIsSidebarVisible(false);
+      setSelectedElement(null);
+      setShowPublishPanel(false);
+    }
+  }, [showPreview]);
+
   // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
@@ -585,16 +596,29 @@ const CartSlotsEditor = ({
               )}
             </div>
 
-            {/* Publish Panel Toggle - Far Right */}
-            <PublishPanelToggle
-              hasUnsavedChanges={hasUnsavedChanges}
-              showPublishPanel={showPublishPanel}
-              onTogglePublishPanel={setShowPublishPanel}
-              onClosePublishPanel={() => {
-                setIsSidebarVisible(false);
-                setSelectedElement(null);
-              }}
-            />
+            {/* Preview and Publish Buttons - Far Right */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowPreview(!showPreview)}
+                variant={showPreview ? "default" : "outline"}
+                size="sm"
+                className="flex items-center gap-1.5"
+                title={showPreview ? "Exit Preview" : "Preview without editing tools"}
+              >
+                <Eye className="w-4 h-4" />
+                {showPreview ? "Exit Preview" : "Preview"}
+              </Button>
+
+              <PublishPanelToggle
+                hasUnsavedChanges={hasUnsavedChanges}
+                showPublishPanel={showPublishPanel}
+                onTogglePublishPanel={setShowPublishPanel}
+                onClosePublishPanel={() => {
+                  setIsSidebarVisible(false);
+                  setSelectedElement(null);
+                }}
+              />
+            </div>
           </div>
         </div>
         {/* Cart Layout - Hierarchical Structure */}
@@ -611,15 +635,17 @@ const CartSlotsEditor = ({
             onViewportChange={setCurrentViewport}
           />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <EditorToolbar
-              showSlotBorders={showSlotBorders}
-              onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
-              onResetLayout={() => setShowResetModal(true)}
-              onShowCode={() => setShowCodeModal(true)}
-              onAddSlot={() => setShowAddSlotModal(true)}
-            />
-          </div>
+          {!showPreview && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <EditorToolbar
+                showSlotBorders={showSlotBorders}
+                onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+                onResetLayout={() => setShowResetModal(true)}
+                onShowCode={() => setShowCodeModal(true)}
+                onAddSlot={() => setShowAddSlotModal(true)}
+              />
+            </div>
+          )}
 
           <ResponsiveContainer
             viewport={currentViewport}
@@ -632,23 +658,23 @@ const CartSlotsEditor = ({
                 <HierarchicalSlotRenderer
                   slots={cartLayoutConfig.slots}
                   parentId={null}
-                  mode={mode}
+                  mode={showPreview ? 'view' : mode}
                   viewMode={viewMode}
-                  showBorders={showSlotBorders}
+                  showBorders={showPreview ? false : showSlotBorders}
                   currentDragInfo={currentDragInfo}
                   setCurrentDragInfo={setCurrentDragInfo}
-                  onElementClick={handleElementClick}
-                  onGridResize={handleGridResize}
-                  onSlotHeightResize={handleSlotHeightResize}
-                  onSlotDrop={handleSlotDrop}
-                  onSlotDelete={handleSlotDelete}
-                  onResizeStart={() => setIsResizing(true)}
-                  onResizeEnd={() => {
+                  onElementClick={showPreview ? null : handleElementClick}
+                  onGridResize={showPreview ? null : handleGridResize}
+                  onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
+                  onSlotDrop={showPreview ? null : handleSlotDrop}
+                  onSlotDelete={showPreview ? null : handleSlotDelete}
+                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                  onResizeEnd={showPreview ? null : () => {
                     lastResizeEndTime.current = Date.now();
                     // Add a small delay to prevent click events from firing immediately after resize
                     setTimeout(() => setIsResizing(false), 100);
                   }}
-                  selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
+                  selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
                   setPageConfig={setCartLayoutConfig}
                   saveConfiguration={saveConfiguration}
                   saveTimeoutRef={saveTimeoutRef}
@@ -668,8 +694,8 @@ const CartSlotsEditor = ({
         </div>
       </div>
 
-      {/* EditorSidebar - only show in edit mode */}
-      {mode === 'edit' && isSidebarVisible && selectedElement && (
+      {/* EditorSidebar - only show in edit mode and not in preview */}
+      {mode === 'edit' && !showPreview && isSidebarVisible && selectedElement && (
         <EditorSidebar
           selectedElement={selectedElement}
           slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
