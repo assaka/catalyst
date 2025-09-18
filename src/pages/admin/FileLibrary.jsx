@@ -48,24 +48,18 @@ const FileLibrary = () => {
       console.log('🔍 FileLibrary: Checking storage connection...');
       const response = await apiClient.get('/supabase/storage/stats');
 
+      console.log('🔍 FileLibrary: Storage stats response:', response);
+
       if (response.success) {
-        const currentProvider = response.data.current;
-        const providerName = currentProvider?.name || 'Unknown Provider';
-        
-        setStorageProvider(providerName);
-        
-        // Check if the current provider is available
-        const isAvailable = response.data.providers[currentProvider?.provider]?.available;
-        
-        if (isAvailable) {
-          setStorageConnected(true);
-          setStorageError(null);
-        } else {
-          setStorageConnected(false);
-          setStorageError(`${providerName} is not properly configured or connected`);
-        }
-        
-        return currentProvider?.provider;
+        // Since we're using Supabase storage, set it directly
+        setStorageProvider('Supabase');
+        setStorageConnected(true);
+        setStorageError(null);
+
+        return 'supabase';
+      } else {
+        setStorageConnected(false);
+        setStorageError('Storage connection failed');
       }
     } catch (error) {
       console.error('Error checking storage provider:', error);
@@ -172,58 +166,73 @@ const FileLibrary = () => {
     setUploading(true);
     
     try {
-      // Upload files using the provider-agnostic storage API
-      if (filesArray.length === 1) {
-        // Single file upload
-        const response = await apiClient.uploadFile('/storage/upload', filesArray[0], {
+      // Upload files using Supabase storage API (same as FilePickerModal)
+      const uploadedFiles = [];
+
+      for (const file of filesArray) {
+        console.log('📤 FileLibrary: Uploading file:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+
+        // Validate file before uploading
+        if (!file || !file.name || file.size === 0) {
+          throw new Error(`Invalid file: ${file?.name || 'Unknown'}`);
+        }
+
+        // Use same upload endpoint as FilePickerModal
+        const additionalData = {
           folder: 'library',
           public: 'true',
-          store_id: selectedStore?.id
-        });
+          type: 'general'
+        };
+
+        const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
 
         if (response.success) {
-          toast.success("File uploaded successfully");
+          console.log('✅ FileLibrary: Upload successful for', file.name, ':', response);
+
+          uploadedFiles.push({
+            id: response.id || `uploaded-${Date.now()}-${uploadedFiles.length}`,
+            name: response.filename || file.name,
+            url: response.url || response.publicUrl,
+            mimeType: file.type,
+            size: file.size,
+            uploadedAt: new Date().toISOString()
+          });
         } else {
-          toast.error("Failed to upload file");
+          throw new Error(`Upload failed for ${file.name}: ${response.message || 'Unknown error'}`);
         }
-      } else {
-        // Multiple files upload
-        const formData = new FormData();
-        filesArray.forEach((file) => {
-          formData.append('images', file);
-        });
-        formData.append('folder', 'library');
-        formData.append('public', 'true');
+      }
 
-        const response = await fetch('/api/storage/upload-multiple', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiClient.getToken()}`
-          },
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          toast.success(`${result.data.totalUploaded} file(s) uploaded successfully`);
-          if (result.data.totalFailed > 0) {
-            toast.error(`${result.data.totalFailed} file(s) failed to upload`);
-          }
-        } else {
-          toast.error(result.error || "Failed to upload files");
-        }
+      if (uploadedFiles.length > 0) {
+        toast.success(`Successfully uploaded ${uploadedFiles.length} file(s)!`);
+        console.log('📤 FileLibrary: All uploads successful, refreshing file list...');
       }
 
       // Reload files to show the new uploads
       await loadFiles();
     } catch (error) {
-      console.error('Upload error:', error);
-      if (error.message?.includes('404') || error.message?.includes('not found')) {
-        toast.error("Storage API not available. Please configure a storage provider in Media Storage settings.");
+      console.error('❌ FileLibrary: Upload error:', error);
+
+      // Parse upload error and provide helpful feedback (same as FilePickerModal)
+      const errorMessage = error.message || 'Unknown upload error';
+      let uploadErrorMessage = 'File upload failed.';
+
+      if (errorMessage.includes('No file provided')) {
+        uploadErrorMessage = 'File upload issue: The server didn\'t receive the file properly. Try a smaller file or check your connection.';
+      } else if (errorMessage.includes('Storage operations require API keys')) {
+        uploadErrorMessage = 'Storage not configured: Please configure Supabase integration in Admin → Integrations.';
+      } else if (errorMessage.includes('Invalid service role key')) {
+        uploadErrorMessage = 'Invalid service role key: Please check your Supabase integration settings.';
+      } else if (errorMessage.includes('File size exceeds')) {
+        uploadErrorMessage = 'File too large: Please use a smaller file (under 50MB).';
       } else {
-        toast.error(error.message || "Failed to upload files");
+        uploadErrorMessage = `Upload failed: ${errorMessage}`;
       }
+
+      toast.error(uploadErrorMessage);
     } finally {
       setUploading(false);
     }
