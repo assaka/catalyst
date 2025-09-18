@@ -341,7 +341,7 @@ const SlotEnabledFileSelector = ({
                 </div>
 
                 {/* File Info */}
-                <div className=Name"flex justify-between">
+                <div className="flex justify-between">
                   <span className="font-medium text-sm">{file.name}</span>
                   {/* Unpublished Changes Indicator */}
                   {file.hasUnpublishedChanges && (
