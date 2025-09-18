@@ -1145,34 +1145,32 @@ export function ResetLayoutModal({
   if (!isOpen) return null;
 
   return (
-                  ...slot.styles,
-                  cursor: 'pointer',
-                  minWidth: 'auto',
-                  minHeight: 'auto',
-                  display: 'inline-block'
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onElementClick(slot.id, e.currentTarget);
-                }}
-                data-slot-id={slot.id}
-                data-editable="true"
-              >
-                {(() => {
-                  // For buttons, extract text content only (no HTML wrappers)
-                  const content = String(slot.content || `Button: ${slot.id}`);
-                  if (content.includes('<')) {
-                    // If content contains HTML, extract just the text
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = content;
-                    return tempDiv.textContent || tempDiv.innerText || content;
-                  }
-                  return content;
-                })()}
-              </button>
-            </ResizeWrapper>
-          )}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 className="text-lg font-semibold mb-4">Reset Layout</h3>
+        <p className="text-gray-600 mb-6">
+          Are you sure you want to reset the layout? This will remove all current slot configurations and cannot be undone.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            disabled={isResetting}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            disabled={isResetting}
+          >
+            {isResetting ? 'Resetting...' : 'Reset Layout'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
               {slot.type === 'button' && mode !== 'edit' && (
                 <button
