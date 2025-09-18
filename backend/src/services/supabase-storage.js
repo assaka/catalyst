@@ -19,19 +19,54 @@ class SupabaseStorageService extends StorageInterface {
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
       if (tokenInfo && tokenInfo.project_url && (tokenInfo.service_role_key || tokenInfo.anon_key)) {
         console.log('Found OAuth integration, attempting to use it...');
+
+        // Validate service role key format if present
+        if (tokenInfo.service_role_key) {
+          console.log('Validating service role key format...');
+          const serviceRoleKey = tokenInfo.service_role_key.trim();
+
+          // Check if it's a valid JWT format
+          if (!serviceRoleKey.startsWith('eyJ') || serviceRoleKey.split('.').length !== 3) {
+            throw new Error('Invalid service role key: The service role key must be a valid JWT token starting with "eyJ" and containing 3 parts separated by dots.');
+          }
+
+          // Try to decode the JWT header to validate structure
+          try {
+            const parts = serviceRoleKey.split('.');
+            const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+            if (!header.alg || !header.typ) {
+              throw new Error('Invalid service role key: JWT header is malformed.');
+            }
+          } catch (decodeError) {
+            throw new Error('Invalid service role key: Unable to decode JWT token. Please check the key format.');
+          }
+        }
+
         const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
 
-        // Test the client with a simple operation to catch invalid keys early
+        // Test the client with a quick validation - use a timeout to prevent hanging
         try {
-          await client.storage.listBuckets();
+          const validationPromise = client.storage.listBuckets();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Service role key validation timeout')), 5000)
+          );
+
+          await Promise.race([validationPromise, timeoutPromise]);
           console.log('OAuth Supabase client validation successful');
           return client;
         } catch (validationError) {
           console.error('OAuth Supabase client validation failed:', validationError.message);
+
+          // Check if it's a timeout
+          if (validationError.message && validationError.message.includes('timeout')) {
+            throw new Error('Invalid service role key: Service role key validation timed out. The key may be invalid or there may be network issues.');
+          }
+
           // Check if it's a JWT/authentication error
-          if (validationError.message && (validationError.message.includes('JWT') || validationError.message.includes('JWS') || validationError.message.includes('invalid') || validationError.message.includes('malformed'))) {
+          if (validationError.message && (validationError.message.includes('JWT') || validationError.message.includes('JWS') || validationError.message.includes('invalid') || validationError.message.includes('malformed') || validationError.message.includes('unauthorized') || validationError.message.includes('forbidden'))) {
             throw new Error('Invalid service role key: The provided service role key appears to be invalid or malformed. Please check your Supabase integration settings.');
           }
+
           throw validationError;
         }
       }
