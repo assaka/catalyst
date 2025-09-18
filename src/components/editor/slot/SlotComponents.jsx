@@ -1678,7 +1678,7 @@ export function CodeModal({
             <button
               onClick={handleSave}
               disabled={!!jsonError || localSaveStatus === 'saving'}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
                 hasChanges
                   ? 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-lg font-semibold'
                   : 'bg-gray-400 hover:bg-gray-500 text-white border border-gray-400 opacity-70'
