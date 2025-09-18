@@ -611,12 +611,7 @@ const CartSlotsEditor = ({
             onViewportChange={setCurrentViewport}
           />
 
-          <ResponsiveContainer
-            viewport={currentViewport}
-            className="bg-white"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <EditorToolbar
               showSlotBorders={showSlotBorders}
               onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
@@ -624,6 +619,13 @@ const CartSlotsEditor = ({
               onShowCode={() => setShowCodeModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
             />
+          </div>
+
+          <ResponsiveContainer
+            viewport={currentViewport}
+            className="bg-white"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (

@@ -1060,127 +1060,66 @@ const CodeEditor = ({
     }
   };
 
-  const handleUndo = async () => {
+  const handleUndo = () => {
     if (editorRef.current) {
-      console.log('🔄 [CodeEditor] Handling undo with hook system');
-      
       try {
-        const codeBeforeUndo = editorRef.current.getValue();
-        
-        // Apply undo hook
-        const shouldUndo = hookSystem.apply('codeEditor.beforeUndo', true, {
-          fileName,
-          currentCode: codeBeforeUndo
-        });
-        
-        if (!shouldUndo) {
-          console.log('Undo operation cancelled by hook');
-          return;
+        editorRef.current.trigger('keyboard', 'undo');
+
+        // Update local state and call onChange
+        const newValue = editorRef.current.getValue();
+        setLocalCode(newValue);
+        setIsModified(newValue !== value);
+
+        if (onChange) {
+          onChange(newValue);
         }
-        
-        const undoAction = editorRef.current.getAction('undo');
-        if (!undoAction) {
-          console.warn('⚠️ [CodeEditor] Undo action not available');
-          return;
-        }
-        
-        await undoAction.run();
-        const codeAfterUndo = editorRef.current.getValue();
-        
-        // Emit undo event
-        eventSystem.emit('codeEditor.undoPerformed', {
-          fileName,
-          beforeCode: codeBeforeUndo,
-          afterCode: codeAfterUndo
-        });
-        
-        // Update diff if enabled
-        if (enableDiffDetection && originalCode && codeBeforeUndo !== codeAfterUndo) {
-          const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterUndo);
-          if (diffResult) {
-            setDiffData(diffResult);
-            const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterUndo);
-            setFullFileDisplayLines(displayLines);
-          }
-        }
-        
+
         // Update button states
         setTimeout(() => {
           try {
             const model = editorRef.current.getModel();
-            if (model && model.canUndo && model.canRedo) {
+            if (model) {
               setCanUndo(model.canUndo());
               setCanRedo(model.canRedo());
-
             }
           } catch (error) {
-            console.warn('Could not update undo/redo state after undo:', error);
+            console.warn('Could not update undo/redo state:', error);
           }
         }, 100);
-        
+
       } catch (error) {
         console.error('❌ [CodeEditor] Error during undo operation:', error);
       }
     }
   };
 
-  const handleRedo = async () => {
+  const handleRedo = () => {
     if (editorRef.current) {
-      console.log('🔄 [CodeEditor] Handling redo with hook system');
-      
       try {
-        const codeBeforeRedo = editorRef.current.getValue();
-        
-        // Apply redo hook
-        const shouldRedo = hookSystem.apply('codeEditor.beforeRedo', true, {
-          fileName,
-          currentCode: codeBeforeRedo
-        });
-        
-        if (!shouldRedo) {
-          console.log('Redo operation cancelled by hook');
-          return;
+        editorRef.current.trigger('keyboard', 'redo');
+
+        // Update local state and call onChange
+        const newValue = editorRef.current.getValue();
+        setLocalCode(newValue);
+        setIsModified(newValue !== value);
+
+        if (onChange) {
+          onChange(newValue);
         }
-        
-        const redoAction = editorRef.current.getAction('redo');
-        if (!redoAction) {
-          console.warn('⚠️ [CodeEditor] Redo action not available');
-          return;
-        }
-        
-        redoAction.run();
-        const codeAfterRedo = editorRef.current.getValue();
-        
-        // Emit redo event
-        eventSystem.emit('codeEditor.redoPerformed', {
-          fileName,
-          beforeCode: codeBeforeRedo,
-          afterCode: codeAfterRedo
-        });
-        
-        // Update diff if enabled
-        if (enableDiffDetection && originalCode && codeBeforeRedo !== codeAfterRedo) {
-          const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterRedo);
-          if (diffResult) {
-            setDiffData(diffResult);
-            const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterRedo);
-            setFullFileDisplayLines(displayLines);
-          }
-        }
-        
+
         // Update button states
         setTimeout(() => {
           try {
             const model = editorRef.current.getModel();
-            if (model && model.canUndo && model.canRedo) {
+            if (model) {
               setCanUndo(model.canUndo());
               setCanRedo(model.canRedo());
             }
           } catch (error) {
-            console.warn('Could not update undo/redo state after redo:', error);
+            console.warn('Could not update undo/redo state:', error);
           }
         }, 100);
-        
+
       } catch (error) {
         console.error('❌ [CodeEditor] Error during redo operation:', error);
       }
@@ -1234,44 +1173,38 @@ const CodeEditor = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleSave}
-              disabled={!isModified || readOnly}
+              onClick={() => {
+                setLocalCode(originalCode || initialContent || '');
+                if (onChange) {
+                  onChange(originalCode || initialContent || '');
+                }
+              }}
+              disabled={!originalCode && !initialContent}
+              title="Restore to original"
             >
-              <Save className="w-4 h-4" />
-            </Button>
-
-            {/* Always show Preview eye, other buttons only when diff detection is enabled */}
-            <Button
-              variant={showPreviewFrame ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setShowPreviewFrame(!showPreviewFrame)}
-              title="Show Preview Frame"
-            >
-              <Eye className="w-4 h-4" />
+              <RotateCcw className="w-4 h-4" />
             </Button>
             
             {enableDiffDetection && diffData && (
               <>
                 <Button
-                  variant={!showSplitView && !showDiffView && !showPreviewFrame ? "default" : "ghost"}
+                  variant={!showSplitView && !showDiffView ? "default" : "ghost"}
                   size="sm"
                   onClick={() => {
                     setShowSplitView(false);
                     setShowDiffView(false);
-                    setShowPreviewFrame(false);
                   }}
                   title="Show Code Editor"
                 >
                   <Code className="w-4 h-4" />
                 </Button>
-                
+
                 <Button
                   variant={showSplitView ? "default" : "ghost"}
                   size="sm"
                   onClick={() => {
                     setShowSplitView(true);
                     setShowDiffView(false);
-                    setShowPreviewFrame(false);
                   }}
                   title="Show Split View"
                 >
@@ -1296,24 +1229,12 @@ const CodeEditor = ({
                   onClick={() => {
                     setShowDiffView(true);
                     setShowSplitView(false);
-                    setShowPreviewFrame(false);
                   }}
                   title="Show Diff View"
                 >
                   <Diff className="w-4 h-4" />
                 </Button>
               </>
-            )}
-            
-            {versionHistory.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowVersionHistory(!showVersionHistory)}
-                title="View Version History"
-              >
-                <History className="w-4 h-4" />
-              </Button>
             )}
 
           </div>
