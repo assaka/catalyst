@@ -181,13 +181,10 @@ const AIContextWindowPage = () => {
   const [baselineCode, setBaselineCode] = useState(''); // Store actual file baseline for semantic diffs
   const [modifiedFiles, setModifiedFiles] = useState([]);
   const [currentPatch, setCurrentPatch] = useState(null);
-  const [cursorPosition, setCursorPosition] = useState({ line: 0, column: 0 });
-  const [selection, setSelection] = useState(null);
-  const [isFileLoading, setIsFileLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState(null);
-  const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
+  const [connectionStatus] = useState(null);
+  const [astDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
-  const [previewMode, setPreviewMode] = useState('hybrid'); // Track preview mode: 'hybrid' (Customize tab is default)
+  const [setPreviewMode] = useState('hybrid'); // Track preview mode: 'hybrid' (Customize tab is default)
   
   // Slot configuration publishing state
   // Version history functionality integrated into UnifiedSlotEditor
@@ -282,33 +279,7 @@ const AIContextWindowPage = () => {
       } else {
         console.error('Failed to load file:', data?.message || 'Unknown error');
         // Provide detailed diagnostic information
-        const diagnosticInfo = `// API Error: ${data.message}
-// File Path: ${filePath}
-// Status: API responded but file loading failed
-// 
-// Troubleshooting:
-// 1. Check if the file exists at: ${filePath}
-// 2. Verify file permissions
-// 3. Ensure path is within allowed directories
-//
-// You can still test the AI Context Window with this placeholder
-//
-import React, { useState, useEffect } from 'react';
 
-const DiagnosticComponent = () => {
-  const [error] = useState('${data.message}');
-  
-  return (
-    <div>
-      <h2>File Loading Error</h2>
-      <p>Error: {error}</p>
-      <p>Attempted to load: ${filePath}</p>
-    </div>
-  );
-};
-
-export default DiagnosticComponent;`;
-        
         setSourceCode(normalizeLineEndings(diagnosticInfo));
         const baselineCode = await fetchBaselineCode(filePath, diagnosticInfo);
         setOriginalCode(baselineCode); // Set baseline for diff detection
@@ -486,12 +457,6 @@ export default ExampleComponent;`;
     setManualEditResult(manualEdit);
     
     if (manualEdit.hasChanges) {
-      console.log(`🔍 Manual changes detected in ${selectedFile?.name || 'file'}`);
-      console.log('📋 Changes detected (baseline comparison):', { 
-        baselineLength: baselineCode.length, 
-        newLength: newCode.length,
-        editorOriginalLength: originalCode.length // Editor's previous state
-      });
       
       // Auto-save patch to database with debouncing
       if (autoSaveTimeoutRef.current) {
@@ -780,7 +745,7 @@ export default ExampleComponent;`;
             <ResizablePanel
               defaultSize={25}
               minSize={15}
-              maxSize={30}
+              maxSize={25}
             >
               <AIContextWindow
                 sourceCode={sourceCode}
@@ -795,9 +760,9 @@ export default ExampleComponent;`;
 
             {/* File Tree Navigator */}
             <ResizablePanel 
-              defaultSize={15}
+              defaultSize={11}
               minSize={10}
-              maxSize={15}
+              maxSize={11}
             >
               <SlotEnabledFileSelector
                 onFileSelect={handleFileSelect}
