@@ -761,9 +761,9 @@ export default ExampleComponent;`;
 
             {/* File Tree Navigator */}
             <ResizablePanel 
-              defaultSize={12}
-              minSize={12}
-              maxSize={12}
+              defaultSize={14}
+              minSize={14}
+              maxSize={14}
             >
               <SlotEnabledFileSelector
                 onFileSelect={handleFileSelect}

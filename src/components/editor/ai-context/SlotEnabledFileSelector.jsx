@@ -276,7 +276,7 @@ const SlotEnabledFileSelector = ({
     <div className={`h-full flex flex-col ${className}`}>
       {/* Header */}
 
-      <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 px-3 py-1">
+      <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 px-2 py-1">
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
           Editable Pages
         </h3>
