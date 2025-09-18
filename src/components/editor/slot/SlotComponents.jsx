@@ -468,9 +468,9 @@ export function GridColumn({
             } ${isNested ? '' : 'p-2'} ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
       } relative responsive-slot ${
-        ['container', 'grid', 'flex'].includes(slot?.type)
+        ['container', 'grid', 'flex'].includes(slot?.type) && !slot?.parentId
           ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
-          : ''
+          : slot?.className || ''
       } ${isNested ? 'm-1' : ''}`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
@@ -553,60 +553,6 @@ export function GridColumn({
   );
 }
 
-// Helper function to generate grid styles for direct application to slot elements
-const getGridStyles = (slot, colSpan = 12, rowSpan = 1, mode = 'edit') => ({
-  gridColumn: `span ${colSpan}`,
-  gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
-  // Add container-specific styles when it's a container type
-  ...(['container', 'grid', 'flex'].includes(slot?.type) ? {
-    minHeight: mode === 'edit' ? '80px' : slot.styles?.minHeight,
-  } : {}),
-  // Apply slot styles
-  ...slot.styles
-});
-
-// Helper function to generate grid classes for direct application to slot elements
-const getGridClasses = (slot, colSpan = 12, showBorders = true, mode = 'edit', isNested = false) => {
-  const baseClasses = [
-    'relative',
-    'responsive-slot'
-  ];
-
-  // Add container-specific classes
-  if (['container', 'grid', 'flex'].includes(slot?.type)) {
-    baseClasses.push('w-full', 'h-full', 'grid', 'grid-cols-12', 'gap-2');
-    if (slot.className) baseClasses.push(slot.className);
-  }
-
-  // Add edit mode styling
-  if (mode === 'edit') {
-    baseClasses.push(
-      showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent',
-      'rounded-lg',
-      'overflow-hidden',
-      'transition-all',
-      'duration-200',
-      'border-gray-300',
-      'hover:border-blue-400',
-      'hover:bg-blue-50/20',
-      'cursor-grab',
-      'active:cursor-grabbing'
-    );
-
-    // Add padding only for non-nested slots
-    if (!isNested) {
-      baseClasses.push('p-2');
-    }
-
-    // Add margin for nested slots
-    if (isNested) {
-      baseClasses.push('m-1');
-    }
-  }
-
-  return baseClasses.join(' ');
-};
-
 // HierarchicalSlotRenderer Component
 export function HierarchicalSlotRenderer({
   slots,
@@ -639,200 +585,98 @@ export function HierarchicalSlotRenderer({
   return filteredSlots.map(slot => {
     let colSpan = slot.colSpan || 12;
     const rowSpan = slot.rowSpan || 1;
-    const isNested = parentId !== null; // We're nested if we have a parent
+    const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
-    const gridStyles = getGridStyles(slot, colSpan, rowSpan, mode);
-    const gridClasses = getGridClasses(slot, colSpan, showBorders, mode, isNested);
+    return (
+      <GridColumn
+        key={slot.id}
+        colSpan={colSpan}
+        rowSpan={rowSpan}
+        height={height}
+        slotId={slot.id}
+        slot={slot}
+        currentDragInfo={currentDragInfo}
+        setCurrentDragInfo={setCurrentDragInfo}
+        onGridResize={onGridResize}
+        onSlotHeightResize={onSlotHeightResize}
+        onSlotDrop={onSlotDrop}
+        onResizeStart={onResizeStart}
+        onResizeEnd={onResizeEnd}
+        mode={mode}
+        showBorders={showBorders}
+        isNested={true}
+      >
+          {slot.type === 'text' && mode === 'edit' && (
+            <ResizeWrapper
+              minWidth={20}
+              minHeight={16}
+              onResize={(newSize) => {
+                setPageConfig(prevConfig => {
+                  const updatedSlots = { ...prevConfig?.slots };
+                  if (updatedSlots[slot.id]) {
+                    updatedSlots[slot.id] = {
+                      ...updatedSlots[slot.id],
+                      styles: {
+                        ...updatedSlots[slot.id].styles,
+                        width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                        height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                      }
+                    };
+                  }
 
-    // TEXT SLOTS - Apply grid styles directly to span
-    if (slot.type === 'text') {
-      if (mode === 'edit') {
-        return (
-          <ResizeWrapper
-            key={slot.id}
-            minWidth={20}
-            minHeight={16}
-            onResize={(newSize) => {
-              setPageConfig(prevConfig => {
-                const updatedSlots = { ...prevConfig?.slots };
-                if (updatedSlots[slot.id]) {
-                  updatedSlots[slot.id] = {
-                    ...updatedSlots[slot.id],
-                    styles: {
-                      ...updatedSlots[slot.id].styles,
-                      width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                      height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                    }
-                  };
-                }
-                return { ...prevConfig, slots: updatedSlots };
-              });
-            }}
-            className={gridClasses}
-            style={gridStyles}
-          >
+                  const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+                  // Debounced auto-save - clear previous timeout and set new one
+                  if (saveTimeoutRef && saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current);
+                  }
+                  if (saveTimeoutRef && saveConfiguration) {
+                    saveTimeoutRef.current = setTimeout(() => {
+                      saveConfiguration(updatedConfig);
+                    }, 500); // Wait 0.5 seconds after resize stops
+                  }
+
+                  return updatedConfig;
+                });
+              }}
+            >
+              <span
+                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+                style={{
+                  ...slot.styles,
+                  cursor: 'pointer',
+                  ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
+                  display: 'inline-block',
+                  // Use fit-content for w-fit elements, otherwise 100%
+                  width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onElementClick(slot.id, e.currentTarget);
+                }}
+                data-slot-id={slot.id}
+                data-editable="true"
+                dangerouslySetInnerHTML={{
+                  __html: String(slot.content || `Text: ${slot.id}`)
+                }}
+              />
+            </ResizeWrapper>
+          )}
+
+          {slot.type === 'text' && mode !== 'edit' && (
             <span
-              className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+              className={`${slot.parentClassName || ''} ${slot.className}`}
               style={{
-                cursor: 'pointer',
-                ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
-                display: 'inline-block',
-                width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+                ...slot.styles,
+                ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
               }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onElementClick(slot.id, e.currentTarget);
-              }}
-              data-slot-id={slot.id}
-              data-editable="true"
               dangerouslySetInnerHTML={{
                 __html: String(slot.content || `Text: ${slot.id}`)
               }}
             />
-          </ResizeWrapper>
-        );
-      } else {
-        return (
-          <span
-            key={slot.id}
-            className={`${slot.parentClassName || ''} ${slot.className} ${gridClasses}`}
-            style={{
-              ...gridStyles,
-              ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
-            }}
-            dangerouslySetInnerHTML={{
-              __html: String(slot.content || `Text: ${slot.id}`)
-            }}
-          />
-        );
-      }
-    }
+          )}
 
-    // BUTTON SLOTS - Apply grid styles directly to button or ResizeWrapper
-    if (slot.type === 'button') {
-      if (mode === 'edit') {
-        return (
-          <ResizeWrapper
-            key={slot.id}
-            minWidth={50}
-            minHeight={20}
-            onResize={(newSize) => {
-              setPageConfig(prevConfig => {
-                const updatedSlots = { ...prevConfig?.slots };
-                if (updatedSlots[slot.id]) {
-                  updatedSlots[slot.id] = {
-                    ...updatedSlots[slot.id],
-                    styles: {
-                      ...updatedSlots[slot.id].styles,
-                      width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                      height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                    }
-                  };
-                }
-                return { ...prevConfig, slots: updatedSlots };
-              });
-            }}
-            className={gridClasses}
-            style={gridStyles}
-          >
-            <button
-              className={`${slot.parentClassName || ''} ${slot.className}`}
-              style={{
-                cursor: 'pointer',
-                minWidth: 'auto',
-                minHeight: 'auto',
-                display: 'inline-block'
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onElementClick(slot.id, e.currentTarget);
-              }}
-              data-slot-id={slot.id}
-              data-editable="true"
-            >
-              {(() => {
-                const content = String(slot.content || `Button: ${slot.id}`);
-                if (content.includes('<')) {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = content;
-                  return tempDiv.textContent || tempDiv.innerText || content;
-                }
-                return content;
-              })()}
-            </button>
-          </ResizeWrapper>
-        );
-      } else {
-        return (
-          <button
-            key={slot.id}
-            className={`${slot.parentClassName || ''} ${slot.className} ${gridClasses}`}
-            style={{
-              ...gridStyles,
-              minWidth: 'auto',
-              minHeight: 'auto'
-            }}
-          >
-            {(() => {
-              const content = String(slot.content || `Button: ${slot.id}`);
-              if (content.includes('<')) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = content;
-                return tempDiv.textContent || tempDiv.innerText || content;
-              }
-              return content;
-            })()}
-          </button>
-        );
-      }
-    }
-
-    // CONTAINER SLOTS - Apply grid styles directly to container div
-    if (['container', 'grid', 'flex'].includes(slot.type)) {
-      return (
-        <div
-          key={slot.id}
-          className={gridClasses}
-          style={gridStyles}
-          data-col-span={colSpan}
-          data-row-span={rowSpan}
-        >
-          <HierarchicalSlotRenderer
-            slots={slots}
-            parentId={slot.id}
-            mode={mode}
-            viewMode={viewMode}
-            showBorders={showBorders}
-            currentDragInfo={currentDragInfo}
-            setCurrentDragInfo={setCurrentDragInfo}
-            onElementClick={onElementClick}
-            onGridResize={onGridResize}
-            onSlotHeightResize={onSlotHeightResize}
-            onSlotDrop={onSlotDrop}
-            onResizeStart={onResizeStart}
-            onResizeEnd={onResizeEnd}
-            selectedElementId={selectedElementId}
-            setPageConfig={setPageConfig}
-            saveConfiguration={saveConfiguration}
-            saveTimeoutRef={saveTimeoutRef}
-          />
-        </div>
-      );
-    }
-
-    // OTHER SLOT TYPES (link, image, input, etc.) - Apply grid styles directly
-    return (
-      <div
-        key={slot.id}
-        className={gridClasses}
-        style={gridStyles}
-        data-col-span={colSpan}
-        data-row-span={rowSpan}
-      >
-        {/* LINK SLOTS */}
-        {slot.type === 'link' && (
-          mode === 'edit' ? (
+          {slot.type === 'button' && mode === 'edit' && (
             <ResizeWrapper
               minWidth={50}
               minHeight={20}
@@ -866,19 +710,15 @@ export function HierarchicalSlotRenderer({
                 });
               }}
             >
-              <a
-                href={slot.href || '#'}
-                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+              <button
+                className={`${slot.parentClassName || ''} ${slot.className}`}
                 style={{
                   ...slot.styles,
                   cursor: 'pointer',
                   minWidth: 'auto',
                   minHeight: 'auto',
-                  display: 'inline-block',
-                  width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+                  display: 'inline-block'
                 }}
-                target={slot.target || '_self'}
-                rel="noopener noreferrer"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -888,289 +728,19 @@ export function HierarchicalSlotRenderer({
                 data-editable="true"
               >
                 {(() => {
-                  const content = String(slot.content || `Link: ${slot.id}`);
+                  // For buttons, extract text content only (no HTML wrappers)
+                  const content = String(slot.content || `Button: ${slot.id}`);
                   if (content.includes('<')) {
+                    // If content contains HTML, extract just the text
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = content;
                     return tempDiv.textContent || tempDiv.innerText || content;
                   }
                   return content;
                 })()}
-              </a>
+              </button>
             </ResizeWrapper>
-          ) : (
-            <a
-              href={slot.href || '#'}
-              className={`${slot.parentClassName || ''} ${slot.className}`}
-              style={{
-                ...slot.styles,
-                minWidth: 'auto',
-                minHeight: 'auto'
-              }}
-              target={slot.target || '_self'}
-              rel="noopener noreferrer"
-            >
-              {(() => {
-                const content = String(slot.content || `Link: ${slot.id}`);
-                if (content.includes('<')) {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = content;
-                  return tempDiv.textContent || tempDiv.innerText || content;
-                }
-                return content;
-              })()}
-            </a>
-          )
-        )}
-
-        {/* IMAGE SLOTS */}
-        {slot.type === 'image' && (
-          slot.content ? (
-            <img
-              src={slot.content}
-              alt={slot.metadata?.alt || slot.metadata?.fileName || 'Slot image'}
-              className="w-full h-full object-contain"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%'
-              }}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 bg-gray-100 border-2 border-dashed border-gray-300 rounded w-full h-full">
-              <Image className="w-16 h-16 mx-auto text-gray-400 mb-2" />
-              <span className="text-sm text-gray-500">No image selected</span>
-            </div>
-          )
-        )}
-
-        {/* INPUT SLOTS */}
-        {slot.type === 'input' && (
-          <input
-            className={`w-full h-full ${slot.className}`}
-            style={{
-              ...slot.styles,
-              minWidth: 'auto',
-              minHeight: 'auto'
-            }}
-            placeholder={String(slot.content || '')}
-            type="text"
-          />
-        )}
-      </div>
-    );
-  });
-}
-
-// BorderToggleButton Component
-export function BorderToggleButton({ showSlotBorders, onToggle }) {
-  return (
-    <Button
-      onClick={onToggle}
-      variant={showSlotBorders ? "default" : "outline"}
-      size="sm"
-      title={showSlotBorders ? "Hide slot borders" : "Show slot borders"}
-    >
-      <Square className="w-4 h-4 mr-2" />
-      Borders
-    </Button>
-  );
-}
-
-// EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
-  return (
-    <div className="flex mb-3 justify-between">
-      <BorderToggleButton
-        showSlotBorders={showSlotBorders}
-        onToggle={onToggleBorders}
-      />
-
-      <div className="flex gap-2 ml-3">
-        <Button
-          onClick={onResetLayout}
-          variant="outline"
-          size="sm"
-          className="hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Reset Layout
-        </Button>
-
-        <Button
-          onClick={onShowCode}
-          variant="outline"
-          size="sm"
-          className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors duration-200"
-        >
-          <Code className="w-4 h-4 mr-2" />
-          Code
-        </Button>
-
-        <Button
-          onClick={onAddSlot}
-          variant="outline"
-          size="sm"
-          className="hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors duration-200"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add New
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// AddSlotModal Component
-export function AddSlotModal({
-  isOpen,
-  onClose,
-  onCreateSlot,
-  onShowFilePicker
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Add New Slot</h3>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-          >
-            ×
-          </Button>
-        </div>
-
-        <div className="space-y-3">
-          <Button
-            onClick={() => {
-              onCreateSlot('container');
-              onClose();
-            }}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3"
-          >
-            <div className="flex items-center">
-              <Square className="w-5 h-5 mr-3 text-blue-600" />
-              <div>
-                <div className="font-medium">Container</div>
-                <div className="text-sm text-gray-500">A flexible container for other elements</div>
-              </div>
-            </div>
-          </Button>
-
-          <Button
-            onClick={() => {
-              onCreateSlot('text', 'New text content');
-              onClose();
-            }}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3"
-          >
-            <div className="flex items-center">
-              <span className="w-5 h-5 mr-3 text-green-600 font-bold">T</span>
-              <div>
-                <div className="font-medium">Text</div>
-                <div className="text-sm text-gray-500">Add text content</div>
-              </div>
-            </div>
-          </Button>
-
-          <Button
-            onClick={() => {
-              onCreateSlot('button', 'Click me');
-              onClose();
-            }}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3"
-          >
-            <div className="flex items-center">
-              <span className="w-5 h-5 mr-3 text-blue-600 font-bold">B</span>
-              <div>
-                <div className="font-medium">Button</div>
-                <div className="text-sm text-gray-500">Add a clickable button</div>
-              </div>
-            </div>
-          </Button>
-
-          <Button
-            onClick={() => {
-              onCreateSlot('link', 'Link text');
-              onClose();
-            }}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3"
-          >
-            <div className="flex items-center">
-              <span className="w-5 h-5 mr-3 text-indigo-600 font-bold">🔗</span>
-              <div>
-                <div className="font-medium">Link</div>
-                <div className="text-sm text-gray-500">Add a clickable link</div>
-              </div>
-            </div>
-          </Button>
-
-          <Button
-            onClick={() => {
-              onClose();
-              onShowFilePicker();
-            }}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3"
-          >
-            <div className="flex items-center">
-              <span className="w-5 h-5 mr-3 text-purple-600">🖼️</span>
-              <div>
-                <div className="font-medium">Image</div>
-                <div className="text-sm text-gray-500">Add an image from File Library</div>
-              </div>
-            </div>
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ResetLayoutModal Component
-export function ResetLayoutModal({
-  isOpen,
-  onClose,
-  onConfirm,
-  isResetting = false
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold mb-4">Reset Layout</h3>
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to reset the layout? This will remove all current slot configurations and cannot be undone.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            disabled={isResetting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-            disabled={isResetting}
-          >
-            {isResetting ? 'Resetting...' : 'Reset Layout'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+          )}
 
               {slot.type === 'button' && mode !== 'edit' && (
                 <button
