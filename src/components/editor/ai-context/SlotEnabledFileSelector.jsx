@@ -320,7 +320,7 @@ const SlotEnabledFileSelector = ({
                 onClick={() => handleFileClick(file)}
               >
                 {/* File Icon */}
-                <div className="flex-shrink-0">
+                <div className="fle gap-2">
                   <IconComponent className={`w-5 h-5 ${file.color}`} />
                   <span className="font-medium text-sm">{file.name}</span>
                 </div>
@@ -329,7 +329,7 @@ const SlotEnabledFileSelector = ({
                 <div className="flex justify-between">
                   {/* Unpublished Changes Indicator */}
                   {file.hasUnpublishedChanges && (
-                      <Dot className="w-12 h-12 text-orange-600" title="Dot" />
+                      <Dot className="w-12 h-12 text-yellow-600" title="Dot" />
                   )}
                   {/* Loading indicator */}
                   {loadingDraft === file.id && (
