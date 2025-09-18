@@ -574,6 +574,7 @@ export function useSlotConfiguration({
       colSpan: slotType === 'container' ? 12 : 6, // Containers full width, others half width
       rowSpan: 1,
       viewMode: ['empty', 'withProducts'], // Show in both modes by default
+      isCustom: true, // Mark as custom slot for deletion
       metadata: {
         created: new Date().toISOString(),
         lastModified: new Date().toISOString(),

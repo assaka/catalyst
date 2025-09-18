@@ -99,6 +99,7 @@ const CartSlotsEditor = ({
     validateSlotConfiguration,
     createSlot,
     handleSlotDrop: slotDropHandler,
+    handleSlotDelete: slotDeleteHandler,
     handleGridResize: gridResizeHandler,
     handleSlotHeightResize: slotHeightResizeHandler,
     handleTextChange: textChangeHandler,
@@ -340,6 +341,7 @@ const CartSlotsEditor = ({
   const handleGridResize = handlerFactory.createGridResizeHandler(gridResizeHandler, saveTimeoutRef);
   const handleSlotHeightResize = handlerFactory.createSlotHeightResizeHandler(slotHeightResizeHandler, saveTimeoutRef);
   const handleSlotDrop = handlerFactory.createSlotDropHandler(slotDropHandler, isDragOperationActiveRef);
+  const handleSlotDelete = handlerFactory.createSlotDeleteHandler(slotDeleteHandler);
   const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
 
   // Wrap reset layout to also reset unsaved changes flag
@@ -633,6 +635,7 @@ const CartSlotsEditor = ({
                   onGridResize={handleGridResize}
                   onSlotHeightResize={handleSlotHeightResize}
                   onSlotDrop={handleSlotDrop}
+                  onSlotDelete={handleSlotDelete}
                   onResizeStart={() => setIsResizing(true)}
                   onResizeEnd={() => {
                     lastResizeEndTime.current = Date.now();
