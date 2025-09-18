@@ -373,6 +373,7 @@ const CodeEditor = ({
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
@@ -1168,16 +1169,11 @@ const CodeEditor = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setLocalCode(originalCode || initialContent || '');
-                if (onChange) {
-                  onChange(originalCode || initialContent || '');
-                }
-              }}
+              onClick={() => setShowRestoreModal(true)}
               disabled={!originalCode && !initialContent}
-              title="Restore to original"
+              title="Restore to original content"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RefreshCw className="w-4 h-4" />
             </Button>
             
             {enableDiffDetection && diffData && (
@@ -1568,6 +1564,53 @@ const CodeEditor = ({
           </div>
         </div>
       </div>
+
+      {/* Restore Confirmation Modal */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <RefreshCw className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Restore Original Content</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-orange-800">
+                <strong>Warning:</strong> All current changes will be lost and the content will be restored to its original state.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowRestoreModal(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setLocalCode(originalCode || initialContent || '');
+                  if (onChange) {
+                    onChange(originalCode || initialContent || '');
+                  }
+                  setShowRestoreModal(false);
+                }}
+                variant="default"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Restore
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
