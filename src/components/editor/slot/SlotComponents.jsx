@@ -1579,7 +1579,9 @@ export function CodeModal({
   const [jsonError, setJsonError] = useState(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [splitView, setSplitView] = useState(false);
   const editorRef = useRef(null);
+  const originalEditorRef = useRef(null);
   const monacoRef = useRef(null);
 
   // Initialize editor value when modal opens
@@ -1592,6 +1594,31 @@ export function CodeModal({
       setJsonError(null);
     }
   }, [isOpen, configuration]);
+
+  // Synchronized scrolling for split view
+  useEffect(() => {
+    if (splitView && editorRef.current && originalEditorRef.current) {
+      const editor = editorRef.current;
+      const originalEditor = originalEditorRef.current;
+
+      const syncScroll = (sourceEditor, targetEditor) => {
+        return sourceEditor.onDidScrollChange((e) => {
+          if (targetEditor) {
+            targetEditor.setScrollTop(e.scrollTop);
+            targetEditor.setScrollLeft(e.scrollLeft);
+          }
+        });
+      };
+
+      const disposable1 = syncScroll(editor, originalEditor);
+      const disposable2 = syncScroll(originalEditor, editor);
+
+      return () => {
+        disposable1?.dispose();
+        disposable2?.dispose();
+      };
+    }
+  }, [splitView, editorRef.current, originalEditorRef.current]);
 
   if (!isOpen) return null;
 
@@ -1730,6 +1757,15 @@ export function CodeModal({
             <div className="w-px h-6 bg-gray-300 mx-1" />
 
             <Button
+              onClick={() => setSplitView(!splitView)}
+              variant={splitView ? "default" : "outline"}
+              size="sm"
+              title="Toggle split view comparison"
+            >
+              <Copy className="w-3 h-3 mr-1" />
+              {splitView ? 'Single' : 'Split'}
+            </Button>
+            <Button
               onClick={handleFormat}
               variant="outline"
               size="sm"
@@ -1789,37 +1825,117 @@ export function CodeModal({
 
         {/* Monaco Editor */}
         <div className="flex-1 overflow-hidden">
-          <Editor
-            height="100%"
-            defaultLanguage="json"
-            value={editorValue}
-            onChange={handleEditorChange}
-            onMount={handleEditorMount}
-            theme="vs-light"
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              wordWrap: 'on',
-              lineNumbers: 'on',
-              renderLineHighlight: 'all',
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              formatOnPaste: true,
-              formatOnType: true,
-              tabSize: 2,
-              insertSpaces: true,
-              folding: true,
-              foldingStrategy: 'indentation',
-              showFoldingControls: 'always',
-              bracketPairColorization: {
-                enabled: true
-              },
-              guides: {
-                indentation: true,
-                bracketPairs: true
-              }
-            }}
-          />
+          {splitView ? (
+            <div className="flex h-full">
+              {/* Original/Base Configuration */}
+              <div className="flex-1 border-r border-gray-200">
+                <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 text-sm font-medium text-gray-700">
+                  Original Configuration
+                </div>
+                <Editor
+                  height="calc(100% - 40px)"
+                  defaultLanguage="json"
+                  value={originalValue}
+                  theme="vs-light"
+                  onMount={(editor, monaco) => {
+                    originalEditorRef.current = editor;
+                  }}
+                  options={{
+                    readOnly: true,
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
+                    renderLineHighlight: 'none',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    insertSpaces: true,
+                    folding: true,
+                    foldingStrategy: 'indentation',
+                    showFoldingControls: 'always',
+                    bracketPairColorization: {
+                      enabled: true
+                    },
+                    guides: {
+                      indentation: true,
+                      bracketPairs: true
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Current/Modified Configuration */}
+              <div className="flex-1">
+                <div className="bg-blue-50 px-3 py-2 border-b border-gray-200 text-sm font-medium text-blue-700">
+                  Current Configuration {hasChanges && <span className="text-orange-600">• Modified</span>}
+                </div>
+                <Editor
+                  height="calc(100% - 40px)"
+                  defaultLanguage="json"
+                  value={editorValue}
+                  onChange={handleEditorChange}
+                  onMount={handleEditorMount}
+                  theme="vs-light"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
+                    renderLineHighlight: 'all',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    formatOnPaste: true,
+                    formatOnType: true,
+                    tabSize: 2,
+                    insertSpaces: true,
+                    folding: true,
+                    foldingStrategy: 'indentation',
+                    showFoldingControls: 'always',
+                    bracketPairColorization: {
+                      enabled: true
+                    },
+                    guides: {
+                      indentation: true,
+                      bracketPairs: true
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <Editor
+              height="100%"
+              defaultLanguage="json"
+              value={editorValue}
+              onChange={handleEditorChange}
+              onMount={handleEditorMount}
+              theme="vs-light"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                renderLineHighlight: 'all',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                formatOnPaste: true,
+                formatOnType: true,
+                tabSize: 2,
+                insertSpaces: true,
+                folding: true,
+                foldingStrategy: 'indentation',
+                showFoldingControls: 'always',
+                bracketPairColorization: {
+                  enabled: true
+                },
+                guides: {
+                  indentation: true,
+                  bracketPairs: true
+                }
+              }}
+            />
+          )}
         </div>
 
         {/* Footer */}
