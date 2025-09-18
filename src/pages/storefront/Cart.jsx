@@ -30,7 +30,7 @@ import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-element-wrapper';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
-import { HierarchicalSlotRenderer } from '@/components/editor/slot/SlotComponents';
+import { CartSlotRenderer } from '@/components/storefront/CartSlotRenderer';
 
 
 
@@ -969,9 +969,65 @@ export default function Cart() {
         return content;
     };
 
-    // Render the default cart layout (when no custom configuration)
+    // Render using full slot configuration for maximum flexibility
+    if (cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0) {
+        return (
+            <div
+                {...getCustomProps({ className: "bg-gray-50 cart-page" })}
+                style={getCustomStyles({ backgroundColor: '#f9fafb' })}
+            >
+                <SeoHeadManager
+                    title="Your Cart"
+                    description="Review your shopping cart items before proceeding to checkout."
+                    keywords="cart, shopping cart, checkout, e-commerce, online store"
+                />
+
+                {/* Flash Message (always show at top) */}
+                <div className="flashMessage-section mb-6">
+                    <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+                </div>
+
+                {/* Fully Dynamic Slot-Based Layout */}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                        <CartSlotRenderer
+                            slots={cartLayoutConfig.slots}
+                            parentId={null}
+                            cartData={{
+                                cartItems,
+                                appliedCoupon,
+                                couponCode,
+                                subtotal,
+                                discount,
+                                tax,
+                                total,
+                                currencySymbol,
+                                settings,
+                                store,
+                                taxes,
+                                selectedCountry,
+                                calculateItemTotal,
+                                safeToFixed,
+                                updateQuantity,
+                                removeItem,
+                                handleCheckout,
+                                handleApplyCoupon,
+                                handleRemoveCoupon,
+                                handleCouponKeyPress,
+                                setCouponCode,
+                                getStoreBaseUrl,
+                                navigate
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Fallback to basic layout when no slot configuration is available
     return (
-        <div 
+        <div
             {...getCustomProps({ className: "bg-gray-50 cart-page" })}
             style={getCustomStyles({ backgroundColor: '#f9fafb' })}
         >
@@ -981,375 +1037,33 @@ export default function Cart() {
                 keywords="cart, shopping cart, checkout, e-commerce, online store"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                {/* FlashMessage Section with Custom Slots */}
-                <div className="flashMessage-section mb-6">
-                    <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                </div>
-                
-                {/* Header Section with Grid Layout */}
-                <div className="header-section mb-8">
-                    <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <div className="col-span-12">
-                            {(() => {
-                                const titleStyling = getSlotStyling('header_title');
-                                const titleContent = getSlotContent('header_title', 'My Cart');
-                                return (
-                                    <h1
-                                        className={titleStyling.elementClasses || "text-3xl font-bold text-gray-900 mb-4"}
-                                        style={titleStyling.elementStyles}
-                                    >
-                                        {titleContent}
-                                    </h1>
-                                );
-                            })()}
+                <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
+                <div className="text-center py-12">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
+                    {cartItems.length === 0 ? (
+                        <div>
+                            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4"/>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+                            <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                            <Button
+                                onClick={() => navigate(getStoreBaseUrl(store))}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Continue Shopping
+                            </Button>
                         </div>
-                    </div>
-                </div>
-
-                {/* Dynamic Custom Slots Rendering */}
-                {cartLayoutConfig?.slots && (
-                    <div className="custom-slots-section mb-8">
-                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                            {/* Render root level custom slots */}
-                            <HierarchicalSlotRenderer
-                                slots={cartLayoutConfig.slots}
-                                parentId={null}
-                                mode="view"
-                                viewMode="live"
-                                showBorders={false}
-                                currentDragInfo={null}
-                                setCurrentDragInfo={null}
-                                onElementClick={null}
-                                onGridResize={null}
-                                onSlotHeightResize={null}
-                                onSlotDrop={null}
-                                onSlotDelete={null}
-                                onResizeStart={null}
-                                onResizeEnd={null}
-                                selectedElementId={null}
-                                setPageConfig={null}
-                                saveConfiguration={null}
-                                saveTimeoutRef={null}
-                            />
-
-                            {/* Render main_layout child slots */}
-                            <HierarchicalSlotRenderer
-                                slots={cartLayoutConfig.slots}
-                                parentId="main_layout"
-                                mode="view"
-                                viewMode="live"
-                                showBorders={false}
-                                currentDragInfo={null}
-                                setCurrentDragInfo={null}
-                                onElementClick={null}
-                                onGridResize={null}
-                                onSlotHeightResize={null}
-                                onSlotDrop={null}
-                                onSlotDelete={null}
-                                onResizeStart={null}
-                                onResizeEnd={null}
-                                selectedElementId={null}
-                                setPageConfig={null}
-                                saveConfiguration={null}
-                                saveTimeoutRef={null}
-                            />
+                    ) : (
+                        <div className="text-left">
+                            <h2 className="text-lg mb-4">Cart items functionality requires slot configuration</h2>
+                            <Button
+                                onClick={() => navigate(getStoreBaseUrl(store))}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Continue Shopping
+                            </Button>
                         </div>
-                    </div>
-                )}
-
-                <CmsBlockRenderer position="cart_above_items" />
-                {cartItems.length === 0 ? (
-                    // Empty cart state with micro-slots in custom order
-                    <div className="emptyCart-section">
-                        <div className="text-center py-12">
-                            <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                {(
-                                    // Fallback to default layout if no configuration
-                                    <>
-                                        <div className="col-span-12">
-                                            <ResizeElementWrapper
-                                                initialWidth={64}
-                                                initialHeight={64}
-                                                minWidth={32}
-                                                maxWidth={128}
-                                                disabled={true}
-                                            >
-                                                <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4"/>
-                                            </ResizeElementWrapper>
-                                        </div>
-                                        <div className="col-span-12">
-                                            {(() => {
-                                                const titleStyling = getSlotStyling('empty_cart_title');
-                                                const titleContent = getSlotContent('empty_cart_title', 'Your cart is empty');
-                                                return (
-                                                    <h2
-                                                        className={titleStyling.elementClasses || "text-xl font-semibold text-gray-900 mb-2"}
-                                                        style={titleStyling.elementStyles}
-                                                    >
-                                                        {titleContent}
-                                                    </h2>
-                                                );
-                                            })()}
-                                        </div>
-                                        <div className="col-span-12">
-                                            {(() => {
-                                                const textStyling = getSlotStyling('empty_cart_text');
-                                                const textContent = getSlotContent('empty_cart_text', "Looks like you haven't added anything to your cart yet.");
-                                                return (
-                                                    <p
-                                                        className={textStyling.elementClasses || "text-gray-600 mb-6"}
-                                                        style={textStyling.elementStyles}
-                                                    >
-                                                        {textContent}
-                                                    </p>
-                                                );
-                                            })()}
-                                        </div>
-                                        <div className="col-span-12 flex justify-center">
-                                            {(() => {
-                                                const buttonStyling = getSlotStyling('empty_cart_button');
-                                                const buttonContent = getSlotContent('empty_cart_button', 'Continue Shopping');
-                                                return (
-                                                    <Button
-                                                        onClick={() => navigate(getStoreBaseUrl(store))}
-                                                        className={buttonStyling.elementClasses || "bg-blue-600 hover:bg-blue-700 w-auto"}
-                                                        style={buttonStyling.elementStyles}
-                                                    >
-                                                        {buttonContent}
-                                                    </Button>
-                                                );
-                                            })()}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                        <div className="lg:col-span-2">
-                            {(() => {
-                                const cartItemsStyling = getSlotStyling('cart_items_container');
-                                return (
-                                    <Card className={cartItemsStyling.elementClasses} style={cartItemsStyling.elementStyles}>
-                                        <CardContent className="px-4 divide-y divide-gray-200">
-                                    {cartItems.map(item => {
-                                        const product = item.product;
-                                        if (!product) return null;
-
-                                        // Logic for basePrice for display, as per outline's intent
-                                        let basePriceForDisplay;
-                                        const itemPriceAsNumber = formatPrice(item.price);
-
-                                        if (itemPriceAsNumber > 0) {
-                                            // Use the stored price from cart if it's a valid positive number
-                                            basePriceForDisplay = itemPriceAsNumber;
-                                        } else {
-                                            // Fallback to product's current pricing if cart item price is invalid/missing/zero
-                                            let productCurrentPrice = formatPrice(product.sale_price || product.price);
-                                            
-                                            // Apply outline's compare_price logic: if compare_price is lower than current product price, use it
-                                            const comparePrice = formatPrice(product.compare_price);
-                                            if (comparePrice > 0 && comparePrice < productCurrentPrice) {
-                                                basePriceForDisplay = comparePrice;
-                                            } else {
-                                                basePriceForDisplay = productCurrentPrice;
-                                            }
-                                        }
-
-                                        const itemTotal = calculateItemTotal(item, product);
-
-                                        return (
-                                            <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                                                <img 
-                                                    src={product.images?.[0] || 'https://placehold.co/100x100?text=No+Image'} 
-                                                    alt={product.name}
-                                                    className="w-20 h-20 object-cover rounded-lg"
-                                                />
-                                                <div className="flex-1">
-                                                    <h3 className="text-lg font-semibold">{product.name}</h3>
-                                                    <p className="text-gray-600">{formatDisplayPrice(basePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each</p>
-                                                    
-                                                    {item.selected_options && item.selected_options.length > 0 && (
-                                                        <div className="text-sm text-gray-500 mt-1">
-                                                            {item.selected_options.map((option, idx) => (
-                                                                <div key={idx}>+ {option.name} (+{formatDisplayPrice(option.price, currencySymbol, store, taxes, selectedCountry)})</div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    <div className="flex items-center space-x-3 mt-3">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => updateQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
-                                                        >
-                                                            <Minus className="w-4 h-4" />
-                                                        </Button>
-                                                        <span className="text-lg font-semibold">{item.quantity || 1}</span>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
-                                                        >
-                                                            <Plus className="w-4 h-4" />
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => removeItem(item.id)}
-                                                            className="ml-auto"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xl font-bold">{formatDisplayPrice(itemTotal, currencySymbol, store, taxes, selectedCountry)}</p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </CardContent>
-                                    </Card>
-                                );
-                            })()}
-                            <CmsBlockRenderer position="cart_below_items" />
-                        </div>
-                        <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
-                            {(() => {
-                                const couponStyling = getSlotStyling('coupon_container');
-                                return (
-                                    <Card className={couponStyling.elementClasses} style={couponStyling.elementStyles}>
-                                        <CardContent className="p-4">
-                                            <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                                {(
-                                                    // Fallback to default layout if no configuration
-                                                    <>
-                                                        <div className="col-span-12">
-                                                            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
-                                                        </div>
-                                                        {!appliedCoupon ? (
-                                                            <>
-                                                                <div className="col-span-8">
-                                                                    <Input
-                                                                        placeholder="Enter coupon code"
-                                                                        value={couponCode}
-                                                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                                                                        onKeyPress={handleCouponKeyPress}
-                                                                    />
-                                                                </div>
-                                                                <div className="col-span-4">
-                                                                    <Button
-                                                                        onClick={handleApplyCoupon}
-                                                                        disabled={!couponCode.trim()}
-                                                                    >
-                                                                        <Tag className="w-4 h-4 mr-2"/> Apply
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="col-span-8">
-                                                                    <div className="bg-green-50 p-3 rounded-lg">
-                                                                        <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
-                                                                        <p className="text-xs text-green-600">
-                                                                            {appliedCoupon.discount_type === 'fixed'
-                                                                                ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
-                                                                                : `${safeToFixed(appliedCoupon.discount_value)}% off`
-                                                                            }
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="col-span-4">
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={handleRemoveCoupon}
-                                                                        className="text-red-600 hover:text-red-800"
-                                                                    >
-                                                                        Remove
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })()}
-                            {(() => {
-                                const orderSummaryStyling = getSlotStyling('order_summary_container');
-                                return (
-                                    <Card className={orderSummaryStyling.elementClasses} style={orderSummaryStyling.elementStyles}>
-                                        <CardContent className="p-4">
-                                            <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                                                {(
-                                                    // Fallback to default layout if no configuration
-                                                    <>
-                                                        <div className="col-span-12">
-                                                            <h3 className="text-lg font-semibold mb-4">Order
-                                                                Summary</h3>
-                                                        </div>
-                                                        <div className="col-span-12">
-                                                            <div className="flex justify-between">
-                                                                <span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-span-12">
-                                                            <div className="flex justify-between">
-                                                                <span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-span-12">
-                                                            <div className="flex justify-between">
-                                                                <span>Shipping</span><span>Free</span>
-                                                            </div>
-                                                        </div>
-                                                        {discount > 0 && (
-                                                            <div className="col-span-12">
-                                                                <div className="flex justify-between">
-                                                                    <span>Discount</span><span
-                                                                    className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        <div className="col-span-12">
-                                                            <div
-                                                                className="flex justify-between text-lg font-semibold border-t pt-4">
-                                                                <span>Total</span>
-                                                                <span>{currencySymbol}{safeToFixed(total)}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-span-12">
-                                                            <div className="border-t mt-6 pt-6">
-                                                                <Button
-                                                                    size="lg"
-                                                                    className="w-full"
-                                                                    onClick={handleCheckout}
-                                                                    style={{
-                                                                        backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-                                                                        color: '#FFFFFF'
-                                                                    }}
-                                                                >
-                                                                    Proceed to Checkout
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                )}
-                <div className="mt-12">
-                  <RecommendedProducts />
+                    )}
                 </div>
             </div>
         </div>
