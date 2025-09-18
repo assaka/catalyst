@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, startTransition } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -11,17 +11,19 @@ import { User } from '@/api/entities';
 import cartService from '@/services/cartService';
 import couponService from '@/services/couponService';
 import taxService from '@/services/taxService';
-import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
-// Import new hook system
-import hookSystem from '@/core/HookSystem.js';
-import eventSystem from '@/core/EventSystem.js';
-import customizationEngine from '@/core/CustomizationEngine.js';
-import { useCustomizations } from '@/hooks/useCustomizations.jsx';
+// Lazy load heavy components and systems
+const RecommendedProducts = React.lazy(() => import('@/components/storefront/RecommendedProducts'));
+
+// Lazy load hook systems to avoid blocking initial render
+let hookSystem = null;
+let eventSystem = null;
+let customizationEngine = null;
+let useCustomizations = null;
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,134 +106,75 @@ const useDebouncedEffect = (effect, deps, delay) => {
 export default function Cart() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    
-    
+
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
-    
-    // State for cart layout configuration
-    const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
+
+    // State for cart layout configuration - start with defaults
+    const [cartLayoutConfig, setCartLayoutConfig] = useState({
+        slots: {},
+        metadata: { created: new Date().toISOString() }
+    });
     const [configLoaded, setConfigLoaded] = useState(false);
 
-    // Load cart layout configuration directly
+    // State for lazy-loaded systems
+    const [systemsLoaded, setSystemsLoaded] = useState(false);
+
+    // Lazy load hook systems to avoid blocking initial render
     useEffect(() => {
-        console.log('🔄 loadCartLayoutConfig useEffect triggered, store:', store);
-        const loadCartLayoutConfig = async () => {
-            if (!store?.id) {
-                console.log('❌ No store.id found, skipping slot config loading');
-                return;
-            }
-            if (configLoaded && cartLayoutConfig) {
-                console.log('✅ Configuration already loaded, skipping reload');
-                return;
-            }
-            console.log('✅ Store ID found, loading published slot configuration for store:', store.id);
-            console.log('🔍 Current timestamp:', new Date().toISOString());
-            console.log('🌐 Backend URL:', process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com');
-
+        const loadSystems = async () => {
             try {
-                // Test backend connectivity first
-                console.log('🔌 Testing backend connectivity...');
+                const [
+                    { default: hooks },
+                    { default: events },
+                    { default: customization },
+                    { useCustomizations: customHook }
+                ] = await Promise.all([
+                    import('@/core/HookSystem.js'),
+                    import('@/core/EventSystem.js'),
+                    import('@/core/CustomizationEngine.js'),
+                    import('@/hooks/useCustomizations.jsx')
+                ]);
 
-                // Load published configuration using the new versioning API
+                hookSystem = hooks;
+                eventSystem = events;
+                customizationEngine = customization;
+                useCustomizations = customHook;
+                setSystemsLoaded(true);
+            } catch (error) {
+                console.warn('Failed to load hook systems:', error);
+                setSystemsLoaded(true); // Continue without hooks
+            }
+        };
+
+        loadSystems();
+    }, []);
+
+    // Load cart layout configuration in background (non-blocking)
+    useEffect(() => {
+        if (!store?.id || configLoaded) return;
+
+        const loadCartLayoutConfig = async () => {
+            try {
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
 
-                console.log('📡 Published config response:', response);
-                console.log('📡 Response data structure:', response?.data);
-                console.log('📡 Configuration content:', response?.data?.configuration);
-                console.log('📡 Configuration status:', response?.data?.status);
-                console.log('📡 Published at:', response?.data?.published_at);
-                console.log('📡 Version number:', response?.data?.version_number);
-                
-                if (response.success && response.data) {
-                    const publishedConfig = response.data;
-                    
-                    if (publishedConfig.configuration) {
-                        console.log('🔧 Setting cart layout config with published data...');
-                        console.log('🔧 Published config slots:', Object.keys(publishedConfig.configuration.slots || {}));
-                        console.log('🔧 Published config metadata:', publishedConfig.configuration.metadata);
-                        setCartLayoutConfig(publishedConfig.configuration);
-                        setConfigLoaded(true);
-                        console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
-                        console.log('🔍 Empty cart title config:', publishedConfig.configuration['emptyCart.title']);
-                    } else {
-                        console.warn('⚠️ Published configuration has no configuration data');
-                        // Fallback to cart-config.js
-                        const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
-                        setCartLayoutConfig({
-                            slots: { ...cartConfig.slots },
-                            metadata: {
-                                created: new Date().toISOString(),
-                                lastModified: new Date().toISOString()
-                            }
-                        });
-                    }
-                } else {
-                    console.warn('⚠️ No published configuration found, using default');
-                    console.warn('⚠️ Response success:', response?.success);
-                    console.warn('⚠️ Response data exists:', !!response?.data);
-                    // Set default configuration
-                    setCartLayoutConfig({
-                        slots: {},
-                        metadata: {
-                            created: new Date().toISOString(),
-                            lastModified: new Date().toISOString()
-                        }
-                    });
+                if (response.success && response.data?.configuration) {
+                    setCartLayoutConfig(response.data.configuration);
                 }
+                setConfigLoaded(true);
             } catch (error) {
-                console.error('❌ Error loading published slot configuration:', error);
-                console.error('❌ Error type:', error.constructor.name);
-                console.error('❌ Error message:', error.message);
-                console.error('❌ Network status:', navigator.onLine ? 'Online' : 'Offline');
-
-                if (error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
-                    console.error('🔌 Backend connectivity issue detected');
-                }
-
-                console.warn('⚠️ Falling back to cart-config.js due to error');
-                // Fallback to cart-config.js
-                const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
-                setCartLayoutConfig({
-                    slots: { ...cartConfig.slots },
-                    metadata: {
-                        created: new Date().toISOString(),
-                        lastModified: new Date().toISOString()
-                    }
-                });
+                console.warn('Failed to load cart layout config, using defaults:', error);
+                setConfigLoaded(true);
             }
         };
-        
-        loadCartLayoutConfig();
-        
-        // Listen for configuration updates from editor
-        const handleStorageChange = (e) => {
-            if (e.key === 'slot_config_updated' && e.newValue) {
-                console.log('🔔 Configuration update notification received');
-                const updateData = JSON.parse(e.newValue);
-                if (updateData.storeId === store?.id) {
-                    console.log('✅ Store matches, reloading configuration');
-                    loadCartLayoutConfig();
-                    // Clear the notification
-                    localStorage.removeItem('slot_config_updated');
-                }
-            }
-        };
-        
-        window.addEventListener('storage', handleStorageChange);
-        
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, [store?.id]);
+
+        // Load configuration after a short delay to not block initial render
+        const timeoutId = setTimeout(loadCartLayoutConfig, 100);
+        return () => clearTimeout(timeoutId);
+    }, [store?.id, configLoaded]);
     
-    // Initialize customization system for Cart component
-    const {
-        isInitialized: customizationsInitialized,
-        isPreviewMode,
-        getCustomStyles,
-        getCustomProps
-    } = useCustomizations({
+    // Initialize customization system for Cart component (only when systems are loaded)
+    const customizationResult = systemsLoaded && useCustomizations ? useCustomizations({
         storeId: store?.id,
         componentName: 'Cart',
         selectors: ['cart-page', 'shopping-cart'],
@@ -240,16 +183,30 @@ export default function Cart() {
             page: 'cart',
             hasItems: false // Will be updated below
         }
-    });
+    }) : {
+        isInitialized: false,
+        isPreviewMode: false,
+        getCustomStyles: () => ({}),
+        getCustomProps: (props) => props
+    };
+
+    const {
+        isInitialized: customizationsInitialized,
+        isPreviewMode,
+        getCustomStyles,
+        getCustomProps
+    } = customizationResult;
     const [taxRules, setTaxRules] = useState([]);
     
-    // Get currency symbol from settings with hook support
-    const currencySymbol = hookSystem.apply('cart.getCurrencySymbol', settings?.currency_symbol || '$', {
-        store,
-        settings
-    });
-    
-    // Enhanced cart context for hooks
+    // Get currency symbol from settings with hook support (only when hooks are loaded)
+    const currencySymbol = useMemo(() => {
+        const baseCurrency = settings?.currency_symbol || '$';
+        return systemsLoaded && hookSystem
+            ? hookSystem.apply('cart.getCurrencySymbol', baseCurrency, { store, settings })
+            : baseCurrency;
+    }, [systemsLoaded, hookSystem, settings?.currency_symbol, store, settings]);
+
+    // Enhanced cart context for hooks - memoized to prevent recreation
     const cartContext = useMemo(() => ({
         store,
         settings,
@@ -257,7 +214,7 @@ export default function Cart() {
         selectedCountry,
         currencySymbol,
         sessionId: getSessionId()
-    }), [store, settings, taxes, selectedCountry, currencySymbol]);
+    }), [store?.id, settings?.currency_symbol, taxes?.length, selectedCountry, currencySymbol]);
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [couponCode, setCouponCode] = useState('');
@@ -268,14 +225,24 @@ export default function Cart() {
     const [quantityUpdates, setQuantityUpdates] = useState({});
 
 
+    // Parallelize data loading to reduce waterfall loading
     useEffect(() => {
-        // Wait for store data to load before loading cart
         if (!storeLoading && store?.id) {
-            const timeoutId = setTimeout(() => {
-                loadCartData();
-                loadTaxRules();
-            }, 1000); // Reduced delay
-            
+            const timeoutId = setTimeout(async () => {
+                // Load all data in parallel instead of sequential
+                const results = await Promise.allSettled([
+                    loadCartData(),
+                    loadTaxRules()
+                ]);
+
+                // Log any failures for debugging
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        console.warn(`Data loading failed for operation ${index}:`, result.reason);
+                    }
+                });
+            }, 500); // Reduced from 1000ms for faster loading
+
             return () => clearTimeout(timeoutId);
         }
     }, [storeLoading, store?.id]);
@@ -362,15 +329,19 @@ export default function Cart() {
         if (showLoader) setLoading(true);
         
         try {
-            // Apply before load hooks
-            const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, cartContext);
-            if (!shouldLoad) {
-                setLoading(false);
-                return;
+            // Apply before load hooks (only if systems are loaded)
+            if (systemsLoaded && hookSystem) {
+                const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, cartContext);
+                if (!shouldLoad) {
+                    setLoading(false);
+                    return;
+                }
             }
 
-            // Emit loading event
-            eventSystem.emit('cart.loadingStarted', cartContext);
+            // Emit loading event (only if systems are loaded)
+            if (systemsLoaded && eventSystem) {
+                eventSystem.emit('cart.loadingStarted', cartContext);
+            }
 
             // Use simplified cart service (session-based approach)
             const cartResult = await cartService.getCart();
@@ -393,17 +364,31 @@ export default function Cart() {
             }
 
             const productIds = [...new Set(cartItems.map(item => item.product_id))];
-            
-            // Fetch products individually to avoid object parameter issues
+
+            // Batch fetch products instead of individual calls for better performance
             const products = await retryApiCall(async () => {
-                const productPromises = productIds.map(id => 
-                    StorefrontProduct.filter({ id: id }).catch(error => {
-                        console.error(`Failed to fetch product ${id}:`, error);
-                        return null;
-                    })
-                );
-                const productArrays = await Promise.all(productPromises);
-                return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
+                if (productIds.length === 0) return [];
+
+                try {
+                    // Try to fetch all products in a single batch call
+                    const batchResult = await StorefrontProduct.filter({
+                        id: { $in: productIds },
+                        limit: productIds.length
+                    });
+                    return batchResult || [];
+                } catch (batchError) {
+                    console.warn('Batch product fetch failed, falling back to individual calls:', batchError);
+
+                    // Fallback to individual calls if batch fails
+                    const productPromises = productIds.map(id =>
+                        StorefrontProduct.filter({ id: id }).catch(error => {
+                            console.error(`Failed to fetch product ${id}:`, error);
+                            return null;
+                        })
+                    );
+                    const productArrays = await Promise.all(productPromises);
+                    return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
+                }
             });
             
             const populatedCart = cartItems.map(item => {
@@ -415,23 +400,29 @@ export default function Cart() {
                 };
             }).filter(item => item.product); // Ensure product exists
             
-            // Apply item processing hooks
-            const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, cartContext);
-            
+            // Apply item processing hooks (only if systems are loaded)
+            const processedItems = (systemsLoaded && hookSystem)
+                ? hookSystem.apply('cart.processLoadedItems', populatedCart, cartContext)
+                : populatedCart;
+
             setCartItems(processedItems);
             setHasLoadedInitialData(true);
-            
-            // Apply after load hooks
-            hookSystem.do('cart.afterLoadItems', {
-                items: processedItems,
-                ...cartContext
-            });
 
-            // Emit loaded event
-            eventSystem.emit('cart.itemsLoaded', {
-                items: processedItems,
-                ...cartContext
-            });
+            // Apply after load hooks (only if systems are loaded)
+            if (systemsLoaded && hookSystem) {
+                hookSystem.do('cart.afterLoadItems', {
+                    items: processedItems,
+                    ...cartContext
+                });
+            }
+
+            // Emit loaded event (only if systems are loaded)
+            if (systemsLoaded && eventSystem) {
+                eventSystem.emit('cart.itemsLoaded', {
+                    items: processedItems,
+                    ...cartContext
+                });
+            }
             
             // Validate applied coupon when cart contents change
             if (appliedCoupon) {
@@ -447,62 +438,73 @@ export default function Cart() {
         }
     };
 
-    // Enhanced updateQuantity with hooks
+    // Enhanced updateQuantity with hooks and optimized state updates
     const updateQuantity = useCallback((itemId, newQuantity) => {
         const currentItem = cartItems.find(item => item.id === itemId);
         if (!currentItem) return;
 
-        // Apply before update hooks
-        const shouldUpdate = hookSystem.apply('cart.beforeUpdateQuantity', true, {
-            itemId,
-            currentQuantity: currentItem.quantity,
-            newQuantity,
-            item: currentItem,
-            ...cartContext
+        // Apply before update hooks (only if systems are loaded)
+        if (systemsLoaded && hookSystem) {
+            const shouldUpdate = hookSystem.apply('cart.beforeUpdateQuantity', true, {
+                itemId,
+                currentQuantity: currentItem.quantity,
+                newQuantity,
+                item: currentItem,
+                ...cartContext
+            });
+
+            if (!shouldUpdate) return;
+        }
+
+        // Apply quantity validation hooks (only if systems are loaded)
+        const validatedQuantity = (systemsLoaded && hookSystem)
+            ? hookSystem.apply('cart.validateQuantity', Math.max(1, newQuantity), {
+                item: currentItem,
+                maxStock: currentItem.product?.stock_quantity,
+                ...cartContext
+            })
+            : Math.max(1, newQuantity);
+
+        // Batch state updates using startTransition for better performance
+        startTransition(() => {
+            // Update local state immediately for instant UI response
+            setCartItems(currentItems =>
+                currentItems.map(item =>
+                    item.id === itemId ? { ...item, quantity: validatedQuantity } : item
+                )
+            );
+
+            setQuantityUpdates(currentUpdates => ({
+                ...currentUpdates,
+                [itemId]: validatedQuantity,
+            }));
         });
 
-        if (!shouldUpdate) return;
+        // Apply after update hooks (only if systems are loaded)
+        if (systemsLoaded && hookSystem) {
+            hookSystem.do('cart.afterUpdateQuantity', {
+                itemId,
+                oldQuantity: currentItem.quantity,
+                newQuantity: validatedQuantity,
+                item: currentItem,
+                ...cartContext
+            });
+        }
 
-        // Apply quantity validation hooks
-        const validatedQuantity = hookSystem.apply('cart.validateQuantity', Math.max(1, newQuantity), {
-            item: currentItem,
-            maxStock: currentItem.product?.stock_quantity,
-            ...cartContext
-        });
-
-        // Update local state immediately for instant UI response
-        setCartItems(currentItems =>
-            currentItems.map(item =>
-                item.id === itemId ? { ...item, quantity: validatedQuantity } : item
-            )
-        );
-
-        // Apply after update hooks
-        hookSystem.do('cart.afterUpdateQuantity', {
-            itemId,
-            oldQuantity: currentItem.quantity,
-            newQuantity: validatedQuantity,
-            item: currentItem,
-            ...cartContext
-        });
-
-        // Emit update event
-        eventSystem.emit('cart.quantityUpdated', {
-            itemId,
-            oldQuantity: currentItem.quantity,
-            newQuantity: validatedQuantity,
-            item: currentItem,
-            ...cartContext
-        });
+        // Emit update event (only if systems are loaded)
+        if (systemsLoaded && eventSystem) {
+            eventSystem.emit('cart.quantityUpdated', {
+                itemId,
+                oldQuantity: currentItem.quantity,
+                newQuantity: validatedQuantity,
+                item: currentItem,
+                ...cartContext
+            });
+        }
 
         // Dispatch immediate update for other components
         window.dispatchEvent(new CustomEvent('cartUpdated'));
-
-        setQuantityUpdates(currentUpdates => ({
-            ...currentUpdates,
-            [itemId]: validatedQuantity,
-        }));
-    }, [cartItems, cartContext]);
+    }, [cartItems, cartContext, systemsLoaded, hookSystem, eventSystem]);
 
     // Enhanced removeItem with hooks
     const removeItem = useCallback(async (itemId) => {
@@ -527,32 +529,38 @@ export default function Cart() {
                 return;
             }
 
-            // Apply before remove hooks
-            const shouldRemove = hookSystem.apply('cart.beforeRemoveItem', true, {
-                itemId,
-                item: itemToRemove,
-                ...cartContext
-            });
+            // Apply before remove hooks (only if systems are loaded)
+            if (systemsLoaded && hookSystem) {
+                const shouldRemove = hookSystem.apply('cart.beforeRemoveItem', true, {
+                    itemId,
+                    item: itemToRemove,
+                    ...cartContext
+                });
 
-            if (!shouldRemove) return;
+                if (!shouldRemove) return;
+            }
 
             // Update local state immediately for instant UI response
             const updatedItems = cartItems.filter(item => item.id !== itemId);
             setCartItems(updatedItems);
 
-            // Apply after remove hooks
-            hookSystem.do('cart.afterRemoveItem', {
-                itemId,
-                removedItem: itemToRemove,
-                ...cartContext
-            });
+            // Apply after remove hooks (only if systems are loaded)
+            if (systemsLoaded && hookSystem) {
+                hookSystem.do('cart.afterRemoveItem', {
+                    itemId,
+                    removedItem: itemToRemove,
+                    ...cartContext
+                });
+            }
 
-            // Emit remove event
-            eventSystem.emit('cart.itemRemoved', {
-                itemId,
-                removedItem: itemToRemove,
-                ...cartContext
-            });
+            // Emit remove event (only if systems are loaded)
+            if (systemsLoaded && eventSystem) {
+                eventSystem.emit('cart.itemRemoved', {
+                    itemId,
+                    removedItem: itemToRemove,
+                    ...cartContext
+                });
+            }
             
             // Dispatch immediate update for other components
             window.dispatchEvent(new CustomEvent('cartUpdated'));
@@ -841,53 +849,78 @@ export default function Cart() {
 
     // Enhanced checkout navigation with hooks
     const handleCheckout = useCallback(() => {
-        // Apply before checkout hooks
-        const checkoutData = hookSystem.apply('cart.beforeCheckout', {
+        if (cartItems.length === 0) return;
+
+        const baseCheckoutData = {
             items: cartItems,
             subtotal,
             discount,
             tax,
             total,
             canProceed: cartItems.length > 0
-        }, cartContext);
+        };
+
+        // Apply before checkout hooks (only if systems are loaded)
+        const checkoutData = (systemsLoaded && hookSystem)
+            ? hookSystem.apply('cart.beforeCheckout', baseCheckoutData, cartContext)
+            : baseCheckoutData;
 
         if (!checkoutData.canProceed) {
-            eventSystem.emit('cart.checkoutBlocked', {
-                reason: 'No items in cart',
-                ...cartContext
-            });
+            if (systemsLoaded && eventSystem) {
+                eventSystem.emit('cart.checkoutBlocked', {
+                    reason: 'No items in cart',
+                    ...cartContext
+                });
+            }
             return;
         }
 
-        // Apply checkout URL hooks
-        const checkoutUrl = hookSystem.apply('cart.getCheckoutUrl', createPublicUrl(store.slug, 'CHECKOUT'), {
-            ...checkoutData,
-            ...cartContext
-        });
+        // Apply checkout URL hooks (only if systems are loaded)
+        const checkoutUrl = (systemsLoaded && hookSystem)
+            ? hookSystem.apply('cart.getCheckoutUrl', createPublicUrl(store.slug, 'CHECKOUT'), {
+                ...checkoutData,
+                ...cartContext
+            })
+            : createPublicUrl(store.slug, 'CHECKOUT');
 
-        // Emit checkout event
-        eventSystem.emit('cart.checkoutStarted', {
-            ...checkoutData,
-            checkoutUrl,
-            ...cartContext
-        });
+        // Emit checkout event (only if systems are loaded)
+        if (systemsLoaded && eventSystem) {
+            eventSystem.emit('cart.checkoutStarted', {
+                ...checkoutData,
+                checkoutUrl,
+                ...cartContext
+            });
+        }
 
         navigate(checkoutUrl);
-    }, [cartItems, subtotal, discount, tax, total, cartContext, store?.slug, navigate]);
+    }, [cartItems, subtotal, discount, tax, total, cartContext, store?.slug, navigate, systemsLoaded, hookSystem, eventSystem]);
 
-    // Emit cart viewed event
+    // Debounced cart viewed event to prevent excessive emissions
+    const debouncedCartViewed = useMemo(() => {
+        let timeoutId;
+        return (viewData) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                if (systemsLoaded && eventSystem) {
+                    eventSystem.emit('cart.viewed', viewData);
+                }
+            }, 300);
+        };
+    }, [systemsLoaded, eventSystem]);
+
+    // Emit cart viewed event (debounced)
     useEffect(() => {
-        if (!loading && cartItems.length >= 0) {
-            eventSystem.emit('cart.viewed', {
+        if (!loading && hasLoadedInitialData && cartItems.length >= 0) {
+            debouncedCartViewed({
                 items: cartItems,
                 subtotal,
-                discount, 
+                discount,
                 tax,
                 total,
                 ...cartContext
             });
         }
-    }, [loading, cartItems, subtotal, discount, tax, total, cartContext]);
+    }, [loading, hasLoadedInitialData, cartItems.length, subtotal, discount, tax, total, debouncedCartViewed, cartContext]);
 
 
     // Debug loading states
@@ -1285,9 +1318,20 @@ export default function Cart() {
                         </div>
                     </div>
                 )}
-                <div className="mt-12">
-                  <RecommendedProducts />
-                </div>
+
+                {/* Load recommended products only when cart has items and after a delay */}
+                {cartItems.length > 0 && (
+                    <div className="mt-12">
+                        <Suspense fallback={
+                            <div className="flex items-center justify-center h-32">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span className="ml-2 text-gray-600">Loading recommendations...</span>
+                            </div>
+                        }>
+                            <RecommendedProducts />
+                        </Suspense>
+                    </div>
+                )}
             </div>
         </div>
     );
