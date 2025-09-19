@@ -662,7 +662,37 @@ export function HierarchicalSlotRenderer({
     return slot.viewMode.includes(viewMode);
   });
 
-  return filteredSlots.map(slot => {
+  // Sort slots by grid coordinates for proper visual ordering (same as storefront)
+  const sortedSlots = filteredSlots.sort((a, b) => {
+    const hasGridCoordsA = a.position && (a.position.col !== undefined && a.position.row !== undefined);
+    const hasGridCoordsB = b.position && (b.position.col !== undefined && b.position.row !== undefined);
+
+    if (hasGridCoordsA && hasGridCoordsB) {
+      // Sort by row first, then by column
+      const rowA = a.position.row;
+      const rowB = b.position.row;
+
+      if (rowA !== rowB) {
+        return rowA - rowB;
+      }
+
+      const colA = a.position.col;
+      const colB = b.position.col;
+
+      if (colA !== colB) {
+        return colA - colB;
+      }
+    }
+
+    // If one has coords and other doesn't, prioritize the one with coords
+    if (hasGridCoordsA && !hasGridCoordsB) return -1;
+    if (!hasGridCoordsA && hasGridCoordsB) return 1;
+
+    // Default: maintain original order for slots without coordinates
+    return 0;
+  });
+
+  return sortedSlots.map(slot => {
     let colSpan = slot.colSpan || 12;
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
