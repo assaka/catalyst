@@ -640,6 +640,7 @@ export function useSlotConfiguration({
       content: draggedSlot.content,
       className: draggedSlot.className,
       parentClassName: draggedSlot.parentClassName,
+      parentId: draggedSlot.parentId,  // CRITICAL: Must preserve parentId!
       styles: draggedSlot.styles || {},
       layout: draggedSlot.layout,
       gridCols: draggedSlot.gridCols,
