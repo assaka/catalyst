@@ -30,7 +30,7 @@ import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-element-wrapper';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
-import { HierarchicalSlotRenderer } from '@/components/editor/slot/SlotComponents';
+import { CartSlotRenderer } from '@/components/storefront/CartSlotRenderer';
 
 
 
@@ -986,29 +986,13 @@ export default function Cart() {
                     <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
                 </div>
 
-                {/* Complete Slot-Based Layout */}
+                {/* Complete Slot-Based Layout with Full Cart Functionality */}
                 {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <HierarchicalSlotRenderer
+                        <CartSlotRenderer
                             slots={cartLayoutConfig.slots}
                             parentId={null}
-                            mode="view"
                             viewMode={cartItems.length === 0 ? 'emptyCart' : 'withProduct'}
-                            showBorders={false}
-                            currentDragInfo={null}
-                            setCurrentDragInfo={null}
-                            onElementClick={null}
-                            onGridResize={null}
-                            onSlotHeightResize={null}
-                            onSlotDrop={null}
-                            onSlotDelete={null}
-                            onResizeStart={null}
-                            onResizeEnd={null}
-                            selectedElementId={null}
-                            setPageConfig={null}
-                            saveConfiguration={null}
-                            saveTimeoutRef={null}
-                            // Pass cart context for functional slots
                             cartContext={{
                                 cartItems,
                                 appliedCoupon,
