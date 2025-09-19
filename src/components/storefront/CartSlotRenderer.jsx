@@ -110,7 +110,6 @@ export function CartSlotRenderer({
         id: slot.id,
         type: slot.type,
         colSpan: slot.colSpan,
-        order: slot.position?.order,
         className: slot.className
       }))
     });
@@ -972,8 +971,7 @@ export function CartSlotRenderer({
             className: slot.className,
             styles: slot.styles,
             position: slot.position,
-            order: slot.position?.order,
-            gridRow: slot.styles?.gridRow,
+                gridRow: slot.styles?.gridRow,
             gridArea: slot.styles?.gridArea
           });
         }

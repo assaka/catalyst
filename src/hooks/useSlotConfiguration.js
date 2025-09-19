@@ -609,6 +609,7 @@ export function useSlotConfiguration({
       return null;
     }
 
+
     // Create a deep clone to avoid mutations
     const updatedSlots = JSON.parse(JSON.stringify(slots));
     const draggedSlot = updatedSlots[draggedSlotId];
@@ -637,16 +638,24 @@ export function useSlotConfiguration({
     };
 
     // Calculate new position based on drop zone
-    let newParentId, newOrder;
+    let newParentId, newPosition;
 
     switch (dropPosition) {
       case 'before':
         newParentId = targetSlot.parentId;
-        newOrder = (targetSlot.position?.order || 0);
+        // Place before target slot - use same row, adjust column if needed
+        newPosition = {
+          col: Math.max(1, (targetSlot.position?.col || 1) - 1),
+          row: targetSlot.position?.row || 1
+        };
         break;
       case 'after':
         newParentId = targetSlot.parentId;
-        newOrder = (targetSlot.position?.order || 0) + 1;
+        // Place after target slot - use same row, next column
+        newPosition = {
+          col: (targetSlot.position?.col || 1) + 1,
+          row: targetSlot.position?.row || 1
+        };
         break;
       case 'inside':
         // Only allow dropping inside containers
@@ -654,7 +663,8 @@ export function useSlotConfiguration({
           return null;
         }
         newParentId = targetSlotId;
-        newOrder = 0;
+        // Place at first available position inside container
+        newPosition = { col: 1, row: 1 };
         break;
       default:
         console.error('❌ Invalid drop position:', dropPosition);
@@ -665,10 +675,7 @@ export function useSlotConfiguration({
     updatedSlots[draggedSlotId] = {
       ...originalProperties,
       parentId: newParentId,
-      position: {
-        ...originalProperties.position,
-        order: newOrder
-      },
+      position: newPosition,
       metadata: {
         ...originalProperties.metadata,
         lastModified: new Date().toISOString()
@@ -680,37 +687,7 @@ export function useSlotConfiguration({
       updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
     }
 
-    // Shift other slots in the target parent to make room
-    Object.keys(updatedSlots).forEach(slotId => {
-      const slot = updatedSlots[slotId];
-      if (slot.id !== draggedSlotId &&
-          slot.parentId === newParentId &&
-          (slot.position?.order || 0) >= newOrder) {
-        updatedSlots[slotId] = {
-          ...slot,
-          position: {
-            ...slot.position,
-            order: (slot.position?.order || 0) + 1
-          }
-        };
-      }
-    });
-
-    // Clean up old parent - shift slots down
-    Object.keys(updatedSlots).forEach(slotId => {
-      const slot = updatedSlots[slotId];
-      if (slot.id !== draggedSlotId &&
-          slot.parentId === originalProperties.parentId &&
-          (slot.position?.order || 0) > (originalProperties.position?.order || 0)) {
-        updatedSlots[slotId] = {
-          ...slot,
-          position: {
-            ...slot.position,
-            order: (slot.position?.order || 0) - 1
-          }
-        };
-      }
-    });
+    // No need for complex order-based shifting - grid coordinates handle positioning
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
