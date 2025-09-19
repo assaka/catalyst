@@ -675,14 +675,6 @@ export function GridColumn({
                 <span>🔄</span>
                 <span>Move into container</span>
               </div>
-              {currentDragInfo.gridPosition && (
-                <div className="mt-2 bg-purple-100 text-purple-700 px-3 py-1 rounded-md text-xs font-mono">
-                  Position: R{currentDragInfo.gridPosition.row} C{currentDragInfo.gridPosition.col}
-                </div>
-              )}
-              <div className="mt-1 text-xs text-purple-600 opacity-75">
-                {currentDragInfo.draggedSlot?.type || 'slot'}: {currentDragInfo.draggedSlotId}
-              </div>
             </div>
           )}
         </>
