@@ -57,19 +57,41 @@ class CartService {
       }
 
       // Force fresh data for cache-busted requests
-      const response = await fetch(fullUrl, {
-        cache: bustCache ? 'no-store' : 'default',
-        headers: {
-          'Cache-Control': bustCache ? 'no-cache, no-store, must-revalidate' : 'max-age=30',
-          'Pragma': bustCache ? 'no-cache' : undefined,
-          'Expires': bustCache ? '0' : undefined
-        }
+      console.log('🌐 CartService.getCart: Attempting fetch to:', fullUrl);
+
+      let response;
+      try {
+        response = await fetch(fullUrl, {
+          cache: bustCache ? 'no-store' : 'default',
+          headers: {
+            'Cache-Control': bustCache ? 'no-cache, no-store, must-revalidate' : 'max-age=30',
+            'Pragma': bustCache ? 'no-cache' : undefined,
+            'Expires': bustCache ? '0' : undefined
+          }
+        });
+      } catch (fetchError) {
+        console.error('🚫 CartService.getCart: Network error during fetch:', {
+          error: fetchError.message,
+          name: fetchError.name,
+          url: fullUrl,
+          stack: fetchError.stack?.split('\n')[0]
+        });
+        throw fetchError; // Re-throw to be caught by outer try-catch
+      }
+
+      console.log('📡 CartService.getCart: Response received:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🛒 CartService.getCart: Response not ok:', response.status);
-        }
+        console.error('🛒 CartService.getCart: Response not ok:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: fullUrl
+        });
         return { success: false, cart: null, items: [] };
       }
 
@@ -92,8 +114,26 @@ class CartService {
       }
       return { success: false, cart: null, items: [] };
     } catch (error) {
-      console.error('🛒 CartService.getCart error:', error);
-      return { success: false, cart: null, items: [] };
+      console.error('🛒 CartService.getCart error:', {
+        message: error.message,
+        name: error.name,
+        url: fullUrl,
+        sessionId: sessionId,
+        stack: error.stack?.split('\n').slice(0, 3)
+      });
+
+      // For network errors, indicate the specific problem
+      if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
+        console.error('🌐 Network connectivity issue - check backend server status');
+      }
+
+      return {
+        success: false,
+        cart: null,
+        items: [],
+        error: error.message,
+        errorType: error.name
+      };
     }
   }
 

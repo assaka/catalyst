@@ -264,6 +264,14 @@ export function GridColumn({
       // Place after target slot
       newRow = targetSlot.position?.row || 1;
       newCol = Math.min(12, (targetSlot.position?.col || 1) + (targetSlot.colSpan || 1));
+    } else if (dropPosition === 'left') {
+      // Place to the left of target slot (horizontal reordering)
+      newRow = targetSlot.position?.row || 1;
+      newCol = Math.max(1, (targetSlot.position?.col || 1));
+    } else if (dropPosition === 'right') {
+      // Place to the right of target slot (horizontal reordering)
+      newRow = targetSlot.position?.row || 1;
+      newCol = Math.min(12, (targetSlot.position?.col || 1) + (targetSlot.colSpan || 1));
     } else if (dropPosition === 'inside') {
       // Place inside container at top-left
       newRow = 1;
@@ -364,7 +372,9 @@ export function GridColumn({
       }
 
       const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+      const width = rect.width;
       const height = rect.height;
 
       const isContainer = ['container', 'grid', 'flex'].includes(slot?.type);
@@ -380,23 +390,41 @@ export function GridColumn({
       const isReordering = draggedParent === targetParent;
       const isMoving = draggedParent !== targetParent;
 
-      if (y < height * 0.33) {
-        // Top third - "before"
-        newDropZone = 'before';
-        e.dataTransfer.dropEffect = 'move';
-      } else if (y > height * 0.67) {
-        // Bottom third - "after"
-        newDropZone = 'after';
-        e.dataTransfer.dropEffect = 'move';
-      } else {
-        // Middle area - only allow "inside" for containers
-        if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
-          newDropZone = 'inside';
+      // Check if this is a horizontal reordering scenario (same parent, side-by-side slots)
+      const isHorizontalReordering = isReordering && slot && draggedSlot &&
+        slot.position?.row === draggedSlot.position?.row;
+
+      if (isHorizontalReordering) {
+        // For horizontal reordering, use left/right zones instead of top/bottom
+        if (x < width * 0.5) {
+          // Left half - "left" (before in horizontal context)
+          newDropZone = 'left';
           e.dataTransfer.dropEffect = 'move';
         } else {
-          // Non-container in middle area - show forbidden cursor
-          e.dataTransfer.dropEffect = 'none';
-          newDropZone = null;
+          // Right half - "right" (after in horizontal context)
+          newDropZone = 'right';
+          e.dataTransfer.dropEffect = 'move';
+        }
+      } else {
+        // Use vertical zones for non-horizontal scenarios
+        if (y < height * 0.33) {
+          // Top third - "before"
+          newDropZone = 'before';
+          e.dataTransfer.dropEffect = 'move';
+        } else if (y > height * 0.67) {
+          // Bottom third - "after"
+          newDropZone = 'after';
+          e.dataTransfer.dropEffect = 'move';
+        } else {
+          // Middle area - only allow "inside" for containers
+          if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
+            newDropZone = 'inside';
+            e.dataTransfer.dropEffect = 'move';
+          } else {
+            // Non-container in middle area - show forbidden cursor
+            e.dataTransfer.dropEffect = 'none';
+            newDropZone = null;
+          }
         }
       }
 
@@ -451,7 +479,14 @@ export function GridColumn({
     }
 
     const draggedSlotId = e.dataTransfer.getData('text/plain');
-    const dropPosition = dropZone || 'after';
+    let dropPosition = dropZone || 'after';
+
+    // Map horizontal drop zones to appropriate positions
+    if (dropPosition === 'left') {
+      dropPosition = 'before'; // Left means before in horizontal context
+    } else if (dropPosition === 'right') {
+      dropPosition = 'after'; // Right means after in horizontal context
+    }
 
     if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
       onSlotDrop(draggedSlotId, slotId, dropPosition);
@@ -549,17 +584,26 @@ export function GridColumn({
       {/* Enhanced visual feedback for drag operations */}
       {mode === 'edit' && isDragActive && dropZone && currentDragInfo && (
         <>
-          {/* Ghost Preview Slot - only show for before/after */}
-          {(dropZone === 'before' || dropZone === 'after') && (
-            <div className={`absolute ${dropZone === 'before' ? '-top-16' : '-bottom-16'} left-0 right-0 z-50 pointer-events-none`}>
-              <div className="bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-dashed border-blue-400 rounded-lg p-3 shadow-xl animate-pulse">
+          {/* Ghost Preview Slot - show for before/after/left/right */}
+          {(dropZone === 'before' || dropZone === 'after' || dropZone === 'left' || dropZone === 'right') && (
+            <div className={`absolute z-50 pointer-events-none ${
+              dropZone === 'before' ? '-top-16 left-0 right-0' :
+              dropZone === 'after' ? '-bottom-16 left-0 right-0' :
+              dropZone === 'left' ? '-left-16 top-0 bottom-0 w-16' :
+              dropZone === 'right' ? '-right-16 top-0 bottom-0 w-16' : ''
+            }`}>
+              <div className={`bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-dashed border-blue-400 rounded-lg p-3 shadow-xl animate-pulse ${
+                (dropZone === 'left' || dropZone === 'right') ? 'h-full flex flex-col justify-center' : ''
+              }`}>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">
-                      {currentDragInfo.operationType === 'reorder' ? '↕️' : '🔄'}
+                      {(dropZone === 'left' || dropZone === 'right') ? '↔️' :
+                       currentDragInfo.operationType === 'reorder' ? '↕️' : '🔄'}
                     </span>
                     <span className="font-semibold text-blue-700">
-                      {currentDragInfo.operationType === 'reorder' ? 'Reordering' : 'Moving'}
+                      {(dropZone === 'left' || dropZone === 'right') ? 'Horizontal Reorder' :
+                       currentDragInfo.operationType === 'reorder' ? 'Reordering' : 'Moving'}
                     </span>
                   </div>
                   {currentDragInfo.gridPosition && (
@@ -602,6 +646,25 @@ export function GridColumn({
                   currentDragInfo.operationType === 'reorder' ? 'bg-green-600' : 'bg-blue-600'
                 }`}>
                   {currentDragInfo.operationType === 'reorder' ? '↕️ Reorder after' : '🔄 Move after'}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Horizontal insertion lines for left/right drop zones */}
+          {dropZone === 'left' && (
+            <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-1 h-full rounded-full shadow-lg bg-gradient-to-b from-green-400 to-blue-500">
+                <div className="absolute -left-8 top-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
+                  ↔️ Reorder left
+                </div>
+              </div>
+            </div>
+          )}
+          {dropZone === 'right' && (
+            <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-1 h-full rounded-full shadow-lg bg-gradient-to-b from-green-400 to-blue-500">
+                <div className="absolute -right-8 top-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
+                  ↔️ Reorder right
                 </div>
               </div>
             </div>

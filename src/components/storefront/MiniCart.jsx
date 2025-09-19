@@ -309,6 +309,21 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       } catch (error) {
         console.error(`🛒 MiniCart: Error loading cart (${refreshId}):`, error);
+
+        // For network errors, try to fall back to localStorage data instead of clearing cart
+        if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
+          console.log('🔄 MiniCart: Network error detected, checking localStorage fallback');
+          const localCart = getCartFromLocalStorage();
+          if (localCart && localCart.length > 0) {
+            console.log('💾 MiniCart: Using localStorage fallback:', localCart.length, 'items');
+            setCartItems(localCart);
+            setLastRefreshId(refreshId);
+            return; // Don't clear cart on network error if we have local data
+          }
+        }
+
+        // Only clear cart for non-network errors or when no fallback available
+        console.log('🗑️ MiniCart: Clearing cart due to unrecoverable error');
         setCartItems([]);
         setCartProducts({});
         setLastRefreshId(refreshId);
