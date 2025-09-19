@@ -132,19 +132,13 @@ class CartService {
           console.log('🛒 CartService.addItem: Successfully added item');
         }
 
-        // Dispatch cart update event with detailed information
-        const updateEvent = new CustomEvent('cartUpdated', {
+        // Dispatch single cart update event
+        window.dispatchEvent(new CustomEvent('cartUpdated', {
           detail: {
             action: 'add_from_service',
             timestamp: Date.now(),
             source: 'cartService.addItem'
           }
-        });
-        window.dispatchEvent(updateEvent);
-
-        // Also dispatch a more specific MiniCart refresh event
-        window.dispatchEvent(new CustomEvent('refreshMiniCart', {
-          detail: { source: 'cartService.addItem', timestamp: Date.now() }
         }));
 
         return { success: true, cart: result.data };

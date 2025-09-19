@@ -152,7 +152,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
           window.catalyst.trackAddToCart(product, 1);
         }
 
-        // Dispatch cart update events strategically
+        // Single strategic cart update event
         const eventDetail = {
           action: 'add_from_product_card',
           productId: product.id,
@@ -163,15 +163,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
 
         // Primary cartUpdated event (immediate)
         window.dispatchEvent(new CustomEvent('cartUpdated', { detail: eventDetail }));
-        console.log('🛒 Dispatched immediate cartUpdated event:', product.name);
-
-        // Backup refreshMiniCart event after short delay (in case cartUpdated fails)
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('refreshMiniCart', {
-            detail: { ...eventDetail, source: 'ProductCard_backup' }
-          }));
-          console.log('🛒 Dispatched backup refreshMiniCart event:', product.name);
-        }, 200);
+        console.log('🛒 Dispatched cartUpdated event:', product.name);
 
         console.log('✅ Successfully added to cart:', product.name);
 

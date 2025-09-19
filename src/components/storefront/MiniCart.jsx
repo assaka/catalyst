@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl } from '@/utils/urlUtils';
@@ -27,31 +27,64 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [loadCartTimeout, setLoadCartTimeout] = useState(null);
+  const [lastRefreshId, setLastRefreshId] = useState(null);
+  const loadCartRef = useRef(null);
 
   // Load cart on mount and when triggered
   useEffect(() => {
     loadCart();
   }, [cartUpdateTrigger]);
 
-  // Listen for cart updates - simplified for reliability
+  // Production-ready event handling with race condition prevention
   useEffect(() => {
+    let refreshTimeout = null;
+    let pendingRefresh = false;
+
+    const debouncedRefresh = (immediate = false) => {
+      if (pendingRefresh && !immediate) {
+        console.log('🛒 MiniCart: Refresh already pending, skipping');
+        return;
+      }
+
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+
+      if (immediate) {
+        pendingRefresh = true;
+        loadCart().finally(() => {
+          pendingRefresh = false;
+        });
+      } else {
+        refreshTimeout = setTimeout(() => {
+          if (!pendingRefresh) {
+            pendingRefresh = true;
+            loadCart().finally(() => {
+              pendingRefresh = false;
+            });
+          }
+        }, 100); // Small delay to batch multiple events
+      }
+    };
+
     const handleCartUpdate = (event) => {
       console.log('🛒 MiniCart: cartUpdated event received', {
         detail: event.detail,
         timestamp: new Date().toISOString()
       });
-      // Always refresh immediately for reliability
-      loadCart();
+
+      // Immediate refresh for add operations, debounced for others
+      const isAddOperation = event.detail?.action?.includes('add');
+      debouncedRefresh(isAddOperation);
+    };
+
+    const handleDirectRefresh = (event) => {
+      console.log('🛒 MiniCart: Direct refresh event received', event.detail);
+      debouncedRefresh(true); // Always immediate for direct refresh
     };
 
     const handleStorageChange = () => {
-      loadCart(); // Remove debouncing for storage changes too
-    };
-
-    // Direct MiniCart refresh event (backup mechanism)
-    const handleDirectRefresh = (event) => {
-      console.log('🛒 MiniCart: Direct refresh event received', event.detail);
-      loadCart();
+      debouncedRefresh(false); // Debounced for storage changes
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
@@ -62,6 +95,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('refreshMiniCart', handleDirectRefresh);
       window.removeEventListener('storage', handleStorageChange);
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
       if (loadCartTimeout) {
         clearTimeout(loadCartTimeout);
       }
@@ -72,59 +108,79 @@ export default function MiniCart({ cartUpdateTrigger }) {
   // All cart updates now trigger immediate refresh
 
   const loadCart = async () => {
-    console.log('🛒 MiniCart: loadCart started');
-    try {
-      setLoading(true);
-      
-      // Use simplified cart service
-      const cartResult = await cartService.getCart();
-      console.log('🛒 MiniCart: Cart result:', {
-        success: cartResult.success,
-        itemCount: cartResult.items?.length || 0,
-        items: cartResult.items
-      });
+    // Prevent concurrent loadCart calls
+    if (loadCartRef.current) {
+      console.log('🛒 MiniCart: LoadCart already in progress, skipping');
+      return loadCartRef.current;
+    }
 
-      if (cartResult.success && cartResult.items) {
-        console.log('🛒 MiniCart: Setting cart items:', cartResult.items.length);
-        setCartItems(cartResult.items);
-        
-        // Load product details for cart items
-        if (cartResult.items.length > 0) {
-          const productDetails = {};
-          for (const item of cartResult.items) {
-            if (!productDetails[item.product_id]) {
-              try {
-                const result = await StorefrontProduct.filter({ id: item.product_id });
-                const products = Array.isArray(result) ? result : [];
-                if (products.length > 0) {
-                  const foundProduct = products[0];
-                  if (foundProduct.id === item.product_id) {
-                    productDetails[item.product_id] = foundProduct;
-                  } else {
-                    console.error(`MiniCart: ID MISMATCH! Requested: ${item.product_id}, Got: ${foundProduct.id} (${foundProduct.name})`);
-                    // Don't add mismatched product
+    const refreshId = Date.now();
+    console.log(`🛒 MiniCart: loadCart started (${refreshId})`);
+
+    const loadCartPromise = (async () => {
+      try {
+        setLoading(true);
+
+        // Use simplified cart service
+        const cartResult = await cartService.getCart();
+        console.log(`🛒 MiniCart: Cart result (${refreshId}):`, {
+          success: cartResult.success,
+          itemCount: cartResult.items?.length || 0,
+          items: cartResult.items
+        });
+
+        if (cartResult.success && cartResult.items) {
+          console.log(`🛒 MiniCart: Setting cart items (${refreshId}):`, cartResult.items.length);
+          setCartItems(cartResult.items);
+          setLastRefreshId(refreshId);
+
+          // Load product details for cart items
+          if (cartResult.items.length > 0) {
+            const productDetails = {};
+            for (const item of cartResult.items) {
+              if (!productDetails[item.product_id]) {
+                try {
+                  const result = await StorefrontProduct.filter({ id: item.product_id });
+                  const products = Array.isArray(result) ? result : [];
+                  if (products.length > 0) {
+                    const foundProduct = products[0];
+                    if (foundProduct.id === item.product_id) {
+                      productDetails[item.product_id] = foundProduct;
+                    } else {
+                      console.error(`MiniCart: ID MISMATCH! Requested: ${item.product_id}, Got: ${foundProduct.id} (${foundProduct.name})`);
+                      // Don't add mismatched product
+                    }
                   }
+                } catch (error) {
+                  console.error(`Failed to load product ${item.product_id}:`, error);
                 }
-              } catch (error) {
-                console.error(`Failed to load product ${item.product_id}:`, error);
               }
             }
+            setCartProducts(productDetails);
+          } else {
+            setCartProducts({});
           }
-          setCartProducts(productDetails);
+        } else {
+          console.log(`🛒 MiniCart: Empty or failed cart result (${refreshId})`);
+          setCartItems([]);
+          setCartProducts({});
+          setLastRefreshId(refreshId);
         }
-      } else {
+
+      } catch (error) {
+        console.error(`🛒 MiniCart: Error loading cart (${refreshId}):`, error);
         setCartItems([]);
         setCartProducts({});
+        setLastRefreshId(refreshId);
+      } finally {
+        console.log(`🛒 MiniCart: loadCart completed (${refreshId}), setting loading to false`);
+        setLoading(false);
+        loadCartRef.current = null;
       }
+    })();
 
-    } catch (error) {
-      console.error('🛒 MiniCart: Error loading cart:', error);
-      setCartItems([]);
-      setCartProducts({});
-    } finally {
-      console.log('🛒 MiniCart: loadCart completed, setting loading to false');
-      setLoading(false);
-    }
+    loadCartRef.current = loadCartPromise;
+    return loadCartPromise;
   };
 
   const updateQuantity = async (cartItemId, newQuantity) => {
