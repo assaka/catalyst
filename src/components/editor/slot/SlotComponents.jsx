@@ -643,51 +643,23 @@ export function GridColumn({
           {/* Enhanced insertion lines with operation indicators */}
           {dropZone === 'before' && (
             <div className="absolute -top-1 left-0 right-0 z-50 pointer-events-none">
-              <div className={`h-1 rounded-full shadow-lg ${
-                currentDragInfo.operationType === 'reorder'
-                  ? 'bg-gradient-to-r from-green-400 to-blue-500'
-                  : 'bg-gradient-to-r from-blue-400 to-purple-500'
-              }`}>
-                <div className={`absolute -top-7 left-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg ${
-                  currentDragInfo.operationType === 'reorder' ? 'bg-green-600' : 'bg-blue-600'
-                }`}>
-                  {currentDragInfo.operationType === 'reorder' ? '↕️ Reorder before' : '🔄 Move before'}
-                </div>
-              </div>
+              <div className="h-0.5 bg-green-400 shadow-md opacity-75" />
             </div>
           )}
           {dropZone === 'after' && (
             <div className="absolute -bottom-1 left-0 right-0 z-50 pointer-events-none">
-              <div className={`h-1 rounded-full shadow-lg ${
-                currentDragInfo.operationType === 'reorder'
-                  ? 'bg-gradient-to-r from-green-400 to-blue-500'
-                  : 'bg-gradient-to-r from-blue-400 to-purple-500'
-              }`}>
-                <div className={`absolute -bottom-7 left-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg ${
-                  currentDragInfo.operationType === 'reorder' ? 'bg-green-600' : 'bg-blue-600'
-                }`}>
-                  {currentDragInfo.operationType === 'reorder' ? '↕️ Reorder after' : '🔄 Move after'}
-                </div>
-              </div>
+              <div className="h-0.5 bg-green-400 shadow-md opacity-75" />
             </div>
           )}
           {/* Horizontal insertion lines for left/right drop zones */}
           {dropZone === 'left' && (
-            <div className="absolute -left-2 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-2 h-full rounded shadow-xl bg-green-500">
-                <div className="absolute -left-12 top-2 text-white px-2 py-1 rounded text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
-                  ↔️ Left
-                </div>
-              </div>
+            <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-0.5 h-full bg-green-400 shadow-md opacity-75" />
             </div>
           )}
           {dropZone === 'right' && (
-            <div className="absolute -right-2 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-2 h-full rounded shadow-xl bg-green-500">
-                <div className="absolute -right-12 top-2 text-white px-2 py-1 rounded text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
-                  ↔️ Right
-                </div>
-              </div>
+            <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-0.5 h-full bg-green-400 shadow-md opacity-75" />
             </div>
           )}
           {dropZone === 'inside' && (
