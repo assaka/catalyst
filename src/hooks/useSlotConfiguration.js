@@ -62,6 +62,7 @@ function createCleanSlots(config) {
         gridCols: slot.gridCols || null,
         colSpan: slot.colSpan || 12,
         rowSpan: slot.rowSpan || 1,
+        position: slot.position ? { ...slot.position } : null,
         viewMode: slot.viewMode ? [...slot.viewMode] : [],
         metadata: slot.metadata ? { ...slot.metadata } : {}
       };
