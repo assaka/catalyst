@@ -357,10 +357,16 @@ export function GridColumn({
         yPercent: Math.round((y / height) * 100)
       });
 
-      if (y < height * 0.25 || y > height * 0.75) {
-        // Before/After drops - allow both intra-container reordering and cross-container moves
-        newDropZone = y < height * 0.25 ? 'before' : 'after';
+      if (y < height * 0.33) {
+        // Top third - "before"
+        newDropZone = 'before';
         e.dataTransfer.dropEffect = 'move';
+        console.log(`🔴 BEFORE zone detected: y=${y}, height=${height}, percentage=${Math.round((y/height)*100)}%`);
+      } else if (y > height * 0.67) {
+        // Bottom third - "after"
+        newDropZone = 'after';
+        e.dataTransfer.dropEffect = 'move';
+        console.log(`🟢 AFTER zone detected: y=${y}, height=${height}, percentage=${Math.round((y/height)*100)}%`);
       } else {
         // Middle area - only allow "inside" for containers
         if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
@@ -509,10 +515,14 @@ export function GridColumn({
       {mode === 'edit' && isDragActive && dropZone && (
         <>
           {dropZone === 'before' && (
-            <div className="absolute -top-1 left-0 right-0 h-1 bg-blue-500 rounded-full shadow-lg z-40 opacity-80" />
+            <div className="absolute -top-1 left-0 right-0 h-2 bg-red-500 rounded-full shadow-lg z-50 opacity-100">
+              {console.log(`🔴 Rendering RED line for BEFORE on ${slot?.id}`)}
+            </div>
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-1 left-0 right-0 h-1 bg-blue-500 rounded-full shadow-lg z-40 opacity-80" />
+            <div className="absolute -bottom-1 left-0 right-0 h-2 bg-green-500 rounded-full shadow-lg z-50 opacity-100">
+              {console.log(`🟢 Rendering GREEN line for AFTER on ${slot?.id}`)}
+            </div>
           )}
           {dropZone === 'inside' && (
             <div className="absolute inset-1 border-2 border-dashed border-blue-500 bg-blue-50/20 rounded z-40 opacity-80 flex items-center justify-center">
