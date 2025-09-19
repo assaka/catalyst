@@ -40,7 +40,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
     let refreshTimeout = null;
     let pendingRefresh = false;
 
-    const debouncedRefresh = (immediate = false) => {
+    const debouncedRefresh = (immediate = false, retryCount = 0) => {
       if (pendingRefresh && !immediate) {
         console.log('🛒 MiniCart: Refresh already pending, skipping');
         return;
@@ -50,18 +50,45 @@ export default function MiniCart({ cartUpdateTrigger }) {
         clearTimeout(refreshTimeout);
       }
 
-      if (immediate) {
+      const executeRefresh = async () => {
         pendingRefresh = true;
-        loadCart().finally(() => {
+        try {
+          const previousItemCount = cartItems.length;
+          await loadCart();
+
+          // For add operations, verify the cart actually updated
+          if (immediate && retryCount < 3) {
+            // Small delay to let backend process the change
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const newResult = await cartService.getCart();
+
+            if (newResult.success && newResult.items) {
+              const newItemCount = newResult.items.length;
+              console.log(`🛒 MiniCart: Retry check - Previous: ${previousItemCount}, Current: ${newItemCount}`);
+
+              // If count didn't increase for add operation, retry
+              if (newItemCount === previousItemCount) {
+                console.log('🔄 MiniCart: Cart count unchanged, retrying...');
+                setTimeout(() => debouncedRefresh(true, retryCount + 1), 500);
+                return;
+              }
+
+              // Update with the fresh data
+              setCartItems(newResult.items);
+              console.log(`✅ MiniCart: Cart updated successfully - ${newItemCount} items`);
+            }
+          }
+        } finally {
           pendingRefresh = false;
-        });
+        }
+      };
+
+      if (immediate) {
+        executeRefresh();
       } else {
         refreshTimeout = setTimeout(() => {
           if (!pendingRefresh) {
-            pendingRefresh = true;
-            loadCart().finally(() => {
-              pendingRefresh = false;
-            });
+            executeRefresh();
           }
         }, 100); // Small delay to batch multiple events
       }
@@ -72,6 +99,22 @@ export default function MiniCart({ cartUpdateTrigger }) {
         detail: event.detail,
         timestamp: new Date().toISOString()
       });
+
+      // Handle optimistic updates for immediate UI feedback
+      if (event.detail?.optimistic && event.detail?.action?.includes('add')) {
+        console.log('🚀 MiniCart: Applying optimistic update');
+        // Optimistically increment cart count for immediate feedback
+        setCartItems(prevItems => [
+          ...prevItems,
+          {
+            id: `optimistic-${Date.now()}`,
+            product_id: event.detail.productId,
+            quantity: event.detail.quantity || 1,
+            price: 0,
+            optimistic: true
+          }
+        ]);
+      }
 
       // Immediate refresh for add operations, debounced for others
       const isAddOperation = event.detail?.action?.includes('add');

@@ -152,18 +152,19 @@ const ProductCard = ({ product, settings, className = "" }) => {
           window.catalyst.trackAddToCart(product, 1);
         }
 
-        // Single strategic cart update event
+        // Optimistic UI update + cart event
         const eventDetail = {
           action: 'add_from_product_card',
           productId: product.id,
           productName: product.name,
           quantity: 1,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          optimistic: true // Flag for optimistic update
         };
 
         // Primary cartUpdated event (immediate)
         window.dispatchEvent(new CustomEvent('cartUpdated', { detail: eventDetail }));
-        console.log('🛒 Dispatched cartUpdated event:', product.name);
+        console.log('🛒 Dispatched optimistic cartUpdated event:', product.name);
 
         console.log('✅ Successfully added to cart:', product.name);
 
