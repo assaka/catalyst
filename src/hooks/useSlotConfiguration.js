@@ -611,6 +611,13 @@ export function useSlotConfiguration({
       return null;
     }
 
+    // ONLY allow drops into containers - reject all other drop targets
+    const targetSlot = slots[targetSlotId];
+    if (!targetSlot || !['container', 'grid', 'flex'].includes(targetSlot.type)) {
+      console.log(`🚫 REJECT: Cannot drop into ${targetSlot?.type || 'unknown'} slot - only containers allowed`);
+      return null;
+    }
+
     // Prevent moving critical layout containers
     if (draggedSlotId === 'main_layout') {
       return null;
@@ -683,71 +690,11 @@ export function useSlotConfiguration({
       return { col, row };
     };
 
-    switch (dropPosition) {
-      case 'before':
-        // Stay in same parent if possible, otherwise use target's parent
-        newParentId = originalProperties.parentId === targetSlot.parentId ?
-          originalProperties.parentId : targetSlot.parentId;
+    // Since we only allow drops into containers, it's always an "inside" operation
+    newParentId = targetSlotId;
+    newPosition = findAvailablePosition(newParentId, 1, 1);
 
-        // Place before target slot - take target's position and shift target forward
-        newPosition = {
-          col: targetSlot.position?.col || 1,
-          row: targetSlot.position?.row || 1
-        };
-        break;
-
-      case 'after':
-        // Stay in same parent if possible, otherwise use target's parent
-        newParentId = originalProperties.parentId === targetSlot.parentId ?
-          originalProperties.parentId : targetSlot.parentId;
-
-        // Place after target slot
-        const targetPos = targetSlot.position || { col: 1, row: 1 };
-        if (targetPos.col < 12) {
-          newPosition = {
-            col: targetPos.col + 1,
-            row: targetPos.row
-          };
-        } else {
-          newPosition = {
-            col: 1,
-            row: targetPos.row + 1
-          };
-        }
-        break;
-
-      case 'inside':
-        // Only allow dropping inside actual containers, not regular slots
-        if (!['container', 'grid', 'flex'].includes(targetSlot.type)) {
-          console.log(`⚠️ Cannot drop inside ${targetSlot.type} slot, treating as repositioning within current parent`);
-          // Stay in same parent and reposition
-          newParentId = originalProperties.parentId;
-
-          // Find a position near the target but within current parent
-          const siblings = Object.values(updatedSlots).filter(slot =>
-            slot.parentId === originalProperties.parentId && slot.id !== draggedSlotId
-          );
-
-          // Find next available position
-          let nextRow = 1;
-          siblings.forEach(sibling => {
-            if (sibling.position?.row >= nextRow) {
-              nextRow = (sibling.position.row || 1) + 1;
-            }
-          });
-
-          newPosition = { col: 1, row: nextRow };
-        } else {
-          // Allow dropping into actual containers
-          newParentId = targetSlotId;
-          newPosition = findAvailablePosition(newParentId, 1, 1);
-        }
-        break;
-
-      default:
-        console.error('❌ Invalid drop position:', dropPosition);
-        return null;
-    }
+    console.log(`📦 Dropping ${draggedSlotId} into container ${targetSlotId}`);
 
     // Debug logging for drag operations
     console.log(`🔄 Drag operation: ${draggedSlotId} ${dropPosition} ${targetSlotId}`);
@@ -781,37 +728,7 @@ export function useSlotConfiguration({
       updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
     }
 
-    // Shift other slots if there's a conflict at the new position
-    if (dropPosition === 'before' || dropPosition === 'after') {
-      Object.keys(updatedSlots).forEach(slotId => {
-        if (slotId !== draggedSlotId) {
-          const slot = updatedSlots[slotId];
-          // Check if this slot is in the same parent and at/after the new position
-          if (slot.parentId === newParentId && slot.position) {
-            const needsShift = (
-              slot.position.row > newPosition.row ||
-              (slot.position.row === newPosition.row && slot.position.col >= newPosition.col)
-            );
-
-            if (needsShift) {
-              // Shift this slot forward
-              if (slot.position.col < 12) {
-                slot.position = {
-                  ...slot.position,
-                  col: slot.position.col + 1
-                };
-              } else {
-                // Move to next row if at end of columns
-                slot.position = {
-                  col: 1,
-                  row: slot.position.row + 1
-                };
-              }
-            }
-          }
-        }
-      });
-    }
+    // No need for complex shifting - findAvailablePosition handles conflicts
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
