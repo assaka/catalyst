@@ -404,7 +404,33 @@ export function CartSlotRenderer({
         );
       }
 
-      // Default coupon functionality with title override from content
+      // Default coupon functionality - check for child slots first
+      const childSlots = SlotManager.getChildSlots(slots, slot.id);
+      const hasChildSlots = childSlots && childSlots.length > 0;
+      console.log(`🔧 Coupon container child slots:`, {
+        hasChildSlots,
+        childCount: childSlots?.length || 0,
+        childIds: childSlots?.map(s => s.id) || []
+      });
+
+      if (hasChildSlots) {
+        // Render child slots if they exist (customizable coupon layout)
+        return (
+          <Card className={className} style={styles}>
+            <CardContent className="p-4">
+              <CartSlotRenderer
+                slots={slots}
+                parentId={slot.id}
+                viewMode={viewMode}
+                cartContext={cartContext}
+              />
+            </CardContent>
+          </Card>
+        );
+      }
+
+      // Fallback to default UI if no child slots
+      console.log(`🔧 No child slots found, using default coupon UI`);
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
