@@ -446,6 +446,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'coupon_container',
+      position: { col: 1, row: 1 },
       colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -459,6 +460,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'coupon_container',
+      position: { col: 1, row: 2 },
       colSpan: 8,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -472,6 +474,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'coupon_container',
+      position: { col: 9, row: 2 },
       colSpan: 4,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -498,6 +501,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
+      position: { col: 1, row: 1 },
       colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -511,6 +515,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
+      position: { col: 1, row: 2 },
       colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -524,6 +529,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
+      position: { col: 1, row: 3 },
       colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -537,6 +543,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
+      position: { col: 1, row: 4 },
       colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -550,6 +557,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'order_summary_container',
+      position: { col: 1, row: 5 },
       colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }

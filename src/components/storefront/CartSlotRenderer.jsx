@@ -122,6 +122,13 @@ export function CartSlotRenderer({
     const actualOrder = childSlots.map(s => s.id);
     const orderMatches = JSON.stringify(expectedOrder) === JSON.stringify(actualOrder);
 
+    // Suggested grid coordinates for proper positioning
+    const suggestedGridCoordinates = {
+      'coupon_title': { gridColumn: '1 / -1', gridRow: '1', colSpan: 12 },
+      'coupon_input': { gridColumn: '1 / 9', gridRow: '2', colSpan: 8 },
+      'coupon_button': { gridColumn: '9 / -1', gridRow: '2', colSpan: 4 }
+    };
+
     console.log('🎫 COUPON CONTAINER INTERNAL LAYOUT:', {
       parentId,
       childCount: childSlots.length,
@@ -131,8 +138,13 @@ export function CartSlotRenderer({
       children: childSlots.map((slot, index) => ({
         id: slot.id,
         type: slot.type,
-        colSpan: slot.colSpan,
-        position: slot.position,
+        currentColSpan: slot.colSpan,
+        currentGridCoords: {
+          gridColumn: slot.styles?.gridColumn,
+          gridRow: slot.styles?.gridRow
+        },
+        suggestedGridCoords: suggestedGridCoordinates[slot.id],
+        hasGridCoords: !!(slot.styles?.gridColumn || slot.styles?.gridRow),
         databaseIndex: index,
         expectedIndex: expectedOrder.indexOf(slot.id),
         className: slot.className
@@ -203,12 +215,36 @@ export function CartSlotRenderer({
     return slot.viewMode.includes(viewMode);
   });
 
-  // Sort slots for consistent ordering, especially for sidebar components
+  // Sort slots using grid coordinates for precise positioning
   const sortedSlots = filteredSlots.sort((a, b) => {
-    // First, sort by explicit position.order if available
+    // First priority: Use grid coordinates (col, row) if available
+    const coordsA = a.position && (a.position.col !== undefined && a.position.row !== undefined);
+    const coordsB = b.position && (b.position.col !== undefined && b.position.row !== undefined);
+
+    if (coordsA && coordsB) {
+      // Sort by row first, then by column
+      const rowA = a.position.row;
+      const rowB = b.position.row;
+
+      if (rowA !== rowB) {
+        console.log(`📐 Grid positioning by row: ${a.id}(row:${rowA}) vs ${b.id}(row:${rowB})`);
+        return rowA - rowB;
+      }
+
+      // Same row, sort by column
+      const colA = a.position.col;
+      const colB = b.position.col;
+      if (colA !== colB) {
+        console.log(`📐 Grid positioning by col: ${a.id}(col:${colA}) vs ${b.id}(col:${colB})`);
+        return colA - colB;
+      }
+    }
+
+    // Second priority: Use legacy position.order if available
     const orderA = a.position?.order ?? 999;
     const orderB = b.position?.order ?? 999;
     if (orderA !== orderB) {
+      console.log(`📐 Legacy order positioning: ${a.id}(${orderA}) vs ${b.id}(${orderB})`);
       return orderA - orderB;
     }
 
@@ -226,43 +262,16 @@ export function CartSlotRenderer({
       }
     }
 
-    // Fallback: specific order for coupon container internals
-    if (parentId === 'coupon_container') {
-      const couponInternalOrder = {
-        'coupon_title': 1,
-        'coupon_input': 2,
-        'coupon_button': 3
-      };
-      const priorityA = couponInternalOrder[a.id] ?? 999;
-      const priorityB = couponInternalOrder[b.id] ?? 999;
-      if (priorityA !== priorityB) {
-        console.log(`🎫 Applying coupon internal order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
-        return priorityA - priorityB;
-      }
-    }
-
-    // Fallback: specific order for order summary container internals
-    if (parentId === 'order_summary_container') {
-      const orderSummaryInternalOrder = {
-        'order_summary_title': 1,
-        'order_summary_subtotal': 2,
-        'order_summary_tax': 3,
-        'order_summary_total': 4,
-        'checkout_button': 5
-      };
-      const priorityA = orderSummaryInternalOrder[a.id] ?? 999;
-      const priorityB = orderSummaryInternalOrder[b.id] ?? 999;
-      if (priorityA !== priorityB) {
-        console.log(`📊 Applying order summary internal order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
-        return priorityA - priorityB;
-      }
-    }
-
     // Default: maintain original order
     return 0;
   });
 
-  console.log('🎯 Filtered and sorted slots:', sortedSlots.length, sortedSlots.map(s => ({ id: s.id, viewMode: s.viewMode, order: s.position?.order })));
+  console.log('🎯 Filtered and sorted slots:', sortedSlots.length, sortedSlots.map(s => ({
+    id: s.id,
+    viewMode: s.viewMode,
+    gridCoords: s.position ? `col:${s.position.col}, row:${s.position.row}` : 'none',
+    legacyOrder: s.position?.order
+  })));
 
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
