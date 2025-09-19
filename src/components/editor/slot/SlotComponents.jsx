@@ -338,30 +338,33 @@ export function GridColumn({
       const y = e.clientY - rect.top;
       const height = rect.height;
 
-      let newDropZone = 'after';
+      const isContainer = ['container', 'grid', 'flex'].includes(slot?.type);
+      let newDropZone = null;
 
-      if (y < height * 0.25) {
-        newDropZone = 'before';
-      } else if (y > height * 0.75) {
-        newDropZone = 'after';
-      } else {
-        const isContainer = ['container', 'grid', 'flex'].includes(slot?.type);
+      // Get the dragged slot info to determine valid drop types
+      const draggedSlotId = currentDragInfo?.draggedSlotId;
+      const draggedSlot = draggedSlotId ? slots[draggedSlotId] : null;
+      const draggedParent = draggedSlot?.parentId;
+      const targetParent = slot?.parentId;
 
-        if (isContainer && currentDragInfo) {
-          const draggedSlotParent = currentDragInfo.parentId;
-          const draggedSlotId = currentDragInfo.slotId;
-          const targetSlotId = slot?.id;
-
-          const canDropInside = draggedSlotParent !== targetSlotId &&
-                                draggedSlotId !== targetSlotId;
-
-          if (canDropInside) {
-            newDropZone = 'inside';
-          } else {
-            newDropZone = 'after';
-          }
+      if (y < height * 0.25 || y > height * 0.75) {
+        // Before/After drops - only allow if it's for reordering within same container
+        if (draggedParent === targetParent) {
+          newDropZone = y < height * 0.25 ? 'before' : 'after';
         } else {
-          newDropZone = 'after';
+          // Different containers - show forbidden cursor
+          e.dataTransfer.dropEffect = 'none';
+          newDropZone = null;
+        }
+      } else {
+        // Middle area - only allow "inside" for containers
+        if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
+          newDropZone = 'inside';
+          e.dataTransfer.dropEffect = 'move';
+        } else {
+          // Non-container in middle area - show forbidden cursor
+          e.dataTransfer.dropEffect = 'none';
+          newDropZone = null;
         }
       }
 
