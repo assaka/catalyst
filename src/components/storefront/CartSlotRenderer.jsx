@@ -54,6 +54,21 @@ export function CartSlotRenderer({
   let childSlots = SlotManager.getChildSlots(slots, parentId);
   console.log('📋 Child slots for parentId', parentId, ':', childSlots.length, childSlots.map(s => s.id));
 
+  // Special debugging for sidebar layout
+  if (parentId === 'sidebar_area') {
+    console.log('🏠 SIDEBAR LAYOUT DEBUG:', {
+      parentId,
+      childCount: childSlots.length,
+      children: childSlots.map(slot => ({
+        id: slot.id,
+        type: slot.type,
+        colSpan: slot.colSpan,
+        order: slot.position?.order,
+        className: slot.className
+      }))
+    });
+  }
+
   // If this is the cart_items_container, generate dynamic cart item slots based on actual cart data
   if (parentId === 'cart_items_container' && cartItems && cartItems.length > 0 && viewMode === 'withProducts') {
     console.log('🔄 Generating dynamic cart item slots for', cartItems.length, 'items');
@@ -793,6 +808,23 @@ export function CartSlotRenderer({
       {filteredSlots.map((slot) => {
         const colSpan = slot.colSpan || 12;
         const gridColumn = `span ${colSpan} / span ${colSpan}`;
+
+        // Special logging for layout-critical slots
+        if (slot.id === 'coupon_container' || slot.id === 'order_summary_container') {
+          console.log(`📍 LAYOUT CHECK - ${slot.id}:`, {
+            id: slot.id,
+            type: slot.type,
+            parentId: slot.parentId,
+            colSpan: slot.colSpan,
+            gridColumn,
+            className: slot.className,
+            styles: slot.styles,
+            position: slot.position,
+            order: slot.position?.order,
+            gridRow: slot.styles?.gridRow,
+            gridArea: slot.styles?.gridArea
+          });
+        }
 
         console.log('🎨 About to render slot:', {
           id: slot.id,
