@@ -376,15 +376,25 @@ export default function Cart() {
         if (showLoader) setLoading(true);
 
         try {
+            // Create cart context locally to avoid circular dependency
+            const localCartContext = {
+                store,
+                settings,
+                taxes,
+                selectedCountry,
+                currencySymbol,
+                sessionId: getSessionId()
+            };
+
             // Apply before load hooks
-            const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, cartContext);
+            const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, localCartContext);
             if (!shouldLoad) {
                 setLoading(false);
                 return;
             }
 
             // Emit loading event
-            eventSystem.emit('cart.loadingStarted', cartContext);
+            eventSystem.emit('cart.loadingStarted', localCartContext);
 
             // Use simplified cart service (session-based approach)
             const cartResult = await cartService.getCart();
@@ -444,21 +454,21 @@ export default function Cart() {
             }).filter(item => item.product); // Ensure product exists
             
             // Apply item processing hooks
-            const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, cartContext);
-            
+            const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, localCartContext);
+
             setCartItems(processedItems);
             setHasLoadedInitialData(true);
-            
+
             // Apply after load hooks
             hookSystem.do('cart.afterLoadItems', {
                 items: processedItems,
-                ...cartContext
+                ...localCartContext
             });
 
             // Emit loaded event
             eventSystem.emit('cart.itemsLoaded', {
                 items: processedItems,
-                ...cartContext
+                ...localCartContext
             });
             
             // Validate applied coupon when cart contents change
@@ -473,7 +483,7 @@ export default function Cart() {
         } finally {
             if (showLoader) setLoading(false);
         }
-    }, [appliedCoupon, cartContext]); // Add dependency array for useCallback
+    }, [appliedCoupon, store, settings, taxes, selectedCountry, currencySymbol]); // Fixed dependencies to avoid circular reference
 
     // Enhanced updateQuantity with hooks
     const updateQuantity = useCallback((itemId, newQuantity) => {
