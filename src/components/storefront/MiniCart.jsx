@@ -82,8 +82,14 @@ export default function MiniCart({ cartUpdateTrigger }) {
       
       // Use simplified cart service
       const cartResult = await cartService.getCart();
-      
+      console.log('🛒 MiniCart: Cart result:', {
+        success: cartResult.success,
+        itemCount: cartResult.items?.length || 0,
+        items: cartResult.items
+      });
+
       if (cartResult.success && cartResult.items) {
+        console.log('🛒 MiniCart: Setting cart items:', cartResult.items.length);
         setCartItems(cartResult.items);
         
         // Load product details for cart items
@@ -116,10 +122,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
       }
 
     } catch (error) {
-      console.error('MiniCart: Error loading cart:', error);
+      console.error('🛒 MiniCart: Error loading cart:', error);
       setCartItems([]);
       setCartProducts({});
     } finally {
+      console.log('🛒 MiniCart: loadCart completed, setting loading to false');
       setLoading(false);
     }
   };
