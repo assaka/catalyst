@@ -139,12 +139,43 @@ const ProductCard = ({ product, settings, className = "" }) => {
         if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
           window.catalyst.trackAddToCart(product, 1);
         }
-        
-        // Dispatch cart updated event to refresh MiniCart
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
-        console.log('Successfully added to cart:', product.name);
+
+        // Dispatch multiple cart updated events to ensure components update
+        window.dispatchEvent(new CustomEvent('cartUpdated', {
+          detail: {
+            action: 'add',
+            productId: product.id,
+            productName: product.name,
+            quantity: 1
+          }
+        }));
+
+        // Additional event with slight delay to ensure processing
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('cartUpdated', {
+            detail: { action: 'add_delayed', productId: product.id }
+          }));
+        }, 100);
+
+        console.log('✅ Successfully added to cart:', product.name);
+
+        // Show flash message
+        window.dispatchEvent(new CustomEvent('showFlashMessage', {
+          detail: {
+            type: 'success',
+            message: `${product.name} added to cart successfully!`
+          }
+        }));
       } else {
-        console.error('Failed to add to cart:', result.error);
+        console.error('❌ Failed to add to cart:', result.error);
+
+        // Show error flash message
+        window.dispatchEvent(new CustomEvent('showFlashMessage', {
+          detail: {
+            type: 'error',
+            message: `Failed to add ${product.name} to cart. Please try again.`
+          }
+        }));
       }
     } catch (error) {
       console.error("Failed to add to cart", error);

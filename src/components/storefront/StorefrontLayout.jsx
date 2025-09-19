@@ -26,6 +26,7 @@ import DataLayerManager from '@/components/storefront/DataLayerManager';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -67,6 +68,9 @@ export default function StorefrontLayout({ children }) {
     const [expandedMobileCategories, setExpandedMobileCategories] = useState(new Set());
     // State to trigger MiniCart re-render
     const [cartUpdateTrigger, setCartUpdateTrigger] = useState(0);
+
+    // Flash message state
+    const [flashMessage, setFlashMessage] = useState(null);
 
     // Toggle function for mobile category expansion
     const toggleMobileCategory = (categoryId) => {
@@ -166,6 +170,22 @@ export default function StorefrontLayout({ children }) {
 
       window.addEventListener('cartUpdated', handleCartUpdate);
       return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+    }, []);
+
+    // Flash message event listener
+    useEffect(() => {
+      const handleShowFlashMessage = (event) => {
+        const { type, message } = event.detail;
+        setFlashMessage({ type, message });
+
+        // Auto-hide flash message after 5 seconds
+        setTimeout(() => {
+          setFlashMessage(null);
+        }, 5000);
+      };
+
+      window.addEventListener('showFlashMessage', handleShowFlashMessage);
+      return () => window.removeEventListener('showFlashMessage', handleShowFlashMessage);
     }, []);
 
     if (loading) {
@@ -678,6 +698,17 @@ export default function StorefrontLayout({ children }) {
                 {/* Main Content - Full Width */}
                 <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
                     <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
+
+                    {/* Global Flash Message */}
+                    {flashMessage && (
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+                            <FlashMessage
+                                message={flashMessage}
+                                onClose={() => setFlashMessage(null)}
+                            />
+                        </div>
+                    )}
+
                     <RedirectHandler storeId={store?.id}>
                         {children}
                     </RedirectHandler>
