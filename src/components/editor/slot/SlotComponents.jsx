@@ -391,19 +391,38 @@ export function GridColumn({
       const isMoving = draggedParent !== targetParent;
 
       // Check if this is a horizontal reordering scenario (same parent, side-by-side slots)
+      // For now, assume any reordering within the same parent is potentially horizontal
       const isHorizontalReordering = isReordering && slot && draggedSlot &&
-        slot.position?.row === draggedSlot.position?.row;
+        !['container', 'grid', 'flex'].includes(slot?.type);
+
+      console.log('🔄 Drag feedback check:', {
+        isHorizontalReordering,
+        isReordering,
+        draggedSlot: draggedSlot?.id,
+        targetSlot: slot?.id,
+        targetType: slot?.type,
+        draggedParent,
+        targetParent
+      });
 
       if (isHorizontalReordering) {
         // For horizontal reordering, use left/right zones instead of top/bottom
-        if (x < width * 0.5) {
-          // Left half - "left" (before in horizontal context)
+        // Make the zones more sensitive for better detection
+        if (x < width * 0.4) {
+          // Left 40% - "left" (before in horizontal context)
           newDropZone = 'left';
           e.dataTransfer.dropEffect = 'move';
-        } else {
-          // Right half - "right" (after in horizontal context)
+          console.log('🟢 LEFT zone detected', { x, width, percentage: Math.round((x/width)*100) });
+        } else if (x > width * 0.6) {
+          // Right 40% - "right" (after in horizontal context)
           newDropZone = 'right';
           e.dataTransfer.dropEffect = 'move';
+          console.log('🟢 RIGHT zone detected', { x, width, percentage: Math.round((x/width)*100) });
+        } else {
+          // Middle 20% - no drop zone for clearer UX
+          newDropZone = null;
+          e.dataTransfer.dropEffect = 'none';
+          console.log('🚫 Middle zone - no drop', { x, width, percentage: Math.round((x/width)*100) });
         }
       } else {
         // Use vertical zones for non-horizontal scenarios
@@ -484,8 +503,10 @@ export function GridColumn({
     // Map horizontal drop zones to appropriate positions
     if (dropPosition === 'left') {
       dropPosition = 'before'; // Left means before in horizontal context
+      console.log('🔄 Mapping LEFT to BEFORE');
     } else if (dropPosition === 'right') {
       dropPosition = 'after'; // Right means after in horizontal context
+      console.log('🔄 Mapping RIGHT to AFTER');
     }
 
     if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
@@ -652,19 +673,19 @@ export function GridColumn({
           )}
           {/* Horizontal insertion lines for left/right drop zones */}
           {dropZone === 'left' && (
-            <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-1 h-full rounded-full shadow-lg bg-gradient-to-b from-green-400 to-blue-500">
-                <div className="absolute -left-8 top-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
-                  ↔️ Reorder left
+            <div className="absolute -left-2 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-2 h-full rounded shadow-xl bg-green-500">
+                <div className="absolute -left-12 top-2 text-white px-2 py-1 rounded text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
+                  ↔️ Left
                 </div>
               </div>
             </div>
           )}
           {dropZone === 'right' && (
-            <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-1 h-full rounded-full shadow-lg bg-gradient-to-b from-green-400 to-blue-500">
-                <div className="absolute -right-8 top-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
-                  ↔️ Reorder right
+            <div className="absolute -right-2 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-2 h-full rounded shadow-xl bg-green-500">
+                <div className="absolute -right-12 top-2 text-white px-2 py-1 rounded text-xs font-medium shadow-lg bg-green-600 whitespace-nowrap">
+                  ↔️ Right
                 </div>
               </div>
             </div>

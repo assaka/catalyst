@@ -229,7 +229,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-store-id', 'params', 'cache-control', 'headers'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-store-id', 'params', 'cache-control', 'pragma', 'expires', 'headers'],
   exposedHeaders: ['Access-Control-Allow-Origin'],
   optionsSuccessStatus: 200,
   preflightContinue: false

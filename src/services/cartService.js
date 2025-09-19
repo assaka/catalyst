@@ -61,13 +61,19 @@ class CartService {
 
       let response;
       try {
+        // Build headers object without undefined values to avoid CORS issues
+        const headers = {
+          'Cache-Control': bustCache ? 'no-cache, no-store, must-revalidate' : 'max-age=30'
+        };
+
+        // Only add Pragma for cache busting, don't add Expires (causes CORS issues)
+        if (bustCache) {
+          headers['Pragma'] = 'no-cache';
+        }
+
         response = await fetch(fullUrl, {
           cache: bustCache ? 'no-store' : 'default',
-          headers: {
-            'Cache-Control': bustCache ? 'no-cache, no-store, must-revalidate' : 'max-age=30',
-            'Pragma': bustCache ? 'no-cache' : undefined,
-            'Expires': bustCache ? '0' : undefined
-          }
+          headers: headers
         });
       } catch (fetchError) {
         console.error('🚫 CartService.getCart: Network error during fetch:', {
