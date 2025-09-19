@@ -593,6 +593,14 @@ export function useSlotConfiguration({
     return { updatedSlots, newSlotId };
   }, []);
 
+  // Helper function to get the parent of a parent
+  const getParentOfParent = (slots, slotId) => {
+    const slot = slots[slotId];
+    if (!slot || !slot.parentId) return null;
+    const parent = slots[slot.parentId];
+    return parent?.parentId || null;
+  };
+
   // Generic slot drop handler
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
     console.log(`🎯 START: handleSlotDrop(${draggedSlotId}, ${targetSlotId}, ${dropPosition})`);
@@ -695,10 +703,25 @@ export function useSlotConfiguration({
     const targetParent = targetSlot.parentId;
 
     if (dropPosition === 'inside' && isContainerTarget) {
-      // Container-to-container move
-      console.log(`📦 Moving ${draggedSlotId} into container ${targetSlotId}`);
-      newParentId = targetSlotId;
-      newPosition = findAvailablePosition(newParentId, 1, 1);
+      // Check if this is really a cross-container move or accidental parent hit
+      if (originalProperties.parentId && targetSlotId === getParentOfParent(slots, originalProperties.parentId)) {
+        // User dragged to grandparent container - likely trying to reorder within current parent
+        console.log(`🔄 Detected parent container hit - keeping in current container ${originalProperties.parentId}`);
+        newParentId = originalProperties.parentId;
+
+        // Find an early position in the container (row 1)
+        const siblings = Object.values(slots).filter(slot =>
+          slot.parentId === originalProperties.parentId && slot.id !== draggedSlotId
+        );
+        const minRow = Math.min(...siblings.map(s => s.position?.row || 1));
+        newPosition = { col: 1, row: Math.max(1, minRow - 1) };
+
+      } else {
+        // Genuine container-to-container move
+        console.log(`📦 Moving ${draggedSlotId} into container ${targetSlotId}`);
+        newParentId = targetSlotId;
+        newPosition = findAvailablePosition(newParentId, 1, 1);
+      }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent) {
       // Intra-container reordering - same parent, different position
