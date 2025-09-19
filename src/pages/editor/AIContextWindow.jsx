@@ -685,7 +685,7 @@ export default ExampleComponent;`;
                             return (
                               <CartSlotsEditor
                                 mode="edit"
-                                viewMode="empty"
+                                viewMode="emptyCart"
                                 slotType={slotType}
                                 onSave={handleSave}
                               />
@@ -880,7 +880,7 @@ export default ExampleComponent;`;
                                 return (
                                   <CartSlotsEditor
                                     mode="edit"
-                                    viewMode="empty"
+                                    viewMode="emptyCart"
                                     slotType={slotType}
                                     onSave={handleSave}
                                   />
