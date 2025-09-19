@@ -140,64 +140,64 @@ export default function Cart() {
                 console.log('📡 Published at:', response?.data?.published_at);
                 console.log('📡 Version number:', response?.data?.version_number);
                 
-                if (response.success && response.data) {
+                // Check for various "no published config" scenarios
+                if (response.success && response.data &&
+                    response.data.configuration &&
+                    response.data.configuration.slots &&
+                    Object.keys(response.data.configuration.slots).length > 0) {
+
                     const publishedConfig = response.data;
-                    
-                    if (publishedConfig.configuration) {
-                        console.log('🔧 Setting cart layout config with published data...');
-                        console.log('🔧 Published config slots:', Object.keys(publishedConfig.configuration.slots || {}));
-                        console.log('🔧 Published config metadata:', publishedConfig.configuration.metadata);
-                        setCartLayoutConfig(publishedConfig.configuration);
-                        setConfigLoaded(true);
-                        console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
-                        console.log('🔍 Empty cart title config:', publishedConfig.configuration['empty_cart_title']);
-                    } else {
-                        console.warn('⚠️ Published configuration has no configuration data');
-                        // Fallback to cart-config.js
-                        const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
-                        const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
-                        console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
+                    console.log('🔧 Setting cart layout config with published data...');
+                    console.log('🔧 Published config slots:', Object.keys(publishedConfig.configuration.slots || {}));
+                    console.log('🔧 Published config metadata:', publishedConfig.configuration.metadata);
+                    setCartLayoutConfig(publishedConfig.configuration);
+                    setConfigLoaded(true);
+                    console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
+                    console.log('🔍 Empty cart title config:', publishedConfig.configuration['empty_cart_title']);
 
-                        const fallbackConfig = {
-                            slots: { ...cartConfig.slots },
-                            metadata: {
-                                ...cartConfig.metadata,
-                                fallbackUsed: true,
-                                fallbackReason: 'Published configuration missing configuration data'
-                            }
-                        };
-
-                        setCartLayoutConfig(fallbackConfig);
-                        setConfigLoaded(true);
-                    }
                 } else {
-                    console.warn('⚠️ No published configuration found, falling back to cart-config.js');
-                    console.warn('⚠️ Response success:', response?.success);
-                    console.warn('⚠️ Response data exists:', !!response?.data);
+                    // Any scenario where we don't have a valid published configuration
+                    const noConfigReasons = [];
+                    if (!response.success) noConfigReasons.push('API response not successful');
+                    if (!response.data) noConfigReasons.push('No response data');
+                    if (response.data && !response.data.configuration) noConfigReasons.push('No configuration in response');
+                    if (response.data?.configuration && !response.data.configuration.slots) noConfigReasons.push('No slots in configuration');
+                    if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
 
-                    // Fallback to cart-config.js default configuration
+                    console.warn('⚠️ No valid published configuration found. Reasons:', noConfigReasons);
+                    console.warn('⚠️ Response details:', {
+                        success: response?.success,
+                        hasData: !!response?.data,
+                        hasConfig: !!response?.data?.configuration,
+                        hasSlots: !!response?.data?.configuration?.slots,
+                        slotCount: Object.keys(response?.data?.configuration?.slots || {}).length
+                    });
+
+                    // Fallback to cart-config.js
                     const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
                     const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
                     console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
-                    console.log('📦 Sample slots:', Object.keys(cartConfig.slots).slice(0, 5));
+                    console.log('📦 Sample slots from cart-config.js:', Object.keys(cartConfig.slots).slice(0, 5));
 
                     const fallbackConfig = {
                         slots: { ...cartConfig.slots },
                         metadata: {
                             ...cartConfig.metadata,
                             fallbackUsed: true,
-                            fallbackReason: 'No published configuration found'
+                            fallbackReason: `No valid published configuration: ${noConfigReasons.join(', ')}`
                         }
                     };
 
                     console.log('📦 Setting fallback config:', {
                         slotCount: Object.keys(fallbackConfig.slots).length,
                         hasSlots: !!fallbackConfig.slots,
+                        sampleSlots: Object.keys(fallbackConfig.slots).slice(0, 3),
                         metadata: fallbackConfig.metadata
                     });
 
                     setCartLayoutConfig(fallbackConfig);
                     setConfigLoaded(true);
+                    console.log('🔧 Fallback configuration set successfully');
                 }
             } catch (error) {
                 console.error('❌ Error loading published slot configuration:', error);
