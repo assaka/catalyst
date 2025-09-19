@@ -28,6 +28,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loadCartTimeout, setLoadCartTimeout] = useState(null);
   const [lastRefreshId, setLastRefreshId] = useState(null);
+  const [lastOptimisticUpdate, setLastOptimisticUpdate] = useState(null);
   const loadCartRef = useRef(null);
 
   // Load cart on mount and when triggered
@@ -57,25 +58,28 @@ export default function MiniCart({ cartUpdateTrigger }) {
           await loadCart();
 
           // For add operations, verify the cart actually updated
-          if (immediate && retryCount < 3) {
-            // Small delay to let backend process the change
-            await new Promise(resolve => setTimeout(resolve, 300));
+          if (immediate && retryCount < 5 && lastOptimisticUpdate) {
+            // Progressive delay to let backend process the change
+            const delay = 300 + (retryCount * 200); // 300ms, 500ms, 700ms, 900ms, 1100ms
+            await new Promise(resolve => setTimeout(resolve, delay));
             const newResult = await cartService.getCart();
 
             if (newResult.success && newResult.items) {
               const newItemCount = newResult.items.length;
-              console.log(`🛒 MiniCart: Retry check - Previous: ${previousItemCount}, Current: ${newItemCount}`);
+              const expectedCount = cartItems.length; // Current count including optimistic
+              console.log(`🛒 MiniCart: Retry check ${retryCount + 1}/5 - Expected: ${expectedCount}, Backend: ${newItemCount}`);
 
-              // If count didn't increase for add operation, retry
-              if (newItemCount === previousItemCount) {
-                console.log('🔄 MiniCart: Cart count unchanged, retrying...');
-                setTimeout(() => debouncedRefresh(true, retryCount + 1), 500);
+              // If backend count is still less than expected, retry
+              if (newItemCount < expectedCount) {
+                console.log(`🔄 MiniCart: Backend still behind (${newItemCount} < ${expectedCount}), retrying in ${delay + 200}ms...`);
+                setTimeout(() => debouncedRefresh(true, retryCount + 1), delay + 200);
                 return;
               }
 
-              // Update with the fresh data
+              // Backend caught up, update with fresh data
+              console.log(`✅ MiniCart: Backend caught up - ${newItemCount} items`);
               setCartItems(newResult.items);
-              console.log(`✅ MiniCart: Cart updated successfully - ${newItemCount} items`);
+              setLastOptimisticUpdate(null); // Clear optimistic tracking
             }
           }
         } finally {
@@ -103,17 +107,25 @@ export default function MiniCart({ cartUpdateTrigger }) {
       // Handle optimistic updates for immediate UI feedback
       if (event.detail?.optimistic && event.detail?.action?.includes('add')) {
         console.log('🚀 MiniCart: Applying optimistic update');
+        const optimisticTimestamp = Date.now();
+        setLastOptimisticUpdate(optimisticTimestamp);
+
         // Optimistically increment cart count for immediate feedback
-        setCartItems(prevItems => [
-          ...prevItems,
-          {
-            id: `optimistic-${Date.now()}`,
-            product_id: event.detail.productId,
-            quantity: event.detail.quantity || 1,
-            price: 0,
-            optimistic: true
-          }
-        ]);
+        setCartItems(prevItems => {
+          const newItems = [
+            ...prevItems,
+            {
+              id: `optimistic-${optimisticTimestamp}`,
+              product_id: event.detail.productId,
+              quantity: event.detail.quantity || 1,
+              price: 0,
+              optimistic: true,
+              optimisticTimestamp
+            }
+          ];
+          console.log(`🚀 Optimistic update: ${prevItems.length} → ${newItems.length} items`);
+          return newItems;
+        });
       }
 
       // Immediate refresh for add operations, debounced for others
@@ -174,10 +186,39 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
         if (cartResult.success && cartResult.items) {
           console.log(`🛒 MiniCart: Setting cart items (${refreshId}):`, cartResult.items.length);
-          // Filter out optimistic items and replace with real data
+
+          // Check if this backend data is fresher than our optimistic update
+          const currentItemCount = cartItems.length;
+          const backendItemCount = cartResult.items.length;
+          const hasOptimisticItems = cartItems.some(item => item.optimistic);
+
+          console.log(`📊 Data comparison - Current: ${currentItemCount}, Backend: ${backendItemCount}, HasOptimistic: ${hasOptimisticItems}`);
+
+          // Don't overwrite optimistic data with stale backend data
+          if (hasOptimisticItems && backendItemCount < currentItemCount) {
+            console.log('⚠️ Backend data appears stale, keeping optimistic data');
+            // Keep current optimistic data, but update product details
+            const realItems = cartResult.items.filter(item => !item.optimistic);
+            if (realItems.length > cartItems.filter(item => !item.optimistic).length) {
+              // Backend has more real items, merge them
+              const optimisticItems = cartItems.filter(item => item.optimistic);
+              setCartItems([...realItems, ...optimisticItems]);
+              console.log('🔄 Merged real + optimistic data');
+            }
+            // Don't update setLastRefreshId to allow retry
+            return;
+          }
+
+          // Backend data is fresh, use it
           const realItems = cartResult.items.filter(item => !item.optimistic);
           setCartItems(realItems);
           setLastRefreshId(refreshId);
+
+          // Clear optimistic update tracking if backend data is sufficient
+          if (lastOptimisticUpdate && backendItemCount >= currentItemCount) {
+            setLastOptimisticUpdate(null);
+            console.log('✅ Backend data confirmed optimistic update');
+          }
 
           // Load product details for cart items
           if (cartResult.items.length > 0) {
