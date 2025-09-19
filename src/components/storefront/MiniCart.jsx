@@ -31,6 +31,46 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [lastOptimisticUpdate, setLastOptimisticUpdate] = useState(null);
   const loadCartRef = useRef(null);
 
+  // Helper function to load product details for cart items
+  const loadProductDetails = async (cartItems) => {
+    if (cartItems.length === 0) {
+      setCartProducts({});
+      return;
+    }
+
+    const productDetails = {};
+    for (const item of cartItems) {
+      // Ensure product_id is a string/number, not an object
+      const productId = typeof item.product_id === 'object' ?
+        (item.product_id?.id || item.product_id?.toString() || null) :
+        item.product_id;
+
+      if (productId && !productDetails[productId]) {
+        try {
+          console.log(`🔍 MiniCart: Loading product details for ID: ${productId} (type: ${typeof productId})`);
+          const result = await StorefrontProduct.filter({ id: productId });
+          const products = Array.isArray(result) ? result : [];
+          if (products.length > 0) {
+            const foundProduct = products[0];
+            if (foundProduct.id == productId) { // Use == for type coercion
+              productDetails[productId] = foundProduct;
+              console.log(`✅ MiniCart: Loaded product: ${foundProduct.name}`);
+            } else {
+              console.error(`MiniCart: ID MISMATCH! Requested: ${productId}, Got: ${foundProduct.id} (${foundProduct.name})`);
+            }
+          } else {
+            console.warn(`MiniCart: No product found for ID: ${productId}`);
+          }
+        } catch (error) {
+          console.error(`Failed to load product ${productId}:`, error);
+        }
+      } else if (!productId) {
+        console.error('MiniCart: Invalid product_id in cart item:', item);
+      }
+    }
+    setCartProducts(productDetails);
+  };
+
   // Helper functions for localStorage cart persistence
   const saveCartToLocalStorage = (items) => {
     try {
@@ -143,7 +183,13 @@ export default function MiniCart({ cartUpdateTrigger }) {
         setCartItems(event.detail.freshCartData.items);
         saveCartToLocalStorage(event.detail.freshCartData.items);
         setLastOptimisticUpdate(null); // Clear optimistic tracking
-        return; // Don't make another API call
+
+        // Also load product details for the fresh items
+        if (event.detail.freshCartData.items.length > 0) {
+          loadProductDetails(event.detail.freshCartData.items);
+        }
+
+        return; // Don't make another API call - we have fresh data!
       }
 
       // Handle optimistic updates for immediate UI feedback (fallback)
@@ -172,11 +218,20 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
           return newItems;
         });
+
+        // Make API call to get real data for optimistic updates
+        const isAddOperation = event.detail?.action?.includes('add');
+        debouncedRefresh(isAddOperation);
+        return;
       }
 
-      // Immediate refresh for add operations, debounced for others
-      const isAddOperation = event.detail?.action?.includes('add');
-      debouncedRefresh(isAddOperation);
+      // Only refresh if we don't have fresh data and it's not optimistic
+      if (!event.detail?.freshCartData) {
+        const isAddOperation = event.detail?.action?.includes('add');
+        debouncedRefresh(isAddOperation);
+      } else {
+        console.log('🚫 MiniCart: Skipping refresh - already have fresh data');
+      }
     };
 
     const handleDirectRefresh = (event) => {
@@ -264,42 +319,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
           }
 
           // Load product details for cart items
-          if (cartResult.items.length > 0) {
-            const productDetails = {};
-            for (const item of cartResult.items) {
-              // Ensure product_id is a string/number, not an object
-              const productId = typeof item.product_id === 'object' ?
-                (item.product_id?.id || item.product_id?.toString() || null) :
-                item.product_id;
-
-              if (productId && !productDetails[productId]) {
-                try {
-                  console.log(`🔍 MiniCart: Loading product details for ID: ${productId} (type: ${typeof productId})`);
-                  const result = await StorefrontProduct.filter({ id: productId });
-                  const products = Array.isArray(result) ? result : [];
-                  if (products.length > 0) {
-                    const foundProduct = products[0];
-                    if (foundProduct.id == productId) { // Use == for type coercion
-                      productDetails[productId] = foundProduct;
-                      console.log(`✅ MiniCart: Loaded product: ${foundProduct.name}`);
-                    } else {
-                      console.error(`MiniCart: ID MISMATCH! Requested: ${productId}, Got: ${foundProduct.id} (${foundProduct.name})`);
-                      // Don't add mismatched product
-                    }
-                  } else {
-                    console.warn(`MiniCart: No product found for ID: ${productId}`);
-                  }
-                } catch (error) {
-                  console.error(`Failed to load product ${productId}:`, error);
-                }
-              } else if (!productId) {
-                console.error('MiniCart: Invalid product_id in cart item:', item);
-              }
-            }
-            setCartProducts(productDetails);
-          } else {
-            setCartProducts({});
-          }
+          await loadProductDetails(realItems);
         } else {
           console.log(`🛒 MiniCart: Empty or failed cart result (${refreshId})`);
           setCartItems([]);
