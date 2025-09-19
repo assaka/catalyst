@@ -597,6 +597,15 @@ export function useSlotConfiguration({
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
     console.log(`🎯 START: handleSlotDrop(${draggedSlotId}, ${targetSlotId}, ${dropPosition})`);
 
+    // Debug: Check if slots have parentId values
+    if (slots[draggedSlotId]) {
+      console.log(`📍 DEBUG: ${draggedSlotId} slot data:`, {
+        parentId: slots[draggedSlotId].parentId,
+        position: slots[draggedSlotId].position,
+        type: slots[draggedSlotId].type
+      });
+    }
+
     if (draggedSlotId === targetSlotId) {
       console.log('⚠️ ABORT: Cannot drop slot onto itself');
       return null;

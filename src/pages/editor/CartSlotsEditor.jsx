@@ -180,6 +180,11 @@ const CartSlotsEditor = ({
 
         // Simple one-time initialization
         if (isMounted) {
+          // Debug: Log what we're setting
+          console.log('🏗️ CartSlotsEditor: Setting initial config');
+          if (finalConfig.slots && finalConfig.slots.header_title) {
+            console.log('📍 header_title parentId:', finalConfig.slots.header_title.parentId);
+          }
           setCartLayoutConfig(finalConfig);
           configurationLoadedRef.current = true;
         }
