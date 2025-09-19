@@ -154,7 +154,8 @@ export default function Cart() {
                     } else {
                         console.warn('⚠️ Published configuration has no configuration data');
                         // Fallback to cart-config.js
-                        const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+                        const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
+                        const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
                         console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
 
                         const fallbackConfig = {
@@ -175,7 +176,8 @@ export default function Cart() {
                     console.warn('⚠️ Response data exists:', !!response?.data);
 
                     // Fallback to cart-config.js default configuration
-                    const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+                    const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
+                    const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
                     console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
                     console.log('📦 Sample slots:', Object.keys(cartConfig.slots).slice(0, 5));
 
@@ -209,7 +211,8 @@ export default function Cart() {
 
                 console.warn('⚠️ Falling back to cart-config.js due to error');
                 // Fallback to cart-config.js
-                const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+                const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
+                const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
                 console.log('📦 Loaded cart-config.js error fallback with', Object.keys(cartConfig.slots).length, 'slots');
 
                 const fallbackConfig = {
@@ -1163,7 +1166,8 @@ export default function Cart() {
                 {(() => {
                     const hasConfig = !!cartLayoutConfig;
                     const hasSlots = !!cartLayoutConfig?.slots;
-                    const slotCount = Object.keys(cartLayoutConfig?.slots || {}).length;
+                    const slotsObject = cartLayoutConfig?.slots || {};
+                    const slotCount = Object.keys(slotsObject).length;
                     const hasFallback = cartLayoutConfig?.metadata?.fallbackUsed;
 
                     console.log('🔍 Cart Debug - Layout Config:', {
@@ -1173,14 +1177,26 @@ export default function Cart() {
                         hasFallback,
                         fallbackReason: cartLayoutConfig?.metadata?.fallbackReason,
                         cartItemsLength: cartItems.length,
-                        viewMode: cartItems.length === 0 ? 'emptyCart' : 'withProducts'
+                        viewMode: cartItems.length === 0 ? 'emptyCart' : 'withProducts',
+                        cartLayoutConfig: cartLayoutConfig,
+                        slotsObject: slotsObject,
+                        firstFewSlots: Object.keys(slotsObject).slice(0, 3)
                     });
 
                     if (hasFallback) {
-                        console.log('📦 Using cart-config.js fallback configuration');
+                        console.log('📦 Using cart-config.js fallback configuration with', slotCount, 'slots');
+                        console.log('📦 First few slots:', Object.keys(slotsObject).slice(0, 5));
                     }
 
-                    return hasConfig && hasSlots && slotCount > 0;
+                    const shouldRender = hasConfig && hasSlots && slotCount > 0;
+                    console.log('🎯 Render decision:', {
+                        shouldRender,
+                        hasConfig,
+                        hasSlots,
+                        slotCount
+                    });
+
+                    return shouldRender;
                 })() ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
                         <CartSlotRenderer
