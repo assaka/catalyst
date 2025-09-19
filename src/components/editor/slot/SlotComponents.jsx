@@ -647,35 +647,29 @@ export function GridColumn({
             </div>
           )}
 
-          {/* Enhanced insertion lines with operation indicators */}
+          {/* Mark explicit drop zones without borders */}
           {dropZone === 'before' && (
-            <div className="absolute -top-1 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
+            <div className="absolute -top-2 left-0 right-0 z-50 pointer-events-none">
+              <div className="h-1 bg-blue-500 opacity-80" />
             </div>
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-1 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
+            <div className="absolute -bottom-2 left-0 right-0 z-50 pointer-events-none">
+              <div className="h-1 bg-blue-500 opacity-80" />
             </div>
           )}
-          {/* Horizontal insertion lines for left/right drop zones */}
           {dropZone === 'left' && (
-            <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
+            <div className="absolute -left-2 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-1 h-full bg-blue-500 opacity-80" />
             </div>
           )}
           {dropZone === 'right' && (
-            <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
+            <div className="absolute -right-2 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-1 h-full bg-blue-500 opacity-80" />
             </div>
           )}
           {dropZone === 'inside' && (
-            <div className="absolute inset-1 border-2 border-dashed border-purple-500 bg-purple-50/30 rounded-lg z-40 opacity-90 flex flex-col items-center justify-center pointer-events-none">
-              <div className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg flex items-center gap-2">
-                <span>🔄</span>
-                <span>Move into container</span>
-              </div>
-            </div>
+            <div className="absolute inset-0 bg-blue-100 opacity-20 rounded z-40 pointer-events-none" />
           )}
         </>
       )}
