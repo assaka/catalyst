@@ -987,7 +987,16 @@ export default function Cart() {
                 </div>
 
                 {/* Complete Slot-Based Layout with Full Cart Functionality */}
-                {cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
+                {(() => {
+                    console.log('🔍 Cart Debug - Layout Config:', {
+                        hasConfig: !!cartLayoutConfig,
+                        hasSlots: !!cartLayoutConfig?.slots,
+                        slotCount: Object.keys(cartLayoutConfig?.slots || {}).length,
+                        cartItemsLength: cartItems.length,
+                        viewMode: cartItems.length === 0 ? 'emptyCart' : 'withProduct'
+                    });
+                    return cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0;
+                })() ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
                         <CartSlotRenderer
                             slots={cartLayoutConfig.slots}

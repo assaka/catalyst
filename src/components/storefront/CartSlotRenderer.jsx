@@ -42,8 +42,17 @@ export function CartSlotRenderer({
     navigate
   } = cartContext;
 
+  // Debug logging
+  console.log('🔍 CartSlotRenderer Debug:', {
+    parentId,
+    viewMode,
+    totalSlots: Object.keys(slots || {}).length,
+    slotsKeys: Object.keys(slots || {}),
+  });
+
   // Get child slots for current parent
   const childSlots = SlotManager.getChildSlots(slots, parentId);
+  console.log('📋 Child slots for parentId', parentId, ':', childSlots.length, childSlots.map(s => s.id));
 
   // Filter by viewMode
   const filteredSlots = childSlots.filter(slot => {
@@ -52,6 +61,8 @@ export function CartSlotRenderer({
     }
     return slot.viewMode.includes(viewMode);
   });
+
+  console.log('🎯 Filtered slots after viewMode:', filteredSlots.length, filteredSlots.map(s => ({ id: s.id, viewMode: s.viewMode })));
 
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {} } = slot;
@@ -332,11 +343,29 @@ export function CartSlotRenderer({
     }
   };
 
+  // If no slots found, show debug info
+  if (filteredSlots.length === 0) {
+    console.warn('⚠️ No slots to render for parentId:', parentId, 'viewMode:', viewMode);
+    return (
+      <div className="col-span-12 p-4 bg-yellow-50 border border-yellow-200 rounded">
+        <p className="text-sm text-yellow-800">
+          Debug: No slots found for parentId "{parentId}" in viewMode "{viewMode}"
+        </p>
+        <p className="text-xs text-yellow-600 mt-1">
+          Total slots: {Object.keys(slots || {}).length},
+          Child slots: {childSlots.length}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       {filteredSlots.map((slot) => {
         const colSpan = slot.colSpan || 12;
         const gridColumn = `span ${colSpan} / span ${colSpan}`;
+
+        console.log('🎨 Rendering slot:', slot.id, 'type:', slot.type);
 
         return (
           <div
