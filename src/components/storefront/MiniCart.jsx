@@ -38,37 +38,60 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return;
     }
 
-    const productDetails = {};
-    for (const item of cartItems) {
-      // Ensure product_id is a string/number, not an object
+    // Extract unique product IDs and batch the request
+    const productIds = [...new Set(cartItems.map(item => {
       const productId = typeof item.product_id === 'object' ?
         (item.product_id?.id || item.product_id?.toString() || null) :
         item.product_id;
+      return productId;
+    }).filter(id => id !== null))];
 
-      if (productId && !productDetails[productId]) {
-        try {
-          console.log(`🔍 MiniCart: Loading product details for ID: ${productId} (type: ${typeof productId})`);
-          const result = await StorefrontProduct.filter({ id: productId });
-          const products = Array.isArray(result) ? result : [];
-          if (products.length > 0) {
-            const foundProduct = products[0];
-            if (foundProduct.id == productId) { // Use == for type coercion
-              productDetails[productId] = foundProduct;
-              console.log(`✅ MiniCart: Loaded product: ${foundProduct.name}`);
-            } else {
-              console.error(`MiniCart: ID MISMATCH! Requested: ${productId}, Got: ${foundProduct.id} (${foundProduct.name})`);
-            }
-          } else {
-            console.warn(`MiniCart: No product found for ID: ${productId}`);
-          }
-        } catch (error) {
-          console.error(`Failed to load product ${productId}:`, error);
-        }
-      } else if (!productId) {
-        console.error('MiniCart: Invalid product_id in cart item:', item);
-      }
+    if (productIds.length === 0) {
+      console.warn('MiniCart: No valid product IDs found in cart items');
+      setCartProducts({});
+      return;
     }
-    setCartProducts(productDetails);
+
+    try {
+      console.log(`🔍 MiniCart: Batch loading ${productIds.length} product details:`, productIds);
+
+      // Try batch loading first
+      let products = [];
+      try {
+        const result = await StorefrontProduct.filter({ id: { in: productIds } });
+        products = Array.isArray(result) ? result : [];
+      } catch (batchError) {
+        console.warn('MiniCart: Batch loading failed, falling back to individual requests:', batchError.message);
+
+        // Fallback to individual requests if batch fails
+        const productPromises = productIds.map(async (productId) => {
+          try {
+            const result = await StorefrontProduct.filter({ id: productId });
+            return Array.isArray(result) ? result[0] : result;
+          } catch (error) {
+            console.error(`Failed to load product ${productId}:`, error);
+            return null;
+          }
+        });
+
+        const results = await Promise.all(productPromises);
+        products = results.filter(p => p !== null);
+      }
+
+      // Build product details map
+      const productDetails = {};
+      products.forEach(product => {
+        if (product && product.id) {
+          productDetails[product.id] = product;
+        }
+      });
+
+      console.log(`✅ MiniCart: Loaded ${Object.keys(productDetails).length} products`);
+      setCartProducts(productDetails);
+    } catch (error) {
+      console.error('MiniCart: Error loading product details:', error);
+      setCartProducts({});
+    }
   };
 
   // Helper functions for localStorage cart persistence
@@ -409,7 +432,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
       setCartItems(updatedItems);
 
       // Dispatch immediate update with remove action for other components
-      window.dispatchEvent(new CustomEvent('cartUpdated', {
+      // Use a different event to avoid triggering refresh loops
+      window.dispatchEvent(new CustomEvent('cartItemRemoved', {
         detail: {
           action: 'remove_from_minicart',
           timestamp: Date.now(),
@@ -422,8 +446,15 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       if (result.success) {
         console.log('✅ MiniCart: Item removed successfully');
-        // Success - keep the optimistic update, don't reload cart
-        // The backend should now be in sync with our local state
+        // Update product details for remaining items without full reload
+        const remainingItems = cartItems.filter(item => item.id !== cartItemId);
+        if (remainingItems.length > 0) {
+          loadProductDetails(remainingItems);
+        } else {
+          setCartProducts({});
+        }
+        // Save to localStorage
+        saveCartToLocalStorage(remainingItems);
       } else {
         console.error('Failed to remove item:', result.error);
         // Only revert on actual API failure
