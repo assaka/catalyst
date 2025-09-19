@@ -155,7 +155,34 @@ export function CartSlotRenderer({
     return slot.viewMode.includes(viewMode);
   });
 
-  console.log('🎯 Filtered slots after viewMode:', filteredSlots.length, filteredSlots.map(s => ({ id: s.id, viewMode: s.viewMode })));
+  // Sort slots for consistent ordering, especially for sidebar components
+  const sortedSlots = filteredSlots.sort((a, b) => {
+    // First, sort by explicit position.order if available
+    const orderA = a.position?.order ?? 999;
+    const orderB = b.position?.order ?? 999;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+
+    // Fallback: specific order for sidebar components to match editor
+    if (parentId === 'sidebar_area') {
+      const sidebarOrder = {
+        'coupon_container': 1,
+        'order_summary_container': 2
+      };
+      const priorityA = sidebarOrder[a.id] ?? 999;
+      const priorityB = sidebarOrder[b.id] ?? 999;
+      if (priorityA !== priorityB) {
+        console.log(`📐 Applying sidebar order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
+        return priorityA - priorityB;
+      }
+    }
+
+    // Default: maintain original order
+    return 0;
+  });
+
+  console.log('🎯 Filtered and sorted slots:', sortedSlots.length, sortedSlots.map(s => ({ id: s.id, viewMode: s.viewMode, order: s.position?.order })));
 
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
@@ -852,7 +879,7 @@ export function CartSlotRenderer({
 
   return (
     <>
-      {filteredSlots.map((slot) => {
+      {sortedSlots.map((slot) => {
         const colSpan = slot.colSpan || 12;
         const gridColumn = `span ${colSpan} / span ${colSpan}`;
 

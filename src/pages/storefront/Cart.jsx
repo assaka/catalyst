@@ -267,14 +267,10 @@ export default function Cart() {
 
 
     useEffect(() => {
-        // Load cart data immediately when store is available - no artificial delay
+        // Load cart data immediately when store is available - tax rules now loaded in parallel within loadCartData
         if (!storeLoading && store?.id) {
-            // Load cart data and tax rules in parallel for better performance
-            Promise.all([
-                loadCartData(),
-                loadTaxRules()
-            ]).catch(error => {
-                console.error('Error loading cart data in parallel:', error);
+            loadCartData().catch(error => {
+                console.error('Error loading cart data:', error);
             });
         }
     }, [storeLoading, store?.id]);
@@ -378,6 +374,9 @@ export default function Cart() {
         if (showLoader) setLoading(true);
 
         try {
+            console.log('⚡ Starting parallel cart loading...');
+            const totalStartTime = performance.now();
+
             // Create cart context locally to avoid circular dependency
             const localCartContext = {
                 store,
@@ -398,13 +397,49 @@ export default function Cart() {
             // Emit loading event
             eventSystem.emit('cart.loadingStarted', localCartContext);
 
-            // Use simplified cart service (session-based approach)
-            const cartResult = await cartService.getCart();
+            // **PARALLEL LOADING: Start all operations simultaneously**
+            console.log('🚀 Launching parallel operations: cart + tax rules');
 
+            const [cartResult, taxRulesData] = await Promise.allSettled([
+                // Load cart data
+                (async () => {
+                    const startTime = performance.now();
+                    const result = await cartService.getCart();
+                    const loadTime = performance.now() - startTime;
+                    console.log(`📦 Cart data loaded: ${loadTime.toFixed(2)}ms`);
+                    return result;
+                })(),
+
+                // Load tax rules in parallel
+                (async () => {
+                    const startTime = performance.now();
+                    try {
+                        const taxData = store?.id ? await Tax.filter({ store_id: store.id, is_active: true }) : [];
+                        const loadTime = performance.now() - startTime;
+                        console.log(`💰 Tax rules loaded: ${loadTime.toFixed(2)}ms`);
+                        return taxData || [];
+                    } catch (error) {
+                        console.error('Tax rules loading failed:', error);
+                        return [];
+                    }
+                })()
+            ]);
+
+            // Extract cart results
             let cartItems = [];
-            if (cartResult.success && cartResult.items) {
-                cartItems = cartResult.items;
+            if (cartResult.status === 'fulfilled' && cartResult.value.success && cartResult.value.items) {
+                cartItems = cartResult.value.items;
+            } else if (cartResult.status === 'rejected') {
+                console.error('Cart loading failed:', cartResult.reason);
             }
+
+            // Update tax rules from parallel load
+            if (taxRulesData.status === 'fulfilled') {
+                setTaxRules(taxRulesData.value);
+            }
+
+            const parallelLoadTime = performance.now() - totalStartTime;
+            console.log(`⚡ Parallel operations completed: ${parallelLoadTime.toFixed(2)}ms`);
 
             if (!cartItems || cartItems.length === 0) {
                 setCartItems([]);
@@ -418,30 +453,78 @@ export default function Cart() {
 
             const productIds = [...new Set(cartItems.map(item => item.product_id))];
 
-            // Optimized: Batch fetch products with single API call
+            // High-Performance Batch Product Fetching
             const products = await (async () => {
+                if (productIds.length === 0) return [];
+
+                console.log('🚀 Batch fetching', productIds.length, 'products:', productIds);
+                const startTime = performance.now();
+
                 try {
-                    // Try batch fetch first (most efficient)
-                    if (productIds.length > 1) {
-                        const batchResults = await StorefrontProduct.filter({
-                            id: { in: productIds }
-                        });
-                        if (batchResults && batchResults.length > 0) {
-                            return batchResults;
+                    // Try multiple batch API patterns for maximum compatibility
+                    const batchStrategies = [
+                        // Strategy 1: Standard batch filter with "in" operator
+                        () => StorefrontProduct.filter({ id: { in: productIds } }),
+
+                        // Strategy 2: Batch filter with ids array
+                        () => StorefrontProduct.filter({ ids: productIds }),
+
+                        // Strategy 3: Query string approach
+                        () => StorefrontProduct.filter({ id: productIds.join(',') })
+                    ];
+
+                    // Try each strategy until one works
+                    for (const [index, strategy] of batchStrategies.entries()) {
+                        try {
+                            console.log(`🔄 Trying batch strategy ${index + 1}`);
+                            const results = await strategy();
+
+                            if (results && Array.isArray(results) && results.length > 0) {
+                                const fetchTime = performance.now() - startTime;
+                                console.log(`✅ Batch strategy ${index + 1} succeeded:`, {
+                                    requested: productIds.length,
+                                    received: results.length,
+                                    fetchTime: `${fetchTime.toFixed(2)}ms`,
+                                    strategy: index + 1
+                                });
+                                return results;
+                            }
+                        } catch (strategyError) {
+                            console.log(`❌ Batch strategy ${index + 1} failed:`, strategyError.message);
+                            continue;
                         }
                     }
 
-                    // Fallback to parallel individual fetches (no artificial delays)
-                    const productPromises = productIds.map(id =>
-                        StorefrontProduct.filter({ id: id }).catch(error => {
+                    // Fallback: Optimized parallel individual fetches
+                    console.log('🔄 Falling back to parallel individual fetches');
+                    const productPromises = productIds.map(async (id, index) => {
+                        try {
+                            // Add small staggered delay to prevent overwhelming the server
+                            if (index > 0) await new Promise(resolve => setTimeout(resolve, index * 10));
+
+                            const result = await StorefrontProduct.filter({ id: id });
+                            return Array.isArray(result) ? result[0] : result;
+                        } catch (error) {
                             console.error(`Failed to fetch product ${id}:`, error);
                             return null;
-                        })
-                    );
-                    const productArrays = await Promise.all(productPromises);
-                    return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
+                        }
+                    });
+
+                    const productResults = await Promise.all(productPromises);
+                    const validProducts = productResults.filter(product => product !== null);
+
+                    const fetchTime = performance.now() - startTime;
+                    console.log(`✅ Parallel fetch completed:`, {
+                        requested: productIds.length,
+                        received: validProducts.length,
+                        fetchTime: `${fetchTime.toFixed(2)}ms`,
+                        method: 'parallel'
+                    });
+
+                    return validProducts;
+
                 } catch (error) {
-                    console.error('Error fetching products:', error);
+                    console.error('❌ All product fetching strategies failed:', error);
                     return [];
                 }
             })();
@@ -477,8 +560,23 @@ export default function Cart() {
             if (appliedCoupon) {
                 validateAppliedCoupon(appliedCoupon, processedItems);
             }
+
+            // **PERFORMANCE REPORTING**
+            const totalLoadTime = performance.now() - totalStartTime;
+            console.log('🎯 CART LOADING PERFORMANCE SUMMARY:', {
+                totalTime: `${totalLoadTime.toFixed(2)}ms`,
+                cartItems: processedItems.length,
+                productsLoaded: products.length,
+                taxRulesLoaded: taxRulesData.status === 'fulfilled',
+                optimizations: ['Parallel Loading', 'Batch Product API'],
+                breakdown: {
+                    'Cart + Tax Rules (Parallel)': `${parallelLoadTime.toFixed(2)}ms`,
+                    'Product Fetching': 'See batch logs above',
+                    'Data Processing': `${(totalLoadTime - parallelLoadTime).toFixed(2)}ms`
+                }
+            });
         } catch (error) {
-            console.error("Error loading cart:", error);
+            console.error("❌ Error loading cart:", error);
             setFlashMessage({ type: 'error', message: "Could not load your cart. Please try refreshing." });
             setCartItems([]); // Set to empty array on error
             setHasLoadedInitialData(true);
