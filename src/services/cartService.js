@@ -46,8 +46,10 @@ class CartService {
 
       const fullUrl = `${this.endpoint}?${params.toString()}`;
 
-      console.log('🛒 CartService.getCart: Making GET request to:', fullUrl);
-      console.log('🛒 CartService.getCart: Using session_id:', sessionId);
+      // Reduced logging for performance
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🛒 CartService.getCart: Session ID:', sessionId);
+      }
 
       // Use short cache for cart data (30 seconds) to balance freshness and performance
       const response = await fetch(fullUrl, {
@@ -57,34 +59,30 @@ class CartService {
         }
       });
 
-      console.log('🛒 CartService.getCart: Response status:', response.status);
-
       if (!response.ok) {
-        console.log('🛒 CartService.getCart: Response not ok, returning empty cart');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🛒 CartService.getCart: Response not ok:', response.status);
+        }
         return { success: false, cart: null, items: [] };
       }
 
       const result = await response.json();
-      console.log('🛒 CartService.getCart: Response data:', result);
 
       if (result.success && result.data) {
         // Handle both direct data.items and data.dataValues.items structures
         const cartData = result.data.dataValues || result.data;
         const items = Array.isArray(cartData.items) ? cartData.items : [];
-        console.log('🛒 CartService.getCart: Found cart with items:', items.length);
-        console.log('🛒 CartService.getCart: Cart data structure:', {
-          hasDataValues: !!result.data.dataValues,
-          hasDirectItems: !!result.data.items,
-          actualItems: items
-        });
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🛒 CartService.getCart: Found cart with items:', items.length);
+        }
+
         return {
           success: true,
           cart: cartData,
           items: items
         };
       }
-
-      console.log('🛒 CartService.getCart: No valid cart data, returning empty');
       return { success: false, cart: null, items: [] };
     } catch (error) {
       console.error('🛒 CartService.getCart error:', error);
@@ -111,16 +109,15 @@ class CartService {
         session_id: sessionId // Always use session_id for simplicity
       };
 
-      console.log('🛒 CartService.addItem: Making POST request to:', this.endpoint);
-      console.log('🛒 CartService.addItem: Request data:', cartData);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🛒 CartService.addItem: Adding product:', productId);
+      }
 
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cartData)
       });
-
-      console.log('🛒 CartService.addItem: Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -129,10 +126,11 @@ class CartService {
       }
 
       const result = await response.json();
-      console.log('🛒 CartService.addItem: Response data:', result);
 
       if (result.success) {
-        console.log('🛒 CartService.addItem: Successfully added item, dispatching cartUpdated event');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🛒 CartService.addItem: Successfully added item');
+        }
         // Dispatch cart update event
         window.dispatchEvent(new CustomEvent('cartUpdated'));
 

@@ -70,40 +70,25 @@ const safeToFixed = (value, decimals = 2) => {
     return num.toFixed(decimals);
 };
 
-// Global request queue to manage API calls
-let globalRequestQueue = Promise.resolve();
+// Simplified retry function without artificial delays
+const simpleRetry = async (apiCall, maxRetries = 2) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      const isRateLimit = error.response?.status === 429;
 
-const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 3000) => {
-  return new Promise((resolve, reject) => {
-    globalRequestQueue = globalRequestQueue.then(async () => {
-      for (let i = 0; i < maxRetries; i++) {
-        try {
-          await delay(1000 + Math.random() * 1000); // Random delay between requests
-          const result = await apiCall();
-          return resolve(result);
-        } catch (error) {
-          const isRateLimit = error.response?.status === 429 || 
-                             error.message?.includes('Rate limit') || 
-                             error.message?.includes('429') ||
-                             error.detail?.includes('Rate limit');
-          
-          if (isRateLimit && i < maxRetries - 1) {
-            const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
-            console.warn(`Cart: Rate limit hit, waiting ${delayTime.toFixed(0)}ms before retry ${i + 1}/${maxRetries}`);
-            await delay(delayTime);
-            continue;
-          }
-          
-          if (isRateLimit) {
-            console.error('Cart: Rate limit exceeded after all retries');
-            return resolve([]); // Return empty array for list operations
-          }
-          
-          return reject(error);
-        }
+      if (isRateLimit && i < maxRetries - 1) {
+        // Only minimal delay for rate limits
+        await delay(1000);
+        continue;
       }
-    }).catch(reject);
-  });
+
+      if (i === maxRetries - 1) {
+        throw error;
+      }
+    }
+  }
 };
 
 const useDebouncedEffect = (effect, deps, delay) => {
@@ -281,14 +266,15 @@ export default function Cart() {
 
 
     useEffect(() => {
-        // Wait for store data to load before loading cart
+        // Load cart data immediately when store is available - no artificial delay
         if (!storeLoading && store?.id) {
-            const timeoutId = setTimeout(() => {
-                loadCartData();
-                loadTaxRules();
-            }, 1000); // Reduced delay
-            
-            return () => clearTimeout(timeoutId);
+            // Load cart data and tax rules in parallel for better performance
+            Promise.all([
+                loadCartData(),
+                loadTaxRules()
+            ]).catch(error => {
+                console.error('Error loading cart data in parallel:', error);
+            });
         }
     }, [storeLoading, store?.id]);
 
@@ -356,7 +342,7 @@ export default function Cart() {
                 // Use simplified cart service
                 const result = await cartService.updateCart(updatedItems, store.id);
                 setQuantityUpdates({});
-                await delay(500);
+                // Remove artificial delay - reload immediately
                 loadCartData(false);
                 
                 // Dispatch update event
@@ -374,12 +360,9 @@ export default function Cart() {
         if (showLoader) setLoading(true);
 
         try {
-            console.log('🛒 Cart.jsx loadCartData: Starting cart load, showLoader:', showLoader);
-
             // Apply before load hooks
             const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, cartContext);
             if (!shouldLoad) {
-                console.log('🛒 Cart.jsx loadCartData: Load blocked by hooks');
                 setLoading(false);
                 return;
             }
@@ -388,20 +371,14 @@ export default function Cart() {
             eventSystem.emit('cart.loadingStarted', cartContext);
 
             // Use simplified cart service (session-based approach)
-            console.log('🛒 Cart.jsx loadCartData: Calling cartService.getCart()');
             const cartResult = await cartService.getCart();
-            console.log('🛒 Cart.jsx loadCartData: Cart service result:', cartResult);
 
             let cartItems = [];
             if (cartResult.success && cartResult.items) {
                 cartItems = cartResult.items;
-                console.log('🛒 Cart.jsx loadCartData: Found cart items:', cartItems.length);
-            } else {
-                console.log('🛒 Cart.jsx loadCartData: No cart items found or request failed');
             }
 
             if (!cartItems || cartItems.length === 0) {
-                console.log('🛒 Cart.jsx loadCartData: Setting empty cart');
                 setCartItems([]);
                 // Clear applied coupon when cart is empty
                 if (appliedCoupon) {
@@ -412,18 +389,34 @@ export default function Cart() {
             }
 
             const productIds = [...new Set(cartItems.map(item => item.product_id))];
-            
-            // Fetch products individually to avoid object parameter issues
-            const products = await retryApiCall(async () => {
-                const productPromises = productIds.map(id => 
-                    StorefrontProduct.filter({ id: id }).catch(error => {
-                        console.error(`Failed to fetch product ${id}:`, error);
-                        return null;
-                    })
-                );
-                const productArrays = await Promise.all(productPromises);
-                return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
-            });
+
+            // Optimized: Batch fetch products with single API call
+            const products = await (async () => {
+                try {
+                    // Try batch fetch first (most efficient)
+                    if (productIds.length > 1) {
+                        const batchResults = await StorefrontProduct.filter({
+                            id: { in: productIds }
+                        });
+                        if (batchResults && batchResults.length > 0) {
+                            return batchResults;
+                        }
+                    }
+
+                    // Fallback to parallel individual fetches (no artificial delays)
+                    const productPromises = productIds.map(id =>
+                        StorefrontProduct.filter({ id: id }).catch(error => {
+                            console.error(`Failed to fetch product ${id}:`, error);
+                            return null;
+                        })
+                    );
+                    const productArrays = await Promise.all(productPromises);
+                    return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
+                } catch (error) {
+                    console.error('Error fetching products:', error);
+                    return [];
+                }
+            })();
             
             const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
@@ -654,10 +647,10 @@ export default function Cart() {
         
         try {
             
-            const coupons = await retryApiCall(() => Coupon.filter({ 
-                code: couponCode, 
-                is_active: true, 
-                store_id: store.id 
+            const coupons = await simpleRetry(() => Coupon.filter({
+                code: couponCode,
+                is_active: true,
+                store_id: store.id
             }));
             
             
