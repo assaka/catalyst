@@ -116,6 +116,40 @@ export function CartSlotRenderer({
     });
   }
 
+  // Special debugging for coupon container internal layout
+  if (parentId === 'coupon_container') {
+    console.log('🎫 COUPON CONTAINER INTERNAL LAYOUT:', {
+      parentId,
+      childCount: childSlots.length,
+      children: childSlots.map(slot => ({
+        id: slot.id,
+        type: slot.type,
+        colSpan: slot.colSpan,
+        order: slot.position?.order,
+        gridRow: slot.styles?.gridRow,
+        gridColumn: slot.styles?.gridColumn,
+        className: slot.className
+      }))
+    });
+  }
+
+  // Special debugging for order summary container internal layout
+  if (parentId === 'order_summary_container') {
+    console.log('📊 ORDER SUMMARY CONTAINER INTERNAL LAYOUT:', {
+      parentId,
+      childCount: childSlots.length,
+      children: childSlots.map(slot => ({
+        id: slot.id,
+        type: slot.type,
+        colSpan: slot.colSpan,
+        order: slot.position?.order,
+        gridRow: slot.styles?.gridRow,
+        gridColumn: slot.styles?.gridColumn,
+        className: slot.className
+      }))
+    });
+  }
+
   // If this is the cart_items_container, generate dynamic cart item slots based on actual cart data
   if (parentId === 'cart_items_container' && cartItems && cartItems.length > 0 && viewMode === 'withProducts') {
     console.log('🔄 Generating dynamic cart item slots for', cartItems.length, 'items');
@@ -174,6 +208,38 @@ export function CartSlotRenderer({
       const priorityB = sidebarOrder[b.id] ?? 999;
       if (priorityA !== priorityB) {
         console.log(`📐 Applying sidebar order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
+        return priorityA - priorityB;
+      }
+    }
+
+    // Fallback: specific order for coupon container internals
+    if (parentId === 'coupon_container') {
+      const couponInternalOrder = {
+        'coupon_title': 1,
+        'coupon_input': 2,
+        'coupon_button': 3
+      };
+      const priorityA = couponInternalOrder[a.id] ?? 999;
+      const priorityB = couponInternalOrder[b.id] ?? 999;
+      if (priorityA !== priorityB) {
+        console.log(`🎫 Applying coupon internal order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
+        return priorityA - priorityB;
+      }
+    }
+
+    // Fallback: specific order for order summary container internals
+    if (parentId === 'order_summary_container') {
+      const orderSummaryInternalOrder = {
+        'order_summary_title': 1,
+        'order_summary_subtotal': 2,
+        'order_summary_tax': 3,
+        'order_summary_total': 4,
+        'checkout_button': 5
+      };
+      const priorityA = orderSummaryInternalOrder[a.id] ?? 999;
+      const priorityB = orderSummaryInternalOrder[b.id] ?? 999;
+      if (priorityA !== priorityB) {
+        console.log(`📊 Applying order summary internal order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
         return priorityA - priorityB;
       }
     }
