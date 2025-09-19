@@ -765,7 +765,38 @@ export function useSlotConfiguration({
       updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
     }
 
-    // No need for complex shifting - findAvailablePosition handles conflicts
+    // Handle slot shifting for intra-container reordering
+    if (currentParent === newParentId && (dropPosition === 'before' || dropPosition === 'after')) {
+      // Shift other slots in the same container to make room
+      Object.keys(updatedSlots).forEach(slotId => {
+        if (slotId !== draggedSlotId) {
+          const slot = updatedSlots[slotId];
+          if (slot.parentId === newParentId && slot.position) {
+            const needsShift = (
+              slot.position.row > newPosition.row ||
+              (slot.position.row === newPosition.row && slot.position.col >= newPosition.col)
+            );
+
+            if (needsShift) {
+              // Shift this slot forward
+              if (slot.position.col < 12) {
+                slot.position = {
+                  ...slot.position,
+                  col: slot.position.col + 1
+                };
+              } else {
+                // Move to next row if at end of columns
+                slot.position = {
+                  col: 1,
+                  row: slot.position.row + 1
+                };
+              }
+              console.log(`  ↪️ Shifted ${slotId} to ${JSON.stringify(slot.position)}`);
+            }
+          }
+        }
+      });
+    }
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
