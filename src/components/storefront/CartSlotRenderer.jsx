@@ -98,9 +98,20 @@ export function CartSlotRenderer({
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
 
+    // Debug logging for slot rendering
+    console.log(`🎨 Rendering slot: ${id}`, {
+      type,
+      content: content ? `"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"` : 'null',
+      className,
+      parentClassName,
+      hasStyles: Object.keys(styles).length > 0,
+      stylesKeys: Object.keys(styles)
+    });
+
     // Helper function to wrap content with parent class if needed
     const wrapWithParentClass = (children) => {
       if (parentClassName) {
+        console.log(`🎯 Wrapping slot ${id} with parentClassName: ${parentClassName}`);
         return <div className={parentClassName}>{children}</div>;
       }
       return children;
@@ -373,7 +384,17 @@ export function CartSlotRenderer({
     // Coupon container - dynamic content with preserved functionality
     if (id === 'coupon_container') {
       // If content is provided and is substantial HTML/custom content, use it as override
-      if (content && content.trim() && (content.includes('<') || content.length > 50)) {
+      const hasSubstantialContent = content && content.trim() && (content.includes('<') || content.length > 50);
+      console.log(`📦 Coupon container content analysis:`, {
+        hasContent: !!content,
+        contentLength: content?.length || 0,
+        hasHTML: content?.includes('<'),
+        hasSubstantialContent,
+        willOverride: hasSubstantialContent
+      });
+
+      if (hasSubstantialContent) {
+        console.log(`✅ Using content override for coupon_container`);
         return (
           <Card className={className} style={styles}>
             <CardContent className="p-4">
@@ -446,6 +467,11 @@ export function CartSlotRenderer({
 
     // Coupon apply button
     if (id === 'coupon_button') {
+      console.log(`🔘 Coupon button content:`, {
+        rawContent: content,
+        fallback: 'Apply',
+        finalText: content || 'Apply'
+      });
       return (
         <Button
           onClick={handleApplyCoupon}
@@ -461,7 +487,17 @@ export function CartSlotRenderer({
     // Order summary container - dynamic content with preserved functionality
     if (id === 'order_summary_container') {
       // If content is provided, use it as override, otherwise render the default summary
-      if (content && content.trim()) {
+      const hasContentOverride = content && content.trim();
+      console.log(`📊 Order summary container content analysis:`, {
+        hasContent: !!content,
+        contentLength: content?.length || 0,
+        trimmedContent: content?.trim() || '',
+        hasContentOverride,
+        willOverride: hasContentOverride
+      });
+
+      if (hasContentOverride) {
+        console.log(`✅ Using content override for order_summary_container`);
         return (
           <Card className={className} style={styles}>
             <CardContent className="p-4">
@@ -699,7 +735,15 @@ export function CartSlotRenderer({
         const colSpan = slot.colSpan || 12;
         const gridColumn = `span ${colSpan} / span ${colSpan}`;
 
-        console.log('🎨 Rendering slot:', slot.id, 'type:', slot.type);
+        console.log('🎨 About to render slot:', {
+          id: slot.id,
+          type: slot.type,
+          hasContent: !!slot.content,
+          contentPreview: slot.content ? `"${slot.content.substring(0, 50)}${slot.content.length > 50 ? '...' : ''}"` : 'null',
+          className: slot.className || 'none',
+          parentClassName: slot.parentClassName || 'none',
+          colSpan
+        });
 
         return (
           <div
