@@ -270,19 +270,40 @@ class SlotConfigurationService {
   async getInitialConfiguration(pageType = 'cart', fileName = null) {
     // Dynamic import to get the latest cart config
     const { cartConfig } = await import('@/components/editor/slot/configs/cart-config.js');
-    
+
     console.log(`🏗️ Creating initial configuration for ${pageType} from cart-config.js`);
-    
-    // Check if cart config has the new unified structure or original structure
-    let initialConfig;
-    
-    // Use the new nested  structure
-    initialConfig = {
-      // Use the root slots and nested  structure
+
+    // Create clean slots with all properties preserved including position coordinates
+    const cleanSlots = {};
+    if (cartConfig.slots) {
+      Object.entries(cartConfig.slots).forEach(([key, slot]) => {
+        // Copy all serializable properties, ensure no undefined values
+        cleanSlots[key] = {
+          id: slot.id || key,
+          type: slot.type || 'container',
+          content: slot.content || '',
+          className: slot.className || '',
+          parentClassName: slot.parentClassName || '',
+          styles: slot.styles ? { ...slot.styles } : {},
+          parentId: slot.parentId === undefined ? null : slot.parentId,
+          layout: slot.layout || null,
+          gridCols: slot.gridCols || null,
+          colSpan: slot.colSpan || 12,
+          rowSpan: slot.rowSpan || 1,
+          position: slot.position ? { ...slot.position } : null,
+          viewMode: slot.viewMode ? [...slot.viewMode] : [],
+          metadata: slot.metadata ? { ...slot.metadata } : {}
+        };
+      });
+    }
+
+    // Use the new nested structure
+    const initialConfig = {
+      // Use the root slots and nested structure
       rootSlots: cartConfig.rootSlots || [],
       slotDefinitions: cartConfig.slotDefinitions || {},
-      slots: { ...cartConfig.slots },
-      
+      slots: cleanSlots,
+
       // Add metadata
       metadata: {
         name: `${pageType.charAt(0).toUpperCase() + pageType.slice(1)} Layout`,
