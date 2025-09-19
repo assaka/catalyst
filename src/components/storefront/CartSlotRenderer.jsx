@@ -533,7 +533,33 @@ export function CartSlotRenderer({
         );
       }
 
-      // Default order summary functionality
+      // Default order summary functionality - check for child slots first
+      const childSlots = SlotManager.getChildSlots(slots, slot.id);
+      const hasChildSlots = childSlots && childSlots.length > 0;
+      console.log(`🔧 Order summary container child slots:`, {
+        hasChildSlots,
+        childCount: childSlots?.length || 0,
+        childIds: childSlots?.map(s => s.id) || []
+      });
+
+      if (hasChildSlots) {
+        // Render child slots if they exist (customizable order summary layout)
+        return (
+          <Card className={className} style={styles}>
+            <CardContent className="p-4">
+              <CartSlotRenderer
+                slots={slots}
+                parentId={slot.id}
+                viewMode={viewMode}
+                cartContext={cartContext}
+              />
+            </CardContent>
+          </Card>
+        );
+      }
+
+      // Fallback to default UI if no child slots
+      console.log(`🔧 No child slots found, using default order summary UI`);
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
@@ -655,6 +681,13 @@ export function CartSlotRenderer({
 
     // Checkout button
     if (id === 'checkout_button') {
+      console.log(`🛒 Checkout button content:`, {
+        rawContent: content,
+        fallback: 'Proceed to Checkout',
+        finalText: content || 'Proceed to Checkout',
+        className,
+        hasStyles: Object.keys(styles).length > 0
+      });
       return (
         <Button
           size="lg"
