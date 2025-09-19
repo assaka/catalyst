@@ -70,9 +70,17 @@ async function checkEmptyCartViewMode() {
     console.log(`🌱 EmptyCart viewMode slots: ${emptyCartSlots.length}`);
     emptyCartSlots.forEach(slot => {
       const parentStr = slot.parentId || 'null';
+      const positionStr = slot.position ? JSON.stringify(slot.position) : 'no position';
       console.log(`  - ${slot.id}: ${slot.type} (parent: ${parentStr})`);
       console.log(`    viewMode: [${slot.viewMode.join(', ')}]`);
       console.log(`    content: "${slot.content || 'no content'}"`);
+      console.log(`    position: ${positionStr}`);
+
+      // Show header_title specifically for debugging
+      if (slot.id === 'header_title') {
+        console.log(`    🔍 HEADER_TITLE DEBUG:`);
+        console.log(`      - Full slot object:`, JSON.stringify(slot, null, 2));
+      }
     });
 
     // Check for empty cart related slots without viewMode

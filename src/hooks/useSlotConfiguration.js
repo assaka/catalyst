@@ -571,7 +571,7 @@ export function useSlotConfiguration({
       parentClassName: '',
       styles: slotType === 'container' ? { minHeight: '80px' } : {},
       parentId: parentId,
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       colSpan: slotType === 'container' ? 12 : 6, // Containers full width, others half width
       rowSpan: 1,
       viewMode: ['emptyCart', 'withProducts'], // Show in both modes by default
@@ -587,12 +587,7 @@ export function useSlotConfiguration({
     const updatedSlots = { ...slots };
     updatedSlots[newSlotId] = newSlot;
 
-    // Update order of existing siblings
-    Object.values(updatedSlots).forEach(slot => {
-      if (slot.id !== newSlotId && slot.parentId === parentId) {
-        slot.position = { order: (slot.position?.order || 0) + 1 };
-      }
-    });
+    // No need to update order - slots use grid coordinates
 
     return { updatedSlots, newSlotId };
   }, []);
