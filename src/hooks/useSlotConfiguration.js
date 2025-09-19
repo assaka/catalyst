@@ -594,7 +594,10 @@ export function useSlotConfiguration({
 
   // Generic slot drop handler
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
+    console.log(`🎯 START: handleSlotDrop(${draggedSlotId}, ${targetSlotId}, ${dropPosition})`);
+
     if (draggedSlotId === targetSlotId) {
+      console.log('⚠️ ABORT: Cannot drop slot onto itself');
       return null;
     }
 
@@ -703,6 +706,17 @@ export function useSlotConfiguration({
     console.log(`   Old: parentId=${originalProperties.parentId}, position=${JSON.stringify(originalProperties.position)}`);
     console.log(`   New: parentId=${newParentId}, position=${JSON.stringify(newPosition)}`);
 
+    // Check if position actually changed
+    const oldPos = originalProperties.position;
+    const positionChanged =
+      originalProperties.parentId !== newParentId ||
+      oldPos?.col !== newPosition.col ||
+      oldPos?.row !== newPosition.row;
+
+    if (!positionChanged) {
+      console.log('⚠️ NOTICE: Position unchanged, but continuing with drag operation');
+    }
+
     // Update dragged slot position while preserving ALL essential properties
     updatedSlots[draggedSlotId] = {
       ...originalProperties,
@@ -727,6 +741,7 @@ export function useSlotConfiguration({
       return null;
     }
 
+    console.log('✅ SUCCESS: Drag operation completed, returning updated slots');
     return updatedSlots;
   }, [validateSlotConfiguration]);
 
