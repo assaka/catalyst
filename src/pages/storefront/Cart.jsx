@@ -35,11 +35,22 @@ import { CartSlotRenderer } from '@/components/storefront/CartSlotRenderer';
 
 
 const getSessionId = () => {
-  let sid = localStorage.getItem('cart_session_id');
+  let sid = localStorage.getItem('guest_session_id');
   if (!sid) {
-    sid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('cart_session_id', sid);
+    sid = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem('guest_session_id', sid);
+    console.log('🆔 Cart.jsx: Created new guest_session_id:', sid);
+  } else {
+    console.log('🆔 Cart.jsx: Using existing guest_session_id:', sid);
   }
+
+  // Check for old cart_session_id and clean it up
+  const oldSid = localStorage.getItem('cart_session_id');
+  if (oldSid) {
+    console.log('⚠️ Cart.jsx: Found old cart_session_id, removing:', oldSid);
+    localStorage.removeItem('cart_session_id');
+  }
+
   return sid;
 };
 
@@ -361,11 +372,14 @@ export default function Cart() {
 
     const loadCartData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
-        
+
         try {
+            console.log('🛒 Cart.jsx loadCartData: Starting cart load, showLoader:', showLoader);
+
             // Apply before load hooks
             const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, cartContext);
             if (!shouldLoad) {
+                console.log('🛒 Cart.jsx loadCartData: Load blocked by hooks');
                 setLoading(false);
                 return;
             }
@@ -374,16 +388,20 @@ export default function Cart() {
             eventSystem.emit('cart.loadingStarted', cartContext);
 
             // Use simplified cart service (session-based approach)
+            console.log('🛒 Cart.jsx loadCartData: Calling cartService.getCart()');
             const cartResult = await cartService.getCart();
-            
+            console.log('🛒 Cart.jsx loadCartData: Cart service result:', cartResult);
+
             let cartItems = [];
             if (cartResult.success && cartResult.items) {
                 cartItems = cartResult.items;
+                console.log('🛒 Cart.jsx loadCartData: Found cart items:', cartItems.length);
+            } else {
+                console.log('🛒 Cart.jsx loadCartData: No cart items found or request failed');
             }
 
-
-            
             if (!cartItems || cartItems.length === 0) {
+                console.log('🛒 Cart.jsx loadCartData: Setting empty cart');
                 setCartItems([]);
                 // Clear applied coupon when cart is empty
                 if (appliedCoupon) {

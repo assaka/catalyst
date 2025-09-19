@@ -19,7 +19,18 @@ class StorefrontApiClient {
       // Generate a new session ID
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
+      console.log('🆔 StorefrontApiClient: Created new guest_session_id:', sessionId);
+    } else {
+      console.log('🆔 StorefrontApiClient: Using existing guest_session_id:', sessionId);
     }
+
+    // Check for old cart_session_id and clean it up
+    const oldSessionId = localStorage.getItem('cart_session_id');
+    if (oldSessionId) {
+      console.log('⚠️ StorefrontApiClient: Found old cart_session_id, removing:', oldSessionId);
+      localStorage.removeItem('cart_session_id');
+    }
+
     return sessionId;
   }
 
@@ -121,12 +132,14 @@ class StorefrontApiClient {
     
     // Always ensure we have a session ID for guest functionality
     this.sessionId = this.getOrCreateSessionId();
-    
+
     // Always add session_id to URL - simpler approach
     const separator = endpoint.includes('?') ? '&' : '?';
     finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
-    
-    
+
+    console.log('🌐 StorefrontApiClient: Making request to endpoint:', finalEndpoint);
+    console.log('🌐 StorefrontApiClient: Using session_id:', this.sessionId);
+
     const url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
 
