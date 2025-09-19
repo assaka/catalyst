@@ -640,22 +640,49 @@ export function useSlotConfiguration({
     // Calculate new position based on drop zone
     let newParentId, newPosition;
 
+    // Helper function to find next available position in a container
+    const findAvailablePosition = (parentId, preferredRow = 1, preferredCol = 1) => {
+      const siblings = Object.values(updatedSlots).filter(slot =>
+        slot.parentId === parentId && slot.id !== draggedSlotId
+      );
+
+      // Try the preferred position first
+      let row = preferredRow;
+      let col = preferredCol;
+
+      // Find an available position by checking for conflicts
+      let positionFound = false;
+      for (let r = row; r <= row + 10 && !positionFound; r++) {
+        for (let c = col; c <= 12 && !positionFound; c++) {
+          const hasConflict = siblings.some(sibling =>
+            sibling.position?.row === r && sibling.position?.col === c
+          );
+          if (!hasConflict) {
+            row = r;
+            col = c;
+            positionFound = true;
+          }
+        }
+        col = 1; // Reset column for next row
+      }
+
+      return { col, row };
+    };
+
     switch (dropPosition) {
       case 'before':
         newParentId = targetSlot.parentId;
-        // Place before target slot - use same row, adjust column if needed
-        newPosition = {
-          col: Math.max(1, (targetSlot.position?.col || 1) - 1),
-          row: targetSlot.position?.row || 1
-        };
+        // Place before target - try same row, earlier column, or previous row
+        const targetRow = targetSlot.position?.row || 1;
+        const targetCol = targetSlot.position?.col || 1;
+        newPosition = findAvailablePosition(newParentId, targetRow, Math.max(1, targetCol - 1));
         break;
       case 'after':
         newParentId = targetSlot.parentId;
-        // Place after target slot - use same row, next column
-        newPosition = {
-          col: (targetSlot.position?.col || 1) + 1,
-          row: targetSlot.position?.row || 1
-        };
+        // Place after target - try same row, later column, or next row
+        const afterRow = targetSlot.position?.row || 1;
+        const afterCol = (targetSlot.position?.col || 1) + 1;
+        newPosition = findAvailablePosition(newParentId, afterRow, afterCol);
         break;
       case 'inside':
         // Only allow dropping inside containers
@@ -663,13 +690,18 @@ export function useSlotConfiguration({
           return null;
         }
         newParentId = targetSlotId;
-        // Place at first available position inside container
-        newPosition = { col: 1, row: 1 };
+        // Find first available position inside container
+        newPosition = findAvailablePosition(newParentId, 1, 1);
         break;
       default:
         console.error('❌ Invalid drop position:', dropPosition);
         return null;
     }
+
+    // Debug logging for drag operations
+    console.log(`🔄 Drag operation: ${draggedSlotId} ${dropPosition} ${targetSlotId}`);
+    console.log(`   Old: parentId=${originalProperties.parentId}, position=${JSON.stringify(originalProperties.position)}`);
+    console.log(`   New: parentId=${newParentId}, position=${JSON.stringify(newPosition)}`);
 
     // Update dragged slot position while preserving ALL essential properties
     updatedSlots[draggedSlotId] = {
