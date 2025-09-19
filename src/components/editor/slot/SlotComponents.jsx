@@ -348,14 +348,9 @@ export function GridColumn({
       const targetParent = slot?.parentId;
 
       if (y < height * 0.25 || y > height * 0.75) {
-        // Before/After drops - only allow if it's for reordering within same container
-        if (draggedParent === targetParent) {
-          newDropZone = y < height * 0.25 ? 'before' : 'after';
-        } else {
-          // Different containers - show forbidden cursor
-          e.dataTransfer.dropEffect = 'none';
-          newDropZone = null;
-        }
+        // Before/After drops - allow both intra-container reordering and cross-container moves
+        newDropZone = y < height * 0.25 ? 'before' : 'after';
+        e.dataTransfer.dropEffect = 'move';
       } else {
         // Middle area - only allow "inside" for containers
         if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
