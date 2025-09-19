@@ -143,7 +143,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block w-full text-gray-700 hover:bg-gray-100 px-3 py-0 text-sm"
+                    className="block w-full text-gray-700 hover:bg-gray-100 px-3 py-2 text-sm"
                     style={{ paddingLeft: `${depth * 16 + 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -171,7 +171,7 @@ export default function CategoryNav({ categories }) {
                 <div className="flex items-center justify-between">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-0 rounded-md flex-1 touch-manipulation"
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-2 rounded-md flex-1 touch-manipulation"
                         style={{ marginLeft: `${depth * 16}px` }}
                     >
                         {category.name}
@@ -213,7 +213,7 @@ export default function CategoryNav({ categories }) {
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
-                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md h-auto flex items-center whitespace-nowrap"
+                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap"
                         >
                             <span>{category.name}</span>
                             <ChevronDown className="w-3 h-3" />
@@ -238,7 +238,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md whitespace-nowrap"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                 >
                     {category.name}
                 </Link>
@@ -253,7 +253,7 @@ export default function CategoryNav({ categories }) {
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md inline-flex items-center whitespace-nowrap"
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
                     >
                         {category.name}
                         <ChevronDown className="w-3 h-3" />
@@ -264,7 +264,7 @@ export default function CategoryNav({ categories }) {
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
                                 View All {category.name}
                             </Link>
@@ -279,7 +279,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md whitespace-nowrap"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                 >
                     {category.name}
                 </Link>
@@ -296,7 +296,7 @@ export default function CategoryNav({ categories }) {
             <Link 
                 key={category.id}
                 to={createCategoryUrl(store.slug, category.slug)}
-                className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 style={{ paddingLeft: `${16 + depth * 12}px` }}
             >
                 {depth > 0 && '→ '}{category.name}
@@ -324,7 +324,7 @@ export default function CategoryNav({ categories }) {
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
@@ -336,7 +336,7 @@ export default function CategoryNav({ categories }) {
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
                                 View All {category.name}
                             </Link>
@@ -358,7 +358,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -377,7 +377,7 @@ export default function CategoryNav({ categories }) {
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
@@ -389,7 +389,7 @@ export default function CategoryNav({ categories }) {
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
                                 View All {category.name}
                             </Link>
@@ -405,7 +405,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -424,7 +424,7 @@ export default function CategoryNav({ categories }) {
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
@@ -436,7 +436,7 @@ export default function CategoryNav({ categories }) {
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
                                 View All {category.name}
                             </Link>
@@ -452,7 +452,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -471,7 +471,7 @@ export default function CategoryNav({ categories }) {
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
@@ -483,7 +483,7 @@ export default function CategoryNav({ categories }) {
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
                                 View All {category.name}
                             </Link>
@@ -499,7 +499,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -518,7 +518,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     <span>{depth > 0 && '→ '}{category.name}</span>
@@ -531,7 +531,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -561,7 +561,7 @@ export default function CategoryNav({ categories }) {
                 >
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
@@ -574,7 +574,7 @@ export default function CategoryNav({ categories }) {
                             <div>
                                 <Link 
                                     to={createCategoryUrl(store.slug, category.slug)}
-                                    className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                    className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                                 >
                                     View All {category.name}
                                 </Link>
@@ -583,7 +583,7 @@ export default function CategoryNav({ categories }) {
                                     <Link 
                                         key={child.id}
                                         to={createCategoryUrl(store.slug, child.slug)}
-                                        className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     >
                                         {child.name}
                                     </Link>
@@ -599,7 +599,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -618,7 +618,7 @@ export default function CategoryNav({ categories }) {
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
@@ -630,7 +630,7 @@ export default function CategoryNav({ categories }) {
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                             >
                                 View All {category.name}
                             </Link>
@@ -646,7 +646,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-0 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     style={{ paddingLeft: `${16 + depth * 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
@@ -662,7 +662,7 @@ export default function CategoryNav({ categories }) {
                 <Link
 
                     to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-0 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-2 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
                 >
                     Home
                 </Link>
@@ -674,7 +674,7 @@ export default function CategoryNav({ categories }) {
             {/* Desktop view - Always hover-based, expandAllMenuItems controls second-level expansion */}
             <nav className="hidden md:block">
                 <div className="flex items-center space-x-2">
-                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md whitespace-nowrap">
+                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
                         Home
                     </Link>
                     {rootCategories.map(category => {
@@ -683,7 +683,7 @@ export default function CategoryNav({ categories }) {
                                 <div key={category.id} className="relative group">
                                     <Link 
                                         to={createCategoryUrl(store.slug, category.slug)}
-                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md inline-flex items-center whitespace-nowrap"
+                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
                                     >
                                         {category.name}
                                         <ChevronDown className="w-3 h-3" />
@@ -693,7 +693,7 @@ export default function CategoryNav({ categories }) {
                                         <div>
                                             <Link 
                                                 to={createCategoryUrl(store.slug, category.slug)}
-                                                className="block px-4 py-0 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                                             >
                                                 View All {category.name}
                                             </Link>
@@ -716,7 +716,7 @@ export default function CategoryNav({ categories }) {
                                 <Link 
                                     key={category.id}
                                     to={createCategoryUrl(store.slug, category.slug)} 
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-0 rounded-md whitespace-nowrap"
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                                 >
                                     {category.name}
                                 </Link>
