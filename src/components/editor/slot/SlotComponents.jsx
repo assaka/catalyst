@@ -515,13 +515,13 @@ export function GridColumn({
       {mode === 'edit' && isDragActive && dropZone && (
         <>
           {dropZone === 'before' && (
-            <div className="absolute -top-1 left-0 right-0 h-2 bg-red-500 rounded-full shadow-lg z-50 opacity-100">
-              {console.log(`🔴 Rendering RED line for BEFORE on ${slot?.id}`)}
+            <div className="absolute -top-0.5 left-0 right-0 h-0.5 bg-blue-500 z-50">
+              {console.log(`🔵 Rendering insertion line BEFORE ${slot?.id}`)}
             </div>
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-1 left-0 right-0 h-2 bg-green-500 rounded-full shadow-lg z-50 opacity-100">
-              {console.log(`🟢 Rendering GREEN line for AFTER on ${slot?.id}`)}
+            <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-blue-500 z-50">
+              {console.log(`🔵 Rendering insertion line AFTER ${slot?.id}`)}
             </div>
           )}
           {dropZone === 'inside' && (
