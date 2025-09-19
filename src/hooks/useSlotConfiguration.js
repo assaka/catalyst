@@ -712,13 +712,22 @@ export function useSlotConfiguration({
           row: targetSlot.position?.row || 1
         };
       } else { // after
-        // Place after target
+        // Place after target - use next available position
         const targetPos = targetSlot.position || { col: 1, row: 1 };
-        if (targetPos.col < 12) {
-          newPosition = { col: targetPos.col + 1, row: targetPos.row };
-        } else {
-          newPosition = { col: 1, row: targetPos.row + 1 };
+        console.log(`🎯 Target ${targetSlotId} position:`, targetPos);
+
+        // Try placing in next column, but ensure it's different from current position
+        let newCol = targetPos.col + 1;
+        let newRow = targetPos.row;
+
+        // If at end of row or same as current position, go to next row
+        if (newCol > 12 || (newCol === originalProperties.position?.col && newRow === originalProperties.position?.row)) {
+          newCol = 1;
+          newRow = targetPos.row + 1;
         }
+
+        newPosition = { col: newCol, row: newRow };
+        console.log(`🎯 Calculated new position:`, newPosition);
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent) {
@@ -734,6 +743,7 @@ export function useSlotConfiguration({
         };
       } else {
         const targetPos = targetSlot.position || { col: 1, row: 1 };
+        // For cross-container moves, place after target
         if (targetPos.col < 12) {
           newPosition = { col: targetPos.col + 1, row: targetPos.row };
         } else {
