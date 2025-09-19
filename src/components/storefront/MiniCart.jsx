@@ -316,14 +316,46 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
       setCartItems(updatedItems);
 
-      // Dispatch immediate update for other components
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      // Dispatch immediate update with remove action for other components
+      window.dispatchEvent(new CustomEvent('cartUpdated', {
+        detail: {
+          action: 'remove_from_minicart',
+          timestamp: Date.now(),
+          itemId: cartItemId,
+          source: 'MiniCart.removeItem'
+        }
+      }));
 
       const result = await cartService.updateCart(updatedItems, store.id);
-      
+
       if (result.success) {
-        // Reload in background to sync with server
-        await loadCart();
+        // Add delay and verification similar to add operations
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Verify the removal was processed
+        const verifyResult = await cartService.getCart();
+        if (verifyResult.success && verifyResult.items) {
+          const backendItemCount = verifyResult.items.length;
+          const expectedCount = updatedItems.length;
+
+          console.log(`🛒 MiniCart removeItem: Expected: ${expectedCount}, Backend: ${backendItemCount}`);
+
+          // If backend still has the item, retry once
+          if (backendItemCount > expectedCount) {
+            console.log('🔄 MiniCart: Backend still has removed item, retrying...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const retryResult = await cartService.updateCart(updatedItems, store.id);
+            if (retryResult.success) {
+              await loadCart();
+            }
+          } else {
+            // Backend confirmed removal, use fresh data
+            setCartItems(verifyResult.items);
+          }
+        } else {
+          // Fallback to loadCart if verification fails
+          await loadCart();
+        }
       } else {
         console.error('Failed to remove item:', result.error);
         // Revert local state on error
@@ -331,6 +363,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
       }
     } catch (error) {
       console.error('Failed to remove item:', error);
+      // Revert local state on error
+      await loadCart();
     }
   };
 

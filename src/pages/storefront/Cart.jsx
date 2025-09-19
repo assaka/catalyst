@@ -736,10 +736,39 @@ export default function Cart() {
             // Use simplified cart service
             const result = await cartService.updateCart(updatedItems, store.id);
 
-            // Don't reload - we already updated local state above
-            // Just notify other components about the change
-            window.dispatchEvent(new CustomEvent('cartItemRemoved'));
-            setFlashMessage({ type: 'success', message: "Item removed from cart." });
+            if (result.success) {
+                // Add delay and verification similar to other cart operations
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // Verify the removal was processed
+                const verifyResult = await cartService.getCart();
+                if (verifyResult.success && verifyResult.items) {
+                    const backendItemCount = verifyResult.items.length;
+                    const expectedCount = updatedItems.length;
+
+                    console.log(`🛒 Cart removeItem: Expected: ${expectedCount}, Backend: ${backendItemCount}`);
+
+                    // If backend still has the item, retry once
+                    if (backendItemCount > expectedCount) {
+                        console.log('🔄 Cart: Backend still has removed item, retrying...');
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        const retryResult = await cartService.updateCart(updatedItems, store.id);
+                        if (retryResult.success) {
+                            // Reload full cart data after retry
+                            await loadCartItems();
+                        }
+                    }
+                }
+
+                // Notify other components about the change
+                window.dispatchEvent(new CustomEvent('cartItemRemoved'));
+                setFlashMessage({ type: 'success', message: "Item removed from cart." });
+            } else {
+                console.error('Failed to remove item:', result.error);
+                // Revert local state on error
+                await loadCartItems();
+                setFlashMessage({ type: 'error', message: "Failed to remove item." });
+            }
         } catch (error) {
             console.error("Error removing item:", error);
             setFlashMessage({ type: 'error', message: "Failed to remove item." });
