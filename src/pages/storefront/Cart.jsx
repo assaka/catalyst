@@ -737,36 +737,17 @@ export default function Cart() {
             const result = await cartService.updateCart(updatedItems, store.id);
 
             if (result.success) {
-                // Add delay and verification similar to other cart operations
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-                // Verify the removal was processed
-                const verifyResult = await cartService.getCart();
-                if (verifyResult.success && verifyResult.items) {
-                    const backendItemCount = verifyResult.items.length;
-                    const expectedCount = updatedItems.length;
-
-                    console.log(`🛒 Cart removeItem: Expected: ${expectedCount}, Backend: ${backendItemCount}`);
-
-                    // If backend still has the item, retry once
-                    if (backendItemCount > expectedCount) {
-                        console.log('🔄 Cart: Backend still has removed item, retrying...');
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        const retryResult = await cartService.updateCart(updatedItems, store.id);
-                        if (retryResult.success) {
-                            // Reload full cart data after retry
-                            await loadCartItems();
-                        }
-                    }
-                }
-
-                // Notify other components about the change
+                console.log('✅ Cart: Item removed successfully');
+                // Success - keep the optimistic update, notify components
                 window.dispatchEvent(new CustomEvent('cartItemRemoved'));
                 setFlashMessage({ type: 'success', message: "Item removed from cart." });
             } else {
                 console.error('Failed to remove item:', result.error);
-                // Revert local state on error
-                await loadCartItems();
+                // Only revert on actual API failure - restore the removed item
+                setCartItems(prevItems => {
+                    const alreadyExists = prevItems.find(item => item.id === itemToRemove.id);
+                    return alreadyExists ? prevItems : [...prevItems, itemToRemove];
+                });
                 setFlashMessage({ type: 'error', message: "Failed to remove item." });
             }
         } catch (error) {

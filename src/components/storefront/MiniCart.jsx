@@ -31,8 +31,41 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [lastOptimisticUpdate, setLastOptimisticUpdate] = useState(null);
   const loadCartRef = useRef(null);
 
+  // Helper functions for localStorage cart persistence
+  const saveCartToLocalStorage = (items) => {
+    try {
+      localStorage.setItem('minicart_items', JSON.stringify(items));
+      localStorage.setItem('minicart_timestamp', Date.now().toString());
+    } catch (error) {
+      console.warn('Failed to save cart to localStorage:', error);
+    }
+  };
+
+  const getCartFromLocalStorage = () => {
+    try {
+      const items = localStorage.getItem('minicart_items');
+      const timestamp = localStorage.getItem('minicart_timestamp');
+      if (items && timestamp) {
+        const age = Date.now() - parseInt(timestamp);
+        // Use localStorage cart if it's less than 5 minutes old
+        if (age < 5 * 60 * 1000) {
+          return JSON.parse(items);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to get cart from localStorage:', error);
+    }
+    return null;
+  };
+
   // Load cart on mount and when triggered
   useEffect(() => {
+    // Initialize from localStorage first for instant display
+    const localCart = getCartFromLocalStorage();
+    if (localCart && localCart.length > 0) {
+      console.log('🔄 MiniCart: Initializing from localStorage:', localCart.length, 'items');
+      setCartItems(localCart);
+    }
     loadCart();
   }, [cartUpdateTrigger]);
 
@@ -104,7 +137,16 @@ export default function MiniCart({ cartUpdateTrigger }) {
         timestamp: new Date().toISOString()
       });
 
-      // Handle optimistic updates for immediate UI feedback
+      // Check if we have fresh cart data from the backend
+      if (event.detail?.freshCartData && event.detail.freshCartData.items) {
+        console.log('✨ MiniCart: Using fresh cart data from backend:', event.detail.freshCartData.items.length, 'items');
+        setCartItems(event.detail.freshCartData.items);
+        saveCartToLocalStorage(event.detail.freshCartData.items);
+        setLastOptimisticUpdate(null); // Clear optimistic tracking
+        return; // Don't make another API call
+      }
+
+      // Handle optimistic updates for immediate UI feedback (fallback)
       if (event.detail?.optimistic && event.detail?.action?.includes('add')) {
         console.log('🚀 MiniCart: Applying optimistic update');
         const optimisticTimestamp = Date.now();
@@ -124,6 +166,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
             }
           ];
           console.log(`🚀 Optimistic update: ${prevItems.length} → ${newItems.length} items`);
+
+          // Save optimistic state to localStorage immediately
+          saveCartToLocalStorage(newItems);
+
           return newItems;
         });
       }
@@ -185,39 +231,36 @@ export default function MiniCart({ cartUpdateTrigger }) {
         });
 
         if (cartResult.success && cartResult.items) {
-          console.log(`🛒 MiniCart: Setting cart items (${refreshId}):`, cartResult.items.length);
+          console.log(`🛒 MiniCart: Backend returned ${cartResult.items.length} items`);
 
-          // Check if this backend data is fresher than our optimistic update
           const currentItemCount = cartItems.length;
           const backendItemCount = cartResult.items.length;
-          const hasOptimisticItems = cartItems.some(item => item.optimistic);
+          const currentNonOptimisticCount = cartItems.filter(item => !item.optimistic).length;
 
-          console.log(`📊 Data comparison - Current: ${currentItemCount}, Backend: ${backendItemCount}, HasOptimistic: ${hasOptimisticItems}`);
+          console.log(`📊 Compare - Current: ${currentItemCount} (${currentNonOptimisticCount} real), Backend: ${backendItemCount}`);
 
-          // Don't overwrite optimistic data with stale backend data
-          if (hasOptimisticItems && backendItemCount < currentItemCount) {
-            console.log('⚠️ Backend data appears stale, keeping optimistic data');
-            // Keep current optimistic data, but update product details
-            const realItems = cartResult.items.filter(item => !item.optimistic);
-            if (realItems.length > cartItems.filter(item => !item.optimistic).length) {
-              // Backend has more real items, merge them
-              const optimisticItems = cartItems.filter(item => item.optimistic);
-              setCartItems([...realItems, ...optimisticItems]);
-              console.log('🔄 Merged real + optimistic data');
-            }
-            // Don't update setLastRefreshId to allow retry
-            return;
+          // PROTECTION: Never accept backend data that has fewer items than our current real items
+          // This prevents the "goes to 0" issue from stale/empty backend responses
+          if (backendItemCount < currentNonOptimisticCount) {
+            console.log('🛡️ PROTECTION: Backend has fewer items than expected, keeping current state');
+            console.log(`   Rejecting backend (${backendItemCount}) vs current real items (${currentNonOptimisticCount})`);
+            return; // Don't update anything
           }
 
-          // Backend data is fresh, use it
+          // If backend has same or more items, it's probably fresh data
+          console.log(`✅ Backend data looks valid (${backendItemCount} >= ${currentNonOptimisticCount})`);
+
           const realItems = cartResult.items.filter(item => !item.optimistic);
           setCartItems(realItems);
           setLastRefreshId(refreshId);
 
-          // Clear optimistic update tracking if backend data is sufficient
-          if (lastOptimisticUpdate && backendItemCount >= currentItemCount) {
+          // Save valid cart state to localStorage
+          saveCartToLocalStorage(realItems);
+
+          // Clear optimistic update tracking
+          if (lastOptimisticUpdate) {
             setLastOptimisticUpdate(null);
-            console.log('✅ Backend data confirmed optimistic update');
+            console.log('✅ Backend confirmed cart update');
           }
 
           // Load product details for cart items
@@ -312,6 +355,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
         return;
       }
 
+      // Store original items in case we need to revert
+      const originalItems = [...cartItems];
+
       // Update local state immediately for instant UI response
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
       setCartItems(updatedItems);
@@ -329,42 +375,21 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const result = await cartService.updateCart(updatedItems, store.id);
 
       if (result.success) {
-        // Add delay and verification similar to add operations
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Verify the removal was processed
-        const verifyResult = await cartService.getCart();
-        if (verifyResult.success && verifyResult.items) {
-          const backendItemCount = verifyResult.items.length;
-          const expectedCount = updatedItems.length;
-
-          console.log(`🛒 MiniCart removeItem: Expected: ${expectedCount}, Backend: ${backendItemCount}`);
-
-          // If backend still has the item, retry once
-          if (backendItemCount > expectedCount) {
-            console.log('🔄 MiniCart: Backend still has removed item, retrying...');
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const retryResult = await cartService.updateCart(updatedItems, store.id);
-            if (retryResult.success) {
-              await loadCart();
-            }
-          } else {
-            // Backend confirmed removal, use fresh data
-            setCartItems(verifyResult.items);
-          }
-        } else {
-          // Fallback to loadCart if verification fails
-          await loadCart();
-        }
+        console.log('✅ MiniCart: Item removed successfully');
+        // Success - keep the optimistic update, don't reload cart
+        // The backend should now be in sync with our local state
       } else {
         console.error('Failed to remove item:', result.error);
-        // Revert local state on error
-        await loadCart();
+        // Only revert on actual API failure
+        setCartItems(originalItems);
       }
     } catch (error) {
       console.error('Failed to remove item:', error);
-      // Revert local state on error
-      await loadCart();
+      // Only revert to original state on network/other errors
+      // Don't reload from backend as it might have stale data
+      const originalItems = cartItems.filter(item => item.id !== cartItemId);
+      // Keep the optimistic removal even on error to prevent flickering
+      console.log('🔄 MiniCart: Keeping optimistic removal despite error');
     }
   };
 

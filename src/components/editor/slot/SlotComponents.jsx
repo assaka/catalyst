@@ -234,7 +234,8 @@ export function GridColumn({
   currentDragInfo,
   setCurrentDragInfo,
   children,
-  isNested = false
+  isNested = false,
+  slots = {} // Add slots prop for enhanced feedback
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -244,6 +245,33 @@ export function GridColumn({
   const [isDragging, setIsDragging] = useState(false);
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Calculate grid position for ghost preview
+  const calculateGridPosition = useCallback((dropPosition, targetSlot) => {
+    if (!targetSlot || !slots) return null;
+
+    const parentSlots = Object.values(slots).filter(s => s.parentId === targetSlot.parentId);
+    const targetIndex = parentSlots.findIndex(s => s.id === targetSlot.id);
+
+    let newRow = targetSlot.position?.row || 1;
+    let newCol = targetSlot.position?.col || 1;
+
+    if (dropPosition === 'before') {
+      // Place before target slot
+      newRow = targetSlot.position?.row || 1;
+      newCol = Math.max(1, (targetSlot.position?.col || 1));
+    } else if (dropPosition === 'after') {
+      // Place after target slot
+      newRow = targetSlot.position?.row || 1;
+      newCol = Math.min(12, (targetSlot.position?.col || 1) + (targetSlot.colSpan || 1));
+    } else if (dropPosition === 'inside') {
+      // Place inside container at top-left
+      newRow = 1;
+      newCol = 1;
+    }
+
+    return { row: newRow, col: newCol };
+  }, [slots]);
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
@@ -344,28 +372,22 @@ export function GridColumn({
 
       // Get the dragged slot info to determine valid drop types
       const draggedSlotId = currentDragInfo?.draggedSlotId;
+      const draggedSlot = slots[draggedSlotId];
       const draggedParent = currentDragInfo?.parentId;
       const targetParent = slot?.parentId;
 
-      // Debug logging for drop zone detection
-      console.log(`🔍 Drag detection: ${draggedSlotId} over ${slot?.id}`, {
-        draggedParent,
-        targetParent,
-        y: Math.round(y),
-        height: Math.round(height),
-        yPercent: Math.round((y / height) * 100)
-      });
+      // Determine operation type for enhanced feedback
+      const isReordering = draggedParent === targetParent;
+      const isMoving = draggedParent !== targetParent;
 
       if (y < height * 0.33) {
         // Top third - "before"
         newDropZone = 'before';
         e.dataTransfer.dropEffect = 'move';
-        console.log(`🔴 BEFORE zone detected: y=${y}, height=${height}, percentage=${Math.round((y/height)*100)}%`);
       } else if (y > height * 0.67) {
         // Bottom third - "after"
         newDropZone = 'after';
         e.dataTransfer.dropEffect = 'move';
-        console.log(`🟢 AFTER zone detected: y=${y}, height=${height}, percentage=${Math.round((y/height)*100)}%`);
       } else {
         // Middle area - only allow "inside" for containers
         if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
@@ -379,11 +401,24 @@ export function GridColumn({
       }
 
       if (newDropZone !== dropZone) {
-        console.log(`🎯 Drop zone changed for ${slot?.id}: ${dropZone} → ${newDropZone}`);
         setDropZone(newDropZone);
+
+        // Update global drag info with enhanced feedback
+        if (setCurrentDragInfo && newDropZone) {
+          const gridPosition = calculateGridPosition(newDropZone, slot);
+          setCurrentDragInfo(prev => ({
+            ...prev,
+            targetSlotId: slot?.id,
+            dropPosition: newDropZone,
+            operationType: isReordering ? 'reorder' : 'move',
+            gridPosition,
+            targetSlot: slot,
+            draggedSlot
+          }));
+        }
       }
     }
-  }, [mode, isDragging, slot?.type, isDragOver, dropZone]);
+  }, [mode, isDragging, slot?.type, isDragOver, dropZone, slots, currentDragInfo?.draggedSlotId, currentDragInfo?.parentId, calculateGridPosition, setCurrentDragInfo]);
 
   const handleDragLeave = useCallback((e) => {
     const relatedTarget = e.relatedTarget;
@@ -511,22 +546,79 @@ export function GridColumn({
       }}
       style={gridStyles}
     >
-      {mode === 'edit' && isDragActive && dropZone && (
+      {/* Enhanced visual feedback for drag operations */}
+      {mode === 'edit' && isDragActive && dropZone && currentDragInfo && (
         <>
+          {/* Ghost Preview Slot - only show for before/after */}
+          {(dropZone === 'before' || dropZone === 'after') && (
+            <div className={`absolute ${dropZone === 'before' ? '-top-16' : '-bottom-16'} left-0 right-0 z-50 pointer-events-none`}>
+              <div className="bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-dashed border-blue-400 rounded-lg p-3 shadow-xl animate-pulse">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">
+                      {currentDragInfo.operationType === 'reorder' ? '↕️' : '🔄'}
+                    </span>
+                    <span className="font-semibold text-blue-700">
+                      {currentDragInfo.operationType === 'reorder' ? 'Reordering' : 'Moving'}
+                    </span>
+                  </div>
+                  {currentDragInfo.gridPosition && (
+                    <div className="bg-blue-200 text-blue-800 px-2 py-1 rounded-md text-xs font-mono">
+                      R{currentDragInfo.gridPosition.row} C{currentDragInfo.gridPosition.col}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-xs text-gray-600">
+                  <span className="font-medium">{currentDragInfo.draggedSlot?.type || 'slot'}</span>: {currentDragInfo.draggedSlotId}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced insertion lines with operation indicators */}
           {dropZone === 'before' && (
-            <div className="absolute -top-0.5 left-0 right-0 h-0.5 bg-blue-500 z-50">
-              {console.log(`🔵 Rendering insertion line BEFORE ${slot?.id}`)}
+            <div className="absolute -top-1 left-0 right-0 z-50 pointer-events-none">
+              <div className={`h-1 rounded-full shadow-lg ${
+                currentDragInfo.operationType === 'reorder'
+                  ? 'bg-gradient-to-r from-green-400 to-blue-500'
+                  : 'bg-gradient-to-r from-blue-400 to-purple-500'
+              }`}>
+                <div className={`absolute -top-7 left-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg ${
+                  currentDragInfo.operationType === 'reorder' ? 'bg-green-600' : 'bg-blue-600'
+                }`}>
+                  {currentDragInfo.operationType === 'reorder' ? '↕️ Reorder before' : '🔄 Move before'}
+                </div>
+              </div>
             </div>
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-blue-500 z-50">
-              {console.log(`🔵 Rendering insertion line AFTER ${slot?.id}`)}
+            <div className="absolute -bottom-1 left-0 right-0 z-50 pointer-events-none">
+              <div className={`h-1 rounded-full shadow-lg ${
+                currentDragInfo.operationType === 'reorder'
+                  ? 'bg-gradient-to-r from-green-400 to-blue-500'
+                  : 'bg-gradient-to-r from-blue-400 to-purple-500'
+              }`}>
+                <div className={`absolute -bottom-7 left-2 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg ${
+                  currentDragInfo.operationType === 'reorder' ? 'bg-green-600' : 'bg-blue-600'
+                }`}>
+                  {currentDragInfo.operationType === 'reorder' ? '↕️ Reorder after' : '🔄 Move after'}
+                </div>
+              </div>
             </div>
           )}
           {dropZone === 'inside' && (
-            <div className="absolute inset-1 border-2 border-dashed border-blue-500 bg-blue-50/20 rounded z-40 opacity-80 flex items-center justify-center">
-              <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
-                Drop inside
+            <div className="absolute inset-1 border-2 border-dashed border-purple-500 bg-purple-50/30 rounded-lg z-40 opacity-90 flex flex-col items-center justify-center pointer-events-none">
+              <div className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg flex items-center gap-2">
+                <span>🔄</span>
+                <span>Move into container</span>
+              </div>
+              {currentDragInfo.gridPosition && (
+                <div className="mt-2 bg-purple-100 text-purple-700 px-3 py-1 rounded-md text-xs font-mono">
+                  Position: R{currentDragInfo.gridPosition.row} C{currentDragInfo.gridPosition.col}
+                </div>
+              )}
+              <div className="mt-1 text-xs text-purple-600 opacity-75">
+                {currentDragInfo.draggedSlot?.type || 'slot'}: {currentDragInfo.draggedSlotId}
               </div>
             </div>
           )}
@@ -723,6 +815,7 @@ export function HierarchicalSlotRenderer({
         height={height}
         slotId={slot.id}
         slot={slot}
+        slots={slots}
         currentDragInfo={currentDragInfo}
         setCurrentDragInfo={setCurrentDragInfo}
         onGridResize={onGridResize}

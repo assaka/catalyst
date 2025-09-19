@@ -36,26 +36,33 @@ class CartService {
     }
   }
 
-  // Get cart - simplified to always use session_id approach with smart caching
-  async getCart() {
+  // Get cart - simplified to always use session_id approach with aggressive cache busting
+  async getCart(bustCache = false) {
     try {
       const sessionId = this.getSessionId();
 
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
 
+      // Add cache busting for fresh data requests
+      if (bustCache) {
+        params.append('_t', Date.now().toString());
+      }
+
       const fullUrl = `${this.endpoint}?${params.toString()}`;
 
       // Reduced logging for performance
       if (process.env.NODE_ENV === 'development') {
-        console.log('🛒 CartService.getCart: Session ID:', sessionId);
+        console.log('🛒 CartService.getCart: Session ID:', sessionId, bustCache ? '(cache busted)' : '');
       }
 
-      // Use short cache for cart data (30 seconds) to balance freshness and performance
+      // Force fresh data for cache-busted requests
       const response = await fetch(fullUrl, {
-        cache: 'default',
+        cache: bustCache ? 'no-store' : 'default',
         headers: {
-          'Cache-Control': 'max-age=30'
+          'Cache-Control': bustCache ? 'no-cache, no-store, must-revalidate' : 'max-age=30',
+          'Pragma': bustCache ? 'no-cache' : undefined,
+          'Expires': bustCache ? '0' : undefined
         }
       });
 
@@ -132,12 +139,24 @@ class CartService {
           console.log('🛒 CartService.addItem: Successfully added item');
         }
 
-        // Dispatch single cart update event
+        // Extract fresh cart data from the response
+        const freshCartData = result.data;
+        const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                         Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+        console.log('🔄 CartService.addItem: Fresh cart data from backend:', cartItems.length, 'items');
+
+        // Dispatch cart update event with the fresh cart data
         window.dispatchEvent(new CustomEvent('cartUpdated', {
           detail: {
             action: 'add_from_service',
             timestamp: Date.now(),
-            source: 'cartService.addItem'
+            source: 'cartService.addItem',
+            freshCartData: {
+              success: true,
+              items: cartItems,
+              cart: freshCartData
+            }
           }
         }));
 
