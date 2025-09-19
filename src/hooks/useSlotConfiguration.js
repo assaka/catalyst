@@ -611,10 +611,9 @@ export function useSlotConfiguration({
       return null;
     }
 
-    // ONLY allow drops into containers - reject all other drop targets
     const targetSlot = slots[targetSlotId];
-    if (!targetSlot || !['container', 'grid', 'flex'].includes(targetSlot.type)) {
-      console.log(`🚫 REJECT: Cannot drop into ${targetSlot?.type || 'unknown'} slot - only containers allowed`);
+    if (!targetSlot) {
+      console.log(`🚫 REJECT: Target slot ${targetSlotId} not found`);
       return null;
     }
 
@@ -690,11 +689,49 @@ export function useSlotConfiguration({
       return { col, row };
     };
 
-    // Since we only allow drops into containers, it's always an "inside" operation
-    newParentId = targetSlotId;
-    newPosition = findAvailablePosition(newParentId, 1, 1);
+    // Determine if this is container-to-container or intra-container reordering
+    const isContainerTarget = ['container', 'grid', 'flex'].includes(targetSlot.type);
+    const currentParent = originalProperties.parentId;
+    const targetParent = targetSlot.parentId;
 
-    console.log(`📦 Dropping ${draggedSlotId} into container ${targetSlotId}`);
+    if (dropPosition === 'inside' && isContainerTarget) {
+      // Container-to-container move
+      console.log(`📦 Moving ${draggedSlotId} into container ${targetSlotId}`);
+      newParentId = targetSlotId;
+      newPosition = findAvailablePosition(newParentId, 1, 1);
+
+    } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent) {
+      // Intra-container reordering - same parent, different position
+      console.log(`📍 Reordering ${draggedSlotId} ${dropPosition} ${targetSlotId} within ${currentParent}`);
+      newParentId = currentParent;
+
+      if (dropPosition === 'before') {
+        // Take target's position, shift target and others down/right
+        newPosition = {
+          col: targetSlot.position?.col || 1,
+          row: targetSlot.position?.row || 1
+        };
+      } else { // after
+        // Place after target
+        const targetPos = targetSlot.position || { col: 1, row: 1 };
+        if (targetPos.col < 12) {
+          newPosition = { col: targetPos.col + 1, row: targetPos.row };
+        } else {
+          newPosition = { col: 1, row: targetPos.row + 1 };
+        }
+      }
+
+    } else if ((dropPosition === 'before' || dropPosition === 'after') && isContainerTarget) {
+      // Move to different container at specific position
+      console.log(`🔄 Moving ${draggedSlotId} to container ${targetParent} near ${targetSlotId}`);
+      newParentId = targetParent;
+      newPosition = findAvailablePosition(newParentId, 1, 1);
+
+    } else {
+      // Invalid drop target (non-container for inside, or other invalid combination)
+      console.log(`🚫 REJECT: Invalid drop - ${dropPosition} on ${targetSlot.type} from parent ${currentParent} to ${targetParent}`);
+      return null;
+    }
 
     // Debug logging for drag operations
     console.log(`🔄 Drag operation: ${draggedSlotId} ${dropPosition} ${targetSlotId}`);

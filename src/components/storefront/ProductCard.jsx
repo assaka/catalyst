@@ -152,25 +152,26 @@ const ProductCard = ({ product, settings, className = "" }) => {
           window.catalyst.trackAddToCart(product, 1);
         }
 
-        // Dispatch immediate cart update event
-        const dispatchCartUpdate = (delay = 0, suffix = '') => {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('cartUpdated', {
-              detail: {
-                action: `add${suffix}`,
-                productId: product.id,
-                productName: product.name,
-                quantity: 1,
-                timestamp: Date.now()
-              }
-            }));
-            console.log(`🛒 Dispatched cartUpdated event${suffix}:`, product.name);
-          }, delay);
+        // Dispatch cart update events strategically
+        const eventDetail = {
+          action: 'add_from_product_card',
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          timestamp: Date.now()
         };
 
-        // Dual events for reliability without overwhelming the system
-        dispatchCartUpdate(0, ''); // Immediate
-        dispatchCartUpdate(100, '_100ms'); // Backup after 100ms
+        // Primary cartUpdated event (immediate)
+        window.dispatchEvent(new CustomEvent('cartUpdated', { detail: eventDetail }));
+        console.log('🛒 Dispatched immediate cartUpdated event:', product.name);
+
+        // Backup refreshMiniCart event after short delay (in case cartUpdated fails)
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('refreshMiniCart', {
+            detail: { ...eventDetail, source: 'ProductCard_backup' }
+          }));
+          console.log('🛒 Dispatched backup refreshMiniCart event:', product.name);
+        }, 200);
 
         console.log('✅ Successfully added to cart:', product.name);
 

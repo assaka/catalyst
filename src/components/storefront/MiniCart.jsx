@@ -33,25 +33,34 @@ export default function MiniCart({ cartUpdateTrigger }) {
     loadCart();
   }, [cartUpdateTrigger]);
 
-  // Listen for cart updates with debouncing
+  // Listen for cart updates - simplified for reliability
   useEffect(() => {
     const handleCartUpdate = (event) => {
       console.log('🛒 MiniCart: cartUpdated event received', {
         detail: event.detail,
         timestamp: new Date().toISOString()
       });
-      debouncedLoadCart();
+      // Always refresh immediately for reliability
+      loadCart();
     };
-    
+
     const handleStorageChange = () => {
-      debouncedLoadCart();
+      loadCart(); // Remove debouncing for storage changes too
+    };
+
+    // Direct MiniCart refresh event (backup mechanism)
+    const handleDirectRefresh = (event) => {
+      console.log('🛒 MiniCart: Direct refresh event received', event.detail);
+      loadCart();
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('refreshMiniCart', handleDirectRefresh);
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('refreshMiniCart', handleDirectRefresh);
       window.removeEventListener('storage', handleStorageChange);
       if (loadCartTimeout) {
         clearTimeout(loadCartTimeout);
@@ -59,21 +68,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
     };
   }, []);
 
-  // Debounced load cart to prevent multiple rapid calls
-  const debouncedLoadCart = () => {
-    console.log('🛒 MiniCart: debouncedLoadCart called');
-    if (loadCartTimeout) {
-      console.log('🛒 MiniCart: Clearing existing timeout');
-      clearTimeout(loadCartTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      console.log('🛒 MiniCart: Executing loadCart after debounce');
-      loadCart();
-    }, 300); // 300ms debounce
-
-    setLoadCartTimeout(timeout);
-  };
+  // Note: Debouncing removed for better reliability
+  // All cart updates now trigger immediate refresh
 
   const loadCart = async () => {
     console.log('🛒 MiniCart: loadCart started');
