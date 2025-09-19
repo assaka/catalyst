@@ -1005,61 +1005,81 @@ export default function Cart() {
                     </div>
                 </div>
 
-                {/* Custom Slots Section - Only show standalone custom elements */}
-                {cartLayoutConfig?.slots && (
-                    <div className="custom-slots-section mb-8">
-                        <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                            {Object.values(cartLayoutConfig.slots)
-                                .filter(slot =>
-                                    // Only show truly custom slots, not functional cart elements
-                                    slot.id.startsWith('new_') ||
-                                    (!slot.id.includes('cart_item') &&
-                                     !slot.id.includes('order_summary') &&
-                                     !slot.id.includes('coupon') &&
-                                     !slot.id.includes('header_title') &&
-                                     !slot.id.includes('empty_cart') &&
-                                     slot.parentId === null)
-                                )
-                                .sort((a, b) => (a.position?.order || 0) - (b.position?.order || 0))
-                                .map(slot => {
-                                    const colSpan = slot.colSpan || 12;
-                                    return (
-                                        <div
-                                            key={slot.id}
-                                            className={`col-span-${colSpan}`}
-                                            style={{ gridColumn: `span ${colSpan} / span ${colSpan}` }}
-                                        >
-                                            {slot.type === 'text' && (
-                                                <div
-                                                    className={slot.className}
-                                                    style={slot.styles}
-                                                    dangerouslySetInnerHTML={{ __html: slot.content || '' }}
-                                                />
-                                            )}
-                                            {slot.type === 'image' && (
-                                                <img
-                                                    src={slot.content}
-                                                    alt="Custom content"
-                                                    className={slot.className}
-                                                    style={slot.styles}
-                                                />
-                                            )}
-                                            {slot.type === 'link' && (
-                                                <a
-                                                    href="#"
-                                                    className={slot.className}
-                                                    style={slot.styles}
-                                                >
-                                                    {slot.content || 'Link'}
-                                                </a>
-                                            )}
-                                        </div>
-                                    );
-                                })
+                {/* Custom Slots Section - Filtered by cart state viewMode */}
+                {cartLayoutConfig?.slots && (() => {
+                    // Determine current viewMode based on cart state
+                    const currentViewMode = cartItems.length === 0 ? 'emptyCart' : 'withProduct';
+
+                    // Get root slots using SlotManager to maintain proper order
+                    const rootSlots = SlotManager.getRootSlots(cartLayoutConfig.slots);
+
+                    // Filter slots by viewMode and exclude functional cart elements
+                    const customSlots = rootSlots.filter(slot => {
+                        // Check if slot should be displayed in current viewMode
+                        if (slot.viewMode && Array.isArray(slot.viewMode) && slot.viewMode.length > 0) {
+                            if (!slot.viewMode.includes(currentViewMode)) {
+                                return false;
                             }
-                        </div>
-                    </div>
-                )}
+                        }
+
+                        // Only show truly custom slots, not functional cart elements
+                        return (
+                            slot.id.startsWith('new_') ||
+                            (!slot.id.includes('cart_item') &&
+                             !slot.id.includes('order_summary') &&
+                             !slot.id.includes('coupon') &&
+                             !slot.id.includes('header_title') &&
+                             !slot.id.includes('empty_cart') &&
+                             !slot.id.includes('main_layout'))
+                        );
+                    });
+
+                    // Render slots if any exist for current viewMode
+                    if (customSlots.length > 0) {
+                        return (
+                            <div className="custom-slots-section mb-8">
+                                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                                    {customSlots.map(slot => {
+                                        const colSpan = slot.colSpan || 12;
+                                        return (
+                                            <div
+                                                key={slot.id}
+                                                className={`col-span-${colSpan}`}
+                                                style={{ gridColumn: `span ${colSpan} / span ${colSpan}` }}
+                                            >
+                                                {slot.type === 'text' && (
+                                                    <div
+                                                        className={slot.className}
+                                                        style={slot.styles}
+                                                        dangerouslySetInnerHTML={{ __html: slot.content || '' }}
+                                                    />
+                                                )}
+                                                {slot.type === 'image' && (
+                                                    <img
+                                                        src={slot.content}
+                                                        alt="Custom content"
+                                                        className={slot.className}
+                                                        style={slot.styles}
+                                                    />
+                                                )}
+                                                {slot.type === 'link' && (
+                                                    <a
+                                                        href="#"
+                                                        className={slot.className}
+                                                        style={slot.styles}
+                                                    >
+                                                        {slot.content || 'Link'}
+                                                    </a>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
 
                 <CmsBlockRenderer position="cart_above_items" />
 
