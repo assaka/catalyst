@@ -633,9 +633,9 @@ export function useSlotConfiguration({
     // Create a deep clone to avoid mutations
     const updatedSlots = JSON.parse(JSON.stringify(slots));
     const draggedSlot = updatedSlots[draggedSlotId];
-    const targetSlot = updatedSlots[targetSlotId];
+    const updatedTargetSlot = updatedSlots[targetSlotId];
 
-    if (!draggedSlot || !targetSlot) {
+    if (!draggedSlot || !updatedTargetSlot) {
       console.error('❌ Slot not found:', { draggedSlotId, targetSlotId });
       return null;
     }
