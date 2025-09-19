@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
     }
 
     if (!cart) {
-      console.log('Cart GET - No cart found, returning empty cart');
+      console.log('Cart GET - No cart found, returning empty cart for session:', session_id, 'user:', user_id);
       // Return empty cart structure
       cart = {
         session_id: session_id || null,
@@ -83,8 +83,24 @@ router.get('/', async (req, res) => {
         items: cart.items,
         itemsType: typeof cart.items,
         itemsLength: cart.items ? cart.items.length : 0,
-        rawItems: JSON.stringify(cart.items)
+        rawItems: JSON.stringify(cart.items),
+        createdAt: cart.createdAt,
+        updatedAt: cart.updatedAt
       });
+
+      // Additional debug: directly query from DB to ensure we're getting latest data
+      try {
+        const freshCart = await Cart.findByPk(cart.id);
+        console.log('Cart GET - Fresh DB query result:', {
+          id: freshCart?.id,
+          session_id: freshCart?.session_id,
+          items: freshCart?.items,
+          itemsLength: freshCart?.items ? freshCart.items.length : 0,
+          updatedAt: freshCart?.updatedAt
+        });
+      } catch (debugError) {
+        console.error('Cart GET - Debug query failed:', debugError);
+      }
     }
 
     // Load slot configuration for cart layout if we have a store_id
@@ -148,10 +164,13 @@ router.post('/', async (req, res) => {
 
     let cart;
     if (user_id) {
+      console.log('Cart POST - Looking for cart by user_id:', user_id);
       cart = await Cart.findOne({ where: { user_id } });
     } else {
+      console.log('Cart POST - Looking for cart by session_id:', session_id);
       cart = await Cart.findOne({ where: { session_id } });
     }
+    console.log('Cart POST - Found existing cart:', cart ? cart.id : 'none');
 
     let cartItems = [];
 
@@ -199,18 +218,13 @@ router.post('/', async (req, res) => {
     }
 
     if (cart) {
-      // Update existing cart - force JSON column update by setting to null first
+      // Update existing cart - use changed() to force JSON column update
       console.log('Cart POST - Updating existing cart with items:', JSON.stringify(cartItems));
-      await cart.update({
-        items: null,
-        user_id: user_id || cart.user_id,
-        store_id: store_id || cart.store_id
-      });
-      await cart.update({
-        items: cartItems,
-        user_id: user_id || cart.user_id,
-        store_id: store_id || cart.store_id
-      });
+      cart.items = cartItems;
+      cart.user_id = user_id || cart.user_id;
+      cart.store_id = store_id || cart.store_id;
+      cart.changed('items', true); // Force Sequelize to recognize JSON change
+      await cart.save();
       await cart.reload();
       console.log('Cart POST - After reload, cart items:', JSON.stringify(cart.items));
     } else {
