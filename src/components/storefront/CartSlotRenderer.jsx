@@ -217,11 +217,11 @@ export function CartSlotRenderer({
 
   // Sort slots using grid coordinates for precise positioning
   const sortedSlots = filteredSlots.sort((a, b) => {
-    // First priority: Use grid coordinates (col, row) if available
-    const coordsA = a.position && (a.position.col !== undefined && a.position.row !== undefined);
-    const coordsB = b.position && (b.position.col !== undefined && b.position.row !== undefined);
+    // Use grid coordinates (col, row) - all slots should have these now
+    const hasGridCoordsA = a.position && (a.position.col !== undefined && a.position.row !== undefined);
+    const hasGridCoordsB = b.position && (b.position.col !== undefined && b.position.row !== undefined);
 
-    if (coordsA && coordsB) {
+    if (hasGridCoordsA && hasGridCoordsB) {
       // Sort by row first, then by column
       const rowA = a.position.row;
       const rowB = b.position.row;
@@ -240,37 +240,26 @@ export function CartSlotRenderer({
       }
     }
 
-    // Second priority: Use legacy position.order if available
-    const orderA = a.position?.order ?? 999;
-    const orderB = b.position?.order ?? 999;
-    if (orderA !== orderB) {
-      console.log(`📐 Legacy order positioning: ${a.id}(${orderA}) vs ${b.id}(${orderB})`);
-      return orderA - orderB;
+    // Warn about slots without grid coordinates
+    if (!hasGridCoordsA || !hasGridCoordsB) {
+      console.warn(`⚠️ Slot missing grid coordinates:`, {
+        slotA: a.id,
+        hasGridCoordsA,
+        coordsA: a.position,
+        slotB: b.id,
+        hasGridCoordsB,
+        coordsB: b.position
+      });
     }
 
-    // Fallback: specific order for sidebar components to match editor
-    if (parentId === 'sidebar_area') {
-      const sidebarOrder = {
-        'coupon_container': 1,
-        'order_summary_container': 2
-      };
-      const priorityA = sidebarOrder[a.id] ?? 999;
-      const priorityB = sidebarOrder[b.id] ?? 999;
-      if (priorityA !== priorityB) {
-        console.log(`📐 Applying sidebar order: ${a.id}(${priorityA}) vs ${b.id}(${priorityB})`);
-        return priorityA - priorityB;
-      }
-    }
-
-    // Default: maintain original order
+    // Default: maintain original order for slots without coordinates
     return 0;
   });
 
   console.log('🎯 Filtered and sorted slots:', sortedSlots.length, sortedSlots.map(s => ({
     id: s.id,
     viewMode: s.viewMode,
-    gridCoords: s.position ? `col:${s.position.col}, row:${s.position.row}` : 'none',
-    legacyOrder: s.position?.order
+    gridCoords: s.position ? `col:${s.position.col}, row:${s.position.row}` : 'missing'
   })));
 
   const renderSlotContent = (slot) => {

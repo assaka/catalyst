@@ -73,7 +73,7 @@ export const cartConfig = {
       parentClassName: 'text-center',
       styles: {},
       parentId: 'header_container',
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
     },
@@ -86,7 +86,7 @@ export const cartConfig = {
       className: 'empty-cart-container text-center',
       styles: { gridRow: '2' },
       parentId: 'main_layout',
-      position: { order: 1 },
+      position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: 12,
       viewMode: ['emptyCart'],
@@ -101,7 +101,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       colSpan: 12,
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -115,7 +115,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
-      position: { order: 1 },
+      position: { col: 1, row: 2 },
       colSpan: 12,
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -129,7 +129,7 @@ export const cartConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'empty_cart_container',
-      position: { order: 2 },
+      position: { col: 1, row: 3 },
       colSpan: 12,
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -143,7 +143,7 @@ export const cartConfig = {
       parentClassName: 'text-center',
       styles: {},
       parentId: 'empty_cart_container',
-      position: { order: 3 },
+      position: { col: 1, row: 4 },
       colSpan: 12,
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
