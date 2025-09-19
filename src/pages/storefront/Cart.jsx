@@ -263,6 +263,7 @@ export default function Cart() {
     const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
     
     const [quantityUpdates, setQuantityUpdates] = useState({});
+    const [externalCartUpdateTrigger, setExternalCartUpdateTrigger] = useState(0);
 
 
     useEffect(() => {
@@ -321,8 +322,9 @@ export default function Cart() {
 
                 // Debounce rapid cart updates
                 debounceTimer = setTimeout(() => {
-                    console.log('🔄 Cart: External cart update detected, reloading...');
-                    loadCartData(false); // Reload without showing loader
+                    console.log('🔄 Cart: External cart update detected, triggering reload...');
+                    // Trigger reload using state instead of direct function call
+                    setExternalCartUpdateTrigger(prev => prev + 1);
                 }, 300); // 300ms debounce
             }
         };
@@ -333,7 +335,7 @@ export default function Cart() {
             clearTimeout(debounceTimer);
             window.removeEventListener('cartUpdated', handleCartUpdate);
         };
-    }, [loading, hasLoadedInitialData, loadCartData]);
+    }, [loading, hasLoadedInitialData]);
 
     useDebouncedEffect(() => {
         const updateCartQuantities = async () => {
@@ -484,6 +486,14 @@ export default function Cart() {
             if (showLoader) setLoading(false);
         }
     }, [appliedCoupon, store, settings, taxes, selectedCountry, currencySymbol]); // Fixed dependencies to avoid circular reference
+
+    // Handle external cart update triggers (placed after loadCartData definition)
+    useEffect(() => {
+        if (externalCartUpdateTrigger > 0 && !loading && hasLoadedInitialData) {
+            console.log('🔄 Cart: Responding to external update trigger');
+            loadCartData(false);
+        }
+    }, [externalCartUpdateTrigger, loading, hasLoadedInitialData, loadCartData]);
 
     // Enhanced updateQuantity with hooks
     const updateQuantity = useCallback((itemId, newQuantity) => {
