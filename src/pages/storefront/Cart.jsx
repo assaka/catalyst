@@ -156,14 +156,18 @@ export default function Cart() {
                         // Fallback to cart-config.js
                         const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
                         console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
-                        setCartLayoutConfig({
+
+                        const fallbackConfig = {
                             slots: { ...cartConfig.slots },
                             metadata: {
                                 ...cartConfig.metadata,
                                 fallbackUsed: true,
                                 fallbackReason: 'Published configuration missing configuration data'
                             }
-                        });
+                        };
+
+                        setCartLayoutConfig(fallbackConfig);
+                        setConfigLoaded(true);
                     }
                 } else {
                     console.warn('⚠️ No published configuration found, falling back to cart-config.js');
@@ -173,14 +177,25 @@ export default function Cart() {
                     // Fallback to cart-config.js default configuration
                     const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
                     console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
-                    setCartLayoutConfig({
+                    console.log('📦 Sample slots:', Object.keys(cartConfig.slots).slice(0, 5));
+
+                    const fallbackConfig = {
                         slots: { ...cartConfig.slots },
                         metadata: {
                             ...cartConfig.metadata,
                             fallbackUsed: true,
                             fallbackReason: 'No published configuration found'
                         }
+                    };
+
+                    console.log('📦 Setting fallback config:', {
+                        slotCount: Object.keys(fallbackConfig.slots).length,
+                        hasSlots: !!fallbackConfig.slots,
+                        metadata: fallbackConfig.metadata
                     });
+
+                    setCartLayoutConfig(fallbackConfig);
+                    setConfigLoaded(true);
                 }
             } catch (error) {
                 console.error('❌ Error loading published slot configuration:', error);
@@ -196,14 +211,18 @@ export default function Cart() {
                 // Fallback to cart-config.js
                 const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
                 console.log('📦 Loaded cart-config.js error fallback with', Object.keys(cartConfig.slots).length, 'slots');
-                setCartLayoutConfig({
+
+                const fallbackConfig = {
                     slots: { ...cartConfig.slots },
                     metadata: {
                         ...cartConfig.metadata,
                         fallbackUsed: true,
                         fallbackReason: `Error loading configuration: ${error.message}`
                     }
-                });
+                };
+
+                setCartLayoutConfig(fallbackConfig);
+                setConfigLoaded(true);
             }
         };
         
