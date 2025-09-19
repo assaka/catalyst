@@ -118,16 +118,23 @@ export function CartSlotRenderer({
 
   // Special debugging for coupon container internal layout
   if (parentId === 'coupon_container') {
+    const expectedOrder = ['coupon_title', 'coupon_input', 'coupon_button'];
+    const actualOrder = childSlots.map(s => s.id);
+    const orderMatches = JSON.stringify(expectedOrder) === JSON.stringify(actualOrder);
+
     console.log('🎫 COUPON CONTAINER INTERNAL LAYOUT:', {
       parentId,
       childCount: childSlots.length,
-      children: childSlots.map(slot => ({
+      expectedOrder,
+      actualOrder,
+      orderMatches,
+      children: childSlots.map((slot, index) => ({
         id: slot.id,
         type: slot.type,
         colSpan: slot.colSpan,
-        order: slot.position?.order,
-        gridRow: slot.styles?.gridRow,
-        gridColumn: slot.styles?.gridColumn,
+        position: slot.position,
+        databaseIndex: index,
+        expectedIndex: expectedOrder.indexOf(slot.id),
         className: slot.className
       }))
     });
@@ -135,16 +142,23 @@ export function CartSlotRenderer({
 
   // Special debugging for order summary container internal layout
   if (parentId === 'order_summary_container') {
+    const expectedOrder = ['order_summary_title', 'order_summary_subtotal', 'order_summary_tax', 'order_summary_total', 'checkout_button'];
+    const actualOrder = childSlots.map(s => s.id);
+    const orderMatches = JSON.stringify(expectedOrder) === JSON.stringify(actualOrder);
+
     console.log('📊 ORDER SUMMARY CONTAINER INTERNAL LAYOUT:', {
       parentId,
       childCount: childSlots.length,
-      children: childSlots.map(slot => ({
+      expectedOrder,
+      actualOrder,
+      orderMatches,
+      children: childSlots.map((slot, index) => ({
         id: slot.id,
         type: slot.type,
         colSpan: slot.colSpan,
-        order: slot.position?.order,
-        gridRow: slot.styles?.gridRow,
-        gridColumn: slot.styles?.gridColumn,
+        position: slot.position,
+        databaseIndex: index,
+        expectedIndex: expectedOrder.indexOf(slot.id),
         className: slot.className
       }))
     });
