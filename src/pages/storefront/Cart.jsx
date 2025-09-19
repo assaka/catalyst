@@ -155,24 +155,30 @@ export default function Cart() {
                         console.warn('⚠️ Published configuration has no configuration data');
                         // Fallback to cart-config.js
                         const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+                        console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
                         setCartLayoutConfig({
                             slots: { ...cartConfig.slots },
                             metadata: {
-                                created: new Date().toISOString(),
-                                lastModified: new Date().toISOString()
+                                ...cartConfig.metadata,
+                                fallbackUsed: true,
+                                fallbackReason: 'Published configuration missing configuration data'
                             }
                         });
                     }
                 } else {
-                    console.warn('⚠️ No published configuration found, using default');
+                    console.warn('⚠️ No published configuration found, falling back to cart-config.js');
                     console.warn('⚠️ Response success:', response?.success);
                     console.warn('⚠️ Response data exists:', !!response?.data);
-                    // Set default configuration
+
+                    // Fallback to cart-config.js default configuration
+                    const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+                    console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
                     setCartLayoutConfig({
-                        slots: {},
+                        slots: { ...cartConfig.slots },
                         metadata: {
-                            created: new Date().toISOString(),
-                            lastModified: new Date().toISOString()
+                            ...cartConfig.metadata,
+                            fallbackUsed: true,
+                            fallbackReason: 'No published configuration found'
                         }
                     });
                 }
@@ -189,11 +195,13 @@ export default function Cart() {
                 console.warn('⚠️ Falling back to cart-config.js due to error');
                 // Fallback to cart-config.js
                 const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
+                console.log('📦 Loaded cart-config.js error fallback with', Object.keys(cartConfig.slots).length, 'slots');
                 setCartLayoutConfig({
                     slots: { ...cartConfig.slots },
                     metadata: {
-                        created: new Date().toISOString(),
-                        lastModified: new Date().toISOString()
+                        ...cartConfig.metadata,
+                        fallbackUsed: true,
+                        fallbackReason: `Error loading configuration: ${error.message}`
                     }
                 });
             }
@@ -1134,14 +1142,26 @@ export default function Cart() {
 
                 {/* Complete Slot-Based Layout with Full Cart Functionality */}
                 {(() => {
+                    const hasConfig = !!cartLayoutConfig;
+                    const hasSlots = !!cartLayoutConfig?.slots;
+                    const slotCount = Object.keys(cartLayoutConfig?.slots || {}).length;
+                    const hasFallback = cartLayoutConfig?.metadata?.fallbackUsed;
+
                     console.log('🔍 Cart Debug - Layout Config:', {
-                        hasConfig: !!cartLayoutConfig,
-                        hasSlots: !!cartLayoutConfig?.slots,
-                        slotCount: Object.keys(cartLayoutConfig?.slots || {}).length,
+                        hasConfig,
+                        hasSlots,
+                        slotCount,
+                        hasFallback,
+                        fallbackReason: cartLayoutConfig?.metadata?.fallbackReason,
                         cartItemsLength: cartItems.length,
                         viewMode: cartItems.length === 0 ? 'emptyCart' : 'withProducts'
                     });
-                    return cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0;
+
+                    if (hasFallback) {
+                        console.log('📦 Using cart-config.js fallback configuration');
+                    }
+
+                    return hasConfig && hasSlots && slotCount > 0;
                 })() ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
                         <CartSlotRenderer
@@ -1177,10 +1197,24 @@ export default function Cart() {
                         />
                     </div>
                 ) : (
-                    // Fallback when no slot configuration
+                    // Fallback when no slot configuration is available
                     <div className="text-center py-12">
                         <h1 className="text-3xl font-bold text-gray-900 mb-4">My Cart</h1>
-                        <p className="text-gray-600">Loading cart configuration...</p>
+                        {!cartLayoutConfig ? (
+                            <p className="text-gray-600">Loading cart configuration...</p>
+                        ) : (
+                            <div className="text-gray-600">
+                                <p className="mb-2">Cart configuration not available.</p>
+                                {cartLayoutConfig?.metadata?.fallbackReason && (
+                                    <p className="text-sm text-orange-600 mb-4">
+                                        Reason: {cartLayoutConfig.metadata.fallbackReason}
+                                    </p>
+                                )}
+                                <p className="text-sm">
+                                    Using default cart layout. Please check your store configuration.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
 
