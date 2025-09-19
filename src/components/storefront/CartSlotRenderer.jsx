@@ -96,11 +96,19 @@ export function CartSlotRenderer({
   console.log('🎯 Filtered slots after viewMode:', filteredSlots.length, filteredSlots.map(s => ({ id: s.id, viewMode: s.viewMode })));
 
   const renderSlotContent = (slot) => {
-    const { id, type, content, className = '', styles = {} } = slot;
+    const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
+
+    // Helper function to wrap content with parent class if needed
+    const wrapWithParentClass = (children) => {
+      if (parentClassName) {
+        return <div className={parentClassName}>{children}</div>;
+      }
+      return children;
+    };
 
     // Handle text content slots
     if (id === 'header_title') {
-      return (
+      return wrapWithParentClass(
         <h1 className={className || "text-3xl font-bold text-gray-900 mb-4"} style={styles}>
           {content || 'My Cart'}
         </h1>
@@ -108,7 +116,7 @@ export function CartSlotRenderer({
     }
 
     if (id === 'empty_cart_title') {
-      return (
+      return wrapWithParentClass(
         <h2 className={className || "text-xl font-semibold text-gray-900 mb-2"} style={styles}>
           {content || 'Your cart is empty'}
         </h2>
@@ -116,7 +124,7 @@ export function CartSlotRenderer({
     }
 
     if (id === 'empty_cart_text') {
-      return (
+      return wrapWithParentClass(
         <p className={className || "text-gray-600 mb-6"} style={styles}>
           {content || "Looks like you haven't added anything to your cart yet."}
         </p>
@@ -124,7 +132,7 @@ export function CartSlotRenderer({
     }
 
     if (id === 'empty_cart_button') {
-      return (
+      return wrapWithParentClass(
         <Button
           onClick={() => navigate(getStoreBaseUrl(store))}
           className={className || "bg-blue-600 hover:bg-blue-700"}
@@ -367,7 +375,7 @@ export function CartSlotRenderer({
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+            <h3 className="text-lg font-semibold mb-4">{content || 'Apply Coupon'}</h3>
             {!appliedCoupon ? (
               <div className="flex gap-2">
                 <Input
@@ -414,7 +422,7 @@ export function CartSlotRenderer({
     if (id === 'coupon_input') {
       return (
         <Input
-          placeholder="Enter coupon code"
+          placeholder={content || "Enter coupon code"}
           value={couponCode}
           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
           onKeyPress={handleCouponKeyPress}
@@ -433,7 +441,7 @@ export function CartSlotRenderer({
           className={className}
           style={styles}
         >
-          <Tag className="w-4 h-4 mr-2" /> Apply
+          <Tag className="w-4 h-4 mr-2" /> {content || 'Apply'}
         </Button>
       );
     }
@@ -443,7 +451,7 @@ export function CartSlotRenderer({
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+            <h3 className="text-lg font-semibold mb-4">{content || 'Order Summary'}</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
@@ -488,28 +496,73 @@ export function CartSlotRenderer({
 
     // Order summary individual components
     if (id === 'order_summary_subtotal') {
+      // Parse content for custom labels, fallback to default structure
+      let leftLabel = 'Subtotal';
+      let rightValue = `${currencySymbol}${safeToFixed(subtotal)}`;
+
+      if (content && content.includes('<span>')) {
+        // Handle HTML content format: '<span>Subtotal</span><span>$79.97</span>'
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const spans = tempDiv.querySelectorAll('span');
+        if (spans.length >= 1) leftLabel = spans[0].textContent || leftLabel;
+        // Keep dynamic right value regardless of static content
+      } else if (content) {
+        leftLabel = content;
+      }
+
       return (
-        <div className={`${className} flex justify-between`} style={styles}>
-          <span>Subtotal</span>
-          <span>{currencySymbol}{safeToFixed(subtotal)}</span>
+        <div className={className} style={styles}>
+          <span>{leftLabel}</span>
+          <span>{rightValue}</span>
         </div>
       );
     }
 
     if (id === 'order_summary_tax') {
+      // Parse content for custom labels, fallback to default structure
+      let leftLabel = 'Tax';
+      let rightValue = `${currencySymbol}${safeToFixed(tax)}`;
+
+      if (content && content.includes('<span>')) {
+        // Handle HTML content format: '<span>Tax</span><span>$6.40</span>'
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const spans = tempDiv.querySelectorAll('span');
+        if (spans.length >= 1) leftLabel = spans[0].textContent || leftLabel;
+        // Keep dynamic right value regardless of static content
+      } else if (content) {
+        leftLabel = content;
+      }
+
       return (
-        <div className={`${className} flex justify-between`} style={styles}>
-          <span>Tax</span>
-          <span>{currencySymbol}{safeToFixed(tax)}</span>
+        <div className={className} style={styles}>
+          <span>{leftLabel}</span>
+          <span>{rightValue}</span>
         </div>
       );
     }
 
     if (id === 'order_summary_total') {
+      // Parse content for custom labels, fallback to default structure
+      let leftLabel = 'Total';
+      let rightValue = `${currencySymbol}${safeToFixed(total)}`;
+
+      if (content && content.includes('<span>')) {
+        // Handle HTML content format: '<span>Total</span><span>$81.37</span>'
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        const spans = tempDiv.querySelectorAll('span');
+        if (spans.length >= 1) leftLabel = spans[0].textContent || leftLabel;
+        // Keep dynamic right value regardless of static content
+      } else if (content) {
+        leftLabel = content;
+      }
+
       return (
-        <div className={`${className} flex justify-between text-lg font-semibold border-t pt-4`} style={styles}>
-          <span>Total</span>
-          <span>{currencySymbol}{safeToFixed(total)}</span>
+        <div className={className} style={styles}>
+          <span>{leftLabel}</span>
+          <span>{rightValue}</span>
         </div>
       );
     }
