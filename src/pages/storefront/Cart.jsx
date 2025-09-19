@@ -305,22 +305,35 @@ export default function Cart() {
         return unsubscribe;
     }, []);
 
-    // Listen for cart updates from other components (like MiniCart)
+    // Listen for cart updates from other components (like MiniCart, add to cart) with debouncing
     useEffect(() => {
+        let debounceTimer;
+
         const handleCartUpdate = (event) => {
-            
             // Only reload if we're not currently processing our own updates
-            if (!loading && hasLoadedInitialData) {
-                loadCartData(false); // Reload without showing loader
+            // and the event is not from our own quantity/remove updates
+            if (!loading && hasLoadedInitialData &&
+                event.type !== 'cartQuantityUpdated' &&
+                event.type !== 'cartItemRemoved') {
+
+                // Clear existing timer
+                clearTimeout(debounceTimer);
+
+                // Debounce rapid cart updates
+                debounceTimer = setTimeout(() => {
+                    console.log('🔄 Cart: External cart update detected, reloading...');
+                    loadCartData(false); // Reload without showing loader
+                }, 300); // 300ms debounce
             }
         };
 
         window.addEventListener('cartUpdated', handleCartUpdate);
-        
+
         return () => {
+            clearTimeout(debounceTimer);
             window.removeEventListener('cartUpdated', handleCartUpdate);
         };
-    }, [loading, hasLoadedInitialData]);
+    }, [loading, hasLoadedInitialData, loadCartData]);
 
     useDebouncedEffect(() => {
         const updateCartQuantities = async () => {
@@ -342,11 +355,13 @@ export default function Cart() {
                 // Use simplified cart service
                 const result = await cartService.updateCart(updatedItems, store.id);
                 setQuantityUpdates({});
-                // Remove artificial delay - reload immediately
-                loadCartData(false);
-                
-                // Dispatch update event
-                window.dispatchEvent(new CustomEvent('cartUpdated'));
+
+                // Update local state immediately instead of reloading
+                setCartItems(updatedItems);
+
+                // Dispatch update event for other components (MiniCart, etc.)
+                // Use custom event type to avoid triggering our own listener
+                window.dispatchEvent(new CustomEvent('cartQuantityUpdated'));
             } catch (error) {
                 console.error("Error updating cart quantities:", error);
                 setFlashMessage({ type: 'error', message: "Failed to update cart quantities." });
@@ -356,7 +371,8 @@ export default function Cart() {
         updateCartQuantities();
     }, [quantityUpdates], 1500);
 
-    const loadCartData = async (showLoader = true) => {
+    const loadCartData = useCallback(async (showLoader = true) => {
+        console.log('🔄 Cart.loadCartData: Called with showLoader:', showLoader);
         if (showLoader) setLoading(true);
 
         try {
@@ -457,7 +473,7 @@ export default function Cart() {
         } finally {
             if (showLoader) setLoading(false);
         }
-    };
+    }, [appliedCoupon, cartContext]); // Add dependency array for useCallback
 
     // Enhanced updateQuantity with hooks
     const updateQuantity = useCallback((itemId, newQuantity) => {
@@ -571,9 +587,10 @@ export default function Cart() {
 
             // Use simplified cart service
             const result = await cartService.updateCart(updatedItems, store.id);
-            
-            // Reload data in background without showing loader
-            loadCartData(false);
+
+            // Don't reload - we already updated local state above
+            // Just notify other components about the change
+            window.dispatchEvent(new CustomEvent('cartItemRemoved'));
             setFlashMessage({ type: 'success', message: "Item removed from cart." });
         } catch (error) {
             console.error("Error removing item:", error);
