@@ -344,8 +344,7 @@ export function GridColumn({
 
       // Get the dragged slot info to determine valid drop types
       const draggedSlotId = currentDragInfo?.draggedSlotId;
-      const draggedSlot = draggedSlotId ? slots[draggedSlotId] : null;
-      const draggedParent = draggedSlot?.parentId;
+      const draggedParent = currentDragInfo?.parentId;
       const targetParent = slot?.parentId;
 
       // Debug logging for drop zone detection

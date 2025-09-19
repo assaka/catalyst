@@ -299,10 +299,20 @@ export default function Products() {
   const handleDeleteProduct = async (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        await Product.delete(productId);
+        // Optimistic update - remove product from UI immediately
+        const optimisticProducts = products.filter(p => p.id !== productId);
+        setProducts(optimisticProducts);
+
+        // Perform deletion with retry mechanism
+        await retryApiCall(() => Product.delete(productId));
+
+        // Reload data with delay to ensure backend processing is complete
+        await delay(500);
         await loadData();
       } catch (error) {
         console.error("Error deleting product:", error);
+        // Revert optimistic update on error
+        await loadData();
       }
     }
   };
@@ -332,17 +342,43 @@ export default function Products() {
 
   const handleBulkDelete = async () => {
     if (selectedProducts.size === 0) return;
-    
+
     const count = selectedProducts.size;
     if (window.confirm(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}?`)) {
       try {
-        const deletePromises = Array.from(selectedProducts).map(id => Product.delete(id));
-        await Promise.all(deletePromises);
+        // Optimistic update - remove products from UI immediately
+        const selectedIds = Array.from(selectedProducts);
+        const optimisticProducts = products.filter(p => !selectedIds.includes(p.id));
+        setProducts(optimisticProducts);
         setSelectedProducts(new Set());
         setShowBulkActions(false);
+
+        // Delete products in smaller batches to avoid overwhelming the backend
+        const batchSize = 3;
+        const batches = [];
+        for (let i = 0; i < selectedIds.length; i += batchSize) {
+          batches.push(selectedIds.slice(i, i + batchSize));
+        }
+
+        for (const batch of batches) {
+          const deletePromises = batch.map(id => retryApiCall(() => Product.delete(id)));
+          await Promise.all(deletePromises);
+
+          // Small delay between batches
+          if (batches.indexOf(batch) < batches.length - 1) {
+            await delay(300);
+          }
+        }
+
+        // Reload data with delay to ensure backend processing is complete
+        await delay(1000);
         await loadData();
       } catch (error) {
         console.error("Error deleting products:", error);
+        // Revert optimistic update on error
+        setSelectedProducts(new Set());
+        setShowBulkActions(false);
+        await loadData();
       }
     }
   };
