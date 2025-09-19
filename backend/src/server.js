@@ -146,10 +146,10 @@ app.use((req, res, next) => {
 });
 app.use(compression());
 
-// Rate limiting
+// Rate limiting - increased limits for development
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX_REQUESTS || 100,
+  max: process.env.RATE_LIMIT_MAX_REQUESTS || 1000, // Increased from 100 to 1000
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
@@ -199,15 +199,25 @@ app.use(cors({
     
     // Check for Vercel preview URLs pattern (catalyst-*.vercel.app)
     const isVercelPreview = /^https:\/\/catalyst-[a-z0-9]+-hamids-projects-[a-z0-9]+\.vercel\.app$/.test(origin);
-    
+
     // Also check for main Vercel domain pattern
     const isVercelDomain = /^https:\/\/catalyst-[a-z0-9-]*\.vercel\.app$/.test(origin);
+
+    // Allow any localhost for development
+    const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+
+    // Allow any Vercel app domain for development
+    const isAnyVercelApp = /^https:\/\/[a-z0-9-]+(\.vercel\.app)$/.test(origin);
     
-    if (isAllowed || isVercelPreview || isVercelDomain) {
+    if (isAllowed || isVercelPreview || isVercelDomain || isLocalhost || isAnyVercelApp) {
       if (isVercelPreview) {
         console.log('✅ CORS allowed for Vercel preview URL:', origin);
       } else if (isVercelDomain) {
         console.log('✅ CORS allowed for Vercel domain:', origin);
+      } else if (isLocalhost) {
+        console.log('✅ CORS allowed for localhost:', origin);
+      } else if (isAnyVercelApp) {
+        console.log('✅ CORS allowed for Vercel app:', origin);
       } else {
         console.log('✅ CORS allowed for origin (pattern match):', origin);
       }
