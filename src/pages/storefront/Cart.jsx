@@ -993,7 +993,7 @@ export default function Cart() {
                         hasSlots: !!cartLayoutConfig?.slots,
                         slotCount: Object.keys(cartLayoutConfig?.slots || {}).length,
                         cartItemsLength: cartItems.length,
-                        viewMode: cartItems.length === 0 ? 'empty' : 'withProducts'
+                        viewMode: cartItems.length === 0 ? 'emptyCart' : 'withProducts'
                     });
                     return cartLayoutConfig?.slots && Object.keys(cartLayoutConfig.slots).length > 0;
                 })() ? (
@@ -1001,7 +1001,7 @@ export default function Cart() {
                         <CartSlotRenderer
                             slots={cartLayoutConfig.slots}
                             parentId={null}
-                            viewMode={cartItems.length === 0 ? 'empty' : 'withProducts'}
+                            viewMode={cartItems.length === 0 ? 'emptyCart' : 'withProducts'}
                             cartContext={{
                                 cartItems,
                                 appliedCoupon,

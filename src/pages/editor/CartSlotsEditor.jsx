@@ -39,7 +39,7 @@ import { runDragDropTests } from '@/utils/dragDropTester';
 const CartSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode: propViewMode = 'empty'
+  viewMode: propViewMode = 'emptyCart'
 }) => {
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -561,9 +561,9 @@ const CartSlotsEditor = ({
               {/* View Mode Tabs */}
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode('empty')}
+                  onClick={() => setViewMode('emptyCart')}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'empty'
+                    viewMode === 'emptyCart'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                   }`}

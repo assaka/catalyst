@@ -21,7 +21,7 @@ export const cartConfig = {
       layout: 'grid',
       gridCols: 12,
       colSpan: 12,
-      viewMode: ['empty', 'withProducts'],
+      viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
     },
 
@@ -34,7 +34,7 @@ export const cartConfig = {
       parentId: 'main_layout',
       layout: 'flex',
       colSpan: 12,
-      viewMode: ['empty', 'withProducts'],
+      viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
     },
 
@@ -47,7 +47,7 @@ export const cartConfig = {
       parentId: 'main_layout',
       layout: 'block',
       colSpan: 12, // Will be dynamically adjusted to 8 in withProducts mode
-      viewMode: ['empty', 'withProducts'],
+      viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
     },
 
@@ -74,7 +74,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'header_container',
       position: { order: 0 },
-      viewMode: ['empty', 'withProducts'],
+      viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
     },
     
@@ -89,7 +89,7 @@ export const cartConfig = {
       position: { order: 1 },
       layout: 'block',
       colSpan: 12,
-      viewMode: ['empty'],
+      viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
     },
     
@@ -103,7 +103,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { order: 0 },
       colSpan: 12,
-      viewMode: ['empty'],
+      viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
     },
     
@@ -117,7 +117,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { order: 1 },
       colSpan: 12,
-      viewMode: ['empty'],
+      viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
     },
     
@@ -131,7 +131,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { order: 2 },
       colSpan: 12,
-      viewMode: ['empty'],
+      viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
     },
     
@@ -145,7 +145,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { order: 3 },
       colSpan: 12,
-      viewMode: ['empty'],
+      viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
     },
     
@@ -566,7 +566,7 @@ export const cartConfig = {
   
   // View configuration
   views: [
-    { id: 'empty', label: 'Empty Cart', icon: ShoppingCart },
+    { id: 'emptyCart', label: 'Empty Cart', icon: ShoppingCart },
     { id: 'withProducts', label: 'With Products', icon: Package }
   ],
   

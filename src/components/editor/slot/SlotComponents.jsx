@@ -637,7 +637,7 @@ export function HierarchicalSlotRenderer({
   slots,
   parentId = null,
   mode,
-  viewMode = 'empty',
+  viewMode = 'emptyCart',
   showBorders = true,
   currentDragInfo,
   setCurrentDragInfo,
