@@ -42,6 +42,53 @@ export function CartSlotRenderer({
     navigate
   } = cartContext;
 
+  // Helper function to extract image URL from various formats
+  const getProductImageUrl = (product) => {
+    if (!product || !product.images) {
+      console.log('🖼️ No product or images found:', { product: !!product, hasImages: !!product?.images });
+      return 'https://placehold.co/100x100?text=No+Image';
+    }
+
+    const firstImage = product.images[0];
+    console.log('🖼️ Image analysis:', {
+      productName: product.name,
+      imagesLength: product.images?.length,
+      firstImageType: typeof firstImage,
+      firstImage: firstImage,
+      isString: typeof firstImage === 'string',
+      isObject: typeof firstImage === 'object'
+    });
+
+    // If it's already a string URL
+    if (typeof firstImage === 'string') {
+      console.log('🖼️ Using string URL:', firstImage);
+      return firstImage;
+    }
+
+    // If it's an object, try common property names
+    if (typeof firstImage === 'object' && firstImage) {
+      const extractedUrl = firstImage.url ||
+                          firstImage.src ||
+                          firstImage.path ||
+                          firstImage.image_url ||
+                          firstImage.uri;
+
+      console.log('🖼️ Extracted from object:', {
+        url: firstImage.url,
+        src: firstImage.src,
+        path: firstImage.path,
+        image_url: firstImage.image_url,
+        uri: firstImage.uri,
+        extractedUrl
+      });
+
+      return extractedUrl || 'https://placehold.co/100x100?text=No+Image';
+    }
+
+    console.log('🖼️ Fallback to placeholder');
+    return 'https://placehold.co/100x100?text=No+Image';
+  };
+
   // Debug logging
   console.log('🔍 CartSlotRenderer Debug:', {
     parentId,
@@ -190,7 +237,7 @@ export function CartSlotRenderer({
               return (
                 <div key={item.id} className="flex items-center space-x-4 py-6 border-b border-gray-200">
                   <img
-                    src={product.images?.[0] || 'https://placehold.co/100x100?text=No+Image'}
+                    src={getProductImageUrl(product)}
                     alt={product.name}
                     className="w-20 h-20 object-cover rounded-lg"
                   />
@@ -264,7 +311,7 @@ export function CartSlotRenderer({
       return (
         <div className={`${className} flex items-center space-x-4 py-6 border-b border-gray-200`} style={styles}>
           <img
-            src={product.images?.[0] || 'https://placehold.co/100x100?text=No+Image'}
+            src={getProductImageUrl(product)}
             alt={product.name}
             className="w-20 h-20 object-cover rounded-lg"
           />
@@ -373,7 +420,7 @@ export function CartSlotRenderer({
       if (id.endsWith('_image')) {
         return (
           <img
-            src={currentProduct.images?.[0] || 'https://placehold.co/100x100?text=No+Image'}
+            src={getProductImageUrl(currentProduct)}
             alt={currentProduct.name}
             className={className}
             style={styles}
