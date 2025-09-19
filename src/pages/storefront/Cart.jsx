@@ -481,7 +481,13 @@ export default function Cart() {
                 return;
             }
 
-            const productIds = [...new Set(cartItems.map(item => item.product_id))];
+            const productIds = [...new Set(cartItems.map(item => {
+                // Ensure product_id is a string/number, not an object
+                const productId = typeof item.product_id === 'object' ?
+                    (item.product_id?.id || item.product_id?.toString() || null) :
+                    item.product_id;
+                return productId;
+            }).filter(id => id !== null))];
 
             // High-Performance Batch Product Fetching
             const products = await (async () => {

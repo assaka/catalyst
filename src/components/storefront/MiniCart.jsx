@@ -267,22 +267,33 @@ export default function MiniCart({ cartUpdateTrigger }) {
           if (cartResult.items.length > 0) {
             const productDetails = {};
             for (const item of cartResult.items) {
-              if (!productDetails[item.product_id]) {
+              // Ensure product_id is a string/number, not an object
+              const productId = typeof item.product_id === 'object' ?
+                (item.product_id?.id || item.product_id?.toString() || null) :
+                item.product_id;
+
+              if (productId && !productDetails[productId]) {
                 try {
-                  const result = await StorefrontProduct.filter({ id: item.product_id });
+                  console.log(`🔍 MiniCart: Loading product details for ID: ${productId} (type: ${typeof productId})`);
+                  const result = await StorefrontProduct.filter({ id: productId });
                   const products = Array.isArray(result) ? result : [];
                   if (products.length > 0) {
                     const foundProduct = products[0];
-                    if (foundProduct.id === item.product_id) {
-                      productDetails[item.product_id] = foundProduct;
+                    if (foundProduct.id == productId) { // Use == for type coercion
+                      productDetails[productId] = foundProduct;
+                      console.log(`✅ MiniCart: Loaded product: ${foundProduct.name}`);
                     } else {
-                      console.error(`MiniCart: ID MISMATCH! Requested: ${item.product_id}, Got: ${foundProduct.id} (${foundProduct.name})`);
+                      console.error(`MiniCart: ID MISMATCH! Requested: ${productId}, Got: ${foundProduct.id} (${foundProduct.name})`);
                       // Don't add mismatched product
                     }
+                  } else {
+                    console.warn(`MiniCart: No product found for ID: ${productId}`);
                   }
                 } catch (error) {
-                  console.error(`Failed to load product ${item.product_id}:`, error);
+                  console.error(`Failed to load product ${productId}:`, error);
                 }
+              } else if (!productId) {
+                console.error('MiniCart: Invalid product_id in cart item:', item);
               }
             }
             setCartProducts(productDetails);
