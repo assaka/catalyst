@@ -686,17 +686,29 @@ export function useSlotConfiguration({
     switch (dropPosition) {
       case 'before':
         newParentId = targetSlot.parentId;
-        // Place before target - try same row, earlier column, or previous row
-        const targetRow = targetSlot.position?.row || 1;
-        const targetCol = targetSlot.position?.col || 1;
-        newPosition = findAvailablePosition(newParentId, targetRow, Math.max(1, targetCol - 1));
+        // For 'before', we want to take the target's position and shift target and siblings forward
+        newPosition = {
+          col: targetSlot.position?.col || 1,
+          row: targetSlot.position?.row || 1
+        };
         break;
       case 'after':
         newParentId = targetSlot.parentId;
-        // Place after target - try same row, later column, or next row
-        const afterRow = targetSlot.position?.row || 1;
-        const afterCol = (targetSlot.position?.col || 1) + 1;
-        newPosition = findAvailablePosition(newParentId, afterRow, afterCol);
+        // For 'after', place in the next logical position
+        const targetPos = targetSlot.position || { col: 1, row: 1 };
+        if (targetPos.col < 12) {
+          // Try next column in same row
+          newPosition = {
+            col: targetPos.col + 1,
+            row: targetPos.row
+          };
+        } else {
+          // Move to next row if at end of columns
+          newPosition = {
+            col: 1,
+            row: targetPos.row + 1
+          };
+        }
         break;
       case 'inside':
         // Only allow dropping inside containers
@@ -744,7 +756,37 @@ export function useSlotConfiguration({
       updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
     }
 
-    // No need for complex order-based shifting - grid coordinates handle positioning
+    // Shift other slots if there's a conflict at the new position
+    if (dropPosition === 'before' || dropPosition === 'after') {
+      Object.keys(updatedSlots).forEach(slotId => {
+        if (slotId !== draggedSlotId) {
+          const slot = updatedSlots[slotId];
+          // Check if this slot is in the same parent and at/after the new position
+          if (slot.parentId === newParentId && slot.position) {
+            const needsShift = (
+              slot.position.row > newPosition.row ||
+              (slot.position.row === newPosition.row && slot.position.col >= newPosition.col)
+            );
+
+            if (needsShift) {
+              // Shift this slot forward
+              if (slot.position.col < 12) {
+                slot.position = {
+                  ...slot.position,
+                  col: slot.position.col + 1
+                };
+              } else {
+                // Move to next row if at end of columns
+                slot.position = {
+                  col: 1,
+                  row: slot.position.row + 1
+                };
+              }
+            }
+          }
+        }
+      });
+    }
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
