@@ -12,23 +12,6 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [error, setError] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('checking'); // 'checking', 'connected', 'failed'
 
-  console.log('🔵 FilePickerModal: Component rendered with props:', {
-    isOpen,
-    fileType,
-    hasOnClose: !!onClose,
-    hasOnSelect: !!onSelect
-  });
-
-  console.log('🔵 FilePickerModal: Current state:', {
-    filesCount: files.length,
-    loading,
-    uploading,
-    error,
-    selectedFile: selectedFile?.name,
-    connectionStatus
-  });
-
-
   // Validate service role key format and basic properties
   const validateServiceRoleKey = (token) => {
     if (!token) {
@@ -50,9 +33,6 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       // Decode header
       const header = JSON.parse(atob(parts[0]));
       const payload = JSON.parse(atob(parts[1]));
-
-      console.log('🔍 Token header:', header);
-      console.log('🔍 Token payload:', payload);
 
       // Check if it's a valid role for storage operations
       const validStorageRoles = ['service_role', 'store_owner', 'admin'];
@@ -79,16 +59,11 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       setError(null);
       setConnectionStatus('checking');
 
-      console.log('🔍 FilePickerModal: Starting file load request...');
-
       const token = apiClient.getToken();
-      console.log('🔐 FilePickerModal: Auth token present:', !!token);
-      console.log('🔐 FilePickerModal: User role:', apiClient.getCurrentUserRole());
 
       // Validate the token format first
       if (token) {
         const validation = validateServiceRoleKey(token);
-        console.log('🔍 FilePickerModal: Token validation:', validation);
 
         if (!validation.valid) {
           throw new Error(`Invalid service role key: ${validation.reason}`);
@@ -98,51 +73,37 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
       // Very aggressive timeout - 3 seconds max
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
-          console.log('⏰ FilePickerModal: Request timed out after 3 seconds');
           reject(new Error('Request timeout'));
         }, 3000);
       });
 
       // First test with a simple working endpoint like MediaStorage uses
-      console.log('📡 FilePickerModal: Testing connection with /supabase/storage/stats');
       const startTime = Date.now();
 
       const responsePromise = apiClient.get('/supabase/storage/stats');
       const response = await Promise.race([responsePromise, timeoutPromise]);
 
       const duration = Date.now() - startTime;
-      console.log(`✅ FilePickerModal: Response received in ${duration}ms:`, response);
 
       // Process successful response
       setConnectionStatus('connected');
-      console.log('✅ FilePickerModal: Supabase connection successful');
 
       // Now try to get actual files using the storage/list endpoint
       try {
-        console.log('📁 FilePickerModal: Now fetching files from storage...');
         const filesResponse = await apiClient.get('/supabase/storage/list/suprshop-assets');
-
-        // Debug: Log the complete response to understand its structure
-        console.log('🔍 FilePickerModal: Full API response:', JSON.stringify(filesResponse, null, 2));
-        console.log('🔍 FilePickerModal: Response type:', typeof filesResponse);
-        console.log('🔍 FilePickerModal: Response success field:', filesResponse?.success);
-        console.log('🔍 FilePickerModal: Response keys:', Object.keys(filesResponse || {}));
 
         // Check for authentication/authorization errors first
         if (!filesResponse.success) {
           // API returned error - throw to trigger error handling
           const errorMsg = filesResponse.message || filesResponse.error || 'Failed to list files';
-          console.log('🚨 FilePickerModal: API returned success=false, throwing error:', errorMsg);
           throw new Error(errorMsg);
         }
 
         if (filesResponse.success && filesResponse.files) {
-          console.log('📂 FilePickerModal: Found files:', filesResponse.files);
 
           // Convert files to our format, using URLs from backend
           const formattedFiles = filesResponse.files.map(file => {
             const imageUrl = file.url || file.publicUrl || file.name;
-            console.log(`🖼️ FilePickerModal: Processing file ${file.name}, URL: ${imageUrl}`);
 
             return {
               id: file.id || `file-${file.name}`,
@@ -161,7 +122,6 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
 
           setFiles(filteredFiles);
           setError(null);
-          console.log('✅ FilePickerModal: Successfully loaded files:', filteredFiles.length);
         } else if (filesResponse.files && filesResponse.files.length === 0) {
           // Only show "no files" if we're sure authentication worked
           setFiles([]);
@@ -172,18 +132,12 @@ const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
         }
       } catch (filesError) {
         console.error('❌ FilePickerModal: Error fetching files:', filesError);
-        console.log('🔍 FilePickerModal: Error object:', JSON.stringify(filesError, Object.getOwnPropertyNames(filesError), 2));
-        console.log('🔍 FilePickerModal: Error name:', filesError.name);
-        console.log('🔍 FilePickerModal: Error message:', filesError.message);
-        console.log('🔍 FilePickerModal: Error status:', filesError.status);
-        console.log('🔍 FilePickerModal: Error stack:', filesError.stack);
 
         // Parse error message to provide helpful feedback
         const errorMessage = filesError.message || 'Unknown error';
         const errorStatus = filesError.status;
         let userFriendlyError = '';
 
-        console.log('🔍 FilePickerModal: Processing error message:', errorMessage, 'status:', errorStatus);
 
         // Check for token validation errors first
         if (errorMessage.includes('Invalid service role key')) {
@@ -310,11 +264,9 @@ There's an issue with the storage bucket configuration.
 
           // Try to get more specific bucket information
           try {
-            console.log('🔄 FilePickerModal: Trying buckets endpoint for detailed error...');
             const bucketsResponse = await apiClient.get('/supabase/storage/buckets');
 
             if (bucketsResponse.success && bucketsResponse.buckets) {
-              console.log('📦 FilePickerModal: Found buckets:', bucketsResponse.buckets);
               const assetsBucket = bucketsResponse.buckets.find(b => b.name === 'suprshop-assets');
 
               if (assetsBucket) {
@@ -394,13 +346,11 @@ Error: ${errorMessage}`;
       }
     } catch (error) {
       console.error('❌ FilePickerModal: Error loading files (outer catch):', error);
-      console.log('🔍 FilePickerModal: Outer error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       setConnectionStatus('failed');
 
       // Check if this is an authentication error that should be handled properly
       const errorMessage = error.message || 'Unknown error';
       const errorStatus = error.status;
-      console.log('🔍 FilePickerModal: Outer error message:', errorMessage, 'status:', errorStatus);
 
       if (errorStatus === 401 || errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied') || errorMessage.includes('Invalid service role key')) {
         setFiles([]);
@@ -424,9 +374,6 @@ Your Supabase service role key appears to be invalid or expired.
 
 **Important:** Use the service_role key, not the anon key for storage operations.`);
       } else {
-        // Provide detailed error information instead of generic message
-        console.log('🧪 FilePickerModal: Connection failed, providing detailed error info');
-
         let detailedError = `🚫 Storage System Connection Failed
 
 Unable to connect to the Supabase storage system.
@@ -471,31 +418,21 @@ Error: ${errorMessage}`;
     // Convert FileList to array if needed
     const files = Array.from(fileList || []);
     if (!files.length) {
-      console.log('📤 FilePickerModal: No files to upload');
       return;
     }
 
     setUploading(true);
-    console.log('📤 FilePickerModal: Starting upload for', files.length, 'files:', files.map(f => f.name));
 
     try {
       const uploadedFiles = [];
 
       // Upload files one by one to Supabase storage
       for (const file of files) {
-        console.log('📤 FilePickerModal: Uploading file:', {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
 
         // Validate file before creating FormData
         if (!file || !file.name || file.size === 0) {
           throw new Error(`Invalid file: ${file?.name || 'Unknown'}`);
         }
-
-        // Use apiClient's uploadFile method which handles auth and FormData properly
-        console.log('📤 FilePickerModal: Using apiClient.uploadFile with auth...');
 
         const additionalData = {
           folder: 'library',
@@ -503,12 +440,9 @@ Error: ${errorMessage}`;
           type: 'general'
         };
 
-        console.log('📤 FilePickerModal: Upload data:', { file: file.name, ...additionalData });
-
         const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
 
         if (response.success) {
-          console.log('✅ FilePickerModal: Upload successful for', file.name, ':', response);
 
           // Add uploaded file to our list
           uploadedFiles.push({
@@ -527,7 +461,6 @@ Error: ${errorMessage}`;
       if (uploadedFiles.length > 0) {
         // Clear error and refresh file list
         setError(null);
-        console.log('📤 FilePickerModal: All uploads successful, refreshing file list...');
 
         // Refresh the file list to show all files including newly uploaded ones
         await loadFiles();
@@ -633,22 +566,15 @@ ${errorMessage}
 
   // Load files when modal opens
   useEffect(() => {
-    console.log('🟡 FilePickerModal: useEffect triggered with isOpen:', isOpen);
     if (isOpen) {
-      console.log('🟡 FilePickerModal: Modal is open, loading files...');
       setError(null); // Clear any previous errors
       loadFiles();
     }
   }, [isOpen]);
 
-  console.log('🟢 FilePickerModal: About to render. isOpen:', isOpen);
-
   if (!isOpen) {
-    console.log('🔴 FilePickerModal: Modal not open, returning null');
     return null;
   }
-
-  console.log('🟢 FilePickerModal: Rendering modal with files:', files.length, 'loading:', loading, 'error:', error);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -660,7 +586,6 @@ ${errorMessage}
 
             {/* Connection Status Badge */}
             {(() => {
-              console.log('🎨 FilePickerModal: Rendering badge with connectionStatus:', connectionStatus);
               return (
                 <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                   connectionStatus === 'connected'
@@ -727,10 +652,8 @@ ${errorMessage}
         {/* Files Grid */}
         <div className="flex-1 p-6 overflow-y-auto">
           {(() => {
-            console.log('🎨 FilePickerModal: Rendering files grid. loading:', loading, 'error:', error, 'filteredFiles.length:', filteredFiles.length);
 
             if (loading) {
-              console.log('🔄 FilePickerModal: Showing loading state');
               return (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -740,7 +663,6 @@ ${errorMessage}
             }
 
             if (error) {
-              console.log('❌ FilePickerModal: Showing error state:', error);
               return (
                 <div className="py-8 px-4">
                   <div className="max-w-lg mx-auto">
@@ -816,7 +738,6 @@ ${errorMessage}
             }
 
             if (filteredFiles.length === 0) {
-              console.log('📭 FilePickerModal: No files to show');
               return (
                 <div className="text-center py-12">
                   <Image className="w-16 h-16 mx-auto text-gray-300 mb-4" />
@@ -826,11 +747,9 @@ ${errorMessage}
               );
             }
 
-            console.log('🖼️ FilePickerModal: Showing files grid with', filteredFiles.length, 'files');
             return (
               <div className="grid grid-cols-4 gap-4">
                 {filteredFiles.map((file, index) => {
-                  console.log(`🖼️ FilePickerModal: Rendering file ${index}:`, file);
                   return (
                 <div
                   key={file.id}
