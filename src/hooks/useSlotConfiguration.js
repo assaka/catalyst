@@ -481,6 +481,7 @@ export function useSlotConfiguration({
                 content: savedSlot.content !== undefined ? savedSlot.content : staticSlot.content,
                 className: savedSlot.className !== undefined ? savedSlot.className : staticSlot.className,
                 parentClassName: savedSlot.parentClassName !== undefined ? savedSlot.parentClassName : staticSlot.parentClassName,
+                parentId: savedSlot.parentId !== undefined ? savedSlot.parentId : staticSlot.parentId,
                 styles: savedSlot.styles ? { ...staticSlot.styles, ...savedSlot.styles } : staticSlot.styles,
                 colSpan: savedSlot.colSpan !== undefined ? savedSlot.colSpan : staticSlot.colSpan,
                 rowSpan: savedSlot.rowSpan !== undefined ? savedSlot.rowSpan : staticSlot.rowSpan,
