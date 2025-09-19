@@ -391,9 +391,13 @@ export function GridColumn({
       const isMoving = draggedParent !== targetParent;
 
       // Check if this is a horizontal reordering scenario (same parent, side-by-side slots)
-      // For now, assume any reordering within the same parent is potentially horizontal
+      // Only enable horizontal reordering for non-container slots when both slots exist
+      // and have the same row position (or if row positions are undefined)
       const isHorizontalReordering = isReordering && slot && draggedSlot &&
-        !['container', 'grid', 'flex'].includes(slot?.type);
+        !['container', 'grid', 'flex'].includes(slot?.type) &&
+        !['container', 'grid', 'flex'].includes(draggedSlot?.type) &&
+        (slot.position?.row === draggedSlot.position?.row ||
+         (!slot.position?.row && !draggedSlot.position?.row));
 
       console.log('🔄 Drag feedback check:', {
         isHorizontalReordering,
@@ -401,6 +405,9 @@ export function GridColumn({
         draggedSlot: draggedSlot?.id,
         targetSlot: slot?.id,
         targetType: slot?.type,
+        draggedType: draggedSlot?.type,
+        targetRow: slot.position?.row,
+        draggedRow: draggedSlot.position?.row,
         draggedParent,
         targetParent
       });
@@ -643,23 +650,23 @@ export function GridColumn({
           {/* Enhanced insertion lines with operation indicators */}
           {dropZone === 'before' && (
             <div className="absolute -top-1 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-0.5 bg-green-400 shadow-md opacity-75" />
+              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'after' && (
             <div className="absolute -bottom-1 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-0.5 bg-green-400 shadow-md opacity-75" />
+              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {/* Horizontal insertion lines for left/right drop zones */}
           {dropZone === 'left' && (
             <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-0.5 h-full bg-green-400 shadow-md opacity-75" />
+              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'right' && (
             <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-0.5 h-full bg-green-400 shadow-md opacity-75" />
+              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'inside' && (
