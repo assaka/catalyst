@@ -174,7 +174,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
         if (cartResult.success && cartResult.items) {
           console.log(`🛒 MiniCart: Setting cart items (${refreshId}):`, cartResult.items.length);
-          setCartItems(cartResult.items);
+          // Filter out optimistic items and replace with real data
+          const realItems = cartResult.items.filter(item => !item.optimistic);
+          setCartItems(realItems);
           setLastRefreshId(refreshId);
 
           // Load product details for cart items
