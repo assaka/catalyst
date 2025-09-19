@@ -685,40 +685,65 @@ export function useSlotConfiguration({
 
     switch (dropPosition) {
       case 'before':
-        newParentId = targetSlot.parentId;
-        // For 'before', we want to take the target's position and shift target and siblings forward
+        // Stay in same parent if possible, otherwise use target's parent
+        newParentId = originalProperties.parentId === targetSlot.parentId ?
+          originalProperties.parentId : targetSlot.parentId;
+
+        // Place before target slot - take target's position and shift target forward
         newPosition = {
           col: targetSlot.position?.col || 1,
           row: targetSlot.position?.row || 1
         };
         break;
+
       case 'after':
-        newParentId = targetSlot.parentId;
-        // For 'after', place in the next logical position
+        // Stay in same parent if possible, otherwise use target's parent
+        newParentId = originalProperties.parentId === targetSlot.parentId ?
+          originalProperties.parentId : targetSlot.parentId;
+
+        // Place after target slot
         const targetPos = targetSlot.position || { col: 1, row: 1 };
         if (targetPos.col < 12) {
-          // Try next column in same row
           newPosition = {
             col: targetPos.col + 1,
             row: targetPos.row
           };
         } else {
-          // Move to next row if at end of columns
           newPosition = {
             col: 1,
             row: targetPos.row + 1
           };
         }
         break;
+
       case 'inside':
-        // Only allow dropping inside containers
+        // Only allow dropping inside actual containers, not regular slots
         if (!['container', 'grid', 'flex'].includes(targetSlot.type)) {
-          return null;
+          console.log(`⚠️ Cannot drop inside ${targetSlot.type} slot, treating as repositioning within current parent`);
+          // Stay in same parent and reposition
+          newParentId = originalProperties.parentId;
+
+          // Find a position near the target but within current parent
+          const siblings = Object.values(updatedSlots).filter(slot =>
+            slot.parentId === originalProperties.parentId && slot.id !== draggedSlotId
+          );
+
+          // Find next available position
+          let nextRow = 1;
+          siblings.forEach(sibling => {
+            if (sibling.position?.row >= nextRow) {
+              nextRow = (sibling.position.row || 1) + 1;
+            }
+          });
+
+          newPosition = { col: 1, row: nextRow };
+        } else {
+          // Allow dropping into actual containers
+          newParentId = targetSlotId;
+          newPosition = findAvailablePosition(newParentId, 1, 1);
         }
-        newParentId = targetSlotId;
-        // Find first available position inside container
-        newPosition = findAvailablePosition(newParentId, 1, 1);
         break;
+
       default:
         console.error('❌ Invalid drop position:', dropPosition);
         return null;

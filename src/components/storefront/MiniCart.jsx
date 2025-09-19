@@ -35,7 +35,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   // Listen for cart updates with debouncing
   useEffect(() => {
-    const handleCartUpdate = () => {
+    const handleCartUpdate = (event) => {
+      console.log('🛒 MiniCart: cartUpdated event received', {
+        detail: event.detail,
+        timestamp: new Date().toISOString()
+      });
       debouncedLoadCart();
     };
     
@@ -57,18 +61,22 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   // Debounced load cart to prevent multiple rapid calls
   const debouncedLoadCart = () => {
+    console.log('🛒 MiniCart: debouncedLoadCart called');
     if (loadCartTimeout) {
+      console.log('🛒 MiniCart: Clearing existing timeout');
       clearTimeout(loadCartTimeout);
     }
-    
+
     const timeout = setTimeout(() => {
+      console.log('🛒 MiniCart: Executing loadCart after debounce');
       loadCart();
     }, 300); // 300ms debounce
-    
+
     setLoadCartTimeout(timeout);
   };
 
   const loadCart = async () => {
+    console.log('🛒 MiniCart: loadCart started');
     try {
       setLoading(true);
       
