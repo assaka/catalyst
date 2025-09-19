@@ -5,12 +5,12 @@ class CartService {
     this.endpoint = `${this.baseURL}/api/cart`;
   }
 
-  // Get session ID consistently
+  // Get session ID consistently - use same as StorefrontApiClient
   getSessionId() {
-    let sessionId = localStorage.getItem('cart_session_id');
+    let sessionId = localStorage.getItem('guest_session_id');
     if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('cart_session_id', sessionId);
+      sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('guest_session_id', sessionId);
     }
     return sessionId;
   }
