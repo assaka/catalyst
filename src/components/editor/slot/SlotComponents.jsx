@@ -348,6 +348,15 @@ export function GridColumn({
       const draggedParent = draggedSlot?.parentId;
       const targetParent = slot?.parentId;
 
+      // Debug logging for drop zone detection
+      console.log(`🔍 Drag detection: ${draggedSlotId} over ${slot?.id}`, {
+        draggedParent,
+        targetParent,
+        y: Math.round(y),
+        height: Math.round(height),
+        yPercent: Math.round((y / height) * 100)
+      });
+
       if (y < height * 0.25 || y > height * 0.75) {
         // Before/After drops - allow both intra-container reordering and cross-container moves
         newDropZone = y < height * 0.25 ? 'before' : 'after';
@@ -365,6 +374,7 @@ export function GridColumn({
       }
 
       if (newDropZone !== dropZone) {
+        console.log(`🎯 Drop zone changed for ${slot?.id}: ${dropZone} → ${newDropZone}`);
         setDropZone(newDropZone);
       }
     }
