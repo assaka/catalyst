@@ -372,6 +372,18 @@ export function CartSlotRenderer({
 
     // Coupon container - dynamic content with preserved functionality
     if (id === 'coupon_container') {
+      // If content is provided and is substantial HTML/custom content, use it as override
+      if (content && content.trim() && (content.includes('<') || content.length > 50)) {
+        return (
+          <Card className={className} style={styles}>
+            <CardContent className="p-4">
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            </CardContent>
+          </Card>
+        );
+      }
+
+      // Default coupon functionality with title override from content
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
@@ -448,10 +460,22 @@ export function CartSlotRenderer({
 
     // Order summary container - dynamic content with preserved functionality
     if (id === 'order_summary_container') {
+      // If content is provided, use it as override, otherwise render the default summary
+      if (content && content.trim()) {
+        return (
+          <Card className={className} style={styles}>
+            <CardContent className="p-4">
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            </CardContent>
+          </Card>
+        );
+      }
+
+      // Default order summary functionality
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-4">{content || 'Order Summary'}</h3>
+            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
