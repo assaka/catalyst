@@ -130,10 +130,13 @@ router.get('/', async (req, res) => {
       }
     }
 
+    // Ensure clean response structure - extract dataValues if it's a Sequelize instance
+    const cleanCart = cart.dataValues || cart;
+
     res.json({
       success: true,
       data: {
-        ...cart,
+        ...cleanCart,
         slotConfiguration
       }
     });

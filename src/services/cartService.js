@@ -68,11 +68,18 @@ class CartService {
       console.log('🛒 CartService.getCart: Response data:', result);
 
       if (result.success && result.data) {
-        const items = Array.isArray(result.data.items) ? result.data.items : [];
+        // Handle both direct data.items and data.dataValues.items structures
+        const cartData = result.data.dataValues || result.data;
+        const items = Array.isArray(cartData.items) ? cartData.items : [];
         console.log('🛒 CartService.getCart: Found cart with items:', items.length);
+        console.log('🛒 CartService.getCart: Cart data structure:', {
+          hasDataValues: !!result.data.dataValues,
+          hasDirectItems: !!result.data.items,
+          actualItems: items
+        });
         return {
           success: true,
-          cart: result.data,
+          cart: cartData,
           items: items
         };
       }
