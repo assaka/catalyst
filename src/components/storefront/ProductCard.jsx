@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createProductUrl } from '@/utils/urlUtils';
@@ -13,6 +13,9 @@ import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
 const ProductCard = ({ product, settings, className = "" }) => {
   const { productLabels, store, taxes, selectedCountry } = useStore();
+
+  // Prevent duplicate add to cart operations
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   if (!product || !store) return null;
 
@@ -113,8 +116,17 @@ const ProductCard = ({ product, settings, className = "" }) => {
   const handleAddToCart = async (e) => {
     e.preventDefault(); // Prevent navigation when clicking the button
     e.stopPropagation();
-    
+
+    // Prevent multiple rapid additions
+    if (isAddingToCart) {
+      console.log('⏳ Add to cart already in progress, ignoring duplicate request for:', product.name);
+      return;
+    }
+
     try {
+      setIsAddingToCart(true);
+      console.log('🛒 Starting add to cart for:', product.name);
+
       if (!product || !product.id) {
         console.error('Invalid product for add to cart');
         return;
@@ -140,22 +152,25 @@ const ProductCard = ({ product, settings, className = "" }) => {
           window.catalyst.trackAddToCart(product, 1);
         }
 
-        // Dispatch multiple cart updated events to ensure components update
-        window.dispatchEvent(new CustomEvent('cartUpdated', {
-          detail: {
-            action: 'add',
-            productId: product.id,
-            productName: product.name,
-            quantity: 1
-          }
-        }));
+        // Dispatch immediate cart update event
+        const dispatchCartUpdate = (delay = 0, suffix = '') => {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('cartUpdated', {
+              detail: {
+                action: `add${suffix}`,
+                productId: product.id,
+                productName: product.name,
+                quantity: 1,
+                timestamp: Date.now()
+              }
+            }));
+            console.log(`🛒 Dispatched cartUpdated event${suffix}:`, product.name);
+          }, delay);
+        };
 
-        // Additional event with slight delay to ensure processing
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('cartUpdated', {
-            detail: { action: 'add_delayed', productId: product.id }
-          }));
-        }, 100);
+        // Dual events for reliability without overwhelming the system
+        dispatchCartUpdate(0, ''); // Immediate
+        dispatchCartUpdate(100, '_100ms'); // Backup after 100ms
 
         console.log('✅ Successfully added to cart:', product.name);
 
@@ -178,7 +193,21 @@ const ProductCard = ({ product, settings, className = "" }) => {
         }));
       }
     } catch (error) {
-      console.error("Failed to add to cart", error);
+      console.error("❌ Failed to add to cart", error);
+
+      // Show error flash message for catch block
+      window.dispatchEvent(new CustomEvent('showFlashMessage', {
+        detail: {
+          type: 'error',
+          message: `Error adding ${product.name} to cart. Please try again.`
+        }
+      }));
+    } finally {
+      // Always reset the loading state after 2 seconds to prevent permanent lock
+      setTimeout(() => {
+        setIsAddingToCart(false);
+        console.log('🔓 Add to cart lock released for:', product.name);
+      }, 2000);
     }
   };
 
