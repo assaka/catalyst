@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { formatPrice, safeToFixed, calculateDisplayPrice, formatDisplayPrice } from '@/utils/priceUtils';
+import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
 export default function MiniCart({ cartUpdateTrigger }) {
   const { store, settings, taxes, selectedCountry } = useStore();
@@ -504,8 +505,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
                   return (
                     <div key={item.id} className="flex items-center space-x-3 py-2 border-b border-gray-200">
-                      <img 
-                        src={product.images?.[0] || 'https://placehold.co/50x50?text=No+Image'} 
+                      <img
+                        src={getPrimaryImageUrl(product.images) || 'https://placehold.co/50x50?text=No+Image'}
                         alt={product.name}
                         className="w-12 h-12 object-cover rounded"
                       />
