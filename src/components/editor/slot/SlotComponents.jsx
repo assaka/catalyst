@@ -421,12 +421,6 @@ export function GridColumn({
           dragDirection = deltaY > 0 ? 'down' : 'up';
         }
 
-        console.log('🎯 Direction detection:', {
-          currentPos: { x: currentX, y: currentY },
-          startPos: { x: startX, y: startY },
-          delta: { x: deltaX, y: deltaY },
-          direction: dragDirection
-        });
       }
 
       // Use movement direction to determine drop zone
@@ -441,11 +435,9 @@ export function GridColumn({
         if (draggedParent === targetParent || draggedParent !== targetParent) {
           newDropZone = 'before';
           e.dataTransfer.dropEffect = 'move';
-          console.log('🟢 TOP zone (moving up)');
         } else {
           newDropZone = null;
           e.dataTransfer.dropEffect = 'none';
-          console.log('🚫 TOP blocked');
         }
       } else if (dragDirection === 'down') {
         if (draggedParent === targetParent || draggedParent !== targetParent) {
@@ -454,7 +446,6 @@ export function GridColumn({
         }
       } else {
         // No clear direction - fall back to position-based detection
-        console.log('🔄 Using position-based fallback logic');
         if (isHorizontalReordering) {
           newDropZone = x < width * 0.5 ? 'left' : 'right';
           e.dataTransfer.dropEffect = 'move';
@@ -463,30 +454,20 @@ export function GridColumn({
           if (y < height * 0.33) {
             newDropZone = 'before';
             e.dataTransfer.dropEffect = 'move';
-            console.log('🟢 TOP zone (position fallback)');
           } else if (y > height * 0.67) {
             newDropZone = 'after';
             e.dataTransfer.dropEffect = 'move';
-            console.log('🟢 BOTTOM zone (position fallback)');
           } else if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
             newDropZone = 'inside';
             e.dataTransfer.dropEffect = 'move';
-            console.log('📦 INSIDE container zone (fallback)');
           } else {
             newDropZone = null;
             e.dataTransfer.dropEffect = 'none';
-            console.log('🚫 No drop zone (fallback)');
           }
         }
       }
 
       if (newDropZone !== dropZone) {
-        console.log(`🎯 ACTIVE DROP ZONE: ${newDropZone || 'NONE'}`, {
-          targetSlot: slot?.id,
-          draggedSlot: draggedSlot?.id,
-          position: newDropZone
-        });
-
         setDropZone(newDropZone);
 
         // Update global drag info with enhanced feedback
@@ -542,10 +523,8 @@ export function GridColumn({
     // Map horizontal drop zones to appropriate positions
     if (dropPosition === 'left') {
       dropPosition = 'before'; // Left means before in horizontal context
-      console.log('🔄 Mapping LEFT to BEFORE');
     } else if (dropPosition === 'right') {
       dropPosition = 'after'; // Right means after in horizontal context
-      console.log('🔄 Mapping RIGHT to AFTER');
     }
 
     if (draggedSlotId && draggedSlotId !== slotId && onSlotDrop) {
@@ -647,63 +626,38 @@ export function GridColumn({
 
           {/* Clear directional drop zone indicators */}
           {dropZone === 'before' && (
-            (() => {
-              console.log('Before drop zone active:', { dropZone, currentDragInfo, isDragActive });
-              return (
-                <div className="absolute -top-1 left-0 right-0 z-[100] pointer-events-none">
-                  <div className="h-2 bg-green-500 shadow-xl border-t-4 border-green-600" />
-                  <div className="absolute -top-8 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
-                    ⬆️ Drop above
-                  </div>
-                </div>
-              );
-            })()
+            <div className="absolute -top-1 left-0 right-0 z-[100] pointer-events-none">
+              <div className="h-2 bg-green-500 shadow-xl border-t-4 border-green-600" />
+              <div className="absolute -top-8 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                ⬆️ Drop above
+              </div>
+            </div>
           )}
           {dropZone === 'after' && (
-            (() => {
-              console.log('After drop zone active:', { dropZone, currentDragInfo, isDragActive });
-              return (
-                <div className="absolute -bottom-1 left-0 right-0 z-[100] pointer-events-none">
-                  <div className="h-2 bg-green-500 shadow-xl border-b-4 border-green-600" />
-                  <div className="absolute -bottom-8 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
-                    ⬇️ Drop below
-                  </div>
-                </div>
-              );
-            })()
+            <div className="absolute -bottom-1 left-0 right-0 z-[100] pointer-events-none">
+              <div className="h-2 bg-green-500 shadow-xl border-b-4 border-green-600" />
+              <div className="absolute -bottom-8 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                ⬇️ Drop below
+              </div>
+            </div>
           )}
           {dropZone === 'left' && (
-            (() => {
-              console.log('Left drop zone active:', { dropZone, currentDragInfo, isDragActive });
-              return (
-                <div className="absolute -left-1 top-0 bottom-0 z-[100] pointer-events-none">
-                  <div className="w-2 h-full bg-green-500 shadow-xl border-l-4 border-green-600" />
-                  <div className="absolute top-2 -left-24 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
-                    ⬅️ Drop left
-                  </div>
-                </div>
-              );
-            })()
+            <div className="absolute -left-1 top-0 bottom-0 z-[100] pointer-events-none">
+              <div className="w-2 h-full bg-green-500 shadow-xl border-l-4 border-green-600" />
+              <div className="absolute top-2 -left-24 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                ⬅️ Drop left
+              </div>
+            </div>
           )}
           {dropZone === 'right' && (
-            (() => {
-              console.log('Right drop zone active:', { dropZone, currentDragInfo, isDragActive });
-              return (
-                <div className="absolute -right-1 top-0 bottom-0 z-[100] pointer-events-none">
-                  <div className="w-2 h-full bg-green-500 shadow-xl border-r-4 border-green-600" />
-                  <div className="absolute top-2 -right-24 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
-                    ➡️ Drop right
-                  </div>
-                </div>
-              );
-            })()
+            <div className="absolute -right-1 top-0 bottom-0 z-[100] pointer-events-none">
+              <div className="w-2 h-full bg-green-500 shadow-xl border-r-4 border-green-600" />
+              <div className="absolute top-2 -right-24 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                ➡️ Drop right
+              </div>
+            </div>
           )}
-          {dropZone === 'inside' && (
-            (() => {
-              console.log('Inside drop zone active:', { dropZone, currentDragInfo, isDragActive });
-              return null;
-            })()
-          )}
+          {dropZone === 'inside' && null}
         </>
       )}
 
