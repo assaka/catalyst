@@ -396,71 +396,22 @@ export function GridColumn({
       const isReordering = draggedParent === targetParent;
       const isMoving = draggedParent !== targetParent;
 
-      // Detect drag direction based on actual mouse movement
-      const targetRect = e.currentTarget.getBoundingClientRect();
-      const targetCenterX = targetRect.left + targetRect.width / 2;
-      const targetCenterY = targetRect.top + targetRect.height / 2;
+      // Check if slots are on same row for horizontal reordering
+      const isHorizontalReordering = isReordering &&
+        slot?.position?.row === draggedSlot?.position?.row &&
+        slot?.position?.row !== undefined;
 
-      let dragDirection = 'unknown';
-      let isHorizontalDrag = false;
-      let isVerticalDrag = false;
-
-      if (currentDragInfo?.startPosition) {
-        const deltaX = targetCenterX - currentDragInfo.startPosition.x;
-        const deltaY = targetCenterY - currentDragInfo.startPosition.y;
-        const absDeltaX = Math.abs(deltaX);
-        const absDeltaY = Math.abs(deltaY);
-
-        // Determine primary drag direction based on which axis has more movement
-        if (absDeltaX > absDeltaY * 1.5) {
-          // Primarily horizontal movement
-          isHorizontalDrag = true;
-          dragDirection = deltaX > 0 ? 'right' : 'left';
-        } else if (absDeltaY > absDeltaX * 1.5) {
-          // Primarily vertical movement
-          isVerticalDrag = true;
-          dragDirection = deltaY > 0 ? 'down' : 'up';
-        } else {
-          // Diagonal or minimal movement - use position context
-          if (slot?.position?.row === draggedSlot?.position?.row) {
-            isHorizontalDrag = true;
-            dragDirection = deltaX > 0 ? 'right' : 'left';
-          } else {
-            isVerticalDrag = true;
-            dragDirection = deltaY > 0 ? 'down' : 'up';
-          }
-        }
-      }
-
-      console.log('🔄 Drag feedback check:', {
-        dragDirection,
-        isHorizontalDrag,
-        isVerticalDrag,
-        slots: {
-          dragged: draggedSlot?.id,
-          target: slot?.id,
-          draggedRow: draggedSlot?.position?.row,
-          targetRow: slot?.position?.row
-        },
-        parents: {
-          dragged: draggedParent,
-          target: targetParent,
-          sameParent: draggedParent === targetParent
-        }
-      });
-
-      // Determine drop zones based on detected drag direction
+      // Determine drop zones based on slot positions and mouse location
       console.log('🎯 Zone detection logic:', {
-        dragDirection,
-        isHorizontalDrag,
-        isVerticalDrag,
+        isHorizontalReordering,
+        isReordering,
         mousePosition: { x, y },
         dimensions: { width, height },
         percentages: { xPercent: Math.round((x/width)*100), yPercent: Math.round((y/height)*100) }
       });
 
-      if (isHorizontalDrag && isReordering) {
-        console.log('🔄 Using HORIZONTAL drag logic');
+      if (isHorizontalReordering) {
+        console.log('🔄 Using HORIZONTAL reordering logic (same row)');
         // For horizontal dragging, use left/right zones
         if (x < width * 0.35) {
           newDropZone = 'left';
@@ -514,6 +465,13 @@ export function GridColumn({
       }
 
       if (newDropZone !== dropZone) {
+        console.log(`🎯 ACTIVE DROP ZONE: ${newDropZone || 'NONE'}`, {
+          targetSlot: slot?.id,
+          draggedSlot: draggedSlot?.id,
+          direction: dragDirection,
+          position: newDropZone
+        });
+
         setDropZone(newDropZone);
 
         // Update global drag info with enhanced feedback
@@ -708,29 +666,66 @@ export function GridColumn({
 
           {/* Clear directional drop zone indicators */}
           {dropZone === 'before' && (
-            <div className="absolute -top-1 left-1 right-1 z-50 pointer-events-none">
-              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
-            </div>
+            (() => {
+              console.log('Before drop zone active:', { dropZone, currentDragInfo, isDragActive });
+              return (
+                <div className="absolute -top-2 left-0 right-0 z-[100] pointer-events-none">
+                  <div className="h-2 bg-green-500 shadow-2xl" />
+                  <div className="absolute -top-6 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    Drop here (top)
+                  </div>
+                </div>
+              );
+            })()
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-1 left-1 right-1 z-50 pointer-events-none">
-              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
-            </div>
+            (() => {
+              console.log('After drop zone active:', { dropZone, currentDragInfo, isDragActive });
+              return (
+                <div className="absolute -bottom-2 left-0 right-0 z-[100] pointer-events-none">
+                  <div className="h-2 bg-green-500 shadow-2xl" />
+                  <div className="absolute -bottom-6 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    Drop here (bottom)
+                  </div>
+                </div>
+              );
+            })()
           )}
           {dropZone === 'left' && (
-            <div className="absolute -left-1 top-1 bottom-1 z-50 pointer-events-none">
-              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
-            </div>
+            (() => {
+              console.log('Left drop zone active:', { dropZone, currentDragInfo, isDragActive });
+              return (
+                <div className="absolute -left-2 top-0 bottom-0 z-[100] pointer-events-none">
+                  <div className="w-2 h-full bg-green-500 shadow-2xl" />
+                  <div className="absolute top-2 -left-20 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    Drop here (left)
+                  </div>
+                </div>
+              );
+            })()
           )}
           {dropZone === 'right' && (
-            <div className="absolute -right-1 top-1 bottom-1 z-50 pointer-events-none">
-              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
-            </div>
+            (() => {
+              console.log('Right drop zone active:', { dropZone, currentDragInfo, isDragActive });
+              return (
+                <div className="absolute -right-2 top-0 bottom-0 z-[100] pointer-events-none">
+                  <div className="w-2 h-full bg-green-500 shadow-2xl" />
+                  <div className="absolute top-2 -right-20 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                    Drop here (right)
+                  </div>
+                </div>
+              );
+            })()
           )}
           {dropZone === 'inside' && (
-            <div className="absolute inset-2 bg-green-200 opacity-40 rounded border-2 border-dashed border-green-500 z-40 pointer-events-none flex items-center justify-center">
-              <span className="text-green-700 text-xs font-medium">Drop into container</span>
-            </div>
+            (() => {
+              console.log('Inside drop zone active:', { dropZone, currentDragInfo, isDragActive });
+              return (
+                <div className="absolute inset-2 bg-green-200 opacity-50 rounded border-2 border-solid border-green-600 z-[100] pointer-events-none flex items-center justify-center">
+                  <span className="bg-green-600 text-white px-3 py-2 rounded font-bold">Drop into container</span>
+                </div>
+              );
+            })()
           )}
         </>
       )}
