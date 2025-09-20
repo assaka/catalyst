@@ -38,8 +38,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return;
     }
 
-    console.log('MiniCart: Loading product details for items:', cartItems);
-
     // Extract unique product IDs and batch the request
     const productIds = [...new Set(cartItems.map(item => {
       const productId = typeof item.product_id === 'object' ?
@@ -48,10 +46,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return productId;
     }).filter(id => id !== null))];
 
-    console.log('MiniCart: Extracted product IDs:', productIds);
-
     if (productIds.length === 0) {
-      console.warn('MiniCart: No valid product IDs found');
       setCartProducts({});
       return;
     }
@@ -61,8 +56,13 @@ export default function MiniCart({ cartUpdateTrigger }) {
       // Try batch loading first
       let products = [];
       try {
+        console.log('MiniCart: Attempting batch product load with IDs:', productIds);
         const result = await StorefrontProduct.filter({ id: { in: productIds } });
+        console.log('MiniCart: Batch load result:', result);
         products = Array.isArray(result) ? result : [];
+        if (products.length === 0) {
+          console.warn('MiniCart: Batch loading returned no products for IDs:', productIds);
+        }
       } catch (batchError) {
         console.warn('MiniCart: Batch loading failed, falling back to individual requests:', batchError.message);
 
@@ -89,11 +89,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
           productDetails[String(product.id)] = product;
         }
       });
-      console.log('MiniCart: Loaded products:', {
-        requestedIds: productIds,
-        loadedProducts: Object.keys(productDetails),
-        productDetails
-      });
+      if (Object.keys(productDetails).length === 0) {
+        console.warn('MiniCart: No products loaded for IDs:', productIds);
+      }
       setCartProducts(productDetails);
     } catch (error) {
       console.error('MiniCart: Error loading product details:', error);
@@ -133,7 +131,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
     // Initialize from localStorage first for instant display
     const localCart = getCartFromLocalStorage();
     if (localCart && localCart.length > 0) {
-      console.log('MiniCart: Loaded from localStorage:', localCart);
       setCartItems(localCart);
       // Also load product details for localStorage items
       loadProductDetails(localCart);
@@ -144,31 +141,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
   // Load product details when cartItems change
   useEffect(() => {
     if (cartItems.length > 0) {
-      console.log('MiniCart: CartItems changed, loading product details...', cartItems);
       loadProductDetails(cartItems);
     } else {
-      console.log('MiniCart: CartItems empty, clearing products');
       setCartProducts({});
     }
   }, [cartItems]);
-
-  // Debug cart state changes
-  useEffect(() => {
-    console.log('🔍 MiniCart: cartItems state changed:', {
-      length: cartItems.length,
-      items: cartItems,
-      timestamp: new Date().toISOString()
-    });
-  }, [cartItems]);
-
-  // Debug cartProducts state changes
-  useEffect(() => {
-    console.log('🔍 MiniCart: cartProducts state changed:', {
-      productsCount: Object.keys(cartProducts).length,
-      productIds: Object.keys(cartProducts),
-      timestamp: new Date().toISOString()
-    });
-  }, [cartProducts]);
 
   // Production-ready event handling with race condition prevention
   useEffect(() => {
@@ -296,10 +273,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
           // Simplified: always trust backend data
           const backendItems = cartResult.items;
 
-          console.log('MiniCart: Cart loaded from backend:', {
-            items: backendItems,
-            itemCount: backendItems.length
-          });
 
           setCartItems(backendItems);
           setLastRefreshId(refreshId);
@@ -452,13 +425,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const totalItems = getTotalItems();
 
-  console.log('MiniCart: Render state:', {
-    cartItems: cartItems,
-    cartItemsLength: cartItems.length,
-    totalItems: totalItems,
-    cartProducts: Object.keys(cartProducts),
-    loading: loading
-  });
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -489,20 +455,36 @@ export default function MiniCart({ cartUpdateTrigger }) {
           ) : (
             <>
               <div className="space-y-3 max-h-60 overflow-y-auto">
-                {console.log('MiniCart: Rendering with cartItems:', cartItems, 'cartProducts:', cartProducts)}
                 {cartItems.map((item) => {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);
                   const product = cartProducts[productKey];
                   if (!product) {
-                    console.warn('MiniCart: Product not found for cart item:', {
-                      itemId: item.id,
-                      productId: item.product_id,
-                      productKey: productKey,
-                      availableProducts: Object.keys(cartProducts),
-                      cartItem: item
-                    });
-                    return null;
+                    // Show placeholder for missing product instead of hiding completely
+                    return (
+                      <div key={item.id} className="flex items-center space-x-3 py-2 border-b border-gray-200">
+                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            Product (ID: {String(item.product_id).slice(-8)})
+                          </p>
+                          <p className="text-xs text-gray-500">Product details unavailable</p>
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {currencySymbol}{(item.price || 0).toFixed(2)}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    );
                   }
                   
                   // Use the stored price from cart (which should be the sale price)
