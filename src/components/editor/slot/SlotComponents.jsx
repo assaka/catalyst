@@ -974,13 +974,6 @@ export function HierarchicalSlotRenderer({
                   e.stopPropagation();
                   onElementClick(slot.id, e.currentTarget);
                 }}
-                onMouseDown={(e) => {
-                  // Don't stop propagation for mousedown - allow drag to work
-                  // Only prevent default to avoid text selection during drag
-                  if (e.button === 0) { // Left mouse button
-                    e.preventDefault();
-                  }
-                }}
                 data-slot-id={slot.id}
                 data-editable="true"
                 dangerouslySetInnerHTML={{
