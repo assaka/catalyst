@@ -121,8 +121,6 @@ export default function Cart() {
 
                 // Load published configuration using the new versioning API
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
-                console.log('🔍 Published config response status:', response?.data?.status);
-                console.log('🔍 Published config response data:', response?.data);
                 
                 // Check for various "no published config" scenarios
                 if (response.success && response.data &&
@@ -417,9 +415,6 @@ export default function Cart() {
             if (taxRulesData.status === 'fulfilled') {
                 setTaxRules(taxRulesData.value);
             }
-
-            const parallelLoadTime = performance.now() - totalStartTime;
-            console.log(`⚡ Parallel operations completed: ${parallelLoadTime.toFixed(2)}ms`);
 
             if (!cartItems || cartItems.length === 0) {
                 setCartItems([]);

@@ -766,13 +766,6 @@ const EditorSidebar = ({
       
       // Save immediately using parent callback with preserved styles
       if (onInlineClassChange) {
-        console.log('🎯 EditorSidebar: Calling onInlineClassChange for alignment:', {
-          elementSlotId,
-          combinedClasses,
-          currentInlineStyles,
-          isAlignmentChange: true,
-          targetAlignmentClasses
-        });
         onInlineClassChange(elementSlotId, combinedClasses, currentInlineStyles, true);
       }
     } else {
@@ -791,12 +784,10 @@ const EditorSidebar = ({
     if (!selectedElement) return;
 
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
-    console.log('🟡 elementSlotId:', elementSlotId);
     if (!elementSlotId) return;
 
     // Handle textAlign specially - always apply to parent
     if (property === 'textAlign') {
-      console.log('🟡 Calling handleAlignmentChange for textAlign');
       handleAlignmentChange(property, value);
       return;
     }
@@ -876,13 +867,6 @@ const EditorSidebar = ({
         
         // Save immediately using parent callback with preserved styles
         if (onInlineClassChange) {
-          console.log('🎨 EditorSidebar calling onInlineClassChange for class-based property:', {
-            elementSlotId,
-            property,
-            value,
-            className: selectedElement.className,
-            currentInlineStyles
-          });
           onInlineClassChange(elementSlotId, selectedElement.className, currentInlineStyles);
         }
       }
@@ -899,13 +883,10 @@ const EditorSidebar = ({
 
         if (button) {
           targetElement = button;
-          console.log('🎨 Applying style to button element instead of wrapper');
         } else if (textElement) {
           targetElement = textElement;
-          console.log('🎨 Applying style to text element instead of wrapper');
         } else if (inputElement) {
           targetElement = inputElement;
-          console.log('🎨 Applying style to input element instead of wrapper');
         }
       }
 
@@ -939,13 +920,6 @@ const EditorSidebar = ({
       
       // Save immediately using parent callback (for inline styles, we update classes to persist)
       if (onInlineClassChange) {
-        console.log('🎨 EditorSidebar calling onInlineClassChange for inline style:', {
-          elementSlotId,
-          property,
-          formattedValue,
-          className: selectedElement.className,
-          inlineStyles: { [property]: formattedValue }
-        });
         // Include auto-set border properties in save data
         const saveStyles = { [property]: formattedValue };
         if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
@@ -1284,7 +1258,6 @@ const EditorSidebar = ({
                     variant={currentAlignment === 'left' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => {
-                      console.log('🔴 ALIGN LEFT BUTTON CLICKED');
                       handlePropertyChange('textAlign', 'left');
                     }}
                     className="h-7 px-2"
@@ -1295,7 +1268,6 @@ const EditorSidebar = ({
                     variant={currentAlignment === 'center' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => {
-                      console.log('🔴 ALIGN CENTER BUTTON CLICKED');
                       handlePropertyChange('textAlign', 'center');
                     }}
                     className="h-7 px-2"
@@ -1306,7 +1278,6 @@ const EditorSidebar = ({
                     variant={currentAlignment === 'right' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => {
-                      console.log('🔴 ALIGN RIGHT BUTTON CLICKED');
                       handlePropertyChange('textAlign', 'right');
                     }}
                     className="h-7 px-2"

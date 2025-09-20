@@ -18,10 +18,7 @@ class SlotConfigurationService {
   async getPublishedConfiguration(storeId, pageType = 'cart') {
     try {
       const url = `${API_BASE}/published/${storeId}/${pageType}?status=published&latest=true`;
-      console.log('🌐 Calling published config API:', url);
       const response = await apiClient.get(url);
-      console.log('📡 Published config API response:', response);
-      console.log('📡 Published config status:', response?.data?.status);
 
       // Additional verification: ensure we got a published record
       if (response.data && response.data.status !== 'published') {

@@ -46,8 +46,6 @@ class CustomizationEngine {
   async initialize(storeId, options = {}) {
     try {
       const { page, component, selectors = [], context = {} } = options;
-      
-      console.log('🎨 Initializing customization engine for:', { page, component });
 
       // Get and apply live customizations (published)
       if (!this.isPreviewMode) {
