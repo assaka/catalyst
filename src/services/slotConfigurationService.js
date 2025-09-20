@@ -17,7 +17,18 @@ class SlotConfigurationService {
   // Get published configuration for display (used by storefront)
   async getPublishedConfiguration(storeId, pageType = 'cart') {
     try {
-      const response = await apiClient.get(`${API_BASE}/published/${storeId}/${pageType}`);
+      const url = `${API_BASE}/published/${storeId}/${pageType}?status=published&latest=true`;
+      console.log('🌐 Calling published config API:', url);
+      const response = await apiClient.get(url);
+      console.log('📡 Published config API response:', response);
+      console.log('📡 Published config status:', response?.data?.status);
+
+      // Additional verification: ensure we got a published record
+      if (response.data && response.data.status !== 'published') {
+        console.warn('⚠️ WARNING: API returned non-published record:', response.data.status);
+        console.warn('⚠️ This may indicate a backend issue with the /published endpoint');
+      }
+
       return response;
     } catch (error) {
       console.error('Error getting published configuration:', error);

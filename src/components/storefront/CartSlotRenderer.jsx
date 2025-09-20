@@ -613,7 +613,8 @@ export function CartSlotRenderer({
                 onClick={handleCheckout}
                 style={{
                   backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-                  color: '#FFFFFF'
+                  color: '#FFFFFF',
+                  ...styles  // Custom styles override defaults
                 }}
               >
                 Proceed to Checkout
@@ -707,7 +708,7 @@ export function CartSlotRenderer({
           style={{
             backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
             color: '#FFFFFF',
-            ...styles
+            ...styles  // Custom styles override defaults
           }}
         >
           {content || 'Proceed to Checkout'}
