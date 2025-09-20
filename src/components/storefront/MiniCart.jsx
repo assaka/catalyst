@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl } from '@/utils/urlUtils';
@@ -33,7 +33,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const loadCartRef = useRef(null);
 
   // Helper function to load product details for cart items
-  const loadProductDetails = async (cartItems) => {
+  const loadProductDetails = useCallback(async (cartItems) => {
     if (cartItems.length === 0) {
       setCartProducts({});
       return;
@@ -52,9 +52,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return;
     }
 
-    try {
-      console.log('MiniCart: Loading products with IDs:', productIds);
+    console.log('MiniCart: Loading products for IDs:', productIds);
 
+    try {
       // Use proper batch loading strategies (similar to Cart component)
       const batchStrategies = [
         // Strategy 1: Standard batch filter with "in" operator
@@ -104,7 +104,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       console.error('MiniCart: Error loading product details:', error);
       setCartProducts({});
     }
-  };
+  }, []); // Removed cartProducts dependency to prevent excessive calls
 
   // Helper functions for localStorage cart persistence
   const saveCartToLocalStorage = (items) => {
@@ -139,8 +139,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
     const localCart = getCartFromLocalStorage();
     if (localCart && localCart.length > 0) {
       setCartItems(localCart);
-      // Also load product details for localStorage items
-      loadProductDetails(localCart);
+      // Product details will be loaded by the cartItems useEffect
     }
     loadCart();
   }, [cartUpdateTrigger]);
@@ -152,7 +151,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
     } else {
       setCartProducts({});
     }
-  }, [cartItems]);
+  }, [cartItems, loadProductDetails]);
 
   // Production-ready event handling with race condition prevention
   useEffect(() => {
@@ -482,7 +481,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={() => removeItem(item.id)}
                           className="text-red-500 hover:text-red-700 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
