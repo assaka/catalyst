@@ -646,8 +646,8 @@ export function GridColumn({
             <div className={`absolute z-50 pointer-events-none ${
               dropZone === 'before' ? '-top-16 left-0 right-0' :
               dropZone === 'after' ? '-bottom-16 left-0 right-0' :
-              dropZone === 'left' ? '-left-16 top-0 bottom-0 w-16' :
-              dropZone === 'right' ? '-right-16 top-0 bottom-0 w-16' : ''
+              dropZone === 'left' ? '-left-8 top-0 bottom-0 w-8' :
+              dropZone === 'right' ? '-right-8 top-0 bottom-0 w-8' : ''
             }`}>
               <div className={`bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-dashed border-blue-400 rounded-lg p-3 shadow-xl animate-pulse ${
                 (dropZone === 'left' || dropZone === 'right') ? 'h-full flex flex-col justify-center' : ''
