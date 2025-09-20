@@ -412,24 +412,20 @@ export function GridColumn({
 
       if (isHorizontalReordering) {
         console.log('🔄 Using HORIZONTAL reordering logic (same row)');
-        // For horizontal dragging, use left/right zones
-        if (x < width * 0.35) {
+        // For horizontal dragging, use left/right zones with larger areas
+        if (x < width * 0.5) {
           newDropZone = 'left';
           e.dataTransfer.dropEffect = 'move';
           console.log('🟢 LEFT zone detected', { x, width, percentage: Math.round((x/width)*100) });
-        } else if (x > width * 0.65) {
+        } else {
           newDropZone = 'right';
           e.dataTransfer.dropEffect = 'move';
           console.log('🟢 RIGHT zone detected', { x, width, percentage: Math.round((x/width)*100) });
-        } else {
-          newDropZone = null;
-          e.dataTransfer.dropEffect = 'none';
-          console.log('🚫 HORIZONTAL Middle zone - no drop', { x, width, percentage: Math.round((x/width)*100) });
         }
       } else {
         console.log('🔄 Using VERTICAL reordering logic');
         // For vertical scenarios, ensure we stay within parent container
-        if (y < height * 0.25) {
+        if (y < height * 0.33) {
           // Only allow 'before' if target and dragged have same parent (avoid escaping container)
           if (draggedParent === targetParent) {
             newDropZone = 'before';
@@ -440,7 +436,7 @@ export function GridColumn({
             e.dataTransfer.dropEffect = 'none';
             console.log('🚫 BEFORE blocked (different parent)', { draggedParent, targetParent });
           }
-        } else if (y > height * 0.75) {
+        } else if (y > height * 0.67) {
           // Only allow 'after' if target and dragged have same parent
           if (draggedParent === targetParent) {
             newDropZone = 'after';
@@ -460,6 +456,7 @@ export function GridColumn({
           } else {
             newDropZone = null;
             e.dataTransfer.dropEffect = 'none';
+            console.log('🚫 Middle zone - no drop');
           }
         }
       }
@@ -668,12 +665,7 @@ export function GridColumn({
             (() => {
               console.log('Before drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute -top-2 left-0 right-0 z-[100] pointer-events-none">
-                  <div className="h-2 bg-green-500 shadow-2xl" />
-                  <div className="absolute -top-6 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
-                    Drop here (top)
-                  </div>
-                </div>
+                <div className="absolute inset-0 border-t-4 border-green-500 z-[100] pointer-events-none" />
               );
             })()
           )}
@@ -681,12 +673,7 @@ export function GridColumn({
             (() => {
               console.log('After drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute -bottom-2 left-0 right-0 z-[100] pointer-events-none">
-                  <div className="h-2 bg-green-500 shadow-2xl" />
-                  <div className="absolute -bottom-6 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
-                    Drop here (bottom)
-                  </div>
-                </div>
+                <div className="absolute inset-0 border-b-4 border-green-500 z-[100] pointer-events-none" />
               );
             })()
           )}
@@ -694,12 +681,7 @@ export function GridColumn({
             (() => {
               console.log('Left drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute -left-2 top-0 bottom-0 z-[100] pointer-events-none">
-                  <div className="w-2 h-full bg-green-500 shadow-2xl" />
-                  <div className="absolute top-2 -left-20 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
-                    Drop here (left)
-                  </div>
-                </div>
+                <div className="absolute inset-0 border-l-4 border-green-500 z-[100] pointer-events-none" />
               );
             })()
           )}
@@ -707,23 +689,14 @@ export function GridColumn({
             (() => {
               console.log('Right drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute -right-2 top-0 bottom-0 z-[100] pointer-events-none">
-                  <div className="w-2 h-full bg-green-500 shadow-2xl" />
-                  <div className="absolute top-2 -right-20 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
-                    Drop here (right)
-                  </div>
-                </div>
+                <div className="absolute inset-0 border-r-4 border-green-500 z-[100] pointer-events-none" />
               );
             })()
           )}
           {dropZone === 'inside' && (
             (() => {
               console.log('Inside drop zone active:', { dropZone, currentDragInfo, isDragActive });
-              return (
-                <div className="absolute inset-2 bg-green-200 opacity-50 rounded border-2 border-solid border-green-600 z-[100] pointer-events-none flex items-center justify-center">
-                  <span className="bg-green-600 text-white px-3 py-2 rounded font-bold">Drop into container</span>
-                </div>
-              );
+              return null;
             })()
           )}
         </>
