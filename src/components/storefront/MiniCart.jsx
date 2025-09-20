@@ -350,41 +350,22 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
       setCartItems(updatedItems);
 
-      // Dispatch immediate update with remove action for other components
-      // Use a different event to avoid triggering refresh loops
-      window.dispatchEvent(new CustomEvent('cartItemRemoved', {
-        detail: {
-          action: 'remove_from_minicart',
-          timestamp: Date.now(),
-          itemId: cartItemId,
-          source: 'MiniCart.removeItem'
-        }
-      }));
-
+      // Use simplified cart service - it will handle event dispatching
       const result = await cartService.updateCart(updatedItems, store.id);
 
       if (result.success) {
-        // Update product details for remaining items without full reload
-        const remainingItems = cartItems.filter(item => item.id !== cartItemId);
-        if (remainingItems.length > 0) {
-          loadProductDetails(remainingItems);
-        } else {
-          setCartProducts({});
-        }
-        // Save to localStorage
-        saveCartToLocalStorage(remainingItems);
+        // Success - cartService dispatched event with fresh data
+        // MiniCart will receive fresh data via cartUpdated event automatically
+        saveCartToLocalStorage(updatedItems);
       } else {
         console.error('Failed to remove item:', result.error);
-        // Only revert on actual API failure
+        // Revert optimistic change on failure
         setCartItems(originalItems);
       }
     } catch (error) {
       console.error('Failed to remove item:', error);
-      // Only revert to original state on network/other errors
-      // Don't reload from backend as it might have stale data
-      const originalItems = cartItems.filter(item => item.id !== cartItemId);
-      // Keep the optimistic removal even on error to prevent flickering
-      console.log('🔄 MiniCart: Keeping optimistic removal despite error');
+      // Revert optimistic change on error
+      setCartItems(originalItems);
     }
   };
 

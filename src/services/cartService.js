@@ -213,8 +213,25 @@ class CartService {
       const result = await response.json();
 
       if (result.success) {
-        // Dispatch cart update event
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        // Extract fresh cart data from the response
+        const freshCartData = result.data;
+        const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
+                         Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+        // Dispatch cart update event with fresh cart data (same pattern as addItem)
+        window.dispatchEvent(new CustomEvent('cartUpdated', {
+          detail: {
+            action: 'update_from_service',
+            timestamp: Date.now(),
+            source: 'cartService.updateCart',
+            freshCartData: {
+              success: true,
+              items: cartItems,
+              cart: freshCartData
+            }
+          }
+        }));
+
         return { success: true, cart: result.data };
       }
 

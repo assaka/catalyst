@@ -162,7 +162,7 @@ export const cartConfig = {
       parentId: 'content_area',
       position: { col: 1, row: 1 },
       layout: 'block',
-      colSpan: 12,
+      colSpan: 8,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },

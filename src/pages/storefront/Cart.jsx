@@ -649,15 +649,11 @@ export default function Cart() {
                 ...cartContext
             });
             
-            // Dispatch immediate update for other components
-            window.dispatchEvent(new CustomEvent('cartUpdated'));
-
-            // Use simplified cart service
+            // Use simplified cart service - it will handle event dispatching
             const result = await cartService.updateCart(updatedItems, store.id);
 
             if (result.success) {
-                // Success - keep the optimistic update, notify components
-                window.dispatchEvent(new CustomEvent('cartItemRemoved'));
+                // Success - cartService already dispatched update event
                 setFlashMessage({ type: 'success', message: "Item removed from cart." });
             } else {
                 console.error('Failed to remove item:', result.error);
