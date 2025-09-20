@@ -53,7 +53,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
     }
 
     try {
-      console.log(`🔍 MiniCart: Batch loading ${productIds.length} product details:`, productIds);
 
       // Try batch loading first
       let products = [];
@@ -126,7 +125,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
     // Initialize from localStorage first for instant display
     const localCart = getCartFromLocalStorage();
     if (localCart && localCart.length > 0) {
-      console.log('🔄 MiniCart: Initializing from localStorage:', localCart.length, 'items');
       setCartItems(localCart);
     }
     loadCart();
@@ -139,7 +137,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
     const debouncedRefresh = (immediate = false, retryCount = 0) => {
       if (pendingRefresh && !immediate) {
-        console.log('🛒 MiniCart: Refresh already pending, skipping');
         return;
       }
 
@@ -163,17 +160,14 @@ export default function MiniCart({ cartUpdateTrigger }) {
             if (newResult.success && newResult.items) {
               const newItemCount = newResult.items.length;
               const expectedCount = cartItems.length; // Current count including optimistic
-              console.log(`🛒 MiniCart: Retry check ${retryCount + 1}/5 - Expected: ${expectedCount}, Backend: ${newItemCount}`);
 
               // If backend count is still less than expected, retry
               if (newItemCount < expectedCount) {
-                console.log(`🔄 MiniCart: Backend still behind (${newItemCount} < ${expectedCount}), retrying in ${delay + 200}ms...`);
                 setTimeout(() => debouncedRefresh(true, retryCount + 1), delay + 200);
                 return;
               }
 
               // Backend caught up, update with fresh data
-              console.log(`✅ MiniCart: Backend caught up - ${newItemCount} items`);
               setCartItems(newResult.items);
               setLastOptimisticUpdate(null); // Clear optimistic tracking
             }
@@ -195,14 +189,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
     };
 
     const handleCartUpdate = (event) => {
-      console.log('🛒 MiniCart: cartUpdated event received', {
-        detail: event.detail,
-        timestamp: new Date().toISOString()
-      });
 
       // Check if we have fresh cart data from the backend
       if (event.detail?.freshCartData && event.detail.freshCartData.items) {
-        console.log('✨ MiniCart: Using fresh cart data from backend:', event.detail.freshCartData.items.length, 'items');
         setCartItems(event.detail.freshCartData.items);
         saveCartToLocalStorage(event.detail.freshCartData.items);
         setLastOptimisticUpdate(null); // Clear optimistic tracking
@@ -217,7 +206,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       // Handle optimistic updates for immediate UI feedback (fallback)
       if (event.detail?.optimistic && event.detail?.action?.includes('add')) {
-        console.log('🚀 MiniCart: Applying optimistic update');
         const optimisticTimestamp = Date.now();
         setLastOptimisticUpdate(optimisticTimestamp);
 
@@ -234,7 +222,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
               optimisticTimestamp
             }
           ];
-          console.log(`🚀 Optimistic update: ${prevItems.length} → ${newItems.length} items`);
 
           // Save optimistic state to localStorage immediately
           saveCartToLocalStorage(newItems);
@@ -258,7 +245,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
     };
 
     const handleDirectRefresh = (event) => {
-      console.log('🛒 MiniCart: Direct refresh event received', event.detail);
       debouncedRefresh(true); // Always immediate for direct refresh
     };
 
@@ -289,12 +275,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const loadCart = async () => {
     // Prevent concurrent loadCart calls
     if (loadCartRef.current) {
-      console.log('🛒 MiniCart: LoadCart already in progress, skipping');
       return loadCartRef.current;
     }
 
     const refreshId = Date.now();
-    console.log(`🛒 MiniCart: loadCart started (${refreshId})`);
 
     const loadCartPromise = (async () => {
       try {
@@ -302,31 +286,20 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
         // Use simplified cart service
         const cartResult = await cartService.getCart();
-        console.log(`🛒 MiniCart: Cart result (${refreshId}):`, {
-          success: cartResult.success,
-          itemCount: cartResult.items?.length || 0,
-          items: cartResult.items
-        });
 
         if (cartResult.success && cartResult.items) {
-          console.log(`🛒 MiniCart: Backend returned ${cartResult.items.length} items`);
 
           const currentItemCount = cartItems.length;
           const backendItemCount = cartResult.items.length;
           const currentNonOptimisticCount = cartItems.filter(item => !item.optimistic).length;
 
-          console.log(`📊 Compare - Current: ${currentItemCount} (${currentNonOptimisticCount} real), Backend: ${backendItemCount}`);
-
           // PROTECTION: Never accept backend data that has fewer items than our current real items
           // This prevents the "goes to 0" issue from stale/empty backend responses
           if (backendItemCount < currentNonOptimisticCount) {
-            console.log('🛡️ PROTECTION: Backend has fewer items than expected, keeping current state');
-            console.log(`   Rejecting backend (${backendItemCount}) vs current real items (${currentNonOptimisticCount})`);
             return; // Don't update anything
           }
 
           // If backend has same or more items, it's probably fresh data
-          console.log(`✅ Backend data looks valid (${backendItemCount} >= ${currentNonOptimisticCount})`);
 
           const realItems = cartResult.items.filter(item => !item.optimistic);
           setCartItems(realItems);
@@ -338,13 +311,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
           // Clear optimistic update tracking
           if (lastOptimisticUpdate) {
             setLastOptimisticUpdate(null);
-            console.log('✅ Backend confirmed cart update');
           }
 
           // Load product details for cart items
           await loadProductDetails(realItems);
         } else {
-          console.log(`🛒 MiniCart: Empty or failed cart result (${refreshId})`);
           setCartItems([]);
           setCartProducts({});
           setLastRefreshId(refreshId);
@@ -366,7 +337,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
         }
 
         // Only clear cart for non-network errors or when no fallback available
-        console.log('🗑️ MiniCart: Clearing cart due to unrecoverable error');
         setCartItems([]);
         setCartProducts({});
         setLastRefreshId(refreshId);
@@ -445,7 +415,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const result = await cartService.updateCart(updatedItems, store.id);
 
       if (result.success) {
-        console.log('✅ MiniCart: Item removed successfully');
         // Update product details for remaining items without full reload
         const remainingItems = cartItems.filter(item => item.id !== cartItemId);
         if (remainingItems.length > 0) {

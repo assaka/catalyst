@@ -11,15 +11,8 @@ class CartService {
     if (!sessionId) {
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
-      console.log('🆔 CartService: Created new guest_session_id:', sessionId);
     } else {
       console.log('🆔 CartService: Using existing guest_session_id:', sessionId);
-    }
-
-    // Also check for old cart_session_id and log if it exists
-    const oldSessionId = localStorage.getItem('cart_session_id');
-    if (oldSessionId) {
-      console.log('⚠️ CartService: Found old cart_session_id in localStorage:', oldSessionId);
     }
 
     return sessionId;
@@ -51,14 +44,6 @@ class CartService {
 
       const fullUrl = `${this.endpoint}?${params.toString()}`;
 
-      // Reduced logging for performance
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🛒 CartService.getCart: Session ID:', sessionId, bustCache ? '(cache busted)' : '');
-      }
-
-      // Force fresh data for cache-busted requests
-      console.log('🌐 CartService.getCart: Attempting fetch to:', fullUrl);
-
       let response;
       try {
         // Build headers object without undefined values to avoid CORS issues
@@ -85,13 +70,6 @@ class CartService {
         throw fetchError; // Re-throw to be caught by outer try-catch
       }
 
-      console.log('📡 CartService.getCart: Response received:', {
-        ok: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
       if (!response.ok) {
         console.error('🛒 CartService.getCart: Response not ok:', {
           status: response.status,
@@ -107,10 +85,6 @@ class CartService {
         // Handle both direct data.items and data.dataValues.items structures
         const cartData = result.data.dataValues || result.data;
         const items = Array.isArray(cartData.items) ? cartData.items : [];
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🛒 CartService.getCart: Found cart with items:', items.length);
-        }
 
         return {
           success: true,
@@ -162,10 +136,6 @@ class CartService {
         session_id: sessionId // Always use session_id for simplicity
       };
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🛒 CartService.addItem: Adding product:', productId);
-      }
-
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,16 +151,11 @@ class CartService {
       const result = await response.json();
 
       if (result.success) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🛒 CartService.addItem: Successfully added item');
-        }
 
         // Extract fresh cart data from the response
         const freshCartData = result.data;
         const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
-
-        console.log('🔄 CartService.addItem: Fresh cart data from backend:', cartItems.length, 'items');
 
         // Dispatch cart update event with the fresh cart data
         window.dispatchEvent(new CustomEvent('cartUpdated', {
