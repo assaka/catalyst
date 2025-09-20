@@ -189,59 +189,24 @@ export default function MiniCart({ cartUpdateTrigger }) {
     };
 
     const handleCartUpdate = (event) => {
-
-      // Check if we have fresh cart data from the backend
+      // Simplified: only handle fresh cart data from backend
       if (event.detail?.freshCartData && event.detail.freshCartData.items) {
+        // We have fresh data from backend - use it directly
         setCartItems(event.detail.freshCartData.items);
         saveCartToLocalStorage(event.detail.freshCartData.items);
-        setLastOptimisticUpdate(null); // Clear optimistic tracking
+        setLastOptimisticUpdate(null); // Clear any optimistic tracking
 
-        // Also load product details for the fresh items
+        // Load product details for the fresh items
         if (event.detail.freshCartData.items.length > 0) {
           loadProductDetails(event.detail.freshCartData.items);
         }
 
-        return; // Don't make another API call - we have fresh data!
+        return; // Fresh data received - no need for additional API calls
       }
 
-      // Handle optimistic updates for immediate UI feedback (fallback)
-      if (event.detail?.optimistic && event.detail?.action?.includes('add')) {
-        const optimisticTimestamp = Date.now();
-        setLastOptimisticUpdate(optimisticTimestamp);
-
-        // Optimistically increment cart count for immediate feedback
-        setCartItems(prevItems => {
-          const newItems = [
-            ...prevItems,
-            {
-              id: `optimistic-${optimisticTimestamp}`,
-              product_id: event.detail.productId,
-              quantity: event.detail.quantity || 1,
-              price: 0,
-              optimistic: true,
-              optimisticTimestamp
-            }
-          ];
-
-          // Save optimistic state to localStorage immediately
-          saveCartToLocalStorage(newItems);
-
-          return newItems;
-        });
-
-        // Make API call to get real data for optimistic updates
-        const isAddOperation = event.detail?.action?.includes('add');
-        debouncedRefresh(isAddOperation);
-        return;
-      }
-
-      // Only refresh if we don't have fresh data and it's not optimistic
-      if (!event.detail?.freshCartData) {
-        const isAddOperation = event.detail?.action?.includes('add');
-        debouncedRefresh(isAddOperation);
-      } else {
-        console.log('🚫 MiniCart: Skipping refresh - already have fresh data');
-      }
+      // For events without fresh data, just refresh from backend
+      // This handles cases like quantity updates, removals, etc.
+      debouncedRefresh(true);
     };
 
     const handleDirectRefresh = (event) => {
@@ -288,33 +253,20 @@ export default function MiniCart({ cartUpdateTrigger }) {
         const cartResult = await cartService.getCart();
 
         if (cartResult.success && cartResult.items) {
+          // Simplified: always trust backend data
+          const backendItems = cartResult.items;
 
-          const currentItemCount = cartItems.length;
-          const backendItemCount = cartResult.items.length;
-          const currentNonOptimisticCount = cartItems.filter(item => !item.optimistic).length;
-
-          // PROTECTION: Never accept backend data that has fewer items than our current real items
-          // This prevents the "goes to 0" issue from stale/empty backend responses
-          if (backendItemCount < currentNonOptimisticCount) {
-            return; // Don't update anything
-          }
-
-          // If backend has same or more items, it's probably fresh data
-
-          const realItems = cartResult.items.filter(item => !item.optimistic);
-          setCartItems(realItems);
+          setCartItems(backendItems);
           setLastRefreshId(refreshId);
 
           // Save valid cart state to localStorage
-          saveCartToLocalStorage(realItems);
+          saveCartToLocalStorage(backendItems);
 
-          // Clear optimistic update tracking
-          if (lastOptimisticUpdate) {
-            setLastOptimisticUpdate(null);
-          }
+          // Clear any optimistic update tracking
+          setLastOptimisticUpdate(null);
 
           // Load product details for cart items
-          await loadProductDetails(realItems);
+          await loadProductDetails(backendItems);
         } else {
           setCartItems([]);
           setCartProducts({});

@@ -389,10 +389,9 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
           );
 
           if (result.success !== false) {
-              // Dispatch cart updated event to refresh MiniCart
-              window.dispatchEvent(new CustomEvent('cartUpdated'));
-              console.log('Successfully added to cart:', product.name);
-              
+              // Note: cartService.addItem() already dispatches cartUpdated event with fresh data
+              // No need for additional dispatch here
+
               // Optional: Show success message or remove from wishlist
               // You could add a toast notification here
           } else {
