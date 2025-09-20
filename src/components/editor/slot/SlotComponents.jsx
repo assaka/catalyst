@@ -695,8 +695,8 @@ export function GridColumn({
               console.log('After drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
                 <div className="absolute -bottom-1 left-0 right-0 z-[100] pointer-events-none">
-                  <div className="h-1 bg-green-400 shadow-lg" />
-                  <div className="absolute -bottom-8 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                  <div className="h-2 bg-green-500 shadow-xl border-b-4 border-green-600" />
+                  <div className="absolute -bottom-8 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
                     ⬇️ Drop below
                   </div>
                 </div>
