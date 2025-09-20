@@ -525,17 +525,28 @@ const CartSlotsEditor = ({
   // Dynamically adjust content area colSpan based on view mode
   useEffect(() => {
     if (cartLayoutConfig && cartLayoutConfig.slots && cartLayoutConfig.slots.content_area) {
-      const newColSpan = viewMode === 'withProducts' ? 8 : 12;
       const currentColSpan = cartLayoutConfig.slots.content_area.colSpan;
 
-      if (currentColSpan !== newColSpan) {
+      // Check if colSpan is already in the new object format
+      if (typeof currentColSpan === 'object' && currentColSpan !== null) {
+        // Already in object format, no need to update
+        return;
+      }
+
+      // Convert old number format to new object format
+      if (typeof currentColSpan === 'number') {
+        const newColSpanObject = {
+          emptyCart: 12,
+          withProducts: 8
+        };
+
         setCartLayoutConfig(prevConfig => ({
           ...prevConfig,
           slots: {
             ...prevConfig.slots,
             content_area: {
               ...prevConfig.slots.content_area,
-              colSpan: newColSpan
+              colSpan: newColSpanObject
             }
           }
         }));

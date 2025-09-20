@@ -230,6 +230,7 @@ export function GridColumn({
   onSlotDrop,
   onSlotDelete, // Add delete handler prop
   mode = 'edit',
+  viewMode = 'emptyCart', // Add viewMode parameter
   showBorders = true,
   currentDragInfo,
   setCurrentDragInfo,
@@ -253,6 +254,14 @@ export function GridColumn({
     const parentSlots = Object.values(slots).filter(s => s.parentId === targetSlot.parentId);
     const targetIndex = parentSlots.findIndex(s => s.id === targetSlot.id);
 
+    // Get targetSlot colSpan handling both old (number) and new (object) formats
+    let targetColSpan = 1;
+    if (typeof targetSlot.colSpan === 'number') {
+      targetColSpan = targetSlot.colSpan;
+    } else if (typeof targetSlot.colSpan === 'object' && targetSlot.colSpan !== null) {
+      targetColSpan = targetSlot.colSpan[viewMode] || 1;
+    }
+
     let newRow = targetSlot.position?.row || 1;
     let newCol = targetSlot.position?.col || 1;
 
@@ -263,7 +272,7 @@ export function GridColumn({
     } else if (dropPosition === 'after') {
       // Place after target slot
       newRow = targetSlot.position?.row || 1;
-      newCol = Math.min(12, (targetSlot.position?.col || 1) + (targetSlot.colSpan || 1));
+      newCol = Math.min(12, (targetSlot.position?.col || 1) + targetColSpan);
     } else if (dropPosition === 'left') {
       // Place to the left of target slot (horizontal reordering)
       newRow = targetSlot.position?.row || 1;
@@ -271,7 +280,7 @@ export function GridColumn({
     } else if (dropPosition === 'right') {
       // Place to the right of target slot (horizontal reordering)
       newRow = targetSlot.position?.row || 1;
-      newCol = Math.min(12, (targetSlot.position?.col || 1) + (targetSlot.colSpan || 1));
+      newCol = Math.min(12, (targetSlot.position?.col || 1) + targetColSpan);
     } else if (dropPosition === 'inside') {
       // Place inside container at top-left
       newRow = 1;
@@ -279,7 +288,7 @@ export function GridColumn({
     }
 
     return { row: newRow, col: newCol };
-  }, [slots]);
+  }, [slots, viewMode]);
 
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
@@ -839,7 +848,17 @@ export function HierarchicalSlotRenderer({
   });
 
   return sortedSlots.map(slot => {
-    let colSpan = slot.colSpan || 12;
+    // Handle both old (number) and new (object) colSpan formats
+    let colSpan = 12; // default value
+
+    if (typeof slot.colSpan === 'number') {
+      // Old format: direct number
+      colSpan = slot.colSpan;
+    } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
+      // New format: object with viewMode keys
+      colSpan = slot.colSpan[viewMode] || 12;
+    }
+
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
@@ -861,6 +880,7 @@ export function HierarchicalSlotRenderer({
         onResizeStart={onResizeStart}
         onResizeEnd={onResizeEnd}
         mode={mode}
+        viewMode={viewMode}
         showBorders={showBorders}
         isNested={true}
       >

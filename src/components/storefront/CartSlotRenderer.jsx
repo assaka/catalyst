@@ -442,7 +442,7 @@ export function CartSlotRenderer({
       if (hasSubstantialContent) {
         return (
           <Card className={className} style={styles}>
-            <CardContent className="p-4">
+            <CardContent className="p-4 grid">
               <div dangerouslySetInnerHTML={{ __html: content }} />
             </CardContent>
           </Card>
