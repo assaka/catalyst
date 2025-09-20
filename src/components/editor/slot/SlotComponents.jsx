@@ -293,11 +293,17 @@ export function GridColumn({
     e.dataTransfer.setData('text/plain', slotId);
     e.dataTransfer.effectAllowed = 'move';
 
+    // Store drag start position for direction detection
+    const rect = e.currentTarget.getBoundingClientRect();
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+
     if (setCurrentDragInfo) {
       setCurrentDragInfo({
         draggedSlotId: slotId,
         slotId: slotId,
-        parentId: slot?.parentId
+        parentId: slot?.parentId,
+        startPosition: { x: startX, y: startY }
       });
     }
 
@@ -390,66 +396,119 @@ export function GridColumn({
       const isReordering = draggedParent === targetParent;
       const isMoving = draggedParent !== targetParent;
 
-      // Check if this is a horizontal reordering scenario (same parent, side-by-side slots)
-      // Only enable horizontal reordering for non-container slots when both slots exist
-      // and have the same row position (or if row positions are undefined)
-      const isHorizontalReordering = isReordering && slot && draggedSlot &&
-        !['container', 'grid', 'flex'].includes(slot?.type) &&
-        !['container', 'grid', 'flex'].includes(draggedSlot?.type) &&
-        (slot.position?.row === draggedSlot.position?.row ||
-         (!slot.position?.row && !draggedSlot.position?.row));
+      // Detect drag direction based on actual mouse movement
+      const targetRect = e.currentTarget.getBoundingClientRect();
+      const targetCenterX = targetRect.left + targetRect.width / 2;
+      const targetCenterY = targetRect.top + targetRect.height / 2;
+
+      let dragDirection = 'unknown';
+      let isHorizontalDrag = false;
+      let isVerticalDrag = false;
+
+      if (currentDragInfo?.startPosition) {
+        const deltaX = targetCenterX - currentDragInfo.startPosition.x;
+        const deltaY = targetCenterY - currentDragInfo.startPosition.y;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+
+        // Determine primary drag direction based on which axis has more movement
+        if (absDeltaX > absDeltaY * 1.5) {
+          // Primarily horizontal movement
+          isHorizontalDrag = true;
+          dragDirection = deltaX > 0 ? 'right' : 'left';
+        } else if (absDeltaY > absDeltaX * 1.5) {
+          // Primarily vertical movement
+          isVerticalDrag = true;
+          dragDirection = deltaY > 0 ? 'down' : 'up';
+        } else {
+          // Diagonal or minimal movement - use position context
+          if (slot?.position?.row === draggedSlot?.position?.row) {
+            isHorizontalDrag = true;
+            dragDirection = deltaX > 0 ? 'right' : 'left';
+          } else {
+            isVerticalDrag = true;
+            dragDirection = deltaY > 0 ? 'down' : 'up';
+          }
+        }
+      }
 
       console.log('🔄 Drag feedback check:', {
-        isHorizontalReordering,
-        isReordering,
-        draggedSlot: draggedSlot?.id,
-        targetSlot: slot?.id,
-        targetType: slot?.type,
-        draggedType: draggedSlot?.type,
-        targetRow: slot.position?.row,
-        draggedRow: draggedSlot.position?.row,
-        draggedParent,
-        targetParent
+        dragDirection,
+        isHorizontalDrag,
+        isVerticalDrag,
+        slots: {
+          dragged: draggedSlot?.id,
+          target: slot?.id,
+          draggedRow: draggedSlot?.position?.row,
+          targetRow: slot?.position?.row
+        },
+        parents: {
+          dragged: draggedParent,
+          target: targetParent,
+          sameParent: draggedParent === targetParent
+        }
       });
 
-      if (isHorizontalReordering) {
-        // For horizontal reordering, use left/right zones instead of top/bottom
-        // Make the zones more sensitive for better detection
-        if (x < width * 0.4) {
-          // Left 40% - "left" (before in horizontal context)
+      // Determine drop zones based on detected drag direction
+      console.log('🎯 Zone detection logic:', {
+        dragDirection,
+        isHorizontalDrag,
+        isVerticalDrag,
+        mousePosition: { x, y },
+        dimensions: { width, height },
+        percentages: { xPercent: Math.round((x/width)*100), yPercent: Math.round((y/height)*100) }
+      });
+
+      if (isHorizontalDrag && isReordering) {
+        console.log('🔄 Using HORIZONTAL drag logic');
+        // For horizontal dragging, use left/right zones
+        if (x < width * 0.35) {
           newDropZone = 'left';
           e.dataTransfer.dropEffect = 'move';
           console.log('🟢 LEFT zone detected', { x, width, percentage: Math.round((x/width)*100) });
-        } else if (x > width * 0.6) {
-          // Right 40% - "right" (after in horizontal context)
+        } else if (x > width * 0.65) {
           newDropZone = 'right';
           e.dataTransfer.dropEffect = 'move';
           console.log('🟢 RIGHT zone detected', { x, width, percentage: Math.round((x/width)*100) });
         } else {
-          // Middle 20% - no drop zone for clearer UX
           newDropZone = null;
           e.dataTransfer.dropEffect = 'none';
-          console.log('🚫 Middle zone - no drop', { x, width, percentage: Math.round((x/width)*100) });
+          console.log('🚫 HORIZONTAL Middle zone - no drop', { x, width, percentage: Math.round((x/width)*100) });
         }
       } else {
-        // Use vertical zones for non-horizontal scenarios
-        if (y < height * 0.33) {
-          // Top third - "before"
-          newDropZone = 'before';
-          e.dataTransfer.dropEffect = 'move';
-        } else if (y > height * 0.67) {
-          // Bottom third - "after"
-          newDropZone = 'after';
-          e.dataTransfer.dropEffect = 'move';
+        console.log('🔄 Using VERTICAL reordering logic');
+        // For vertical scenarios, ensure we stay within parent container
+        if (y < height * 0.25) {
+          // Only allow 'before' if target and dragged have same parent (avoid escaping container)
+          if (draggedParent === targetParent) {
+            newDropZone = 'before';
+            e.dataTransfer.dropEffect = 'move';
+            console.log('🔼 BEFORE zone (same parent)', { draggedParent, targetParent });
+          } else {
+            newDropZone = null;
+            e.dataTransfer.dropEffect = 'none';
+            console.log('🚫 BEFORE blocked (different parent)', { draggedParent, targetParent });
+          }
+        } else if (y > height * 0.75) {
+          // Only allow 'after' if target and dragged have same parent
+          if (draggedParent === targetParent) {
+            newDropZone = 'after';
+            e.dataTransfer.dropEffect = 'move';
+            console.log('🔽 AFTER zone (same parent)', { draggedParent, targetParent });
+          } else {
+            newDropZone = null;
+            e.dataTransfer.dropEffect = 'none';
+            console.log('🚫 AFTER blocked (different parent)', { draggedParent, targetParent });
+          }
         } else {
           // Middle area - only allow "inside" for containers
           if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
             newDropZone = 'inside';
             e.dataTransfer.dropEffect = 'move';
+            console.log('📦 INSIDE container zone');
           } else {
-            // Non-container in middle area - show forbidden cursor
-            e.dataTransfer.dropEffect = 'none';
             newDropZone = null;
+            e.dataTransfer.dropEffect = 'none';
           }
         }
       }
@@ -649,27 +708,29 @@ export function GridColumn({
 
           {/* Clear directional drop zone indicators */}
           {dropZone === 'before' && (
-            <div className="absolute -top-1 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-0.5 bg-green-500 shadow-sm" />
+            <div className="absolute -top-1 left-1 right-1 z-50 pointer-events-none">
+              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-1 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-0.5 bg-green-500 shadow-sm" />
+            <div className="absolute -bottom-1 left-1 right-1 z-50 pointer-events-none">
+              <div className="h-1 bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'left' && (
-            <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-0.5 h-full bg-green-500 shadow-sm" />
+            <div className="absolute -left-1 top-1 bottom-1 z-50 pointer-events-none">
+              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'right' && (
-            <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-0.5 h-full bg-green-500 shadow-sm" />
+            <div className="absolute -right-1 top-1 bottom-1 z-50 pointer-events-none">
+              <div className="w-1 h-full bg-green-500 shadow-lg opacity-90" />
             </div>
           )}
           {dropZone === 'inside' && (
-            <div className="absolute inset-1 bg-green-100 opacity-30 rounded z-40 pointer-events-none" />
+            <div className="absolute inset-2 bg-green-200 opacity-40 rounded border-2 border-dashed border-green-500 z-40 pointer-events-none flex items-center justify-center">
+              <span className="text-green-700 text-xs font-medium">Drop into container</span>
+            </div>
           )}
         </>
       )}
