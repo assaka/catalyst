@@ -945,6 +945,7 @@ export function HierarchicalSlotRenderer({
             <div
               draggable={true}
               onDragStart={(e) => {
+                e.stopPropagation();
                 e.dataTransfer.setData('text/plain', slot.id);
                 e.dataTransfer.effectAllowed = 'move';
 
@@ -957,16 +958,11 @@ export function HierarchicalSlotRenderer({
                   });
                 }
               }}
-              style={{ display: 'inline-block', position: 'relative' }}
+              style={{ display: 'inline-block', position: 'relative', cursor: 'move' }}
               onDragEnd={(e) => {
+                e.stopPropagation();
                 if (setCurrentDragInfo) {
                   setCurrentDragInfo(null);
-                }
-              }}
-              onMouseDown={(e) => {
-                // Prevent text selection while allowing drag
-                if (e.button === 0) { // Left mouse button
-                  e.preventDefault();
                 }
               }}
             >
@@ -1066,13 +1062,6 @@ export function HierarchicalSlotRenderer({
                 }
               }}
             >
-              {/* Drag Handle */}
-              <div
-                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
-                title="Drag to move"
-              >
-                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </div>
               <ResizeWrapper
               minWidth={50}
               minHeight={20}
@@ -1315,13 +1304,6 @@ export function HierarchicalSlotRenderer({
                 }
               }}
             >
-              {/* Drag Handle */}
-              <div
-                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
-                title="Drag to move"
-              >
-                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </div>
               <ResizeWrapper
               minWidth={50}
               minHeight={50}
@@ -1416,13 +1398,6 @@ export function HierarchicalSlotRenderer({
                 }
               }}
             >
-              {/* Drag Handle */}
-              <div
-                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
-                title="Drag to move"
-              >
-                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </div>
               <ResizeWrapper
               minWidth={100}
               minHeight={30}
