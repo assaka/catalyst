@@ -533,19 +533,11 @@ const CartSlotsEditor = ({
         return;
       }
 
-      // Convert old number format to new nested breakpoint format
+      // Convert old number format to new Tailwind responsive format
       if (typeof currentColSpan === 'number') {
         const newColSpanObject = {
-          emptyCart: {
-            mobile: 12,
-            tablet: 12,
-            desktop: 12
-          },
-          withProducts: {
-            mobile: 12,
-            tablet: 12,
-            desktop: 8
-          }
+          emptyCart: 12,
+          withProducts: 'col-span-12 lg:col-span-8'
         };
 
         setCartLayoutConfig(prevConfig => ({

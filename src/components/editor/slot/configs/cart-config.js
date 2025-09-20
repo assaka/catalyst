@@ -71,16 +71,8 @@ export const cartConfig = {
       position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        },
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 8
-        }
+        emptyCart: 12,
+        withProducts: 'col-span-12 lg:col-span-8'
       },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
@@ -96,11 +88,7 @@ export const cartConfig = {
       position: { col: 9, row: 2 },
       layout: 'flex',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 4
-        }
+        withProducts: 'col-span-12 lg:col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -289,11 +277,7 @@ export const cartConfig = {
       parentId: 'cart_item_1',
       layout: 'block',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 8,
-          desktop: 6
-        }
+        withProducts: 'col-span-12 md:col-span-8 lg:col-span-6'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -668,7 +652,7 @@ export const cartConfig = {
       id: 'coupon_input',
       type: 'input',
       content: 'Enter coupon code',
-      className: 'w-1/2 border rounded px-3 py-2',
+      className: 'border rounded px-3 py-2',
       parentClassName: '',
       styles: {},
       parentId: 'coupon_container',

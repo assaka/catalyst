@@ -105,11 +105,7 @@ export function CartSlotRenderer({
       parentId: 'cart_items_container',
       layout: 'flex',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: {
@@ -793,36 +789,41 @@ export function CartSlotRenderer({
   return (
     <>
       {sortedSlots.map((slot) => {
-        // Handle old (number), simple object, and nested breakpoint colSpan formats
-        let colSpan = 12; // default value
+        // Handle number, object with viewMode, and Tailwind responsive classes
+        let colSpanClass = 'col-span-12'; // default Tailwind class
+        let gridColumn = 'span 12 / span 12'; // default grid style
 
         if (typeof slot.colSpan === 'number') {
           // Old format: direct number
-          colSpan = slot.colSpan;
+          colSpanClass = `col-span-${slot.colSpan}`;
+          gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           // New format: object with viewMode keys
           const viewModeValue = slot.colSpan[viewMode];
 
           if (typeof viewModeValue === 'number') {
             // Simple viewMode: number format
-            colSpan = viewModeValue;
+            colSpanClass = `col-span-${viewModeValue}`;
+            gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
+          } else if (typeof viewModeValue === 'string') {
+            // Tailwind responsive class format: 'col-span-12 lg:col-span-8'
+            colSpanClass = viewModeValue;
+            // For Tailwind classes, we don't set gridColumn as it will be handled by CSS
+            gridColumn = null;
           } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
-            // Nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
-            // Default to desktop, fallback to mobile if desktop not available
-            colSpan = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
-          } else {
-            colSpan = 12;
+            // Legacy nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
+            const colSpanValue = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
+            colSpanClass = `col-span-${colSpanValue}`;
+            gridColumn = `span ${colSpanValue} / span ${colSpanValue}`;
           }
         }
-
-        const gridColumn = `span ${colSpan} / span ${colSpan}`;
 
         return (
           <div
             key={slot.id}
-            className={`col-span-${colSpan}`}
+            className={colSpanClass}
             style={{
-              gridColumn,
+              ...(gridColumn ? { gridColumn } : {}),
               ...slot.containerStyles
             }}
           >

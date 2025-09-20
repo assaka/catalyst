@@ -219,6 +219,8 @@ export function EditableElement({
 // GridColumn Component
 export function GridColumn({
   colSpan = 12,
+  colSpanClass = 'col-span-12',
+  useTailwindClass = false,
   rowSpan = 1,
   height,
   slotId,
@@ -553,7 +555,7 @@ export function GridColumn({
   }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
 
   const gridStyles = {
-    gridColumn: `span ${colSpan}`,
+    ...(useTailwindClass ? {} : { gridColumn: `span ${colSpan}` }),
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
     zIndex: 2,
     // Add container-specific styles when it's a container type
@@ -611,7 +613,7 @@ export function GridColumn({
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
             } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot ${
+      } relative responsive-slot ${colSpanClass} ${
         ['container', 'grid', 'flex'].includes(slot?.type)
           ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
           : ''
@@ -857,12 +859,15 @@ export function HierarchicalSlotRenderer({
   });
 
   return sortedSlots.map(slot => {
-    // Handle old (number), simple object, and nested breakpoint colSpan formats
-    let colSpan = 12; // default value
+    // Handle number, object with viewMode, and Tailwind responsive classes
+    let colSpan = 12; // default value for non-Tailwind calculations
+    let colSpanClass = 'col-span-12'; // default Tailwind class
+    let useTailwindClass = false;
 
     if (typeof slot.colSpan === 'number') {
       // Old format: direct number
       colSpan = slot.colSpan;
+      colSpanClass = `col-span-${slot.colSpan}`;
     } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
       // New format: object with viewMode keys
       const viewModeValue = slot.colSpan[viewMode];
@@ -870,12 +875,19 @@ export function HierarchicalSlotRenderer({
       if (typeof viewModeValue === 'number') {
         // Simple viewMode: number format
         colSpan = viewModeValue;
+        colSpanClass = `col-span-${viewModeValue}`;
+      } else if (typeof viewModeValue === 'string') {
+        // Tailwind responsive class format: 'col-span-12 lg:col-span-8'
+        colSpanClass = viewModeValue;
+        useTailwindClass = true;
+        colSpan = 12; // fallback for calculations
       } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
-        // Nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
-        // Default to desktop, fallback to mobile if desktop not available
+        // Legacy nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
         colSpan = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
+        colSpanClass = `col-span-${colSpan}`;
       } else {
         colSpan = 12;
+        colSpanClass = 'col-span-12';
       }
     }
 
@@ -886,6 +898,8 @@ export function HierarchicalSlotRenderer({
       <GridColumn
         key={slot.id}
         colSpan={colSpan}
+        colSpanClass={colSpanClass}
+        useTailwindClass={useTailwindClass}
         rowSpan={rowSpan}
         height={height}
         slotId={slot.id}
