@@ -6,12 +6,6 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
-import {
-  GridResizeHandle,
-  GridColumn,
-  EditableElement,
-  HierarchicalSlotRenderer
-} from '@/components/editor/slot/SlotComponents';
 
 // Helper function to dynamically load page-specific config
 async function loadPageConfig(pageType) {
@@ -89,7 +83,6 @@ export function useSlotConfiguration({
   const saveConfiguration = useCallback(async ({
     slotContent
   }) => {
-    console.log(`💾 ===== SAVE CONFIGURATION STARTED (${pageName}) =====`);
     setSaveStatus('saving');
 
     // Create slot configuration directly
@@ -186,20 +179,13 @@ export function useSlotConfiguration({
   }) => {
     try {
       const storeId = selectedStore?.id;
-      console.log(`📥 Load attempt (${pageName}) - Store ID check:`, {
-        selectedStore,
-        storeId,
-        hasStoreId: !!storeId
-      });
 
       if (!storeId) {
-        console.log('No store ID found, initializing with default configuration');
 
         const defaultSpans = {};
         Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
           defaultSpans[key] = { ...def.defaultSpans };
         });
-        console.log('🎯 LOAD DEBUG: Initialized defaults (no store ID)');
         return;
       }
 
@@ -207,14 +193,11 @@ export function useSlotConfiguration({
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${storeId}`;
 
-      console.log(`📥 Loading configurations from public endpoint (${pageName}):`, endpoint);
-
       const response = await fetch(endpoint);
       let configurations = [];
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📥 Load Response data:', data);
 
         if (data.success && data.data) {
           configurations = data.data;
@@ -222,8 +205,6 @@ export function useSlotConfiguration({
       } else {
         console.warn('⚠️ Failed to load from public endpoint:', response.status, response.statusText);
       }
-
-      console.log('📥 Load Configurations array:', configurations);
 
       // Find the configuration for this page type
       const pageConfig = configurations?.find(cfg =>
@@ -233,7 +214,6 @@ export function useSlotConfiguration({
 
       if (pageConfig) {
         const dbRecord = pageConfig;
-        console.log('📦 Full database record:', dbRecord);
         const config = dbRecord.configuration;
 
         if (!config) {
@@ -243,7 +223,6 @@ export function useSlotConfiguration({
 
         // Load from config.slots structure - only content, styles/classes now in slot config
         if (config.slots) {
-          console.log('📥 Loading from slots structure:', config.slots);
           const loadedContent = {};
 
           Object.entries(config.slots).forEach(([slotId, slotData]) => {
@@ -252,17 +231,12 @@ export function useSlotConfiguration({
             }
           });
 
-          console.log('📥 Loaded content:', loadedContent);
-
           if (setSlotContent) {
             setSlotContent(prev => ({ ...prev, ...loadedContent }));
           }
         }
 
-        console.log(`✅ Configuration loaded successfully (${pageName})`);
       } else {
-        console.log('No configuration found in database, initializing with defaults');
-
           const defaultSpans = {};
           Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
             defaultSpans[key] = { ...def.defaultSpans };
@@ -292,13 +266,6 @@ export function useSlotConfiguration({
     }
 
     const config = draftConfig.configuration;
-    console.log('🔄 LOADING CONFIG STRUCTURE CHECK:', {
-      configKeys: Object.keys(config),
-      hasSlotContent: !!config.slotContent,
-      hasNewStructure: !!config.slots,
-      slots: config.slots,
-      fullConfig: config
-    });
 
     // Load from the slots structure (the only structure we should use)
     if (config.slots) {
@@ -308,10 +275,6 @@ export function useSlotConfiguration({
         if (slotData?.content !== undefined) {
           extractedContent[slotId] = slotData.content;
         }
-      });
-
-      console.log('📦 Loading from slots structure:', {
-        content: extractedContent
       });
 
     } else {
@@ -366,8 +329,6 @@ export function useSlotConfiguration({
       setResetStatus('reset');
       setTimeout(() => setResetStatus(''), 3000);
 
-      console.log(`✅ ${pageType} layout reset to clean configuration from ${pageType}-config.js`);
-
       return cleanConfig;
     } catch (error) {
       console.error(`❌ Failed to reset ${pageType} layout:`, error);
@@ -398,13 +359,11 @@ export function useSlotConfiguration({
       const publishResponse = await slotConfigurationService.publishDraft(draftConfig.id);
 
       if (publishResponse.success) {
-        console.log(`✅ ${pageType} configuration published successfully`);
 
         // Create a new draft based on the published configuration
         try {
           const publishedConfig = draftConfig.configuration; // The configuration that was just published
           await slotConfigurationService.createDraftFromPublished(storeId, publishedConfig, pageType);
-          console.log(`✅ New draft created based on published ${pageType} configuration`);
         } catch (draftError) {
           console.warn(`⚠️ Failed to create new draft after publish:`, draftError);
           // Don't fail the entire publish operation if draft creation fails
@@ -422,7 +381,6 @@ export function useSlotConfiguration({
 
   // Generic load static configuration function
   const loadStaticConfiguration = useCallback(async () => {
-    console.log('📂 Loading static configuration as template...');
 
     const config = await loadPageConfig(pageType);
 
@@ -445,7 +403,6 @@ export function useSlotConfiguration({
       cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
     };
 
-    console.log(`📦 Using static ${pageType} configuration as template`);
     return configToUse;
   }, [pageType, pageName, slotType]);
 
@@ -460,11 +417,9 @@ export function useSlotConfiguration({
     // Try to load from database and merge with static config
     if (storeId) {
       try {
-        console.log('💾 Attempting to load saved configuration from database...');
         const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
 
         if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
-          console.log('📄 Database configuration found:', savedConfig.data.configuration);
           const dbConfig = savedConfig.data.configuration;
 
           // Merge saved config with static config, preserving viewMode and metadata from static
@@ -505,7 +460,6 @@ export function useSlotConfiguration({
             slots: mergedSlots
           };
 
-          console.log('🔄 Merged database config with static config to preserve viewMode arrays');
         }
       } catch (dbError) {
         console.log('📝 No saved configuration found, will use static config as fallback:', dbError.message);
@@ -603,25 +557,13 @@ export function useSlotConfiguration({
 
   // Generic slot drop handler
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
-    console.log(`🎯 START: handleSlotDrop(${draggedSlotId}, ${targetSlotId}, ${dropPosition})`);
-
-    // Debug: Check if slots have parentId values
-    if (slots[draggedSlotId]) {
-      console.log(`📍 DEBUG: ${draggedSlotId} slot data:`, {
-        parentId: slots[draggedSlotId].parentId,
-        position: slots[draggedSlotId].position,
-        type: slots[draggedSlotId].type
-      });
-    }
 
     if (draggedSlotId === targetSlotId) {
-      console.log('⚠️ ABORT: Cannot drop slot onto itself');
       return null;
     }
 
     const targetSlot = slots[targetSlotId];
     if (!targetSlot) {
-      console.log(`🚫 REJECT: Target slot ${targetSlotId} not found`);
       return null;
     }
 
@@ -706,7 +648,6 @@ export function useSlotConfiguration({
       // Check if this is really a cross-container move or accidental parent hit
       if (originalProperties.parentId && targetSlotId === getParentOfParent(slots, originalProperties.parentId)) {
         // User dragged to grandparent container - likely trying to reorder within current parent
-        console.log(`🔄 Detected parent container hit - keeping in current container ${originalProperties.parentId}`);
         newParentId = originalProperties.parentId;
 
         // Find an early position in the container (row 1)
@@ -718,14 +659,12 @@ export function useSlotConfiguration({
 
       } else {
         // Genuine container-to-container move
-        console.log(`📦 Moving ${draggedSlotId} into container ${targetSlotId}`);
         newParentId = targetSlotId;
         newPosition = findAvailablePosition(newParentId, 1, 1);
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent) {
       // Intra-container reordering - same parent, different position
-      console.log(`📍 Reordering ${draggedSlotId} ${dropPosition} ${targetSlotId} within ${currentParent}`);
       newParentId = currentParent;
 
       if (dropPosition === 'before') {
@@ -737,7 +676,6 @@ export function useSlotConfiguration({
       } else { // after
         // Place after target - use next available position
         const targetPos = targetSlot.position || { col: 1, row: 1 };
-        console.log(`🎯 Target ${targetSlotId} position:`, targetPos);
 
         // Try placing in next column, but ensure it's different from current position
         let newCol = targetPos.col + 1;
@@ -750,12 +688,10 @@ export function useSlotConfiguration({
         }
 
         newPosition = { col: newCol, row: newRow };
-        console.log(`🎯 Calculated new position:`, newPosition);
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent) {
       // Different parents - move to target's parent container
-      console.log(`🔄 Moving ${draggedSlotId} to parent ${targetParent} near ${targetSlotId}`);
       newParentId = targetParent;
 
       // Use position relative to target
@@ -776,14 +712,8 @@ export function useSlotConfiguration({
 
     } else {
       // Invalid drop - should only be for "inside" on non-containers
-      console.log(`🚫 REJECT: Invalid drop - ${dropPosition} on ${targetSlot.type}`);
       return null;
     }
-
-    // Debug logging for drag operations
-    console.log(`🔄 Drag operation: ${draggedSlotId} ${dropPosition} ${targetSlotId}`);
-    console.log(`   Old: parentId=${originalProperties.parentId}, position=${JSON.stringify(originalProperties.position)}`);
-    console.log(`   New: parentId=${newParentId}, position=${JSON.stringify(newPosition)}`);
 
     // Check if position actually changed
     const oldPos = originalProperties.position;
@@ -791,10 +721,6 @@ export function useSlotConfiguration({
       originalProperties.parentId !== newParentId ||
       oldPos?.col !== newPosition.col ||
       oldPos?.row !== newPosition.row;
-
-    if (!positionChanged) {
-      console.log('⚠️ NOTICE: Position unchanged, but continuing with drag operation');
-    }
 
     // Update dragged slot position while preserving ALL essential properties
     updatedSlots[draggedSlotId] = {
@@ -838,7 +764,6 @@ export function useSlotConfiguration({
                   row: slot.position.row + 1
                 };
               }
-              console.log(`  ↪️ Shifted ${slotId} to ${JSON.stringify(slot.position)}`);
             }
           }
         }
@@ -851,13 +776,11 @@ export function useSlotConfiguration({
       return null;
     }
 
-    console.log('✅ SUCCESS: Drag operation completed, returning updated slots');
     return updatedSlots;
   }, [validateSlotConfiguration]);
 
   // Generic slot delete handler
   const handleSlotDelete = useCallback((slotId, slots) => {
-    console.log('🗑️ Deleting slot:', slotId);
 
     // Don't allow deleting critical layout containers
     if (['main_layout', 'header_container', 'content_area', 'sidebar_area'].includes(slotId)) {
@@ -867,8 +790,6 @@ export function useSlotConfiguration({
 
     // Use SlotManager to delete the slot and its children
     const updatedSlots = SlotManager.deleteSlot(slots, slotId);
-
-    console.log('✅ Slot deleted successfully');
     return updatedSlots;
   }, []);
 
@@ -929,7 +850,7 @@ export function useSlotConfiguration({
 
   // Generic class change handler
   const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false, slots) => {
-    console.log('📋 handleClassChange called:', { slotId, className, styles, isAlignmentChange, slots });
+
     const updatedSlots = { ...slots };
 
     if (updatedSlots[slotId]) {
@@ -940,13 +861,11 @@ export function useSlotConfiguration({
       // Define categories of classes
       const alignmentClasses = ['text-left', 'text-center', 'text-right'];
       const allClasses = className.split(' ').filter(Boolean);
-      console.log('📋 Processing classes:', { alignmentClasses, allClasses, isAlignmentChange });
 
       if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
         // For alignment changes, only alignment goes to parent, everything else to element
         const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
         const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
-        console.log('📋 Alignment change detected:', { alignmentClassList, elementClassList });
 
         updatedSlots[slotId] = {
           ...updatedSlots[slotId],
@@ -958,7 +877,6 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
-        console.log('📋 Updated slot for alignment:', updatedSlots[slotId]);
       } else {
         // For text styling (bold, italic, colors), keep existing parentClassName
         // and only update className for the text element
@@ -1054,15 +972,12 @@ export function useSlotConfiguration({
 
       createClassChangeHandler: (classChangeHandler) =>
         useCallback((slotId, className, styles, isAlignmentChange = false) => {
-          console.log('🔧 createClassChangeHandler called:', { slotId, className, styles, isAlignmentChange });
           setPageConfig(prevConfig => {
-            console.log('🔧 Previous config before classChangeHandler:', prevConfig);
             const updatedSlots = classChangeHandler(slotId, className, styles, isAlignmentChange, prevConfig?.slots || {});
             const updatedConfig = {
               ...prevConfig,
               slots: updatedSlots
             };
-            console.log('🔧 Updated config after classChangeHandler:', updatedConfig);
 
             // Auto-save
             saveConfigurationHandler(updatedConfig);
@@ -1241,7 +1156,6 @@ export function useSlotConfiguration({
     resetStatus,
     justSavedRef,
     cleanup,
-    // Generic slot management functions
     validateSlotConfiguration,
     createSlot,
     handleSlotDrop,
@@ -1250,12 +1164,6 @@ export function useSlotConfiguration({
     handleSlotHeightResize,
     handleTextChange,
     handleClassChange,
-    // Generic UI components
-    GridResizeHandle,
-    GridColumn,
-    EditableElement,
-    HierarchicalSlotRenderer,
-    // Generic handler factories
     createElementClickHandler,
     createSaveConfigurationHandler,
     createHandlerFactory
