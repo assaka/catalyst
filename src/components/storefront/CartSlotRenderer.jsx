@@ -104,7 +104,9 @@ export function CartSlotRenderer({
       styles: {},
       parentId: 'cart_items_container',
       layout: 'flex',
-      colSpan: 12,
+      colSpan: {
+        withProducts: 12
+      },
       viewMode: ['withProducts'],
       metadata: {
         hierarchical: true,
@@ -787,7 +789,17 @@ export function CartSlotRenderer({
   return (
     <>
       {sortedSlots.map((slot) => {
-        const colSpan = slot.colSpan || 12;
+        // Handle both old (number) and new (object) colSpan formats
+        let colSpan = 12; // default value
+
+        if (typeof slot.colSpan === 'number') {
+          // Old format: direct number
+          colSpan = slot.colSpan;
+        } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
+          // New format: object with viewMode keys
+          colSpan = slot.colSpan[viewMode] || 12;
+        }
+
         const gridColumn = `span ${colSpan} / span ${colSpan}`;
 
         return (
