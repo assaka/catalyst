@@ -245,22 +245,22 @@ export default function StorefrontLayout({ children }) {
       }
       /* Apply theme colors to buttons */
       .btn-primary, .bg-blue-600 {
-          background-color: var(--theme-primary-button) !important;
+          background-color: var(--theme-primary-button);
       }
       .btn-secondary, .bg-gray-600 {
-          background-color: var(--theme-secondary-button) !important;
+          background-color: var(--theme-secondary-button);
       }
       .btn-add-to-cart, .bg-green-600 {
-          background-color: var(--theme-add-to-cart-button) !important;
+          background-color: var(--theme-add-to-cart-button);
       }
       .btn-view-cart {
-          background-color: var(--theme-view-cart-button) !important;
+          background-color: var(--theme-view-cart-button);
       }
       .btn-checkout {
-          background-color: var(--theme-checkout-button) !important;
+          background-color: var(--theme-checkout-button);
       }
       .btn-place-order {
-          background-color: var(--theme-place-order-button) !important;
+          background-color: var(--theme-place-order-button);
       }
     `;
 
