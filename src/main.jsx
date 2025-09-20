@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
-import '@/utils/deploymentTimer.js'
 
 // Global error handler for unhandled filter errors
 window.addEventListener('error', (event) => {
