@@ -647,29 +647,29 @@ export function GridColumn({
             </div>
           )}
 
-          {/* Mark explicit drop zones without borders */}
+          {/* Clear directional drop zone indicators */}
           {dropZone === 'before' && (
-            <div className="absolute -top-2 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-1 bg-blue-500 opacity-80" />
+            <div className="absolute -top-1 left-0 right-0 z-50 pointer-events-none">
+              <div className="h-0.5 bg-green-500 shadow-sm" />
             </div>
           )}
           {dropZone === 'after' && (
-            <div className="absolute -bottom-2 left-0 right-0 z-50 pointer-events-none">
-              <div className="h-1 bg-blue-500 opacity-80" />
+            <div className="absolute -bottom-1 left-0 right-0 z-50 pointer-events-none">
+              <div className="h-0.5 bg-green-500 shadow-sm" />
             </div>
           )}
           {dropZone === 'left' && (
-            <div className="absolute -left-2 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-1 h-full bg-blue-500 opacity-80" />
+            <div className="absolute -left-1 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-0.5 h-full bg-green-500 shadow-sm" />
             </div>
           )}
           {dropZone === 'right' && (
-            <div className="absolute -right-2 top-0 bottom-0 z-50 pointer-events-none">
-              <div className="w-1 h-full bg-blue-500 opacity-80" />
+            <div className="absolute -right-1 top-0 bottom-0 z-50 pointer-events-none">
+              <div className="w-0.5 h-full bg-green-500 shadow-sm" />
             </div>
           )}
           {dropZone === 'inside' && (
-            <div className="absolute inset-0 bg-blue-100 opacity-20 rounded z-40 pointer-events-none" />
+            <div className="absolute inset-1 bg-green-100 opacity-30 rounded z-40 pointer-events-none" />
           )}
         </>
       )}
