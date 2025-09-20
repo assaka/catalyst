@@ -133,10 +133,42 @@ export default function MiniCart({ cartUpdateTrigger }) {
     // Initialize from localStorage first for instant display
     const localCart = getCartFromLocalStorage();
     if (localCart && localCart.length > 0) {
+      console.log('MiniCart: Loaded from localStorage:', localCart);
       setCartItems(localCart);
+      // Also load product details for localStorage items
+      loadProductDetails(localCart);
     }
     loadCart();
   }, [cartUpdateTrigger]);
+
+  // Load product details when cartItems change
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      console.log('MiniCart: CartItems changed, loading product details...', cartItems);
+      loadProductDetails(cartItems);
+    } else {
+      console.log('MiniCart: CartItems empty, clearing products');
+      setCartProducts({});
+    }
+  }, [cartItems]);
+
+  // Debug cart state changes
+  useEffect(() => {
+    console.log('🔍 MiniCart: cartItems state changed:', {
+      length: cartItems.length,
+      items: cartItems,
+      timestamp: new Date().toISOString()
+    });
+  }, [cartItems]);
+
+  // Debug cartProducts state changes
+  useEffect(() => {
+    console.log('🔍 MiniCart: cartProducts state changed:', {
+      productsCount: Object.keys(cartProducts).length,
+      productIds: Object.keys(cartProducts),
+      timestamp: new Date().toISOString()
+    });
+  }, [cartProducts]);
 
   // Production-ready event handling with race condition prevention
   useEffect(() => {
@@ -420,6 +452,14 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const totalItems = getTotalItems();
 
+  console.log('MiniCart: Render state:', {
+    cartItems: cartItems,
+    cartItemsLength: cartItems.length,
+    totalItems: totalItems,
+    cartProducts: Object.keys(cartProducts),
+    loading: loading
+  });
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -449,6 +489,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
           ) : (
             <>
               <div className="space-y-3 max-h-60 overflow-y-auto">
+                {console.log('MiniCart: Rendering with cartItems:', cartItems, 'cartProducts:', cartProducts)}
                 {cartItems.map((item) => {
                   // Ensure consistent string key lookup
                   const productKey = String(item.product_id);

@@ -1030,31 +1030,6 @@ export default function Cart() {
         ...(cartLayoutConfig || {})
     };
     
-    // Helper function to get slot styling from configuration
-    const getSlotStyling = (slotId) => {
-        // Handle both old format (config.slots[slotId]) and new format (config[slotId])
-        const slotConfig = cartLayoutConfig?.slots?.[slotId] || cartLayoutConfig?.[slotId];
-        return {
-            elementClasses: slotConfig?.className || '',
-            elementStyles: slotConfig?.styles || {}
-        };
-    };
-    
-    // Helper function to get slot content from configuration
-    const getSlotContent = (slotId, fallback = '') => {
-        const slotConfig = cartLayoutConfig?.slots?.[slotId] || cartLayoutConfig?.[slotId];
-        let content = slotConfig?.content || fallback;
-
-        // Clean up HTML content for direct button usage (remove nested divs from resize)
-        if (typeof content === 'string' && content.includes('<div')) {
-            // Extract text content from nested divs
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            content = tempDiv.textContent || tempDiv.innerText || fallback;
-        }
-
-        return content;
-    };
 
     // Render cart with complete slot-based layout
     return (
