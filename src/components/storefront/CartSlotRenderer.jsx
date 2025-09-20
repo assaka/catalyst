@@ -45,23 +45,13 @@ export function CartSlotRenderer({
   // Helper function to extract image URL from various formats
   const getProductImageUrl = (product) => {
     if (!product || !product.images) {
-      console.log('🖼️ No product or images found:', { product: !!product, hasImages: !!product?.images });
       return 'https://placehold.co/100x100?text=No+Image';
     }
 
     const firstImage = product.images[0];
-    console.log('🖼️ Image analysis:', {
-      productName: product.name,
-      imagesLength: product.images?.length,
-      firstImageType: typeof firstImage,
-      firstImage: firstImage,
-      isString: typeof firstImage === 'string',
-      isObject: typeof firstImage === 'object'
-    });
 
     // If it's already a string URL
     if (typeof firstImage === 'string') {
-      console.log('🖼️ Using string URL:', firstImage);
       return firstImage;
     }
 
@@ -73,47 +63,14 @@ export function CartSlotRenderer({
                           firstImage.image_url ||
                           firstImage.uri;
 
-      console.log('🖼️ Extracted from object:', {
-        url: firstImage.url,
-        src: firstImage.src,
-        path: firstImage.path,
-        image_url: firstImage.image_url,
-        uri: firstImage.uri,
-        extractedUrl
-      });
-
       return extractedUrl || 'https://placehold.co/100x100?text=No+Image';
     }
 
-    console.log('🖼️ Fallback to placeholder');
     return 'https://placehold.co/100x100?text=No+Image';
   };
 
-  // Debug logging
-  console.log('🔍 CartSlotRenderer Debug:', {
-    parentId,
-    viewMode,
-    totalSlots: Object.keys(slots || {}).length,
-    slotsKeys: Object.keys(slots || {}),
-  });
-
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
-  console.log('📋 Child slots for parentId', parentId, ':', childSlots.length, childSlots.map(s => s.id));
-
-  // Special debugging for sidebar layout
-  if (parentId === 'sidebar_area') {
-    console.log('🏠 SIDEBAR LAYOUT DEBUG:', {
-      parentId,
-      childCount: childSlots.length,
-      children: childSlots.map(slot => ({
-        id: slot.id,
-        type: slot.type,
-        colSpan: slot.colSpan,
-        className: slot.className
-      }))
-    });
-  }
 
   // Special debugging for coupon container internal layout
   if (parentId === 'coupon_container') {
@@ -128,27 +85,6 @@ export function CartSlotRenderer({
       'coupon_button': { gridColumn: '9 / -1', gridRow: '2', colSpan: 4 }
     };
 
-    console.log('🎫 COUPON CONTAINER INTERNAL LAYOUT:', {
-      parentId,
-      childCount: childSlots.length,
-      expectedOrder,
-      actualOrder,
-      orderMatches,
-      children: childSlots.map((slot, index) => ({
-        id: slot.id,
-        type: slot.type,
-        currentColSpan: slot.colSpan,
-        currentGridCoords: {
-          gridColumn: slot.styles?.gridColumn,
-          gridRow: slot.styles?.gridRow
-        },
-        suggestedGridCoords: suggestedGridCoordinates[slot.id],
-        hasGridCoords: !!(slot.styles?.gridColumn || slot.styles?.gridRow),
-        databaseIndex: index,
-        expectedIndex: expectedOrder.indexOf(slot.id),
-        className: slot.className
-      }))
-    });
   }
 
   // Special debugging for order summary container internal layout
@@ -156,28 +92,10 @@ export function CartSlotRenderer({
     const expectedOrder = ['order_summary_title', 'order_summary_subtotal', 'order_summary_tax', 'order_summary_total', 'checkout_button'];
     const actualOrder = childSlots.map(s => s.id);
     const orderMatches = JSON.stringify(expectedOrder) === JSON.stringify(actualOrder);
-
-    console.log('📊 ORDER SUMMARY CONTAINER INTERNAL LAYOUT:', {
-      parentId,
-      childCount: childSlots.length,
-      expectedOrder,
-      actualOrder,
-      orderMatches,
-      children: childSlots.map((slot, index) => ({
-        id: slot.id,
-        type: slot.type,
-        colSpan: slot.colSpan,
-        position: slot.position,
-        databaseIndex: index,
-        expectedIndex: expectedOrder.indexOf(slot.id),
-        className: slot.className
-      }))
-    });
   }
 
   // If this is the cart_items_container, generate dynamic cart item slots based on actual cart data
   if (parentId === 'cart_items_container' && cartItems && cartItems.length > 0 && viewMode === 'withProducts') {
-    console.log('🔄 Generating dynamic cart item slots for', cartItems.length, 'items');
     const dynamicCartItemSlots = cartItems.map((item, index) => ({
       id: `dynamic_cart_item_${index + 1}`,
       type: 'container',
@@ -199,11 +117,9 @@ export function CartSlotRenderer({
     // Replace any existing static cart item slots with dynamic ones
     childSlots = childSlots.filter(slot => !slot.id.startsWith('cart_item_'));
     childSlots = [...childSlots, ...dynamicCartItemSlots];
-    console.log('✅ Generated', dynamicCartItemSlots.length, 'dynamic cart item slots');
   } else if (parentId === 'cart_items_container' && (!cartItems || cartItems.length === 0)) {
     // For empty cart, remove all cart item slots
     childSlots = childSlots.filter(slot => !slot.id.startsWith('cart_item_') && !slot.id.startsWith('dynamic_cart_item_'));
-    console.log('🧹 Cleaned cart item slots for empty cart');
   }
 
   // Filter by viewMode
@@ -226,7 +142,6 @@ export function CartSlotRenderer({
       const rowB = b.position.row;
 
       if (rowA !== rowB) {
-        console.log(`📐 Grid positioning by row: ${a.id}(row:${rowA}) vs ${b.id}(row:${rowB})`);
         return rowA - rowB;
       }
 
@@ -234,50 +149,20 @@ export function CartSlotRenderer({
       const colA = a.position.col;
       const colB = b.position.col;
       if (colA !== colB) {
-        console.log(`📐 Grid positioning by col: ${a.id}(col:${colA}) vs ${b.id}(col:${colB})`);
         return colA - colB;
       }
-    }
-
-    // Warn about slots without grid coordinates
-    if (!hasGridCoordsA || !hasGridCoordsB) {
-      console.warn(`⚠️ Slot missing grid coordinates:`, {
-        slotA: a.id,
-        hasGridCoordsA,
-        coordsA: a.position,
-        slotB: b.id,
-        hasGridCoordsB,
-        coordsB: b.position
-      });
     }
 
     // Default: maintain original order for slots without coordinates
     return 0;
   });
 
-  console.log('🎯 Filtered and sorted slots:', sortedSlots.length, sortedSlots.map(s => ({
-    id: s.id,
-    viewMode: s.viewMode,
-    gridCoords: s.position ? `col:${s.position.col}, row:${s.position.row}` : 'missing'
-  })));
-
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
-
-    // Debug logging for slot rendering
-    console.log(`🎨 Rendering slot: ${id}`, {
-      type,
-      content: content ? `"${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"` : 'null',
-      className,
-      parentClassName,
-      hasStyles: Object.keys(styles).length > 0,
-      stylesKeys: Object.keys(styles)
-    });
 
     // Helper function to wrap content with parent class if needed
     const wrapWithParentClass = (children) => {
       if (parentClassName) {
-        console.log(`🎯 Wrapping slot ${id} with parentClassName: ${parentClassName}`);
         return <div className={parentClassName}>{children}</div>;
       }
       return children;
@@ -551,16 +436,8 @@ export function CartSlotRenderer({
     if (id === 'coupon_container') {
       // If content is provided and is substantial HTML/custom content, use it as override
       const hasSubstantialContent = content && content.trim() && (content.includes('<') || content.length > 50);
-      console.log(`📦 Coupon container content analysis:`, {
-        hasContent: !!content,
-        contentLength: content?.length || 0,
-        hasHTML: content?.includes('<'),
-        hasSubstantialContent,
-        willOverride: hasSubstantialContent
-      });
 
       if (hasSubstantialContent) {
-        console.log(`✅ Using content override for coupon_container`);
         return (
           <Card className={className} style={styles}>
             <CardContent className="p-4">
@@ -573,11 +450,6 @@ export function CartSlotRenderer({
       // Default coupon functionality - check for child slots first
       const childSlots = SlotManager.getChildSlots(slots, slot.id);
       const hasChildSlots = childSlots && childSlots.length > 0;
-      console.log(`🔧 Coupon container child slots:`, {
-        hasChildSlots,
-        childCount: childSlots?.length || 0,
-        childIds: childSlots?.map(s => s.id) || []
-      });
 
       if (hasChildSlots) {
         // Render child slots if they exist (customizable coupon layout)
@@ -596,7 +468,6 @@ export function CartSlotRenderer({
       }
 
       // Fallback to default UI if no child slots
-      console.log(`🔧 No child slots found, using default coupon UI`);
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
@@ -659,11 +530,6 @@ export function CartSlotRenderer({
 
     // Coupon apply button
     if (id === 'coupon_button') {
-      console.log(`🔘 Coupon button content:`, {
-        rawContent: content,
-        fallback: 'Apply',
-        finalText: content || 'Apply'
-      });
       return (
         <Button
           onClick={handleApplyCoupon}
@@ -680,16 +546,8 @@ export function CartSlotRenderer({
     if (id === 'order_summary_container') {
       // If content is provided, use it as override, otherwise render the default summary
       const hasContentOverride = content && content.trim();
-      console.log(`📊 Order summary container content analysis:`, {
-        hasContent: !!content,
-        contentLength: content?.length || 0,
-        trimmedContent: content?.trim() || '',
-        hasContentOverride,
-        willOverride: hasContentOverride
-      });
 
       if (hasContentOverride) {
-        console.log(`✅ Using content override for order_summary_container`);
         return (
           <Card className={className} style={styles}>
             <CardContent className="p-4">
@@ -702,11 +560,6 @@ export function CartSlotRenderer({
       // Default order summary functionality - check for child slots first
       const childSlots = SlotManager.getChildSlots(slots, slot.id);
       const hasChildSlots = childSlots && childSlots.length > 0;
-      console.log(`🔧 Order summary container child slots:`, {
-        hasChildSlots,
-        childCount: childSlots?.length || 0,
-        childIds: childSlots?.map(s => s.id) || []
-      });
 
       if (hasChildSlots) {
         // Render child slots if they exist (customizable order summary layout)
@@ -725,7 +578,6 @@ export function CartSlotRenderer({
       }
 
       // Fallback to default UI if no child slots
-      console.log(`🔧 No child slots found, using default order summary UI`);
       return (
         <Card className={className} style={styles}>
           <CardContent className="p-4">
@@ -847,13 +699,6 @@ export function CartSlotRenderer({
 
     // Checkout button
     if (id === 'checkout_button') {
-      console.log(`🛒 Checkout button content:`, {
-        rawContent: content,
-        fallback: 'Proceed to Checkout',
-        finalText: content || 'Proceed to Checkout',
-        className,
-        hasStyles: Object.keys(styles).length > 0
-      });
       return (
         <Button
           size="lg"
@@ -938,53 +783,11 @@ export function CartSlotRenderer({
     }
   };
 
-  // If no slots found, show debug info
-  if (filteredSlots.length === 0) {
-    console.warn('⚠️ No slots to render for parentId:', parentId, 'viewMode:', viewMode);
-    return (
-      <div className="col-span-12 p-4 bg-yellow-50 border border-yellow-200 rounded">
-        <p className="text-sm text-yellow-800">
-          Debug: No slots found for parentId "{parentId}" in viewMode "{viewMode}"
-        </p>
-        <p className="text-xs text-yellow-600 mt-1">
-          Total slots: {Object.keys(slots || {}).length},
-          Child slots: {childSlots.length}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <>
       {sortedSlots.map((slot) => {
         const colSpan = slot.colSpan || 12;
         const gridColumn = `span ${colSpan} / span ${colSpan}`;
-
-        // Special logging for layout-critical slots
-        if (slot.id === 'coupon_container' || slot.id === 'order_summary_container') {
-          console.log(`📍 LAYOUT CHECK - ${slot.id}:`, {
-            id: slot.id,
-            type: slot.type,
-            parentId: slot.parentId,
-            colSpan: slot.colSpan,
-            gridColumn,
-            className: slot.className,
-            styles: slot.styles,
-            position: slot.position,
-                gridRow: slot.styles?.gridRow,
-            gridArea: slot.styles?.gridArea
-          });
-        }
-
-        console.log('🎨 About to render slot:', {
-          id: slot.id,
-          type: slot.type,
-          hasContent: !!slot.content,
-          contentPreview: slot.content ? `"${slot.content.substring(0, 50)}${slot.content.length > 50 ? '...' : ''}"` : 'null',
-          className: slot.className || 'none',
-          parentClassName: slot.parentClassName || 'none',
-          colSpan
-        });
 
         return (
           <div

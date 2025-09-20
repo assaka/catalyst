@@ -39,7 +39,6 @@ const getSessionId = () => {
   if (!sid) {
     sid = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
     localStorage.setItem('guest_session_id', sid);
-    console.log('🆔 Cart.jsx: Created new guest_session_id:', sid);
   } else {
     console.log('🆔 Cart.jsx: Using existing guest_session_id:', sid);
   }
@@ -47,7 +46,6 @@ const getSessionId = () => {
   // Check for old cart_session_id and clean it up
   const oldSid = localStorage.getItem('cart_session_id');
   if (oldSid) {
-    console.log('⚠️ Cart.jsx: Found old cart_session_id, removing:', oldSid);
     localStorage.removeItem('cart_session_id');
   }
 
@@ -112,33 +110,17 @@ export default function Cart() {
 
     // Load cart layout configuration directly
     useEffect(() => {
-        console.log('🔄 loadCartLayoutConfig useEffect triggered, store:', store);
         const loadCartLayoutConfig = async () => {
             if (!store?.id) {
-                console.log('❌ No store.id found, skipping slot config loading');
                 return;
             }
             if (configLoaded && cartLayoutConfig) {
-                console.log('✅ Configuration already loaded, skipping reload');
                 return;
             }
-            console.log('✅ Store ID found, loading published slot configuration for store:', store.id);
-            console.log('🔍 Current timestamp:', new Date().toISOString());
-            console.log('🌐 Backend URL:', process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com');
-
             try {
-                // Test backend connectivity first
-                console.log('🔌 Testing backend connectivity...');
 
                 // Load published configuration using the new versioning API
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
-
-                console.log('📡 Published config response:', response);
-                console.log('📡 Response data structure:', response?.data);
-                console.log('📡 Configuration content:', response?.data?.configuration);
-                console.log('📡 Configuration status:', response?.data?.status);
-                console.log('📡 Published at:', response?.data?.published_at);
-                console.log('📡 Version number:', response?.data?.version_number);
                 
                 // Check for various "no published config" scenarios
                 if (response.success && response.data &&
@@ -147,13 +129,8 @@ export default function Cart() {
                     Object.keys(response.data.configuration.slots).length > 0) {
 
                     const publishedConfig = response.data;
-                    console.log('🔧 Setting cart layout config with published data...');
-                    console.log('🔧 Published config slots:', Object.keys(publishedConfig.configuration.slots || {}));
-                    console.log('🔧 Published config metadata:', publishedConfig.configuration.metadata);
                     setCartLayoutConfig(publishedConfig.configuration);
                     setConfigLoaded(true);
-                    console.log('✅ Loaded published cart layout configuration:', publishedConfig.configuration);
-                    console.log('🔍 Empty cart title config:', publishedConfig.configuration['empty_cart_title']);
 
                 } else {
                     // Any scenario where we don't have a valid published configuration
@@ -164,20 +141,9 @@ export default function Cart() {
                     if (response.data?.configuration && !response.data.configuration.slots) noConfigReasons.push('No slots in configuration');
                     if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
 
-                    console.warn('⚠️ No valid published configuration found. Reasons:', noConfigReasons);
-                    console.warn('⚠️ Response details:', {
-                        success: response?.success,
-                        hasData: !!response?.data,
-                        hasConfig: !!response?.data?.configuration,
-                        hasSlots: !!response?.data?.configuration?.slots,
-                        slotCount: Object.keys(response?.data?.configuration?.slots || {}).length
-                    });
-
                     // Fallback to cart-config.js
                     const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
                     const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
-                    console.log('📦 Loaded cart-config.js fallback with', Object.keys(cartConfig.slots).length, 'slots');
-                    console.log('📦 Sample slots from cart-config.js:', Object.keys(cartConfig.slots).slice(0, 5));
 
                     const fallbackConfig = {
                         slots: { ...cartConfig.slots },
@@ -188,16 +154,8 @@ export default function Cart() {
                         }
                     };
 
-                    console.log('📦 Setting fallback config:', {
-                        slotCount: Object.keys(fallbackConfig.slots).length,
-                        hasSlots: !!fallbackConfig.slots,
-                        sampleSlots: Object.keys(fallbackConfig.slots).slice(0, 3),
-                        metadata: fallbackConfig.metadata
-                    });
-
                     setCartLayoutConfig(fallbackConfig);
                     setConfigLoaded(true);
-                    console.log('🔧 Fallback configuration set successfully');
                 }
             } catch (error) {
                 console.error('❌ Error loading published slot configuration:', error);
@@ -213,7 +171,6 @@ export default function Cart() {
                 // Fallback to cart-config.js
                 const cartConfigModule = await import('@/components/editor/slot/configs/cart-config');
                 const cartConfig = cartConfigModule.default || cartConfigModule.cartConfig;
-                console.log('📦 Loaded cart-config.js error fallback with', Object.keys(cartConfig.slots).length, 'slots');
 
                 const fallbackConfig = {
                     slots: { ...cartConfig.slots },
@@ -234,10 +191,8 @@ export default function Cart() {
         // Listen for configuration updates from editor
         const handleStorageChange = (e) => {
             if (e.key === 'slot_config_updated' && e.newValue) {
-                console.log('🔔 Configuration update notification received');
                 const updateData = JSON.parse(e.newValue);
                 if (updateData.storeId === store?.id) {
-                    console.log('✅ Store matches, reloading configuration');
                     loadCartLayoutConfig();
                     // Clear the notification
                     localStorage.removeItem('slot_config_updated');
@@ -400,11 +355,9 @@ export default function Cart() {
     }, [quantityUpdates], 1500);
 
     const loadCartData = useCallback(async (showLoader = true) => {
-        console.log('🔄 Cart.loadCartData: Called with showLoader:', showLoader);
         if (showLoader) setLoading(true);
 
         try {
-            console.log('⚡ Starting parallel cart loading...');
             const totalStartTime = performance.now();
 
             // Create cart context locally to avoid circular dependency
@@ -427,16 +380,12 @@ export default function Cart() {
             // Emit loading event
             eventSystem.emit('cart.loadingStarted', localCartContext);
 
-            // **PARALLEL LOADING: Start all operations simultaneously**
-            console.log('🚀 Launching parallel operations: cart + tax rules');
-
             const [cartResult, taxRulesData] = await Promise.allSettled([
                 // Load cart data
                 (async () => {
                     const startTime = performance.now();
                     const result = await cartService.getCart();
                     const loadTime = performance.now() - startTime;
-                    console.log(`📦 Cart data loaded: ${loadTime.toFixed(2)}ms`);
                     return result;
                 })(),
 
@@ -446,7 +395,6 @@ export default function Cart() {
                     try {
                         const taxData = store?.id ? await Tax.filter({ store_id: store.id, is_active: true }) : [];
                         const loadTime = performance.now() - startTime;
-                        console.log(`💰 Tax rules loaded: ${loadTime.toFixed(2)}ms`);
                         return taxData || [];
                     } catch (error) {
                         console.error('Tax rules loading failed:', error);
@@ -493,7 +441,6 @@ export default function Cart() {
             const products = await (async () => {
                 if (productIds.length === 0) return [];
 
-                console.log('🚀 Batch fetching', productIds.length, 'products:', productIds);
                 const startTime = performance.now();
 
                 try {
@@ -512,17 +459,10 @@ export default function Cart() {
                     // Try each strategy until one works
                     for (const [index, strategy] of batchStrategies.entries()) {
                         try {
-                            console.log(`🔄 Trying batch strategy ${index + 1}`);
                             const results = await strategy();
 
                             if (results && Array.isArray(results) && results.length > 0) {
                                 const fetchTime = performance.now() - startTime;
-                                console.log(`✅ Batch strategy ${index + 1} succeeded:`, {
-                                    requested: productIds.length,
-                                    received: results.length,
-                                    fetchTime: `${fetchTime.toFixed(2)}ms`,
-                                    strategy: index + 1
-                                });
                                 return results;
                             }
                         } catch (strategyError) {
@@ -548,17 +488,7 @@ export default function Cart() {
 
                     const productResults = await Promise.all(productPromises);
                     const validProducts = productResults.filter(product => product !== null);
-
-                    const fetchTime = performance.now() - startTime;
-                    console.log(`✅ Parallel fetch completed:`, {
-                        requested: productIds.length,
-                        received: validProducts.length,
-                        fetchTime: `${fetchTime.toFixed(2)}ms`,
-                        method: 'parallel'
-                    });
-
                     return validProducts;
-
                 } catch (error) {
                     console.error('❌ All product fetching strategies failed:', error);
                     return [];
@@ -597,20 +527,6 @@ export default function Cart() {
                 validateAppliedCoupon(appliedCoupon, processedItems);
             }
 
-            // **PERFORMANCE REPORTING**
-            const totalLoadTime = performance.now() - totalStartTime;
-            console.log('🎯 CART LOADING PERFORMANCE SUMMARY:', {
-                totalTime: `${totalLoadTime.toFixed(2)}ms`,
-                cartItems: processedItems.length,
-                productsLoaded: products.length,
-                taxRulesLoaded: taxRulesData.status === 'fulfilled',
-                optimizations: ['Parallel Loading', 'Batch Product API'],
-                breakdown: {
-                    'Cart + Tax Rules (Parallel)': `${parallelLoadTime.toFixed(2)}ms`,
-                    'Product Fetching': 'See batch logs above',
-                    'Data Processing': `${(totalLoadTime - parallelLoadTime).toFixed(2)}ms`
-                }
-            });
         } catch (error) {
             console.error("❌ Error loading cart:", error);
             setFlashMessage({ type: 'error', message: "Could not load your cart. Please try refreshing." });
@@ -743,7 +659,6 @@ export default function Cart() {
             const result = await cartService.updateCart(updatedItems, store.id);
 
             if (result.success) {
-                console.log('✅ Cart: Item removed successfully');
                 // Success - keep the optimistic update, notify components
                 window.dispatchEvent(new CustomEvent('cartItemRemoved'));
                 setFlashMessage({ type: 'success', message: "Item removed from cart." });
@@ -1082,25 +997,16 @@ export default function Cart() {
         }
     }, [loading, cartItems, subtotal, discount, tax, total, cartContext]);
 
-
-    // Debug loading states
-    console.log('🔍 Cart loading states:', { loading, storeLoading, store: !!store });
-    console.log('🔍 Cart items:', cartItems?.length || 0);
     
     // Wait for both store data and cart data to load
     if (loading || storeLoading) {
-        console.log('🔄 Cart component is loading - showing spinner');
         return (
             <div className="flex items-center justify-center h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
     }
-    
-    console.log('✅ Cart component loaded - proceeding to render');
-    
-    
-    
+
     // Prepare data object for CartSlots component
     const cartSlotsData = {
         store,
@@ -1184,33 +1090,8 @@ export default function Cart() {
                     const hasSlots = !!cartLayoutConfig?.slots;
                     const slotsObject = cartLayoutConfig?.slots || {};
                     const slotCount = Object.keys(slotsObject).length;
-                    const hasFallback = cartLayoutConfig?.metadata?.fallbackUsed;
-
-                    console.log('🔍 Cart Debug - Layout Config:', {
-                        hasConfig,
-                        hasSlots,
-                        slotCount,
-                        hasFallback,
-                        fallbackReason: cartLayoutConfig?.metadata?.fallbackReason,
-                        cartItemsLength: cartItems.length,
-                        viewMode: cartItems.length === 0 ? 'emptyCart' : 'withProducts',
-                        cartLayoutConfig: cartLayoutConfig,
-                        slotsObject: slotsObject,
-                        firstFewSlots: Object.keys(slotsObject).slice(0, 3)
-                    });
-
-                    if (hasFallback) {
-                        console.log('📦 Using cart-config.js fallback configuration with', slotCount, 'slots');
-                        console.log('📦 First few slots:', Object.keys(slotsObject).slice(0, 5));
-                    }
 
                     const shouldRender = hasConfig && hasSlots && slotCount > 0;
-                    console.log('🎯 Render decision:', {
-                        shouldRender,
-                        hasConfig,
-                        hasSlots,
-                        slotCount
-                    });
 
                     return shouldRender;
                 })() ? (
