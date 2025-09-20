@@ -38,6 +38,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return;
     }
 
+    console.log('MiniCart: Loading product details for items:', cartItems);
+
     // Extract unique product IDs and batch the request
     const productIds = [...new Set(cartItems.map(item => {
       const productId = typeof item.product_id === 'object' ?
@@ -46,7 +48,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return productId;
     }).filter(id => id !== null))];
 
+    console.log('MiniCart: Extracted product IDs:', productIds);
+
     if (productIds.length === 0) {
+      console.warn('MiniCart: No valid product IDs found');
       setCartProducts({});
       return;
     }
@@ -76,12 +81,18 @@ export default function MiniCart({ cartUpdateTrigger }) {
         products = results.filter(p => p !== null);
       }
 
-      // Build product details map
+      // Build product details map - ensure string keys for consistency
       const productDetails = {};
       products.forEach(product => {
         if (product && product.id) {
-          productDetails[product.id] = product;
+          // Always use string keys for consistency
+          productDetails[String(product.id)] = product;
         }
+      });
+      console.log('MiniCart: Loaded products:', {
+        requestedIds: productIds,
+        loadedProducts: Object.keys(productDetails),
+        productDetails
       });
       setCartProducts(productDetails);
     } catch (error) {
@@ -253,6 +264,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
           // Simplified: always trust backend data
           const backendItems = cartResult.items;
 
+          console.log('MiniCart: Cart loaded from backend:', {
+            items: backendItems,
+            itemCount: backendItems.length
+          });
+
           setCartItems(backendItems);
           setLastRefreshId(refreshId);
 
@@ -372,7 +388,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
-      const product = cartProducts[item.product_id];
+      // Ensure consistent string key lookup
+      const productKey = String(item.product_id);
+      const product = cartProducts[productKey];
       if (!product) return total;
       
       // Use the stored price from cart (which should be the sale price)
@@ -432,8 +450,17 @@ export default function MiniCart({ cartUpdateTrigger }) {
             <>
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {cartItems.map((item) => {
-                  const product = cartProducts[item.product_id];
+                  // Ensure consistent string key lookup
+                  const productKey = String(item.product_id);
+                  const product = cartProducts[productKey];
                   if (!product) {
+                    console.warn('MiniCart: Product not found for cart item:', {
+                      itemId: item.id,
+                      productId: item.product_id,
+                      productKey: productKey,
+                      availableProducts: Object.keys(cartProducts),
+                      cartItem: item
+                    });
                     return null;
                   }
                   

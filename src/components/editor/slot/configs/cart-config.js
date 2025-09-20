@@ -56,7 +56,7 @@ export const cartConfig = {
       layout: 'block',
       colSpan: {
         emptyCart: 12,
-        withProducts: 'col-span-12 sm:col-span-12 lg:col-span-8'
+        withProducts: 'col-span-12 sm:col-span-8 lg:col-span-8'
       },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
@@ -72,7 +72,7 @@ export const cartConfig = {
       position: { col: 9, row: 2 },
       layout: 'flex',
       colSpan: {
-        withProducts: 'col-span-12 sm:col-span-12 lg:col-span-4'
+        withProducts: 'col-span-12 sm:col-span-4 lg:col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
