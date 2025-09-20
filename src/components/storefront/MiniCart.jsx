@@ -31,6 +31,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [lastRefreshId, setLastRefreshId] = useState(null);
   const [lastOptimisticUpdate, setLastOptimisticUpdate] = useState(null);
   const loadCartRef = useRef(null);
+  const lastProductLoadRef = useRef(null);
 
   // Helper function to load product details for cart items
   const loadProductDetails = useCallback(async (cartItems) => {
@@ -52,41 +53,20 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return;
     }
 
-    console.log('MiniCart: Loading products for IDs:', productIds);
+    // Prevent duplicate calls from multiple MiniCart instances
+    const productIdsKey = productIds.sort().join(',');
+    const now = Date.now();
+    if (lastProductLoadRef.current &&
+        lastProductLoadRef.current.key === productIdsKey &&
+        now - lastProductLoadRef.current.timestamp < 100) {
+      console.log('MiniCart: Skipping duplicate product load call');
+      return;
+    }
+    lastProductLoadRef.current = { key: productIdsKey, timestamp: now };
 
     try {
-      // Use proper batch loading strategies (similar to Cart component)
-      const batchStrategies = [
-        // Strategy 1: Standard batch filter with "in" operator
-        () => StorefrontProduct.filter({ id: { in: productIds } }),
-        // Strategy 2: Batch filter with ids array
-        () => StorefrontProduct.filter({ ids: productIds }),
-        // Strategy 3: Query string approach
-        () => StorefrontProduct.filter({ id: productIds.join(',') })
-      ];
-
-      let products = [];
-
-      // Try each batch strategy until one works
-      for (const [index, strategy] of batchStrategies.entries()) {
-        try {
-          console.log(`MiniCart: Trying batch strategy ${index + 1}`);
-          const results = await strategy();
-
-          if (results && Array.isArray(results) && results.length > 0) {
-            console.log(`MiniCart: Batch strategy ${index + 1} succeeded, loaded ${results.length} products`);
-            products = results;
-            break;
-          }
-        } catch (strategyError) {
-          console.warn(`MiniCart: Batch strategy ${index + 1} failed:`, strategyError.message);
-        }
-      }
-
-      // If all batch strategies failed, log the issue but don't do individual requests
-      if (products.length === 0) {
-        console.error('MiniCart: All batch loading strategies failed for product IDs:', productIds);
-      }
+      // Use the working batch loading strategy
+      const products = await StorefrontProduct.filter({ ids: productIds });
 
       // Build product details map - ensure string keys for consistency
       const productDetails = {};
@@ -96,9 +76,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
           productDetails[String(product.id)] = product;
         }
       });
-      if (Object.keys(productDetails).length === 0) {
-        console.warn('MiniCart: No products loaded for IDs:', productIds);
-      }
       setCartProducts(productDetails);
     } catch (error) {
       console.error('MiniCart: Error loading product details:', error);
@@ -147,6 +124,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
   // Load product details when cartItems change
   useEffect(() => {
     if (cartItems.length > 0) {
+      console.log('MiniCart: cartItems changed, loading product details');
       loadProductDetails(cartItems);
     } else {
       setCartProducts({});
