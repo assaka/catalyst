@@ -468,7 +468,6 @@ export function GridColumn({
         console.log(`🎯 ACTIVE DROP ZONE: ${newDropZone || 'NONE'}`, {
           targetSlot: slot?.id,
           draggedSlot: draggedSlot?.id,
-          direction: dragDirection,
           position: newDropZone
         });
 
