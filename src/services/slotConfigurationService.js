@@ -177,25 +177,16 @@ class SlotConfigurationService {
   // Helper method to save configuration with auto-draft creation
   async saveConfiguration(storeId, configuration, pageType = 'cart', isReset = false) {
     try {
-      console.log('🔧 SlotConfigurationService.saveConfiguration called:', {
-        storeId,
-        pageType,
-        configuration: configuration,
-        isReset
-      });
 
       // First get or create a draft
       const draftResponse = await this.getDraftConfiguration(storeId, pageType);
       const draftConfig = draftResponse.data;
-      console.log('📝 Draft config retrieved:', draftConfig);
 
       // Transform CartSlotsEditor format to SlotConfiguration API format
       const apiConfiguration = this.transformToSlotConfigFormat(configuration);
-      console.log('🔄 Transformed configuration:', apiConfiguration);
 
       // Update the draft with new configuration
       const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration, isReset);
-      console.log('✅ Update response:', updateResponse);
       return updateResponse;
     } catch (error) {
       console.error('❌ Error saving configuration:', error);
@@ -221,13 +212,11 @@ class SlotConfigurationService {
   // Check if draft exists, create from initial values if not
   async ensureDraftExists(storeId, pageType = 'cart', fileName = null) {
     try {
-      console.log(`🔍 Checking draft configuration for ${storeId}/${pageType}...`);
       
       // Try to get existing draft
       try {
         const draftResponse = await this.getDraftConfiguration(storeId, pageType);
         if (draftResponse.success && draftResponse.data) {
-          console.log(`✅ Found existing draft configuration for ${storeId}/${pageType}`);
           return {
             exists: true,
             draft: draftResponse.data,
@@ -250,7 +239,6 @@ class SlotConfigurationService {
       });
 
       if (createResponse.success) {
-        console.log(`✨ Created new draft configuration for ${storeId}/${pageType} from initial values`);
         return {
           exists: false,
           draft: createResponse.data,
@@ -270,8 +258,6 @@ class SlotConfigurationService {
   async getInitialConfiguration(pageType = 'cart', fileName = null) {
     // Dynamic import to get the latest cart config
     const { cartConfig } = await import('@/components/editor/slot/configs/cart-config.js');
-
-    console.log(`🏗️ Creating initial configuration for ${pageType} from cart-config.js`);
 
     // Create clean slots with all properties preserved including position coordinates
     const cleanSlots = {};
@@ -360,13 +346,11 @@ class SlotConfigurationService {
       }
     }
 
-    console.log('🔄 Transformed configuration:', transformed);
     return transformed;
   }
 
   // Keep hierarchical structure - no more legacy transformations
   transformFromSlotConfigFormat(apiConfig) {
-    console.log('🔄 Preserving hierarchical structure (no legacy transformation):', apiConfig);
     
     // Return the hierarchical structure as-is for CartSlotsEditor
     return {
