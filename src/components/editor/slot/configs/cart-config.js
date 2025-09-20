@@ -48,7 +48,10 @@ export const cartConfig = {
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
       layout: 'block',
-      colSpan: 12, // Will be dynamically adjusted to 8 in withProducts mode
+      colSpan: {
+        emptyCart: 12,
+        withProducts: 8
+      },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
     },
@@ -162,7 +165,7 @@ export const cartConfig = {
       parentId: 'content_area',
       position: { col: 1, row: 1 },
       layout: 'block',
-      colSpan: 8,
+      colSpan: 12,
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },

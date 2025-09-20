@@ -39,8 +39,6 @@ const getSessionId = () => {
   if (!sid) {
     sid = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
     localStorage.setItem('guest_session_id', sid);
-  } else {
-    console.log('🆔 Cart.jsx: Using existing guest_session_id:', sid);
   }
 
   // Check for old cart_session_id and clean it up
