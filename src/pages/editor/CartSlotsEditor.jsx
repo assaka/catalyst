@@ -533,11 +533,19 @@ const CartSlotsEditor = ({
         return;
       }
 
-      // Convert old number format to new object format
+      // Convert old number format to new nested breakpoint format
       if (typeof currentColSpan === 'number') {
         const newColSpanObject = {
-          emptyCart: 12,
-          withProducts: 8
+          emptyCart: {
+            mobile: 12,
+            tablet: 12,
+            desktop: 12
+          },
+          withProducts: {
+            mobile: 12,
+            tablet: 12,
+            desktop: 8
+          }
         };
 
         setCartLayoutConfig(prevConfig => ({

@@ -105,7 +105,11 @@ export function CartSlotRenderer({
       parentId: 'cart_items_container',
       layout: 'flex',
       colSpan: {
-        withProducts: 12
+        withProducts: {
+          mobile: 12,
+          tablet: 12,
+          desktop: 12
+        }
       },
       viewMode: ['withProducts'],
       metadata: {
@@ -457,7 +461,7 @@ export function CartSlotRenderer({
         // Render child slots if they exist (customizable coupon layout)
         return (
           <Card className={className} style={styles}>
-            <CardContent className="p-4">
+            <CardContent className="p-4 grid">
               <CartSlotRenderer
                 slots={slots}
                 parentId={slot.id}
@@ -789,7 +793,7 @@ export function CartSlotRenderer({
   return (
     <>
       {sortedSlots.map((slot) => {
-        // Handle both old (number) and new (object) colSpan formats
+        // Handle old (number), simple object, and nested breakpoint colSpan formats
         let colSpan = 12; // default value
 
         if (typeof slot.colSpan === 'number') {
@@ -797,7 +801,18 @@ export function CartSlotRenderer({
           colSpan = slot.colSpan;
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           // New format: object with viewMode keys
-          colSpan = slot.colSpan[viewMode] || 12;
+          const viewModeValue = slot.colSpan[viewMode];
+
+          if (typeof viewModeValue === 'number') {
+            // Simple viewMode: number format
+            colSpan = viewModeValue;
+          } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
+            // Nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
+            // Default to desktop, fallback to mobile if desktop not available
+            colSpan = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
+          } else {
+            colSpan = 12;
+          }
         }
 
         const gridColumn = `span ${colSpan} / span ${colSpan}`;

@@ -254,12 +254,21 @@ export function GridColumn({
     const parentSlots = Object.values(slots).filter(s => s.parentId === targetSlot.parentId);
     const targetIndex = parentSlots.findIndex(s => s.id === targetSlot.id);
 
-    // Get targetSlot colSpan handling both old (number) and new (object) formats
+    // Get targetSlot colSpan handling old (number), simple object, and nested breakpoint formats
     let targetColSpan = 1;
     if (typeof targetSlot.colSpan === 'number') {
       targetColSpan = targetSlot.colSpan;
     } else if (typeof targetSlot.colSpan === 'object' && targetSlot.colSpan !== null) {
-      targetColSpan = targetSlot.colSpan[viewMode] || 1;
+      const viewModeValue = targetSlot.colSpan[viewMode];
+
+      if (typeof viewModeValue === 'number') {
+        targetColSpan = viewModeValue;
+      } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
+        // Nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
+        targetColSpan = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 1;
+      } else {
+        targetColSpan = 1;
+      }
     }
 
     let newRow = targetSlot.position?.row || 1;
@@ -848,7 +857,7 @@ export function HierarchicalSlotRenderer({
   });
 
   return sortedSlots.map(slot => {
-    // Handle both old (number) and new (object) colSpan formats
+    // Handle old (number), simple object, and nested breakpoint colSpan formats
     let colSpan = 12; // default value
 
     if (typeof slot.colSpan === 'number') {
@@ -856,7 +865,18 @@ export function HierarchicalSlotRenderer({
       colSpan = slot.colSpan;
     } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
       // New format: object with viewMode keys
-      colSpan = slot.colSpan[viewMode] || 12;
+      const viewModeValue = slot.colSpan[viewMode];
+
+      if (typeof viewModeValue === 'number') {
+        // Simple viewMode: number format
+        colSpan = viewModeValue;
+      } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
+        // Nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
+        // Default to desktop, fallback to mobile if desktop not available
+        colSpan = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
+      } else {
+        colSpan = 12;
+      }
     }
 
     const rowSpan = slot.rowSpan || 1;
