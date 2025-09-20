@@ -453,18 +453,30 @@ export function GridColumn({
         }
       } else {
         // No clear direction - fall back to position-based detection
+        console.log('🔄 Using position-based fallback logic');
         if (isHorizontalReordering) {
           newDropZone = x < width * 0.5 ? 'left' : 'right';
           e.dataTransfer.dropEffect = 'move';
           console.log(`🟢 ${newDropZone.toUpperCase()} zone (position fallback)`);
-        } else if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
-          newDropZone = 'inside';
-          e.dataTransfer.dropEffect = 'move';
-          console.log('📦 INSIDE container zone (fallback)');
         } else {
-          newDropZone = null;
-          e.dataTransfer.dropEffect = 'none';
-          console.log('🚫 No drop zone (fallback)');
+          // Vertical positioning fallback
+          if (y < height * 0.33) {
+            newDropZone = 'before';
+            e.dataTransfer.dropEffect = 'move';
+            console.log('🟢 TOP zone (position fallback)');
+          } else if (y > height * 0.67) {
+            newDropZone = 'after';
+            e.dataTransfer.dropEffect = 'move';
+            console.log('🟢 BOTTOM zone (position fallback)');
+          } else if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
+            newDropZone = 'inside';
+            e.dataTransfer.dropEffect = 'move';
+            console.log('📦 INSIDE container zone (fallback)');
+          } else {
+            newDropZone = null;
+            e.dataTransfer.dropEffect = 'none';
+            console.log('🚫 No drop zone (fallback)');
+          }
         }
       }
 
@@ -639,8 +651,8 @@ export function GridColumn({
               console.log('Before drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
                 <div className="absolute -top-1 left-0 right-0 z-[100] pointer-events-none">
-                  <div className="h-1 bg-green-400 shadow-lg" />
-                  <div className="absolute -top-8 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                  <div className="h-2 bg-green-500 shadow-xl border-t-4 border-green-600" />
+                  <div className="absolute -top-8 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
                     ⬆️ Drop above
                   </div>
                 </div>
