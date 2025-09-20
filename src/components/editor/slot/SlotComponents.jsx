@@ -721,8 +721,8 @@ export function GridColumn({
               console.log('Right drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
                 <div className="absolute -right-1 top-0 bottom-0 z-[100] pointer-events-none">
-                  <div className="w-1 h-full bg-green-400 shadow-lg" />
-                  <div className="absolute top-2 -right-24 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                  <div className="w-2 h-full bg-green-500 shadow-xl border-r-4 border-green-600" />
+                  <div className="absolute top-2 -right-24 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
                     ➡️ Drop right
                   </div>
                 </div>
