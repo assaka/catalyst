@@ -400,9 +400,6 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         <WishlistDropdown />
-                                        {!settings?.hide_header_cart && (
-                                            <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
-                                        )}
                                      </div>
 
                                      <div className="hidden md:flex items-center space-x-3">
@@ -425,9 +422,9 @@ export default function StorefrontLayout({ children }) {
                                             </Select>
                                         )}
                                         {settings.allowed_countries && Array.isArray(settings.allowed_countries) && settings.allowed_countries.length > 1 && (
-                                            <CountrySelect 
-                                                value={selectedCountry} 
-                                                onValueChange={setSelectedCountry} 
+                                            <CountrySelect
+                                                value={selectedCountry}
+                                                onValueChange={setSelectedCountry}
                                                 allowedCountries={settings.allowed_countries}
                                             />
                                         )}
@@ -484,7 +481,7 @@ export default function StorefrontLayout({ children }) {
                                                 </DropdownMenu>
                                             </div>
                                         ) : (
-                                            <Button 
+                                            <Button
                                                 onClick={() => {
                                                     // Save store info for redirect after login
                                                     localStorage.setItem('customer_auth_store_id', store.id);
@@ -499,10 +496,12 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         <WishlistDropdown />
-                                        {!settings?.hide_header_cart && (
-                                            <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
-                                        )}
                                      </div>
+
+                                     {/* Single responsive MiniCart for both mobile and desktop */}
+                                     {!settings?.hide_header_cart && (
+                                         <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
+                                     )}
 
                                      <Button
                                         variant="ghost"

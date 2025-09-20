@@ -31,7 +31,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [lastRefreshId, setLastRefreshId] = useState(null);
   const [lastOptimisticUpdate, setLastOptimisticUpdate] = useState(null);
   const loadCartRef = useRef(null);
-  const lastProductLoadRef = useRef(null);
 
   // Helper function to load product details for cart items
   const loadProductDetails = useCallback(async (cartItems) => {
@@ -53,16 +52,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
       return;
     }
 
-    // Prevent duplicate calls from multiple MiniCart instances
-    const productIdsKey = productIds.sort().join(',');
-    const now = Date.now();
-    if (lastProductLoadRef.current &&
-        lastProductLoadRef.current.key === productIdsKey &&
-        now - lastProductLoadRef.current.timestamp < 100) {
-      console.log('MiniCart: Skipping duplicate product load call');
-      return;
-    }
-    lastProductLoadRef.current = { key: productIdsKey, timestamp: now };
 
     try {
       // Use the working batch loading strategy
@@ -124,7 +113,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
   // Load product details when cartItems change
   useEffect(() => {
     if (cartItems.length > 0) {
-      console.log('MiniCart: cartItems changed, loading product details');
       loadProductDetails(cartItems);
     } else {
       setCartProducts({});
