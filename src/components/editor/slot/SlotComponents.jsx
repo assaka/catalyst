@@ -435,24 +435,15 @@ export function GridColumn({
         e.dataTransfer.dropEffect = 'move';
         console.log('🟢 RIGHT zone (moving right)');
       } else if (dragDirection === 'up') {
-        // Check for container escape prevention
-        const draggedRow = draggedSlot?.position?.row;
-        const targetRow = slot?.position?.row;
-        const isAtContainerTop = targetRow === 1 && draggedParent === targetParent;
-        const wouldEscapeContainer = isAtContainerTop && draggedRow > targetRow;
-
-        if (draggedParent === targetParent && !wouldEscapeContainer) {
+        // Allow moving up within same container or to different containers
+        if (draggedParent === targetParent || draggedParent !== targetParent) {
           newDropZone = 'before';
           e.dataTransfer.dropEffect = 'move';
-          console.log('🟢 TOP zone (moving up, safe)');
-        } else if (draggedParent !== targetParent) {
-          newDropZone = 'before';
-          e.dataTransfer.dropEffect = 'move';
-          console.log('🟢 TOP zone (moving up, different container)');
+          console.log('🟢 TOP zone (moving up)');
         } else {
           newDropZone = null;
           e.dataTransfer.dropEffect = 'none';
-          console.log('🚫 TOP blocked (would escape container)');
+          console.log('🚫 TOP blocked');
         }
       } else if (dragDirection === 'down') {
         if (draggedParent === targetParent || draggedParent !== targetParent) {
@@ -641,40 +632,6 @@ export function GridColumn({
       {/* Enhanced visual feedback for drag operations */}
       {mode === 'edit' && isDragActive && dropZone && currentDragInfo && (
         <>
-          {/* Ghost Preview Slot - show for before/after/left/right */}
-          {(dropZone === 'before' || dropZone === 'after' || dropZone === 'left' || dropZone === 'right') && (
-            <div className={`absolute z-50 pointer-events-none ${
-              dropZone === 'before' ? '-top-16 left-0 right-0' :
-              dropZone === 'after' ? '-bottom-16 left-0 right-0' :
-              dropZone === 'left' ? '-left-8 top-0 bottom-0 w-8' :
-              dropZone === 'right' ? '-right-8 top-0 bottom-0 w-8' : ''
-            }`}>
-              <div className={`bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-dashed border-blue-400 rounded-lg p-3 shadow-xl animate-pulse ${
-                (dropZone === 'left' || dropZone === 'right') ? 'h-full flex flex-col justify-center' : ''
-              }`}>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">
-                      {(dropZone === 'left' || dropZone === 'right') ? '↔️' :
-                       currentDragInfo.operationType === 'reorder' ? '↕️' : '🔄'}
-                    </span>
-                    <span className="font-semibold text-blue-700">
-                      {(dropZone === 'left' || dropZone === 'right') ? 'Horizontal Reorder' :
-                       currentDragInfo.operationType === 'reorder' ? 'Reordering' : 'Moving'}
-                    </span>
-                  </div>
-                  {currentDragInfo.gridPosition && (
-                    <div className="bg-blue-200 text-blue-800 px-2 py-1 rounded-md text-xs font-mono">
-                      R{currentDragInfo.gridPosition.row} C{currentDragInfo.gridPosition.col}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2 text-xs text-gray-600">
-                  <span className="font-medium">{currentDragInfo.draggedSlot?.type || 'slot'}</span>: {currentDragInfo.draggedSlotId}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Clear directional drop zone indicators */}
           {dropZone === 'before' && (
