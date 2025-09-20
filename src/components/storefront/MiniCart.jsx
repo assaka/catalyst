@@ -52,33 +52,39 @@ export default function MiniCart({ cartUpdateTrigger }) {
     }
 
     try {
+      console.log('MiniCart: Loading products with IDs:', productIds);
 
-      // Try batch loading first
+      // Use proper batch loading strategies (similar to Cart component)
+      const batchStrategies = [
+        // Strategy 1: Standard batch filter with "in" operator
+        () => StorefrontProduct.filter({ id: { in: productIds } }),
+        // Strategy 2: Batch filter with ids array
+        () => StorefrontProduct.filter({ ids: productIds }),
+        // Strategy 3: Query string approach
+        () => StorefrontProduct.filter({ id: productIds.join(',') })
+      ];
+
       let products = [];
-      try {
-        console.log('MiniCart: Attempting batch product load with IDs:', productIds);
-        const result = await StorefrontProduct.filter({ id: { in: productIds } });
-        console.log('MiniCart: Batch load result:', result);
-        products = Array.isArray(result) ? result : [];
-        if (products.length === 0) {
-          console.warn('MiniCart: Batch loading returned no products for IDs:', productIds);
-        }
-      } catch (batchError) {
-        console.warn('MiniCart: Batch loading failed, falling back to individual requests:', batchError.message);
 
-        // Fallback to individual requests if batch fails
-        const productPromises = productIds.map(async (productId) => {
-          try {
-            const result = await StorefrontProduct.filter({ id: productId });
-            return Array.isArray(result) ? result[0] : result;
-          } catch (error) {
-            console.error(`Failed to load product ${productId}:`, error);
-            return null;
+      // Try each batch strategy until one works
+      for (const [index, strategy] of batchStrategies.entries()) {
+        try {
+          console.log(`MiniCart: Trying batch strategy ${index + 1}`);
+          const results = await strategy();
+
+          if (results && Array.isArray(results) && results.length > 0) {
+            console.log(`MiniCart: Batch strategy ${index + 1} succeeded, loaded ${results.length} products`);
+            products = results;
+            break;
           }
-        });
+        } catch (strategyError) {
+          console.warn(`MiniCart: Batch strategy ${index + 1} failed:`, strategyError.message);
+        }
+      }
 
-        const results = await Promise.all(productPromises);
-        products = results.filter(p => p !== null);
+      // If all batch strategies failed, log the issue but don't do individual requests
+      if (products.length === 0) {
+        console.error('MiniCart: All batch loading strategies failed for product IDs:', productIds);
       }
 
       // Build product details map - ensure string keys for consistency
@@ -393,33 +399,30 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
-      // Ensure consistent string key lookup
+      // Use stored price from cart item, fallback to 0 if no price available
+      let itemPrice = formatPrice(item.price || 0);
+
+      // If we have product details loaded, use product price as fallback
       const productKey = String(item.product_id);
       const product = cartProducts[productKey];
-      if (!product) return total;
-      
-      // Use the stored price from cart (which should be the sale price)
-      let itemPrice = formatPrice(item.price);
-      
-      // If no stored price, calculate from product (use sale price if available)
-      if (!item.price) {
+      if (!item.price && product) {
         itemPrice = formatPrice(product.price);
         const comparePrice = formatPrice(product.compare_price);
         if (comparePrice > 0 && comparePrice !== formatPrice(product.price)) {
           itemPrice = Math.min(formatPrice(product.price), comparePrice);
         }
       }
-      
+
       // Add selected options price
       if (item.selected_options && Array.isArray(item.selected_options)) {
         const optionsPrice = item.selected_options.reduce((sum, option) => sum + formatPrice(option.price), 0);
         itemPrice += optionsPrice;
       }
-      
+
       // Calculate tax-inclusive price if needed
       const displayItemPrice = calculateDisplayPrice(itemPrice, store, taxes, selectedCountry);
-      
-      return total + (displayItemPrice * formatPrice(item.quantity));
+
+      return total + (displayItemPrice * formatPrice(item.quantity || 1));
     }, 0);
   };
 
