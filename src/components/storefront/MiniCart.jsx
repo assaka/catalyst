@@ -151,7 +151,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
     } else {
       setCartProducts({});
     }
-  }, [cartItems, loadProductDetails]);
+  }, [cartItems]);
 
   // Production-ready event handling with race condition prevention
   useEffect(() => {
@@ -219,10 +219,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
         saveCartToLocalStorage(event.detail.freshCartData.items);
         setLastOptimisticUpdate(null); // Clear any optimistic tracking
 
-        // Load product details for the fresh items
-        if (event.detail.freshCartData.items.length > 0) {
-          loadProductDetails(event.detail.freshCartData.items);
-        }
+        // Product details will be loaded by the cartItems useEffect
 
         return; // Fresh data received - no need for additional API calls
       }
@@ -289,8 +286,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
           // Clear any optimistic update tracking
           setLastOptimisticUpdate(null);
 
-          // Load product details for cart items
-          await loadProductDetails(backendItems);
+          // Product details will be loaded by the cartItems useEffect
         } else {
           setCartItems([]);
           setCartProducts({});
