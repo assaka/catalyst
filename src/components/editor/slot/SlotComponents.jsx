@@ -293,10 +293,9 @@ export function GridColumn({
     e.dataTransfer.setData('text/plain', slotId);
     e.dataTransfer.effectAllowed = 'move';
 
-    // Store drag start position for direction detection
-    const rect = e.currentTarget.getBoundingClientRect();
-    const startX = rect.left + rect.width / 2;
-    const startY = rect.top + rect.height / 2;
+    // Store drag start position in viewport coordinates for direction detection
+    const startX = e.clientX;
+    const startY = e.clientY;
 
     if (setCurrentDragInfo) {
       setCurrentDragInfo({
@@ -404,36 +403,39 @@ export function GridColumn({
       // Calculate drag direction based on movement from drag start
       let dragDirection = null;
       if (currentDragInfo?.startPosition) {
-        const deltaX = x - (currentDragInfo.startPosition.x - rect.left);
-        const deltaY = y - (currentDragInfo.startPosition.y - rect.top);
+        // Convert startPosition to viewport coordinates for proper comparison
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        const startX = currentDragInfo.startPosition.x;
+        const startY = currentDragInfo.startPosition.y;
+
+        const deltaX = currentX - startX;
+        const deltaY = currentY - startY;
         const absDeltaX = Math.abs(deltaX);
         const absDeltaY = Math.abs(deltaY);
 
-        // Determine primary movement direction
-        if (absDeltaX > absDeltaY * 1.2) {
+        // Use a lower threshold for better detection
+        if (absDeltaX > absDeltaY * 0.8) {
           dragDirection = deltaX > 0 ? 'right' : 'left';
-        } else if (absDeltaY > absDeltaX * 1.2) {
+        } else if (absDeltaY > absDeltaX * 0.8) {
           dragDirection = deltaY > 0 ? 'down' : 'up';
         }
-      }
 
-      // Map movement direction to drop zones
-      console.log('🎯 Direction-based zone detection:', {
-        dragDirection,
-        mousePosition: { x, y },
-        dimensions: { width, height },
-        percentages: { xPercent: Math.round((x/width)*100), yPercent: Math.round((y/height)*100) }
-      });
+        console.log('🎯 Direction detection:', {
+          currentPos: { x: currentX, y: currentY },
+          startPos: { x: startX, y: startY },
+          delta: { x: deltaX, y: deltaY },
+          direction: dragDirection
+        });
+      }
 
       // Use movement direction to determine drop zone
       if (dragDirection === 'left') {
         newDropZone = 'left';
         e.dataTransfer.dropEffect = 'move';
-        console.log('🟢 LEFT zone (moving left)');
       } else if (dragDirection === 'right') {
         newDropZone = 'right';
         e.dataTransfer.dropEffect = 'move';
-        console.log('🟢 RIGHT zone (moving right)');
       } else if (dragDirection === 'up') {
         // Allow moving up within same container or to different containers
         if (draggedParent === targetParent || draggedParent !== targetParent) {
@@ -449,7 +451,6 @@ export function GridColumn({
         if (draggedParent === targetParent || draggedParent !== targetParent) {
           newDropZone = 'after';
           e.dataTransfer.dropEffect = 'move';
-          console.log('🟢 BOTTOM zone (moving down)');
         }
       } else {
         // No clear direction - fall back to position-based detection
@@ -457,7 +458,6 @@ export function GridColumn({
         if (isHorizontalReordering) {
           newDropZone = x < width * 0.5 ? 'left' : 'right';
           e.dataTransfer.dropEffect = 'move';
-          console.log(`🟢 ${newDropZone.toUpperCase()} zone (position fallback)`);
         } else {
           // Vertical positioning fallback
           if (y < height * 0.33) {
