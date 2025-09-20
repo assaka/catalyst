@@ -19,8 +19,6 @@ class StorefrontApiClient {
       // Generate a new session ID
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
-    } else {
-      console.log('🆔 StorefrontApiClient: Using existing guest_session_id:', sessionId);
     }
 
     // Check for old cart_session_id and clean it up

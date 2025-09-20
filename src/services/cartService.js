@@ -11,8 +11,6 @@ class CartService {
     if (!sessionId) {
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
-    } else {
-      console.log('🆔 CartService: Using existing guest_session_id:', sessionId);
     }
 
     return sessionId;

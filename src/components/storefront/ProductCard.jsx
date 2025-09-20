@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
 import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -119,13 +118,11 @@ const ProductCard = ({ product, settings, className = "" }) => {
 
     // Prevent multiple rapid additions
     if (isAddingToCart) {
-      console.log('⏳ Add to cart already in progress, ignoring duplicate request for:', product.name);
       return;
     }
 
     try {
       setIsAddingToCart(true);
-      console.log('🛒 Starting add to cart for:', product.name);
 
       if (!product || !product.id) {
         console.error('Invalid product for add to cart');
@@ -187,7 +184,6 @@ const ProductCard = ({ product, settings, className = "" }) => {
       // Always reset the loading state after 2 seconds to prevent permanent lock
       setTimeout(() => {
         setIsAddingToCart(false);
-        console.log('🔓 Add to cart lock released for:', product.name);
       }, 2000);
     }
   };

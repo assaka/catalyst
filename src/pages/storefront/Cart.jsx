@@ -303,7 +303,6 @@ export default function Cart() {
 
                 // Debounce rapid cart updates
                 debounceTimer = setTimeout(() => {
-                    console.log('🔄 Cart: External cart update detected, triggering reload...');
                     // Trigger reload using state instead of direct function call
                     setExternalCartUpdateTrigger(prev => prev + 1);
                 }, 300); // 300ms debounce
@@ -537,7 +536,6 @@ export default function Cart() {
     // Handle external cart update triggers (placed after loadCartData definition)
     useEffect(() => {
         if (externalCartUpdateTrigger > 0 && !loading && hasLoadedInitialData) {
-            console.log('🔄 Cart: Responding to external update trigger');
             loadCartData(false);
         }
     }, [externalCartUpdateTrigger, loading, hasLoadedInitialData, loadCartData]);

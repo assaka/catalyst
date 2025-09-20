@@ -47,7 +47,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
     }).filter(id => id !== null))];
 
     if (productIds.length === 0) {
-      console.warn('MiniCart: No valid product IDs found in cart items');
       setCartProducts({});
       return;
     }
@@ -84,8 +83,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
           productDetails[product.id] = product;
         }
       });
-
-      console.log(`✅ MiniCart: Loaded ${Object.keys(productDetails).length} products`);
       setCartProducts(productDetails);
     } catch (error) {
       console.error('MiniCart: Error loading product details:', error);
