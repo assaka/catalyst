@@ -401,63 +401,79 @@ export function GridColumn({
         slot?.position?.row === draggedSlot?.position?.row &&
         slot?.position?.row !== undefined;
 
-      // Determine drop zones based on slot positions and mouse location
-      console.log('🎯 Zone detection logic:', {
-        isHorizontalReordering,
-        isReordering,
+      // Calculate drag direction based on movement from drag start
+      let dragDirection = null;
+      if (currentDragInfo?.startPosition) {
+        const deltaX = x - (currentDragInfo.startPosition.x - rect.left);
+        const deltaY = y - (currentDragInfo.startPosition.y - rect.top);
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+
+        // Determine primary movement direction
+        if (absDeltaX > absDeltaY * 1.2) {
+          dragDirection = deltaX > 0 ? 'right' : 'left';
+        } else if (absDeltaY > absDeltaX * 1.2) {
+          dragDirection = deltaY > 0 ? 'down' : 'up';
+        }
+      }
+
+      // Map movement direction to drop zones
+      console.log('🎯 Direction-based zone detection:', {
+        dragDirection,
         mousePosition: { x, y },
         dimensions: { width, height },
         percentages: { xPercent: Math.round((x/width)*100), yPercent: Math.round((y/height)*100) }
       });
 
-      if (isHorizontalReordering) {
-        console.log('🔄 Using HORIZONTAL reordering logic (same row)');
-        // For horizontal dragging, use left/right zones with larger areas
-        if (x < width * 0.5) {
-          newDropZone = 'left';
+      // Use movement direction to determine drop zone
+      if (dragDirection === 'left') {
+        newDropZone = 'left';
+        e.dataTransfer.dropEffect = 'move';
+        console.log('🟢 LEFT zone (moving left)');
+      } else if (dragDirection === 'right') {
+        newDropZone = 'right';
+        e.dataTransfer.dropEffect = 'move';
+        console.log('🟢 RIGHT zone (moving right)');
+      } else if (dragDirection === 'up') {
+        // Check for container escape prevention
+        const draggedRow = draggedSlot?.position?.row;
+        const targetRow = slot?.position?.row;
+        const isAtContainerTop = targetRow === 1 && draggedParent === targetParent;
+        const wouldEscapeContainer = isAtContainerTop && draggedRow > targetRow;
+
+        if (draggedParent === targetParent && !wouldEscapeContainer) {
+          newDropZone = 'before';
           e.dataTransfer.dropEffect = 'move';
-          console.log('🟢 LEFT zone detected', { x, width, percentage: Math.round((x/width)*100) });
+          console.log('🟢 TOP zone (moving up, safe)');
+        } else if (draggedParent !== targetParent) {
+          newDropZone = 'before';
+          e.dataTransfer.dropEffect = 'move';
+          console.log('🟢 TOP zone (moving up, different container)');
         } else {
-          newDropZone = 'right';
+          newDropZone = null;
+          e.dataTransfer.dropEffect = 'none';
+          console.log('🚫 TOP blocked (would escape container)');
+        }
+      } else if (dragDirection === 'down') {
+        if (draggedParent === targetParent || draggedParent !== targetParent) {
+          newDropZone = 'after';
           e.dataTransfer.dropEffect = 'move';
-          console.log('🟢 RIGHT zone detected', { x, width, percentage: Math.round((x/width)*100) });
+          console.log('🟢 BOTTOM zone (moving down)');
         }
       } else {
-        console.log('🔄 Using VERTICAL reordering logic');
-        // For vertical scenarios, ensure we stay within parent container
-        if (y < height * 0.33) {
-          // Only allow 'before' if target and dragged have same parent (avoid escaping container)
-          if (draggedParent === targetParent) {
-            newDropZone = 'before';
-            e.dataTransfer.dropEffect = 'move';
-            console.log('🔼 BEFORE zone (same parent)', { draggedParent, targetParent });
-          } else {
-            newDropZone = null;
-            e.dataTransfer.dropEffect = 'none';
-            console.log('🚫 BEFORE blocked (different parent)', { draggedParent, targetParent });
-          }
-        } else if (y > height * 0.67) {
-          // Only allow 'after' if target and dragged have same parent
-          if (draggedParent === targetParent) {
-            newDropZone = 'after';
-            e.dataTransfer.dropEffect = 'move';
-            console.log('🔽 AFTER zone (same parent)', { draggedParent, targetParent });
-          } else {
-            newDropZone = null;
-            e.dataTransfer.dropEffect = 'none';
-            console.log('🚫 AFTER blocked (different parent)', { draggedParent, targetParent });
-          }
+        // No clear direction - fall back to position-based detection
+        if (isHorizontalReordering) {
+          newDropZone = x < width * 0.5 ? 'left' : 'right';
+          e.dataTransfer.dropEffect = 'move';
+          console.log(`🟢 ${newDropZone.toUpperCase()} zone (position fallback)`);
+        } else if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
+          newDropZone = 'inside';
+          e.dataTransfer.dropEffect = 'move';
+          console.log('📦 INSIDE container zone (fallback)');
         } else {
-          // Middle area - only allow "inside" for containers
-          if (isContainer && draggedSlotId && draggedSlotId !== slot?.id) {
-            newDropZone = 'inside';
-            e.dataTransfer.dropEffect = 'move';
-            console.log('📦 INSIDE container zone');
-          } else {
-            newDropZone = null;
-            e.dataTransfer.dropEffect = 'none';
-            console.log('🚫 Middle zone - no drop');
-          }
+          newDropZone = null;
+          e.dataTransfer.dropEffect = 'none';
+          console.log('🚫 No drop zone (fallback)');
         }
       }
 
@@ -665,7 +681,12 @@ export function GridColumn({
             (() => {
               console.log('Before drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute inset-0 border-t-4 border-green-500 z-[100] pointer-events-none" />
+                <div className="absolute -top-1 left-0 right-0 z-[100] pointer-events-none">
+                  <div className="h-1 bg-green-400 shadow-lg" />
+                  <div className="absolute -top-8 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                    ⬆️ Drop above
+                  </div>
+                </div>
               );
             })()
           )}
@@ -673,7 +694,12 @@ export function GridColumn({
             (() => {
               console.log('After drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute inset-0 border-b-4 border-green-500 z-[100] pointer-events-none" />
+                <div className="absolute -bottom-1 left-0 right-0 z-[100] pointer-events-none">
+                  <div className="h-1 bg-green-400 shadow-lg" />
+                  <div className="absolute -bottom-8 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                    ⬇️ Drop below
+                  </div>
+                </div>
               );
             })()
           )}
@@ -681,7 +707,12 @@ export function GridColumn({
             (() => {
               console.log('Left drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute inset-0 border-l-4 border-green-500 z-[100] pointer-events-none" />
+                <div className="absolute -left-1 top-0 bottom-0 z-[100] pointer-events-none">
+                  <div className="w-1 h-full bg-green-400 shadow-lg" />
+                  <div className="absolute top-2 -left-24 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                    ⬅️ Drop left
+                  </div>
+                </div>
               );
             })()
           )}
@@ -689,7 +720,12 @@ export function GridColumn({
             (() => {
               console.log('Right drop zone active:', { dropZone, currentDragInfo, isDragActive });
               return (
-                <div className="absolute inset-0 border-r-4 border-green-500 z-[100] pointer-events-none" />
+                <div className="absolute -right-1 top-0 bottom-0 z-[100] pointer-events-none">
+                  <div className="w-1 h-full bg-green-400 shadow-lg" />
+                  <div className="absolute top-2 -right-24 bg-green-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg">
+                    ➡️ Drop right
+                  </div>
+                </div>
               );
             })()
           )}
@@ -926,6 +962,12 @@ export function HierarchicalSlotRenderer({
                   setCurrentDragInfo(null);
                 }
               }}
+              onMouseDown={(e) => {
+                // Prevent text selection while allowing drag
+                if (e.button === 0) { // Left mouse button
+                  e.preventDefault();
+                }
+              }}
             >
               <ResizeWrapper
                 minWidth={20}
@@ -972,7 +1014,10 @@ export function HierarchicalSlotRenderer({
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onElementClick(slot.id, e.currentTarget);
+                  // Don't open Editor Sidebar if we're in the middle of a drag operation
+                  if (!currentDragInfo) {
+                    onElementClick(slot.id, e.currentTarget);
+                  }
                 }}
                 data-slot-id={slot.id}
                 data-editable="true"
