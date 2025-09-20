@@ -534,7 +534,7 @@ export const cartConfig = {
       parentId: 'coupon_container',
       position: { col: 1, row: 2 },
       colSpan: {
-        withProducts: 'col-span-12 sm:col-span-8 lg:col-span-8'
+        withProducts: 'col-span-8'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -550,7 +550,7 @@ export const cartConfig = {
       parentId: 'coupon_container',
       position: { col: 9, row: 2 },
       colSpan: {
-        withProducts: 'col-span-12 sm:col-span-4 lg:col-span-4'
+        withProducts: 'col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
