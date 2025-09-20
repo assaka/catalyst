@@ -943,28 +943,7 @@ export function HierarchicalSlotRenderer({
       >
           {slot.type === 'text' && mode === 'edit' && (
             <div
-              draggable={true}
-              onDragStart={(e) => {
-                e.stopPropagation();
-                e.dataTransfer.setData('text/plain', slot.id);
-                e.dataTransfer.effectAllowed = 'move';
-
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo({
-                    draggedSlotId: slot.id,
-                    slotId: slot.id,
-                    parentId: slot.parentId,
-                    startPosition: { x: e.clientX, y: e.clientY }
-                  });
-                }
-              }}
-              style={{ display: 'inline-block', position: 'relative', cursor: 'move' }}
-              onDragEnd={(e) => {
-                e.stopPropagation();
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo(null);
-                }
-              }}
+              style={{ display: 'inline-block', position: 'relative' }}
             >
               <ResizeWrapper
                 minWidth={20}
@@ -1041,26 +1020,7 @@ export function HierarchicalSlotRenderer({
 
           {slot.type === 'button' && mode === 'edit' && (
             <div
-              draggable={true}
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', slot.id);
-                e.dataTransfer.effectAllowed = 'move';
-
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo({
-                    draggedSlotId: slot.id,
-                    slotId: slot.id,
-                    parentId: slot.parentId,
-                    startPosition: { x: e.clientX, y: e.clientY }
-                  });
-                }
-              }}
               style={{ display: 'inline-block' }}
-              onDragEnd={(e) => {
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo(null);
-                }
-              }}
             >
               <ResizeWrapper
               minWidth={50}
@@ -1283,26 +1243,7 @@ export function HierarchicalSlotRenderer({
 
           {slot.type === 'image' && mode === 'edit' && (
             <div
-              draggable={true}
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', slot.id);
-                e.dataTransfer.effectAllowed = 'move';
-
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo({
-                    draggedSlotId: slot.id,
-                    slotId: slot.id,
-                    parentId: slot.parentId,
-                    startPosition: { x: e.clientX, y: e.clientY }
-                  });
-                }
-              }}
               style={{ display: 'inline-block' }}
-              onDragEnd={(e) => {
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo(null);
-                }
-              }}
             >
               <ResizeWrapper
               minWidth={50}
@@ -1377,26 +1318,7 @@ export function HierarchicalSlotRenderer({
 
           {slot.type === 'input' && mode === 'edit' && (
             <div
-              draggable={true}
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', slot.id);
-                e.dataTransfer.effectAllowed = 'move';
-
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo({
-                    draggedSlotId: slot.id,
-                    slotId: slot.id,
-                    parentId: slot.parentId,
-                    startPosition: { x: e.clientX, y: e.clientY }
-                  });
-                }
-              }}
               style={{ display: 'inline-block' }}
-              onDragEnd={(e) => {
-                if (setCurrentDragInfo) {
-                  setCurrentDragInfo(null);
-                }
-              }}
             >
               <ResizeWrapper
               minWidth={100}
