@@ -537,7 +537,7 @@ const CartSlotsEditor = ({
       if (typeof currentColSpan === 'number') {
         const newColSpanObject = {
           emptyCart: 12,
-          withProducts: 'col-span-12 lg:col-span-8'
+          withProducts: 'col-span-12 sm:col-span-12 lg:col-span-8'
         };
 
         setCartLayoutConfig(prevConfig => ({

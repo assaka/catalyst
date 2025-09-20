@@ -21,16 +21,8 @@ export const cartConfig = {
       layout: 'grid',
       gridCols: 12,
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        },
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12,
+        withProducts: 12
       },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
@@ -46,16 +38,8 @@ export const cartConfig = {
       position: { col: 1, row: 1 },
       layout: 'flex',
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        },
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12,
+        withProducts: 12
       },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
@@ -72,7 +56,7 @@ export const cartConfig = {
       layout: 'block',
       colSpan: {
         emptyCart: 12,
-        withProducts: 'col-span-12 lg:col-span-8'
+        withProducts: 'col-span-12 sm:col-span-12 lg:col-span-8'
       },
       viewMode: ['emptyCart', 'withProducts'],
       metadata: { hierarchical: true }
@@ -88,7 +72,7 @@ export const cartConfig = {
       position: { col: 9, row: 2 },
       layout: 'flex',
       colSpan: {
-        withProducts: 'col-span-12 lg:col-span-4'
+        withProducts: 'col-span-12 sm:col-span-12 lg:col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -119,11 +103,7 @@ export const cartConfig = {
       position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12
       },
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -139,11 +119,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { col: 1, row: 1 },
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12
       },
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -159,11 +135,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { col: 1, row: 2 },
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12
       },
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -179,11 +151,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { col: 1, row: 3 },
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12
       },
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -199,11 +167,7 @@ export const cartConfig = {
       parentId: 'empty_cart_container',
       position: { col: 1, row: 4 },
       colSpan: {
-        emptyCart: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        emptyCart: 12
       },
       viewMode: ['emptyCart'],
       metadata: { hierarchical: true }
@@ -220,11 +184,7 @@ export const cartConfig = {
       position: { col: 1, row: 1 },
       layout: 'block',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -239,11 +199,7 @@ export const cartConfig = {
       parentId: 'cart_items_container',
       layout: 'flex',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -258,11 +214,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -277,7 +229,7 @@ export const cartConfig = {
       parentId: 'cart_item_1',
       layout: 'block',
       colSpan: {
-        withProducts: 'col-span-12 md:col-span-8 lg:col-span-6'
+        withProducts: 'col-span-12 sm:col-span-8 lg:col-span-6'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -292,11 +244,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1_details',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -311,11 +259,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1_details',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -330,11 +274,7 @@ export const cartConfig = {
       parentId: 'cart_item_1_details',
       layout: 'flex',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -349,11 +289,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1_quantity',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -368,11 +304,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1_quantity',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 6,
-          desktop: 4
-        }
+        withProducts: 'col-span-6 sm:col-span-4 lg:col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -387,11 +319,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -406,11 +334,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_1',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -425,11 +349,7 @@ export const cartConfig = {
       parentId: 'cart_items_container',
       layout: 'flex',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -444,11 +364,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -463,11 +379,7 @@ export const cartConfig = {
       parentId: 'cart_item_2',
       layout: 'block',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 8,
-          desktop: 6
-        }
+        withProducts: 'col-span-12 sm:col-span-8 lg:col-span-6'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -482,11 +394,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2_details',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -501,11 +409,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2_details',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -520,11 +424,7 @@ export const cartConfig = {
       parentId: 'cart_item_2_details',
       layout: 'flex',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -539,11 +439,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2_quantity',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -558,11 +454,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2_quantity',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 6,
-          desktop: 4
-        }
+        withProducts: 'col-span-6 sm:col-span-4 lg:col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -577,11 +469,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -596,11 +484,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'cart_item_2',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 2
-        }
+        withProducts: 'col-span-4 sm:col-span-3 lg:col-span-2'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -618,11 +502,7 @@ export const cartConfig = {
       layout: 'grid',
       gridCols: 12,
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -638,11 +518,7 @@ export const cartConfig = {
       parentId: 'coupon_container',
       position: { col: 1, row: 1 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -658,11 +534,7 @@ export const cartConfig = {
       parentId: 'coupon_container',
       position: { col: 1, row: 2 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 8,
-          desktop: 8
-        }
+        withProducts: 'col-span-12 sm:col-span-8 lg:col-span-8'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -678,11 +550,7 @@ export const cartConfig = {
       parentId: 'coupon_container',
       position: { col: 9, row: 2 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 4,
-          desktop: 4
-        }
+        withProducts: 'col-span-12 sm:col-span-4 lg:col-span-4'
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -698,11 +566,7 @@ export const cartConfig = {
       position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -718,11 +582,7 @@ export const cartConfig = {
       parentId: 'order_summary_container',
       position: { col: 1, row: 1 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -738,11 +598,7 @@ export const cartConfig = {
       parentId: 'order_summary_container',
       position: { col: 1, row: 2 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -758,11 +614,7 @@ export const cartConfig = {
       parentId: 'order_summary_container',
       position: { col: 1, row: 3 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -778,11 +630,7 @@ export const cartConfig = {
       parentId: 'order_summary_container',
       position: { col: 1, row: 4 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
@@ -798,11 +646,7 @@ export const cartConfig = {
       parentId: 'order_summary_container',
       position: { col: 1, row: 5 },
       colSpan: {
-        withProducts: {
-          mobile: 12,
-          tablet: 12,
-          desktop: 12
-        }
+        withProducts: 12
       },
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
