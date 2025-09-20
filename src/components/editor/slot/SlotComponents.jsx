@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Image, Square, Settings, Plus, Loader2, Save, Code, X, Check, Rocket, Trash2, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Image, Square, Settings, Plus, Loader2, Save, Code, X, Check, Rocket, Trash2, Monitor, Tablet, Smartphone, GripVertical } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
@@ -952,11 +952,12 @@ export function HierarchicalSlotRenderer({
                   setCurrentDragInfo({
                     draggedSlotId: slot.id,
                     slotId: slot.id,
-                    parentId: slot.parentId
+                    parentId: slot.parentId,
+                    startPosition: { x: e.clientX, y: e.clientY }
                   });
                 }
               }}
-              style={{ display: 'inline-block' }}
+              style={{ display: 'inline-block', position: 'relative' }}
               onDragEnd={(e) => {
                 if (setCurrentDragInfo) {
                   setCurrentDragInfo(null);
@@ -968,7 +969,15 @@ export function HierarchicalSlotRenderer({
                   e.preventDefault();
                 }
               }}
+              className="group"
             >
+              {/* Drag Handle */}
+              <div
+                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
+                title="Drag to move"
+              >
+                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
               <ResizeWrapper
                 minWidth={20}
                 minHeight={16}
@@ -1053,17 +1062,26 @@ export function HierarchicalSlotRenderer({
                   setCurrentDragInfo({
                     draggedSlotId: slot.id,
                     slotId: slot.id,
-                    parentId: slot.parentId
+                    parentId: slot.parentId,
+                    startPosition: { x: e.clientX, y: e.clientY }
                   });
                 }
               }}
-              style={{ display: 'inline-block' }}
+              style={{ display: 'inline-block', position: 'relative' }}
+              className="group"
               onDragEnd={(e) => {
                 if (setCurrentDragInfo) {
                   setCurrentDragInfo(null);
                 }
               }}
             >
+              {/* Drag Handle */}
+              <div
+                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
+                title="Drag to move"
+              >
+                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
               <ResizeWrapper
               minWidth={50}
               minHeight={20}
@@ -1294,17 +1312,26 @@ export function HierarchicalSlotRenderer({
                   setCurrentDragInfo({
                     draggedSlotId: slot.id,
                     slotId: slot.id,
-                    parentId: slot.parentId
+                    parentId: slot.parentId,
+                    startPosition: { x: e.clientX, y: e.clientY }
                   });
                 }
               }}
-              style={{ display: 'inline-block' }}
+              style={{ display: 'inline-block', position: 'relative' }}
+              className="group"
               onDragEnd={(e) => {
                 if (setCurrentDragInfo) {
                   setCurrentDragInfo(null);
                 }
               }}
             >
+              {/* Drag Handle */}
+              <div
+                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
+                title="Drag to move"
+              >
+                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
               <ResizeWrapper
               minWidth={50}
               minHeight={50}
@@ -1387,17 +1414,26 @@ export function HierarchicalSlotRenderer({
                   setCurrentDragInfo({
                     draggedSlotId: slot.id,
                     slotId: slot.id,
-                    parentId: slot.parentId
+                    parentId: slot.parentId,
+                    startPosition: { x: e.clientX, y: e.clientY }
                   });
                 }
               }}
-              style={{ display: 'inline-block' }}
+              style={{ display: 'inline-block', position: 'relative' }}
+              className="group"
               onDragEnd={(e) => {
                 if (setCurrentDragInfo) {
                   setCurrentDragInfo(null);
                 }
               }}
             >
+              {/* Drag Handle */}
+              <div
+                className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-50"
+                title="Drag to move"
+              >
+                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
               <ResizeWrapper
               minWidth={100}
               minHeight={30}
