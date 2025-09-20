@@ -7,6 +7,43 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
 
+export const filterSlotsByViewMode = (childSlots, viewMode) => {
+  return childSlots.filter(slot => {
+    if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
+      return true; // Show if no viewMode specified
+    }
+    return slot.viewMode.includes(viewMode);
+  });
+};
+
+export const sortSlotsByGridCoordinates = (filteredSlots) => {
+  return filteredSlots.sort((a, b) => {
+    // Use grid coordinates (col, row) - all slots should have these now
+    const hasGridCoordsA = a.position && (a.position.col !== undefined && a.position.row !== undefined);
+    const hasGridCoordsB = b.position && (b.position.col !== undefined && b.position.row !== undefined);
+
+    if (hasGridCoordsA && hasGridCoordsB) {
+      // Sort by row first, then by column
+      const rowA = a.position.row;
+      const rowB = b.position.row;
+
+      if (rowA !== rowB) {
+        return rowA - rowB;
+      }
+
+      // Same row, sort by column
+      const colA = a.position.col;
+      const colB = b.position.col;
+      if (colA !== colB) {
+        return colA - colB;
+      }
+    }
+
+    // Default: maintain original order for slots without coordinates
+    return 0;
+  });
+};
+
 // Helper function to dynamically load page-specific config
 async function loadPageConfig(pageType) {
   let config;

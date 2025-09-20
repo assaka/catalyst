@@ -1744,7 +1744,7 @@ export function TimestampsRow({
       <div className="flex justify-between items-center text-xs text-gray-500 pb-6">
         <div className="flex items-center">
           {draftConfig?.updated_at && (
-            <span>Last modified2: {formatTimeAgo(draftConfig.updated_at)}</span>
+            <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
           )}
         </div>
 

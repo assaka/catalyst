@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
+import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 
 /**
  * CartSlotRenderer - Renders slots with full cart functionality
@@ -125,39 +126,10 @@ export function CartSlotRenderer({
   }
 
   // Filter by viewMode
-  const filteredSlots = childSlots.filter(slot => {
-    if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
-      return true; // Show if no viewMode specified
-    }
-    return slot.viewMode.includes(viewMode);
-  });
+  const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
   // Sort slots using grid coordinates for precise positioning
-  const sortedSlots = filteredSlots.sort((a, b) => {
-    // Use grid coordinates (col, row) - all slots should have these now
-    const hasGridCoordsA = a.position && (a.position.col !== undefined && a.position.row !== undefined);
-    const hasGridCoordsB = b.position && (b.position.col !== undefined && b.position.row !== undefined);
-
-    if (hasGridCoordsA && hasGridCoordsB) {
-      // Sort by row first, then by column
-      const rowA = a.position.row;
-      const rowB = b.position.row;
-
-      if (rowA !== rowB) {
-        return rowA - rowB;
-      }
-
-      // Same row, sort by column
-      const colA = a.position.col;
-      const colB = b.position.col;
-      if (colA !== colB) {
-        return colA - colB;
-      }
-    }
-
-    // Default: maintain original order for slots without coordinates
-    return 0;
-  });
+  const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
