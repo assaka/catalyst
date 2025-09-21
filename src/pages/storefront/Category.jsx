@@ -81,7 +81,7 @@ export default function Category() {
           id: 'header',
           type: 'text',
           content: '',
-          className: 'w-full category-header',
+          className: 'text-4xl font-bold',
           styles: {},
           parentId: null,
           colSpan: { grid: 12, list: 12 },
