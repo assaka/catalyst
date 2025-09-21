@@ -105,24 +105,24 @@ const CategorySlotsEditor = ({
   const createDefaultSlots = () => {
     const defaultSlots = {};
 
-    // Create slots for each defaultSlot defined in categoryConfig
-    categoryConfig.defaultSlots.forEach((slotId, index) => {
-      defaultSlots[slotId] = {
-        id: slotId,
-        name: categoryConfig.slots[slotId]?.name || slotId,
-        component: slotId,
-        position: {
-          colStart: 1,
-          colSpan: 12,
-          rowStart: index + 1,
-          rowSpan: 1
-        },
-        styles: {},
-        className: '',
-        content: categoryConfig.slots[slotId]?.defaultContent || '',
-        visible: true,
-        locked: false
-      };
+    // Use the predefined slots from categoryConfig directly
+    categoryConfig.defaultSlots.forEach((slotId) => {
+      const slotDefinition = categoryConfig.slots[slotId];
+      if (slotDefinition) {
+        defaultSlots[slotId] = {
+          ...slotDefinition,
+          // Ensure essential properties are set
+          visible: true,
+          locked: false,
+          // Convert position to the expected format if needed
+          position: slotDefinition.position || {
+            colStart: 1,
+            colSpan: slotDefinition.colSpan?.grid || 12,
+            rowStart: 1,
+            rowSpan: 1
+          }
+        };
+      }
     });
 
     return defaultSlots;
