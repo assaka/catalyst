@@ -1,79 +1,130 @@
 import { Grid, FileText } from 'lucide-react';
 
-// Category Page Configuration - Essential navigation slots are predefined, products area is customizable
+// Category Page Configuration - Following cart-config.js pattern exactly
 export const categoryConfig = {
   page_name: 'Category',
   slot_type: 'category_layout',
-  title: 'Category Layout Editor',
-  defaultView: 'grid',
 
-  // Essential slots that are auto-created (navigation, structure)
-  defaultSlots: ['header', 'breadcrumbs', 'filters', 'pagination'],
-
-  // Available slot definitions - essential navigation + customizable product slots
+  // Slot configuration with full structure like cart-config
   slots: {
-    // Essential navigation slots (auto-created)
+    // Header slot
     header: {
-      name: 'Category Header',
-      defaultContent: '<h1>Category Name</h1>',
-      component: 'category-header',
-      className: 'category-header'
-    },
-    breadcrumbs: {
-      name: 'Navigation Breadcrumbs',
-      defaultContent: '<nav>Home > Category</nav>',
-      component: 'breadcrumbs',
-      className: 'category-breadcrumbs'
-    },
-    filters: {
-      name: 'Layered Navigation',
-      defaultContent: '',
-      component: 'category-filters',
-      className: 'category-filters'
-    },
-    pagination: {
-      name: 'Product Pagination',
-      defaultContent: '',
-      component: 'pagination',
-      className: 'category-pagination'
+      id: 'header',
+      type: 'container',
+      content: '<h1>Category Name</h1>',
+      className: 'category-header',
+      styles: {},
+      parentId: null,
+      layout: null,
+      gridCols: null,
+      colSpan: 12,
+      rowSpan: 1,
+      position: {
+        colStart: 1,
+        colSpan: 12,
+        rowStart: 1,
+        rowSpan: 1
+      },
+      viewMode: ['grid', 'list'],
+      metadata: {},
+      visible: true,
+      locked: false
     },
 
-    // Customizable product area slots (user can add via editor)
-    sorting: {
-      name: 'Sort Controls',
-      defaultContent: '',
-      component: 'category-sorting',
-      className: 'category-sorting'
+    // Breadcrumbs navigation
+    breadcrumbs: {
+      id: 'breadcrumbs',
+      type: 'container',
+      content: '<nav>Home > Category</nav>',
+      className: 'category-breadcrumbs',
+      styles: {},
+      parentId: null,
+      layout: null,
+      gridCols: null,
+      colSpan: 12,
+      rowSpan: 1,
+      position: {
+        colStart: 1,
+        colSpan: 12,
+        rowStart: 2,
+        rowSpan: 1
+      },
+      viewMode: ['grid', 'list'],
+      metadata: {},
+      visible: true,
+      locked: false
     },
+
+    // Filters sidebar
+    filters: {
+      id: 'filters',
+      type: 'container',
+      content: '',
+      className: 'category-filters',
+      styles: {},
+      parentId: null,
+      layout: null,
+      gridCols: null,
+      colSpan: 3,
+      rowSpan: 1,
+      position: {
+        colStart: 1,
+        colSpan: 3,
+        rowStart: 3,
+        rowSpan: 1
+      },
+      viewMode: ['grid', 'list'],
+      metadata: {},
+      visible: true,
+      locked: false
+    },
+
+    // Products grid/list
     products: {
-      name: 'Product Grid/List',
-      defaultContent: '',
-      component: 'category-products',
-      className: 'category-products'
+      id: 'products',
+      type: 'container',
+      content: '',
+      className: 'category-products',
+      styles: {},
+      parentId: null,
+      layout: null,
+      gridCols: null,
+      colSpan: 9,
+      rowSpan: 1,
+      position: {
+        colStart: 4,
+        colSpan: 9,
+        rowStart: 3,
+        rowSpan: 1
+      },
+      viewMode: ['grid', 'list'],
+      metadata: {},
+      visible: true,
+      locked: false
     },
-    products_toolbar: {
-      name: 'Products Toolbar',
-      defaultContent: '',
-      component: 'products-toolbar',
-      className: 'products-toolbar'
-    },
-    category_description: {
-      name: 'Category Description',
-      defaultContent: '<div class="category-description">Category description...</div>',
-      component: 'category-description',
-      className: 'category-description'
-    },
-    featured_products: {
-      name: 'Featured Products',
-      defaultContent: '',
-      component: 'featured-products',
-      className: 'featured-products'
-    },
-    category_banner: {
-      name: 'Category Banner',
-      defaultContent: '',
-      component: 'category-banner',
-      className: 'category-banner'
+
+    // Pagination
+    pagination: {
+      id: 'pagination',
+      type: 'container',
+      content: '',
+      className: 'category-pagination',
+      styles: {},
+      parentId: null,
+      layout: null,
+      gridCols: null,
+      colSpan: 12,
+      rowSpan: 1,
+      position: {
+        colStart: 1,
+        colSpan: 12,
+        rowStart: 4,
+        rowSpan: 1
+      },
+      viewMode: ['grid', 'list'],
+      metadata: {},
+      visible: true,
+      locked: false
     }
   },
 

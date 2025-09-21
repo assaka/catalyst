@@ -101,47 +101,6 @@ const CategorySlotsEditor = ({
   } = useDraftStatusManagement(getSelectedStoreId(), 'category');
 
   // Sample data for category preview
-  // Function to create essential navigation slots (following homepage/product pattern)
-  const createDefaultSlots = () => {
-    const defaultSlots = {};
-
-    // Create only the essential default slots
-    const essentialSlots = categoryConfig.defaultSlots || ['header', 'breadcrumbs', 'filters', 'pagination'];
-
-    essentialSlots.forEach((slotId, index) => {
-      const slotDefinition = categoryConfig.slots[slotId];
-      if (slotDefinition) {
-        defaultSlots[slotId] = {
-          id: slotId,
-          type: 'container',
-          name: slotDefinition.name,
-          component: slotDefinition.component,
-          content: slotDefinition.defaultContent || '',
-          className: slotDefinition.className || '',
-          parentClassName: '',
-          styles: {},
-          position: {
-            colStart: 1,
-            colSpan: 12,
-            rowStart: index + 1,
-            rowSpan: 1
-          },
-          parentId: null,
-          viewMode: ['grid', 'list'],
-          visible: true,
-          locked: false,
-          layout: null,
-          gridCols: null,
-          metadata: {},
-          colSpan: 12,
-          rowSpan: 1
-        };
-      }
-    });
-
-    return defaultSlots;
-  };
-
   const sampleCategoryData = {
     category: {
       id: 1,
@@ -194,8 +153,8 @@ const CategorySlotsEditor = ({
     'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
   );
 
-  // Use generic editor initialization with category-specific default slots
-  useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
+  // Use generic editor initialization (like CartSlotsEditor)
+  useEditorInitialization(initializeConfig, setCategoryLayoutConfig);
 
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(
