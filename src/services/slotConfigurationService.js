@@ -10,9 +10,19 @@ class SlotConfigurationService {
 
       if (staticConfig) {
         // Send static config to backend so it can create draft with full configuration if needed
-        response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, {
-          staticConfiguration: staticConfig
-        });
+        console.log('📤 Sending static config to backend for', pageType, ':', staticConfig);
+
+        try {
+          response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, {
+            staticConfiguration: staticConfig
+          });
+          console.log('✅ POST call successful, response:', response);
+        } catch (postError) {
+          console.log('❌ POST call failed, falling back to GET:', postError.message);
+          // Fallback to GET if backend doesn't support POST yet
+          response = await apiClient.get(`${API_BASE}/draft/${storeId}/${pageType}`);
+          console.log('📥 GET fallback response:', response);
+        }
       } else {
         // Legacy call without static config
         response = await apiClient.get(`${API_BASE}/draft/${storeId}/${pageType}`);
