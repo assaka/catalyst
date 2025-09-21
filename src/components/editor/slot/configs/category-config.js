@@ -14,7 +14,7 @@ export const categoryConfig = {
       id: 'main_container',
       type: 'container',
       content: '',
-      className: 'px-4 sm:px-6 lg:px-8 py-8 min-h-screen',
+      className: 'px-4 sm:px-6 lg:px-8 py-8',
       styles: {},
       parentId: null,
       layout: 'block',
@@ -98,16 +98,16 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Main layout container - flex for side-by-side layout
-    main_layout: {
-      id: 'main_layout',
+    // Main grid container that mimics Category.jsx exactly
+    main_grid: {
+      id: 'main_grid',
       type: 'container',
       content: '',
-      className: 'max-w-7xl mx-auto flex flex-col lg:flex-row gap-8',
+      className: 'grid lg:grid-cols-4 gap-8 max-w-7xl mx-auto',
       styles: {},
       parentId: 'main_container',
       position: { col: 1, row: 2 },
-      layout: 'flex',
+      layout: 'grid',
       colSpan: {
         grid: 12,
         list: 12
@@ -116,17 +116,18 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Left sidebar for filters - show as separate element in grid view
+    // Left sidebar for filters (exactly like Category.jsx line 244-254)
     filters_sidebar: {
       id: 'filters_sidebar',
       type: 'container',
       content: '',
-      className: 'w-full lg:w-80 flex-shrink-0',
+      className: 'lg:col-span-1',
       styles: {},
-      parentId: 'main_layout',
+      parentId: 'main_grid',
+      position: { col: 1, row: 1 },
       layout: 'block',
       colSpan: {
-        grid: 3,   // Take 3 columns out of 12 in grid view
+        grid: 3,   // 1 of 4 columns = 3 of 12
         list: 0    // Hidden in list view
       },
       viewMode: ['grid'],
@@ -142,6 +143,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'filters_sidebar',
+      position: { col: 1, row: 1 },
       colSpan: {
         grid: 12
       },
@@ -157,9 +159,10 @@ export const categoryConfig = {
       className: 'category-filters bg-white rounded-lg shadow-sm border p-6',
       styles: {},
       parentId: 'filters_sidebar',
+      position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
-        grid: 1
+        grid: 12
       },
       viewMode: ['grid'],
       metadata: { hierarchical: true }
@@ -214,18 +217,19 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Main content area - takes remaining space
+    // Main content area (exactly like Category.jsx line 256-299)
     content_area: {
       id: 'content_area',
       type: 'container',
       content: '',
-      className: 'flex-1 min-w-0',
+      className: 'lg:col-span-3',
       styles: {},
-      parentId: 'main_layout',
+      parentId: 'main_grid',
+      position: { col: 2, row: 1 },
       layout: 'block',
       colSpan: {
-        grid: 9,   // Take 9 columns out of 12 in grid view
-        list: 12   // Full width in list view
+        grid: 9,   // 3 of 4 columns = 9 of 12
+        list: 12   // Full width when no sidebar
       },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
