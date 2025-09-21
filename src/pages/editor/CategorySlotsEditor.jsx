@@ -83,6 +83,33 @@ const CategorySlotsEditor = ({
   const publishPanelRef = useRef(null);
 
   // Sample data for category preview
+  // Function to create default slots from categoryConfig
+  const createDefaultSlots = () => {
+    const defaultSlots = {};
+
+    // Create slots for each defaultSlot defined in categoryConfig
+    categoryConfig.defaultSlots.forEach((slotId, index) => {
+      defaultSlots[slotId] = {
+        id: slotId,
+        name: categoryConfig.slots[slotId]?.name || slotId,
+        component: slotId,
+        position: {
+          colStart: 1,
+          colSpan: 12,
+          rowStart: index + 1,
+          rowSpan: 1
+        },
+        styles: {},
+        className: '',
+        content: categoryConfig.slots[slotId]?.defaultContent || '',
+        visible: true,
+        locked: false
+      };
+    });
+
+    return defaultSlots;
+  };
+
   const sampleCategoryData = {
     category: {
       id: 1,
@@ -189,6 +216,21 @@ const CategorySlotsEditor = ({
             console.log('✅ Found saved configuration in database:', dbConfig);
             finalConfig = dbConfig;
           }
+        } else {
+          // No slots configured, create default configuration
+          console.log('🛠️ CategorySlotsEditor: No slots found, creating default configuration');
+          finalConfig = {
+            page_name: 'Category',
+            slot_type: 'category_layout',
+            slots: createDefaultSlots(),
+            metadata: {
+              created: new Date().toISOString(),
+              lastModified: new Date().toISOString(),
+              version: '1.0',
+              pageType: 'category'
+            },
+            cmsBlocks: []
+          };
         }
 
         // Simple one-time initialization
@@ -199,19 +241,19 @@ const CategorySlotsEditor = ({
         }
       } catch (error) {
         console.error('❌ Failed to initialize category configuration:', error);
-        // Set a minimal fallback configuration
+        // Set a fallback configuration with default slots
         setTimeout(() => {
           if (isMounted) {
+            console.log('🛠️ CategorySlotsEditor: Creating fallback configuration with default slots');
             setCategoryLayoutConfig({
               page_name: 'Category',
               slot_type: 'category_layout',
-              slots: {},
+              slots: createDefaultSlots(), // Use default slots instead of empty object
               metadata: {
                 created: new Date().toISOString(),
                 lastModified: new Date().toISOString(),
                 version: '1.0',
-                pageType: 'category',
-                error: 'Failed to load configuration'
+                pageType: 'category'
               },
               cmsBlocks: []
             });
