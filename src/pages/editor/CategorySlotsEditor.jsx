@@ -3,20 +3,33 @@
  * Based on CartSlotsEditor architecture with category-specific components
  */
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Grid,
   List,
-  Loader2,
-  Rocket,
   Eye
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
+import {
+  useSlotConfiguration,
+  useTimestampFormatting,
+  useDraftStatusManagement,
+  useConfigurationChangeDetection,
+  useBadgeRefresh,
+  useClickOutsidePanel,
+  usePreviewModeHandlers,
+  usePublishPanelHandlers,
+  useConfigurationInitialization,
+  usePublishHandler,
+  useResetLayoutHandler,
+  useSaveConfigurationHandler,
+  usePublishPanelHandlerWrappers,
+  useEditorInitialization
+} from '@/hooks/useSlotConfiguration';
 import {
   HierarchicalSlotRenderer,
   EditorToolbar,
@@ -29,14 +42,6 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
-import {
-  CategoryHeaderSlot,
-  ProductGridSlot,
-  CategoryFiltersSlot,
-  CategorySortingSlot,
-  CategoryBreadcrumbsSlot,
-  CategoryPaginationSlot
-} from '@/components/editor/slot/slotComponentsCategory';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
@@ -67,8 +72,7 @@ const CategorySlotsEditor = ({
     cmsBlocks: []
   });
 
-  // Track if configuration has been loaded once
-  const configurationLoadedRef = useRef(false);
+  // Basic editor state
   const isDragOperationActiveRef = useRef(false);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
@@ -81,15 +85,20 @@ const CategorySlotsEditor = ({
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [draftConfig, setDraftConfig] = useState(null);
-  const [latestPublished, setLatestPublished] = useState(null);
   const lastResizeEndTime = useRef(0);
-  const lastSavedConfigRef = useRef(null);
   const publishPanelRef = useRef(null);
+
+  // Use extracted hooks
+  const { formatTimeAgo } = useTimestampFormatting();
+  const {
+    draftConfig, setDraftConfig,
+    latestPublished, setLatestPublished,
+    setConfigurationStatus,
+    hasUnsavedChanges, setHasUnsavedChanges,
+    loadDraftStatus
+  } = useDraftStatusManagement(getSelectedStoreId(), 'category');
 
   // Sample data for category preview
   // Function to create default slots from categoryConfig
@@ -138,14 +147,9 @@ const CategorySlotsEditor = ({
 
   // Database configuration hook with generic functions and handler factories
   const {
-    saveConfiguration: saveToDatabase,
-    loadConfiguration: loadFromDatabase,
-    saveStatus,
     handleResetLayout: resetLayoutFromHook,
     handlePublishConfiguration,
     getDraftOrStaticConfiguration,
-    resetStatus,
-    validateSlotConfiguration,
     createSlot,
     handleSlotDrop: slotDropHandler,
     handleSlotDelete: slotDeleteHandler,
@@ -171,184 +175,24 @@ const CategorySlotsEditor = ({
     onSave
   });
 
-  // Initialize category configuration - ONCE on mount only
-  useEffect(() => {
-    let isMounted = true;
+  // Configuration initialization hook
+  const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
+    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
+  );
 
-    const initializeConfig = async () => {
-      if (!isMounted || configurationLoadedRef.current) return;
+  // Use generic editor initialization with category-specific default slots
+  useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
 
-      try {
-        console.log('🔄 CategorySlotsEditor: Starting configuration initialization...');
-        console.log('🔍 CategorySlotsEditor: Hook parameters - pageType: category, slotType: category_layout');
+  // Configuration change detection
+  const { updateLastSavedConfig } = useConfigurationChangeDetection(
+    configurationLoadedRef, categoryLayoutConfig, setHasUnsavedChanges
+  );
 
-        // Use the hook function to get configuration (either draft or static)
-        const configToUse = await getDraftOrStaticConfiguration();
-        console.log('📋 CategorySlotsEditor: Raw configToUse:', configToUse);
-
-        if (!configToUse) {
-          throw new Error('Failed to load category configuration');
-        }
-
-        // Try to get the status and unpublished changes from draft configuration
-        try {
-          const storeId = getSelectedStoreId();
-          if (storeId) {
-            // Get draft configuration
-            const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'category');
-            if (draftResponse && draftResponse.success && draftResponse.data) {
-              setDraftConfig(draftResponse.data); // Store the full draft config
-              setConfigurationStatus(draftResponse.data.status);
-              // Set hasUnsavedChanges based on database field
-              setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-            }
-
-            // Get latest published configuration for timestamp
-            try {
-              const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'category', 1);
-              if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
-                setLatestPublished(publishedResponse.data[0]);
-              }
-            } catch (publishedError) {
-              console.log('Could not get latest published version:', publishedError);
-            }
-          }
-        } catch (error) {
-          console.log('Could not determine configuration status:', error);
-          setConfigurationStatus('published'); // Default to published if we can't determine
-          setHasUnsavedChanges(false);
-        }
-
-        // Transform database config if needed
-        let finalConfig = configToUse;
-        if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
-          const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-          if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
-            finalConfig = dbConfig;
-          }
-        } else {
-          // No slots configured, create default configuration
-          console.log('🛠️ CategorySlotsEditor: No slots found, creating default configuration');
-          finalConfig = {
-            page_name: 'Category',
-            slot_type: 'category_layout',
-            slots: createDefaultSlots(),
-            metadata: {
-              created: new Date().toISOString(),
-              lastModified: new Date().toISOString(),
-              version: '1.0',
-              pageType: 'category'
-            },
-            cmsBlocks: []
-          };
-        }
-
-        // Simple one-time initialization
-        if (isMounted) {
-          console.log('🏗️ CategorySlotsEditor: Setting initial config');
-          console.log('🔍 CategorySlotsEditor: finalConfig.slots:', finalConfig.slots);
-          console.log('🔍 CategorySlotsEditor: Sample slot structure:', Object.keys(finalConfig.slots).length > 0 ? finalConfig.slots[Object.keys(finalConfig.slots)[0]] : 'No slots');
-          setCategoryLayoutConfig(finalConfig);
-          configurationLoadedRef.current = true;
-        }
-      } catch (error) {
-        console.error('❌ Failed to initialize category configuration:', error);
-        // Set a fallback configuration with default slots
-        setTimeout(() => {
-          if (isMounted) {
-            console.log('🛠️ CategorySlotsEditor: Creating fallback configuration with default slots');
-            setCategoryLayoutConfig({
-              page_name: 'Category',
-              slot_type: 'category_layout',
-              slots: createDefaultSlots(), // Use default slots instead of empty object
-              metadata: {
-                created: new Date().toISOString(),
-                lastModified: new Date().toISOString(),
-                version: '1.0',
-                pageType: 'category'
-              },
-              cmsBlocks: []
-            });
-          }
-        }, 0);
-      }
-    };
-
-    initializeConfig();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - run only once on mount
-
-  // Detect changes in configuration
-  useEffect(() => {
-    if (configurationLoadedRef.current && categoryLayoutConfig) {
-      const currentConfig = JSON.stringify(categoryLayoutConfig);
-      if (lastSavedConfigRef.current === null) {
-        // Initial load - save the initial state
-        lastSavedConfigRef.current = currentConfig;
-      } else if (currentConfig !== lastSavedConfigRef.current) {
-        // Configuration has changed
-        setHasUnsavedChanges(true);
-      }
-    }
-  }, [categoryLayoutConfig]);
-
-  // Refresh badge status when hasUnsavedChanges changes
-  useEffect(() => {
-    if (configurationLoadedRef.current && hasUnsavedChanges) {
-      // When user makes changes, refresh the badge to show "Unpublished"
-      if (window.slotFileSelectorRefresh) {
-        // Small delay to ensure the database is updated first
-        setTimeout(() => {
-          window.slotFileSelectorRefresh('category');
-        }, 500);
-      }
-    }
-  }, [hasUnsavedChanges]);
+  // Badge refresh
+  useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'category');
 
   // Compute when Publish button should be enabled
   const canPublish = hasUnsavedChanges;
-
-  // Timestamp formatting functions
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatTimeAgo = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return formatDate(dateString);
-  };
-
-  // Helper functions for slot styling
-  const getSlotStyling = useCallback((slotId) => {
-    const slotConfig = categoryLayoutConfig && categoryLayoutConfig.slots ? categoryLayoutConfig.slots[slotId] : null;
-    return {
-      elementClasses: slotConfig?.className || '',
-      elementStyles: slotConfig?.styles || {}
-    };
-  }, [categoryLayoutConfig]);
 
   // Save configuration using the generic factory
   const baseSaveConfiguration = createSaveConfigurationHandler(
@@ -359,20 +203,16 @@ const CategorySlotsEditor = ({
     'category'
   );
 
-  // Wrap save configuration to track saved state
-  const saveConfiguration = useCallback(async (...args) => {
-    const result = await baseSaveConfiguration(...args);
-    if (result !== false) {
-      setConfigurationStatus('draft'); // Saving creates a draft
-      lastSavedConfigRef.current = JSON.stringify(categoryLayoutConfig);
-
-      // Refresh the SlotEnabledFileSelector badge status after saving changes
-      if (window.slotFileSelectorRefresh) {
-        window.slotFileSelectorRefresh('category');
-      }
+  // Use generic save configuration handler
+  const { saveConfiguration } = useSaveConfigurationHandler(
+    'category',
+    baseSaveConfiguration,
+    categoryLayoutConfig,
+    {
+      setConfigurationStatus,
+      updateLastSavedConfig
     }
-    return result;
-  }, [baseSaveConfiguration, categoryLayoutConfig]);
+  );
 
 
   // Handle element selection using generic factory
@@ -409,181 +249,58 @@ const CategorySlotsEditor = ({
   const handleSlotDelete = handlerFactory.createSlotDeleteHandler(slotDeleteHandler);
   const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
 
-  // Wrap reset layout to also reset unsaved changes flag
-  const handleResetLayout = useCallback(async () => {
-    const result = await baseHandleResetLayout();
-    setHasUnsavedChanges(false); // Reset should clear unsaved changes flag
-    setConfigurationStatus('draft'); // Reset creates a draft
-    lastSavedConfigRef.current = JSON.stringify(categoryLayoutConfig);
-
-    // Refresh the SlotEnabledFileSelector badge status after reset
-    if (window.slotFileSelectorRefresh) {
-      window.slotFileSelectorRefresh('category');
+  // Use generic reset layout handler
+  const { handleResetLayout } = useResetLayoutHandler(
+    'category',
+    baseHandleResetLayout,
+    categoryLayoutConfig,
+    {
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
     }
-
-    return result;
-  }, [baseHandleResetLayout, categoryLayoutConfig]);
+  );
 
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
-  // Publish status state
-  const [publishStatus, setPublishStatus] = useState('');
-
-  // Handle publish configuration
-  const handlePublish = useCallback(async () => {
-    console.log('🚀 handlePublish called - closing sidebar');
-    setPublishStatus('publishing');
-
-    // Close sidebar when publishing
-    setIsSidebarVisible(false);
-    setSelectedElement(null);
-
-    try {
-      await handlePublishConfiguration();
-      setPublishStatus('published');
-      setHasUnsavedChanges(false);  // Mark as saved after successful publish
-      setConfigurationStatus('draft'); // Set to draft since new draft was created based on published
-      lastSavedConfigRef.current = JSON.stringify(categoryLayoutConfig);
-
-      // Refresh the SlotEnabledFileSelector badge status
-      if (window.slotFileSelectorRefresh) {
-        window.slotFileSelectorRefresh('category');
-      }
-
-      setTimeout(() => setPublishStatus(''), 3000);
-    } catch (error) {
-      console.error('❌ Failed to publish configuration:', error);
-      setPublishStatus('error');
-      setTimeout(() => setPublishStatus(''), 5000);
+  // Use generic publish handler
+  const { handlePublish, publishStatus } = usePublishHandler(
+    'category',
+    categoryLayoutConfig,
+    handlePublishConfiguration,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
     }
-  }, [handlePublishConfiguration, categoryLayoutConfig]);
+  );
 
-  // Handle publish panel callbacks
-  const handlePublishPanelPublished = useCallback(async (publishedConfig) => {
-    console.log('📋 handlePublishPanelPublished called - closing sidebar');
-    // Close sidebar when publishing from panel
-    setIsSidebarVisible(false);
-    setSelectedElement(null);
+  // Click outside and preview mode handlers
+  useClickOutsidePanel(showPublishPanel, publishPanelRef, setShowPublishPanel);
+  usePreviewModeHandlers(showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel);
 
-    // Reload draft configuration to get updated state
-    try {
-      const storeId = getSelectedStoreId();
-      if (storeId) {
-        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'category');
-        if (draftResponse && draftResponse.success && draftResponse.data) {
-          setDraftConfig(draftResponse.data);
-          setConfigurationStatus(draftResponse.data.status);
-          setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-        }
+  // Publish panel handlers
+  const basePublishPanelHandlers = usePublishPanelHandlers(
+    'category', getSelectedStoreId, getDraftOrStaticConfiguration, setCategoryLayoutConfig, slotConfigurationService
+  );
 
-        // Update latest published
-        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'category', 1);
-        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
-          setLatestPublished(publishedResponse.data[0]);
-        }
-
-        // Refresh the SlotEnabledFileSelector badge status
-        if (window.slotFileSelectorRefresh) {
-          window.slotFileSelectorRefresh('category');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to reload draft after publish:', error);
+  // Use generic publish panel handler wrappers
+  const { handlePublishPanelPublished, handlePublishPanelReverted } = usePublishPanelHandlerWrappers(
+    'category',
+    basePublishPanelHandlers,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setDraftConfig,
+      setConfigurationStatus,
+      setHasUnsavedChanges,
+      setLatestPublished,
+      setPageConfig: setCategoryLayoutConfig,
+      updateLastSavedConfig
     }
-  }, [getSelectedStoreId]);
-
-  const handlePublishPanelReverted = useCallback(async (revertedConfig) => {
-    // Handle revert or undo revert
-    try {
-      const storeId = getSelectedStoreId();
-      if (storeId) {
-        if (revertedConfig === null) {
-          // Draft was completely deleted (no previous draft to restore)
-          setDraftConfig(null);
-          setConfigurationStatus('published');
-          setHasUnsavedChanges(false);
-
-          // Reload from latest published configuration
-          const configToUse = await getDraftOrStaticConfiguration();
-          if (configToUse) {
-            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-            setCategoryLayoutConfig(finalConfig);
-            lastSavedConfigRef.current = JSON.stringify(finalConfig);
-          }
-        } else if (revertedConfig && revertedConfig.status === 'draft' && !revertedConfig.current_edit_id) {
-          // Previous draft state was restored
-          setDraftConfig(revertedConfig);
-          setConfigurationStatus(revertedConfig.status);
-          setHasUnsavedChanges(revertedConfig.has_unpublished_changes || false);
-
-          // Reload the category layout configuration from the restored draft
-          const configToUse = await getDraftOrStaticConfiguration();
-          if (configToUse) {
-            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-            setCategoryLayoutConfig(finalConfig);
-            lastSavedConfigRef.current = JSON.stringify(finalConfig);
-          }
-        } else {
-          // Normal revert draft creation
-          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'category');
-          if (draftResponse && draftResponse.success && draftResponse.data) {
-            setDraftConfig(draftResponse.data);
-            setConfigurationStatus(draftResponse.data.status);
-            setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-
-            // Also reload the category layout configuration
-            const configToUse = await getDraftOrStaticConfiguration();
-            if (configToUse) {
-              const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-              setCategoryLayoutConfig(finalConfig);
-              lastSavedConfigRef.current = JSON.stringify(finalConfig);
-            }
-          }
-        }
-
-        // Update latest published after revert/undo
-        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'category', 1);
-        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
-          setLatestPublished(publishedResponse.data[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to reload configuration after revert/undo:', error);
-    }
-  }, [getSelectedStoreId, getDraftOrStaticConfiguration]);
-
-  // Handle click outside to close publish panel
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showPublishPanel && publishPanelRef.current && !publishPanelRef.current.contains(event.target)) {
-        // Check if the click is on the publish button itself
-        const publishButton = event.target.closest('button');
-        const isPublishButton = publishButton && publishButton.textContent.includes('Publish');
-
-        if (!isPublishButton) {
-          setShowPublishPanel(false);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showPublishPanel]);
-
-  // Close sidebar and panels when entering preview mode
-  useEffect(() => {
-    if (showPreview) {
-      setIsSidebarVisible(false);
-      setSelectedElement(null);
-      setShowPublishPanel(false);
-    }
-  }, [showPreview]);
-
-  // Pass sample data to slot components for rendering
-  const slotData = {
-    ...sampleCategoryData,
-    config: { viewMode }
-  };
+  );
 
   // Main render
   return (

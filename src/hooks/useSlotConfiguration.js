@@ -7,6 +7,499 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
 
+// ===============================
+// UTILITY HOOKS FOR SLOT EDITORS
+// ===============================
+
+// Timestamp formatting utilities
+export const useTimestampFormatting = () => {
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }, []);
+
+  const formatTimeAgo = useCallback((dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    return formatDate(dateString);
+  }, [formatDate]);
+
+  return { formatDate, formatTimeAgo };
+};
+
+// Draft status management hook
+export const useDraftStatusManagement = (storeId, pageType) => {
+  const [draftConfig, setDraftConfig] = useState(null);
+  const [latestPublished, setLatestPublished] = useState(null);
+  const [configurationStatus, setConfigurationStatus] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const loadDraftStatus = useCallback(async () => {
+    try {
+      if (storeId) {
+        // Get draft configuration
+        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+        if (draftResponse && draftResponse.success && draftResponse.data) {
+          setDraftConfig(draftResponse.data);
+          setConfigurationStatus(draftResponse.data.status);
+          setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
+        }
+
+        // Get latest published configuration for timestamp
+        try {
+          const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, pageType, 1);
+          if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
+            setLatestPublished(publishedResponse.data[0]);
+          }
+        } catch (publishedError) {
+          console.log('Could not get latest published version:', publishedError);
+        }
+      }
+    } catch (error) {
+      console.log('Could not determine configuration status:', error);
+      setConfigurationStatus('published');
+      setHasUnsavedChanges(false);
+    }
+  }, [storeId, pageType]);
+
+  return {
+    draftConfig, setDraftConfig,
+    latestPublished, setLatestPublished,
+    configurationStatus, setConfigurationStatus,
+    hasUnsavedChanges, setHasUnsavedChanges,
+    loadDraftStatus
+  };
+};
+
+// Configuration change detection hook
+export const useConfigurationChangeDetection = (configurationLoadedRef, pageConfig, setHasUnsavedChanges) => {
+  const lastSavedConfigRef = useRef(null);
+
+  useEffect(() => {
+    if (configurationLoadedRef.current && pageConfig) {
+      const currentConfig = JSON.stringify(pageConfig);
+      if (lastSavedConfigRef.current === null) {
+        // Initial load - save the initial state
+        lastSavedConfigRef.current = currentConfig;
+      } else if (currentConfig !== lastSavedConfigRef.current) {
+        // Configuration has changed
+        setHasUnsavedChanges(true);
+      }
+    }
+  }, [pageConfig, configurationLoadedRef, setHasUnsavedChanges]);
+
+  const updateLastSavedConfig = useCallback((config) => {
+    lastSavedConfigRef.current = JSON.stringify(config);
+  }, []);
+
+  return { lastSavedConfigRef, updateLastSavedConfig };
+};
+
+// Badge refresh hook
+export const useBadgeRefresh = (configurationLoadedRef, hasUnsavedChanges, pageType) => {
+  useEffect(() => {
+    if (configurationLoadedRef.current && hasUnsavedChanges) {
+      if (window.slotFileSelectorRefresh) {
+        setTimeout(() => {
+          window.slotFileSelectorRefresh(pageType);
+        }, 500);
+      }
+    }
+  }, [hasUnsavedChanges, configurationLoadedRef, pageType]);
+};
+
+// Generic publish hook
+export const usePublishHandler = (pageType, pageConfig, handlePublishConfiguration, setters) => {
+  const [publishStatus, setPublishStatus] = useState('');
+
+  const handlePublish = useCallback(async () => {
+    console.log(`🚀 handlePublish called for ${pageType} - closing sidebar`);
+    setPublishStatus('publishing');
+
+    // Close sidebar when publishing
+    setters.setIsSidebarVisible(false);
+    setters.setSelectedElement(null);
+
+    try {
+      await handlePublishConfiguration();
+      setPublishStatus('published');
+      setters.setHasUnsavedChanges(false);  // Mark as saved after successful publish
+      setters.setConfigurationStatus('draft'); // Set to draft since new draft was created based on published
+      setters.updateLastSavedConfig(pageConfig);
+
+      // Refresh the SlotEnabledFileSelector badge status
+      if (window.slotFileSelectorRefresh) {
+        window.slotFileSelectorRefresh(pageType);
+      }
+
+      setTimeout(() => setPublishStatus(''), 3000);
+    } catch (error) {
+      console.error(`❌ Failed to publish ${pageType} configuration:`, error);
+      setPublishStatus('error');
+      setTimeout(() => setPublishStatus(''), 5000);
+    }
+  }, [handlePublishConfiguration, pageConfig, pageType, setters]);
+
+  return { handlePublish, publishStatus };
+};
+
+// Generic reset layout hook
+export const useResetLayoutHandler = (pageType, baseHandleResetLayout, pageConfig, setters) => {
+  const handleResetLayout = useCallback(async () => {
+    const result = await baseHandleResetLayout();
+    setters.setHasUnsavedChanges(false); // Reset should clear unsaved changes flag
+    setters.setConfigurationStatus('draft'); // Reset creates a draft
+    setters.updateLastSavedConfig(pageConfig);
+
+    // Refresh the SlotEnabledFileSelector badge status after reset
+    if (window.slotFileSelectorRefresh) {
+      window.slotFileSelectorRefresh(pageType);
+    }
+
+    return result;
+  }, [baseHandleResetLayout, pageConfig, pageType, setters]);
+
+  return { handleResetLayout };
+};
+
+// Generic save configuration hook
+export const useSaveConfigurationHandler = (pageType, baseSaveConfiguration, pageConfig, setters) => {
+  const saveConfiguration = useCallback(async (...args) => {
+    const result = await baseSaveConfiguration(...args);
+    if (result !== false) {
+      // Don't clear hasUnsavedChanges when saving to draft - the draft still needs to be published
+      // hasUnsavedChanges should only be cleared after successful publish, not save
+      setters.setConfigurationStatus('draft'); // Saving creates a draft
+      setters.updateLastSavedConfig(pageConfig);
+
+      // Refresh the SlotEnabledFileSelector badge status after saving changes
+      if (window.slotFileSelectorRefresh) {
+        window.slotFileSelectorRefresh(pageType);
+      }
+    }
+    return result;
+  }, [baseSaveConfiguration, pageConfig, pageType, setters]);
+
+  return { saveConfiguration };
+};
+
+// Generic publish panel handlers wrapper
+export const usePublishPanelHandlerWrappers = (pageType, baseHandlers, setters) => {
+  const handlePublishPanelPublished = useCallback(async (publishedConfig) => {
+    // Close sidebar when publishing from panel
+    setters.setIsSidebarVisible(false);
+    setters.setSelectedElement(null);
+
+    try {
+      const result = await baseHandlers.handlePublishPanelPublished(publishedConfig);
+      if (result) {
+        if (result.draftConfig !== undefined) setters.setDraftConfig(result.draftConfig);
+        if (result.configurationStatus) setters.setConfigurationStatus(result.configurationStatus);
+        if (result.hasUnsavedChanges !== undefined) setters.setHasUnsavedChanges(result.hasUnsavedChanges);
+        if (result.latestPublished) setters.setLatestPublished(result.latestPublished);
+      }
+    } catch (error) {
+      console.error(`Failed to handle publish panel published for ${pageType}:`, error);
+    }
+  }, [baseHandlers.handlePublishPanelPublished, pageType, setters]);
+
+  const handlePublishPanelReverted = useCallback(async (revertedConfig) => {
+    try {
+      const result = await baseHandlers.handlePublishPanelReverted(revertedConfig);
+      if (result) {
+        if (result.draftConfig !== undefined) setters.setDraftConfig(result.draftConfig);
+        if (result.configurationStatus) setters.setConfigurationStatus(result.configurationStatus);
+        if (result.hasUnsavedChanges !== undefined) setters.setHasUnsavedChanges(result.hasUnsavedChanges);
+        if (result.latestPublished) setters.setLatestPublished(result.latestPublished);
+        if (result.pageConfig) {
+          setters.setPageConfig(result.pageConfig);
+          setters.updateLastSavedConfig(result.pageConfig);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to handle publish panel reverted for ${pageType}:`, error);
+    }
+  }, [baseHandlers.handlePublishPanelReverted, pageType, setters]);
+
+  return { handlePublishPanelPublished, handlePublishPanelReverted };
+};
+
+// Click outside panel handler
+export const useClickOutsidePanel = (showPanel, panelRef, setShowPanel) => {
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPanel && panelRef.current && !panelRef.current.contains(event.target)) {
+        const publishButton = event.target.closest('button');
+        const isPublishButton = publishButton && publishButton.textContent.includes('Publish');
+
+        if (!isPublishButton) {
+          setShowPanel(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPanel, panelRef, setShowPanel]);
+};
+
+// Preview mode handler
+export const usePreviewModeHandlers = (showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel) => {
+  useEffect(() => {
+    if (showPreview) {
+      setIsSidebarVisible(false);
+      setSelectedElement(null);
+      setShowPublishPanel(false);
+    }
+  }, [showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel]);
+};
+
+// Publish panel handlers hook
+export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOrStaticConfiguration, setPageConfig, slotConfigurationService) => {
+  const handlePublishPanelPublished = useCallback(async () => {
+    console.log(`📋 handlePublishPanelPublished called for ${pageType} - closing sidebar`);
+
+    try {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+        if (draftResponse && draftResponse.success && draftResponse.data) {
+          // Return the updated draft data for the editor to handle
+          return {
+            draftConfig: draftResponse.data,
+            configurationStatus: draftResponse.data.status,
+            hasUnsavedChanges: draftResponse.data.has_unpublished_changes || false
+          };
+        }
+
+        // Update latest published
+        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, pageType, 1);
+        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
+          return {
+            latestPublished: publishedResponse.data[0]
+          };
+        }
+
+        // Refresh the SlotEnabledFileSelector badge status
+        if (window.slotFileSelectorRefresh) {
+          window.slotFileSelectorRefresh(pageType);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to reload draft after publish:', error);
+      throw error;
+    }
+  }, [pageType, getSelectedStoreId]);
+
+  const handlePublishPanelReverted = useCallback(async (revertedConfig) => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        if (revertedConfig === null) {
+          // Draft was completely deleted
+          const configToUse = await getDraftOrStaticConfiguration();
+          if (configToUse) {
+            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+            return {
+              draftConfig: null,
+              configurationStatus: 'published',
+              hasUnsavedChanges: false,
+              pageConfig: finalConfig
+            };
+          }
+        } else if (revertedConfig && revertedConfig.status === 'draft' && !revertedConfig.current_edit_id) {
+          // Previous draft state was restored
+          const configToUse = await getDraftOrStaticConfiguration();
+          if (configToUse) {
+            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+            return {
+              draftConfig: revertedConfig,
+              configurationStatus: revertedConfig.status,
+              hasUnsavedChanges: revertedConfig.has_unpublished_changes || false,
+              pageConfig: finalConfig
+            };
+          }
+        } else {
+          // Normal revert draft creation
+          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+          if (draftResponse && draftResponse.success && draftResponse.data) {
+            const configToUse = await getDraftOrStaticConfiguration();
+            if (configToUse) {
+              const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+              return {
+                draftConfig: draftResponse.data,
+                configurationStatus: draftResponse.data.status,
+                hasUnsavedChanges: draftResponse.data.has_unpublished_changes || false,
+                pageConfig: finalConfig
+              };
+            }
+          }
+        }
+
+        // Update latest published after revert/undo
+        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, pageType, 1);
+        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
+          return {
+            latestPublished: publishedResponse.data[0]
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Failed to reload configuration after revert/undo:', error);
+      throw error;
+    }
+  }, [pageType, getSelectedStoreId, getDraftOrStaticConfiguration]);
+
+  return { handlePublishPanelPublished, handlePublishPanelReverted };
+};
+
+// Configuration initialization hook
+export const useConfigurationInitialization = (pageType, pageName, slotType, getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus) => {
+  const configurationLoadedRef = useRef(false);
+
+  const initializeConfig = useCallback(async () => {
+    if (configurationLoadedRef.current) return null;
+
+    try {
+      console.log(`🔄 ${pageType}SlotsEditor: Starting configuration initialization...`);
+
+      // Use the hook function to get configuration (either draft or static)
+      const configToUse = await getDraftOrStaticConfiguration();
+
+      if (!configToUse) {
+        throw new Error(`Failed to load ${pageType} configuration`);
+      }
+
+      // Load draft status
+      await loadDraftStatus();
+
+      // Transform database config if needed
+      let finalConfig = configToUse;
+      if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
+        const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+        if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
+          console.log(`✅ ${pageType}SlotsEditor: Using saved configuration from database`);
+          finalConfig = dbConfig;
+        }
+      } else {
+        // Handle case where no slots are configured
+        console.log(`🛠️ ${pageType}SlotsEditor: No slots found, using default configuration`);
+      }
+
+      configurationLoadedRef.current = true;
+      return finalConfig;
+
+    } catch (error) {
+      console.error(`❌ Failed to initialize ${pageType} configuration:`, error);
+
+      // Set a minimal fallback configuration - let the editor handle defaults
+      const fallbackConfig = {
+        page_name: pageName,
+        slot_type: slotType,
+        slots: {},
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          version: '1.0',
+          pageType: pageType,
+          error: 'Failed to load configuration'
+        },
+        cmsBlocks: []
+      };
+
+      configurationLoadedRef.current = true;
+      return fallbackConfig;
+    }
+  }, [pageType, pageName, slotType, getDraftOrStaticConfiguration, loadDraftStatus]);
+
+  return { initializeConfig, configurationLoadedRef };
+};
+
+// Generic editor initialization hook
+export const useEditorInitialization = (initializeConfig, setPageConfig, createDefaultSlots = null) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const initialize = async () => {
+      if (!isMounted) return;
+
+      let finalConfig = await initializeConfig();
+      if (finalConfig && isMounted) {
+        // If createDefaultSlots is provided (for CategorySlotsEditor), check if we need default slots
+        if (createDefaultSlots && (!finalConfig.slots || Object.keys(finalConfig.slots).length === 0)) {
+          console.log('🛠️ No slots found, creating default configuration');
+          finalConfig = {
+            ...finalConfig,
+            slots: createDefaultSlots()
+          };
+        }
+
+        setPageConfig(finalConfig);
+      }
+    };
+
+    initialize();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initializeConfig, setPageConfig, createDefaultSlots]);
+};
+
+// Generic view mode adjustments hook
+export const useViewModeAdjustments = (pageConfig, setPageConfig, viewMode, adjustmentRules) => {
+  useEffect(() => {
+    if (!pageConfig || !pageConfig.slots || !adjustmentRules) return;
+
+    let hasChanges = false;
+    const updatedSlots = { ...pageConfig.slots };
+
+    // Apply adjustment rules
+    Object.entries(adjustmentRules).forEach(([slotId, rules]) => {
+      if (updatedSlots[slotId]) {
+        Object.entries(rules).forEach(([property, adjustmentConfig]) => {
+          const currentValue = updatedSlots[slotId][property];
+
+          // Check if adjustment is needed based on the current value type
+          if (adjustmentConfig.shouldAdjust && adjustmentConfig.shouldAdjust(currentValue)) {
+            updatedSlots[slotId] = {
+              ...updatedSlots[slotId],
+              [property]: adjustmentConfig.newValue
+            };
+            hasChanges = true;
+          }
+        });
+      }
+    });
+
+    // Apply changes if any were made
+    if (hasChanges) {
+      setPageConfig(prevConfig => ({
+        ...prevConfig,
+        slots: updatedSlots
+      }));
+    }
+  }, [viewMode, pageConfig, setPageConfig, adjustmentRules]);
+};
+
 export const filterSlotsByViewMode = (childSlots, viewMode) => {
   return childSlots.filter(slot => {
     if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
@@ -48,29 +541,35 @@ export const sortSlotsByGridCoordinates = (filteredSlots) => {
 async function loadPageConfig(pageType) {
   let config;
   switch (pageType) {
-    case 'cart':
+    case 'cart': {
       const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
       config = cartConfig;
       break;
-    case 'category':
+    }
+    case 'category': {
       const { categoryConfig } = await import('@/components/editor/slot/configs/category-config');
       config = categoryConfig;
       break;
-    case 'product':
+    }
+    case 'product': {
       const { productConfig } = await import('@/components/editor/slot/configs/product-config');
       config = productConfig;
       break;
-    case 'checkout':
+    }
+    case 'checkout': {
       const { checkoutConfig } = await import('@/components/editor/slot/configs/checkout-config');
       config = checkoutConfig;
       break;
-    case 'success':
+    }
+    case 'success': {
       const { successConfig } = await import('@/components/editor/slot/configs/success-config');
       config = successConfig;
       break;
-    default:
+    }
+    default: {
       const { cartConfig: fallbackConfig } = await import('@/components/editor/slot/configs/cart-config');
       config = fallbackConfig;
+    }
   }
   return config;
 }
@@ -106,232 +605,12 @@ export function useSlotConfiguration({
   pageType,
   pageName,
   slotType,
-  selectedStore,
-  updateConfiguration,
-  onSave,
-  microSlotDefinitions
+  selectedStore
 }) {
-  const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved', 'error'
-  const [resetStatus, setResetStatus] = useState(''); // '', 'resetting', 'reset', 'error'
-  const saveStatusTimeoutRef = useRef(null);
-  const justSavedRef = useRef(false);
-
-  // Generic save configuration function
-  const saveConfiguration = useCallback(async ({
-    slotContent
-  }) => {
-    setSaveStatus('saving');
-
-    // Create slot configuration directly
-    const slots = {};
-
-    // Combine all slot data into the slots structure
-    const allSlotIds = new Set([
-      ...Object.keys(slotContent || {})
-    ]);
-
-    // Process each slot with content only - styles/classes now come from slot config
-    allSlotIds.forEach(id => {
-      slots[id] = {
-        content: slotContent[id] || '',
-        metadata: {
-          lastModified: new Date().toISOString()
-        }
-      };
-    });
-
-    const config = {
-      page_name: pageName,
-      slot_type: slotType,
-      slots,
-      metadata: {
-        lastModified: new Date().toISOString(),
-        version: '1.0',
-        pageType: pageType
-      }
-    };
-
-    try {
-      const storeId = selectedStore?.id;
-
-      if (!storeId) {
-        console.warn('⚠️ No store ID available, cannot save to database');
-        return;
-      }
-
-      if (storeId && updateConfiguration) {
-        try {
-          // Set flag to prevent reload after save
-          justSavedRef.current = true;
-          await updateConfiguration(config);
-        } catch (error) {
-          console.error('❌ Failed to save configuration:', error);
-          throw error;
-        }
-      } else {
-        console.warn('⚠️ Cannot save - missing storeId or updateConfiguration function');
-      }
-
-      // Call the parent onSave callback
-      onSave?.(config);
-
-      // Show saved status
-      setSaveStatus('saved');
-
-      // Clear status after 2 seconds
-      if (saveStatusTimeoutRef.current) {
-        clearTimeout(saveStatusTimeoutRef.current);
-      }
-      saveStatusTimeoutRef.current = setTimeout(() => {
-        setSaveStatus('');
-      }, 2000);
-
-      return true;
-    } catch (error) {
-      console.error('❌ Failed to save configuration to database:', error);
-
-      if (error.response?.status === 413) {
-        console.error('❌ Payload too large! Configuration size exceeds server limit');
-        alert('Configuration is too large to save to database. Try removing some custom slots or content.');
-      } else if (error.response?.status === 400) {
-        console.error('❌ Bad request:', error.response?.data?.error);
-      }
-
-      setSaveStatus('saved'); // Still show saved for localStorage
-
-      if (saveStatusTimeoutRef.current) {
-        clearTimeout(saveStatusTimeoutRef.current);
-      }
-      saveStatusTimeoutRef.current = setTimeout(() => {
-        setSaveStatus('');
-      }, 2000);
-
-      return true;
-    }
-  }, [pageName, slotType, pageType, selectedStore, updateConfiguration, onSave]);
-
-  // Generic load configuration function
-  const loadConfiguration = useCallback(async ({
-    setSlotContent
-  }) => {
-    try {
-      const storeId = selectedStore?.id;
-
-      if (!storeId) {
-
-        const defaultSpans = {};
-        Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-          defaultSpans[key] = { ...def.defaultSpans };
-        });
-        return;
-      }
-
-      // Load from database
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${storeId}`;
-
-      const response = await fetch(endpoint);
-      let configurations = [];
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.success && data.data) {
-          configurations = data.data;
-        }
-      } else {
-        console.warn('⚠️ Failed to load from public endpoint:', response.status, response.statusText);
-      }
-
-      // Find the configuration for this page type
-      const pageConfig = configurations?.find(cfg =>
-        cfg.configuration?.page_name === pageName &&
-        cfg.configuration?.slot_type === slotType
-      );
-
-      if (pageConfig) {
-        const dbRecord = pageConfig;
-        const config = dbRecord.configuration;
-
-        if (!config) {
-          console.error('⚠️ No configuration found in database record');
-          return;
-        }
-
-        // Load from config.slots structure - only content, styles/classes now in slot config
-        if (config.slots) {
-          const loadedContent = {};
-
-          Object.entries(config.slots).forEach(([slotId, slotData]) => {
-            if (slotData.content !== undefined) {
-              loadedContent[slotId] = slotData.content;
-            }
-          });
-
-          if (setSlotContent) {
-            setSlotContent(prev => ({ ...prev, ...loadedContent }));
-          }
-        }
-
-      } else {
-          const defaultSpans = {};
-          Object.entries(microSlotDefinitions || {}).forEach(([key, def]) => {
-            defaultSpans[key] = { ...def.defaultSpans };
-          });
-      }
-    } catch (error) {
-      console.error(`Failed to load configuration from database (${pageName}):`, error);
-     }
-  }, [pageName, slotType, selectedStore, microSlotDefinitions]);
-
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    if (saveStatusTimeoutRef.current) {
-      clearTimeout(saveStatusTimeoutRef.current);
-    }
-  }, []);
-
-  // Apply draft configuration to component state
-  const applyDraftConfiguration = useCallback((draftConfig, setters) => {
-    if (!draftConfig?.configuration) return;
-
-    // Skip reload if we just saved to prevent overriding user changes
-    if (justSavedRef.current) {
-      console.log('🚫 Skipping config reload - just saved');
-      justSavedRef.current = false;
-      return;
-    }
-
-    const config = draftConfig.configuration;
-
-    // Load from the slots structure (the only structure we should use)
-    if (config.slots) {
-      const extractedContent = {};
-
-      Object.entries(config.slots).forEach(([slotId, slotData]) => {
-        if (slotData?.content !== undefined) {
-          extractedContent[slotId] = slotData.content;
-        }
-      });
-
-    } else {
-      console.warn('⚠️ No slots structure found in configuration');
-    }
-
-  }, [microSlotDefinitions]);
-
-  // Helper function for view mode changes
-  const updateSlotsForViewMode = useCallback((requiredSlots, flashMessageContent, setters) => {
-   setters.setSlotContent?.(prev => ({
-      ...prev,
-      'flashMessage.content': flashMessageContent
-    }));
-  }, []);
 
   // Generic reset layout function
   const handleResetLayout = useCallback(async () => {
     try {
-      setResetStatus('resetting');
 
       // Load the clean static configuration for this page type
       const config = await loadPageConfig(pageType);
@@ -363,14 +642,10 @@ export function useSlotConfiguration({
         await slotConfigurationService.saveConfiguration(storeId, cleanConfig, pageType, true);
       }
 
-      setResetStatus('reset');
-      setTimeout(() => setResetStatus(''), 3000);
 
       return cleanConfig;
     } catch (error) {
       console.error(`❌ Failed to reset ${pageType} layout:`, error);
-      setResetStatus('error');
-      setTimeout(() => setResetStatus(''), 5000);
       throw error;
     }
   }, [selectedStore, pageType, pageName, slotType]);
@@ -752,12 +1027,7 @@ export function useSlotConfiguration({
       return null;
     }
 
-    // Check if position actually changed
-    const oldPos = originalProperties.position;
-    const positionChanged =
-      originalProperties.parentId !== newParentId ||
-      oldPos?.col !== newPosition.col ||
-      oldPos?.row !== newPosition.row;
+    // Position validation completed
 
     // Update dragged slot position while preserving ALL essential properties
     updatedSlots[draggedSlotId] = {
@@ -1181,19 +1451,9 @@ export function useSlotConfiguration({
   }, []);
 
   return {
-    saveConfiguration,
-    loadConfiguration,
-    applyDraftConfiguration,
-    updateSlotsForViewMode,
     handleResetLayout,
     handlePublishConfiguration,
-    loadStaticConfiguration,
     getDraftOrStaticConfiguration,
-    saveStatus,
-    resetStatus,
-    justSavedRef,
-    cleanup,
-    validateSlotConfiguration,
     createSlot,
     handleSlotDrop,
     handleSlotDelete,

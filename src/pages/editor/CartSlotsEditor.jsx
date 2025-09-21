@@ -5,20 +5,34 @@
  * - Maintainable structure
  */
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ShoppingCart,
   Package,
-  Loader2,
-  Rocket,
   Eye
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { useSlotConfiguration } from '@/hooks/useSlotConfiguration';
+import {
+  useSlotConfiguration,
+  useTimestampFormatting,
+  useDraftStatusManagement,
+  useConfigurationChangeDetection,
+  useBadgeRefresh,
+  useClickOutsidePanel,
+  usePreviewModeHandlers,
+  usePublishPanelHandlers,
+  useConfigurationInitialization,
+  usePublishHandler,
+  useResetLayoutHandler,
+  useSaveConfigurationHandler,
+  usePublishPanelHandlerWrappers,
+  useEditorInitialization,
+  useViewModeAdjustments
+} from '@/hooks/useSlotConfiguration';
 import {
   HierarchicalSlotRenderer,
   EditorToolbar,
@@ -39,7 +53,6 @@ import {
   CartEmptyStateSlot
 } from '@/components/editor/slot/slotComponentsCart';
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { runDragDropTests } from '@/utils/dragDropTester';
 
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
@@ -71,8 +84,7 @@ const CartSlotsEditor = ({
     cmsBlocks: []
   });
 
-  // Track if configuration has been loaded once
-  const configurationLoadedRef = useRef(false);
+  // Basic editor state
   const isDragOperationActiveRef = useRef(false);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
@@ -85,26 +97,26 @@ const CartSlotsEditor = ({
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [configurationStatus, setConfigurationStatus] = useState(null); // 'draft' or 'published'
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [draftConfig, setDraftConfig] = useState(null);
-  const [latestPublished, setLatestPublished] = useState(null);
   const lastResizeEndTime = useRef(0);
-  const lastSavedConfigRef = useRef(null);
   const publishPanelRef = useRef(null);
-  
+
+  // Use extracted hooks
+  const { formatTimeAgo } = useTimestampFormatting();
+  const {
+    draftConfig, setDraftConfig,
+    latestPublished, setLatestPublished,
+    setConfigurationStatus,
+    hasUnsavedChanges, setHasUnsavedChanges,
+    loadDraftStatus
+  } = useDraftStatusManagement(getSelectedStoreId(), 'cart');
+
   // Database configuration hook with generic functions and handler factories
   const {
-    saveConfiguration: saveToDatabase,
-    loadConfiguration: loadFromDatabase,
-    saveStatus,
     handleResetLayout: resetLayoutFromHook,
     handlePublishConfiguration,
     getDraftOrStaticConfiguration,
-    resetStatus,
-    validateSlotConfiguration,
     createSlot,
     handleSlotDrop: slotDropHandler,
     handleSlotDelete: slotDeleteHandler,
@@ -130,171 +142,25 @@ const CartSlotsEditor = ({
     onSave
   });
 
-  // Initialize cart configuration - ONCE on mount only
-  useEffect(() => {
-    let isMounted = true;
+  // Configuration initialization hook
+  const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
+    'cart', 'Cart', 'cart_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
+  );
 
-    const initializeConfig = async () => {
-      if (!isMounted || configurationLoadedRef.current) return;
+  // Use generic editor initialization
+  useEditorInitialization(initializeConfig, setCartLayoutConfig);
 
-      try {
-        console.log('🔄 CartSlotsEditor: Starting configuration initialization...');
+  // Configuration change detection
+  const { updateLastSavedConfig } = useConfigurationChangeDetection(
+    configurationLoadedRef, cartLayoutConfig, setHasUnsavedChanges
+  );
 
-        // Use the hook function to get configuration (either draft or static)
-        const configToUse = await getDraftOrStaticConfiguration();
-
-        if (!configToUse) {
-          throw new Error('Failed to load cart configuration');
-        }
-
-        // Try to get the status and unpublished changes from draft configuration
-        try {
-          const storeId = getSelectedStoreId();
-          if (storeId) {
-            // Get draft configuration
-            const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
-            if (draftResponse && draftResponse.success && draftResponse.data) {
-              setDraftConfig(draftResponse.data); // Store the full draft config
-              setConfigurationStatus(draftResponse.data.status);
-              // Set hasUnsavedChanges based on database field
-              setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-            }
-
-            // Get latest published configuration for timestamp
-            try {
-              const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
-              if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
-                setLatestPublished(publishedResponse.data[0]);
-              }
-            } catch (publishedError) {
-              console.log('Could not get latest published version:', publishedError);
-            }
-          }
-        } catch (error) {
-          console.log('Could not determine configuration status:', error);
-          setConfigurationStatus('published'); // Default to published if we can't determine
-          setHasUnsavedChanges(false);
-        }
-
-        // Transform database config if needed
-        let finalConfig = configToUse;
-        if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
-          const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-          if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
-            console.log('✅ Found saved configuration in database:', dbConfig);
-            finalConfig = dbConfig;
-          }
-        }
-
-        // Simple one-time initialization
-        if (isMounted) {
-          // Debug: Log what we're setting
-          console.log('🏗️ CartSlotsEditor: Setting initial config');
-          if (finalConfig.slots && finalConfig.slots.header_title) {
-            console.log('📍 header_title parentId:', finalConfig.slots.header_title.parentId);
-          }
-          setCartLayoutConfig(finalConfig);
-          configurationLoadedRef.current = true;
-        }
-      } catch (error) {
-        console.error('❌ Failed to initialize cart configuration:', error);
-        // Set a minimal fallback configuration
-        setTimeout(() => {
-          if (isMounted) {
-            setCartLayoutConfig({
-            page_name: 'Cart',
-            slot_type: 'cart_layout',
-            slots: {},
-            metadata: {
-              created: new Date().toISOString(),
-              lastModified: new Date().toISOString(),
-              version: '1.0',
-              pageType: 'cart',
-              error: 'Failed to load configuration'
-            },
-            cmsBlocks: []
-          });
-          }
-        }, 0);
-      }
-    };
-
-    initializeConfig();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - run only once on mount
-
-  // Detect changes in configuration
-  useEffect(() => {
-    if (configurationLoadedRef.current && cartLayoutConfig) {
-      const currentConfig = JSON.stringify(cartLayoutConfig);
-      if (lastSavedConfigRef.current === null) {
-        // Initial load - save the initial state
-        lastSavedConfigRef.current = currentConfig;
-      } else if (currentConfig !== lastSavedConfigRef.current) {
-        // Configuration has changed
-        setHasUnsavedChanges(true);
-      }
-    }
-  }, [cartLayoutConfig]);
-
-  // Refresh badge status when hasUnsavedChanges changes
-  useEffect(() => {
-    if (configurationLoadedRef.current && hasUnsavedChanges) {
-      // When user makes changes, refresh the badge to show "Unpublished"
-      if (window.slotFileSelectorRefresh) {
-        // Small delay to ensure the database is updated first
-        setTimeout(() => {
-          window.slotFileSelectorRefresh('cart');
-        }, 500);
-      }
-    }
-  }, [hasUnsavedChanges]);
+  // Badge refresh
+  useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'cart');
 
   // Compute when Publish button should be enabled
   // Only enable if there are actual unsaved changes to publish
   const canPublish = hasUnsavedChanges;
-
-  // Timestamp formatting functions
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatTimeAgo = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return formatDate(dateString);
-  };
-
-  // Helper functions for slot styling
-  const getSlotStyling = useCallback((slotId) => {
-    const slotConfig = cartLayoutConfig && cartLayoutConfig.slots ? cartLayoutConfig.slots[slotId] : null;
-    return {
-      elementClasses: slotConfig?.className || '',
-      elementStyles: slotConfig?.styles || {}
-    };
-  }, [cartLayoutConfig]);
 
   // Save configuration using the generic factory
   const baseSaveConfiguration = createSaveConfigurationHandler(
@@ -305,23 +171,16 @@ const CartSlotsEditor = ({
     'cart'
   );
 
-  // Wrap save configuration to track saved state
-  const saveConfiguration = useCallback(async (...args) => {
-    const result = await baseSaveConfiguration(...args);
-    if (result !== false) {
-      // Don't clear hasUnsavedChanges when saving to draft - the draft still needs to be published
-      // hasUnsavedChanges should only be cleared after successful publish, not save
-      setConfigurationStatus('draft'); // Saving creates a draft
-      lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
-
-      // Refresh the SlotEnabledFileSelector badge status after saving changes
-      if (window.slotFileSelectorRefresh) {
-        window.slotFileSelectorRefresh('cart');
-      }
+  // Use generic save configuration handler
+  const { saveConfiguration } = useSaveConfigurationHandler(
+    'cart',
+    baseSaveConfiguration,
+    cartLayoutConfig,
+    {
+      setConfigurationStatus,
+      updateLastSavedConfig
     }
-    return result;
-  }, [baseSaveConfiguration, cartLayoutConfig]);
-
+  );
 
   // Handle element selection using generic factory
   const handleElementClick = createElementClickHandler(
@@ -394,219 +253,76 @@ const CartSlotsEditor = ({
   const handleSlotDelete = handlerFactory.createSlotDeleteHandler(slotDeleteHandler);
   const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
 
-  // Wrap reset layout to also reset unsaved changes flag
-  const handleResetLayout = useCallback(async () => {
-    const result = await baseHandleResetLayout();
-    setHasUnsavedChanges(false); // Reset should clear unsaved changes flag
-    setConfigurationStatus('draft'); // Reset creates a draft
-    lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
-
-    // Refresh the SlotEnabledFileSelector badge status after reset
-    if (window.slotFileSelectorRefresh) {
-      window.slotFileSelectorRefresh('cart');
+  // Use generic reset layout handler
+  const { handleResetLayout } = useResetLayoutHandler(
+    'cart',
+    baseHandleResetLayout,
+    cartLayoutConfig,
+    {
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
     }
-
-    return result;
-  }, [baseHandleResetLayout, cartLayoutConfig]);
+  );
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
-  // Publish status state
-  const [publishStatus, setPublishStatus] = useState('');
-
-  // Handle publish configuration
-  const handlePublish = useCallback(async () => {
-    console.log('🚀 handlePublish called - closing sidebar');
-    setPublishStatus('publishing');
-
-    // Close sidebar when publishing
-    setIsSidebarVisible(false);
-    setSelectedElement(null);
-
-    try {
-      await handlePublishConfiguration();
-      setPublishStatus('published');
-      setHasUnsavedChanges(false);  // Mark as saved after successful publish
-      setConfigurationStatus('draft'); // Set to draft since new draft was created based on published
-      lastSavedConfigRef.current = JSON.stringify(cartLayoutConfig);
-
-      // Refresh the SlotEnabledFileSelector badge status
-      if (window.slotFileSelectorRefresh) {
-        window.slotFileSelectorRefresh('cart');
-      }
-
-      setTimeout(() => setPublishStatus(''), 3000);
-    } catch (error) {
-      console.error('❌ Failed to publish configuration:', error);
-      setPublishStatus('error');
-      setTimeout(() => setPublishStatus(''), 5000);
+  // Use generic publish handler
+  const { handlePublish, publishStatus } = usePublishHandler(
+    'cart',
+    cartLayoutConfig,
+    handlePublishConfiguration,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
     }
-  }, [handlePublishConfiguration, cartLayoutConfig]);
+  );
 
-  // Handle publish panel callbacks
-  const handlePublishPanelPublished = useCallback(async (publishedConfig) => {
-    console.log('📋 handlePublishPanelPublished called - closing sidebar');
-    // Close sidebar when publishing from panel
-    setIsSidebarVisible(false);
-    setSelectedElement(null);
+  // Click outside and preview mode handlers
+  useClickOutsidePanel(showPublishPanel, publishPanelRef, setShowPublishPanel);
+  usePreviewModeHandlers(showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel);
 
-    // Reload draft configuration to get updated state
-    try {
-      const storeId = getSelectedStoreId();
-      if (storeId) {
-        const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
-        if (draftResponse && draftResponse.success && draftResponse.data) {
-          setDraftConfig(draftResponse.data);
-          setConfigurationStatus(draftResponse.data.status);
-          setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-        }
+  // Publish panel handlers
+  const basePublishPanelHandlers = usePublishPanelHandlers(
+    'cart', getSelectedStoreId, getDraftOrStaticConfiguration, setCartLayoutConfig, slotConfigurationService
+  );
 
-        // Update latest published
-        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
-        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
-          setLatestPublished(publishedResponse.data[0]);
-        }
-
-        // Refresh the SlotEnabledFileSelector badge status
-        if (window.slotFileSelectorRefresh) {
-          window.slotFileSelectorRefresh('cart');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to reload draft after publish:', error);
+  // Use generic publish panel handler wrappers
+  const { handlePublishPanelPublished, handlePublishPanelReverted } = usePublishPanelHandlerWrappers(
+    'cart',
+    basePublishPanelHandlers,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setDraftConfig,
+      setConfigurationStatus,
+      setHasUnsavedChanges,
+      setLatestPublished,
+      setPageConfig: setCartLayoutConfig,
+      updateLastSavedConfig
     }
-  }, [getSelectedStoreId]);
+  );
 
-  const handlePublishPanelReverted = useCallback(async (revertedConfig) => {
-    // Handle revert or undo revert
-    try {
-      const storeId = getSelectedStoreId();
-      if (storeId) {
-        if (revertedConfig === null) {
-          // Draft was completely deleted (no previous draft to restore)
-          setDraftConfig(null);
-          setConfigurationStatus('published');
-          setHasUnsavedChanges(false);
-
-          // Reload from latest published configuration
-          const configToUse = await getDraftOrStaticConfiguration();
-          if (configToUse) {
-            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-            setCartLayoutConfig(finalConfig);
-            lastSavedConfigRef.current = JSON.stringify(finalConfig);
-          }
-        } else if (revertedConfig && revertedConfig.status === 'draft' && !revertedConfig.current_edit_id) {
-          // Previous draft state was restored
-          setDraftConfig(revertedConfig);
-          setConfigurationStatus(revertedConfig.status);
-          setHasUnsavedChanges(revertedConfig.has_unpublished_changes || false);
-
-          // Reload the cart layout configuration from the restored draft
-          const configToUse = await getDraftOrStaticConfiguration();
-          if (configToUse) {
-            const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-            setCartLayoutConfig(finalConfig);
-            lastSavedConfigRef.current = JSON.stringify(finalConfig);
-          }
-        } else {
-          // Normal revert draft creation
-          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, 'cart');
-          if (draftResponse && draftResponse.success && draftResponse.data) {
-            setDraftConfig(draftResponse.data);
-            setConfigurationStatus(draftResponse.data.status);
-            setHasUnsavedChanges(draftResponse.data.has_unpublished_changes || false);
-
-            // Also reload the cart layout configuration
-            const configToUse = await getDraftOrStaticConfiguration();
-            if (configToUse) {
-              const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-              setCartLayoutConfig(finalConfig);
-              lastSavedConfigRef.current = JSON.stringify(finalConfig);
-            }
-          }
-        }
-
-        // Update latest published after revert/undo
-        const publishedResponse = await slotConfigurationService.getVersionHistory(storeId, 'cart', 1);
-        if (publishedResponse && publishedResponse.success && publishedResponse.data && publishedResponse.data.length > 0) {
-          setLatestPublished(publishedResponse.data[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to reload configuration after revert/undo:', error);
-    }
-  }, [getSelectedStoreId, getDraftOrStaticConfiguration]);
-
-  // Handle click outside to close publish panel
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showPublishPanel && publishPanelRef.current && !publishPanelRef.current.contains(event.target)) {
-        // Check if the click is on the publish button itself
-        const publishButton = event.target.closest('button');
-        const isPublishButton = publishButton && publishButton.textContent.includes('Publish');
-
-        if (!isPublishButton) {
-          setShowPublishPanel(false);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showPublishPanel]);
-
-  // Debug mode - keyboard shortcut to run tests (Ctrl+Shift+D)
-  useEffect(() => {
-    const handleKeyPress = async (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        console.log('🐛 Debug mode activated - Running drag and drop tests...');
-        await runDragDropTests(handleSlotDrop, validateSlotConfiguration, cartLayoutConfig);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [cartLayoutConfig, handleSlotDrop, validateSlotConfiguration]);
-
-  // Dynamically adjust content area colSpan based on view mode
-  useEffect(() => {
-    if (cartLayoutConfig && cartLayoutConfig.slots && cartLayoutConfig.slots.content_area) {
-      const currentColSpan = cartLayoutConfig.slots.content_area.colSpan;
-
-      // Check if colSpan is already in the new object format
-      if (typeof currentColSpan === 'object' && currentColSpan !== null) {
-        // Already in object format, no need to update
-        return;
-      }
-
-      // Convert old number format to new Tailwind responsive format
-      if (typeof currentColSpan === 'number') {
-        const newColSpanObject = {
+  // Cart-specific view mode adjustments
+  const cartAdjustmentRules = {
+    content_area: {
+      colSpan: {
+        shouldAdjust: (currentValue) => {
+          // Check if colSpan needs to be converted from number to object format
+          return typeof currentValue === 'number';
+        },
+        newValue: {
           emptyCart: 12,
           withProducts: 'col-span-12 sm:col-span-12 lg:col-span-8'
-        };
-
-        setCartLayoutConfig(prevConfig => ({
-          ...prevConfig,
-          slots: {
-            ...prevConfig.slots,
-            content_area: {
-              ...prevConfig.slots.content_area,
-              colSpan: newColSpanObject
-            }
-          }
-        }));
+        }
       }
     }
-  }, [viewMode, cartLayoutConfig]);
+  };
 
-  // Close sidebar and panels when entering preview mode
-  useEffect(() => {
-    if (showPreview) {
-      setIsSidebarVisible(false);
-      setSelectedElement(null);
-      setShowPublishPanel(false);
-    }
-  }, [showPreview]);
+  // Use generic view mode adjustments
+  useViewModeAdjustments(cartLayoutConfig, setCartLayoutConfig, viewMode, cartAdjustmentRules);
 
   // Main render - Clean and maintainable
   return (
