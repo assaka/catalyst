@@ -213,9 +213,11 @@ const CategorySlotsEditor = ({
         // Transform database config if needed
         let finalConfig = configToUse;
         console.log('🔍 CategorySlotsEditor: configToUse.slots keys:', Object.keys(configToUse.slots || {}));
+        console.log('🔍 CategorySlotsEditor: First slot structure:', configToUse.slots[Object.keys(configToUse.slots)[0]]);
         if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
           const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
           console.log('🔄 CategorySlotsEditor: Transformed dbConfig:', dbConfig);
+          console.log('🔍 CategorySlotsEditor: Transformed first slot:', dbConfig.slots[Object.keys(dbConfig.slots)[0]]);
           if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
             console.log('✅ CategorySlotsEditor: Using saved configuration from database');
             finalConfig = dbConfig;
