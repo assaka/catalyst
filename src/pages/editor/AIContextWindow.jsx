@@ -7,6 +7,7 @@ import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledF
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
+import CategorySlotEditor from '@/pages/editor/CategorySlotEditor';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -681,15 +682,35 @@ export default ExampleComponent;`;
                               }
                             };
 
-                            // Use CartSlotsEditor for all slot types for now (can be extended later)
-                            return (
-                              <CartSlotsEditor
-                                mode="edit"
-                                viewMode="emptyCart"
-                                slotType={slotType}
-                                onSave={handleSave}
-                              />
-                            );
+                            // Use appropriate editor based on slot type
+                            if (slotType === 'category') {
+                              return (
+                                <CategorySlotEditor
+                                  mode="edit"
+                                  viewMode="grid"
+                                  onSave={handleSave}
+                                />
+                              );
+                            } else if (slotType === 'cart') {
+                              return (
+                                <CartSlotsEditor
+                                  mode="edit"
+                                  viewMode="emptyCart"
+                                  slotType={slotType}
+                                  onSave={handleSave}
+                                />
+                              );
+                            } else {
+                              // For other slot types, use CartSlotsEditor for now
+                              return (
+                                <CartSlotsEditor
+                                  mode="edit"
+                                  viewMode="emptyCart"
+                                  slotType={slotType}
+                                  onSave={handleSave}
+                                />
+                              );
+                            }
                           } else {
                             // For slot files without recognized type, use CodeEditor
                             return (
@@ -876,15 +897,35 @@ export default ExampleComponent;`;
                                   }
                                 };
                                 
-                                // Use CartSlotsEditor for all slot types for now (can be extended later)
-                                return (
-                                  <CartSlotsEditor
-                                    mode="edit"
-                                    viewMode="emptyCart"
-                                    slotType={slotType}
-                                    onSave={handleSave}
-                                  />
-                                );
+                                // Use appropriate editor based on slot type
+                                if (slotType === 'category') {
+                                  return (
+                                    <CategorySlotEditor
+                                      mode="edit"
+                                      viewMode="grid"
+                                      onSave={handleSave}
+                                    />
+                                  );
+                                } else if (slotType === 'cart') {
+                                  return (
+                                    <CartSlotsEditor
+                                      mode="edit"
+                                      viewMode="emptyCart"
+                                      slotType={slotType}
+                                      onSave={handleSave}
+                                    />
+                                  );
+                                } else {
+                                  // For other slot types, use CartSlotsEditor for now
+                                  return (
+                                    <CartSlotsEditor
+                                      mode="edit"
+                                      viewMode="emptyCart"
+                                      slotType={slotType}
+                                      onSave={handleSave}
+                                    />
+                                  );
+                                }
                               } else {
                                 // For slot files without recognized type, use CodeEditor
                                 return (
