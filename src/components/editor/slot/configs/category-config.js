@@ -254,6 +254,60 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
+    // Products toolbar (sorting, view toggle, product count)
+    products_toolbar: {
+      id: 'products_toolbar',
+      type: 'container',
+      content: '',
+      className: 'flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm',
+      styles: {},
+      parentId: 'content_area',
+      position: { col: 1, row: 2 },
+      layout: 'flex',
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
+    // Product count
+    product_count: {
+      id: 'product_count',
+      type: 'text',
+      content: '<p class="text-gray-600">Showing 3 products</p>',
+      className: 'w-fit',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_toolbar',
+      position: { col: 1, row: 1 },
+      colSpan: {
+        grid: 6,
+        list: 6
+      },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
+    // Sort dropdown
+    sort_dropdown: {
+      id: 'sort_dropdown',
+      type: 'text',
+      content: '<div class="flex items-center space-x-2"><span class="text-sm text-gray-600">Sort by:</span><select class="border border-gray-300 rounded px-3 py-1 text-sm"><option>Relevance</option><option>Price: Low to High</option><option>Price: High to Low</option><option>Newest First</option><option>Name A-Z</option></select></div>',
+      className: 'w-fit',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_toolbar',
+      position: { col: 7, row: 1 },
+      colSpan: {
+        grid: 6,
+        list: 6
+      },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
     // Products grid container (grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px])
     products: {
       id: 'products',
@@ -262,7 +316,7 @@ export const categoryConfig = {
       className: 'category-products grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]',
       styles: {},
       parentId: 'content_area',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 3 },
       layout: 'grid',
       colSpan: {
         grid: 12,
@@ -609,6 +663,41 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
+    // Pagination
+    pagination: {
+      id: 'pagination',
+      type: 'container',
+      content: '',
+      className: 'flex justify-center mt-8 bg-white p-4 rounded-lg shadow-sm',
+      styles: {},
+      parentId: 'content_area',
+      position: { col: 1, row: 4 },
+      layout: 'flex',
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
+    pagination_content: {
+      id: 'pagination_content',
+      type: 'text',
+      content: '<div class="flex items-center space-x-2"><button class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" disabled><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button><button class="px-3 py-2 bg-blue-600 text-white rounded-md">1</button><button class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">2</button><button class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">3</button><span class="px-2 text-gray-500">...</span><button class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">10</button><button class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button></div>',
+      className: 'w-fit',
+      parentClassName: '',
+      styles: {},
+      parentId: 'pagination',
+      position: { col: 1, row: 1 },
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
     // CMS Block below products
     cms_below_products: {
       id: 'cms_below_products',
@@ -618,7 +707,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 5 },
       colSpan: {
         grid: 12,
         list: 12

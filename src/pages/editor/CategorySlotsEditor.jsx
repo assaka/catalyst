@@ -242,10 +242,54 @@ const CategorySlotsEditor = ({
     };
   }, []);
 
+  // Custom product mirroring function
+  const mirrorProductChanges = (slotId, updatedConfig) => {
+    // Check if the modified slot is a product element
+    const productMatch = slotId.match(/^product_(\d+)_(.+)$/);
+    if (!productMatch) return updatedConfig;
+
+    const [, productNumber, elementType] = productMatch;
+    const updatedSlot = updatedConfig.slots[slotId];
+
+    // Mirror the changes to other product elements of the same type
+    const newConfig = { ...updatedConfig };
+    Object.keys(newConfig.slots).forEach(otherSlotId => {
+      const otherProductMatch = otherSlotId.match(/^product_(\d+)_(.+)$/);
+      if (otherProductMatch && otherProductMatch[2] === elementType && otherProductMatch[1] !== productNumber) {
+        // Mirror structure and styling, but keep unique content
+        newConfig.slots[otherSlotId] = {
+          ...newConfig.slots[otherSlotId],
+          className: updatedSlot.className,
+          styles: updatedSlot.styles,
+          colSpan: updatedSlot.colSpan,
+          viewMode: updatedSlot.viewMode,
+          // Keep original content and parentId
+          content: newConfig.slots[otherSlotId].content,
+          parentId: newConfig.slots[otherSlotId].parentId,
+          id: otherSlotId
+        };
+      }
+    });
+
+    return newConfig;
+  };
+
+  // Custom slot drop handler with product mirroring
+  const handleSlotDropWithMirroring = (dropResult) => {
+    const result = handlerFactory.createSlotDropHandler(slotDropHandler, isDragOperationActiveRef)(dropResult);
+
+    // Apply mirroring if a product element was modified
+    if (dropResult.slotId) {
+      setCategoryLayoutConfig(prevConfig => mirrorProductChanges(dropResult.slotId, prevConfig));
+    }
+
+    return result;
+  };
+
   // Create all handlers using the factory
   const handleGridResize = handlerFactory.createGridResizeHandler(gridResizeHandler, saveTimeoutRef);
   const handleSlotHeightResize = handlerFactory.createSlotHeightResizeHandler(slotHeightResizeHandler, saveTimeoutRef);
-  const handleSlotDrop = handlerFactory.createSlotDropHandler(slotDropHandler, isDragOperationActiveRef);
+  const handleSlotDrop = handleSlotDropWithMirroring;
   const handleSlotDelete = handlerFactory.createSlotDeleteHandler(slotDeleteHandler);
   const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
 
