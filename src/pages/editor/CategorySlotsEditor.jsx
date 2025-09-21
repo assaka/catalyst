@@ -107,23 +107,6 @@ const CategorySlotsEditor = ({
     loadDraftStatus
   } = useDraftStatusManagement(getSelectedStoreId(), 'category');
 
-  // Sample data for category preview
-  const sampleCategoryData = {
-    category: {
-      id: 1,
-      name: 'Electronics',
-      description: 'Latest electronic gadgets and accessories',
-      parent: 'Products'
-    },
-    products: [
-      { id: 1, name: 'Smartphone X', price: 999, description: 'Latest flagship phone', image: 'https://via.placeholder.com/200' },
-      { id: 2, name: 'Laptop Pro', price: 1499, description: 'High-performance laptop', image: 'https://via.placeholder.com/200' },
-      { id: 3, name: 'Wireless Earbuds', price: 199, description: 'Premium sound quality', image: 'https://via.placeholder.com/200' },
-      { id: 4, name: 'Smart Watch', price: 399, description: 'Health & fitness tracker', image: 'https://via.placeholder.com/200' },
-      { id: 5, name: 'Tablet Plus', price: 799, description: '12-inch display tablet', image: 'https://via.placeholder.com/200' },
-      { id: 6, name: 'Power Bank', price: 49, description: '20000mAh capacity', image: 'https://via.placeholder.com/200' },
-    ]
-  };
 
   // Database configuration hook with generic functions and handler factories
   const {
