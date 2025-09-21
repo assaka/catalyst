@@ -62,21 +62,17 @@ export default function Category() {
       setLoading(true);
       setActiveFilters({});
 
-      console.log('Loading category products:', { store: store?.id, categorySlug, categories: categories?.length });
-
       if (!store || !categorySlug) {
-        console.log('Missing store or categorySlug:', { store: !!store, categorySlug });
         return;
       }
 
       let category = null;
       if (categories) {
         category = categories.find(c => c?.slug === categorySlug);
-        console.log('Found category:', category?.name, 'from', categories.length, 'categories');
       }
 
       if (!category) {
-        console.warn(`Category with slug '${categorySlug}' not found in categories:`, categories?.map(c => c.slug));
+        console.warn(`Category with slug '${categorySlug}' not found.`);
         showNotFound(`Category "${categorySlug}" not found`);
         return;
       }
