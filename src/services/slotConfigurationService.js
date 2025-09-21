@@ -360,12 +360,36 @@ class SlotConfigurationService {
   // Keep hierarchical structure - no more legacy transformations
   transformFromSlotConfigFormat(apiConfig) {
 
-    // Return the hierarchical structure as-is for slot editors
-    // Prefer actual data from apiConfig, but provide sensible defaults
+    // Transform database slot format to HierarchicalSlotRenderer format
+    const transformedSlots = {};
+
+    if (apiConfig.slots) {
+      Object.entries(apiConfig.slots).forEach(([slotId, slot]) => {
+        // Convert flat database structure to hierarchical structure
+        transformedSlots[slotId] = {
+          id: slot.id || slotId,
+          name: slot.name || slotId,
+          component: slot.component || slotId, // Use slotId as component if not specified
+          position: {
+            colStart: slot.colStart || 1,
+            colSpan: slot.colSpan || 12,
+            rowStart: slot.rowStart || Object.keys(transformedSlots).length + 1,
+            rowSpan: slot.rowSpan || 1
+          },
+          styles: slot.styles || {},
+          className: slot.className || '',
+          content: slot.content || '',
+          visible: slot.visible !== false, // Default to true
+          locked: slot.locked || false
+        };
+      });
+    }
+
+    // Return the hierarchical structure for slot editors
     return {
       page_name: apiConfig.page_name || apiConfig.metadata?.page_name || (apiConfig.slot_type === 'cart_layout' ? 'Cart' : 'Unknown Page'),
       slot_type: apiConfig.slot_type || apiConfig.metadata?.slot_type || 'cart_layout',
-      slots: apiConfig.slots || {},
+      slots: transformedSlots,
       metadata: apiConfig.metadata || {}
     };
   }
