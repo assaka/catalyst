@@ -817,7 +817,8 @@ export function HierarchicalSlotRenderer({
   selectedElementId = null,
   setPageConfig,
   saveConfiguration,
-  saveTimeoutRef
+  saveTimeoutRef,
+  data = null // Add data prop for slot components
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -1433,6 +1434,18 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
+                  {/* Render slot component if it exists */}
+                  {slot.component && (() => {
+                    const SlotComponent = slot.component;
+                    return (
+                      <SlotComponent
+                        data={data} // Pass the data from CategorySlotsEditor
+                        content={slot.content}
+                        config={{ viewMode }}
+                      />
+                    );
+                  })()}
+
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
                     <HierarchicalSlotRenderer
                       slots={slots}
@@ -1453,6 +1466,7 @@ export function HierarchicalSlotRenderer({
                       setPageConfig={setPageConfig}
                       saveConfiguration={saveConfiguration}
                       saveTimeoutRef={saveTimeoutRef}
+                      data={data} // Pass data to recursive calls
                     />
                   )}
                 </EditableElement>
@@ -1630,6 +1644,40 @@ export function AddSlotModal({
               <div>
                 <div className="font-medium">Image</div>
                 <div className="text-sm text-gray-500">Add an image from File Library</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            disabled
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3 opacity-60 cursor-not-allowed"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-orange-600">🧩</span>
+              <div>
+                <div className="font-medium flex items-center gap-2">
+                  Widgets
+                  <Badge className="bg-orange-100 text-orange-800 text-xs">Coming Soon</Badge>
+                </div>
+                <div className="text-sm text-gray-500">Interactive components and widgets</div>
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            disabled
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-3 opacity-60 cursor-not-allowed"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 mr-3 text-teal-600">📝</span>
+              <div>
+                <div className="font-medium flex items-center gap-2">
+                  Forms
+                  <Badge className="bg-teal-100 text-teal-800 text-xs">Coming Soon</Badge>
+                </div>
+                <div className="text-sm text-gray-500">Form inputs and submission handling</div>
               </div>
             </div>
           </Button>
