@@ -59,12 +59,12 @@ export const categoryConfig = {
       metadata: { hierarchical: false }
     },
 
-    // Line 245-253: Filters sidebar (lg:col-span-1)
+    // Line 245-253: Filters sidebar (lg:col-span-1) - matches LayeredNavigation component
     filters: {
       id: 'filters',
       type: 'container',
       content: '',
-      className: 'category-filters bg-white rounded-lg shadow p-6',
+      className: 'category-filters',
       styles: {},
       parentId: null,
       position: { col: 1, row: 4 },
@@ -77,14 +77,15 @@ export const categoryConfig = {
       metadata: { hierarchical: false }
     },
 
-    filters_title: {
-      id: 'filters_title',
-      type: 'text',
-      content: '<h3 class="text-lg font-semibold mb-4">Filters</h3>',
-      className: 'w-full',
-      parentClassName: '',
+    // LayeredNavigation Card structure
+    filters_card: {
+      id: 'filters_card',
+      type: 'container',
+      content: '',
+      className: 'rounded-lg border bg-card text-card-foreground shadow-sm',
       styles: {},
       parentId: 'filters',
+      layout: 'block',
       colSpan: {
         grid: 12,
         list: 0
@@ -93,14 +94,48 @@ export const categoryConfig = {
       metadata: { hierarchical: false }
     },
 
-    filters_content: {
-      id: 'filters_content',
+    // Card Header with "Filter By" title
+    filters_header: {
+      id: 'filters_header',
+      type: 'container',
+      content: '',
+      className: 'flex flex-col space-y-1.5 p-6 pb-4',
+      styles: {},
+      parentId: 'filters_card',
+      layout: 'block',
+      colSpan: {
+        grid: 12,
+        list: 0
+      },
+      viewMode: ['grid'],
+      metadata: { hierarchical: false }
+    },
+
+    filters_title: {
+      id: 'filters_title',
       type: 'text',
-      content: '<div class="space-y-6"><div><h4 class="font-medium text-gray-700 mb-2">Price Range</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">Under $25</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">$25 - $50</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">$50 - $100</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">Over $100</span></label></div></div><div><h4 class="font-medium text-gray-700 mb-2">Brand</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">Apple</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">Samsung</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">Google</span></label></div></div><div><h4 class="font-medium text-gray-700 mb-2">Rating</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">5 stars</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">4 stars & up</span></label><label class="flex items-center"><input type="checkbox" class="mr-2"><span class="text-sm">3 stars & up</span></label></div></div></div>',
+      content: '<h3 class="text-2xl font-semibold leading-none tracking-tight">Filter By</h3>',
       className: 'w-full',
       parentClassName: '',
       styles: {},
-      parentId: 'filters',
+      parentId: 'filters_header',
+      colSpan: {
+        grid: 12,
+        list: 0
+      },
+      viewMode: ['grid'],
+      metadata: { hierarchical: false }
+    },
+
+    // Card Content with accordion filters
+    filters_content: {
+      id: 'filters_content',
+      type: 'text',
+      content: '<div class="p-6 pt-0"><div class="space-y-4"><div class="border-b pb-4"><h4 class="font-semibold mb-3">Price</h4><div class="space-y-2"><input type="range" class="w-full" min="0" max="1000" /><div class="flex justify-between text-sm text-gray-600"><span>$0</span><span>$1000</span></div></div></div><div class="border-b pb-4"><h4 class="font-semibold mb-3">Brand</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">Apple</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">Samsung</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">Google</span></label></div></div><div class="pb-4"><h4 class="font-semibold mb-3">Rating</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">5 stars</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">4 stars & up</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">3 stars & up</span></label></div></div></div></div>',
+      className: 'w-full',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filters_card',
       colSpan: {
         grid: 12,
         list: 0
@@ -127,12 +162,12 @@ export const categoryConfig = {
       metadata: { hierarchical: false }
     },
 
-    // Product cards
+    // Product Card 1 - matches ProductCard component structure
     product_1: {
       id: 'product_1',
       type: 'container',
       content: '',
-      className: 'bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       styles: {},
       parentId: 'products',
       layout: 'block',
@@ -147,8 +182,8 @@ export const categoryConfig = {
     product_1_image: {
       id: 'product_1_image',
       type: 'image',
-      content: 'https://via.placeholder.com/300x300',
-      className: 'aspect-square bg-gray-100 rounded-t-lg w-full object-cover',
+      content: 'https://via.placeholder.com/400x400?text=Headphones',
+      className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
       parentClassName: '',
       styles: {},
       parentId: 'product_1',
@@ -179,24 +214,8 @@ export const categoryConfig = {
     product_1_name: {
       id: 'product_1_name',
       type: 'text',
-      content: 'Wireless Headphones',
-      className: 'text-lg font-semibold text-gray-900 mb-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_1_content',
-      colSpan: {
-        grid: 12,
-        list: 12
-      },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false }
-    },
-
-    product_1_description: {
-      id: 'product_1_description',
-      type: 'text',
-      content: 'High-quality wireless headphones with noise cancellation',
-      className: 'text-gray-600 text-sm mb-3',
+      content: '<h3 class="font-semibold text-lg truncate mt-1">Wireless Headphones</h3>',
+      className: 'w-full',
       parentClassName: '',
       styles: {},
       parentId: 'product_1_content',
@@ -211,8 +230,8 @@ export const categoryConfig = {
     product_1_price: {
       id: 'product_1_price',
       type: 'text',
-      content: '$199.99',
-      className: 'text-xl font-bold text-gray-900 mb-3',
+      content: '<div class="space-y-3 mt-4"><div class="flex items-baseline gap-2"><p class="font-bold text-xl text-gray-900">$199.99</p></div></div>',
+      className: 'w-full',
       parentClassName: '',
       styles: {},
       parentId: 'product_1_content',
@@ -228,9 +247,8 @@ export const categoryConfig = {
       id: 'product_1_button',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors',
-      parentClassName: '',
-      styles: {},
+      className: 'w-full text-white border-0 hover:brightness-90 transition-all duration-200 px-4 py-2 rounded-md text-sm font-medium',
+      styles: { backgroundColor: '#3B82F6' },
       parentId: 'product_1_content',
       colSpan: {
         grid: 12,
@@ -244,7 +262,7 @@ export const categoryConfig = {
       id: 'product_2',
       type: 'container',
       content: '',
-      className: 'bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       styles: {},
       parentId: 'products',
       layout: 'block',
@@ -259,8 +277,8 @@ export const categoryConfig = {
     product_2_image: {
       id: 'product_2_image',
       type: 'image',
-      content: 'https://via.placeholder.com/300x300',
-      className: 'aspect-square bg-gray-100 rounded-t-lg w-full object-cover',
+      content: 'https://via.placeholder.com/400x400?text=Smartphone',
+      className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
       parentClassName: '',
       styles: {},
       parentId: 'product_2',
@@ -291,24 +309,8 @@ export const categoryConfig = {
     product_2_name: {
       id: 'product_2_name',
       type: 'text',
-      content: 'Smartphone',
-      className: 'text-lg font-semibold text-gray-900 mb-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_2_content',
-      colSpan: {
-        grid: 12,
-        list: 12
-      },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false }
-    },
-
-    product_2_description: {
-      id: 'product_2_description',
-      type: 'text',
-      content: 'Latest model smartphone with advanced camera',
-      className: 'text-gray-600 text-sm mb-3',
+      content: '<h3 class="font-semibold text-lg truncate mt-1">Smartphone</h3>',
+      className: 'w-full',
       parentClassName: '',
       styles: {},
       parentId: 'product_2_content',
@@ -323,8 +325,8 @@ export const categoryConfig = {
     product_2_price: {
       id: 'product_2_price',
       type: 'text',
-      content: '$799.99',
-      className: 'text-xl font-bold text-gray-900 mb-3',
+      content: '<div class="space-y-3 mt-4"><div class="flex items-baseline gap-2"><p class="font-bold text-xl text-gray-900">$799.99</p></div></div>',
+      className: 'w-full',
       parentClassName: '',
       styles: {},
       parentId: 'product_2_content',
@@ -340,7 +342,24 @@ export const categoryConfig = {
       id: 'product_2_button',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors',
+      className: 'w-full text-white border-0 hover:brightness-90 transition-all duration-200 px-4 py-2 rounded-md text-sm font-medium',
+      styles: { backgroundColor: '#3B82F6' },
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_2_content',
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: false }
+    },
+
+    product_3: {
+      id: 'product_3',
+      type: 'container',
+      content: '',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       parentClassName: '',
       styles: {},
       parentId: 'product_2_content',
