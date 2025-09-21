@@ -101,26 +101,29 @@ const CategorySlotsEditor = ({
   } = useDraftStatusManagement(getSelectedStoreId(), 'category');
 
   // Sample data for category preview
-  // Function to create default slots from categoryConfig
+  // Function to create essential navigation slots (following homepage/product pattern)
   const createDefaultSlots = () => {
     const defaultSlots = {};
 
-    // Use the predefined slots from categoryConfig directly
-    categoryConfig.defaultSlots.forEach((slotId) => {
+    // Create only essential navigation slots from categoryConfig.defaultSlots
+    categoryConfig.defaultSlots.forEach((slotId, index) => {
       const slotDefinition = categoryConfig.slots[slotId];
       if (slotDefinition) {
         defaultSlots[slotId] = {
-          ...slotDefinition,
-          // Ensure essential properties are set
-          visible: true,
-          locked: false,
-          // Convert position to the expected format if needed
-          position: slotDefinition.position || {
+          id: slotId,
+          name: slotDefinition.name,
+          component: slotDefinition.component,
+          content: slotDefinition.defaultContent || '',
+          className: slotDefinition.className || '',
+          styles: {},
+          position: {
             colStart: 1,
-            colSpan: slotDefinition.colSpan?.grid || 12,
-            rowStart: 1,
+            colSpan: 12,
+            rowStart: index + 1,
             rowSpan: 1
-          }
+          },
+          visible: true,
+          locked: false
         };
       }
     });
