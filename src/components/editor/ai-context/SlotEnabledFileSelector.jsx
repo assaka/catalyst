@@ -157,11 +157,9 @@ const SlotEnabledFileSelector = ({
         file.name
       );
 
-      // Create enhanced file object with slot configuration
+      // Create enhanced file object with slot configuration, preserving all original properties
       const fileWithDraft = {
-        name: file.name,
-        path: file.path,
-        type: 'file',
+        ...file, // Keep all original properties (id, pageType, icon, color, description, etc.)
         slotConfiguration: {
           hasDraft: true,
           draftId: draftResult.draft.id,
@@ -187,11 +185,9 @@ const SlotEnabledFileSelector = ({
     } catch (error) {
       console.error('❌ Error handling slot configuration:', error);
 
-      // Still pass the file, but without slot config
+      // Still pass the file, but without slot config, preserving all original properties
       const fallbackFile = {
-        name: file.name,
-        path: file.path,
-        type: 'file',
+        ...file, // Keep all original properties (id, pageType, icon, color, description, etc.)
         slotConfiguration: { error: error.message }
       };
 
