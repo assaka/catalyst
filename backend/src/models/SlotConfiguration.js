@@ -304,32 +304,15 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
   const getDefaultConfig = async (pageType, staticConfig = null) => {
     // Use provided static configuration if available
     if (staticConfig) {
-      // Ensure slots have proper positions
-      const slotsWithPositions = {};
-      let rowIndex = 1;
-
-      Object.entries(staticConfig.slots || {}).forEach(([slotId, slot]) => {
-        slotsWithPositions[slotId] = {
-          ...slot,
-          position: slot.position || {
-            colStart: 1,
-            colSpan: 12,
-            rowStart: rowIndex++,
-            rowSpan: 1
-          }
-        };
-      });
-
+      // Simply return the static config as-is with timestamps
+      // The frontend sends complete configuration with all properties
       return {
-        page_name: staticConfig.page_name,
-        slot_type: staticConfig.slot_type,
-        slots: slotsWithPositions,
+        ...staticConfig,
         metadata: {
+          ...staticConfig.metadata,
           created: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-          ...(staticConfig.metadata || {})
-        },
-        cmsBlocks: staticConfig.cmsBlocks || []
+          lastModified: new Date().toISOString()
+        }
       };
     }
 
