@@ -443,45 +443,6 @@ export default ExampleComponent;`;
     setSelectedFile(slotFile); // Keep this for compatibility
   }, []);
 
-
-  // Handle code changes in editor
-  const handleCodeChange = useCallback((newCode) => {
-    setSourceCode(newCode);
-
-    // Track modified files - compare against original baseline, not just previous sourceCode
-    if (selectedFile) {
-      setModifiedFiles(prev => {
-        const normalizedNewCode = normalizeLineEndings(newCode);
-        const normalizedOriginalCode = normalizeLineEndings(originalCode);
-        const hasChanges = normalizedNewCode !== normalizedOriginalCode;
-        const isCurrentlyModified = prev.includes(selectedFile.path);
-
-        if (hasChanges && !isCurrentlyModified) {
-          // File has changes from original and is not yet in the modified list - add it
-          return [...prev, selectedFile.path];
-        } else if (!hasChanges && isCurrentlyModified) {
-          // File has no changes from original but is in the modified list - remove it
-          return prev.filter(path => path !== selectedFile.path);
-        }
-
-        // No change needed
-        return prev;
-      });
-    }
-
-    // Update manual edit result when code changes (e.g., from line revert)
-    if (manualEditResult) {
-      const normalizedNewCode = normalizeLineEndings(newCode);
-      const normalizedOriginalCode = normalizeLineEndings(manualEditResult.originalCode || originalCode);
-      const updatedManualEdit = {
-        ...manualEditResult,
-        newCode: newCode,
-        hasChanges: normalizedNewCode !== normalizedOriginalCode
-      };
-      setManualEditResult(updatedManualEdit);
-    }
-  }, [selectedFile, sourceCode, manualEditResult, originalCode, normalizeLineEndings]);
-
   // Handle patch generation from AI Context Window
   const handlePatchGenerated = useCallback((patch) => {
     setCurrentPatch(patch);
@@ -491,80 +452,6 @@ export default ExampleComponent;`;
   const handlePreviewGenerated = useCallback(async (preview) => {
     console.log('Preview generated:', preview);
     // Preview functionality simplified - no more patch storage
-  }, []);
-
-  // Handle manual edit detection with auto-save
-  const handleManualEdit = useCallback(async (newCode, originalCode, options = {}) => {
-    const normalizedNewCode = normalizeLineEndings(newCode);
-    const normalizedBaselineCode = normalizeLineEndings(baselineCode);
-    const manualEdit = {
-      newCode,
-      originalCode, // Keep editor's original for compatibility
-      hasChanges: normalizedNewCode !== normalizedBaselineCode, // Compare against baseline
-      options
-    };
-    
-    setManualEditResult(manualEdit);
-    
-    if (manualEdit.hasChanges) {
-      
-      // Auto-save patch to database with debouncing
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-      
-      autoSaveTimeoutRef.current = setTimeout(async () => {
-        try {
-          const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-          if (!token) {
-            console.warn('⚠️ No auth token found - skipping auto-save');
-            return;
-          }
-
-          const filePath = selectedFile?.path || selectedFile?.name;
-          if (!filePath) {
-            console.warn('⚠️ No file path available - skipping auto-save');
-            return;
-          }
-
-          // Double-check if there are still changes before auto-saving
-          // Compare against baseline, not editor's previous state
-          const currentNormalizedNew = normalizeLineEndings(newCode);
-          const currentNormalizedBaseline = normalizeLineEndings(baselineCode);
-          
-          if (currentNormalizedNew === currentNormalizedBaseline) {
-            console.log('🔄 No changes detected against baseline - skipping save');
-            return;
-          }
-
-          console.log('💾 Auto-save disabled - customizations API is obsolete');
-          // Auto-save functionality removed with customizations API
-        } catch (error) {
-          console.error('❌ Error during auto-save:', error);
-        }
-      }, 2000); // 2 second debounce
-    } else {
-      console.log('✅ Changes undone - code returned to original state');
-      // Clear any pending auto-save when changes are undone
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-        autoSaveTimeoutRef.current = null;
-      }
-    }
-  }, [selectedFile?.name, selectedFile?.path, baselineCode, normalizeLineEndings]);
-
-  // Handle preview mode changes - simplified
-  const handlePreviewModeChange = useCallback(async (mode) => {
-    // Don't set preview mode here as it's already set by the caller
-    // This was causing duplicate state updates and React error #130
-    console.log('Preview mode changed to:', mode);
-  }, []);
-
-
-  // Handle file tree refresh
-  const handleFileTreeRefresh = useCallback(() => {
-    // Refresh logic would go here
-    console.log('File tree refreshed');
   }, []);
 
   return (
@@ -578,55 +465,13 @@ export default ExampleComponent;`;
           </h1>
         </div>
 
-        {/* Connection Status */}
+        {/* Slot Editor Status */}
         <div className="flex items-center space-x-4">
-          {/* Manual Edit Status */}
-          {manualEditResult && manualEditResult.hasChanges && (
-            <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-              <div className="font-medium flex items-center">
-                <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1 animate-pulse"></span>
-                Manual Edit Detected
-              </div>
+          {selectedSlotEditor && (
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Editing: {selectedSlotEditor.name}
             </div>
           )}
-
-          {/* AST Diff Status */}
-          {astDiffStatus && (
-            <div className={`p-2 rounded-md text-xs ${
-              astDiffStatus.status === 'success' ? 'bg-green-100 text-green-800' :
-              astDiffStatus.status === 'error' ? 'bg-red-100 text-red-800' :
-              'bg-blue-100 text-blue-800'
-            }`}>
-              <div className="font-medium">
-                {astDiffStatus.status === 'saving' && (
-                  <span className="inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-1"></span>
-                )}
-                {astDiffStatus.message}
-              </div>
-              {astDiffStatus.data && (
-                <div className="mt-1 text-xs">
-                  ID: {astDiffStatus.data.id?.substring(0, 8)}...
-                </div>
-              )}
-            </div>
-          )}
-
-          {connectionStatus && (
-            <div className={`p-2 rounded-md text-xs ${
-              connectionStatus.status === 'success' ? 'bg-green-100 text-green-800' :
-              connectionStatus.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-              connectionStatus.status === 'error' ? 'bg-red-100 text-red-800' :
-              'bg-blue-100 text-blue-800'
-            }`}>
-              <div className="font-medium">{connectionStatus.message}</div>
-              {connectionStatus.details && (
-                <div className="mt-1">{connectionStatus.details}</div>
-              )}
-            </div>
-          )}
-
-          {/* Version history integrated into UnifiedSlotEditor */}
-          
         </div>
       </div>
 
@@ -877,9 +722,6 @@ export default ExampleComponent;`;
           )}
           {currentPatch && (
             <span className="text-orange-600 dark:text-orange-400">Patch Ready</span>
-          )}
-          {manualEditResult && manualEditResult.hasChanges && (
-            <span className="text-orange-600 dark:text-orange-400">Manual Edit Active</span>
           )}
           <span>Ready</span>
         </div>
