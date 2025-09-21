@@ -45,10 +45,61 @@ export default function Category() {
 
     try {
       const config = await slotConfigurationService.getConfiguration(store.id, 'category_layout');
-      setCategorySlots(config?.slots || null);
+
+      if (config?.slots && Object.keys(config.slots).length > 0) {
+        // Use the saved configuration from editor
+        setCategorySlots(config.slots);
+      } else {
+        // Load default configuration and ensure header slots exist for styling
+        const { categoryConfig } = await import('@/components/editor/slot/configs/category-config');
+
+        // Extract just the header-related slots from the default config
+        const headerSlots = {
+          breadcrumbs: categoryConfig.slots.breadcrumbs,
+          header: categoryConfig.slots.header,
+          header_description: categoryConfig.slots.header_description
+        };
+
+        setCategorySlots(headerSlots);
+      }
     } catch (error) {
       console.warn('Could not load category slot configuration:', error);
-      setCategorySlots(null);
+
+      // Fallback: create minimal header slots that can receive styling
+      const fallbackSlots = {
+        breadcrumbs: {
+          id: 'breadcrumbs',
+          type: 'text',
+          content: '',
+          className: 'w-full category-breadcrumbs',
+          styles: {},
+          parentId: null,
+          colSpan: { grid: 12, list: 12 },
+          viewMode: ['grid', 'list']
+        },
+        header: {
+          id: 'header',
+          type: 'text',
+          content: '',
+          className: 'w-full category-header',
+          styles: {},
+          parentId: null,
+          colSpan: { grid: 12, list: 12 },
+          viewMode: ['grid', 'list']
+        },
+        header_description: {
+          id: 'header_description',
+          type: 'text',
+          content: '',
+          className: 'w-full mb-8',
+          styles: {},
+          parentId: null,
+          colSpan: { grid: 12, list: 12 },
+          viewMode: ['grid', 'list']
+        }
+      };
+
+      setCategorySlots(fallbackSlots);
     }
   };
 
@@ -347,7 +398,7 @@ export default function Category() {
       
       <div className="mb-8 max-w-7xl mx-auto">
         {categorySlots ? (
-          // Render category header using CategorySlotRenderer if configuration exists
+          // Always render using CategorySlotRenderer to enable styling
           <CategorySlotRenderer
             slots={categorySlots}
             parentId={null}
@@ -355,14 +406,12 @@ export default function Category() {
             categoryContext={categoryContext}
           />
         ) : (
-          // Fallback to static header if no configuration
-          <>
-            <Breadcrumb items={getBreadcrumbItems()} />
-            <h1 className="text-4xl font-bold">{pageTitle}</h1>
-            {currentCategory?.description && (
-              <p className="text-gray-600 mt-2">{currentCategory.description}</p>
-            )}
-          </>
+          // Loading state - show nothing until slots are loaded
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-10 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
         )}
       </div>
 

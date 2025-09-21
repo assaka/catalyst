@@ -64,30 +64,58 @@ export function CategorySlotRenderer({
       return children;
     };
 
-    // Handle category header content
-    if (id === 'category_title') {
+    // Handle category header content - with dynamic content from categoryContext
+    if (id === 'header' || id === 'category_title') {
+      // Use content from slot if provided, otherwise use category name
+      const headerContent = content || category?.name || 'Products';
+
       return wrapWithParentClass(
-        <h1 className={className || "text-3xl font-bold text-gray-900 mb-4"} style={styles}>
-          {content || category?.name || 'Products'}
+        <h1 className={className || "text-4xl font-bold text-gray-900 mb-4"} style={styles}>
+          {headerContent}
         </h1>
       );
     }
 
-    if (id === 'category_description') {
+    if (id === 'header_description' || id === 'category_description') {
+      // Use content from slot if provided, otherwise use category description
+      const descContent = content || category?.description || '';
+
+      if (!descContent) return null;
+
       return wrapWithParentClass(
         <p className={className || "text-gray-600 mb-6"} style={styles}>
-          {content || category?.description || ''}
+          {descContent}
         </p>
       );
     }
 
-    if (id === 'breadcrumb_container') {
+    if (id === 'breadcrumbs' || id === 'breadcrumb_container') {
+      // Use content from slot if provided, otherwise generate breadcrumbs
+      if (content && content.trim()) {
+        return wrapWithParentClass(
+          <div
+            className={className || "flex mb-4"}
+            style={styles}
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        );
+      }
+
+      // Generate dynamic breadcrumbs
       return wrapWithParentClass(
         <nav className={className || "flex mb-4"} style={styles} aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-3">
+            <li className="inline-flex items-center">
+              <button
+                onClick={() => navigate('/')}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Home
+              </button>
+            </li>
             {breadcrumbs.map((breadcrumb, index) => (
               <li key={index} className="inline-flex items-center">
-                {index > 0 && <span className="mx-2 text-gray-400">/</span>}
+                <span className="mx-2 text-gray-400">/</span>
                 {index === breadcrumbs.length - 1 ? (
                   <span className="text-gray-500">{breadcrumb.name}</span>
                 ) : (
@@ -100,6 +128,12 @@ export function CategorySlotRenderer({
                 )}
               </li>
             ))}
+            {category && (
+              <li className="inline-flex items-center">
+                <span className="mx-2 text-gray-400">/</span>
+                <span className="text-gray-500">{category.name}</span>
+              </li>
+            )}
           </ol>
         </nav>
       );
