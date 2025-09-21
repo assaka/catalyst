@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { createCategoryUrl } from "@/utils/urlUtils";
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -33,11 +33,24 @@ export default function Category() {
   const [itemsPerPage] = useState(12);
   
   const { storeCode, categorySlug } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Initialize page from URL params
+  useEffect(() => {
+    const pageParam = searchParams.get('p');
+    if (pageParam) {
+      const pageNumber = parseInt(pageParam, 10);
+      if (pageNumber > 0) {
+        setCurrentPage(pageNumber);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
       loadCategoryProducts();
-      
+
       // Track category view
       if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
         const category = categories?.find(c => c?.slug === categorySlug);
@@ -214,7 +227,17 @@ export default function Category() {
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return sortedProducts.slice(startIndex, endIndex);
+    const result = sortedProducts.slice(startIndex, endIndex);
+    console.log('Pagination debug:', {
+      currentPage,
+      itemsPerPage,
+      startIndex,
+      endIndex,
+      sortedProductsLength: sortedProducts.length,
+      paginatedLength: result.length,
+      totalPages: Math.ceil(sortedProducts.length / itemsPerPage)
+    });
+    return result;
   }, [sortedProducts, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
@@ -222,16 +245,46 @@ export default function Category() {
   const handleSortChange = (newSortBy) => {
     setSortBy(newSortBy);
     setCurrentPage(1);
+
+    // Clear page parameter from URL when resetting to page 1
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('p');
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+
+    // Update URL with page parameter
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (page === 1) {
+      newSearchParams.delete('p');
+    } else {
+      newSearchParams.set('p', page.toString());
+    }
+
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+
+    window.history.replaceState({}, '', newUrl);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleFilterChange = (newFilters) => {
     setActiveFilters(newFilters);
     setCurrentPage(1);
+
+    // Clear page parameter from URL when resetting to page 1
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('p');
+    const newUrl = newSearchParams.toString()
+      ? `${window.location.pathname}?${newSearchParams.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
   };
 
   // Build breadcrumb items for category pages
@@ -312,7 +365,11 @@ export default function Category() {
           {/* Sorting and Results Info */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div className="text-sm text-gray-600">
-              Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length)}-{Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
+              Showing {sortedProducts.length > 0 ? Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length) : 0}-{Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
+              {/* Debug info */}
+              <span className="ml-2 text-xs text-blue-500">
+                (Page {currentPage}, Items per page: {itemsPerPage}, Paginated: {paginatedProducts.length})
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
