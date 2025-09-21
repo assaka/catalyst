@@ -206,6 +206,39 @@ const CategorySlotsEditor = ({
   // Create handler factory with page-specific dependencies
   const handlerFactory = createHandlerFactory(setCategoryLayoutConfig, saveConfiguration);
 
+  // Sample category data for editor preview
+  const sampleCategoryData = {
+    category: {
+      id: 1,
+      name: 'Electronics',
+      description: 'Browse our latest electronics and gadgets',
+      parent: 'Home'
+    },
+    products: [
+      {
+        id: 1,
+        name: 'Wireless Headphones',
+        description: 'High-quality wireless headphones with noise cancellation',
+        price: 199.99,
+        image: '/sample-headphones.jpg'
+      },
+      {
+        id: 2,
+        name: 'Smartphone',
+        description: 'Latest model smartphone with advanced camera',
+        price: 799.99,
+        image: '/sample-phone.jpg'
+      },
+      {
+        id: 3,
+        name: 'Tablet',
+        description: 'Portable tablet perfect for work and entertainment',
+        price: 299.99,
+        image: '/sample-tablet.jpg'
+      }
+    ]
+  };
+
   // Create all handlers using the factory
   const handleTextChange = handlerFactory.createTextChangeHandler(textChangeHandler);
   const handleClassChange = handlerFactory.createClassChangeHandler(classChangeHandler);
@@ -412,8 +445,6 @@ const CategorySlotsEditor = ({
                       selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
                       setPageConfig={setCategoryLayoutConfig}
                       saveConfiguration={saveConfiguration}
-                      saveTimeoutRef={saveTimeoutRef}
-                      categoryData={sampleCategoryData}
                       customSlotRenderer={(slot) => {
                         const componentMap = {
                           'header': CategoryHeaderSlot,
@@ -434,6 +465,7 @@ const CategorySlotsEditor = ({
                         }
                         return null;
                       }}
+                      saveTimeoutRef={saveTimeoutRef}
                     />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">

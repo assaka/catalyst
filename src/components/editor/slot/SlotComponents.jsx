@@ -818,7 +818,8 @@ export function HierarchicalSlotRenderer({
   setPageConfig,
   saveConfiguration,
   saveTimeoutRef,
-  categoryData = null // Add category data for category-specific rendering
+  categoryData = null, // Add category data for category-specific rendering
+  customSlotRenderer = null // Add custom slot renderer function
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -1212,6 +1213,8 @@ export function HierarchicalSlotRenderer({
                   onSlotDelete={onSlotDelete}
                   onResizeStart={onResizeStart}
                   onResizeEnd={onResizeEnd}
+                  categoryData={categoryData}
+                  customSlotRenderer={customSlotRenderer}
                   selectedElementId={selectedElementId}
                   setPageConfig={setPageConfig}
                   saveConfiguration={saveConfiguration}
@@ -1434,10 +1437,23 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  {/* Render container content */}
-                  {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && slot.content && (
-                    <div dangerouslySetInnerHTML={{ __html: slot.content }} />
-                  )}
+                  {/* Render container content using custom renderer if available */}
+                  {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (() => {
+                    // Use custom renderer if provided (like Cart does)
+                    if (customSlotRenderer) {
+                      const customContent = customSlotRenderer(slot);
+                      if (customContent) {
+                        return customContent;
+                      }
+                    }
+
+                    // Fall back to default HTML content rendering
+                    if (slot.content) {
+                      return <div dangerouslySetInnerHTML={{ __html: slot.content }} />;
+                    }
+
+                    return null;
+                  })()}
 
                   {/* Render child slots */}
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
@@ -1447,6 +1463,8 @@ export function HierarchicalSlotRenderer({
                       mode={mode}
                       viewMode={viewMode}
                       showBorders={showBorders}
+                      categoryData={categoryData}
+                      customSlotRenderer={customSlotRenderer}
                       currentDragInfo={currentDragInfo}
                       setCurrentDragInfo={setCurrentDragInfo}
                       onElementClick={onElementClick}
