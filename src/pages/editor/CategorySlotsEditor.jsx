@@ -1,6 +1,8 @@
 /**
- * CategorySlotsEditor - Category page layout editor using slot system
- * Based on CartSlotsEditor architecture with category-specific components
+ * Clean CategorySlotsEditor - Error-free version based on CartSlotsEditor.jsx
+ * - Resizing and dragging with minimal complexity
+ * - Click to open EditorSidebar
+ * - Maintainable structure
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -28,7 +30,8 @@ import {
   useResetLayoutHandler,
   useSaveConfigurationHandler,
   usePublishPanelHandlerWrappers,
-  useEditorInitialization
+  useEditorInitialization,
+  useViewModeAdjustments
 } from '@/hooks/useSlotConfiguration';
 import {
   HierarchicalSlotRenderer,
@@ -50,10 +53,10 @@ import {
   CategoryPaginationSlot
 } from '@/components/editor/slot/slotComponentsCategory';
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
 
-// Main CategorySlotsEditor component
+// Main CategorySlotsEditor component - mirrors CartSlotsEditor.jsx structure exactly
+
 const CategorySlotsEditor = ({
   mode = 'edit',
   onSave,
@@ -65,72 +68,13 @@ const CategorySlotsEditor = ({
   // Global state to track current drag operation
   const [currentDragInfo, setCurrentDragInfo] = useState(null);
 
-  // State management - Initialize with default config for testing
+  // Validation function now provided by useSlotConfiguration hook
+
+  // State management - Initialize with empty config to avoid React error #130
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState({
     page_name: 'Category',
     slot_type: 'category_layout',
-    slots: {
-      header: {
-        id: 'header',
-        type: 'container',
-        content: '<h1>Category Name</h1>',
-        className: 'category-header',
-        styles: {},
-        parentId: null,
-        colSpan: { grid: 12, list: 12 },
-        position: { col: 1, row: 1 },
-        viewMode: ['grid', 'list'],
-        visible: true
-      },
-      breadcrumbs: {
-        id: 'breadcrumbs',
-        type: 'container',
-        content: '<nav>Home > Category</nav>',
-        className: 'category-breadcrumbs',
-        styles: {},
-        parentId: null,
-        colSpan: { grid: 12, list: 12 },
-        position: { col: 1, row: 2 },
-        viewMode: ['grid', 'list'],
-        visible: true
-      },
-      filters: {
-        id: 'filters',
-        type: 'container',
-        content: '<div class="filters-container">Filter options here</div>',
-        className: 'category-filters',
-        styles: {},
-        parentId: null,
-        colSpan: { grid: 3, list: 12 },
-        position: { col: 1, row: 3 },
-        viewMode: ['grid', 'list'],
-        visible: true
-      },
-      products: {
-        id: 'products',
-        type: 'container',
-        content: '<div class="products-grid">Products will appear here</div>',
-        className: 'category-products',
-        styles: {},
-        parentId: null,
-        colSpan: { grid: 9, list: 12 },
-        position: { col: 4, row: 3 },
-        viewMode: ['grid', 'list'],
-        visible: true
-      },
-      pagination: {
-        id: 'pagination',
-        type: 'container',
-        content: '<div class="pagination">Page 1 2 3...</div>',
-        className: 'category-pagination',
-        styles: {},
-        parentId: null,
-        colSpan: { grid: 12, list: 12 },
-        position: { col: 1, row: 4 },
-        viewMode: ['grid', 'list'],
-        visible: true
-      }
-    },
+    slots: {},
     metadata: {
       created: new Date().toISOString(),
       lastModified: new Date().toISOString(),
@@ -168,7 +112,6 @@ const CategorySlotsEditor = ({
     loadDraftStatus
   } = useDraftStatusManagement(getSelectedStoreId(), 'category');
 
-
   // Database configuration hook with generic functions and handler factories
   const {
     handleResetLayout: resetLayoutFromHook,
@@ -204,7 +147,7 @@ const CategorySlotsEditor = ({
     'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
   );
 
-  // Use generic editor initialization (like CartSlotsEditor)
+  // Use generic editor initialization
   useEditorInitialization(initializeConfig, setCategoryLayoutConfig);
 
   // Configuration change detection
@@ -216,6 +159,7 @@ const CategorySlotsEditor = ({
   useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'category');
 
   // Compute when Publish button should be enabled
+  // Only enable if there are actual unsaved changes to publish
   const canPublish = hasUnsavedChanges;
 
   // Save configuration using the generic factory
@@ -237,7 +181,6 @@ const CategorySlotsEditor = ({
       updateLastSavedConfig
     }
   );
-
 
   // Handle element selection using generic factory
   const handleElementClick = createElementClickHandler(
@@ -317,7 +260,6 @@ const CategorySlotsEditor = ({
       updateLastSavedConfig
     }
   );
-
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
   // Use generic publish handler
@@ -359,7 +301,38 @@ const CategorySlotsEditor = ({
     }
   );
 
-  // Main render
+  // Category-specific view mode adjustments
+  const categoryAdjustmentRules = {
+    filters: {
+      colSpan: {
+        shouldAdjust: (currentValue) => {
+          // Check if colSpan needs to be converted from number to object format
+          return typeof currentValue === 'number';
+        },
+        newValue: {
+          grid: 3,
+          list: 12
+        }
+      }
+    },
+    products: {
+      colSpan: {
+        shouldAdjust: (currentValue) => {
+          // Check if colSpan needs to be converted from number to object format
+          return typeof currentValue === 'number';
+        },
+        newValue: {
+          grid: 9,
+          list: 12
+        }
+      }
+    }
+  };
+
+  // Use generic view mode adjustments
+  useViewModeAdjustments(categoryLayoutConfig, setCategoryLayoutConfig, viewMode, categoryAdjustmentRules);
+
+  // Main render - Clean and maintainable
   return (
     <div className={`min-h-screen bg-gray-50 ${
       isSidebarVisible ? 'pr-80' : ''
@@ -433,7 +406,6 @@ const CategorySlotsEditor = ({
             </div>
           </div>
         </div>
-
         {/* Category Layout - Hierarchical Structure */}
         <div
           className="bg-gray-50 category-page"
@@ -467,62 +439,50 @@ const CategorySlotsEditor = ({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {(() => {
-                console.log('CategorySlotsEditor render check:', {
-                  categoryLayoutConfig,
-                  hasSlots: categoryLayoutConfig && categoryLayoutConfig.slots,
-                  slotCount: categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots).length : 0,
-                  slotKeys: categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots) : []
-                });
-                return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
-              })() ? (
-                    <HierarchicalSlotRenderer
-                      slots={categoryLayoutConfig.slots}
-                      parentId={null}
-                      mode={showPreview ? 'view' : mode}
-                      viewMode={viewMode}
-                      showBorders={showPreview ? false : showSlotBorders}
-                      currentDragInfo={currentDragInfo}
-                      setCurrentDragInfo={setCurrentDragInfo}
-                      onElementClick={showPreview ? null : handleElementClick}
-                      onGridResize={showPreview ? null : handleGridResize}
-                      onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
-                      onSlotDrop={showPreview ? null : handleSlotDrop}
-                      onSlotDelete={showPreview ? null : handleSlotDelete}
-                      onResizeStart={showPreview ? null : () => setIsResizing(true)}
-                      onResizeEnd={showPreview ? null : () => {
-                        lastResizeEndTime.current = Date.now();
-                        setTimeout(() => setIsResizing(false), 100);
-                      }}
-                      selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
-                      setPageConfig={setCategoryLayoutConfig}
-                      saveConfiguration={saveConfiguration}
-                      customSlotRenderer={(slot) => {
-                        console.log('CustomSlotRenderer called for slot:', slot.id, 'content:', slot.content, 'type:', slot.type);
-                        const componentMap = {
-                          'header': CategoryHeaderSlot,
-                          'breadcrumbs': CategoryBreadcrumbsSlot,
-                          'filters': CategoryFiltersSlot,
-                          'products': CategoryProductsSlot,
-                          'pagination': CategoryPaginationSlot
-                        };
-                        const SlotComponent = componentMap[slot.id];
-                        console.log('Found component for', slot.id, ':', !!SlotComponent);
-                        if (SlotComponent) {
-                          console.log('Rendering custom component for', slot.id, 'with data:', sampleCategoryData);
-                          return (
-                            <SlotComponent
-                              categoryData={sampleCategoryData}
-                              content={slot.content}
-                              config={{ viewMode }}
-                            />
-                          );
-                        }
-                        console.log('No custom component found for slot:', slot.id);
-                        return null;
-                      }}
-                      saveTimeoutRef={saveTimeoutRef}
-                    />
+              {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
+                <HierarchicalSlotRenderer
+                  slots={categoryLayoutConfig.slots}
+                  parentId={null}
+                  mode={showPreview ? 'view' : mode}
+                  viewMode={viewMode}
+                  showBorders={showPreview ? false : showSlotBorders}
+                  currentDragInfo={currentDragInfo}
+                  setCurrentDragInfo={setCurrentDragInfo}
+                  onElementClick={showPreview ? null : handleElementClick}
+                  onGridResize={showPreview ? null : handleGridResize}
+                  onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
+                  onSlotDrop={showPreview ? null : handleSlotDrop}
+                  onSlotDelete={showPreview ? null : handleSlotDelete}
+                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                  onResizeEnd={showPreview ? null : () => {
+                    lastResizeEndTime.current = Date.now();
+                    setTimeout(() => setIsResizing(false), 100);
+                  }}
+                  selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                  setPageConfig={setCategoryLayoutConfig}
+                  saveConfiguration={saveConfiguration}
+                  saveTimeoutRef={saveTimeoutRef}
+                  customSlotRenderer={(slot) => {
+                    const componentMap = {
+                      'header': CategoryHeaderSlot,
+                      'breadcrumbs': CategoryBreadcrumbsSlot,
+                      'filters': CategoryFiltersSlot,
+                      'products': CategoryProductsSlot,
+                      'pagination': CategoryPaginationSlot
+                    };
+                    const SlotComponent = componentMap[slot.id];
+                    if (SlotComponent) {
+                      return (
+                        <SlotComponent
+                          categoryData={sampleCategoryData}
+                          content={slot.content}
+                          config={{ viewMode }}
+                        />
+                      );
+                    }
+                    return null;
+                  }}
+                />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
                   {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
@@ -531,6 +491,7 @@ const CategorySlotsEditor = ({
             </div>
 
             <CmsBlockRenderer position="category_above_products" />
+
             <CmsBlockRenderer position="category_below_products" />
             </div>
           </ResponsiveContainer>
