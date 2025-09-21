@@ -1,5 +1,10 @@
-import { Grid, FileText } from 'lucide-react';
+/**
+ * CategorySlotEditor - Category page layout editor using the generic slot system
+ */
+
 import React from 'react';
+// UnifiedSlotEditor removed - use specific slot editors or code editor
+import { getPageConfig } from '@/components/editor/slot/configs/index';
 
 // Category-specific slot components
 function CategoryHeaderSlot({ data, content }) {
@@ -19,8 +24,8 @@ function CategoryHeaderSlot({ data, content }) {
 
 function ProductGridSlot({ data, content, config }) {
   const products = data.products || [];
-  const viewMode = config?.viewMode || 'grid';
-
+  const viewMode = config.viewMode || 'grid';
+  
   if (products.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -28,7 +33,7 @@ function ProductGridSlot({ data, content, config }) {
       </div>
     );
   }
-
+  
   return (
     <div className={viewMode === 'grid' ? 'grid grid-cols-3 gap-4' : 'space-y-4'}>
       {products.slice(0, 6).map((product, index) => (
@@ -111,103 +116,57 @@ function SortingSlot({ data, content }) {
   );
 }
 
-function BreadcrumbsSlot({ data, content }) {
-  return (
-    <nav className="text-sm text-gray-500 mb-4">
-      {content ? (
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      ) : (
-        <div className="flex items-center space-x-2">
-          <span>Home</span>
-          <span>&gt;</span>
-          <span>{data.category?.parent || 'Products'}</span>
-          <span>&gt;</span>
-          <span className="text-gray-900">{data.category?.name || 'Category'}</span>
-        </div>
-      )}
-    </nav>
-  );
-}
-
-function PaginationSlot({ data, content }) {
-  return (
-    <div className="flex justify-center items-center space-x-2 mt-8">
-      <button className="px-3 py-1 border rounded hover:bg-gray-100">&laquo;</button>
-      <button className="px-3 py-1 border rounded bg-blue-600 text-white">1</button>
-      <button className="px-3 py-1 border rounded hover:bg-gray-100">2</button>
-      <button className="px-3 py-1 border rounded hover:bg-gray-100">3</button>
-      <button className="px-3 py-1 border rounded hover:bg-gray-100">&raquo;</button>
-    </div>
-  );
-}
-
-// Category Page Configuration
-export const categoryConfig = {
-  title: 'Category Layout Editor',
-  defaultView: 'grid',
-  views: [
-    { id: 'grid', label: 'Grid View', icon: Grid },
-    { id: 'list', label: 'List View', icon: FileText }
-  ],
-  defaultSlots: ['header', 'breadcrumbs', 'filters', 'sorting', 'products', 'pagination'],
+// Create enhanced page config with components
+const categoryPageConfig = {
+  ...getPageConfig('category'),
   slots: {
+    ...getPageConfig('category').slots,
     header: {
-      name: 'Category Header',
-      views: ['grid', 'list'],
-      defaultContent: '<h1>Category Name</h1>',
+      ...getPageConfig('category').slots.header,
       component: CategoryHeaderSlot
     },
-    breadcrumbs: {
-      name: 'Breadcrumbs',
-      views: ['grid', 'list'],
-      defaultContent: '<nav>Home > Category</nav>',
-      component: BreadcrumbsSlot
-    },
-    banner: {
-      name: 'Category Banner',
-      views: ['grid', 'list'],
-      defaultContent: '',
-      component: null
+    products: {
+      ...getPageConfig('category').slots.products,
+      component: ProductGridSlot
     },
     filters: {
-      name: 'Product Filters',
-      views: ['grid', 'list'],
-      defaultContent: '',
+      ...getPageConfig('category').slots.filters,
       component: FiltersSlot
     },
     sorting: {
-      name: 'Sort Options',
-      views: ['grid', 'list'],
-      defaultContent: '',
+      ...getPageConfig('category').slots.sorting,
       component: SortingSlot
-    },
-    products: {
-      name: 'Product Grid/List',
-      views: ['grid', 'list'],
-      defaultContent: '',
-      component: ProductGridSlot,
-      getData: (data) => data.products || []
-    },
-    pagination: {
-      name: 'Pagination',
-      views: ['grid', 'list'],
-      defaultContent: '',
-      component: PaginationSlot
-    },
-    seoContent: {
-      name: 'SEO Content',
-      views: ['grid', 'list'],
-      defaultContent: '<div class="seo-content">Category description...</div>',
-      component: null
     }
-  },
-  cmsBlocks: [
-    'category_header',
-    'category_above_products',
-    'category_below_products',
-    'category_sidebar',
-    'category_footer'
-  ]
+  }
 };
 
-export default categoryConfig;
+export default function CategorySlotEditor({ data = {}, onSave, mode = 'editor' }) {
+  // Sample data for preview
+  const sampleData = {
+    category: {
+      id: 1,
+      name: 'Electronics',
+      description: 'Latest electronic gadgets and accessories'
+    },
+    products: [
+      { id: 1, name: 'Smartphone X', price: 999, image: 'https://via.placeholder.com/200' },
+      { id: 2, name: 'Laptop Pro', price: 1499, image: 'https://via.placeholder.com/200' },
+      { id: 3, name: 'Wireless Earbuds', price: 199, image: 'https://via.placeholder.com/200' },
+      { id: 4, name: 'Smart Watch', price: 399, image: 'https://via.placeholder.com/200' },
+      { id: 5, name: 'Tablet Plus', price: 799, image: 'https://via.placeholder.com/200' },
+      { id: 6, name: 'Power Bank', price: 49, image: 'https://via.placeholder.com/200' },
+    ],
+    ...data
+  };
+  
+  return (
+    <div className="category-slot-editor">
+      <UnifiedSlotEditor
+        pageName="Category"
+        data={sampleData}
+        onSave={onSave}
+        className="max-w-7xl mx-auto px-4"
+      />
+    </div>
+  );
+}
