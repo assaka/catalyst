@@ -74,16 +74,6 @@ const AIContextWindowPage = () => {
     setSelectedSlotEditor(slotFile);
   }, []);
 
-  // Handle patch generation from AI Context Window
-  const handlePatchGenerated = useCallback((patch) => {
-    console.log('Patch generated:', patch);
-  }, []);
-
-  // Handle preview generation - simplified without patch storage
-  const handlePreviewGenerated = useCallback(async (preview) => {
-    console.log('Preview generated:', preview);
-  }, []);
-
   return (
     <div className={`min-h-[calc(100vh-100px)] flex flex-col bg-gray-50 dark:bg-gray-900 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
 
