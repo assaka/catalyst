@@ -818,7 +818,7 @@ export function HierarchicalSlotRenderer({
   setPageConfig,
   saveConfiguration,
   saveTimeoutRef,
-  customSlotRenderer = null // Add custom slot renderer function
+  categoryData = null // Add category data for category-specific rendering
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -1434,8 +1434,25 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  {/* Render custom slot content if available */}
-                  {customSlotRenderer && customSlotRenderer(slot)}
+                  {/* Category-specific slot rendering */}
+                  {categoryData && slot.id === 'header' && (
+                    <div>Category header slot content would go here</div>
+                  )}
+                  {categoryData && slot.id === 'breadcrumbs' && (
+                    <div>Category breadcrumbs slot content would go here</div>
+                  )}
+                  {categoryData && slot.id === 'products' && (
+                    <div>Category products slot content would go here</div>
+                  )}
+                  {categoryData && slot.id === 'filters' && (
+                    <div>Category filters slot content would go here</div>
+                  )}
+                  {categoryData && slot.id === 'sorting' && (
+                    <div>Category sorting slot content would go here</div>
+                  )}
+                  {categoryData && slot.id === 'pagination' && (
+                    <div>Category pagination slot content would go here</div>
+                  )}
 
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
                     <HierarchicalSlotRenderer
@@ -1457,7 +1474,7 @@ export function HierarchicalSlotRenderer({
                       setPageConfig={setPageConfig}
                       saveConfiguration={saveConfiguration}
                       saveTimeoutRef={saveTimeoutRef}
-                      customSlotRenderer={customSlotRenderer}
+                      categoryData={categoryData}
                     />
                   )}
                 </EditableElement>

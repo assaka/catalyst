@@ -716,27 +716,7 @@ const CategorySlotsEditor = ({
                       setPageConfig={setCategoryLayoutConfig}
                       saveConfiguration={saveConfiguration}
                       saveTimeoutRef={saveTimeoutRef}
-                      customSlotRenderer={(slot) => {
-                        const componentMap = {
-                          'header': CategoryHeaderSlot,
-                          'breadcrumbs': CategoryBreadcrumbsSlot,
-                          'filters': CategoryFiltersSlot,
-                          'sorting': CategorySortingSlot,
-                          'products': ProductGridSlot,
-                          'pagination': CategoryPaginationSlot
-                        };
-                        const SlotComponent = componentMap[slot.id];
-                        if (SlotComponent) {
-                          return (
-                            <SlotComponent
-                              data={sampleCategoryData}
-                              content={slot.content}
-                              config={{ viewMode }}
-                            />
-                          );
-                        }
-                        return null;
-                      }}
+                      categoryData={sampleCategoryData}
                     />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
