@@ -5,7 +5,7 @@ export const categoryConfig = {
   page_name: 'Category',
   slot_type: 'category_layout',
 
-  // Slot configuration with full structure like cart-config
+  // Slot configuration matching cart-config.js structure exactly
   slots: {
     // Header slot
     header: {
@@ -17,13 +17,14 @@ export const categoryConfig = {
       parentId: null,
       layout: null,
       gridCols: null,
-      colSpan: 12,
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
       rowSpan: 1,
       position: {
-        colStart: 1,
-        colSpan: 12,
-        rowStart: 1,
-        rowSpan: 1
+        col: 1,
+        row: 1
       },
       viewMode: ['grid', 'list'],
       metadata: {},
@@ -41,13 +42,14 @@ export const categoryConfig = {
       parentId: null,
       layout: null,
       gridCols: null,
-      colSpan: 12,
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
       rowSpan: 1,
       position: {
-        colStart: 1,
-        colSpan: 12,
-        rowStart: 2,
-        rowSpan: 1
+        col: 1,
+        row: 2
       },
       viewMode: ['grid', 'list'],
       metadata: {},
@@ -59,19 +61,20 @@ export const categoryConfig = {
     filters: {
       id: 'filters',
       type: 'container',
-      content: '',
+      content: '<div class="filters-container">Filter options here</div>',
       className: 'category-filters',
       styles: {},
       parentId: null,
       layout: null,
       gridCols: null,
-      colSpan: 3,
+      colSpan: {
+        grid: 3,
+        list: 12
+      },
       rowSpan: 1,
       position: {
-        colStart: 1,
-        colSpan: 3,
-        rowStart: 3,
-        rowSpan: 1
+        col: 1,
+        row: 3
       },
       viewMode: ['grid', 'list'],
       metadata: {},
@@ -83,19 +86,20 @@ export const categoryConfig = {
     products: {
       id: 'products',
       type: 'container',
-      content: '',
+      content: '<div class="products-grid">Products will appear here</div>',
       className: 'category-products',
       styles: {},
       parentId: null,
       layout: null,
       gridCols: null,
-      colSpan: 9,
+      colSpan: {
+        grid: 9,
+        list: 12
+      },
       rowSpan: 1,
       position: {
-        colStart: 4,
-        colSpan: 9,
-        rowStart: 3,
-        rowSpan: 1
+        col: 4,
+        row: 3
       },
       viewMode: ['grid', 'list'],
       metadata: {},
@@ -107,19 +111,20 @@ export const categoryConfig = {
     pagination: {
       id: 'pagination',
       type: 'container',
-      content: '',
+      content: '<div class="pagination">Page 1 2 3...</div>',
       className: 'category-pagination',
       styles: {},
       parentId: null,
       layout: null,
       gridCols: null,
-      colSpan: 12,
+      colSpan: {
+        grid: 12,
+        list: 12
+      },
       rowSpan: 1,
       position: {
-        colStart: 1,
-        colSpan: 12,
-        rowStart: 4,
-        rowSpan: 1
+        col: 1,
+        row: 4
       },
       viewMode: ['grid', 'list'],
       metadata: {},
