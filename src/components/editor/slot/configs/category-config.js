@@ -14,7 +14,7 @@ export const categoryConfig = {
       id: 'main_container',
       type: 'container',
       content: '',
-      className: 'px-4 sm:px-6 lg:px-8 py-8',
+      className: 'px-4 sm:px-6 lg:px-8 py-8 min-h-screen',
       styles: {},
       parentId: null,
       layout: 'block',
@@ -98,17 +98,16 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Main grid container (grid lg:grid-cols-4 gap-8 max-w-7xl mx-auto)
-    main_grid: {
-      id: 'main_grid',
-      type: 'grid',
+    // Main layout container - flex for side-by-side layout
+    main_layout: {
+      id: 'main_layout',
+      type: 'container',
       content: '',
-      className: 'grid gap-8 max-w-7xl mx-auto',
+      className: 'max-w-7xl mx-auto flex flex-col lg:flex-row gap-8',
       styles: {},
       parentId: 'main_container',
       position: { col: 1, row: 2 },
-      layout: 'grid',
-      gridCols: 12,
+      layout: 'flex',
       colSpan: {
         grid: 12,
         list: 12
@@ -117,19 +116,18 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Left sidebar for filters (lg:col-span-1 in grid view, hidden in list view)
+    // Left sidebar for filters - show as separate element in grid view
     filters_sidebar: {
       id: 'filters_sidebar',
       type: 'container',
       content: '',
-      className: 'lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto',
+      className: 'w-full lg:w-80 flex-shrink-0',
       styles: {},
-      parentId: 'main_grid',
-      position: { col: 1, row: 1 },
+      parentId: 'main_layout',
       layout: 'block',
       colSpan: {
-        grid: 3,  // lg:col-span-1 out of lg:grid-cols-4 = 3 out of 12
-        list: 0   // Hidden in list view
+        grid: 3,   // Take 3 columns out of 12 in grid view
+        list: 0    // Hidden in list view
       },
       viewMode: ['grid'],
       metadata: { hierarchical: true }
@@ -140,11 +138,10 @@ export const categoryConfig = {
       id: 'cms_above_filters',
       type: 'text',
       content: '<!-- CMS Block: category_above_filters -->',
-      className: 'w-fit',
+      className: 'w-fit mb-4',
       parentClassName: '',
       styles: {},
       parentId: 'filters_sidebar',
-      position: { col: 1, row: 1 },
       colSpan: {
         grid: 12
       },
@@ -157,13 +154,12 @@ export const categoryConfig = {
       id: 'filters',
       type: 'container',
       content: '',
-      className: 'category-filters bg-white rounded-lg shadow p-6',
+      className: 'category-filters bg-white rounded-lg shadow-sm border p-6',
       styles: {},
       parentId: 'filters_sidebar',
-      position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
-        grid: 12
+        grid: 1
       },
       viewMode: ['grid'],
       metadata: { hierarchical: true }
@@ -218,19 +214,18 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Main content area (lg:col-span-3 in grid, lg:col-span-1 in list)
+    // Main content area - takes remaining space
     content_area: {
       id: 'content_area',
       type: 'container',
       content: '',
-      className: 'content-area',
+      className: 'flex-1 min-w-0',
       styles: {},
-      parentId: 'main_grid',
-      position: { col: 4, row: 1 },
+      parentId: 'main_layout',
       layout: 'block',
       colSpan: {
-        grid: 9,  // lg:col-span-3 out of lg:grid-cols-4 = 9 out of 12
-        list: 12  // lg:col-span-1 when no filters = full width
+        grid: 9,   // Take 9 columns out of 12 in grid view
+        list: 12   // Full width in list view
       },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
