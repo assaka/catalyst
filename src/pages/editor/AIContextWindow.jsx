@@ -636,35 +636,24 @@ export default ExampleComponent;`;
           // Fullscreen mode - single panel without ResizablePanelGroup
           <div className="h-full w-full">
             <div className="h-[calc(100vh-200px)] flex flex-col">
-              {selectedFile ? (
+              {selectedSlotEditor ? (
                 <>
-                  {/* Tab Interface Above File Name */}
+                  {/* Slot Editor Header */}
                   <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
                     <div className="flex justify-between border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
-                        <button
-                          onClick={() => {
-                            setPreviewMode('hybrid');
-                            handlePreviewModeChange('hybrid');
-                          }}
-                          className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                            "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
-                          )}
-                        >
-                          {(() => {
-                            const displayInfo = getFileDisplayInfo(selectedFile.name);
-                            const IconComponent = displayInfo.icon;
-                            return (
-                              <>
-                                {IconComponent && (
-                                  <IconComponent className="w-4 h-4 mr-2" />
-                                )}
-                                {displayInfo.name}
-                              </>
-                            );
-                          })()}
-                        </button>
+                      <div className="flex items-center px-4 py-2">
+                        {(() => {
+                          const IconComponent = selectedSlotEditor.icon;
+                          return (
+                            <div className="flex items-center text-sm font-medium">
+                              {IconComponent && (
+                                <IconComponent className={`w-4 h-4 mr-2 ${selectedSlotEditor.color}`} />
+                              )}
+                              <span className="text-gray-900 dark:text-gray-100">{selectedSlotEditor.name} Editor</span>
+                              <span className="text-gray-500 dark:text-gray-400 ml-2">- {selectedSlotEditor.description}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <button
                           onClick={() => setIsFullscreen(!isFullscreen)}
@@ -676,73 +665,58 @@ export default ExampleComponent;`;
                     </div>
                   </div>
 
-                  {/* Single Content Area - Tab-based Content */}
+                  {/* Slot Editor Content */}
                   <div className="flex-1 overflow-hidden">
-                    {/* Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others */}
-                    {selectedSlotEditor ? (
-                      // Render the appropriate slot editor based on selection
-                      (() => {
-                        const handleSave = async (configToSave) => {
-                          try {
-                            const storeId = getSelectedStoreId();
-                            const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, selectedSlotEditor.pageType);
-                            console.log('✅ Configuration saved successfully:', response);
-                            return response;
-                          } catch (error) {
-                            console.error(`❌ Failed to save ${selectedSlotEditor.pageType} configuration:`, error);
-                            throw error;
-                          }
-                        };
-
-                        switch (selectedSlotEditor.pageType) {
-                          case 'category':
-                            return (
-                              <CategorySlotsEditor
-                                mode="edit"
-                                viewMode="grid"
-                                onSave={handleSave}
-                              />
-                            );
-                          case 'cart':
-                            return (
-                              <CartSlotsEditor
-                                mode="edit"
-                                viewMode="emptyCart"
-                                slotType={selectedSlotEditor.pageType}
-                                onSave={handleSave}
-                              />
-                            );
-                          default:
-                            // For other slot types, use CartSlotsEditor for now
-                            return (
-                              <CartSlotsEditor
-                                mode="edit"
-                                viewMode="emptyCart"
-                                slotType={selectedSlotEditor.pageType}
-                                onSave={handleSave}
-                              />
-                            );
+                    {(() => {
+                      const handleSave = async (configToSave) => {
+                        try {
+                          const storeId = getSelectedStoreId();
+                          const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, selectedSlotEditor.pageType);
+                          console.log('✅ Configuration saved successfully:', response);
+                          return response;
+                        } catch (error) {
+                          console.error(`❌ Failed to save ${selectedSlotEditor.pageType} configuration:`, error);
+                          throw error;
                         }
-                      })()
-                    ) : (
-                      // Show placeholder when no slot editor is selected
-                      <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-                        <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
-                          <p className="text-lg mb-2">Select a slot editor from the left panel</p>
-                          <p className="text-sm">Choose Cart, Category, Product, Checkout, or Success to start editing page layouts with the slot system.</p>
-                        </div>
-                      </div>
-                    )}
-                    </div>
+                      };
+
+                      switch (selectedSlotEditor.pageType) {
+                        case 'category':
+                          return (
+                            <CategorySlotsEditor
+                              mode="edit"
+                              viewMode="grid"
+                              onSave={handleSave}
+                            />
+                          );
+                        case 'cart':
+                          return (
+                            <CartSlotsEditor
+                              mode="edit"
+                              viewMode="emptyCart"
+                              slotType={selectedSlotEditor.pageType}
+                              onSave={handleSave}
+                            />
+                          );
+                        default:
+                          // For other slot types, use CartSlotsEditor for now
+                          return (
+                            <CartSlotsEditor
+                              mode="edit"
+                              viewMode="emptyCart"
+                              slotType={selectedSlotEditor.pageType}
+                              onSave={handleSave}
+                            />
+                          );
+                      }
+                    })()}
                   </div>
                 </>
               ) : (
                 <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
                   <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
-                    <p className="text-lg mb-2">Select a file to begin editing</p>
-                    <p className="text-sm mb-4">
-                      Choose an Editable page
-                    </p>
+                    <p className="text-lg mb-2">Select a slot editor from the left panel</p>
+                    <p className="text-sm">Choose Cart, Category, Product, Checkout, or Success to start editing page layouts with the slot system.</p>
                   </div>
                 </div>
               )}
@@ -795,35 +769,24 @@ export default ExampleComponent;`;
               maxSize={60}
             >
               <div className="h-[calc(100vh-200px)] flex flex-col">
-                {selectedFile ? (
+                {selectedSlotEditor ? (
                   <>
-                    {/* Tab Interface Above File Name */}
+                    {/* Slot Editor Header */}
                     <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
                       <div className="flex justify-between border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
-                          <button
-                            onClick={() => {
-                              setPreviewMode('hybrid');
-                              handlePreviewModeChange('hybrid');
-                            }}
-                            className={cn(
-                              "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-                              "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400" // Always active since it's the only tab
-                            )}
-                          >
-                            {(() => {
-                              const displayInfo = getFileDisplayInfo(selectedFile.name);
-                              const IconComponent = displayInfo.icon;
-                              return (
-                                <>
-                                  {IconComponent && (
-                                    <IconComponent className="w-4 h-4 mr-2" />
-                                  )}
-                                  {displayInfo.name}
-                                </>
-                              );
-                            })()}
-                          </button>
+                        <div className="flex items-center px-4 py-2">
+                          {(() => {
+                            const IconComponent = selectedSlotEditor.icon;
+                            return (
+                              <div className="flex items-center text-sm font-medium">
+                                {IconComponent && (
+                                  <IconComponent className={`w-4 h-4 mr-2 ${selectedSlotEditor.color}`} />
+                                )}
+                                <span className="text-gray-900 dark:text-gray-100">{selectedSlotEditor.name} Editor</span>
+                                <span className="text-gray-500 dark:text-gray-400 ml-2">- {selectedSlotEditor.description}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                         <button
                             onClick={() => setIsFullscreen(!isFullscreen)}
@@ -835,127 +798,58 @@ export default ExampleComponent;`;
                       </div>
                     </div>
 
-                    {/* Single Content Area - Tab-based Content */}
+                    {/* Slot Editor Content */}
                     <div className="flex-1 overflow-hidden">
-                      {/* Smart Editor Selection - UnifiedSlotEditor for slots files, CodeEditor for others */}
-                      <div className="h-full overflow-y-auto">
-                        {(() => {
-                            
-                            // Early return if no file is selected
-                            if (!selectedFile) {
-                              return <div className="p-8 text-center text-gray-500">Please select a file from the tree navigator</div>;
-                            }
-                            
-                            // Check both name and path, handle both forward and back slashes
-                            const fileName = selectedFile.name || '';
-                            const filePath = (selectedFile.path || '').replace(/\\/g, '/');
-                            
-                            const isSlotFile = 
-                              fileName.includes('Slots.jsx') || 
-                              fileName.includes('SlotsEditor.jsx') || 
-                              fileName.includes('SlotEditor.jsx') ||
-                              filePath.includes('Slots.jsx') || 
-                              filePath.includes('SlotsEditor.jsx') ||
-                              filePath.includes('SlotEditor.jsx') ||
-                              // Also check for specific editor files
-                              fileName === 'CartSlotsEditor.jsx' ||
-                              fileName === 'CategorySlotEditor.jsx' ||
-                              fileName === 'ProductSlotEditor.jsx' ||
-                              fileName === 'SuccessSlotEditor.jsx' ||
-                              fileName === 'HomepageSlotEditor.jsx';
-                            
-                            if (isSlotFile) {
-                              // Determine slot type from filename
-                              const getSlotTypeFromFilename = (filename) => {
-                                const name = filename.toLowerCase();
-                                if (name.includes('cart')) return 'cart';
-                                if (name.includes('category')) return 'category';
-                                if (name.includes('product')) return 'product';
-                                if (name.includes('homepage')) return 'homepage';
-                                if (name.includes('checkout')) return 'checkout';
-                                if (name.includes('success')) return 'success';
-                                return null;
-                              };
-                              
-                              const slotType = getSlotTypeFromFilename(selectedFile.name);
-                              
-                              if (slotType) {
-                                const handleSave = async (configToSave) => {
-                                  try {
-                                    const storeId = getSelectedStoreId();
-                                    const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
-                                    return response;
-                                  } catch (error) {
-                                    throw error;
-                                  }
-                                };
-                                
-                                // Use appropriate editor based on slot type
-                                if (slotType === 'category') {
-                                  return (
-                                    <CategorySlotsEditor
-                                      mode="edit"
-                                      viewMode="grid"
-                                      onSave={handleSave}
-                                    />
-                                  );
-                                } else if (slotType === 'cart') {
-                                  return (
-                                    <CartSlotsEditor
-                                      mode="edit"
-                                      viewMode="emptyCart"
-                                      slotType={slotType}
-                                      onSave={handleSave}
-                                    />
-                                  );
-                                } else {
-                                  // For other slot types, use CartSlotsEditor for now
-                                  return (
-                                    <CartSlotsEditor
-                                      mode="edit"
-                                      viewMode="emptyCart"
-                                      slotType={slotType}
-                                      onSave={handleSave}
-                                    />
-                                  );
-                                }
-                              } else {
-                                // For slot files without recognized type, use CodeEditor
-                                return (
-                                  <CodeEditor
-                                    filePath={selectedFile.path}
-                                    fileName={selectedFile.name}
-                                    codeSnippet={selectedFile.content}
-                                  />
-                                );
-                              }
-                            } else {
-                              // Regular file - use CodeEditor
-                              return (
-                                <CodeEditor
-                                  value={sourceCode}
-                                  onChange={handleCodeChange}
-                                  fileName={selectedFile.name}
-                                  language={getLanguageFromFileName(selectedFile.name)}
-                                  onCursorPositionChange={setCursorPosition}
-                                  onSelectionChange={setSelection}
-                                  onManualEdit={handleManualEdit}
-                                  originalCode={originalCode}
-                                  initialContent={originalCode}
-                                  enableDiffDetection={true}
-                                  enableTabs={true}
-                                  className="h-full"
-                                />
-                              );
-                            }
-                          })()}
-                        </div>
-                      </div>
+                      {(() => {
+                        const handleSave = async (configToSave) => {
+                          try {
+                            const storeId = getSelectedStoreId();
+                            const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, selectedSlotEditor.pageType);
+                            console.log('✅ Configuration saved successfully:', response);
+                            return response;
+                          } catch (error) {
+                            console.error(`❌ Failed to save ${selectedSlotEditor.pageType} configuration:`, error);
+                            throw error;
+                          }
+                        };
+
+                        switch (selectedSlotEditor.pageType) {
+                          case 'category':
+                            return (
+                              <CategorySlotsEditor
+                                mode="edit"
+                                viewMode="grid"
+                                onSave={handleSave}
+                              />
+                            );
+                          case 'cart':
+                            return (
+                              <CartSlotsEditor
+                                mode="edit"
+                                viewMode="emptyCart"
+                                slotType={selectedSlotEditor.pageType}
+                                onSave={handleSave}
+                              />
+                            );
+                          default:
+                            // For other slot types, use CartSlotsEditor for now
+                            return (
+                              <CartSlotsEditor
+                                mode="edit"
+                                viewMode="emptyCart"
+                                slotType={selectedSlotEditor.pageType}
+                                onSave={handleSave}
+                              />
+                            );
+                        }
+                      })()}
+                    </div>
                   </>
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
                     <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
-                      <p className="text-sm mb-2">Select a file to begin editing</p>
+                      <p className="text-lg mb-2">Select a slot editor from the left panel</p>
+                      <p className="text-sm">Choose Cart, Category, Product, Checkout, or Success to start editing page layouts with the slot system.</p>
                     </div>
                   </div>
                 )}
