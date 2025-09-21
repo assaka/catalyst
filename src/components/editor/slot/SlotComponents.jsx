@@ -817,7 +817,8 @@ export function HierarchicalSlotRenderer({
   selectedElementId = null,
   setPageConfig,
   saveConfiguration,
-  saveTimeoutRef
+  saveTimeoutRef,
+  customSlotRenderer = null // Add custom slot renderer function
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
@@ -1433,6 +1434,9 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
+                  {/* Render custom slot content if available */}
+                  {customSlotRenderer && customSlotRenderer(slot)}
+
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
                     <HierarchicalSlotRenderer
                       slots={slots}
@@ -1453,6 +1457,7 @@ export function HierarchicalSlotRenderer({
                       setPageConfig={setPageConfig}
                       saveConfiguration={saveConfiguration}
                       saveTimeoutRef={saveTimeoutRef}
+                      customSlotRenderer={customSlotRenderer}
                     />
                   )}
                 </EditableElement>

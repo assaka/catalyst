@@ -43,98 +43,6 @@ import { runDragDropTests } from '@/utils/dragDropTester';
 
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
-// Custom CartSlotRenderer that handles inline components
-const CartSlotRenderer = (props) => {
-  const { slots, parentId, viewMode, cartContext } = props;
-
-  // Get child slots for this parent
-  const childSlots = Object.values(slots || {}).filter(slot => slot.parentId === parentId);
-
-  // Render each slot
-  return (
-    <>
-      {childSlots.map(slot => {
-        // Check if this is a specific slot that should render a component
-        if (slot.id === 'header_title') {
-          return (
-            <div key={slot.id} className="col-span-12">
-              <CartHeaderSlot
-                cartContext={cartContext}
-                content={slot.content}
-                config={{ viewMode }}
-              />
-            </div>
-          );
-        }
-
-        if (slot.id === 'empty_cart_container') {
-          return (
-            <div key={slot.id} className="col-span-12">
-              <CartEmptyStateSlot
-                cartContext={cartContext}
-                content={slot.content}
-                config={{ viewMode }}
-              />
-            </div>
-          );
-        }
-
-        if (slot.id === 'cart_items_container') {
-          return (
-            <div key={slot.id} className="col-span-8">
-              <CartItemsSlot
-                cartContext={cartContext}
-                content={slot.content}
-                config={{ viewMode }}
-              />
-            </div>
-          );
-        }
-
-        if (slot.id === 'coupon_container') {
-          return (
-            <div key={slot.id} className="col-span-4">
-              <CartCouponSlot
-                cartContext={cartContext}
-                content={slot.content}
-                config={{ viewMode }}
-              />
-            </div>
-          );
-        }
-
-        if (slot.id === 'order_summary_container') {
-          return (
-            <div key={slot.id} className="col-span-4">
-              <CartSummarySlot
-                cartContext={cartContext}
-                content={slot.content}
-                config={{ viewMode }}
-              />
-            </div>
-          );
-        }
-
-        // For container/grid/flex slots, render hierarchically
-        if (slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') {
-          const colSpanClass = slot.colSpan?.[viewMode] || slot.colSpan || 'col-span-12';
-          const finalColSpanClass = typeof colSpanClass === 'string' ? colSpanClass : `col-span-${colSpanClass}`;
-
-          return (
-            <div key={slot.id} className={finalColSpanClass}>
-              <div className={slot.className} style={slot.styles}>
-                <CartSlotRenderer {...props} parentId={slot.id} />
-              </div>
-            </div>
-          );
-        }
-
-        // For other slot types, fall back to HierarchicalSlotRenderer
-        return null;
-      })}
-    </>
-  );
-};
 
 const CartSlotsEditor = ({
   mode = 'edit',
@@ -808,11 +716,48 @@ const CartSlotsEditor = ({
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
-                <CartSlotRenderer
+                <HierarchicalSlotRenderer
                   slots={cartLayoutConfig.slots}
                   parentId={null}
+                  mode={showPreview ? 'view' : mode}
                   viewMode={viewMode}
-                  cartContext={sampleCartContext}
+                  showBorders={showPreview ? false : showSlotBorders}
+                  currentDragInfo={currentDragInfo}
+                  setCurrentDragInfo={setCurrentDragInfo}
+                  onElementClick={showPreview ? null : handleElementClick}
+                  onGridResize={showPreview ? null : handleGridResize}
+                  onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
+                  onSlotDrop={showPreview ? null : handleSlotDrop}
+                  onSlotDelete={showPreview ? null : handleSlotDelete}
+                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                  onResizeEnd={showPreview ? null : () => {
+                    lastResizeEndTime.current = Date.now();
+                    setTimeout(() => setIsResizing(false), 100);
+                  }}
+                  selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                  setPageConfig={setCartLayoutConfig}
+                  saveConfiguration={saveConfiguration}
+                  saveTimeoutRef={saveTimeoutRef}
+                  customSlotRenderer={(slot) => {
+                    const componentMap = {
+                      'header_title': CartHeaderSlot,
+                      'empty_cart_container': CartEmptyStateSlot,
+                      'cart_items_container': CartItemsSlot,
+                      'coupon_container': CartCouponSlot,
+                      'order_summary_container': CartSummarySlot
+                    };
+                    const SlotComponent = componentMap[slot.id];
+                    if (SlotComponent) {
+                      return (
+                        <SlotComponent
+                          cartContext={sampleCartContext}
+                          content={slot.content}
+                          config={{ viewMode }}
+                        />
+                      );
+                    }
+                    return null;
+                  }}
                 />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
