@@ -443,11 +443,6 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
 
       let finalConfig = await initializeConfig();
       if (finalConfig && isMounted) {
-        console.log('🔧 useEditorInitialization - finalConfig received:', finalConfig);
-        console.log('🔧 useEditorInitialization - finalConfig.slots:', finalConfig.slots);
-        console.log('🔧 useEditorInitialization - slots length:', finalConfig.slots ? Object.keys(finalConfig.slots).length : 'no slots property');
-        console.log('🔧 useEditorInitialization - createDefaultSlots provided:', !!createDefaultSlots);
-
         // If createDefaultSlots is provided (for CategorySlotsEditor), check if we need default slots
         if (createDefaultSlots && (!finalConfig.slots || Object.keys(finalConfig.slots).length === 0)) {
           console.log('🛠️ No slots found, creating default configuration');
@@ -455,11 +450,8 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
             ...finalConfig,
             slots: createDefaultSlots()
           };
-        } else {
-          console.log('🔧 NOT creating default slots - slots exist or no createDefaultSlots function');
         }
 
-        console.log('🔧 useEditorInitialization - final config to set:', finalConfig);
         setPageConfig(finalConfig);
       }
     };

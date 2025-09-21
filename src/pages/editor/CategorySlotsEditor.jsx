@@ -103,17 +103,11 @@ const CategorySlotsEditor = ({
   // Sample data for category preview
   // Function to create essential navigation slots (following homepage/product pattern)
   const createDefaultSlots = () => {
-    console.log('🔧 CategorySlotsEditor: createDefaultSlots called');
-    console.log('🔧 categoryConfig.defaultSlots:', categoryConfig.defaultSlots);
-    console.log('🔧 categoryConfig.slots:', categoryConfig.slots);
-
     const defaultSlots = {};
 
     // Create only essential navigation slots from categoryConfig.defaultSlots
     categoryConfig.defaultSlots.forEach((slotId, index) => {
       const slotDefinition = categoryConfig.slots[slotId];
-      console.log(`🔧 Processing slot ${slotId}:`, slotDefinition);
-
       if (slotDefinition) {
         defaultSlots[slotId] = {
           id: slotId,
@@ -134,7 +128,6 @@ const CategorySlotsEditor = ({
       }
     });
 
-    console.log('🔧 Created defaultSlots:', defaultSlots);
     return defaultSlots;
   };
 
@@ -191,10 +184,7 @@ const CategorySlotsEditor = ({
   );
 
   // Use generic editor initialization with category-specific default slots
-  useEditorInitialization(initializeConfig, (config) => {
-    console.log('🔧 CategorySlotsEditor: Setting config:', config);
-    setCategoryLayoutConfig(config);
-  }, createDefaultSlots);
+  useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
 
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(
