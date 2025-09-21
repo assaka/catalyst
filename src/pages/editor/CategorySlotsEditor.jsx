@@ -240,6 +240,8 @@ const CategorySlotsEditor = ({
         // Simple one-time initialization
         if (isMounted) {
           console.log('🏗️ CategorySlotsEditor: Setting initial config');
+          console.log('🔍 CategorySlotsEditor: finalConfig.slots:', finalConfig.slots);
+          console.log('🔍 CategorySlotsEditor: Sample slot structure:', Object.keys(finalConfig.slots).length > 0 ? finalConfig.slots[Object.keys(finalConfig.slots)[0]] : 'No slots');
           setCategoryLayoutConfig(finalConfig);
           configurationLoadedRef.current = true;
         }
@@ -685,7 +687,12 @@ const CategorySlotsEditor = ({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
+              {(() => {
+                console.log('🔍 CategorySlotsEditor: Render check - categoryLayoutConfig:', !!categoryLayoutConfig);
+                console.log('🔍 CategorySlotsEditor: Render check - slots:', categoryLayoutConfig?.slots);
+                console.log('🔍 CategorySlotsEditor: Render check - slots length:', Object.keys(categoryLayoutConfig?.slots || {}).length);
+                return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
+              })() ? (
                 <HierarchicalSlotRenderer
                   slots={categoryLayoutConfig.slots}
                   parentId={null}
