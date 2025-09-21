@@ -31,11 +31,111 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
+import {
+  CartHeaderSlot,
+  CartItemsSlot,
+  CartSummarySlot,
+  CartCouponSlot,
+  CartEmptyStateSlot
+} from '@/components/editor/slot/slotComponentsCart';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { runDragDropTests } from '@/utils/dragDropTester';
 
 
 // Main CartSlotsEditor component - mirrors Cart.jsx structure exactly
+// Custom CartSlotRenderer that handles inline components
+const CartSlotRenderer = (props) => {
+  const { slots, parentId, viewMode, cartContext } = props;
+
+  // Get child slots for this parent
+  const childSlots = Object.values(slots || {}).filter(slot => slot.parentId === parentId);
+
+  // Render each slot
+  return (
+    <>
+      {childSlots.map(slot => {
+        // Check if this is a specific slot that should render a component
+        if (slot.id === 'header_title') {
+          return (
+            <div key={slot.id} className="col-span-12">
+              <CartHeaderSlot
+                cartContext={cartContext}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'empty_cart_container') {
+          return (
+            <div key={slot.id} className="col-span-12">
+              <CartEmptyStateSlot
+                cartContext={cartContext}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'cart_items_container') {
+          return (
+            <div key={slot.id} className="col-span-8">
+              <CartItemsSlot
+                cartContext={cartContext}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'coupon_container') {
+          return (
+            <div key={slot.id} className="col-span-4">
+              <CartCouponSlot
+                cartContext={cartContext}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'order_summary_container') {
+          return (
+            <div key={slot.id} className="col-span-4">
+              <CartSummarySlot
+                cartContext={cartContext}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        // For container/grid/flex slots, render hierarchically
+        if (slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') {
+          const colSpanClass = slot.colSpan?.[viewMode] || slot.colSpan || 'col-span-12';
+          const finalColSpanClass = typeof colSpanClass === 'string' ? colSpanClass : `col-span-${colSpanClass}`;
+
+          return (
+            <div key={slot.id} className={finalColSpanClass}>
+              <div className={slot.className} style={slot.styles}>
+                <CartSlotRenderer {...props} parentId={slot.id} />
+              </div>
+            </div>
+          );
+        }
+
+        // For other slot types, fall back to HierarchicalSlotRenderer
+        return null;
+      })}
+    </>
+  );
+};
+
 const CartSlotsEditor = ({
   mode = 'edit',
   onSave,
@@ -325,6 +425,43 @@ const CartSlotsEditor = ({
 
   // Create handler factory with page-specific dependencies
   const handlerFactory = createHandlerFactory(setCartLayoutConfig, saveConfiguration);
+
+  // Sample cart data for editor preview
+  const sampleCartContext = {
+    cartItems: viewMode === 'withProducts' ? [
+      {
+        id: 1,
+        product_id: 1,
+        quantity: 2,
+        price: 29.99,
+        product: { id: 1, name: 'Sample Product 1', image_url: '/sample-product.jpg' },
+        selected_options: []
+      },
+      {
+        id: 2,
+        product_id: 2,
+        quantity: 1,
+        price: 49.99,
+        product: { id: 2, name: 'Sample Product 2', image_url: '/sample-product2.jpg' },
+        selected_options: [{ name: 'Size', value: 'Large', price: 5.00 }]
+      }
+    ] : [],
+    subtotal: 109.97,
+    discount: 10.00,
+    tax: 8.00,
+    total: 107.97,
+    currencySymbol: '$',
+    appliedCoupon: null,
+    couponCode: '',
+    setCouponCode: () => {},
+    handleApplyCoupon: () => {},
+    handleRemoveCoupon: () => {},
+    updateQuantity: () => {},
+    removeItem: () => {},
+    handleCheckout: () => {},
+    calculateItemTotal: (item) => item.price * item.quantity,
+    safeToFixed: (value) => value.toFixed(2)
+  };
 
   // Create all handlers using the factory
   const handleTextChange = handlerFactory.createTextChangeHandler(textChangeHandler);
@@ -671,29 +808,11 @@ const CartSlotsEditor = ({
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {cartLayoutConfig && cartLayoutConfig.slots && Object.keys(cartLayoutConfig.slots).length > 0 ? (
-                <HierarchicalSlotRenderer
+                <CartSlotRenderer
                   slots={cartLayoutConfig.slots}
                   parentId={null}
-                  mode={showPreview ? 'view' : mode}
                   viewMode={viewMode}
-                  showBorders={showPreview ? false : showSlotBorders}
-                  currentDragInfo={currentDragInfo}
-                  setCurrentDragInfo={setCurrentDragInfo}
-                  onElementClick={showPreview ? null : handleElementClick}
-                  onGridResize={showPreview ? null : handleGridResize}
-                  onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
-                  onSlotDrop={showPreview ? null : handleSlotDrop}
-                  onSlotDelete={showPreview ? null : handleSlotDelete}
-                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
-                  onResizeEnd={showPreview ? null : () => {
-                    lastResizeEndTime.current = Date.now();
-                    // Add a small delay to prevent click events from firing immediately after resize
-                    setTimeout(() => setIsResizing(false), 100);
-                  }}
-                  selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
-                  setPageConfig={setCartLayoutConfig}
-                  saveConfiguration={saveConfiguration}
-                  saveTimeoutRef={saveTimeoutRef}
+                  cartContext={sampleCartContext}
                 />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">

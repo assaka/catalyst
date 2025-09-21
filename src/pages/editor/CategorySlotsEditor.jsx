@@ -29,8 +29,121 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
+import {
+  CategoryHeaderSlot,
+  ProductGridSlot,
+  CategoryFiltersSlot,
+  CategorySortingSlot,
+  CategoryBreadcrumbsSlot,
+  CategoryPaginationSlot
+} from '@/components/editor/slot/slotComponentsCategory';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
+
+// Custom CategorySlotRenderer that handles inline components
+const CategorySlotRenderer = (props) => {
+  const { slots, parentId, viewMode, data } = props;
+
+  // Get child slots for this parent
+  const childSlots = Object.values(slots || {}).filter(slot => slot.parentId === parentId);
+
+  // Render each slot
+  return (
+    <>
+      {childSlots.map(slot => {
+        // Check if this is a specific slot that should render a component
+        if (slot.id === 'header') {
+          return (
+            <div key={slot.id} className="col-span-12">
+              <CategoryHeaderSlot
+                data={data}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'breadcrumbs') {
+          return (
+            <div key={slot.id} className="col-span-12">
+              <CategoryBreadcrumbsSlot
+                data={data}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'filters') {
+          return (
+            <div key={slot.id} className="col-span-3">
+              <CategoryFiltersSlot
+                data={data}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'sorting') {
+          return (
+            <div key={slot.id} className="col-span-12">
+              <CategorySortingSlot
+                data={data}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'products') {
+          return (
+            <div key={slot.id} className="col-span-9">
+              <ProductGridSlot
+                data={data}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        if (slot.id === 'pagination') {
+          return (
+            <div key={slot.id} className="col-span-12">
+              <CategoryPaginationSlot
+                data={data}
+                content={slot.content}
+                config={{ viewMode }}
+              />
+            </div>
+          );
+        }
+
+        // For container/grid/flex slots, render hierarchically
+        if (slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') {
+          const colSpanClass = slot.colSpan?.[viewMode] || slot.colSpan || 'col-span-12';
+          const finalColSpanClass = typeof colSpanClass === 'string' ? colSpanClass : `col-span-${colSpanClass}`;
+
+          return (
+            <div key={slot.id} className={finalColSpanClass}>
+              <div className={slot.className} style={slot.styles}>
+                <CategorySlotRenderer {...props} parentId={slot.id} />
+              </div>
+            </div>
+          );
+        }
+
+        // For other slot types, fall back to HierarchicalSlotRenderer
+        return null;
+      })}
+    </>
+  );
+};
 
 // Main CategorySlotsEditor component
 const CategorySlotsEditor = ({
@@ -685,31 +798,11 @@ const CategorySlotsEditor = ({
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
-                    <HierarchicalSlotRenderer
+                    <CategorySlotRenderer
                       slots={categoryLayoutConfig.slots}
                       parentId={null}
-                      mode={showPreview ? 'view' : mode}
                       viewMode={viewMode}
-                      showBorders={showPreview ? false : showSlotBorders}
-                      currentDragInfo={currentDragInfo}
-                      setCurrentDragInfo={setCurrentDragInfo}
-                      onElementClick={showPreview ? null : handleElementClick}
-                      onGridResize={showPreview ? null : handleGridResize}
-                      onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
-                      onSlotDrop={showPreview ? null : handleSlotDrop}
-                      onSlotDelete={showPreview ? null : handleSlotDelete}
-                      onResizeStart={showPreview ? null : () => setIsResizing(true)}
-                      onResizeEnd={showPreview ? null : () => {
-                        lastResizeEndTime.current = Date.now();
-                        // Add a small delay to prevent click events from firing immediately after resize
-                        setTimeout(() => setIsResizing(false), 100);
-                      }}
-                      selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
-                      setPageConfig={setCategoryLayoutConfig}
-                      saveConfiguration={saveConfiguration}
-                      saveTimeoutRef={saveTimeoutRef}
-                      pageConfig={categoryConfig}
-                      data={slotData}
+                      data={sampleCategoryData}
                     />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">

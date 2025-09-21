@@ -1,15 +1,5 @@
 import { Grid, FileText } from 'lucide-react';
 
-// Import category components from SlotComponents
-import {
-  CategoryHeaderSlot,
-  ProductGridSlot,
-  CategoryFiltersSlot,
-  CategorySortingSlot,
-  CategoryBreadcrumbsSlot,
-  CategoryPaginationSlot
-} from '../SlotComponents';
-
 // Category Page Configuration with hierarchical support (matching cart-config.js structure)
 export const categoryConfig = {
   page_name: 'Category',
@@ -49,7 +39,6 @@ export const categoryConfig = {
         list: 12
       },
       viewMode: ['grid', 'list'],
-      component: CategoryHeaderSlot,
       metadata: { hierarchical: true }
     },
 
@@ -67,7 +56,6 @@ export const categoryConfig = {
         list: 12
       },
       viewMode: ['grid', 'list'],
-      component: CategoryBreadcrumbsSlot,
       metadata: { hierarchical: true }
     },
 
@@ -104,7 +92,6 @@ export const categoryConfig = {
         list: 1
       },
       viewMode: ['grid', 'list'],
-      component: CategoryFiltersSlot,
       metadata: { hierarchical: true }
     },
 
@@ -140,7 +127,6 @@ export const categoryConfig = {
         list: 12
       },
       viewMode: ['grid', 'list'],
-      component: CategorySortingSlot,
       metadata: { hierarchical: true }
     },
 
@@ -158,7 +144,6 @@ export const categoryConfig = {
         list: 12
       },
       viewMode: ['grid', 'list'],
-      component: ProductGridSlot,
       metadata: { hierarchical: true }
     },
 
@@ -176,7 +161,6 @@ export const categoryConfig = {
         list: 12
       },
       viewMode: ['grid', 'list'],
-      component: CategoryPaginationSlot,
       metadata: { hierarchical: true }
     },
 
@@ -194,7 +178,6 @@ export const categoryConfig = {
         list: 12
       },
       viewMode: ['grid', 'list'],
-      component: null,
       metadata: { hierarchical: true }
     }
   },
