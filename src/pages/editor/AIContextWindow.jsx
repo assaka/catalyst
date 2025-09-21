@@ -7,7 +7,7 @@ import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledF
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 import AIContextWindow from '@/components/editor/ai-context/AIContextWindow';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
-import CategorySlotEditor from '@/pages/editor/CategorySlotEditor';
+import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';
 import apiClient from '@/api/client';
 import { SlotConfiguration } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -685,7 +685,7 @@ export default ExampleComponent;`;
                             // Use appropriate editor based on slot type
                             if (slotType === 'category') {
                               return (
-                                <CategorySlotEditor
+                                <CategorySlotsEditor
                                   mode="edit"
                                   viewMode="grid"
                                   onSave={handleSave}
@@ -900,7 +900,7 @@ export default ExampleComponent;`;
                                 // Use appropriate editor based on slot type
                                 if (slotType === 'category') {
                                   return (
-                                    <CategorySlotEditor
+                                    <CategorySlotsEditor
                                       mode="edit"
                                       viewMode="grid"
                                       onSave={handleSave}

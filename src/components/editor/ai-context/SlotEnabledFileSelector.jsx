@@ -40,7 +40,7 @@ const SlotEnabledFileSelector = ({
     {
       id: 'category',
       name: 'Category',
-      path: 'src/pages/editor/CategorySlotEditor.jsx',
+      path: 'src/pages/editor/CategorySlotsEditor.jsx',
       pageType: 'category',
       icon: Grid3X3,
       description: 'Product category listing page',

@@ -1,5 +1,5 @@
 /**
- * CategorySlotEditor - Category page layout editor using slot system
+ * CategorySlotsEditor - Category page layout editor using slot system
  * Based on CartSlotsEditor architecture with category-specific components
  */
 
@@ -32,8 +32,8 @@ import {
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
-// Main CategorySlotEditor component
-const CategorySlotEditor = ({
+// Main CategorySlotsEditor component
+const CategorySlotsEditor = ({
   mode = 'edit',
   onSave,
   viewMode: propViewMode = 'grid'
@@ -143,7 +143,7 @@ const CategorySlotEditor = ({
       if (!isMounted || configurationLoadedRef.current) return;
 
       try {
-        console.log('🔄 CategorySlotEditor: Starting configuration initialization...');
+        console.log('🔄 CategorySlotsEditor: Starting configuration initialization...');
 
         // Use the hook function to get configuration (either draft or static)
         const configToUse = await getDraftOrStaticConfiguration();
@@ -193,7 +193,7 @@ const CategorySlotEditor = ({
 
         // Simple one-time initialization
         if (isMounted) {
-          console.log('🏗️ CategorySlotEditor: Setting initial config');
+          console.log('🏗️ CategorySlotsEditor: Setting initial config');
           setCategoryLayoutConfig(finalConfig);
           configurationLoadedRef.current = true;
         }
@@ -688,7 +688,7 @@ const CategorySlotEditor = ({
           slotConfig={(() => {
             const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
             const config = categoryLayoutConfig && categoryLayoutConfig.slots && slotId ? categoryLayoutConfig.slots[slotId] : null;
-            console.log('🏗️ CategorySlotEditor: Passing slotConfig to EditorSidebar:', { slotId, config, categoryLayoutConfig });
+            console.log('🏗️ CategorySlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, categoryLayoutConfig });
             return config;
           })()}
           onTextChange={handleTextChange}
@@ -760,4 +760,4 @@ const CategorySlotEditor = ({
   );
 };
 
-export default CategorySlotEditor;
+export default CategorySlotsEditor;
