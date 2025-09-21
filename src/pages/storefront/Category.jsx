@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { createCategoryUrl } from "@/utils/urlUtils";
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -9,7 +9,7 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
-import { Package, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,8 +33,6 @@ export default function Category() {
   const [itemsPerPage] = useState(12);
   
   const { storeCode, categorySlug } = useParams();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
@@ -88,7 +86,7 @@ export default function Category() {
           if (exact && exact.length > 0) {
             return exact;
           }
-        } catch (e) {
+        } catch {
           console.warn("Failed to get products by category, falling back to filtered approach");
         }
         
@@ -240,8 +238,6 @@ export default function Category() {
   const getBreadcrumbItems = () => {
     if (!currentCategory || !categories) return [];
     
-    const items = [];
-    
     // Build hierarchy from current category up to root
     let category = currentCategory;
     const categoryChain = [category];
@@ -261,7 +257,7 @@ export default function Category() {
     const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
     
     // Convert to breadcrumb items
-    return filteredChain.map((cat, index) => ({
+    return filteredChain.map((cat) => ({
       name: cat.name,
       url: createCategoryUrl(storeCode, cat.slug)
     }));
@@ -351,32 +347,33 @@ export default function Category() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
-              {paginatedProducts.length > 0 ? (
-                paginatedProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    settings={settings}
-                    className="hover:shadow-lg transition-shadow rounded-lg"
-                  />
-                ))
-              ) : (
-                <div className="col-span-full flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
-                  <Package className="w-16 h-16 text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
-                  <p className="text-gray-500 mt-2 text-center">
-                    {currentCategory ?
-                      `No products found in the "${currentCategory.name}" category.` :
-                      "No products match your current filters."
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
+                {paginatedProducts.length > 0 ? (
+                  paginatedProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      settings={settings}
+                      className="hover:shadow-lg transition-shadow rounded-lg"
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
+                    <Package className="w-16 h-16 text-gray-400 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
+                    <p className="text-gray-500 mt-2 text-center">
+                      {currentCategory ?
+                        `No products found in the "${currentCategory.name}" category.` :
+                        "No products match your current filters."
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
               <div className="flex justify-center items-center mt-8 gap-2">
                 <Button
                   variant="outline"
@@ -459,7 +456,9 @@ export default function Category() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
-            )}
+              )}
+            </>
+          )}
           <CmsBlockRenderer position="category_below_products" />
         </div>
       </div>
