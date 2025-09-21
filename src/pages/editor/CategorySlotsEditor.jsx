@@ -171,9 +171,11 @@ const CategorySlotsEditor = ({
 
       try {
         console.log('🔄 CategorySlotsEditor: Starting configuration initialization...');
+        console.log('🔍 CategorySlotsEditor: Hook parameters - pageType: category, slotType: category_layout');
 
         // Use the hook function to get configuration (either draft or static)
         const configToUse = await getDraftOrStaticConfiguration();
+        console.log('📋 CategorySlotsEditor: Raw configToUse:', configToUse);
 
         if (!configToUse) {
           throw new Error('Failed to load category configuration');
@@ -210,10 +212,12 @@ const CategorySlotsEditor = ({
 
         // Transform database config if needed
         let finalConfig = configToUse;
+        console.log('🔍 CategorySlotsEditor: configToUse.slots keys:', Object.keys(configToUse.slots || {}));
         if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
           const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
+          console.log('🔄 CategorySlotsEditor: Transformed dbConfig:', dbConfig);
           if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
-            console.log('✅ Found saved configuration in database:', dbConfig);
+            console.log('✅ CategorySlotsEditor: Using saved configuration from database');
             finalConfig = dbConfig;
           }
         } else {
