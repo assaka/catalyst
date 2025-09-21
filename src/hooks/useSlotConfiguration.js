@@ -401,7 +401,14 @@ export const useConfigurationInitialization = (pageType, pageName, slotType, get
         }
       } else {
         // Handle case where no slots are configured
-        console.log(`🛠️ ${pageType}SlotsEditor: No slots found, using default configuration`);
+        console.log(`🛠️ ${pageType}SlotsEditor: No slots found, using base configuration structure`);
+
+        // For category page type, we want to ensure default slots are available for the useEditorInitialization hook
+        // The actual default slot creation will happen in useEditorInitialization
+        finalConfig = {
+          ...configToUse,
+          slots: {} // Ensure empty slots object exists so useEditorInitialization can detect it
+        };
       }
 
       configurationLoadedRef.current = true;
@@ -442,34 +449,15 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
       if (!isMounted) return;
 
       let finalConfig = await initializeConfig();
-      console.log('🔍 useEditorInitialization - finalConfig:', finalConfig);
-      console.log('🔍 useEditorInitialization - createDefaultSlots function provided:', !!createDefaultSlots);
 
       if (finalConfig && isMounted) {
-        console.log('🔍 useEditorInitialization - finalConfig.slots:', finalConfig.slots);
-        console.log('🔍 useEditorInitialization - slots exists:', !!finalConfig.slots);
-        console.log('🔍 useEditorInitialization - slots length:', finalConfig.slots ? Object.keys(finalConfig.slots).length : 'no slots');
-        console.log('🔍 useEditorInitialization - slots content:', JSON.stringify(finalConfig.slots, null, 2));
-
-        const shouldCreateDefaults = createDefaultSlots && (!finalConfig.slots || Object.keys(finalConfig.slots).length === 0);
-        console.log('🔍 useEditorInitialization - should create defaults:', shouldCreateDefaults);
-
         // If createDefaultSlots is provided (for CategorySlotsEditor), check if we need default slots
-        if (shouldCreateDefaults) {
+        if (createDefaultSlots && (!finalConfig.slots || Object.keys(finalConfig.slots).length === 0)) {
           console.log('🛠️ No slots found, creating default configuration');
-          const defaultSlots = createDefaultSlots();
-          console.log('🛠️ Created default slots:', defaultSlots);
           finalConfig = {
             ...finalConfig,
-            slots: defaultSlots
+            slots: createDefaultSlots()
           };
-          console.log('🛠️ Final config with default slots:', finalConfig);
-        } else {
-          console.log('🚫 NOT creating default slots - reason:', {
-            hasCreateDefaultSlots: !!createDefaultSlots,
-            hasSlots: !!finalConfig.slots,
-            slotsLength: finalConfig.slots ? Object.keys(finalConfig.slots).length : 0
-          });
         }
 
         setPageConfig(finalConfig);
