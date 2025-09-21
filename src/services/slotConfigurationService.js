@@ -359,11 +359,12 @@ class SlotConfigurationService {
 
   // Keep hierarchical structure - no more legacy transformations
   transformFromSlotConfigFormat(apiConfig) {
-    
-    // Return the hierarchical structure as-is for CartSlotsEditor
+
+    // Return the hierarchical structure as-is for slot editors
+    // Use the actual data from apiConfig instead of hardcoded Cart defaults
     return {
-      page_name: apiConfig.metadata?.page_name || 'Cart',
-      slot_type: apiConfig.metadata?.slot_type || 'cart_layout',
+      page_name: apiConfig.page_name || apiConfig.metadata?.page_name || 'Unknown Page',
+      slot_type: apiConfig.slot_type || apiConfig.metadata?.slot_type || 'unknown_layout',
       slots: apiConfig.slots || {},
       metadata: apiConfig.metadata || {}
     };
