@@ -212,15 +212,9 @@ const CategorySlotsEditor = ({
 
         // Transform database config if needed
         let finalConfig = configToUse;
-        console.log('🔍 CategorySlotsEditor: configToUse.slots keys:', Object.keys(configToUse.slots || {}));
-        console.log('🔍 CategorySlotsEditor: configToUse structure:', configToUse);
-        console.log('🔍 CategorySlotsEditor: First slot structure:', configToUse.slots[Object.keys(configToUse.slots)[0]]);
         if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
           const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
-          console.log('🔄 CategorySlotsEditor: Transformed dbConfig:', dbConfig);
-          console.log('🔍 CategorySlotsEditor: Transformed first slot:', dbConfig.slots[Object.keys(dbConfig.slots)[0]]);
           if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
-            console.log('✅ CategorySlotsEditor: Using saved configuration from database');
             finalConfig = dbConfig;
           }
         } else {
@@ -690,18 +684,7 @@ const CategorySlotsEditor = ({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {(() => {
-                console.log('🔍 CategorySlotsEditor: Render check - categoryLayoutConfig:', !!categoryLayoutConfig);
-                console.log('🔍 CategorySlotsEditor: Render check - slots:', categoryLayoutConfig?.slots);
-                console.log('🔍 CategorySlotsEditor: Render check - slots length:', Object.keys(categoryLayoutConfig?.slots || {}).length);
-                return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
-              })() ? (
-                <div>
-                  {console.log('🔍 CategorySlotsEditor: RENDERING HierarchicalSlotRenderer NOW')}
-                  {console.log('🔍 CategorySlotsEditor: slots:', categoryLayoutConfig.slots)}
-                  {console.log('🔍 CategorySlotsEditor: header slot:', categoryLayoutConfig.slots.header)}
-                  {(() => {
-                    return (
+              {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
                     <HierarchicalSlotRenderer
                       slots={categoryLayoutConfig.slots}
                       parentId={null}
@@ -728,9 +711,6 @@ const CategorySlotsEditor = ({
                       pageConfig={categoryConfig}
                       data={slotData}
                     />
-                    );
-                  })()}
-                </div>
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
                   {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
