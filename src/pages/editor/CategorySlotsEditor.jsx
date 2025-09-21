@@ -695,12 +695,12 @@ const CategorySlotsEditor = ({
                 console.log('🔍 CategorySlotsEditor: Render check - slots length:', Object.keys(categoryLayoutConfig?.slots || {}).length);
                 return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
               })() ? (
-                {(() => {
-                  console.log('🔍 CategorySlotsEditor: About to render HierarchicalSlotRenderer with slots:', categoryLayoutConfig.slots);
-                  console.log('🔍 CategorySlotsEditor: Sample slot (header):', categoryLayoutConfig.slots.header);
-                  console.log('🔍 CategorySlotsEditor: pageConfig:', categoryConfig);
-                  console.log('🔍 CategorySlotsEditor: slotData:', slotData);
-                  return (
+                <div>
+                  {console.log('🔍 CategorySlotsEditor: RENDERING HierarchicalSlotRenderer NOW')}
+                  {console.log('🔍 CategorySlotsEditor: slots:', categoryLayoutConfig.slots)}
+                  {console.log('🔍 CategorySlotsEditor: header slot:', categoryLayoutConfig.slots.header)}
+                  {(() => {
+                    return (
                     <HierarchicalSlotRenderer
                       slots={categoryLayoutConfig.slots}
                       parentId={null}
@@ -727,8 +727,9 @@ const CategorySlotsEditor = ({
                       pageConfig={categoryConfig}
                       data={slotData}
                     />
-                  );
-                })()}
+                    );
+                  })()}
+                </div>
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
                   {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
