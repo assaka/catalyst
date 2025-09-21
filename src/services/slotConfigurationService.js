@@ -360,7 +360,26 @@ class SlotConfigurationService {
   // Keep hierarchical structure - no more legacy transformations
   transformFromSlotConfigFormat(apiConfig) {
 
-    // Transform database slot format to HierarchicalSlotRenderer format
+    // Check if this is already in the correct hierarchical format
+    const firstSlot = apiConfig.slots ? Object.values(apiConfig.slots)[0] : null;
+    const isAlreadyHierarchical = firstSlot && (
+      firstSlot.hasOwnProperty('parentId') ||
+      firstSlot.hasOwnProperty('metadata') ||
+      firstSlot.hasOwnProperty('viewMode') ||
+      firstSlot.hasOwnProperty('layout')
+    );
+
+    // If already hierarchical (from static config), return as-is with minimal fixes
+    if (isAlreadyHierarchical) {
+      return {
+        page_name: apiConfig.page_name || apiConfig.metadata?.page_name || 'Unknown Page',
+        slot_type: apiConfig.slot_type || apiConfig.metadata?.slot_type || 'unknown_layout',
+        slots: apiConfig.slots || {},
+        metadata: apiConfig.metadata || {}
+      };
+    }
+
+    // Transform flat database format to hierarchical structure (legacy support)
     const transformedSlots = {};
 
     if (apiConfig.slots) {
