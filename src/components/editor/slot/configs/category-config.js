@@ -127,11 +127,11 @@ export const categoryConfig = {
       metadata: { hierarchical: false }
     },
 
-    // Card Content with accordion filters
+    // Card Content with accordion filters - more compact
     filters_content: {
       id: 'filters_content',
       type: 'text',
-      content: '<div class="p-6 pt-0"><div class="space-y-4"><div class="border-b pb-4"><h4 class="font-semibold mb-3">Price</h4><div class="space-y-2"><input type="range" class="w-full" min="0" max="1000" /><div class="flex justify-between text-sm text-gray-600"><span>$0</span><span>$1000</span></div></div></div><div class="border-b pb-4"><h4 class="font-semibold mb-3">Brand</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">Apple</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">Samsung</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">Google</span></label></div></div><div class="pb-4"><h4 class="font-semibold mb-3">Rating</h4><div class="space-y-2"><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">5 stars</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">4 stars & up</span></label><label class="flex items-center"><input type="checkbox" class="mr-2 rounded border-gray-300"><span class="text-sm">3 stars & up</span></label></div></div></div></div>',
+      content: '<div class="p-6 pt-0"><div class="space-y-3"><div class="pb-3"><h4 class="font-semibold mb-2 text-sm">Price</h4><div class="space-y-1"><input type="range" class="w-full h-1" min="0" max="1000" /><div class="flex justify-between text-xs text-gray-600"><span>$0</span><span>$1000</span></div></div></div><div class="pb-3 border-t pt-3"><h4 class="font-semibold mb-2 text-sm">Brand</h4><div class="space-y-1"><label class="flex items-center text-sm"><input type="checkbox" class="mr-2 h-3 w-3"><span>Apple</span></label><label class="flex items-center text-sm"><input type="checkbox" class="mr-2 h-3 w-3"><span>Samsung</span></label></div></div></div></div>',
       className: 'w-full',
       parentClassName: '',
       styles: {},
@@ -154,6 +154,7 @@ export const categoryConfig = {
       parentId: null,
       position: { col: 4, row: 4 },
       layout: 'grid',
+      gridCols: 3,  // Specify 3 columns for the products grid
       colSpan: {
         grid: 9,   // lg:col-span-3 = 9 of 12
         list: 12   // Full width in list view
@@ -172,7 +173,7 @@ export const categoryConfig = {
       parentId: 'products',
       layout: 'block',
       colSpan: {
-        grid: 4,    // 1 of 3 columns in products grid
+        grid: 1,    // Takes 1 column in the 3-column products grid
         list: 12    // Full width in list view
       },
       viewMode: ['grid', 'list'],
@@ -267,7 +268,7 @@ export const categoryConfig = {
       parentId: 'products',
       layout: 'block',
       colSpan: {
-        grid: 4,
+        grid: 1,
         list: 12
       },
       viewMode: ['grid', 'list'],
@@ -380,7 +381,7 @@ export const categoryConfig = {
       parentId: 'products',
       layout: 'block',
       colSpan: {
-        grid: 4,
+        grid: 1,
         list: 12
       },
       viewMode: ['grid', 'list'],
