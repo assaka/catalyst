@@ -239,11 +239,4 @@ export function CategoryPaginationSlot({ categoryData, content }) {
   );
 }
 
-// Export all components
-export {
-  CategoryHeaderSlot,
-  CategoryBreadcrumbsSlot,
-  CategoryFiltersSlot,
-  CategoryProductsSlot,
-  CategoryPaginationSlot
-};
+// Components are exported individually above with "export function"
