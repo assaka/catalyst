@@ -258,33 +258,6 @@ export default function Category() {
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
-  // Create category context for CategorySlotRenderer
-  const categoryContext = {
-    category: currentCategory,
-    products: paginatedProducts,
-    filters: {},
-    sortOption: currentSort,
-    currentPage,
-    totalPages,
-    subcategories: [],
-    breadcrumbs: getBreadcrumbItems(),
-    selectedFilters: activeFilters,
-    priceRange: {},
-    currencySymbol: settings?.currency_symbol || '$',
-    settings,
-    store,
-    taxes: [],
-    selectedCountry: null,
-    handleFilterChange: setActiveFilters,
-    handleSortChange: setSort,
-    handlePageChange: setPage,
-    clearFilters: () => setActiveFilters({}),
-    formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
-    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
-    navigate: (url) => window.location.href = url,
-    onProductClick: (product) => window.location.href = createCategoryUrl(store?.code, product.slug)
-  };
-
   const handleSortChange = (newSort) => {
     setSort(newSort);
   };
@@ -321,6 +294,33 @@ export default function Category() {
       name: cat.name,
       url: createCategoryUrl(storeCode, cat.slug)
     }));
+  };
+
+  // Create category context for CategorySlotRenderer
+  const categoryContext = {
+    category: currentCategory,
+    products: paginatedProducts,
+    filters: {},
+    sortOption: currentSort,
+    currentPage,
+    totalPages,
+    subcategories: [],
+    breadcrumbs: getBreadcrumbItems(),
+    selectedFilters: activeFilters,
+    priceRange: {},
+    currencySymbol: settings?.currency_symbol || '$',
+    settings,
+    store,
+    taxes: [],
+    selectedCountry: null,
+    handleFilterChange: setActiveFilters,
+    handleSortChange: handleSortChange,
+    handlePageChange: handlePageChange,
+    clearFilters: () => setActiveFilters({}),
+    formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
+    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
+    navigate: (url) => window.location.href = url,
+    onProductClick: (product) => window.location.href = createCategoryUrl(store?.code, product.slug)
   };
 
   if (storeLoading) {
