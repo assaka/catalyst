@@ -476,10 +476,7 @@ const CategorySlotsEditor = ({
             </div>
           )}
 
-          <ResponsiveContainer
-            viewport={currentViewport}
-            className="bg-white"
-          >
+          <div className="bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
@@ -538,7 +535,7 @@ const CategorySlotsEditor = ({
 
             <CmsBlockRenderer position="category_below_products" />
             </div>
-          </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
