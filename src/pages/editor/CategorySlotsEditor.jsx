@@ -65,11 +65,72 @@ const CategorySlotsEditor = ({
   // Global state to track current drag operation
   const [currentDragInfo, setCurrentDragInfo] = useState(null);
 
-  // State management - Initialize with empty config
+  // State management - Initialize with default config for testing
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState({
     page_name: 'Category',
     slot_type: 'category_layout',
-    slots: {},
+    slots: {
+      header: {
+        id: 'header',
+        type: 'container',
+        content: '<h1>Category Name</h1>',
+        className: 'category-header',
+        styles: {},
+        parentId: null,
+        colSpan: { grid: 12, list: 12 },
+        position: { col: 1, row: 1 },
+        viewMode: ['grid', 'list'],
+        visible: true
+      },
+      breadcrumbs: {
+        id: 'breadcrumbs',
+        type: 'container',
+        content: '<nav>Home > Category</nav>',
+        className: 'category-breadcrumbs',
+        styles: {},
+        parentId: null,
+        colSpan: { grid: 12, list: 12 },
+        position: { col: 1, row: 2 },
+        viewMode: ['grid', 'list'],
+        visible: true
+      },
+      filters: {
+        id: 'filters',
+        type: 'container',
+        content: '<div class="filters-container">Filter options here</div>',
+        className: 'category-filters',
+        styles: {},
+        parentId: null,
+        colSpan: { grid: 3, list: 12 },
+        position: { col: 1, row: 3 },
+        viewMode: ['grid', 'list'],
+        visible: true
+      },
+      products: {
+        id: 'products',
+        type: 'container',
+        content: '<div class="products-grid">Products will appear here</div>',
+        className: 'category-products',
+        styles: {},
+        parentId: null,
+        colSpan: { grid: 9, list: 12 },
+        position: { col: 4, row: 3 },
+        viewMode: ['grid', 'list'],
+        visible: true
+      },
+      pagination: {
+        id: 'pagination',
+        type: 'container',
+        content: '<div class="pagination">Page 1 2 3...</div>',
+        className: 'category-pagination',
+        styles: {},
+        parentId: null,
+        colSpan: { grid: 12, list: 12 },
+        position: { col: 1, row: 4 },
+        viewMode: ['grid', 'list'],
+        visible: true
+      }
+    },
     metadata: {
       created: new Date().toISOString(),
       lastModified: new Date().toISOString(),
@@ -406,7 +467,15 @@ const CategorySlotsEditor = ({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
+              {(() => {
+                console.log('CategorySlotsEditor render check:', {
+                  categoryLayoutConfig,
+                  hasSlots: categoryLayoutConfig && categoryLayoutConfig.slots,
+                  slotCount: categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots).length : 0,
+                  slotKeys: categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots) : []
+                });
+                return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
+              })() ? (
                     <HierarchicalSlotRenderer
                       slots={categoryLayoutConfig.slots}
                       parentId={null}
@@ -429,6 +498,7 @@ const CategorySlotsEditor = ({
                       setPageConfig={setCategoryLayoutConfig}
                       saveConfiguration={saveConfiguration}
                       customSlotRenderer={(slot) => {
+                        console.log('CustomSlotRenderer called for slot:', slot.id, 'content:', slot.content, 'type:', slot.type);
                         const componentMap = {
                           'header': CategoryHeaderSlot,
                           'breadcrumbs': CategoryBreadcrumbsSlot,
@@ -437,7 +507,9 @@ const CategorySlotsEditor = ({
                           'pagination': CategoryPaginationSlot
                         };
                         const SlotComponent = componentMap[slot.id];
+                        console.log('Found component for', slot.id, ':', !!SlotComponent);
                         if (SlotComponent) {
+                          console.log('Rendering custom component for', slot.id, 'with data:', sampleCategoryData);
                           return (
                             <SlotComponent
                               categoryData={sampleCategoryData}
@@ -446,6 +518,7 @@ const CategorySlotsEditor = ({
                             />
                           );
                         }
+                        console.log('No custom component found for slot:', slot.id);
                         return null;
                       }}
                       saveTimeoutRef={saveTimeoutRef}
