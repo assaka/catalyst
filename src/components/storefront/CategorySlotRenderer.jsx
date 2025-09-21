@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Grid, List, Filter, Search, Tag, ChevronDown } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
+import Breadcrumb from '@/components/storefront/Breadcrumb';
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
@@ -90,7 +91,7 @@ export function CategorySlotRenderer({
     }
 
     if (id === 'breadcrumbs' || id === 'breadcrumb_container') {
-      // Use content from slot if provided, otherwise generate breadcrumbs
+      // Use content from slot if provided, otherwise use Breadcrumb component
       if (content && content.trim()) {
         return wrapWithParentClass(
           <div
@@ -101,41 +102,22 @@ export function CategorySlotRenderer({
         );
       }
 
-      // Generate dynamic breadcrumbs
+      // Create breadcrumb items with current category added
+      const breadcrumbItems = [...breadcrumbs];
+      if (category) {
+        breadcrumbItems.push({
+          name: category.name,
+          url: window.location.pathname // Current page, so it won't be a link
+        });
+      }
+
+      // Use the actual Breadcrumb component with dynamic styling
       return wrapWithParentClass(
-        <nav className={className || "flex mb-4"} style={styles} aria-label="Breadcrumb">
-          <ol className="inline-flex items-center space-x-1 md:space-x-3">
-            <li className="inline-flex items-center">
-              <button
-                onClick={() => navigate('/')}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Home
-              </button>
-            </li>
-            {breadcrumbs.map((breadcrumb, index) => (
-              <li key={index} className="inline-flex items-center">
-                <span className="mx-2 text-gray-400">/</span>
-                {index === breadcrumbs.length - 1 ? (
-                  <span className="text-gray-500">{breadcrumb.name}</span>
-                ) : (
-                  <button
-                    onClick={() => navigate(breadcrumb.url)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {breadcrumb.name}
-                  </button>
-                )}
-              </li>
-            ))}
-            {category && (
-              <li className="inline-flex items-center">
-                <span className="mx-2 text-gray-400">/</span>
-                <span className="text-gray-500">{category.name}</span>
-              </li>
-            )}
-          </ol>
-        </nav>
+        <Breadcrumb
+          items={breadcrumbItems}
+          className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
+          style={styles}
+        />
       );
     }
 

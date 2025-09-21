@@ -4,15 +4,19 @@ import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { ChevronRight, Home } from 'lucide-react';
 
-export default function Breadcrumb({ items = [] }) {
+export default function Breadcrumb({ items = [], className, style }) {
     const { store } = useStore();
-    
+
     if (!items || items.length === 0) {
         return null;
     }
 
     return (
-        <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
+        <nav
+            className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
+            style={style}
+            aria-label="Breadcrumb"
+        >
             <Link 
                 to={createPublicUrl(store?.slug || 'default', 'STOREFRONT')} 
                 className="flex items-center hover:text-blue-600 transition-colors"

@@ -12,7 +12,7 @@ export const categoryConfig = {
       id: 'breadcrumbs',
       type: 'text',
       content: '',
-      className: 'flex mb-4',
+      className: 'flex items-center space-x-1 text-sm text-gray-500 mb-6',
       parentClassName: '',
       styles: {},
       parentId: null,
