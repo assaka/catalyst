@@ -301,7 +301,22 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
   });
 
   // Dynamic configuration loader based on page type
-  const getDefaultConfig = async (pageType) => {
+  const getDefaultConfig = async (pageType, staticConfig = null) => {
+    // Use provided static configuration if available
+    if (staticConfig) {
+      return {
+        page_name: staticConfig.page_name,
+        slot_type: staticConfig.slot_type,
+        slots: staticConfig.slots || {},
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          ...(staticConfig.metadata || {})
+        }
+      };
+    }
+
+    // Otherwise load from page config file
     const config = await loadPageConfig(pageType);
 
     return {
@@ -316,6 +331,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     };
   };
 
+  // Use provided configuration, or latest published, or default config
   const baseConfig = configuration || (latestPublished ? latestPublished.configuration : await getDefaultConfig(pageType));
 
   const newDraft = await this.create({

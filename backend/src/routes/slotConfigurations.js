@@ -9,16 +9,39 @@ router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
   try {
     const { storeId, pageType = 'cart' } = req.params;
     const userId = req.user.id;
-    
+
     // Use upsert to get or create draft
     const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType);
-    
+
     res.json({
       success: true,
       data: draft
     });
   } catch (error) {
     console.error('Error getting/creating draft:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST endpoint to create/get draft with static configuration
+router.post('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType = 'cart' } = req.params;
+    const { staticConfiguration } = req.body;
+    const userId = req.user.id;
+
+    // Use upsert to get or create draft with static configuration
+    const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType, staticConfiguration);
+
+    res.json({
+      success: true,
+      data: draft
+    });
+  } catch (error) {
+    console.error('Error getting/creating draft with static config:', error);
     res.status(500).json({
       success: false,
       error: error.message
