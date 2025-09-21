@@ -120,86 +120,102 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Filters container
+    // Filters container - Column 1
     if (id === 'filters_container') {
       return wrapWithParentClass(
-        <Card className={className || "mb-6"} style={styles}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center">
-                <Filter className="w-5 h-5 mr-2" />
-                {content || 'Filters'}
-              </h3>
-              {Object.keys(selectedFilters).length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearFilters}
-                >
-                  Clear All
-                </Button>
+        <div className={className || "w-full"} style={styles}>
+          <Card className="sticky top-4">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <Filter className="w-5 h-5 mr-2" />
+                  {content || 'Filters'}
+                </h3>
+                {Object.keys(selectedFilters).length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                  >
+                    Clear All
+                  </Button>
+                )}
+              </div>
+
+              {/* Price Range Filter */}
+              {priceRange && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Price Range</label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      value={priceRange.min || ''}
+                      onChange={(e) => handleFilterChange('price', { ...priceRange, min: e.target.value })}
+                      className="w-24"
+                    />
+                    <span>-</span>
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={priceRange.max || ''}
+                      onChange={(e) => handleFilterChange('price', { ...priceRange, max: e.target.value })}
+                      className="w-24"
+                    />
+                  </div>
+                </div>
               )}
-            </div>
 
-            {/* Price Range Filter */}
-            {priceRange && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Price Range</label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={priceRange.min || ''}
-                    onChange={(e) => handleFilterChange('price', { ...priceRange, min: e.target.value })}
-                    className="w-24"
-                  />
-                  <span>-</span>
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    value={priceRange.max || ''}
-                    onChange={(e) => handleFilterChange('price', { ...priceRange, max: e.target.value })}
-                    className="w-24"
-                  />
+              {/* Category Filters */}
+              {Object.entries(filters).map(([filterKey, filterOptions]) => (
+                <div key={filterKey} className="mb-4">
+                  <label className="block text-sm font-medium mb-2 capitalize">
+                    {filterKey.replace('_', ' ')}
+                  </label>
+                  <div className="space-y-2">
+                    {filterOptions.map((option) => (
+                      <label key={option.value} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters[filterKey]?.includes(option.value) || false}
+                          onChange={(e) => {
+                            const currentValues = selectedFilters[filterKey] || [];
+                            const newValues = e.target.checked
+                              ? [...currentValues, option.value]
+                              : currentValues.filter(v => v !== option.value);
+                            handleFilterChange(filterKey, newValues);
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">
+                          {option.label} ({option.count})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Category Filters */}
-            {Object.entries(filters).map(([filterKey, filterOptions]) => (
-              <div key={filterKey} className="mb-4">
-                <label className="block text-sm font-medium mb-2 capitalize">
-                  {filterKey.replace('_', ' ')}
-                </label>
-                <div className="space-y-2">
-                  {filterOptions.map((option) => (
-                    <label key={option.value} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters[filterKey]?.includes(option.value) || false}
-                        onChange={(e) => {
-                          const currentValues = selectedFilters[filterKey] || [];
-                          const newValues = e.target.checked
-                            ? [...currentValues, option.value]
-                            : currentValues.filter(v => v !== option.value);
-                          handleFilterChange(filterKey, newValues);
-                        }}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">
-                        {option.label} ({option.count})
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       );
     }
 
-    // Sort controls
+    // Main content container - Column 2
+    if (id === 'main_content_container') {
+      return wrapWithParentClass(
+        <div className={className || "w-full"} style={styles}>
+          <CategorySlotRenderer
+            slots={slots}
+            parentId={slot.id}
+            viewMode={viewMode}
+            categoryContext={categoryContext}
+          />
+        </div>
+      );
+    }
+
+    // Sort controls and product count
     if (id === 'sort_controls') {
       const sortOptions = [
         { value: 'name_asc', label: 'Name A-Z' },
@@ -211,10 +227,10 @@ export function CategorySlotRenderer({
       ];
 
       return wrapWithParentClass(
-        <div className={className || "flex items-center justify-between mb-6"} style={styles}>
+        <div className={className || "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"} style={styles}>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-600">
-              {products.length} products
+              Showing {products.length > 0 ? ((currentPage - 1) * 12 + 1) : 0}-{Math.min(currentPage * 12, products.length)} of {products.length} products
             </span>
           </div>
           <div className="flex items-center space-x-2">
@@ -222,7 +238,7 @@ export function CategorySlotRenderer({
             <select
               value={sortOption}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-1 text-sm"
+              className="border border-gray-300 rounded px-3 py-1 text-sm bg-white"
             >
               {sortOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -257,14 +273,14 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Products container
+    // Products container - optimized for 2-column layout
     if (id === 'products_container') {
       const gridClass = viewMode === 'grid'
-        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-4';
 
       return (
-        <div className={`${className} ${gridClass}`} style={styles}>
+        <div className={`${className} ${gridClass} mb-8`} style={styles}>
           {products.map(product => (
             <Card
               key={product.id}
@@ -273,22 +289,22 @@ export function CategorySlotRenderer({
               }`}
               onClick={() => onProductClick && onProductClick(product)}
             >
-              <div className={viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}>
+              <div className={viewMode === 'list' ? 'w-40 flex-shrink-0' : ''}>
                 <img
                   src={getProductImageUrl(product)}
                   alt={product.name}
-                  className={`w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover rounded-t-lg`}
+                  className={`w-full ${viewMode === 'list' ? 'h-32' : 'h-40'} object-cover ${viewMode === 'list' ? 'rounded-l-lg' : 'rounded-t-lg'}`}
                 />
               </div>
               <CardContent className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                {product.description && (
+                <h3 className="font-semibold text-base mb-2 line-clamp-2">{product.name}</h3>
+                {product.description && viewMode === 'list' && (
                   <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                     {product.description}
                   </p>
                 )}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col">
                     {product.sale_price && product.sale_price < product.price ? (
                       <>
                         <span className="text-lg font-bold text-red-600">
