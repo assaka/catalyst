@@ -9,7 +9,7 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
-import { usePagination, useSorting, useFilters } from "@/hooks/useUrlUtils";
+import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,12 @@ export default function Category() {
   const [products, setProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeFilters, setActiveFilters] = useState({});
   const [itemsPerPage] = useState(12);
 
   const { storeCode, categorySlug } = useParams();
   const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();
-  const { filters: activeFilters, updateFilter, clearAllFilters } = useFilters();
 
 
   useEffect(() => {
@@ -61,18 +61,22 @@ export default function Category() {
     try {
       setLoading(true);
       setActiveFilters({});
-      
+
+      console.log('Loading category products:', { store: store?.id, categorySlug, categories: categories?.length });
+
       if (!store || !categorySlug) {
+        console.log('Missing store or categorySlug:', { store: !!store, categorySlug });
         return;
       }
 
       let category = null;
       if (categories) {
         category = categories.find(c => c?.slug === categorySlug);
+        console.log('Found category:', category?.name, 'from', categories.length, 'categories');
       }
-      
+
       if (!category) {
-        console.warn(`Category with slug '${categorySlug}' not found.`);
+        console.warn(`Category with slug '${categorySlug}' not found in categories:`, categories?.map(c => c.slug));
         showNotFound(`Category "${categorySlug}" not found`);
         return;
       }
@@ -297,7 +301,7 @@ export default function Category() {
             <LayeredNavigation
               products={products}
               attributes={filterableAttributes}
-              onFilterChange={updateFilter}
+              onFilterChange={setActiveFilters}
             />
             <CmsBlockRenderer position="category_below_filters" />
           </div>
