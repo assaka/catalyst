@@ -42,6 +42,13 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
+import {
+  CategoryHeaderSlot,
+  CategoryBreadcrumbsSlot,
+  CategoryFiltersSlot,
+  CategoryProductsSlot,
+  CategoryPaginationSlot
+} from '@/components/editor/slot/slotComponentsCategory';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
@@ -407,6 +414,26 @@ const CategorySlotsEditor = ({
                       saveConfiguration={saveConfiguration}
                       saveTimeoutRef={saveTimeoutRef}
                       categoryData={sampleCategoryData}
+                      customSlotRenderer={(slot) => {
+                        const componentMap = {
+                          'header': CategoryHeaderSlot,
+                          'breadcrumbs': CategoryBreadcrumbsSlot,
+                          'filters': CategoryFiltersSlot,
+                          'products': CategoryProductsSlot,
+                          'pagination': CategoryPaginationSlot
+                        };
+                        const SlotComponent = componentMap[slot.id];
+                        if (SlotComponent) {
+                          return (
+                            <SlotComponent
+                              categoryData={sampleCategoryData}
+                              content={slot.content}
+                              config={{ viewMode }}
+                            />
+                          );
+                        }
+                        return null;
+                      }}
                     />
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">

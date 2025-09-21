@@ -1,24 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Filter, Grid, List } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Filter, Grid, List, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 
 // ============================================
 // Category-specific Slot Components
 // ============================================
 
 // CategoryHeaderSlot Component
-export function CategoryHeaderSlot({ data, content }) {
+export function CategoryHeaderSlot({ categoryData, content }) {
+  const { category } = categoryData || {};
+
   return (
     <div className="category-header">
       {content ? (
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
         <>
-          <h1 className="text-3xl font-bold">{data?.category?.name || 'Category Name'}</h1>
-          <p className="text-gray-600 mt-2">{data?.category?.description || 'Category description'}</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {category?.name || 'Category Name'}
+          </h1>
+          {category?.description && (
+            <p className="text-gray-600 mt-2">{category.description}</p>
+          )}
         </>
       )}
     </div>
@@ -26,267 +32,218 @@ export function CategoryHeaderSlot({ data, content }) {
 }
 
 // CategoryBreadcrumbsSlot Component
-export function CategoryBreadcrumbsSlot({ data, content }) {
+export function CategoryBreadcrumbsSlot({ categoryData, content }) {
+  const { category } = categoryData || {};
+
   return (
-    <nav className="text-sm text-gray-500 mb-4">
+    <nav className="category-breadcrumbs">
       {content ? (
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
-        <div className="flex items-center space-x-2">
-          <Link to="/" className="hover:text-gray-700">Home</Link>
-          <span>&gt;</span>
-          <span>{data?.category?.parent || 'Products'}</span>
-          <span>&gt;</span>
-          <span className="text-gray-900 font-medium">
-            {data?.category?.name || 'Category'}
-          </span>
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <Link to="/" className="hover:text-gray-900">Home</Link>
+          <span>/</span>
+          {category?.parent && (
+            <>
+              <Link to={`/category/${category.parent}`} className="hover:text-gray-900">
+                {category.parent}
+              </Link>
+              <span>/</span>
+            </>
+          )}
+          <span className="text-gray-900">{category?.name || 'Category'}</span>
         </div>
       )}
     </nav>
   );
 }
 
-// ProductGridSlot Component
-export function ProductGridSlot({ data, content, config }) {
-  const products = data?.products || [];
-  const viewMode = config?.viewMode || 'grid';
-
-  if (products.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <p>No products in this category</p>
-      </div>
-    );
-  }
-
+// CategoryFiltersSlot Component
+export function CategoryFiltersSlot({ categoryData, content }) {
   return (
-    <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-      {products.slice(0, 6).map((product, index) => (
-        <Card key={index} className={viewMode === 'grid' ? 'overflow-hidden' : 'overflow-hidden flex'}>
-          <div className={viewMode === 'grid' ? '' : 'w-48 h-48 flex-shrink-0'}>
-            {product.image ? (
-              <img
-                src={product.image}
-                alt={product.name}
-                className={viewMode === 'grid' ? 'w-full h-48 object-cover' : 'w-full h-full object-cover'}
-              />
-            ) : (
-              <div className={viewMode === 'grid' ? 'w-full h-48 bg-gray-200 flex items-center justify-center' : 'w-full h-full bg-gray-200 flex items-center justify-center'}>
-                <span className="text-gray-400">No Image</span>
+    <div className="category-filters">
+      {content ? (
+        <div dangerouslySetInnerHTML={{ __html: content }} />
+      ) : (
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Filter className="w-4 h-4 mr-2" />
+              Filters
+            </h3>
+
+            {/* Price Range */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-700 mb-2">Price Range</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">Under $25</span>
+                </label>
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">$25 - $50</span>
+                </label>
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">$50 - $100</span>
+                </label>
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">Over $100</span>
+                </label>
               </div>
-            )}
+            </div>
+
+            {/* Brand */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-700 mb-2">Brand</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">Apple</span>
+                </label>
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">Samsung</span>
+                </label>
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  <span className="text-sm">Google</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Rating */}
+            <div>
+              <h4 className="font-medium text-gray-700 mb-2">Rating</h4>
+              <div className="space-y-2">
+                {[4, 3, 2, 1].map(rating => (
+                  <label key={rating} className="flex items-center">
+                    <input type="checkbox" className="mr-2" />
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                        />
+                      ))}
+                      <span className="text-sm ml-1">& up</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
-          <CardContent className={viewMode === 'grid' ? 'p-4' : 'p-4 flex-1'}>
-            <h3 className="font-semibold text-lg mb-2">{product.name || `Product ${index + 1}`}</h3>
-            <p className="text-2xl font-bold text-blue-600 mb-2">
-              ${product.price || '99.99'}
-            </p>
-            {viewMode === 'list' && (
-              <p className="text-sm text-gray-600 mb-3">{product.description || 'Product description...'}</p>
-            )}
-            <Button className="w-full">
-              Add to Cart
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// CategoryFiltersSlot Component
-export function CategoryFiltersSlot({ data, content }) {
+// CategoryProductsSlot Component
+export function CategoryProductsSlot({ categoryData, content, config }) {
+  const { products } = categoryData || {};
+  const { viewMode } = config || {};
+
   return (
-    <Card className="filters-sidebar">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Filter className="w-4 h-4 mr-2" />
-          Filters
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Price Range */}
+    <div className="category-products">
+      {content ? (
+        <div dangerouslySetInnerHTML={{ __html: content }} />
+      ) : (
         <div>
-          <h4 className="text-sm font-medium mb-3">Price Range</h4>
-          <div className="space-y-2">
-            <Input type="range" className="w-full" min="0" max="1000" />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>$0</span>
-              <span>$1000+</span>
+          {/* View Mode Toggle */}
+          <div className="flex justify-between items-center mb-6">
+            <p className="text-gray-600">
+              {products?.length || 0} products found
+            </p>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">View:</span>
+              <Button variant="outline" size="sm">
+                <Grid className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="sm">
+                <List className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        </div>
 
-        {/* Brand Filter */}
-        <div>
-          <h4 className="text-sm font-medium mb-3">Brand</h4>
-          <div className="space-y-2">
-            {['Samsung', 'Apple', 'Sony', 'LG'].map(brand => (
-              <label key={brand} className="flex items-center">
-                <input type="checkbox" className="mr-2" />
-                <span className="text-sm">{brand}</span>
-              </label>
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(products || []).map((product) => (
+              <Card key={product.id} className="group hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="aspect-square bg-gray-100 rounded-lg mb-4 overflow-hidden">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                    {product.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    {product.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-gray-900">
+                      ${product.price}
+                    </span>
+                    <Button size="sm">Add to Cart</Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
+
+          {products?.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No products found in this category.</p>
+            </div>
+          )}
         </div>
-
-        {/* Rating Filter */}
-        <div>
-          <h4 className="text-sm font-medium mb-3">Customer Rating</h4>
-          <div className="space-y-2">
-            {[4, 3, 2, 1].map(rating => (
-              <label key={rating} className="flex items-center">
-                <input type="checkbox" className="mr-2" />
-                <span className="text-sm">{rating}+ stars</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Apply Filters Button */}
-        <Button className="w-full" variant="outline">
-          Apply Filters
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-// CategorySortingSlot Component
-export function CategorySortingSlot({ data, content, config }) {
-  const viewMode = config?.viewMode || 'grid';
-
-  return (
-    <div className="category-sorting flex justify-between items-center mb-6">
-      {/* Sort Options */}
-      <div className="flex items-center space-x-4">
-        <label className="text-sm font-medium">Sort by:</label>
-        <select className="border rounded px-3 py-1 text-sm">
-          <option value="featured">Featured</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="name">Name A-Z</option>
-          <option value="rating">Customer Rating</option>
-          <option value="newest">Newest</option>
-        </select>
-      </div>
-
-      {/* View Mode Toggle */}
-      <div className="flex items-center space-x-2">
-        <span className="text-sm font-medium">View:</span>
-        <Button
-          variant={viewMode === 'grid' ? 'default' : 'outline'}
-          size="sm"
-          className="h-8 w-8 p-0"
-        >
-          <Grid className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={viewMode === 'list' ? 'default' : 'outline'}
-          size="sm"
-          className="h-8 w-8 p-0"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-      </div>
+      )}
     </div>
   );
 }
 
 // CategoryPaginationSlot Component
-export function CategoryPaginationSlot({ data, content }) {
-  const currentPage = 1;
-  const totalPages = 5;
-
+export function CategoryPaginationSlot({ categoryData, content }) {
   return (
-    <div className="category-pagination flex justify-center items-center space-x-2 mt-8">
-      {/* Previous Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={currentPage === 1}
-        className="flex items-center"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Previous
-      </Button>
-
-      {/* Page Numbers */}
-      <div className="flex space-x-1">
-        {[1, 2, 3, 4, 5].map(page => (
-          <Button
-            key={page}
-            variant={page === currentPage ? 'default' : 'outline'}
-            size="sm"
-            className="h-8 w-8 p-0"
-          >
-            {page}
+    <div className="category-pagination">
+      {content ? (
+        <div dangerouslySetInnerHTML={{ __html: content }} />
+      ) : (
+        <div className="flex items-center justify-center space-x-2">
+          <Button variant="outline" size="sm" disabled>
+            <ChevronLeft className="w-4 h-4" />
           </Button>
-        ))}
-      </div>
-
-      {/* Next Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={currentPage === totalPages}
-        className="flex items-center"
-      >
-        Next
-        <ChevronRight className="h-4 w-4 ml-1" />
-      </Button>
-    </div>
-  );
-}
-
-// CategoryStatsSlot Component - Shows product count, etc.
-export function CategoryStatsSlot({ data, content }) {
-  const products = data?.products || [];
-  const totalProducts = products.length;
-
-  return (
-    <div className="category-stats text-sm text-gray-600 mb-4">
-      {content ? (
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      ) : (
-        <p>
-          Showing {Math.min(6, totalProducts)} of {totalProducts} products
-        </p>
-      )}
-    </div>
-  );
-}
-
-// CategorySeoContentSlot Component - SEO content at bottom
-export function CategorySeoContentSlot({ data, content }) {
-  return (
-    <div className="category-seo-content mt-12 prose max-w-none">
-      {content ? (
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      ) : (
-        <div>
-          <h2>About {data?.category?.name || 'This Category'}</h2>
-          <p>
-            Discover our wide selection of {data?.category?.name?.toLowerCase() || 'products'}.
-            We offer high-quality items at competitive prices with fast shipping.
-          </p>
-          <p>
-            Browse through our collection and find exactly what you're looking for.
-            All products come with our satisfaction guarantee.
-          </p>
+          <Button variant="default" size="sm">1</Button>
+          <Button variant="outline" size="sm">2</Button>
+          <Button variant="outline" size="sm">3</Button>
+          <span className="px-2 text-gray-500">...</span>
+          <Button variant="outline" size="sm">10</Button>
+          <Button variant="outline" size="sm">
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       )}
     </div>
   );
 }
 
-export default {
+// Export all components
+export {
   CategoryHeaderSlot,
   CategoryBreadcrumbsSlot,
-  ProductGridSlot,
   CategoryFiltersSlot,
-  CategorySortingSlot,
-  CategoryPaginationSlot,
-  CategoryStatsSlot,
-  CategorySeoContentSlot
+  CategoryProductsSlot,
+  CategoryPaginationSlot
 };
