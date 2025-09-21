@@ -452,7 +452,7 @@ const CategorySlotsEditor = ({
         </div>
         {/* Category Layout - Hierarchical Structure */}
         <div
-          className="bg-gray-50 category-page flex-1 flex flex-col overflow-hidden"
+          className="bg-gray-50 category-page flex-1 overflow-y-auto"
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
@@ -476,7 +476,10 @@ const CategorySlotsEditor = ({
             </div>
           )}
 
-          <div className="bg-white flex-1 overflow-y-auto">
+          <ResponsiveContainer
+            viewport={currentViewport}
+            className="bg-white"
+          >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
@@ -535,7 +538,7 @@ const CategorySlotsEditor = ({
 
             <CmsBlockRenderer position="category_below_products" />
             </div>
-          </div>
+          </ResponsiveContainer>
         </div>
       </div>
 

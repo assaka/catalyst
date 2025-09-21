@@ -9,8 +9,10 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
-import { Package } from "lucide-react";
+import { Package, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -26,6 +28,9 @@ export default function Category() {
   const [currentCategory, setCurrentCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
+  const [sortBy, setSortBy] = useState('name-asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
   
   const { storeCode, categorySlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -110,7 +115,7 @@ export default function Category() {
   
   const filteredProducts = useMemo(() => {
     let currentProducts = products;
-    
+
     // First apply stock filtering based on display_out_of_stock setting
     if (settings?.enable_inventory && !settings?.display_out_of_stock) {
       currentProducts = currentProducts.filter(product => {
@@ -120,7 +125,7 @@ export default function Category() {
         return true; // Products without stock_quantity are always shown (unlimited stock)
       });
     }
-    
+
     // Then apply user filters
     if (Object.keys(activeFilters).length === 0) return currentProducts;
 
@@ -129,12 +134,12 @@ export default function Category() {
       if (activeFilters.priceRange) {
         const [min, max] = activeFilters.priceRange;
         let price = parseFloat(product.price || 0);
-        
+
         // Use the lowest price if compare_price exists and is lower
         if (product.compare_price && parseFloat(product.compare_price) > 0) {
           price = Math.min(price, parseFloat(product.compare_price));
         }
-        
+
         if (price < min || price > max) {
           return false;
         }
@@ -145,16 +150,16 @@ export default function Category() {
         if (key !== 'priceRange') {
           const filterValues = activeFilters[key];
           if (!filterValues || filterValues.length === 0) continue;
-          
+
           const productAttributes = product.attributes || product.attribute_values || {};
-          
+
           // Try multiple possible keys for the attribute
           const possibleKeys = [
             key,
             key.toLowerCase(),
             key.replace(/[_-]/g, '')
           ];
-          
+
           let productValue = null;
           for (const possibleKey of possibleKeys) {
             if (productAttributes[possibleKey] !== undefined || product[possibleKey] !== undefined) {
@@ -162,13 +167,13 @@ export default function Category() {
               break;
             }
           }
-          
+
           if (productValue === undefined || productValue === null) {
             return false;
           }
-          
+
           productValue = String(productValue);
-          
+
           const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
           if (!hasMatch) {
             return false;
@@ -178,6 +183,58 @@ export default function Category() {
       return true;
     });
   }, [products, activeFilters, settings]);
+
+  const sortedProducts = useMemo(() => {
+    const sorted = [...filteredProducts];
+
+    switch (sortBy) {
+      case 'name-asc':
+        return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      case 'name-desc':
+        return sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+      case 'price-asc':
+        return sorted.sort((a, b) => {
+          const priceA = parseFloat(a.price || 0);
+          const priceB = parseFloat(b.price || 0);
+          return priceA - priceB;
+        });
+      case 'price-desc':
+        return sorted.sort((a, b) => {
+          const priceA = parseFloat(a.price || 0);
+          const priceB = parseFloat(b.price || 0);
+          return priceB - priceA;
+        });
+      case 'newest':
+        return sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      case 'oldest':
+        return sorted.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      default:
+        return sorted;
+    }
+  }, [filteredProducts, sortBy]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedProducts.slice(startIndex, endIndex);
+  }, [sortedProducts, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+
+  const handleSortChange = (newSortBy) => {
+    setSortBy(newSortBy);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFilterChange = (newFilters) => {
+    setActiveFilters(newFilters);
+    setCurrentPage(1);
+  };
 
   // Build breadcrumb items for category pages
   const getBreadcrumbItems = () => {
@@ -247,7 +304,7 @@ export default function Category() {
             <LayeredNavigation
               products={products}
               attributes={filterableAttributes}
-              onFilterChange={setActiveFilters}
+              onFilterChange={handleFilterChange}
             />
             <CmsBlockRenderer position="category_below_filters" />
           </div>
@@ -255,6 +312,30 @@ export default function Category() {
         
         <div className={(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? "lg:col-span-3" : "lg:col-span-1"}>
           <CmsBlockRenderer position="category_above_products" />
+
+          {/* Sorting and Results Info */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div className="text-sm text-gray-600">
+              Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length)}-{Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Sort by:</span>
+              <Select value={sortBy} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="price-asc">Price (Low to High)</SelectItem>
+                  <SelectItem value="price-desc">Price (High to Low)</SelectItem>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
               {[...Array(6)].map((_, i) => (
@@ -271,11 +352,11 @@ export default function Category() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
+              {paginatedProducts.length > 0 ? (
+                paginatedProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
                     settings={settings}
                     className="hover:shadow-lg transition-shadow rounded-lg"
                   />
@@ -285,7 +366,7 @@ export default function Category() {
                   <Package className="w-16 h-16 text-gray-400 mb-4" />
                   <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
                   <p className="text-gray-500 mt-2 text-center">
-                    {currentCategory ? 
+                    {currentCategory ?
                       `No products found in the "${currentCategory.name}" category.` :
                       "No products match your current filters."
                     }
@@ -293,7 +374,92 @@ export default function Category() {
                 </div>
               )}
             </div>
-          )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center mt-8 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {/* First page */}
+                  {currentPage > 3 && (
+                    <>
+                      <Button
+                        variant={1 === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                      >
+                        1
+                      </Button>
+                      {currentPage > 4 && <span className="px-2">...</span>}
+                    </>
+                  )}
+
+                  {/* Page numbers around current page */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+
+                    if (pageNumber < 1 || pageNumber > totalPages) return null;
+                    if (pageNumber === 1 && currentPage > 3) return null;
+                    if (pageNumber === totalPages && currentPage < totalPages - 2) return null;
+
+                    return (
+                      <Button
+                        key={pageNumber}
+                        variant={pageNumber === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNumber)}
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+
+                  {/* Last page */}
+                  {currentPage < totalPages - 2 && (
+                    <>
+                      {currentPage < totalPages - 3 && <span className="px-2">...</span>}
+                      <Button
+                        variant={totalPages === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                      >
+                        {totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           <CmsBlockRenderer position="category_below_products" />
         </div>
       </div>
