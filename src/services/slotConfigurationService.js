@@ -4,9 +4,20 @@ const API_BASE = 'slot-configurations';
 
 class SlotConfigurationService {
   // Get or create draft configuration for editing
-  async getDraftConfiguration(storeId, pageType = 'cart') {
+  async getDraftConfiguration(storeId, pageType = 'cart', staticConfig = null) {
     try {
-      const response = await apiClient.get(`${API_BASE}/draft/${storeId}/${pageType}`);
+      let response;
+
+      if (staticConfig) {
+        // Send static config to backend so it can create draft with full configuration if needed
+        response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, {
+          staticConfiguration: staticConfig
+        });
+      } else {
+        // Legacy call without static config
+        response = await apiClient.get(`${API_BASE}/draft/${storeId}/${pageType}`);
+      }
+
       return response;
     } catch (error) {
       console.error('Error getting draft configuration:', error);

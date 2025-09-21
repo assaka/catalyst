@@ -738,21 +738,13 @@ export function useSlotConfiguration({
     // Try to load from database and merge with static config
     if (storeId) {
       try {
-        const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+        const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, staticConfig);
 
         if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
           const dbConfig = savedConfig.data.configuration;
 
-          // Check if database config has any meaningful slots
-          const hasSlots = dbConfig.slots && Object.keys(dbConfig.slots).length > 0;
-
-          if (!hasSlots) {
-            // Database config has empty slots - use static config instead
-            console.log('📝 Database config has empty slots, using static configuration');
-            configToUse = staticConfig;
-          } else {
-            // Merge saved config with static config, preserving viewMode and metadata from static
-            const mergedSlots = {};
+          // Merge saved config with static config, preserving viewMode and metadata from static
+          const mergedSlots = {};
 
           // Start with static config slots to ensure all viewMode arrays are preserved
           Object.entries(staticConfig.slots).forEach(([slotId, staticSlot]) => {
@@ -783,12 +775,11 @@ export function useSlotConfiguration({
             });
           }
 
-            configToUse = {
-              ...staticConfig,
-              ...dbConfig,
-              slots: mergedSlots
-            };
-          }
+          configToUse = {
+            ...staticConfig,
+            ...dbConfig,
+            slots: mergedSlots
+          };
 
         }
       } catch (dbError) {
