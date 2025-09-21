@@ -9,12 +9,14 @@ import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
+import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -31,15 +33,29 @@ export default function Category() {
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
   const [itemsPerPage] = useState(12);
+  const [categorySlots, setCategorySlots] = useState(null);
 
   const { storeCode, categorySlug } = useParams();
   const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();
 
+  // Load category slot configuration
+  const loadCategorySlotConfiguration = async () => {
+    if (!store?.id) return;
+
+    try {
+      const config = await slotConfigurationService.getConfiguration(store.id, 'category_layout');
+      setCategorySlots(config?.slots || null);
+    } catch (error) {
+      console.warn('Could not load category slot configuration:', error);
+      setCategorySlots(null);
+    }
+  };
 
   useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
       loadCategoryProducts();
+      loadCategorySlotConfiguration();
 
       // Track category view
       if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
@@ -242,6 +258,33 @@ export default function Category() {
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
+  // Create category context for CategorySlotRenderer
+  const categoryContext = {
+    category: currentCategory,
+    products: paginatedProducts,
+    filters: {},
+    sortOption: currentSort,
+    currentPage,
+    totalPages,
+    subcategories: [],
+    breadcrumbs: getBreadcrumbItems(),
+    selectedFilters: activeFilters,
+    priceRange: {},
+    currencySymbol: settings?.currency_symbol || '$',
+    settings,
+    store,
+    taxes: [],
+    selectedCountry: null,
+    handleFilterChange: setActiveFilters,
+    handleSortChange: setSort,
+    handlePageChange: setPage,
+    clearFilters: () => setActiveFilters({}),
+    formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
+    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
+    navigate: (url) => window.location.href = url,
+    onProductClick: (product) => window.location.href = createCategoryUrl(store?.code, product.slug)
+  };
+
   const handleSortChange = (newSort) => {
     setSort(newSort);
   };
@@ -303,10 +346,23 @@ export default function Category() {
       />
       
       <div className="mb-8 max-w-7xl mx-auto">
-        <Breadcrumb items={getBreadcrumbItems()} />
-        <h1 className="text-4xl font-bold">{pageTitle}</h1>
-        {currentCategory?.description && (
-          <p className="text-gray-600 mt-2">{currentCategory.description}</p>
+        {categorySlots ? (
+          // Render category header using CategorySlotRenderer if configuration exists
+          <CategorySlotRenderer
+            slots={categorySlots}
+            parentId={null}
+            viewMode="list"
+            categoryContext={categoryContext}
+          />
+        ) : (
+          // Fallback to static header if no configuration
+          <>
+            <Breadcrumb items={getBreadcrumbItems()} />
+            <h1 className="text-4xl font-bold">{pageTitle}</h1>
+            {currentCategory?.description && (
+              <p className="text-gray-600 mt-2">{currentCategory.description}</p>
+            )}
+          </>
         )}
       </div>
 
