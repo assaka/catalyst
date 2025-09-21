@@ -19,7 +19,8 @@ const SlotEnabledFileSelector = ({
   onFileSelect,
   selectedFile = null,
   className = '',
-  refreshTrigger = 0 // Add refresh trigger prop
+  refreshTrigger = 0, // Add refresh trigger prop
+  files = null // Accept files array as prop
 }) => {
   const { selectedStore } = useStoreSelection();
   const [slotFiles, setSlotFiles] = useState([]);
@@ -77,33 +78,20 @@ const SlotEnabledFileSelector = ({
 
   useEffect(() => {
     loadSlotFiles();
-  }, [selectedStore?.id, refreshTrigger]);
+  }, [selectedStore?.id, refreshTrigger, files]);
 
   const loadSlotFiles = async () => {
     setLoading(true);
     try {
-      // Check which files actually exist in the codebase
-      const existingFiles = [];
+      // Use files prop if provided, otherwise use default slotEnabledFiles
+      const filesToProcess = files || slotEnabledFiles;
 
-      for (const file of slotEnabledFiles) {
-        try {
-          // Check if file exists by attempting to fetch baselines
-          const data = await apiClient.get('extensions/baselines');
-          if (data?.success && data?.data?.files) {
-            const fileExists = data.data.files.some(f => f.file_path === file.path);
-            if (fileExists) {
-              existingFiles.push({
-                ...file,
-                exists: true,
-                hasSlotConfig: false // Will be updated below
-              });
-            }
-          }
-        } catch (error) {
-          // File doesn't exist or API error - skip this file
-          console.warn(`Could not verify existence of ${file.path}`);
-        }
-      }
+      // Mark all files as existing since we're not checking file_baselines anymore
+      const existingFiles = filesToProcess.map(file => ({
+        ...file,
+        exists: true,
+        hasSlotConfig: false // Will be updated below
+      }));
 
       // Check slot configuration status for existing files
       if (selectedStore?.id) {

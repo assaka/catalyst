@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History, ShoppingCart, Package, Home, CreditCard, CheckCheck} from 'lucide-react';
+import {Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2, History, ShoppingCart, Package, Home, CreditCard, CheckCheck, Grid3X3} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
@@ -170,6 +170,55 @@ const getFileDisplayInfo = (filename) => {
     icon: null
   };
 };
+
+// Define the slot-enabled files with their metadata
+const slotEnabledFiles = [
+  {
+    id: 'cart',
+    name: 'Cart',
+    path: 'src/pages/editor/CartSlotsEditor.jsx',
+    pageType: 'cart',
+    icon: ShoppingCart,
+    description: 'Shopping cart page with slot customization',
+    color: 'text-blue-500'
+  },
+  {
+    id: 'category',
+    name: 'Category',
+    path: 'src/pages/editor/CategorySlotsEditor.jsx',
+    pageType: 'category',
+    icon: Grid3X3,
+    description: 'Product category listing page',
+    color: 'text-green-500'
+  },
+  {
+    id: 'product',
+    name: 'Product',
+    path: 'src/pages/editor/ProductSlotsEditor.jsx',
+    pageType: 'product',
+    icon: Package,
+    description: 'Product detail page with customizable slots',
+    color: 'text-purple-500'
+  },
+  {
+    id: 'checkout',
+    name: 'Checkout',
+    path: 'src/pages/editor/CheckoutSlotsEditor.jsx',
+    pageType: 'checkout',
+    icon: CreditCard,
+    description: 'Checkout flow with payment integration',
+    color: 'text-orange-500'
+  },
+  {
+    id: 'success',
+    name: 'Success',
+    path: 'src/pages/editor/SuccessSlotsEditor.jsx',
+    pageType: 'success',
+    icon: CheckCircle,
+    description: 'Order confirmation and success page',
+    color: 'text-emerald-500'
+  }
+];
 
 const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -790,6 +839,7 @@ export default ExampleComponent;`;
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedFile}
                 className="h-[calc(100vh-200px)]"
+                files={slotEnabledFiles}
               />
             </ResizablePanel>
 
