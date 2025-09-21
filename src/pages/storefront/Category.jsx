@@ -195,14 +195,34 @@ export default function Category() {
         return sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
       case 'price-asc':
         return sorted.sort((a, b) => {
-          const priceA = parseFloat(a.price || 0);
-          const priceB = parseFloat(b.price || 0);
+          // Use the same logic as ProductCard for actual selling price
+          let priceA = parseFloat(a.price || 0);
+          let priceB = parseFloat(b.price || 0);
+
+          // If there's a compare_price, use the lower of the two prices (sale price)
+          if (a.compare_price && parseFloat(a.compare_price) > 0) {
+            priceA = Math.min(priceA, parseFloat(a.compare_price));
+          }
+          if (b.compare_price && parseFloat(b.compare_price) > 0) {
+            priceB = Math.min(priceB, parseFloat(b.compare_price));
+          }
+
           return priceA - priceB;
         });
       case 'price-desc':
         return sorted.sort((a, b) => {
-          const priceA = parseFloat(a.price || 0);
-          const priceB = parseFloat(b.price || 0);
+          // Use the same logic as ProductCard for actual selling price
+          let priceA = parseFloat(a.price || 0);
+          let priceB = parseFloat(b.price || 0);
+
+          // If there's a compare_price, use the lower of the two prices (sale price)
+          if (a.compare_price && parseFloat(a.compare_price) > 0) {
+            priceA = Math.min(priceA, parseFloat(a.compare_price));
+          }
+          if (b.compare_price && parseFloat(b.compare_price) > 0) {
+            priceB = Math.min(priceB, parseFloat(b.compare_price));
+          }
+
           return priceB - priceA;
         });
       case 'newest':
