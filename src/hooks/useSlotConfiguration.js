@@ -380,8 +380,6 @@ export const useConfigurationInitialization = (pageType, pageName, slotType, get
     if (configurationLoadedRef.current) return null;
 
     try {
-      console.log(`🔄 ${pageType}SlotsEditor: Starting configuration initialization...`);
-
       // Use the hook function to get configuration (either draft or static)
       const configToUse = await getDraftOrStaticConfiguration();
 
@@ -397,18 +395,12 @@ export const useConfigurationInitialization = (pageType, pageName, slotType, get
       if (configToUse.slots && Object.keys(configToUse.slots).length > 0) {
         const dbConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
         if (dbConfig && dbConfig.slots && Object.keys(dbConfig.slots).length > 0) {
-          console.log(`✅ ${pageType}SlotsEditor: Using saved configuration from database`);
           finalConfig = dbConfig;
         }
       } else {
-        // Handle case where no slots are configured
-        console.log(`🛠️ ${pageType}SlotsEditor: No slots found, using base configuration structure`);
-
-        // For category page type, we want to ensure default slots are available for the useEditorInitialization hook
-        // The actual default slot creation will happen in useEditorInitialization
         finalConfig = {
           ...configToUse,
-          slots: {} // Ensure empty slots object exists so useEditorInitialization can detect it
+          slots: {}
         };
       }
 
@@ -454,7 +446,6 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
       if (finalConfig && isMounted) {
         // If createDefaultSlots is provided (for CategorySlotsEditor), check if we need default slots
         if (createDefaultSlots && (!finalConfig.slots || Object.keys(finalConfig.slots).length === 0)) {
-          console.log('🛠️ No slots found, creating default configuration');
           finalConfig = {
             ...finalConfig,
             slots: createDefaultSlots()
@@ -743,15 +734,8 @@ export function useSlotConfiguration({
         if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
           const dbConfig = savedConfig.data.configuration;
 
-          // Check if backend returned empty slots (backend not updated yet)
-          const hasSlots = dbConfig.slots && Object.keys(dbConfig.slots).length > 0;
-
-          if (!hasSlots) {
-            console.log('⚠️ Backend returned empty slots, using static config (backend needs updating)');
-            configToUse = staticConfig;
-          } else {
-            // Merge saved config with static config, preserving viewMode and metadata from static
-            const mergedSlots = {};
+          // Merge saved config with static config, preserving viewMode and metadata from static
+          const mergedSlots = {};
 
           // Start with static config slots to ensure all viewMode arrays are preserved
           Object.entries(staticConfig.slots).forEach(([slotId, staticSlot]) => {
@@ -782,16 +766,15 @@ export function useSlotConfiguration({
             });
           }
 
-            configToUse = {
-              ...staticConfig,
-              ...dbConfig,
-              slots: mergedSlots
-            };
-          }
+          configToUse = {
+            ...staticConfig,
+            ...dbConfig,
+            slots: mergedSlots
+          };
 
         }
       } catch (dbError) {
-        console.log('📝 No saved configuration found, will use static config as fallback:', dbError.message);
+        // No saved configuration found, will use static config as fallback
       }
     }
 

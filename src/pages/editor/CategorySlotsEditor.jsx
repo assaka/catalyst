@@ -184,24 +184,7 @@ const CategorySlotsEditor = ({
   );
 
   // Use generic editor initialization with category-specific default slots
-  useEditorInitialization(initializeConfig, (config) => {
-    // For CategorySlotsEditor, if we get a config with empty slots, populate with defaults
-    if (config && (!config.slots || Object.keys(config.slots).length === 0)) {
-      console.log('🔧 CategorySlotsEditor: Received empty slots, creating defaults');
-      const defaultSlots = createDefaultSlots();
-      const configWithDefaults = {
-        ...config,
-        slots: defaultSlots
-      };
-      console.log('🔧 CategorySlotsEditor: Setting config with defaults:', configWithDefaults);
-      setCategoryLayoutConfig(configWithDefaults);
-      // Also save it immediately so it persists
-      saveConfiguration(configWithDefaults);
-    } else {
-      console.log('🔧 CategorySlotsEditor: Setting config as-is:', config);
-      setCategoryLayoutConfig(config);
-    }
-  }, createDefaultSlots);
+  useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
 
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(
