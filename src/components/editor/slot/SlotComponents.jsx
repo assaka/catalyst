@@ -1434,26 +1434,12 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  {/* Category-specific slot rendering */}
-                  {categoryData && slot.id === 'header' && (
-                    <div>Category header slot content would go here</div>
-                  )}
-                  {categoryData && slot.id === 'breadcrumbs' && (
-                    <div>Category breadcrumbs slot content would go here</div>
-                  )}
-                  {categoryData && slot.id === 'products' && (
-                    <div>Category products slot content would go here</div>
-                  )}
-                  {categoryData && slot.id === 'filters' && (
-                    <div>Category filters slot content would go here</div>
-                  )}
-                  {categoryData && slot.id === 'sorting' && (
-                    <div>Category sorting slot content would go here</div>
-                  )}
-                  {categoryData && slot.id === 'pagination' && (
-                    <div>Category pagination slot content would go here</div>
+                  {/* Render container content */}
+                  {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && slot.content && (
+                    <div dangerouslySetInnerHTML={{ __html: slot.content }} />
                   )}
 
+                  {/* Render child slots */}
                   {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
                     <HierarchicalSlotRenderer
                       slots={slots}
