@@ -695,32 +695,40 @@ const CategorySlotsEditor = ({
                 console.log('🔍 CategorySlotsEditor: Render check - slots length:', Object.keys(categoryLayoutConfig?.slots || {}).length);
                 return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
               })() ? (
-                <HierarchicalSlotRenderer
-                  slots={categoryLayoutConfig.slots}
-                  parentId={null}
-                  mode={showPreview ? 'view' : mode}
-                  viewMode={viewMode}
-                  showBorders={showPreview ? false : showSlotBorders}
-                  currentDragInfo={currentDragInfo}
-                  setCurrentDragInfo={setCurrentDragInfo}
-                  onElementClick={showPreview ? null : handleElementClick}
-                  onGridResize={showPreview ? null : handleGridResize}
-                  onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
-                  onSlotDrop={showPreview ? null : handleSlotDrop}
-                  onSlotDelete={showPreview ? null : handleSlotDelete}
-                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
-                  onResizeEnd={showPreview ? null : () => {
-                    lastResizeEndTime.current = Date.now();
-                    // Add a small delay to prevent click events from firing immediately after resize
-                    setTimeout(() => setIsResizing(false), 100);
-                  }}
-                  selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
-                  setPageConfig={setCategoryLayoutConfig}
-                  saveConfiguration={saveConfiguration}
-                  saveTimeoutRef={saveTimeoutRef}
-                  pageConfig={categoryConfig}
-                  data={slotData}
-                />
+                {(() => {
+                  console.log('🔍 CategorySlotsEditor: About to render HierarchicalSlotRenderer with slots:', categoryLayoutConfig.slots);
+                  console.log('🔍 CategorySlotsEditor: Sample slot (header):', categoryLayoutConfig.slots.header);
+                  console.log('🔍 CategorySlotsEditor: pageConfig:', categoryConfig);
+                  console.log('🔍 CategorySlotsEditor: slotData:', slotData);
+                  return (
+                    <HierarchicalSlotRenderer
+                      slots={categoryLayoutConfig.slots}
+                      parentId={null}
+                      mode={showPreview ? 'view' : mode}
+                      viewMode={viewMode}
+                      showBorders={showPreview ? false : showSlotBorders}
+                      currentDragInfo={currentDragInfo}
+                      setCurrentDragInfo={setCurrentDragInfo}
+                      onElementClick={showPreview ? null : handleElementClick}
+                      onGridResize={showPreview ? null : handleGridResize}
+                      onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
+                      onSlotDrop={showPreview ? null : handleSlotDrop}
+                      onSlotDelete={showPreview ? null : handleSlotDelete}
+                      onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                      onResizeEnd={showPreview ? null : () => {
+                        lastResizeEndTime.current = Date.now();
+                        // Add a small delay to prevent click events from firing immediately after resize
+                        setTimeout(() => setIsResizing(false), 100);
+                      }}
+                      selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                      setPageConfig={setCategoryLayoutConfig}
+                      saveConfiguration={saveConfiguration}
+                      saveTimeoutRef={saveTimeoutRef}
+                      pageConfig={categoryConfig}
+                      data={slotData}
+                    />
+                  );
+                })()}
               ) : (
                 <div className="col-span-12 text-center py-12 text-gray-500">
                   {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
