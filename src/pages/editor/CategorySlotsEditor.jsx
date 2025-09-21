@@ -382,7 +382,7 @@ const CategorySlotsEditor = ({
       isSidebarVisible ? 'pr-80' : ''
     }`}>
       {/* Main Editor Area */}
-      <div className="flex flex-col">
+      <div className="flex flex-col h-screen">
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
@@ -452,7 +452,7 @@ const CategorySlotsEditor = ({
         </div>
         {/* Category Layout - Hierarchical Structure */}
         <div
-          className="bg-gray-50 category-page"
+          className="bg-gray-50 category-page flex-1 flex flex-col overflow-hidden"
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
@@ -476,7 +476,7 @@ const CategorySlotsEditor = ({
             </div>
           )}
 
-          <div className="bg-white overflow-auto">
+          <div className="bg-white flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
             <div className="grid grid-cols-12 gap-2 auto-rows-min">
