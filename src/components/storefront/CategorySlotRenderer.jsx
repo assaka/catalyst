@@ -70,7 +70,7 @@ export function CategorySlotRenderer({
       const headerContent = content || category?.name || 'Products';
 
       return wrapWithParentClass(
-        <h1 className={className || "text-4xl font-bold text-gray-900 mb-4"} style={styles}>
+        <h1 className={className || "text-4xl font-bold"} style={styles}>
           {headerContent}
         </h1>
       );
@@ -83,7 +83,7 @@ export function CategorySlotRenderer({
       if (!descContent) return null;
 
       return wrapWithParentClass(
-        <p className={className || "text-gray-600 mb-6"} style={styles}>
+        <p className={className || "text-gray-600 mt-2"} style={styles}>
           {descContent}
         </p>
       );

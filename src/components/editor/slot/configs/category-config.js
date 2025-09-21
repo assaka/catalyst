@@ -11,8 +11,8 @@ export const categoryConfig = {
     breadcrumbs: {
       id: 'breadcrumbs',
       type: 'text',
-      content: '<nav class="flex items-center space-x-2 text-sm text-gray-600"><a href="/" class="hover:text-gray-900">Home</a><span>/</span><span class="text-gray-900">Electronics</span></nav>',
-      className: 'w-full category-breadcrumbs',
+      content: '',
+      className: 'flex mb-4',
       parentClassName: '',
       styles: {},
       parentId: null,
@@ -28,8 +28,8 @@ export const categoryConfig = {
     header: {
       id: 'header',
       type: 'text',
-      content: '<h1 class="text-4xl font-bold">Electronics</h1>',
-      className: 'w-full category-header',
+      content: '',
+      className: 'text-4xl font-bold',
       parentClassName: '',
       styles: {},
       parentId: null,
@@ -45,8 +45,8 @@ export const categoryConfig = {
     header_description: {
       id: 'header_description',
       type: 'text',
-      content: '<p class="text-gray-600 mt-2">Browse our latest electronics and gadgets</p>',
-      className: 'w-full mb-8',
+      content: '',
+      className: 'text-gray-600 mt-2',
       parentClassName: '',
       styles: {},
       parentId: null,
