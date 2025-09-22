@@ -420,8 +420,20 @@ export default function Category() {
             if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
               if (Array.isArray(attributeValue)) {
                 attributeValue.forEach(val => {
-                  if (val) values.add(String(val));
+                  if (val) {
+                    // Handle object values properly
+                    if (typeof val === 'object' && val !== null) {
+                      const extractedValue = val.value || val.label || val.name;
+                      if (extractedValue) values.add(String(extractedValue));
+                    } else {
+                      values.add(String(val));
+                    }
+                  }
                 });
+              } else if (typeof attributeValue === 'object' && attributeValue !== null) {
+                // Handle object attribute values
+                const extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+                if (extractedValue) values.add(String(extractedValue));
               } else {
                 values.add(String(attributeValue));
               }
