@@ -125,15 +125,18 @@ export default function CategoryNav({ categories }) {
     const buildCategoryPath = (targetCategory, allCategories) => {
         if (!targetCategory || !targetCategory.slug) {
             console.warn('buildCategoryPath: Invalid target category', targetCategory);
-            return [];
+            return [targetCategory?.slug || ''].filter(Boolean);
         }
 
         const path = [];
         let current = targetCategory;
+        const visited = new Set(); // Prevent infinite loops
 
         // Build path from target up to root
-        while (current) {
+        while (current && !visited.has(current.id)) {
+            visited.add(current.id);
             path.unshift(current.slug);
+
             if (current.parent_id) {
                 current = allCategories.find(c => c.id === current.parent_id);
             } else {
@@ -142,20 +145,21 @@ export default function CategoryNav({ categories }) {
         }
 
         // Filter out root categories (categories with no parent_id)
-        const rootIndex = path.findIndex(slug => {
+        // Keep all categories that have a parent (are not root level)
+        const filteredPath = [];
+        for (const slug of path) {
             const cat = allCategories.find(c => c.slug === slug);
-            return cat && !cat.parent_id;
-        });
+            if (cat && cat.parent_id !== null) {
+                filteredPath.push(slug);
+            }
+        }
 
-        const finalPath = rootIndex >= 0 ? path.slice(rootIndex + 1) : path;
-
-        // Fallback to just the category slug if path building failed
-        if (finalPath.length === 0) {
-            console.warn('buildCategoryPath: Path building failed, using fallback', targetCategory.slug);
+        // If no valid path found, fallback to just the target category
+        if (filteredPath.length === 0) {
             return [targetCategory.slug];
         }
 
-        return finalPath;
+        return filteredPath;
     };
 
     // Render all descendants of a category with proper indentation

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { createCategoryUrl, createProductUrl } from "@/utils/urlUtils";
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -31,7 +31,12 @@ export default function Category() {
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
 
-  const { storeCode, categorySlug } = useParams();
+  const { storeCode } = useParams();
+  const location = useLocation();
+
+  // Extract category path from URL: /public/storeCode/category/path/to/category
+  const categoryPath = location.pathname.split('/').slice(4).join('/');
+  const categorySlug = categoryPath.split('/').pop(); // Get the last segment as the actual category slug
 
   const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();

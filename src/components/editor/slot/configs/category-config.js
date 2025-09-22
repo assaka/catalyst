@@ -79,7 +79,8 @@ export const categoryConfig = {
       viewMode: ['grid'],
       metadata: {
         hierarchical: false,
-        cmsPosition: 'category_above_filters'
+        cmsPosition: 'category_above_filters',
+        displayName: 'CMS Block - Above Filters'
       }
     },
 
@@ -97,7 +98,8 @@ export const categoryConfig = {
       viewMode: ['grid'],
       metadata: {
         hierarchical: false,
-        component: 'LayeredNavigation'
+        component: 'LayeredNavigation',
+        displayName: 'Product Filters (Price, Brand, Size, etc.)'
       }
     },
 
@@ -114,7 +116,8 @@ export const categoryConfig = {
       viewMode: ['grid'],
       metadata: {
         hierarchical: false,
-        cmsPosition: 'category_below_filters'
+        cmsPosition: 'category_below_filters',
+        displayName: 'CMS Block - Below Filters'
       }
     },
 
@@ -147,7 +150,8 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
-        cmsPosition: 'category_above_products'
+        cmsPosition: 'category_above_products',
+        displayName: 'CMS Block - Above Products'
       }
     },
 
@@ -413,7 +417,8 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
-        cmsPosition: 'category_below_products'
+        cmsPosition: 'category_below_products',
+        displayName: 'CMS Block - Below Products'
       }
     }
   },
