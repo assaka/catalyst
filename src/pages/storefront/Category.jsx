@@ -506,25 +506,6 @@ export default function Category() {
         pageTitle={pageTitle}
       />
 
-      <div className="mb-8 max-w-7xl mx-auto">
-        {categorySlots ? (
-          // Always render using CategorySlotRenderer to enable styling
-          <CategorySlotRenderer
-            slots={categorySlots}
-            parentId={null}
-            viewMode="list"
-            categoryContext={categoryContext}
-          />
-        ) : (
-          // Loading state - show nothing until slots are loaded
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-10 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          </div>
-        )}
-      </div>
-
       {/* Dynamic layout using CategorySlotRenderer for everything below header */}
       <div className="max-w-7xl mx-auto">
         {loading ? (

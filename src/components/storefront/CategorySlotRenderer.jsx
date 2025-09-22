@@ -453,7 +453,7 @@ export function CategorySlotRenderer({
                     {product.description}
                   </p>
                 )}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex flex-col">
                     {product.sale_price && product.sale_price < product.price ? (
                       <>
@@ -477,6 +477,19 @@ export function CategorySlotRenderer({
                     </div>
                   )}
                 </div>
+
+                {/* Add to Cart Button */}
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering product click
+                    // Add to cart functionality
+                    console.log('Add to cart:', product.id);
+                  }}
+                >
+                  Add to Cart
+                </Button>
                 {product.stock_status && (
                   <div className="mt-2">
                     <span className={`text-xs px-2 py-1 rounded ${
