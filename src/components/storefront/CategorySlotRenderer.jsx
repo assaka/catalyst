@@ -170,14 +170,8 @@ export function CategorySlotRenderer({
         );
       }
 
-      // Create breadcrumb items with current category added
+      // Use breadcrumb items as provided (without adding current category)
       const breadcrumbItems = [...breadcrumbs];
-      if (category) {
-        breadcrumbItems.push({
-          name: category.name,
-          url: window.location.pathname // Current page, so it won't be a link
-        });
-      }
 
       // Always use simple breadcrumb implementation to avoid context issues
       return wrapWithParentClass(
@@ -1425,12 +1419,6 @@ export function CategorySlotRenderer({
             </span>
           </Fragment>
         ))}
-        {category && (
-          <>
-            {breadcrumbs.length > 0 && <span className="text-gray-400 mx-1">/</span>}
-            <span className="text-gray-900 font-medium">{category.name}</span>
-          </>
-        )}
       </nav>
     );
   }
