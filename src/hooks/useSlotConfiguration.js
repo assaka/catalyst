@@ -5,12 +5,137 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { slotConfigurationService as apiService } from '@/lib/api/slot-configuration-service';
 import { SlotManager } from '@/utils/slotUtils';
 import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
 
 // ===============================
 // UTILITY HOOKS FOR SLOT EDITORS
 // ===============================
+
+/**
+ * Generic hook for loading layout configurations
+ * @param {Object} store - The store object containing store.id
+ * @param {string} pageType - The type of page (e.g., 'cart', 'category', 'product')
+ * @param {string} configModulePath - Path to the fallback config module (e.g., '@/components/editor/slot/configs/cart-config')
+ * @returns {Object} - { layoutConfig, configLoaded, reloadConfig }
+ */
+export function useLayoutConfig(store, pageType, configModulePath) {
+    const [layoutConfig, setLayoutConfig] = useState(null);
+    const [configLoaded, setConfigLoaded] = useState(false);
+
+    const loadLayoutConfig = async () => {
+        if (!store?.id) {
+            return;
+        }
+        if (configLoaded && layoutConfig) {
+            return;
+        }
+
+        try {
+            // Load published configuration using the new versioning API
+            const response = await apiService.getPublishedConfiguration(store.id, pageType);
+
+            // Check for various "no published config" scenarios
+            if (response.success && response.data &&
+                response.data.configuration &&
+                response.data.configuration.slots &&
+                Object.keys(response.data.configuration.slots).length > 0) {
+
+                const publishedConfig = response.data;
+                setLayoutConfig(publishedConfig.configuration);
+                setConfigLoaded(true);
+
+            } else {
+                // Any scenario where we don't have a valid published configuration
+                const noConfigReasons = [];
+                if (!response.success) noConfigReasons.push('API response not successful');
+                if (!response.data) noConfigReasons.push('No response data');
+                if (response.data && !response.data.configuration) noConfigReasons.push('No configuration in response');
+                if (response.data?.configuration && !response.data.configuration.slots) noConfigReasons.push('No slots in configuration');
+                if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
+
+                // Fallback to config module
+                const configModule = await import(configModulePath);
+                const config = configModule.default || configModule[`${pageType}Config`];
+
+                const fallbackConfig = {
+                    slots: { ...config.slots },
+                    metadata: {
+                        ...config.metadata,
+                        fallbackUsed: true,
+                        fallbackReason: `No valid published configuration: ${noConfigReasons.join(', ')}`
+                    }
+                };
+
+                setLayoutConfig(fallbackConfig);
+                setConfigLoaded(true);
+            }
+        } catch (error) {
+            console.error(`❌ Error loading published ${pageType} slot configuration:`, error);
+            console.error('❌ Error type:', error.constructor.name);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Network status:', navigator.onLine ? 'Online' : 'Offline');
+
+            if (error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
+                console.error('🔌 Backend connectivity issue detected');
+            }
+
+            console.warn(`⚠️ Falling back to ${pageType}-config.js due to error`);
+
+            // Fallback to config module
+            try {
+                const configModule = await import(configModulePath);
+                const config = configModule.default || configModule[`${pageType}Config`];
+
+                const fallbackConfig = {
+                    slots: { ...config.slots },
+                    metadata: {
+                        ...config.metadata,
+                        fallbackUsed: true,
+                        fallbackReason: `Error loading configuration: ${error.message}`
+                    }
+                };
+
+                setLayoutConfig(fallbackConfig);
+                setConfigLoaded(true);
+            } catch (importError) {
+                console.error(`❌ Failed to import fallback config from ${configModulePath}:`, importError);
+                // Set empty config if fallback also fails
+                setLayoutConfig({ slots: {}, metadata: { fallbackUsed: true, fallbackReason: 'Failed to load any configuration' } });
+                setConfigLoaded(true);
+            }
+        }
+    };
+
+    useEffect(() => {
+        loadLayoutConfig();
+
+        // Listen for configuration updates from editor
+        const handleStorageChange = (e) => {
+            if (e.key === 'slot_config_updated' && e.newValue) {
+                const updateData = JSON.parse(e.newValue);
+                if (updateData.storeId === store?.id && updateData.pageType === pageType) {
+                    loadLayoutConfig();
+                    // Clear the notification
+                    localStorage.removeItem('slot_config_updated');
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [store?.id]);
+
+    return {
+        layoutConfig,
+        configLoaded,
+        reloadConfig: loadLayoutConfig
+    };
+}
 
 // Timestamp formatting utilities
 export const useTimestampFormatting = () => {
