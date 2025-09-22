@@ -355,7 +355,7 @@ export default function Category() {
 
   // Build breadcrumb items for category pages using generic utility
   const getBreadcrumbItems = () => {
-    return buildBreadcrumbItems('category', currentCategory, storeCode, categories);
+    return buildBreadcrumbItems('category', currentCategory, storeCode, categories, settings);
   };
 
   // Build dynamic filters from filterable attributes (matching LayeredNavigation logic)
@@ -572,7 +572,7 @@ export default function Category() {
           </div>
         ) : (
           <>
-            {paginatedProducts.length > 0 || (settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? (
+            {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? (
               <CategorySlotRenderer
                 slots={categorySlots}
                 parentId={null}

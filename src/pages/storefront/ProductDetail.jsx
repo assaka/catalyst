@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createCategoryUrl } from "@/utils/urlUtils";
+import { buildBreadcrumbItems } from "@/utils/breadcrumbUtils";
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -520,50 +521,11 @@ export default function ProductDetail() {
     return "outline"; // Default for in stock
   };
 
-  // Build breadcrumb items for product pages
+  // Build breadcrumb items for product pages using generic utility
   const getBreadcrumbItems = () => {
     if (!product) return [];
-    
-    const items = [];
-    
-    // Add category hierarchy if product has categories and setting is enabled
-    if (settings?.show_category_in_breadcrumb && product.category_ids && product.category_ids.length > 0) {
-      const primaryCategoryId = product.category_ids[0];
-      const primaryCategory = categories.find(c => c.id === primaryCategoryId);
-      
-      if (primaryCategory) {
-        // Build category hierarchy
-        let category = primaryCategory;
-        const categoryChain = [category];
-        
-        // Find parent categories
-        while (category?.parent_id) {
-          const parent = categories.find(c => c.id === category.parent_id);
-          if (parent) {
-            categoryChain.unshift(parent);
-            category = parent;
-          } else {
-            break;
-          }
-        }
-        
-        // Add category items to breadcrumb with correct URL format
-        categoryChain.forEach(cat => {
-          items.push({
-            name: cat.name,
-            url: createCategoryUrl(store?.slug || store?.code, cat.slug)
-          });
-        });
-      }
-    }
-    
-    // Add current product as last item
-    items.push({
-      name: product.name,
-      url: createPageUrl(`ProductDetail?slug=${product.slug}`)
-    });
-    
-    return items;
+    const storeCode = store?.slug || store?.code;
+    return buildBreadcrumbItems('product', product, storeCode, categories, settings);
   };
 
   return (

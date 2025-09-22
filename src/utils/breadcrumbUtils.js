@@ -3,16 +3,16 @@ import { createCategoryUrl, createProductUrl, createCmsPageUrl } from "./urlUtil
 /**
  * Generic breadcrumb builder for different page types
  */
-export const buildBreadcrumbItems = (pageType, pageData, storeCode, categories = []) => {
+export const buildBreadcrumbItems = (pageType, pageData, storeCode, categories = [], settings = {}) => {
   switch (pageType) {
     case 'category':
-      return buildCategoryBreadcrumbs(pageData, storeCode, categories);
+      return buildCategoryBreadcrumbs(pageData, storeCode, categories, settings);
 
     case 'product':
-      return buildProductBreadcrumbs(pageData, storeCode, categories);
+      return buildProductBreadcrumbs(pageData, storeCode, categories, settings);
 
     case 'cms':
-      return buildCmsBreadcrumbs(pageData, storeCode);
+      return buildCmsBreadcrumbs(pageData, storeCode, settings);
 
     default:
       return [];
@@ -23,7 +23,7 @@ export const buildBreadcrumbItems = (pageType, pageData, storeCode, categories =
  * Build breadcrumbs for category pages
  * Returns parent categories and current category (current is not clickable)
  */
-export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories = []) => {
+export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories = [], settings = {}) => {
   if (!currentCategory || !categories) return [];
 
   // Build hierarchy from current category up to root
@@ -55,53 +55,45 @@ export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories 
 /**
  * Build breadcrumbs for product pages
  * Returns category hierarchy and the product (product is not clickable)
+ * Respects the show_category_in_breadcrumb setting
  */
-export const buildProductBreadcrumbs = (product, storeCode, categories = []) => {
-  if (!product || !categories) return [];
-
-  // Find the primary category for the product
-  let primaryCategory = null;
-  if (product.category_ids && product.category_ids.length > 0) {
-    // Use the first category as primary, or find the deepest category
-    const productCategories = categories.filter(cat =>
-      product.category_ids.includes(cat.id)
-    );
-
-    if (productCategories.length > 0) {
-      // Find the category with the highest level (deepest in hierarchy)
-      primaryCategory = productCategories.reduce((deepest, current) =>
-        (current.level || 0) > (deepest.level || 0) ? current : deepest
-      );
-    }
-  }
+export const buildProductBreadcrumbs = (product, storeCode, categories = [], settings = {}) => {
+  if (!product) return [];
 
   const breadcrumbs = [];
 
-  if (primaryCategory) {
-    // Build category breadcrumbs (all categories should be clickable for product pages)
-    let category = primaryCategory;
-    const categoryChain = [primaryCategory];
+  // Add category hierarchy if product has categories and setting is enabled
+  if (settings?.show_category_in_breadcrumb && product.category_ids && product.category_ids.length > 0 && categories) {
+    // Find the primary category for the product
+    const primaryCategoryId = product.category_ids[0];
+    const primaryCategory = categories.find(c => c.id === primaryCategoryId);
 
-    // Find parent categories
-    while (category?.parent_id) {
-      const parent = categories.find(c => c.id === category.parent_id);
-      if (parent) {
-        categoryChain.unshift(parent);
-        category = parent;
-      } else {
-        break;
+    if (primaryCategory) {
+      // Build category hierarchy
+      let category = primaryCategory;
+      const categoryChain = [category];
+
+      // Find parent categories
+      while (category?.parent_id) {
+        const parent = categories.find(c => c.id === category.parent_id);
+        if (parent) {
+          categoryChain.unshift(parent);
+          category = parent;
+        } else {
+          break;
+        }
       }
-    }
 
-    // Filter out root categories and add to breadcrumbs
-    const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
-    filteredChain.forEach(cat => {
-      breadcrumbs.push({
-        name: cat.name,
-        url: createCategoryUrl(storeCode, cat.slug),
-        isCurrent: false
+      // Filter out root categories and add to breadcrumbs (all categories clickable)
+      const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
+      filteredChain.forEach(cat => {
+        breadcrumbs.push({
+          name: cat.name,
+          url: createCategoryUrl(storeCode, cat.slug),
+          isCurrent: false
+        });
       });
-    });
+    }
   }
 
   // Add the current product as the last breadcrumb (not clickable)
@@ -118,7 +110,7 @@ export const buildProductBreadcrumbs = (product, storeCode, categories = []) => 
  * Build breadcrumbs for CMS pages
  * Returns a simple breadcrumb structure including current page
  */
-export const buildCmsBreadcrumbs = (cmsPage, storeCode) => {
+export const buildCmsBreadcrumbs = (cmsPage, storeCode, settings = {}) => {
   if (!cmsPage) return [];
 
   const breadcrumbs = [];
