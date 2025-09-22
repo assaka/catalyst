@@ -4,18 +4,11 @@ import { createCategoryUrl } from "@/utils/urlUtils";
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
-import ProductCard from "@/components/storefront/ProductCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
-import LayeredNavigation from "@/components/storefront/LayeredNavigation";
-import Breadcrumb from "@/components/storefront/Breadcrumb";
-import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
@@ -118,7 +111,7 @@ export default function Category() {
   // Extract slots from the loaded configuration
   const categorySlots = categoryLayoutConfig?.slots || null;
 
-  useEffect(() => {
+    useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
       loadCategoryProducts();
 
@@ -361,11 +354,47 @@ export default function Category() {
     }));
   };
 
+  // Build dynamic filters from current products and filterable attributes
+  const buildFilters = () => {
+    const filters = {};
+
+    if (!products || !filterableAttributes) return filters;
+
+    filterableAttributes.forEach(attr => {
+      const filterKey = attr.name || attr.attribute_name;
+      const values = new Map();
+
+      products.forEach(product => {
+        const productAttributes = product.attributes || product.attribute_values || {};
+        let productValue = productAttributes[filterKey] || product[filterKey];
+
+        if (productValue !== undefined && productValue !== null && productValue !== '') {
+          const stringValue = String(productValue);
+          if (values.has(stringValue)) {
+            values.set(stringValue, values.get(stringValue) + 1);
+          } else {
+            values.set(stringValue, 1);
+          }
+        }
+      });
+
+      if (values.size > 0) {
+        filters[filterKey] = Array.from(values.entries()).map(([value, count]) => ({
+          value,
+          label: value,
+          count
+        }));
+      }
+    });
+
+    return filters;
+  };
+
   // Create category context for CategorySlotRenderer
   const categoryContext = {
     category: currentCategory,
     products: paginatedProducts,
-    filters: {},
+    filters: buildFilters(),
     sortOption: currentSort,
     currentPage,
     totalPages,
@@ -429,176 +458,45 @@ export default function Category() {
         )}
       </div>
 
-      <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
-        {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (
-          <div className="lg:col-span-1 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
-            <CmsBlockRenderer position="category_above_filters" />
-            <LayeredNavigation
-              products={products}
-              attributes={filterableAttributes}
-              onFilterChange={setActiveFilters}
-            />
-            <CmsBlockRenderer position="category_below_filters" />
+      {/* Dynamic layout using CategorySlotRenderer for everything below header */}
+      <div className="max-w-7xl mx-auto">
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
+                <CardContent className="p-4 space-y-3">
+                  <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-10 bg-gray-300 rounded w-full mt-2"></div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
+        ) : (
+          <>
+            {paginatedProducts.length > 0 || (settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? (
+              <CategorySlotRenderer
+                slots={categorySlots}
+                parentId={null}
+                viewMode="grid"
+                categoryContext={categoryContext}
+              />
+            ) : (
+              <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
+                <Package className="w-16 h-16 text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
+                <p className="text-gray-500 mt-2 text-center">
+                  {currentCategory ?
+                    `No products found in the "${currentCategory.name}" category.` :
+                    "No products match your current filters."
+                  }
+                </p>
+              </div>
+            )}
+          </>
         )}
-
-        <div className={(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? "lg:col-span-3" : "lg:col-span-1"}>
-          <CmsBlockRenderer position="category_above_products" />
-
-          {/* Sorting and Results Info */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div className="text-sm text-gray-600">
-              Showing {sortedProducts.length > 0 ? Math.min((currentPage - 1) * itemsPerPage + 1, sortedProducts.length) : 0}-{Math.min(currentPage * itemsPerPage, sortedProducts.length)} of {sortedProducts.length} products
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort by:</span>
-              <Select value={currentSort} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Default</SelectItem>
-                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                  <SelectItem value="price-asc">Price (Low to High)</SelectItem>
-                  <SelectItem value="price-desc">Price (High to Low)</SelectItem>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="h-5 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-10 bg-gray-300 rounded w-full mt-2"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <>
-              {paginatedProducts.length > 0 ? (
-                <CategorySlotRenderer
-                  slots={categorySlots}
-                  parentId={null}
-                  viewMode="list"
-                  categoryContext={categoryContext}
-                />
-              ) : (
-                <div className="col-span-full flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
-                  <Package className="w-16 h-16 text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
-                  <p className="text-gray-500 mt-2 text-center">
-                    {currentCategory ?
-                      `No products found in the "${currentCategory.name}" category.` :
-                      "No products match your current filters."
-                    }
-                  </p>
-                </div>
-              )}
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <Pagination className="mt-8">
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-
-                    {/* First page */}
-                    {currentPage > 3 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationLink
-                            onClick={() => handlePageChange(1)}
-                            isActive={1 === currentPage}
-                            className="cursor-pointer"
-                          >
-                            1
-                          </PaginationLink>
-                        </PaginationItem>
-                        {currentPage > 4 && (
-                          <PaginationItem>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        )}
-                      </>
-                    )}
-
-                    {/* Page numbers around current page */}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-
-                      if (pageNumber < 1 || pageNumber > totalPages) return null;
-                      if (pageNumber === 1 && currentPage > 3) return null;
-                      if (pageNumber === totalPages && currentPage < totalPages - 2) return null;
-
-                      return (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink
-                            onClick={() => handlePageChange(pageNumber)}
-                            isActive={pageNumber === currentPage}
-                            className="cursor-pointer"
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-
-                    {/* Last page */}
-                    {currentPage < totalPages - 2 && (
-                      <>
-                        {currentPage < totalPages - 3 && (
-                          <PaginationItem>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        )}
-                        <PaginationItem>
-                          <PaginationLink
-                            onClick={() => handlePageChange(totalPages)}
-                            isActive={totalPages === currentPage}
-                            className="cursor-pointer"
-                          >
-                            {totalPages}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </>
-          )}
-          <CmsBlockRenderer position="category_below_products" />
-        </div>
       </div>
     </div>
   );
