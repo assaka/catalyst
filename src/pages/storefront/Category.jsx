@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { createCategoryUrl } from "@/utils/urlUtils";
+import { createCategoryUrl, createProductUrl } from "@/utils/urlUtils";
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
@@ -494,7 +494,7 @@ export default function Category() {
     formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
     navigate: (url) => window.location.href = url,
-    onProductClick: (product) => window.location.href = createCategoryUrl(store?.code, product.slug)
+    onProductClick: (product) => window.location.href = createProductUrl(store?.code, product.slug)
   };
 
   if (storeLoading) {
