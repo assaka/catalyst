@@ -55,8 +55,14 @@ export function useLayoutConfig(store, pageType, configModulePath) {
                 if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
 
                 // Fallback to config module
+                console.log(`Loading fallback config for ${pageType} from: ${configModulePath}`);
                 const configModule = await import(configModulePath);
-                const config = configModule.default || configModule[`${pageType}Config`];
+                const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
+
+                if (!config || !config.slots) {
+                    console.error(`Invalid config module for ${pageType}:`, configModule);
+                    throw new Error(`Invalid configuration module for ${pageType}`);
+                }
 
                 const fallbackConfig = {
                     slots: { ...config.slots },
@@ -67,6 +73,7 @@ export function useLayoutConfig(store, pageType, configModulePath) {
                     }
                 };
 
+                console.log(`Loaded fallback config for ${pageType} with ${Object.keys(config.slots).length} slots`);
                 setLayoutConfig(fallbackConfig);
                 setConfigLoaded(true);
             }
@@ -84,8 +91,15 @@ export function useLayoutConfig(store, pageType, configModulePath) {
 
             // Fallback to config module
             try {
+                console.log(`Loading error fallback config for ${pageType} from: ${configModulePath}`);
                 const configModule = await import(configModulePath);
-                const config = configModule.default || configModule[`${pageType}Config`];
+                const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
+
+                if (!config || !config.slots) {
+                    console.error(`Invalid config module for ${pageType}:`, configModule);
+                    console.error('Available exports in module:', Object.keys(configModule || {}));
+                    throw new Error(`Invalid configuration module for ${pageType}`);
+                }
 
                 const fallbackConfig = {
                     slots: { ...config.slots },
@@ -96,6 +110,7 @@ export function useLayoutConfig(store, pageType, configModulePath) {
                     }
                 };
 
+                console.log(`Loaded error fallback config for ${pageType} with ${Object.keys(config.slots).length} slots`);
                 setLayoutConfig(fallbackConfig);
                 setConfigLoaded(true);
             } catch (importError) {
