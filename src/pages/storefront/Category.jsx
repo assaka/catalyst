@@ -339,7 +339,10 @@ export default function Category() {
     while (category?.parent_id) {
       const parent = categories.find(c => c.id === category.parent_id);
       if (parent) {
-        categoryChain.unshift(parent);
+        // Skip adding parent if it has the same name as current (child) category
+        if (parent.name !== category.name) {
+          categoryChain.unshift(parent);
+        }
         category = parent;
       } else {
         break;
@@ -349,14 +352,8 @@ export default function Category() {
     // Filter out root categories (categories with no parent_id or level 0)
     const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
 
-    // Remove consecutive duplicates (when parent and child have same name)
-    const deduplicatedChain = filteredChain.filter((cat, index) => {
-      if (index === 0) return true;
-      return cat.name !== filteredChain[index - 1].name;
-    });
-
     // Convert to breadcrumb items
-    return deduplicatedChain.map((cat) => ({
+    return filteredChain.map((cat) => ({
       name: cat.name,
       url: createCategoryUrl(storeCode, cat.slug)
     }));
