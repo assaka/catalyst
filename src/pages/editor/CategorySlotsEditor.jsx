@@ -539,45 +539,56 @@ const CategorySlotsEditor = ({
                   categoryContext={mockCategoryContext}
                 />
               ) : (
-                // Edit mode: Use HierarchicalSlotRenderer for editing capabilities
-                <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                  <HierarchicalSlotRenderer
+                // Edit mode: Use CategorySlotRenderer with editing overlay
+                <div className="relative">
+                  {/* Render the actual content using CategorySlotRenderer */}
+                  <CategorySlotRenderer
                     slots={categoryLayoutConfig.slots}
                     parentId={null}
-                    mode={mode}
                     viewMode={viewMode}
-                    showBorders={showSlotBorders}
-                    currentDragInfo={currentDragInfo}
-                    setCurrentDragInfo={setCurrentDragInfo}
-                    onElementClick={handleElementClick}
-                    onGridResize={handleGridResize}
-                    onSlotHeightResize={handleSlotHeightResize}
-                    onSlotDrop={handleSlotDrop}
-                    onSlotDelete={handleSlotDelete}
-                    onResizeStart={() => setIsResizing(true)}
-                    onResizeEnd={() => {
-                      lastResizeEndTime.current = Date.now();
-                      setTimeout(() => setIsResizing(false), 100);
-                    }}
-                    selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
-                    setPageConfig={setCategoryLayoutConfig}
-                    saveConfiguration={saveConfiguration}
-                    saveTimeoutRef={saveTimeoutRef}
-                    customSlotRenderer={(slot) => {
-                      // For edit mode, render a simplified preview using CategorySlotRenderer
-                      // but wrap it in an editable container
-                      return (
-                        <div className="w-full h-full">
-                          <CategorySlotRenderer
-                            slots={{ [slot.id]: slot }}
-                            parentId={slot.parentId}
-                            viewMode={viewMode}
-                            categoryContext={mockCategoryContext}
-                          />
-                        </div>
-                      );
-                    }}
+                    categoryContext={mockCategoryContext}
                   />
+
+                  {/* Overlay HierarchicalSlotRenderer for editing capabilities */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="grid grid-cols-12 gap-2 auto-rows-min h-full">
+                      <HierarchicalSlotRenderer
+                        slots={categoryLayoutConfig.slots}
+                        parentId={null}
+                        mode={mode}
+                        viewMode={viewMode}
+                        showBorders={showSlotBorders}
+                        currentDragInfo={currentDragInfo}
+                        setCurrentDragInfo={setCurrentDragInfo}
+                        onElementClick={handleElementClick}
+                        onGridResize={handleGridResize}
+                        onSlotHeightResize={handleSlotHeightResize}
+                        onSlotDrop={handleSlotDrop}
+                        onSlotDelete={handleSlotDelete}
+                        onResizeStart={() => setIsResizing(true)}
+                        onResizeEnd={() => {
+                          lastResizeEndTime.current = Date.now();
+                          setTimeout(() => setIsResizing(false), 100);
+                        }}
+                        selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
+                        setPageConfig={setCategoryLayoutConfig}
+                        saveConfiguration={saveConfiguration}
+                        saveTimeoutRef={saveTimeoutRef}
+                        customSlotRenderer={(slot) => {
+                          // Return invisible content for overlay - just for editing structure
+                          return (
+                            <div
+                              className="w-full h-full bg-transparent pointer-events-auto"
+                              style={{
+                                minHeight: '20px',
+                                border: showSlotBorders ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               )
             ) : (
