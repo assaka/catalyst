@@ -410,6 +410,25 @@ export default function Category() {
         pageTitle={pageTitle}
       />
 
+      <div className="mb-8 max-w-7xl mx-auto">
+        {categorySlots ? (
+          // Always render using CategorySlotRenderer to enable styling
+          <CategorySlotRenderer
+            slots={categorySlots}
+            parentId={null}
+            viewMode="list"
+            categoryContext={categoryContext}
+          />
+        ) : (
+          // Loading state - show nothing until slots are loaded
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-10 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        )}
+      </div>
+
       <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
         {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (
           <div className="lg:col-span-1 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
@@ -422,7 +441,7 @@ export default function Category() {
             <CmsBlockRenderer position="category_below_filters" />
           </div>
         )}
-        
+
         <div className={(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? "lg:col-span-3" : "lg:col-span-1"}>
           <CmsBlockRenderer position="category_above_products" />
 
@@ -466,29 +485,25 @@ export default function Category() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
-                {paginatedProducts.length > 0 ? (
-                  paginatedProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      settings={settings}
-                      className="hover:shadow-lg transition-shadow rounded-lg"
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
-                    <Package className="w-16 h-16 text-gray-400 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
-                    <p className="text-gray-500 mt-2 text-center">
-                      {currentCategory ?
-                        `No products found in the "${currentCategory.name}" category.` :
-                        "No products match your current filters."
-                      }
-                    </p>
-                  </div>
-                )}
-              </div>
+              {paginatedProducts.length > 0 ? (
+                <CategorySlotRenderer
+                  slots={categorySlots}
+                  parentId={null}
+                  viewMode="list"
+                  categoryContext={categoryContext}
+                />
+              ) : (
+                <div className="col-span-full flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
+                  <Package className="w-16 h-16 text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-800">No Products Found</h3>
+                  <p className="text-gray-500 mt-2 text-center">
+                    {currentCategory ?
+                      `No products found in the "${currentCategory.name}" category.` :
+                      "No products match your current filters."
+                    }
+                  </p>
+                </div>
+              )}
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
