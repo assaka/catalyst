@@ -161,7 +161,7 @@ export default function Cart() {
                 console.error('Error loading cart data:', error);
             });
         }
-
+        
     }, [storeLoading, store?.id]);
 
     const loadTaxRules = async () => {
