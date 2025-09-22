@@ -377,12 +377,18 @@ export function CategorySlotRenderer({
             </div>
           </CardHeader>
           <CardContent>
-            {/* Render child slots at the top (e.g., active_filters) */}
-            {renderChildSlots(slots, id).map(childSlot => (
-              <div key={childSlot.id} className="mb-4">
-                {renderSlotContent(childSlot)}
-              </div>
-            ))}
+            {/* Render child slots at the top (e.g., active_filters, cms blocks, layered navigation placeholders) */}
+            {renderChildSlots(slots, id).map(childSlot => {
+              // Skip the actual layered navigation slot in filters - it's handled below
+              if (childSlot.type === 'layered_navigation' && childSlot.id === 'layered_navigation') {
+                return null;
+              }
+              return (
+                <div key={childSlot.id} className="mb-4">
+                  {renderSlotContent(childSlot)}
+                </div>
+              );
+            })}
 
             <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
               {/* Price Slider */}
@@ -1207,6 +1213,36 @@ export function CategorySlotRenderer({
           >
             {content || 'Button'}
           </Button>
+        );
+
+      case 'cms_block':
+        // Show CMS block position name
+        return (
+          <div className={className} style={styles}>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center text-gray-500">
+              <div className="text-sm font-medium mb-1">
+                {slot.metadata?.displayName || 'CMS Block'}
+              </div>
+              <div className="text-xs text-gray-400">
+                Position: {slot.metadata?.cmsPosition || 'undefined'}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'layered_navigation':
+        // Show layered navigation label
+        return (
+          <div className={className} style={styles}>
+            <div className="border-2 border-dashed border-blue-300 rounded-lg p-4">
+              <div className="text-sm font-medium text-blue-600 mb-2">
+                {slot.metadata?.displayName || 'Layered Navigation'}
+              </div>
+              <div className="text-xs text-gray-500">
+                Product filtering system will appear here
+              </div>
+            </div>
+          </div>
         );
 
       default:
