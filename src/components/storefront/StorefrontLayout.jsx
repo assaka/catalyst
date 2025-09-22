@@ -695,7 +695,7 @@ export default function StorefrontLayout({ children }) {
 
             <div className="flex-1">
                 {/* Main Content - Full Width */}
-                <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
+                <main className="w-full px-4 sm:px-6 lg:px-8 pb-8">
                     <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
 
                     {/* Global Flash Message */}
