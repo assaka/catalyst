@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createCategoryUrl } from "@/utils/urlUtils";
@@ -27,7 +27,6 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CustomOptions from "@/components/storefront/CustomOptions";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
-import Breadcrumb from "@/components/storefront/Breadcrumb";
 
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
@@ -542,7 +541,33 @@ export default function ProductDetail() {
         pageTitle={product?.name}
       />
 
-      <Breadcrumb items={getBreadcrumbItems()} />
+      {/* Breadcrumb Navigation */}
+      {(() => {
+        const breadcrumbItems = getBreadcrumbItems();
+        if (!breadcrumbItems || breadcrumbItems.length === 0) return null;
+
+        return (
+          <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
+            {breadcrumbItems.map((item, index) => (
+              <Fragment key={index}>
+                {index > 0 && <span className="text-gray-400 mx-1">/</span>}
+                {item.url ? (
+                  <a
+                    href={item.url}
+                    className="text-gray-500 hover:text-gray-700 hover:underline"
+                  >
+                    {item.name}
+                  </a>
+                ) : (
+                  <span className="text-gray-900 font-medium">
+                    {item.name}
+                  </span>
+                )}
+              </Fragment>
+            ))}
+          </nav>
+        );
+      })()}
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Product Images */}
