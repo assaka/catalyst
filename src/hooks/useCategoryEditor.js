@@ -24,16 +24,17 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
-  // Initialize state with category config
+  // Initialize state with category config structure
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState({
     page_name: categoryConfig.page_name,
     slot_type: categoryConfig.slot_type,
-    slots: categoryConfig.slots,
+    slots: { ...categoryConfig.slots }, // Deep copy the slots
     metadata: {
       created: new Date().toISOString(),
       lastModified: new Date().toISOString(),
       version: '1.0',
-      pageType: 'category'
+      pageType: 'category',
+      ...categoryConfig.metadata
     },
     cmsBlocks: categoryConfig.cmsBlocks || [],
     views: categoryConfig.views,

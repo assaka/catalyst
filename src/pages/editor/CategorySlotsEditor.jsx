@@ -1,5 +1,5 @@
 /**
- * Clean CategorySlotsEditor - Simplified layout version
+ * CategorySlotsEditor - Mirror of Category.jsx layout with editing capabilities
  */
 
 import React from "react";
@@ -10,13 +10,18 @@ import {
   AddSlotModal,
   ResetLayoutModal,
   FilePickerModalWrapper,
-  CodeModal
+  CodeModal,
+  EditorToolbar,
+  EditModeControls,
+  PublishPanelToggle,
+  TimestampsRow,
+  HierarchicalSlotRenderer
 } from '@/components/editor/slot/SlotComponents';
-import CategoryEditorHeader from '@/components/editor/CategoryEditorHeader';
-import CategoryEditorToolbar from '@/components/editor/CategoryEditorToolbar';
-import { CategoryEditorLayout, CategoryEditorContent } from '@/components/editor/CategoryEditorLayout';
+import CategoryViewModeControls from '@/components/editor/CategoryViewModeControls';
 import CategoryContentRenderer from '@/components/editor/CategoryContentRenderer';
 import { useCategoryEditor } from '@/hooks/useCategoryEditor';
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 
 const CategorySlotsEditor = ({
   mode = 'edit',
@@ -25,33 +30,193 @@ const CategorySlotsEditor = ({
 }) => {
   const editor = useCategoryEditor({ mode, onSave, viewMode: propViewMode });
 
-  const renderSidebar = () => {
-    if (mode !== 'edit' || editor.showPreview || !editor.isSidebarVisible || !editor.selectedElement) {
-      return null;
-    }
-
-    const slotId = editor.selectedElement?.getAttribute?.('data-slot-id');
-    const slotConfig = editor.categoryLayoutConfig?.slots?.[slotId] || null;
-
-    return (
-      <EditorSidebar
-        selectedElement={editor.selectedElement}
-        slotId={slotId}
-        slotConfig={slotConfig}
-        onTextChange={editor.handleTextChange}
-        onClassChange={editor.handleClassChange}
-        onInlineClassChange={editor.handleClassChange}
-        onClearSelection={() => {
-          editor.setSelectedElement(null);
-          editor.setIsSidebarVisible(false);
-        }}
-        isVisible={true}
-      />
-    );
-  };
-
-  const renderModals = () => (
+  return (
     <>
+      {/* Minimal Editor Header - only show when editing */}
+      {mode === 'edit' && !editor.showPreview && (
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto py-3">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                {/* Left section */}
+                <div className="flex items-center gap-6">
+                  <CategoryViewModeControls
+                    viewMode={editor.viewMode}
+                    onViewModeChange={editor.setViewMode}
+                  />
+
+                  <EditModeControls
+                    localSaveStatus={editor.localSaveStatus}
+                    publishStatus={editor.publishStatus}
+                    saveConfiguration={editor.saveConfiguration}
+                    onPublish={editor.handlePublish}
+                    hasChanges={editor.canPublish}
+                  />
+                </div>
+
+                {/* Right section */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => editor.setShowPreview(!editor.showPreview)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Preview
+                  </Button>
+
+                  <PublishPanelToggle
+                    hasUnsavedChanges={editor.hasUnsavedChanges}
+                    showPublishPanel={editor.showPublishPanel}
+                    onTogglePublishPanel={editor.setShowPublishPanel}
+                    onClosePublishPanel={() => {
+                      editor.setIsSidebarVisible(false);
+                      editor.setSelectedElement(null);
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Timestamps and Editor Toolbar */}
+              <div className="border-t border-gray-100 pt-3 mt-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <TimestampsRow
+                    draftConfig={editor.draftConfig}
+                    latestPublished={editor.latestPublished}
+                    formatTimeAgo={editor.formatTimeAgo}
+                    currentViewport={editor.currentViewport}
+                    onViewportChange={editor.setCurrentViewport}
+                  />
+
+                  <EditorToolbar
+                    showSlotBorders={editor.showSlotBorders}
+                    onToggleBorders={() => editor.setShowSlotBorders(!editor.showSlotBorders)}
+                    onResetLayout={() => editor.setShowResetModal(true)}
+                    onShowCode={() => editor.setShowCodeModal(true)}
+                    onAddSlot={() => editor.setShowAddSlotModal(true)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview mode header */}
+      {editor.showPreview && (
+        <div className="bg-blue-50 border-b border-blue-200 sticky top-0 z-40">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto py-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-blue-700 font-medium">
+                  Preview Mode - This is how your category page will look to customers
+                </span>
+                <Button
+                  onClick={() => editor.setShowPreview(false)}
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-200 text-blue-700 hover:bg-blue-100"
+                >
+                  Exit Preview
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Exact mirror of Category.jsx structure */}
+      <div className={`px-4 sm:px-6 lg:px-8 ${editor.isSidebarVisible && !editor.showPreview ? 'lg:pr-80' : ''} transition-all duration-300`}>
+        <div className="max-w-7xl mx-auto">
+          {editor.showPreview ? (
+            // Pure preview mode - exactly like Category.jsx
+            <CategoryContentRenderer
+              categoryLayoutConfig={editor.categoryLayoutConfig}
+              viewMode={editor.viewMode}
+              mockCategoryContext={editor.mockCategoryContext}
+              showPreview={true}
+              mode={mode}
+              showSlotBorders={false}
+              currentDragInfo={null}
+              setCurrentDragInfo={() => {}}
+              onElementClick={() => {}}
+              onGridResize={() => {}}
+              onSlotHeightResize={() => {}}
+              onSlotDrop={() => {}}
+              onSlotDelete={() => {}}
+              onResizeStart={() => {}}
+              onResizeEnd={() => {}}
+              selectedElement={null}
+              setPageConfig={() => {}}
+              saveConfiguration={() => {}}
+              saveTimeoutRef={{ current: null }}
+            />
+          ) : (
+            // Edit mode with overlay
+            <div className="relative">
+              {/* Background content */}
+              <CategoryContentRenderer
+                categoryLayoutConfig={editor.categoryLayoutConfig}
+                viewMode={editor.viewMode}
+                mockCategoryContext={editor.mockCategoryContext}
+                showPreview={false}
+                mode={mode}
+                showSlotBorders={editor.showSlotBorders}
+                currentDragInfo={editor.currentDragInfo}
+                setCurrentDragInfo={editor.setCurrentDragInfo}
+                onElementClick={editor.handleElementClick}
+                onGridResize={editor.handleGridResize}
+                onSlotHeightResize={editor.handleSlotHeightResize}
+                onSlotDrop={editor.handleSlotDrop}
+                onSlotDelete={editor.handleSlotDelete}
+                onResizeStart={() => editor.setIsResizing(true)}
+                onResizeEnd={() => {
+                  editor.lastResizeEndTime.current = Date.now();
+                  setTimeout(() => editor.setIsResizing(false), 100);
+                }}
+                selectedElement={editor.selectedElement}
+                setPageConfig={editor.setCategoryLayoutConfig}
+                saveConfiguration={editor.saveConfiguration}
+                saveTimeoutRef={editor.saveTimeoutRef}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Editor Sidebar - Mobile overlay, desktop fixed */}
+      {mode === 'edit' && !editor.showPreview && editor.isSidebarVisible && editor.selectedElement && (
+        <>
+          {/* Mobile backdrop */}
+          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => {
+            editor.setSelectedElement(null);
+            editor.setIsSidebarVisible(false);
+          }} />
+
+          {/* Sidebar */}
+          <div className="fixed top-0 right-0 h-full w-80 z-50 lg:z-40">
+            <EditorSidebar
+              selectedElement={editor.selectedElement}
+              slotId={editor.selectedElement?.getAttribute?.('data-slot-id')}
+              slotConfig={(() => {
+                const slotId = editor.selectedElement?.getAttribute?.('data-slot-id');
+                return editor.categoryLayoutConfig?.slots?.[slotId] || null;
+              })()}
+              onTextChange={editor.handleTextChange}
+              onClassChange={editor.handleClassChange}
+              onInlineClassChange={editor.handleClassChange}
+              onClearSelection={() => {
+                editor.setSelectedElement(null);
+                editor.setIsSidebarVisible(false);
+              }}
+              isVisible={true}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Modals */}
       <AddSlotModal
         isOpen={editor.showAddSlotModal}
         onClose={() => editor.setShowAddSlotModal(false)}
@@ -85,6 +250,7 @@ const CategorySlotsEditor = ({
         }}
       />
 
+      {/* Floating Publish Panel */}
       {editor.showPublishPanel && (
         <div ref={editor.publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
           <PublishPanel
@@ -98,83 +264,6 @@ const CategorySlotsEditor = ({
         </div>
       )}
     </>
-  );
-
-  return (
-    <CategoryEditorLayout
-      isSidebarVisible={editor.isSidebarVisible}
-      showPreview={editor.showPreview}
-      currentViewport={editor.currentViewport}
-      sidebar={renderSidebar()}
-      modals={renderModals()}
-    >
-      {/* Header */}
-      <CategoryEditorHeader
-        mode={mode}
-        viewMode={editor.viewMode}
-        onViewModeChange={editor.setViewMode}
-        localSaveStatus={editor.localSaveStatus}
-        publishStatus={editor.publishStatus}
-        saveConfiguration={editor.saveConfiguration}
-        onPublish={editor.handlePublish}
-        canPublish={editor.canPublish}
-        showPreview={editor.showPreview}
-        onTogglePreview={() => editor.setShowPreview(!editor.showPreview)}
-        hasUnsavedChanges={editor.hasUnsavedChanges}
-        showPublishPanel={editor.showPublishPanel}
-        onTogglePublishPanel={editor.setShowPublishPanel}
-        onClosePublishPanel={() => {
-          editor.setIsSidebarVisible(false);
-          editor.setSelectedElement(null);
-        }}
-      />
-
-      {/* Toolbar */}
-      <CategoryEditorToolbar
-        showPreview={editor.showPreview}
-        draftConfig={editor.draftConfig}
-        latestPublished={editor.latestPublished}
-        formatTimeAgo={editor.formatTimeAgo}
-        currentViewport={editor.currentViewport}
-        onViewportChange={editor.setCurrentViewport}
-        showSlotBorders={editor.showSlotBorders}
-        onToggleBorders={() => editor.setShowSlotBorders(!editor.showSlotBorders)}
-        onResetLayout={() => editor.setShowResetModal(true)}
-        onShowCode={() => editor.setShowCodeModal(true)}
-        onAddSlot={() => editor.setShowAddSlotModal(true)}
-      />
-
-      {/* Content */}
-      <CategoryEditorContent
-        showPreview={editor.showPreview}
-        currentViewport={editor.currentViewport}
-      >
-        <CategoryContentRenderer
-          categoryLayoutConfig={editor.categoryLayoutConfig}
-          viewMode={editor.viewMode}
-          mockCategoryContext={editor.mockCategoryContext}
-          showPreview={editor.showPreview}
-          mode={mode}
-          showSlotBorders={editor.showSlotBorders}
-          currentDragInfo={editor.currentDragInfo}
-          setCurrentDragInfo={editor.setCurrentDragInfo}
-          onElementClick={editor.handleElementClick}
-          onGridResize={editor.handleGridResize}
-          onSlotHeightResize={editor.handleSlotHeightResize}
-          onSlotDrop={editor.handleSlotDrop}
-          onSlotDelete={editor.handleSlotDelete}
-          onResizeStart={() => editor.setIsResizing(true)}
-          onResizeEnd={() => {
-            editor.lastResizeEndTime.current = Date.now();
-            setTimeout(() => editor.setIsResizing(false), 100);
-          }}
-          selectedElement={editor.selectedElement}
-          setPageConfig={editor.setCategoryLayoutConfig}
-          saveConfiguration={editor.saveConfiguration}
-          saveTimeoutRef={editor.saveTimeoutRef}
-        />
-      </CategoryEditorContent>
-    </CategoryEditorLayout>
   );
 };
 

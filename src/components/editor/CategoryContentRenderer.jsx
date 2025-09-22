@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { CategorySlotRenderer } from '@/components/storefront/CategorySlotRenderer';
 import { HierarchicalSlotRenderer } from '@/components/editor/slot/SlotComponents';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
-import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 // Simple ErrorBoundary component
 class ErrorBoundary extends React.Component {
@@ -68,20 +67,14 @@ const CategoryContentRenderer = ({
   }
 
   if (showPreview) {
-    // Preview mode: Use CategorySlotRenderer exactly like storefront
+    // Preview mode: Use CategorySlotRenderer exactly like Category.jsx
     return (
-      <>
-        <CategorySlotRenderer
-          slots={categoryLayoutConfig.slots}
-          parentId={null}
-          viewMode={viewMode}
-          categoryContext={mockCategoryContext}
-        />
-        {/* Render CMS blocks from configuration */}
-        {categoryConfig.cmsBlocks.map((position) => (
-          <CmsBlockRenderer key={position} position={position} />
-        ))}
-      </>
+      <CategorySlotRenderer
+        slots={categoryLayoutConfig.slots}
+        parentId={null}
+        viewMode={viewMode}
+        categoryContext={mockCategoryContext}
+      />
     );
   }
 
@@ -133,10 +126,6 @@ const CategoryContentRenderer = ({
         </div>
       </div>
 
-      {/* Render CMS blocks from configuration */}
-      {categoryConfig.cmsBlocks.map((position) => (
-        <CmsBlockRenderer key={position} position={position} />
-      ))}
     </div>
   );
 };

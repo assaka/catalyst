@@ -18,6 +18,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import cartService from '@/services/cartService';
+import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
 // Note: Removed Breadcrumb import to avoid useStore() context issues in editor
 // We'll use a simple implementation instead
 
@@ -48,6 +49,7 @@ export function CategorySlotRenderer({
     currencySymbol = '$',
     settings = {},
     store,
+    categories = [],
     taxes,
     selectedCountry,
     handleFilterChange,
@@ -170,34 +172,17 @@ export function CategorySlotRenderer({
         );
       }
 
-      // Use breadcrumb items as provided (without adding current category)
-      const breadcrumbItems = [...breadcrumbs];
-
-      // Always use simple breadcrumb implementation to avoid context issues
+      // Use unified breadcrumb renderer with auto-generation
       return wrapWithParentClass(
-        <nav
+        <BreadcrumbRenderer
+          items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
+          pageType="category"
+          pageData={category}
+          storeCode={store?.slug || store?.code}
+          categories={categories}
+          settings={settings}
           className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
-          style={styles}
-          aria-label="Breadcrumb"
-        >
-          {breadcrumbItems.map((item, index) => (
-            <Fragment key={index}>
-              {index > 0 && <span className="text-gray-400 mx-1">/</span>}
-              {item.url ? (
-                <a
-                  href={item.url}
-                  className="text-gray-500 hover:text-gray-700 hover:underline"
-                >
-                  {item.name}
-                </a>
-              ) : (
-                <span className="text-gray-900 font-medium">
-                  {item.name}
-                </span>
-              )}
-            </Fragment>
-          ))}
-        </nav>
+        />
       );
     }
 
@@ -1492,25 +1477,14 @@ export function CategorySlotRenderer({
     }
     // Default breadcrumbs if no slot defined
     return (
-      <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
-        {breadcrumbs.map((item, index) => (
-          <Fragment key={index}>
-            {index > 0 && <span className="text-gray-400 mx-1">/</span>}
-            {item.url ? (
-              <a
-                href={item.url}
-                className="text-gray-500 hover:text-gray-700 hover:underline"
-              >
-                {item.name}
-              </a>
-            ) : (
-              <span className="text-gray-900 font-medium">
-                {item.name}
-              </span>
-            )}
-          </Fragment>
-        ))}
-      </nav>
+      <BreadcrumbRenderer
+        items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
+        pageType="category"
+        pageData={category}
+        storeCode={store?.slug || store?.code}
+        categories={categories}
+        settings={settings}
+      />
     );
   }
 

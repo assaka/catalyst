@@ -11,7 +11,6 @@ import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
-import { buildBreadcrumbItems } from "@/utils/breadcrumbUtils";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -359,10 +358,6 @@ export default function Category() {
     }
   }, [activeFilters, setPage]);
 
-  // Build breadcrumb items for category pages using generic utility
-  const getBreadcrumbItems = () => {
-    return buildBreadcrumbItems('category', currentCategory, storeCode, categories, settings);
-  };
 
   // Build dynamic filters from filterable attributes (matching LayeredNavigation logic)
   const buildFilters = () => {
@@ -520,12 +515,13 @@ export default function Category() {
     currentPage,
     totalPages,
     subcategories: [],
-    breadcrumbs: getBreadcrumbItems(),
+    breadcrumbs: [],
     selectedFilters: activeFilters,
     priceRange: {},
     currencySymbol: settings?.currency_symbol || '$',
     settings,
     store,
+    categories,
     taxes: [],
     selectedCountry: null,
     handleFilterChange: setActiveFilters,

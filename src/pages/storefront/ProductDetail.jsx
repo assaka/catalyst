@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createCategoryUrl } from "@/utils/urlUtils";
-import { buildBreadcrumbItems } from "@/utils/breadcrumbUtils";
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -27,6 +26,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CustomOptions from "@/components/storefront/CustomOptions";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
+import BreadcrumbRenderer from "@/components/storefront/BreadcrumbRenderer";
 
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
@@ -92,7 +92,7 @@ const generateProductName = (product, basePrefix = '') => {
 };
 
 export default function ProductDetail() {
-  const { slug: paramSlug, productSlug: routeProductSlug } = useParams();
+  const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
   
@@ -520,12 +520,6 @@ export default function ProductDetail() {
     return "outline"; // Default for in stock
   };
 
-  // Build breadcrumb items for product pages using generic utility
-  const getBreadcrumbItems = () => {
-    if (!product) return [];
-    const storeCode = store?.slug || store?.code;
-    return buildBreadcrumbItems('product', product, storeCode, categories, settings);
-  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -541,33 +535,13 @@ export default function ProductDetail() {
         pageTitle={product?.name}
       />
 
-      {/* Breadcrumb Navigation */}
-      {(() => {
-        const breadcrumbItems = getBreadcrumbItems();
-        if (!breadcrumbItems || breadcrumbItems.length === 0) return null;
-
-        return (
-          <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
-            {breadcrumbItems.map((item, index) => (
-              <Fragment key={index}>
-                {index > 0 && <span className="text-gray-400 mx-1">/</span>}
-                {item.url ? (
-                  <a
-                    href={item.url}
-                    className="text-gray-500 hover:text-gray-700 hover:underline"
-                  >
-                    {item.name}
-                  </a>
-                ) : (
-                  <span className="text-gray-900 font-medium">
-                    {item.name}
-                  </span>
-                )}
-              </Fragment>
-            ))}
-          </nav>
-        );
-      })()}
+      <BreadcrumbRenderer
+        pageType="product"
+        pageData={product}
+        storeCode={store?.slug || store?.code}
+        categories={categories}
+        settings={settings}
+      />
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Product Images */}
