@@ -1,4 +1,4 @@
-import { createCategoryUrl, createProductUrl, createCmsUrl } from "./urlUtils";
+import { createCategoryUrl, createProductUrl, createCmsPageUrl } from "./urlUtils";
 
 /**
  * Generic breadcrumb builder for different page types
@@ -101,7 +101,7 @@ export const buildCmsBreadcrumbs = (cmsPage, storeCode) => {
   if (cmsPage.parent_page) {
     breadcrumbs.push({
       name: cmsPage.parent_page.title,
-      url: createCmsUrl(storeCode, cmsPage.parent_page.slug)
+      url: createCmsPageUrl(storeCode, cmsPage.parent_page.slug)
     });
   }
 
