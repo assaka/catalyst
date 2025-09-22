@@ -1517,70 +1517,74 @@ export function CategorySlotRenderer({
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="mb-8 max-w-7xl mx-auto">
-        {/* Render breadcrumbs first */}
-        {renderBreadcrumbs()}
+      <div className="max-w-7xl mx-auto">
+        {/* 12 Column Grid Layout */}
+        <div className="grid grid-cols-12 gap-2 auto-rows-min">
+          {/* Breadcrumbs - Full Width (12 columns) */}
+          <div className="col-span-12">
+            {renderBreadcrumbs()}
+          </div>
 
-        {/* Category Hero Section with Image and Title - after breadcrumbs */}
-        {(category?.image || category?.image_url || category?.name) && (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-            {(category?.image || category?.image_url) && (
-              <div className="relative w-full h-48 sm:h-64 lg:h-80">
-                <img
-                  src={category?.image || category?.image_url}
-                  alt={category?.name || 'Category'}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
-                    {category?.name || 'Products'}
-                  </h1>
-                  {category?.description && (
-                    <p className="mt-2 text-lg text-white/90 max-w-3xl">
-                      {category?.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            {/* If no image, show title and description separately */}
-            {!(category?.image || category?.image_url) && category?.name && (
-              <div className="p-6">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-                  {category?.name}
-                </h1>
-                {category?.description && (
-                  <p className="mt-2 text-lg text-gray-600">
-                    {category?.description}
-                  </p>
+          {/* Header Section - Full Width (12 columns) */}
+          <div className="col-span-12 mb-8">
+            {/* Category Hero Section with Image and Title */}
+            {(category?.image || category?.image_url || category?.name) && (
+              <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                {(category?.image || category?.image_url) && (
+                  <div className="relative w-full h-48 sm:h-64 lg:h-80">
+                    <img
+                      src={category?.image || category?.image_url}
+                      alt={category?.name || 'Category'}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+                        {category?.name || 'Products'}
+                      </h1>
+                      {category?.description && (
+                        <p className="mt-2 text-lg text-white/90 max-w-3xl">
+                          {category?.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* If no image, show title and description separately */}
+                {!(category?.image || category?.image_url) && category?.name && (
+                  <div className="p-6">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                      {category?.name}
+                    </h1>
+                    {category?.description && (
+                      <p className="mt-2 text-lg text-gray-600">
+                        {category?.description}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
+
+            {/* Render other header slots except breadcrumbs */}
+            {renderOtherHeaderSlots()}
           </div>
-        )}
 
-        {/* Render other header slots except breadcrumbs */}
-        {renderOtherHeaderSlots()}
-      </div>
+          {/* Filter Sidebar - 3 columns */}
+          {filtersEnabled && (
+            <div className="col-span-12 lg:col-span-3 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
+              <CmsBlockRenderer position="category_above_filters" />
+              {renderFiltersContainer()}
+              <CmsBlockRenderer position="category_below_filters" />
+            </div>
+          )}
 
-      {/* Main Grid Layout */}
-      <div className={`grid ${filtersEnabled ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
-        {/* Filter Sidebar */}
-        {filtersEnabled && (
-          <div className="lg:col-span-1 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
-            <CmsBlockRenderer position="category_above_filters" />
-            {renderFiltersContainer()}
-            <CmsBlockRenderer position="category_below_filters" />
+          {/* Main Content Area - 9 columns when filters enabled, 12 when not */}
+          <div className={filtersEnabled ? "col-span-12 lg:col-span-9" : "col-span-12"}>
+            <CmsBlockRenderer position="category_above_products" />
+            {renderMainContent()}
+            <CmsBlockRenderer position="category_below_products" />
           </div>
-        )}
-
-        {/* Main Content Area */}
-        <div className={filtersEnabled ? "lg:col-span-3" : "lg:col-span-1"}>
-          <CmsBlockRenderer position="category_above_products" />
-          {renderMainContent()}
-          <CmsBlockRenderer position="category_below_products" />
         </div>
       </div>
     </div>
