@@ -298,8 +298,9 @@ export function CategorySlotRenderer({
                     });
                   }
 
-                  // Debug logging for color filter
-                  if (filterKey === 'color' && option.value === 'Zwart') {
+                  // Debug logging for specific filters
+                  if ((filterKey === 'color' && option.value === 'Zwart') ||
+                      (filterKey === 'manufacturer' && option.value === 'Aga')) {
                     console.log(`Debug ${filterKey} - ${option.value}:`, {
                       productId: p.id,
                       productName: p.name,

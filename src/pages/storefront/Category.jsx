@@ -250,9 +250,27 @@ export default function Category() {
             return false;
           }
 
-          productValue = String(productValue);
+          // Extract value from object if needed (same logic as in CategorySlotRenderer)
+          let extractedValue = productValue;
+          if (typeof productValue === 'object' && productValue !== null) {
+            extractedValue = productValue.value || productValue.label || productValue.name;
+          } else if (Array.isArray(productValue)) {
+            // For arrays, check if any value matches
+            const arrayMatch = productValue.some(val => {
+              const valToCheck = typeof val === 'object' && val !== null
+                ? (val.value || val.label || val.name)
+                : val;
+              return filterValues.some(filterVal => String(filterVal) === String(valToCheck));
+            });
+            if (!arrayMatch) {
+              return false;
+            }
+            continue; // Skip the single value check below
+          }
 
-          const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
+          extractedValue = String(extractedValue);
+
+          const hasMatch = filterValues.some(filterVal => String(filterVal) === extractedValue);
           if (!hasMatch) {
             return false;
           }
