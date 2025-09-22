@@ -255,9 +255,12 @@ export function CategorySlotRenderer({
               // Count products for each filter value using all products
               const optionsWithCount = filterValues.map(optionRaw => {
                 // Normalize the option to ensure we have a consistent structure
-                const option = typeof optionRaw === 'object' && optionRaw.value
-                  ? optionRaw
-                  : { value: optionRaw, label: optionRaw };
+                const option = typeof optionRaw === 'object' && optionRaw !== null
+                  ? {
+                      value: String(optionRaw.value || optionRaw.label || optionRaw.name || optionRaw),
+                      label: optionRaw.label || optionRaw.name || optionRaw.value || String(optionRaw)
+                    }
+                  : { value: String(optionRaw), label: String(optionRaw) };
                 const productCount = allProducts.filter(p => {
                   const productAttributes = p.attributes || p.attribute_values || {};
 
