@@ -396,23 +396,6 @@ export const categoryConfig = {
       className: 'w-full text-white border-0 hover:brightness-90 transition-all duration-200 px-4 py-2 rounded-md text-sm font-medium',
       styles: { backgroundColor: '#3B82F6' },
       parentClassName: '',
-      styles: {},
-      parentId: 'product_2_content',
-      colSpan: {
-        grid: 12,
-        list: 12
-      },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false }
-    },
-
-    product_3: {
-      id: 'product_3',
-      type: 'container',
-      content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
-      parentClassName: '',
-      styles: {},
       parentId: 'product_2_content',
       colSpan: {
         grid: 12,

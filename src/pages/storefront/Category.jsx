@@ -71,7 +71,7 @@ export default function Category() {
           id: 'breadcrumbs',
           type: 'text',
           content: '',
-          className: 'w-full category-breadcrumbs',
+          className: 'w-full flex mb-8',
           styles: {},
           parentId: null,
           colSpan: { grid: 12, list: 12 },
