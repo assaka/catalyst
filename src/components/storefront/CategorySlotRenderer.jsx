@@ -1259,7 +1259,7 @@ export function CategorySlotRenderer({
           return (
             <Card
               key={id}
-              className={className || "group overflow-hidden hover:shadow-lg transition-shadow"}
+              className={`cursor-pointer ${className || "group overflow-hidden hover:shadow-lg transition-shadow"}`}
               style={styles}
               onClick={() => onProductClick && onProductClick(product)}
             >
