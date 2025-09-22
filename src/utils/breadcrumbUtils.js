@@ -44,12 +44,19 @@ export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories 
   // Filter out root categories (categories with no parent_id)
   const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
 
-  // Convert to breadcrumb items
-  return filteredChain.map((cat, index) => ({
-    name: cat.name,
-    url: cat.id === currentCategory.id ? null : createCategoryUrl(storeCode, cat.slug), // Current category not clickable
-    isCurrent: cat.id === currentCategory.id
-  }));
+  // Convert to breadcrumb items with full category paths
+  return filteredChain.map((cat, index) => {
+    // Build the full category path from root to this category
+    const categoryPath = [];
+    const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);
+    categoryChainUpToCurrent.forEach(c => categoryPath.push(c.slug));
+
+    return {
+      name: cat.name,
+      url: cat.id === currentCategory.id ? null : createCategoryUrl(storeCode, categoryPath.join('/')), // Current category not clickable
+      isCurrent: cat.id === currentCategory.id
+    };
+  });
 };
 
 /**
@@ -87,10 +94,15 @@ export const buildProductBreadcrumbs = (product, storeCode, categories = [], set
       // Add all categories to breadcrumbs (all categories clickable)
       // Only filter out root categories (level 0 or no parent)
       const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
-      filteredChain.forEach(cat => {
+      filteredChain.forEach((cat, index) => {
+        // Build the full category path from root to this category
+        const categoryPath = [];
+        const categoryChainUpToCurrent = filteredChain.slice(0, index + 1);
+        categoryChainUpToCurrent.forEach(c => categoryPath.push(c.slug));
+
         breadcrumbs.push({
           name: cat.name,
-          url: createCategoryUrl(storeCode, cat.slug),
+          url: createCategoryUrl(storeCode, categoryPath.join('/')),
           isCurrent: false
         });
       });
