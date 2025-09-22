@@ -409,25 +409,6 @@ export default function Category() {
         } : store}
         pageTitle={pageTitle}
       />
-      
-      <div className="mb-8 max-w-7xl mx-auto">
-        {categorySlots ? (
-          // Always render using CategorySlotRenderer to enable styling
-          <CategorySlotRenderer
-            slots={categorySlots}
-            parentId={null}
-            viewMode="list"
-            categoryContext={categoryContext}
-          />
-        ) : (
-          // Loading state - show nothing until slots are loaded
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-10 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          </div>
-        )}
-      </div>
 
       <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
         {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (

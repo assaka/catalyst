@@ -65,6 +65,59 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
+    // CMS blocks in filters
+    filters_above_cms: {
+      id: 'filters_above_cms',
+      type: 'cms_block',
+      content: '',
+      className: 'mb-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filters_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        cmsPosition: 'category_above_filters'
+      }
+    },
+
+    // Layered Navigation (filters)
+    layered_navigation: {
+      id: 'layered_navigation',
+      type: 'layered_navigation',
+      content: '',
+      className: 'space-y-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filters_container',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        component: 'LayeredNavigation'
+      }
+    },
+
+    filters_below_cms: {
+      id: 'filters_below_cms',
+      type: 'cms_block',
+      content: '',
+      className: 'mt-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filters_container',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        cmsPosition: 'category_below_filters'
+      }
+    },
+
     // Products section
     products_container: {
       id: 'products_container',
@@ -80,7 +133,25 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Sorting controls
+    // CMS blocks above products
+    products_above_cms: {
+      id: 'products_above_cms',
+      type: 'cms_block',
+      content: '',
+      className: 'mb-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        cmsPosition: 'category_above_products'
+      }
+    },
+
+    // Sorting controls and product count
     sorting_controls: {
       id: 'sorting_controls',
       type: 'container',
@@ -89,10 +160,46 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
+    },
+
+    // Product count info
+    product_count_info: {
+      id: 'product_count_info',
+      type: 'text',
+      content: '',
+      className: 'text-sm text-gray-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 6, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ProductCountInfo'
+      }
+    },
+
+    // Sort selector
+    sort_selector: {
+      id: 'sort_selector',
+      type: 'select',
+      content: '',
+      className: 'flex items-center gap-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 7, row: 1 },
+      colSpan: { grid: 6, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'SortSelector'
+      }
     },
 
     // Products grid
@@ -104,7 +211,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
@@ -259,16 +366,37 @@ export const categoryConfig = {
     // Pagination
     pagination_container: {
       id: 'pagination_container',
-      type: 'container',
+      type: 'pagination',
       content: '',
       className: 'flex justify-center mt-8',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: false,
+        component: 'PaginationComponent'
+      }
+    },
+
+    // CMS blocks below products
+    products_below_cms: {
+      id: 'products_below_cms',
+      type: 'cms_block',
+      content: '',
+      className: 'mt-8',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 5 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        cmsPosition: 'category_below_products'
+      }
     }
   },
 
