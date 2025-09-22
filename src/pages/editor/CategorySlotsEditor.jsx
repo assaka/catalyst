@@ -18,7 +18,7 @@ import {
   HierarchicalSlotRenderer
 } from '@/components/editor/slot/SlotComponents';
 import CategoryViewModeControls from '@/components/editor/CategoryViewModeControls';
-import CategoryContentRenderer from '@/components/editor/CategoryContentRenderer';
+import { CategorySlotRenderer } from '@/components/storefront/CategorySlotRenderer';
 import { useCategoryEditor } from '@/hooks/useCategoryEditor';
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
@@ -131,55 +131,62 @@ const CategorySlotsEditor = ({
         <div className="max-w-7xl mx-auto">
           {editor.showPreview ? (
             // Pure preview mode - exactly like Category.jsx
-            <CategoryContentRenderer
-              categoryLayoutConfig={editor.categoryLayoutConfig}
+            <CategorySlotRenderer
+              slots={editor.categoryLayoutConfig?.slots}
+              parentId={null}
               viewMode={editor.viewMode}
-              mockCategoryContext={editor.mockCategoryContext}
-              showPreview={true}
-              mode={mode}
-              showSlotBorders={false}
-              currentDragInfo={null}
-              setCurrentDragInfo={() => {}}
-              onElementClick={() => {}}
-              onGridResize={() => {}}
-              onSlotHeightResize={() => {}}
-              onSlotDrop={() => {}}
-              onSlotDelete={() => {}}
-              onResizeStart={() => {}}
-              onResizeEnd={() => {}}
-              selectedElement={null}
-              setPageConfig={() => {}}
-              saveConfiguration={() => {}}
-              saveTimeoutRef={{ current: null }}
+              categoryContext={editor.mockCategoryContext}
             />
           ) : (
             // Edit mode with overlay
             <div className="relative">
-              {/* Background content */}
-              <CategoryContentRenderer
-                categoryLayoutConfig={editor.categoryLayoutConfig}
-                viewMode={editor.viewMode}
-                mockCategoryContext={editor.mockCategoryContext}
-                showPreview={false}
-                mode={mode}
-                showSlotBorders={editor.showSlotBorders}
-                currentDragInfo={editor.currentDragInfo}
-                setCurrentDragInfo={editor.setCurrentDragInfo}
-                onElementClick={editor.handleElementClick}
-                onGridResize={editor.handleGridResize}
-                onSlotHeightResize={editor.handleSlotHeightResize}
-                onSlotDrop={editor.handleSlotDrop}
-                onSlotDelete={editor.handleSlotDelete}
-                onResizeStart={() => editor.setIsResizing(true)}
-                onResizeEnd={() => {
-                  editor.lastResizeEndTime.current = Date.now();
-                  setTimeout(() => editor.setIsResizing(false), 100);
-                }}
-                selectedElement={editor.selectedElement}
-                setPageConfig={editor.setCategoryLayoutConfig}
-                saveConfiguration={editor.saveConfiguration}
-                saveTimeoutRef={editor.saveTimeoutRef}
-              />
+              {/* Background content - CategorySlotRenderer */}
+              <div className="pointer-events-none">
+                <CategorySlotRenderer
+                  slots={editor.categoryLayoutConfig?.slots}
+                  parentId={null}
+                  viewMode={editor.viewMode}
+                  categoryContext={editor.mockCategoryContext}
+                />
+              </div>
+
+              {/* Overlay - HierarchicalSlotRenderer for editing */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="grid grid-cols-12 gap-2 auto-rows-min h-full">
+                  <HierarchicalSlotRenderer
+                    slots={editor.categoryLayoutConfig?.slots || {}}
+                    parentId={null}
+                    mode={mode}
+                    viewMode={editor.viewMode}
+                    showBorders={editor.showSlotBorders}
+                    currentDragInfo={editor.currentDragInfo}
+                    setCurrentDragInfo={editor.setCurrentDragInfo}
+                    onElementClick={editor.handleElementClick}
+                    onGridResize={editor.handleGridResize}
+                    onSlotHeightResize={editor.handleSlotHeightResize}
+                    onSlotDrop={editor.handleSlotDrop}
+                    onSlotDelete={editor.handleSlotDelete}
+                    onResizeStart={() => editor.setIsResizing(true)}
+                    onResizeEnd={() => {
+                      editor.lastResizeEndTime.current = Date.now();
+                      setTimeout(() => editor.setIsResizing(false), 100);
+                    }}
+                    selectedElementId={editor.selectedElement?.getAttribute?.('data-slot-id')}
+                    setPageConfig={editor.setCategoryLayoutConfig}
+                    saveConfiguration={editor.saveConfiguration}
+                    saveTimeoutRef={editor.saveTimeoutRef}
+                    customSlotRenderer={() => (
+                      <div
+                        className="w-full h-full bg-transparent pointer-events-auto"
+                        style={{
+                          minHeight: '20px',
+                          border: editor.showSlotBorders ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'
+                        }}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
