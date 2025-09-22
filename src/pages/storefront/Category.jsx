@@ -346,6 +346,13 @@ export default function Category() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (Object.keys(activeFilters).length > 0) {
+      setPage(1);
+    }
+  }, [activeFilters, setPage]);
+
   // Build breadcrumb items for category pages using generic utility
   const getBreadcrumbItems = () => {
     return buildBreadcrumbItems('category', currentCategory, storeCode, categories);
@@ -485,6 +492,16 @@ export default function Category() {
     console.log('CategoryPage: Built filters:', filters);
     return filters;
   };
+
+  // Debug logging for products
+  console.log('Category: Product counts:', {
+    totalProducts: products.length,
+    filteredProducts: filteredProducts.length,
+    sortedProducts: sortedProducts.length,
+    paginatedProducts: paginatedProducts.length,
+    currentPage,
+    totalPages
+  });
 
   // Create category context for CategorySlotRenderer
   const categoryContext = {
