@@ -6,10 +6,9 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+import PropTypes from 'prop-types';
 import { Button } from "@/components/ui/button";
 import {
-  Grid,
-  List,
   Eye
 } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
@@ -60,7 +59,7 @@ class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error) {
     console.warn('CategorySlotRenderer error in editor (expected):', error.message);
   }
 
@@ -273,9 +272,10 @@ const CategorySlotsEditor = ({
 
   // Cleanup timeout on unmount
   useEffect(() => {
+    const timeoutId = saveTimeoutRef.current;
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);
@@ -386,15 +386,15 @@ const CategorySlotsEditor = ({
 
   // Generate view mode adjustment rules from category config
   const categoryAdjustmentRules = Object.keys(categoryConfig.slots).reduce((rules, slotId) => {
-    const slot = categoryConfig.slots[slotId];
+    const slotConfig = categoryConfig.slots[slotId];
     const slotName = slotId.replace(/_container$/, '').replace(/_/g, '');
 
     // Generate rules for slots that have responsive colSpan
-    if (slot.colSpan && typeof slot.colSpan === 'object') {
+    if (slotConfig.colSpan && typeof slotConfig.colSpan === 'object') {
       rules[slotName] = {
         colSpan: {
           shouldAdjust: (currentValue) => typeof currentValue === 'number',
-          newValue: slot.colSpan
+          newValue: slotConfig.colSpan
         }
       };
     }
@@ -553,7 +553,7 @@ const CategorySlotsEditor = ({
                         setPageConfig={setCategoryLayoutConfig}
                         saveConfiguration={saveConfiguration}
                         saveTimeoutRef={saveTimeoutRef}
-                        customSlotRenderer={(slot) => {
+                        customSlotRenderer={() => {
                           // Return invisible content for overlay - just for editing structure
                           return (
                             <div
@@ -663,6 +663,17 @@ const CategorySlotsEditor = ({
       />
     </div>
   );
+};
+
+// PropTypes for validation
+CategorySlotsEditor.propTypes = {
+  mode: PropTypes.string,
+  onSave: PropTypes.func,
+  viewMode: PropTypes.string
+};
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired
 };
 
 export default CategorySlotsEditor;
