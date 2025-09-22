@@ -183,9 +183,18 @@ export function CategorySlotRenderer({
           {breadcrumbItems.map((item, index) => (
             <Fragment key={index}>
               {index > 0 && <span className="text-gray-400 mx-1">/</span>}
-              <span className={index === breadcrumbItems.length - 1 ? "text-gray-900 font-medium" : "text-gray-500 hover:text-gray-700"}>
-                {item.name}
-              </span>
+              {item.url ? (
+                <a
+                  href={item.url}
+                  className="text-gray-500 hover:text-gray-700 hover:underline"
+                >
+                  {item.name}
+                </a>
+              ) : (
+                <span className="text-gray-900 font-medium">
+                  {item.name}
+                </span>
+              )}
             </Fragment>
           ))}
         </nav>
@@ -1414,9 +1423,18 @@ export function CategorySlotRenderer({
         {breadcrumbs.map((item, index) => (
           <Fragment key={index}>
             {index > 0 && <span className="text-gray-400 mx-1">/</span>}
-            <span className={index === breadcrumbs.length - 1 ? "text-gray-900 font-medium" : "text-gray-500 hover:text-gray-700"}>
-              {item.name}
-            </span>
+            {item.url ? (
+              <a
+                href={item.url}
+                className="text-gray-500 hover:text-gray-700 hover:underline"
+              >
+                {item.name}
+              </a>
+            ) : (
+              <span className="text-gray-900 font-medium">
+                {item.name}
+              </span>
+            )}
           </Fragment>
         ))}
       </nav>

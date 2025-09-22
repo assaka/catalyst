@@ -452,19 +452,14 @@ export default function Category() {
             }
           });
 
-          // Only create filters if we have actual values
-          if (values.size > 0) {
-            // Create the final filter array with proper labels
-            filters[filterKey] = Object.entries(valueToLabel).sort(([a], [b]) => a.localeCompare(b)).map(([value, label]) => ({
-              value,
-              label,
-              count: 0 // Will be calculated in CategorySlotRenderer
-            }));
+          // Create the final filter array with proper labels
+          filters[filterKey] = Object.entries(valueToLabel).sort(([a], [b]) => a.localeCompare(b)).map(([value, label]) => ({
+            value,
+            label,
+            count: 0 // Will be calculated in CategorySlotRenderer
+          }));
 
-            console.log(`CategoryPage: Added filter ${filterKey} with ${values.size} values:`, Array.from(values));
-          } else {
-            console.log(`CategoryPage: Skipping filter ${filterKey} - no values found`);
-          }
+          console.log(`CategoryPage: Added filter ${filterKey} with ${values.size} values:`, Array.from(values));
         }
       }
     });

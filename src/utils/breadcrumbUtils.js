@@ -21,16 +21,16 @@ export const buildBreadcrumbItems = (pageType, pageData, storeCode, categories =
 
 /**
  * Build breadcrumbs for category pages
- * Returns parent categories only (not including current category)
+ * Returns parent categories and current category (current is not clickable)
  */
 export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories = []) => {
   if (!currentCategory || !categories) return [];
 
-  // Build hierarchy from current category up to root (excluding current category)
+  // Build hierarchy from current category up to root
   let category = currentCategory;
-  const categoryChain = [];
+  const categoryChain = [currentCategory];
 
-  // Find parent categories only
+  // Find parent categories
   while (category?.parent_id) {
     const parent = categories.find(c => c.id === category.parent_id);
     if (parent) {
@@ -45,15 +45,16 @@ export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories 
   const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
 
   // Convert to breadcrumb items
-  return filteredChain.map((cat) => ({
+  return filteredChain.map((cat, index) => ({
     name: cat.name,
-    url: createCategoryUrl(storeCode, cat.slug)
+    url: cat.id === currentCategory.id ? null : createCategoryUrl(storeCode, cat.slug), // Current category not clickable
+    isCurrent: cat.id === currentCategory.id
   }));
 };
 
 /**
  * Build breadcrumbs for product pages
- * Returns category hierarchy leading to the product
+ * Returns category hierarchy and the product (product is not clickable)
  */
 export const buildProductBreadcrumbs = (product, storeCode, categories = []) => {
   if (!product || !categories) return [];
@@ -74,23 +75,48 @@ export const buildProductBreadcrumbs = (product, storeCode, categories = []) => 
     }
   }
 
-  if (!primaryCategory) return [];
+  const breadcrumbs = [];
 
-  // Build category breadcrumbs including the primary category
-  const categoryBreadcrumbs = buildCategoryBreadcrumbs(primaryCategory, storeCode, categories);
+  if (primaryCategory) {
+    // Build category breadcrumbs (all categories should be clickable for product pages)
+    let category = primaryCategory;
+    const categoryChain = [primaryCategory];
 
-  // Add the primary category to the breadcrumbs
-  categoryBreadcrumbs.push({
-    name: primaryCategory.name,
-    url: createCategoryUrl(storeCode, primaryCategory.slug)
+    // Find parent categories
+    while (category?.parent_id) {
+      const parent = categories.find(c => c.id === category.parent_id);
+      if (parent) {
+        categoryChain.unshift(parent);
+        category = parent;
+      } else {
+        break;
+      }
+    }
+
+    // Filter out root categories and add to breadcrumbs
+    const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
+    filteredChain.forEach(cat => {
+      breadcrumbs.push({
+        name: cat.name,
+        url: createCategoryUrl(storeCode, cat.slug),
+        isCurrent: false
+      });
+    });
+  }
+
+  // Add the current product as the last breadcrumb (not clickable)
+  breadcrumbs.push({
+    name: product.name,
+    url: null, // Current product not clickable
+    isCurrent: true
   });
 
-  return categoryBreadcrumbs;
+  return breadcrumbs;
 };
 
 /**
  * Build breadcrumbs for CMS pages
- * Returns a simple breadcrumb structure for CMS pages
+ * Returns a simple breadcrumb structure including current page
  */
 export const buildCmsBreadcrumbs = (cmsPage, storeCode) => {
   if (!cmsPage) return [];
@@ -101,9 +127,17 @@ export const buildCmsBreadcrumbs = (cmsPage, storeCode) => {
   if (cmsPage.parent_page) {
     breadcrumbs.push({
       name: cmsPage.parent_page.title,
-      url: createCmsPageUrl(storeCode, cmsPage.parent_page.slug)
+      url: createCmsPageUrl(storeCode, cmsPage.parent_page.slug),
+      isCurrent: false
     });
   }
+
+  // Add current page (not clickable)
+  breadcrumbs.push({
+    name: cmsPage.title || cmsPage.name,
+    url: null, // Current page not clickable
+    isCurrent: true
+  });
 
   return breadcrumbs;
 };
