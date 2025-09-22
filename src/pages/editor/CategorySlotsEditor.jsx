@@ -223,7 +223,9 @@ const CategorySlotsEditor = ({
       id: 1,
       name: 'Electronics',
       description: 'Browse our latest electronics and gadgets',
-      slug: 'electronics'
+      slug: 'electronics',
+      image: 'https://images.unsplash.com/photo-1588508065123-287b28e013da?w=1200&h=400&fit=crop',
+      image_url: 'https://images.unsplash.com/photo-1588508065123-287b28e013da?w=1200&h=400&fit=crop'
     },
     products: [
       {

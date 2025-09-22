@@ -63,12 +63,12 @@ export function CategorySlotRenderer({
 
   // Get header slots (above the main grid)
   const headerSlots = SlotManager.getChildSlots(slots, null).filter(slot =>
-    ['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container'].includes(slot.id)
+    ['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container', 'category_image'].includes(slot.id)
   );
 
   // Get main content slots
   const mainSlots = SlotManager.getChildSlots(slots, null).filter(slot =>
-    !['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container'].includes(slot.id)
+    !['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container', 'category_image'].includes(slot.id)
   );
 
   // Render header slots first
@@ -87,15 +87,38 @@ export function CategorySlotRenderer({
       return children;
     };
 
+    // Handle category image
+    if (id === 'category_image') {
+      const imageUrl = category?.image || category?.image_url;
+
+      if (!imageUrl && !content) return null;
+
+      return wrapWithParentClass(
+        <div className={className || "relative w-full h-64 mb-6 rounded-lg overflow-hidden"} style={styles}>
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={category?.name || 'Category'}
+              className="w-full h-full object-cover"
+            />
+          ) : content ? (
+            <div dangerouslySetInnerHTML={{ __html: content }} />
+          ) : null}
+        </div>
+      );
+    }
+
     // Handle category header content - with dynamic content from categoryContext
     if (id === 'header' || id === 'category_title') {
       // Use content from slot if provided, otherwise use category name
       const headerContent = content || category?.name || 'Products';
 
       return wrapWithParentClass(
-        <h1 className={className || "text-4xl font-bold"} style={styles}>
-          {headerContent}
-        </h1>
+        <div className="mb-4">
+          <h1 className={className || "text-4xl font-bold text-gray-900"} style={styles}>
+            {headerContent}
+          </h1>
+        </div>
       );
     }
 
@@ -690,6 +713,46 @@ export function CategorySlotRenderer({
     <div className="px-4 sm:px-6 lg:px-8 py-8">
       {/* Header Section */}
       <div className="mb-8 max-w-7xl mx-auto">
+        {/* Category Hero Section with Image and Title */}
+        {(category?.image || category?.image_url || category?.name) && (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+            {(category?.image || category?.image_url) && (
+              <div className="relative w-full h-48 sm:h-64 lg:h-80">
+                <img
+                  src={category?.image || category?.image_url}
+                  alt={category?.name || 'Category'}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+                    {category?.name || 'Products'}
+                  </h1>
+                  {category?.description && (
+                    <p className="mt-2 text-lg text-white/90 max-w-3xl">
+                      {category?.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* If no image, show title and description separately */}
+            {!(category?.image || category?.image_url) && category?.name && (
+              <div className="p-6">
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                  {category?.name}
+                </h1>
+                {category?.description && (
+                  <p className="mt-2 text-lg text-gray-600">
+                    {category?.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Render other header slots like breadcrumbs */}
         {renderHeaderSlots()}
       </div>
 
