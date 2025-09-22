@@ -16,20 +16,10 @@ import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlot
  * Generic hook for loading layout configurations
  * @param {Object} store - The store object containing store.id
  * @param {string} pageType - The type of page (e.g., 'cart', 'category', 'product')
- * @param {string} configModulePath - Path to the fallback config module (e.g., '@/components/editor/slot/configs/cart-config')
+ * @param {Object} fallbackConfig - Fallback configuration object to use when no published config exists
  * @returns {Object} - { layoutConfig, configLoaded, reloadConfig }
  */
-// Convert alias path to relative path for dynamic imports
-const resolveImportPath = (path) => {
-    // If path starts with @/, replace with relative path from hooks folder
-    if (path.startsWith('@/')) {
-        // From hooks folder, we need to go up one level to src, then to the rest of the path
-        return path.replace('@/', '../');
-    }
-    return path;
-};
-
-export function useLayoutConfig(store, pageType, configModulePath) {
+export function useLayoutConfig(store, pageType, fallbackConfig) {
     const [layoutConfig, setLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 

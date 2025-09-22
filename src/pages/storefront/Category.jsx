@@ -11,13 +11,13 @@ import Breadcrumb from "@/components/storefront/Breadcrumb";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
-import { useLayoutConfig } from '@/hooks/useSlotConfiguration';
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -34,17 +34,86 @@ export default function Category() {
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
   const [itemsPerPage] = useState(12);
+  const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
+  const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
 
   const { storeCode, categorySlug } = useParams();
   const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();
 
-  // Use the generic hook for loading category layout configuration
-  const {
-    layoutConfig: categoryLayoutConfig,
-    configLoaded: categoryConfigLoaded,
-    reloadConfig
-  } = useLayoutConfig(store, 'category', '@/components/editor/slot/configs/category-config');
+  // Load category layout configuration directly
+  useEffect(() => {
+    const loadCategoryLayoutConfig = async () => {
+      if (!store?.id) {
+        return;
+      }
+
+      try {
+        // Load published configuration using the new versioning API
+        const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'category');
+
+        // Check for various "no published config" scenarios
+        if (response.success && response.data &&
+            response.data.configuration &&
+            response.data.configuration.slots &&
+            Object.keys(response.data.configuration.slots).length > 0) {
+
+          const publishedConfig = response.data;
+          setCategoryLayoutConfig(publishedConfig.configuration);
+          setCategoryConfigLoaded(true);
+
+        } else {
+          // Fallback to category-config.js
+          const fallbackConfig = {
+            slots: { ...categoryConfig.slots },
+            metadata: {
+              ...categoryConfig.metadata,
+              fallbackUsed: true,
+              fallbackReason: `No valid published configuration`
+            }
+          };
+
+          setCategoryLayoutConfig(fallbackConfig);
+          setCategoryConfigLoaded(true);
+        }
+      } catch (error) {
+        console.error('❌ Error loading published slot configuration:', error);
+
+        // Fallback to category-config.js
+        const fallbackConfig = {
+          slots: { ...categoryConfig.slots },
+          metadata: {
+            ...categoryConfig.metadata,
+            fallbackUsed: true,
+            fallbackReason: `Error loading configuration: ${error.message}`
+          }
+        };
+
+        setCategoryLayoutConfig(fallbackConfig);
+        setCategoryConfigLoaded(true);
+      }
+    };
+
+    loadCategoryLayoutConfig();
+
+    // Listen for configuration updates from editor
+    const handleStorageChange = (e) => {
+      if (e.key === 'slot_config_updated' && e.newValue) {
+        const updateData = JSON.parse(e.newValue);
+        if (updateData.storeId === store?.id && updateData.pageType === 'category') {
+          loadCategoryLayoutConfig();
+          // Clear the notification
+          localStorage.removeItem('slot_config_updated');
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [store?.id]);
 
   // Extract slots from the loaded configuration
   const categorySlots = categoryLayoutConfig?.slots || null;

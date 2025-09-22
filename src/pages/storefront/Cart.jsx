@@ -31,7 +31,7 @@ import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-el
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
 import { CartSlotRenderer } from '@/components/storefront/CartSlotRenderer';
-import { useLayoutConfig } from '@/hooks/useSlotConfiguration';
+import { cartConfig } from '@/components/editor/slot/configs/cart-config';
 
 
 
@@ -103,12 +103,83 @@ export default function Cart() {
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
 
-    // Use the generic hook for loading cart layout configuration
-    const {
-        layoutConfig: cartLayoutConfig,
-        configLoaded,
-        reloadConfig
-    } = useLayoutConfig(store, 'cart', '@/components/editor/slot/configs/cart-config');
+    // State for cart layout configuration
+    const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
+    const [configLoaded, setConfigLoaded] = useState(false);
+
+    // Load cart layout configuration directly
+    useEffect(() => {
+        const loadCartLayoutConfig = async () => {
+            if (!store?.id) {
+                return;
+            }
+
+            try {
+                // Load published configuration using the new versioning API
+                const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
+
+                // Check for various "no published config" scenarios
+                if (response.success && response.data &&
+                    response.data.configuration &&
+                    response.data.configuration.slots &&
+                    Object.keys(response.data.configuration.slots).length > 0) {
+
+                    const publishedConfig = response.data;
+                    setCartLayoutConfig(publishedConfig.configuration);
+                    setConfigLoaded(true);
+
+                } else {
+                    // Fallback to cart-config.js
+                    const fallbackConfig = {
+                        slots: { ...cartConfig.slots },
+                        metadata: {
+                            ...cartConfig.metadata,
+                            fallbackUsed: true,
+                            fallbackReason: `No valid published configuration`
+                        }
+                    };
+
+                    setCartLayoutConfig(fallbackConfig);
+                    setConfigLoaded(true);
+                }
+            } catch (error) {
+                console.error('❌ Error loading published slot configuration:', error);
+
+                // Fallback to cart-config.js
+                const fallbackConfig = {
+                    slots: { ...cartConfig.slots },
+                    metadata: {
+                        ...cartConfig.metadata,
+                        fallbackUsed: true,
+                        fallbackReason: `Error loading configuration: ${error.message}`
+                    }
+                };
+
+                setCartLayoutConfig(fallbackConfig);
+                setConfigLoaded(true);
+            }
+        };
+
+        loadCartLayoutConfig();
+
+        // Listen for configuration updates from editor
+        const handleStorageChange = (e) => {
+            if (e.key === 'slot_config_updated' && e.newValue) {
+                const updateData = JSON.parse(e.newValue);
+                if (updateData.storeId === store?.id && updateData.pageType === 'cart') {
+                    loadCartLayoutConfig();
+                    // Clear the notification
+                    localStorage.removeItem('slot_config_updated');
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [store?.id]);
     
     // Initialize customization system for Cart component
     const {
