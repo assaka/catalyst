@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,7 +120,29 @@ export function CategorySlotRenderer({
         });
       }
 
-      // Use the actual Breadcrumb component with dynamic styling
+      // For editor mode, render a simple breadcrumb without StoreProvider dependency
+      const isEditorMode = !store || typeof window === 'undefined' || !window.location;
+
+      if (isEditorMode) {
+        return wrapWithParentClass(
+          <nav
+            className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
+            style={styles}
+            aria-label="Breadcrumb"
+          >
+            {breadcrumbItems.map((item, index) => (
+              <Fragment key={index}>
+                {index > 0 && <span className="text-gray-400">/</span>}
+                <span className={index === breadcrumbItems.length - 1 ? "text-gray-900 font-medium" : "text-gray-500 hover:text-gray-700"}>
+                  {item.name}
+                </span>
+              </Fragment>
+            ))}
+          </nav>
+        );
+      }
+
+      // Use the actual Breadcrumb component with dynamic styling for storefront
       return wrapWithParentClass(
         <Breadcrumb
           items={breadcrumbItems}

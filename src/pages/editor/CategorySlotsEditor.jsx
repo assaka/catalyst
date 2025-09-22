@@ -5,7 +5,7 @@
  * - Maintainable structure
  */
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Grid,
@@ -47,6 +47,36 @@ import {
 } from '@/components/editor/slot/SlotComponents';
 import { CategorySlotRenderer } from '@/components/storefront/CategorySlotRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
+
+// Simple ErrorBoundary component to handle context issues
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.warn('CategorySlotRenderer error in editor (expected):', error.message);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800 text-sm">
+            Preview mode temporarily unavailable. Use Preview button for full preview.
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 
 // Main CategorySlotsEditor component - mirrors CartSlotsEditor.jsx structure exactly
@@ -542,12 +572,14 @@ const CategorySlotsEditor = ({
                 // Edit mode: Use CategorySlotRenderer with editing overlay
                 <div className="relative">
                   {/* Render the actual content using CategorySlotRenderer */}
-                  <CategorySlotRenderer
-                    slots={categoryLayoutConfig.slots}
-                    parentId={null}
-                    viewMode={viewMode}
-                    categoryContext={mockCategoryContext}
-                  />
+                  <ErrorBoundary>
+                    <CategorySlotRenderer
+                      slots={categoryLayoutConfig.slots}
+                      parentId={null}
+                      viewMode={viewMode}
+                      categoryContext={mockCategoryContext}
+                    />
+                  </ErrorBoundary>
 
                   {/* Overlay HierarchicalSlotRenderer for editing capabilities */}
                   <div className="absolute inset-0 pointer-events-none">
