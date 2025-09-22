@@ -180,41 +180,50 @@ export function CategorySlotRenderer({
         const options = {};
 
         Object.entries(filters).forEach(([filterKey, filterValues]) => {
-          if (filterValues && filterValues.length > 0) {
-            // Count products for each filter value using all products
-            const optionsWithCount = filterValues.map(option => {
-              const productCount = allProducts.filter(p => {
-                const productAttributes = p.attributes || p.attribute_values || {};
+          // Include filters even if they have no values yet (empty array)
+          // This ensures all 'use for filter' attributes are shown
+          if (filterValues !== undefined) {
+            if (filterValues.length > 0) {
+              // Count products for each filter value using all products
+              const optionsWithCount = filterValues.map(option => {
+                const productCount = allProducts.filter(p => {
+                  const productAttributes = p.attributes || p.attribute_values || {};
 
-                // Try multiple possible keys for the attribute (like LayeredNavigation)
-                const possibleKeys = [
-                  filterKey,
-                  filterKey.toLowerCase(),
-                  filterKey.toLowerCase().replace(/[_-\s]/g, ''),
-                ];
+                  // Try multiple possible keys for the attribute (like LayeredNavigation)
+                  const possibleKeys = [
+                    filterKey,
+                    filterKey.toLowerCase(),
+                    filterKey.toLowerCase().replace(/[_-\s]/g, ''),
+                  ];
 
-                let attributeValue = null;
-                for (const key of possibleKeys) {
-                  if (productAttributes[key] !== undefined || p[key] !== undefined) {
-                    attributeValue = productAttributes[key] || p[key];
-                    break;
+                  let attributeValue = null;
+                  for (const key of possibleKeys) {
+                    if (productAttributes[key] !== undefined || p[key] !== undefined) {
+                      attributeValue = productAttributes[key] || p[key];
+                      break;
+                    }
                   }
-                }
 
-                return String(attributeValue) === String(option.value);
-              }).length;
+                  return String(attributeValue) === String(option.value);
+                }).length;
 
-              return {
-                ...option,
-                count: productCount
-              };
-            }).filter(option => option.count > 0); // Only show options that have products
+                return {
+                  ...option,
+                  count: productCount
+                };
+              }); // Don't filter out options with 0 count - show all options
 
-            if (optionsWithCount.length > 0) {
               options[filterKey] = {
                 name: filterKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                 values: optionsWithCount.map(opt => opt.value),
                 options: optionsWithCount
+              };
+            } else {
+              // Empty filter array - create section with no options but show the header
+              options[filterKey] = {
+                name: filterKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                values: [],
+                options: []
               };
             }
           }
@@ -300,34 +309,38 @@ export function CategorySlotRenderer({
                   <AccordionTrigger className="font-semibold">{name}</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {options.map(option => (
-                        <div key={option.value} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`attr-${code}-${option.value}`}
-                              checked={selectedFilters[code]?.includes(option.value) || false}
-                              onCheckedChange={(checked) => {
-                                const currentValues = selectedFilters[code] || [];
-                                const newValues = checked
-                                  ? [...currentValues, option.value]
-                                  : currentValues.filter(v => v !== option.value);
+                      {options.length > 0 ? (
+                        options.map(option => (
+                          <div key={option.value} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`attr-${code}-${option.value}`}
+                                checked={selectedFilters[code]?.includes(option.value) || false}
+                                onCheckedChange={(checked) => {
+                                  const currentValues = selectedFilters[code] || [];
+                                  const newValues = checked
+                                    ? [...currentValues, option.value]
+                                    : currentValues.filter(v => v !== option.value);
 
-                                const newFilters = { ...selectedFilters };
-                                if (newValues.length > 0) {
-                                  newFilters[code] = newValues;
-                                } else {
-                                  delete newFilters[code];
-                                }
-                                handleFilterChange(newFilters);
-                              }}
-                            />
-                            <Label htmlFor={`attr-${code}-${option.value}`} className="text-sm">
-                              {option.value}
-                            </Label>
+                                  const newFilters = { ...selectedFilters };
+                                  if (newValues.length > 0) {
+                                    newFilters[code] = newValues;
+                                  } else {
+                                    delete newFilters[code];
+                                  }
+                                  handleFilterChange(newFilters);
+                                }}
+                              />
+                              <Label htmlFor={`attr-${code}-${option.value}`} className="text-sm">
+                                {option.value}
+                              </Label>
+                            </div>
+                            <span className="text-xs text-gray-400">({option.count})</span>
                           </div>
-                          <span className="text-xs text-gray-400">({option.count})</span>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">No options available</p>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>

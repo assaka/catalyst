@@ -354,39 +354,104 @@ export default function Category() {
     }));
   };
 
-  // Build dynamic filters from current products and filterable attributes
+  // Build dynamic filters from filterable attributes (matching LayeredNavigation logic)
   const buildFilters = () => {
     const filters = {};
 
-    if (!products || !filterableAttributes) return filters;
+    if (!filterableAttributes) {
+      console.log('CategoryPage: No filterableAttributes found');
+      return filters;
+    }
+
+    console.log('CategoryPage: filterableAttributes:', filterableAttributes);
 
     filterableAttributes.forEach(attr => {
-      const filterKey = attr.name || attr.attribute_name;
-      const values = new Map();
+      // Check if attribute is filterable (handle different possible properties)
+      const isFilterable = attr.is_filterable || attr.filterable || attr.use_for_filter;
 
-      products.forEach(product => {
-        const productAttributes = product.attributes || product.attribute_values || {};
-        let productValue = productAttributes[filterKey] || product[filterKey];
+      if (isFilterable) {
+        const filterKey = attr.code || attr.name || attr.attribute_name;
+        console.log(`CategoryPage: Processing filterable attribute: ${filterKey}`, attr);
 
-        if (productValue !== undefined && productValue !== null && productValue !== '') {
-          const stringValue = String(productValue);
-          if (values.has(stringValue)) {
-            values.set(stringValue, values.get(stringValue) + 1);
-          } else {
-            values.set(stringValue, 1);
-          }
+        const values = new Set();
+
+        // Add values from products - try multiple possible attribute keys (like LayeredNavigation)
+        if (products && products.length > 0) {
+          products.forEach(p => {
+            const productAttributes = p.attributes || p.attribute_values || {};
+
+            // Try multiple possible keys for the attribute (expanded list like LayeredNavigation)
+            const possibleKeys = [
+              attr.code,
+              attr.name,
+              attr.attribute_name,
+              attr.code?.toLowerCase(),
+              attr.name?.toLowerCase(),
+              attr.attribute_name?.toLowerCase(),
+              // Add more variations
+              attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
+              attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
+              attr.attribute_name?.toLowerCase().replace(/[_-\s]/g, ''),
+              // Common attribute variations
+              filterKey,
+              filterKey?.toLowerCase(),
+              filterKey?.toLowerCase().replace(/[_-\s]/g, ''),
+              // Common color attribute variations (from LayeredNavigation)
+              'color', 'Color', 'COLOR',
+              'colour', 'Colour', 'COLOUR'
+            ].filter(Boolean);
+
+            let attributeValue = null;
+            for (const key of possibleKeys) {
+              if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
+                attributeValue = productAttributes[key] || p[key];
+                break;
+              }
+            }
+
+            if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
+              if (Array.isArray(attributeValue)) {
+                attributeValue.forEach(val => {
+                  if (val) values.add(String(val));
+                });
+              } else {
+                values.add(String(attributeValue));
+              }
+            }
+          });
         }
-      });
 
-      if (values.size > 0) {
-        filters[filterKey] = Array.from(values.entries()).map(([value, count]) => ({
-          value,
-          label: value,
-          count
-        }));
+        // IMPORTANT: Also add predefined options from attribute definition (like LayeredNavigation)
+        if (attr.options && Array.isArray(attr.options)) {
+          attr.options.forEach(option => {
+            // Handle different option formats
+            const optionValue = option.value || option.label || option.name || option;
+            if (optionValue && optionValue !== '') {
+              values.add(String(optionValue));
+            }
+          });
+        }
+
+        // Include all filterable attributes, even if they have no values yet
+        // This ensures all 'use for filter' attributes are shown
+        if (values.size > 0 || isFilterable) {
+          filters[filterKey] = Array.from(values).sort().map(value => ({
+            value,
+            label: value,
+            count: 0 // Will be calculated in CategorySlotRenderer
+          }));
+
+          // If no values found but attribute is filterable, create empty array to show the section
+          if (values.size === 0) {
+            filters[filterKey] = [];
+          }
+
+          console.log(`CategoryPage: Added filter ${filterKey} with ${values.size} values:`, Array.from(values));
+        }
       }
     });
 
+    console.log('CategoryPage: Built filters:', filters);
     return filters;
   };
 
@@ -396,6 +461,7 @@ export default function Category() {
     products: paginatedProducts,
     allProducts: sortedProducts, // All products for filter counting
     filters: buildFilters(),
+    filterableAttributes, // Pass filterable attributes for reference
     sortOption: currentSort,
     currentPage,
     totalPages,
