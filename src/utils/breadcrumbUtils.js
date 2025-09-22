@@ -41,8 +41,8 @@ export const buildCategoryBreadcrumbs = (currentCategory, storeCode, categories 
     }
   }
 
-  // Filter out root categories (categories with no parent_id or level 0)
-  const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
+  // Filter out root categories (categories with no parent_id)
+  const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
 
   // Convert to breadcrumb items
   return filteredChain.map((cat, index) => ({
@@ -84,8 +84,9 @@ export const buildProductBreadcrumbs = (product, storeCode, categories = [], set
         }
       }
 
-      // Filter out root categories and add to breadcrumbs (all categories clickable)
-      const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
+      // Add all categories to breadcrumbs (all categories clickable)
+      // Only filter out root categories (level 0 or no parent)
+      const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
       filteredChain.forEach(cat => {
         breadcrumbs.push({
           name: cat.name,
