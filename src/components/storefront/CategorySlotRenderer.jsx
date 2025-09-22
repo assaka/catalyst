@@ -547,6 +547,100 @@ export function CategorySlotRenderer({
       );
     }
 
+    // Active filters display
+    if (id === 'active_filters') {
+      // Only show if there are active filters
+      if (!selectedFilters || Object.keys(selectedFilters).length === 0) {
+        return null;
+      }
+
+      const filterEntries = Object.entries(selectedFilters).filter(([key, values]) =>
+        values && (Array.isArray(values) ? values.length > 0 : values !== null && values !== undefined)
+      );
+
+      if (filterEntries.length === 0) {
+        return null;
+      }
+
+      return wrapWithParentClass(
+        <div className={className || "mb-6"} style={styles}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Active filters:</span>
+
+            {filterEntries.map(([filterKey, filterValue]) => {
+              // Handle different filter types
+              if (filterKey === 'priceRange' && Array.isArray(filterValue)) {
+                return (
+                  <div key={filterKey} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    <span>Price: {currencySymbol}{filterValue[0]} - {currencySymbol}{filterValue[1]}</span>
+                    <button
+                      onClick={() => {
+                        const newFilters = { ...selectedFilters };
+                        delete newFilters.priceRange;
+                        handleFilterChange && handleFilterChange(newFilters);
+                      }}
+                      className="ml-2 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              }
+
+              // Handle array filters (multi-select)
+              if (Array.isArray(filterValue)) {
+                return filterValue.map(value => (
+                  <div key={`${filterKey}-${value}`} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                    <span>{filterKey}: {value}</span>
+                    <button
+                      onClick={() => {
+                        const newFilters = { ...selectedFilters };
+                        const newValues = filterValue.filter(v => v !== value);
+                        if (newValues.length > 0) {
+                          newFilters[filterKey] = newValues;
+                        } else {
+                          delete newFilters[filterKey];
+                        }
+                        handleFilterChange && handleFilterChange(newFilters);
+                      }}
+                      className="ml-2 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ));
+              }
+
+              // Handle single value filters
+              return (
+                <div key={filterKey} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <span>{filterKey}: {filterValue}</span>
+                  <button
+                    onClick={() => {
+                      const newFilters = { ...selectedFilters };
+                      delete newFilters[filterKey];
+                      handleFilterChange && handleFilterChange(newFilters);
+                    }}
+                    className="ml-2 text-blue-600 hover:text-blue-800"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+
+            {/* Clear All button */}
+            <button
+              onClick={() => clearFilters && clearFilters()}
+              className="text-sm text-red-600 hover:text-red-800 px-3 py-1 border border-red-300 rounded-full hover:bg-red-50"
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     // Pagination controls
     if (id === 'pagination_container' || id === 'pagination_controls') {
       if (!totalPages || totalPages <= 1) return null;

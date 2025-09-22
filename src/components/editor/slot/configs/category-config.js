@@ -202,6 +202,24 @@ export const categoryConfig = {
       }
     },
 
+    // Active filters display
+    active_filters: {
+      id: 'active_filters',
+      type: 'active_filters',
+      content: '',
+      className: 'mb-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ActiveFilters'
+      }
+    },
+
     // Products grid
     products_grid: {
       id: 'products_grid',
@@ -211,7 +229,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
@@ -372,7 +390,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
@@ -390,7 +408,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 6 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
