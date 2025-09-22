@@ -6,7 +6,7 @@ import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
-import { usePagination, useSorting } from "@/hooks/useUrlUtils";
+import { useSorting } from "@/hooks/useUrlUtils";
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -31,7 +31,7 @@ export default function Category() {
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
 
   const { storeCode, categorySlug } = useParams();
-  const { currentPage, setPage } = usePagination();
+  // Removed pagination hook - no pagination for now
   const { currentSort, setSort } = useSorting();
 
   // Load category layout configuration directly
@@ -457,8 +457,6 @@ export default function Category() {
     filters: buildFilters(),
     filterableAttributes, // Pass filterable attributes for reference
     sortOption: currentSort,
-    currentPage,
-    totalPages,
     subcategories: [],
     breadcrumbs: getBreadcrumbItems(),
     selectedFilters: activeFilters,
