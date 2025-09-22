@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Grid, List, Filter, Search, Tag, ChevronDown } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
@@ -136,84 +145,196 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Filters container - Column 1
+    // Filters container - Column 1 (exact LayeredNavigation structure)
     if (id === 'filters_container') {
-      return wrapWithParentClass(
-        <div className={className || "w-full"} style={styles}>
-          <Card className="sticky top-4">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center">
-                  <Filter className="w-5 h-5 mr-2" />
-                  {content || 'Filters'}
-                </h3>
-                {Object.keys(selectedFilters).length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearFilters}
-                  >
-                    Clear All
-                  </Button>
-                )}
-              </div>
+      // Calculate price range from all products (not just paginated)
+      const allProducts = categoryContext.allProducts || products;
 
-              {/* Price Range Filter */}
-              {priceRange && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Price Range</label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={priceRange.min || ''}
-                      onChange={(e) => handleFilterChange('price', { ...priceRange, min: e.target.value })}
-                      className="w-24"
-                    />
-                    <span>-</span>
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={priceRange.max || ''}
-                      onChange={(e) => handleFilterChange('price', { ...priceRange, max: e.target.value })}
-                      className="w-24"
-                    />
-                  </div>
-                </div>
-              )}
+      const { minPrice, maxPrice } = (() => {
+        if (!allProducts || allProducts.length === 0) return { minPrice: 0, maxPrice: 1000 };
 
-              {/* Category Filters */}
-              {Object.entries(filters).map(([filterKey, filterOptions]) => (
-                <div key={filterKey} className="mb-4">
-                  <label className="block text-sm font-medium mb-2 capitalize">
-                    {filterKey.replace('_', ' ')}
-                  </label>
-                  <div className="space-y-2">
-                    {filterOptions.map((option) => (
-                      <label key={option.value} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedFilters[filterKey]?.includes(option.value) || false}
-                          onChange={(e) => {
-                            const currentValues = selectedFilters[filterKey] || [];
-                            const newValues = e.target.checked
-                              ? [...currentValues, option.value]
-                              : currentValues.filter(v => v !== option.value);
-                            handleFilterChange(filterKey, newValues);
-                          }}
-                          className="mr-2"
-                        />
-                        <span className="text-sm">
-                          {option.label} ({option.count})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
+        const prices = [];
+        allProducts.forEach(p => {
+          const price = parseFloat(p.price || 0);
+          if (price > 0) prices.push(price);
+
+          const comparePrice = parseFloat(p.compare_price || 0);
+          if (comparePrice > 0 && comparePrice !== price) {
+            prices.push(comparePrice);
+          }
+        });
+
+        if (prices.length === 0) return { minPrice: 0, maxPrice: 1000 };
+
+        return {
+          minPrice: Math.floor(Math.min(...prices)),
+          maxPrice: Math.ceil(Math.max(...prices))
+        };
+      })();
+
+      // Get current price range from selectedFilters or use full range
+      const currentPriceRange = selectedFilters.priceRange || [minPrice, maxPrice];
+
+      // Build filter options exactly like LayeredNavigation
+      const filterOptions = (() => {
+        const options = {};
+
+        Object.entries(filters).forEach(([filterKey, filterValues]) => {
+          if (filterValues && filterValues.length > 0) {
+            // Count products for each filter value using all products
+            const optionsWithCount = filterValues.map(option => {
+              const productCount = allProducts.filter(p => {
+                const productAttributes = p.attributes || p.attribute_values || {};
+
+                // Try multiple possible keys for the attribute (like LayeredNavigation)
+                const possibleKeys = [
+                  filterKey,
+                  filterKey.toLowerCase(),
+                  filterKey.toLowerCase().replace(/[_-\s]/g, ''),
+                ];
+
+                let attributeValue = null;
+                for (const key of possibleKeys) {
+                  if (productAttributes[key] !== undefined || p[key] !== undefined) {
+                    attributeValue = productAttributes[key] || p[key];
+                    break;
+                  }
+                }
+
+                return String(attributeValue) === String(option.value);
+              }).length;
+
+              return {
+                ...option,
+                count: productCount
+              };
+            }).filter(option => option.count > 0); // Only show options that have products
+
+            if (optionsWithCount.length > 0) {
+              options[filterKey] = {
+                name: filterKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                values: optionsWithCount.map(opt => opt.value),
+                options: optionsWithCount
+              };
+            }
+          }
+        });
+
+        return options;
+      })();
+
+      // Check if any filters are active
+      const hasActiveFilters = Object.keys(selectedFilters).length > 0 ||
+                              (currentPriceRange[0] !== minPrice || currentPriceRange[1] !== maxPrice);
+
+      if (!allProducts || allProducts.length === 0) {
+        return wrapWithParentClass(
+          <Card className={className || "sticky top-4"} style={styles}>
+            <CardHeader>
+              <CardTitle>Filter By</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">No products to filter</p>
             </CardContent>
           </Card>
-        </div>
+        );
+      }
+
+      return wrapWithParentClass(
+        <Card className={className || "sticky top-4"} style={styles}>
+          <CardHeader>
+            <div className="flex justify-between items-center h-5">
+              <CardTitle>Filter By</CardTitle>
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-xs"
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
+              {/* Price Slider */}
+              <AccordionItem value="price">
+                <AccordionTrigger className="font-semibold">Price</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4">
+                    <div className="px-2">
+                      <Slider
+                        min={minPrice}
+                        max={maxPrice}
+                        step={1}
+                        value={currentPriceRange}
+                        onValueChange={(range) => {
+                          const newFilters = { ...selectedFilters };
+                          if (range[0] !== minPrice || range[1] !== maxPrice) {
+                            newFilters.priceRange = range;
+                          } else {
+                            delete newFilters.priceRange;
+                          }
+                          handleFilterChange(newFilters);
+                        }}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>${currentPriceRange[0]}</span>
+                      <span>${currentPriceRange[1]}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Min: ${minPrice}</span>
+                      <span>Max: ${maxPrice}</span>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Attribute Filters */}
+              {Object.entries(filterOptions).map(([code, { name, values, options }]) => (
+                <AccordionItem key={code} value={code}>
+                  <AccordionTrigger className="font-semibold">{name}</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {options.map(option => (
+                        <div key={option.value} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`attr-${code}-${option.value}`}
+                              checked={selectedFilters[code]?.includes(option.value) || false}
+                              onCheckedChange={(checked) => {
+                                const currentValues = selectedFilters[code] || [];
+                                const newValues = checked
+                                  ? [...currentValues, option.value]
+                                  : currentValues.filter(v => v !== option.value);
+
+                                const newFilters = { ...selectedFilters };
+                                if (newValues.length > 0) {
+                                  newFilters[code] = newValues;
+                                } else {
+                                  delete newFilters[code];
+                                }
+                                handleFilterChange(newFilters);
+                              }}
+                            />
+                            <Label htmlFor={`attr-${code}-${option.value}`} className="text-sm">
+                              {option.value}
+                            </Label>
+                          </div>
+                          <span className="text-xs text-gray-400">({option.count})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
       );
     }
 

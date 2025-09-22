@@ -394,6 +394,7 @@ export default function Category() {
   const categoryContext = {
     category: currentCategory,
     products: paginatedProducts,
+    allProducts: sortedProducts, // All products for filter counting
     filters: buildFilters(),
     sortOption: currentSort,
     currentPage,
