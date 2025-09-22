@@ -11,6 +11,7 @@ import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
+import { buildBreadcrumbItems } from "@/utils/breadcrumbUtils";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -327,33 +328,9 @@ export default function Category() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Build breadcrumb items for category pages
+  // Build breadcrumb items for category pages using generic utility
   const getBreadcrumbItems = () => {
-    if (!currentCategory || !categories) return [];
-
-    // Build hierarchy from current category up to root (excluding current category)
-    let category = currentCategory;
-    const categoryChain = [];
-
-    // Find parent categories only (don't include current category)
-    while (category?.parent_id) {
-      const parent = categories.find(c => c.id === category.parent_id);
-      if (parent) {
-        categoryChain.unshift(parent);
-        category = parent;
-      } else {
-        break;
-      }
-    }
-
-    // Filter out root categories (categories with no parent_id or level 0)
-    const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
-
-    // Convert to breadcrumb items (not including current category)
-    return filteredChain.map((cat) => ({
-      name: cat.name,
-      url: createCategoryUrl(storeCode, cat.slug)
-    }));
+    return buildBreadcrumbItems('category', currentCategory, storeCode, categories);
   };
 
   // Build dynamic filters from filterable attributes (matching LayeredNavigation logic)
