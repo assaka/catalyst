@@ -333,14 +333,14 @@ export default function Category() {
 
     // Build hierarchy from current category up to root
     let category = currentCategory;
-    const categoryChain = [category];
+    const categoryChain = [];
 
-    // Find parent categories
+    // Find parent categories (don't include current category yet)
     while (category?.parent_id) {
       const parent = categories.find(c => c.id === category.parent_id);
       if (parent) {
-        // Skip adding parent if it has the same name as current (child) category
-        if (parent.name !== category.name) {
+        // Only add parent if it has a different name than the current category we're viewing
+        if (parent.name !== currentCategory.name) {
           categoryChain.unshift(parent);
         }
         category = parent;
@@ -348,6 +348,9 @@ export default function Category() {
         break;
       }
     }
+
+    // Always add the current category at the end
+    categoryChain.push(currentCategory);
 
     // Filter out root categories (categories with no parent_id or level 0)
     const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
