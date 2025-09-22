@@ -471,12 +471,31 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Products container - optimized for 2-column layout
+    // Products container - render product slots dynamically
     if (id === 'products_container') {
       const gridClass = viewMode === 'grid'
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-4';
 
+      // Find product template slot
+      const productTemplateSlot = Object.values(slots || {}).find(slot =>
+        slot.id === 'product_template' || slot.metadata?.isTemplate
+      );
+
+      // If we have a template, render products using the slot structure
+      if (productTemplateSlot) {
+        return (
+          <div className={`${className} ${gridClass} mb-8`} style={styles}>
+            {products.map((product, index) => (
+              <div key={product.id} className="product-slot-wrapper">
+                {renderProductFromSlots(product, index)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // Fallback to default product card rendering
       return (
         <div className={`${className} ${gridClass} mb-8`} style={styles}>
           {products.map(product => (
@@ -876,6 +895,227 @@ export function CategorySlotRenderer({
         );
     }
   };
+
+  // Helper function to render product using slots
+  function renderProductFromSlots(product, productIndex) {
+    // Get all product-related slots
+    const productSlots = Object.values(slots || {}).filter(slot =>
+      slot.parentId === 'product_template' ||
+      slot.id?.startsWith('product_') ||
+      slot.metadata?.microslot
+    );
+
+    // Create a unique instance of slots for this product
+    const productInstanceSlots = {};
+    productSlots.forEach(slot => {
+      const instanceId = `${slot.id}_${productIndex}`;
+      productInstanceSlots[instanceId] = {
+        ...slot,
+        id: instanceId,
+        // Replace parentId references
+        parentId: slot.parentId === 'product_template' ? `product_template_${productIndex}` :
+                 slot.parentId?.startsWith('product_') ? `${slot.parentId}_${productIndex}` : slot.parentId
+      };
+    });
+
+    // Add the template slot itself
+    const templateSlot = slots['product_template'];
+    if (templateSlot) {
+      productInstanceSlots[`product_template_${productIndex}`] = {
+        ...templateSlot,
+        id: `product_template_${productIndex}`,
+        parentId: null
+      };
+    }
+
+    // Render product slots with product data
+    return renderProductSlots(productInstanceSlots, `product_template_${productIndex}`, product);
+  }
+
+  // Helper function to render product slots recursively
+  function renderProductSlots(productSlots, parentId, product) {
+    const childSlots = Object.values(productSlots).filter(slot => slot.parentId === parentId);
+
+    if (childSlots.length === 0 && parentId === null) {
+      // No slots found, return null
+      return null;
+    }
+
+    return childSlots.map(slot => {
+      const { id, type, content, className = '', styles = {} } = slot;
+      const slotIdParts = id.split('_');
+      const baseSlotId = slotIdParts.slice(0, -1).join('_'); // Remove the product index
+
+      // Render based on slot type
+      switch (baseSlotId) {
+        case 'product_template':
+          return (
+            <Card
+              key={id}
+              className={className || "group overflow-hidden hover:shadow-lg transition-shadow"}
+              style={styles}
+              onClick={() => onProductClick && onProductClick(product)}
+            >
+              {renderProductSlots(productSlots, id, product)}
+            </Card>
+          );
+
+        case 'product_image_container':
+          return (
+            <div key={id} className={className || "relative overflow-hidden"} style={styles}>
+              {renderProductSlots(productSlots, id, product)}
+            </div>
+          );
+
+        case 'product_image':
+          const imageUrl = (() => {
+            if (product.images && product.images.length > 0) {
+              const firstImage = product.images[0];
+              if (typeof firstImage === 'object') {
+                return firstImage.url || firstImage.src || firstImage.image || '/placeholder-product.jpg';
+              }
+              return firstImage;
+            }
+            if (product.image) {
+              if (typeof product.image === 'object') {
+                return product.image.url || product.image.src || '/placeholder-product.jpg';
+              }
+              return product.image;
+            }
+            return '/placeholder-product.jpg';
+          })();
+
+          return (
+            <img
+              key={id}
+              src={imageUrl}
+              alt={product.name}
+              className={className || "w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"}
+              style={styles}
+            />
+          );
+
+        case 'product_content':
+          return (
+            <div key={id} className={className || "p-4 space-y-3"} style={styles}>
+              {renderProductSlots(productSlots, id, product)}
+            </div>
+          );
+
+        case 'product_name':
+          return (
+            <h3 key={id} className={className || "font-semibold text-lg truncate"} style={styles}>
+              {product.name}
+            </h3>
+          );
+
+        case 'product_price_container':
+          return (
+            <div key={id} className={className || "flex items-baseline gap-2"} style={styles}>
+              {renderProductSlots(productSlots, id, product)}
+            </div>
+          );
+
+        case 'product_price':
+          const displayPrice = product.compare_price && parseFloat(product.compare_price) > 0 &&
+                              parseFloat(product.compare_price) !== parseFloat(product.price)
+            ? Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0))
+            : parseFloat(product.price || 0);
+
+          return (
+            <span key={id} className={className || "text-lg font-bold text-green-600"} style={styles}>
+              {formatDisplayPrice(
+                displayPrice,
+                settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
+                store,
+                taxes,
+                selectedCountry
+              )}
+            </span>
+          );
+
+        case 'product_compare_price':
+          if (product.compare_price && parseFloat(product.compare_price) > 0 &&
+              parseFloat(product.compare_price) !== parseFloat(product.price)) {
+            const comparePrice = Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+            return (
+              <span key={id} className={className || "text-sm text-gray-500 line-through"} style={styles}>
+                {formatDisplayPrice(
+                  comparePrice,
+                  settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
+                  store,
+                  taxes,
+                  selectedCountry
+                )}
+              </span>
+            );
+          }
+          return null;
+
+        case 'product_add_to_cart':
+          return (
+            <Button
+              key={id}
+              onClick={async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                try {
+                  if (!product || !product.id || !store?.id) {
+                    console.error('Invalid product or store for add to cart');
+                    return;
+                  }
+
+                  const result = await cartService.addItem(
+                    product.id,
+                    1,
+                    product.price || 0,
+                    [],
+                    store.id
+                  );
+
+                  if (result.success !== false) {
+                    if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
+                      window.catalyst.trackAddToCart(product, 1);
+                    }
+
+                    window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                      detail: {
+                        type: 'success',
+                        message: `${product.name} added to cart successfully!`
+                      }
+                    }));
+                  }
+                } catch (error) {
+                  console.error("Failed to add to cart", error);
+                }
+              }}
+              className={className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
+              size="sm"
+              style={{
+                backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                color: 'white',
+                ...styles
+              }}
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              {content || 'Add to Cart'}
+            </Button>
+          );
+
+        default:
+          // For containers and other slot types
+          if (type === 'container') {
+            return (
+              <div key={id} className={className} style={styles}>
+                {renderProductSlots(productSlots, id, product)}
+              </div>
+            );
+          }
+          return null;
+      }
+    });
+  }
 
   // Helper function to render breadcrumbs
   function renderBreadcrumbs() {
