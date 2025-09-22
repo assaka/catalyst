@@ -284,6 +284,20 @@ export function CategorySlotRenderer({
                     }
                   }
 
+                  // Extract value from object if needed (same logic as in Category.jsx)
+                  let extractedValue = attributeValue;
+                  if (typeof attributeValue === 'object' && attributeValue !== null) {
+                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+                  } else if (Array.isArray(attributeValue)) {
+                    // For arrays, check if any value matches
+                    return attributeValue.some(val => {
+                      const valToCheck = typeof val === 'object' && val !== null
+                        ? (val.value || val.label || val.name)
+                        : val;
+                      return String(valToCheck) === String(option.value);
+                    });
+                  }
+
                   // Debug logging for color filter
                   if (filterKey === 'color' && option.value === 'Zwart') {
                     console.log(`Debug ${filterKey} - ${option.value}:`, {
@@ -292,12 +306,13 @@ export function CategorySlotRenderer({
                       productAttributes,
                       possibleKeys,
                       foundAttributeValue: attributeValue,
-                      match: String(attributeValue) === String(option.value)
+                      extractedValue,
+                      match: String(extractedValue) === String(option.value)
                     });
                   }
 
                   // Compare with the normalized option value
-                  return String(attributeValue) === String(option.value);
+                  return String(extractedValue) === String(option.value);
                 }).length;
 
                 return {
