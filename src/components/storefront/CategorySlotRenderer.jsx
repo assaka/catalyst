@@ -249,8 +249,10 @@ export function CategorySlotRenderer({
       // Build filter options exactly like LayeredNavigation
       const filterOptions = (() => {
         const options = {};
+        console.log('CategorySlotRenderer: Processing filters:', filters);
 
         Object.entries(filters).forEach(([filterKey, filterValues]) => {
+          console.log(`CategorySlotRenderer: Processing filter ${filterKey}:`, filterValues);
           // Include filters even if they have no values yet (empty array)
           // This ensures all 'use for filter' attributes are shown
           if (filterValues !== undefined) {
@@ -308,6 +310,7 @@ export function CategorySlotRenderer({
           }
         });
 
+        console.log('CategorySlotRenderer: Final filterOptions:', options);
         return options;
       })();
 
