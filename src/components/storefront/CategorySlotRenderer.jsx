@@ -14,12 +14,13 @@ import {
 import { Grid, List, Filter, Search, Tag, ChevronDown } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Note: Removed Breadcrumb import to avoid useStore() context issues in editor
 // We'll use a simple implementation instead
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
- * Extends the concept of HierarchicalSlotRenderer for category-specific needs
+ * Uses responsive grid layout with conditional filter sidebar
  */
 export function CategorySlotRenderer({
   slots,
@@ -30,7 +31,9 @@ export function CategorySlotRenderer({
   const {
     category,
     products = [],
+    allProducts = [],
     filters = {},
+    filterableAttributes = [],
     sortOption,
     searchQuery,
     currentPage,
@@ -40,7 +43,7 @@ export function CategorySlotRenderer({
     selectedFilters = {},
     priceRange = {},
     currencySymbol = '$',
-    settings,
+    settings = {},
     store,
     taxes,
     selectedCountry,
@@ -55,14 +58,23 @@ export function CategorySlotRenderer({
     onProductClick
   } = categoryContext;
 
-  // Get child slots for current parent
-  let childSlots = SlotManager.getChildSlots(slots, parentId);
+  // Check if filters should be enabled
+  const filtersEnabled = settings?.enable_product_filters !== false && filterableAttributes?.length > 0;
 
-  // Filter by viewMode
-  const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
+  // Get header slots (above the main grid)
+  const headerSlots = SlotManager.getChildSlots(slots, null).filter(slot =>
+    ['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container'].includes(slot.id)
+  );
 
-  // Sort slots using grid coordinates for precise positioning
-  const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
+  // Get main content slots
+  const mainSlots = SlotManager.getChildSlots(slots, null).filter(slot =>
+    !['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container'].includes(slot.id)
+  );
+
+  // Render header slots first
+  const renderHeaderSlots = () => {
+    return headerSlots.map(slot => renderSlotContent(slot));
+  };
 
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
@@ -655,51 +667,50 @@ export function CategorySlotRenderer({
     }
   };
 
+  // Helper function to render filters container
+  function renderFiltersContainer() {
+    const filtersSlot = mainSlots.find(slot => slot.id === 'filters_container');
+    if (filtersSlot) {
+      return renderSlotContent(filtersSlot);
+    }
+    return null;
+  }
+
+  // Helper function to render main content (products, sorting, etc.)
+  function renderMainContent() {
+    const contentSlots = mainSlots.filter(slot => slot.id !== 'filters_container');
+    return contentSlots.map(slot => (
+      <div key={slot.id} className="mb-6">
+        {renderSlotContent(slot)}
+      </div>
+    ));
+  }
+
   return (
-    <>
-      {sortedSlots.map((slot) => {
-        // Handle number, object with viewMode, and Tailwind responsive classes
-        let colSpanClass = 'col-span-12'; // default Tailwind class
-        let gridColumn = 'span 12 / span 12'; // default grid style
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header Section */}
+      <div className="mb-8 max-w-7xl mx-auto">
+        {renderHeaderSlots()}
+      </div>
 
-        if (typeof slot.colSpan === 'number') {
-          // Old format: direct number
-          colSpanClass = `col-span-${slot.colSpan}`;
-          gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
-        } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
-          // New format: object with viewMode keys
-          const viewModeValue = slot.colSpan[viewMode];
-
-          if (typeof viewModeValue === 'number') {
-            // Simple viewMode: number format
-            colSpanClass = `col-span-${viewModeValue}`;
-            gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
-          } else if (typeof viewModeValue === 'string') {
-            // Tailwind responsive class format: 'col-span-12 lg:col-span-8'
-            colSpanClass = viewModeValue;
-            // For Tailwind classes, we don't set gridColumn as it will be handled by CSS
-            gridColumn = null;
-          } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
-            // Legacy nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
-            const colSpanValue = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
-            colSpanClass = `col-span-${colSpanValue}`;
-            gridColumn = `span ${colSpanValue} / span ${colSpanValue}`;
-          }
-        }
-
-        return (
-          <div
-            key={slot.id}
-            className={colSpanClass}
-            style={{
-              ...(gridColumn ? { gridColumn } : {}),
-              ...slot.containerStyles
-            }}
-          >
-            {renderSlotContent(slot)}
+      {/* Main Grid Layout */}
+      <div className={`grid ${filtersEnabled ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
+        {/* Filter Sidebar */}
+        {filtersEnabled && (
+          <div className="lg:col-span-1 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <CmsBlockRenderer position="category_above_filters" />
+            {renderFiltersContainer()}
+            <CmsBlockRenderer position="category_below_filters" />
           </div>
-        );
-      })}
-    </>
+        )}
+
+        {/* Main Content Area */}
+        <div className={filtersEnabled ? "lg:col-span-3" : "lg:col-span-1"}>
+          <CmsBlockRenderer position="category_above_products" />
+          {renderMainContent()}
+          <CmsBlockRenderer position="category_below_products" />
+        </div>
+      </div>
+    </div>
   );
 }
