@@ -137,6 +137,7 @@ export default function Category() {
       setActiveFilters({});
 
       if (!store || !categorySlug) {
+        setLoading(false);
         return;
       }
 
@@ -148,6 +149,7 @@ export default function Category() {
       if (!category) {
         console.warn(`Category with slug '${categorySlug}' not found.`);
         showNotFound(`Category "${categorySlug}" not found`);
+        setLoading(false);
         return;
       }
       
