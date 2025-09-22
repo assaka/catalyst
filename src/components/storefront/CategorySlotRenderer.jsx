@@ -609,8 +609,56 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Products container - render product slots dynamically
+    // Products grid - render just the product items
+    if (id === 'products_grid') {
+      const gridClass = viewMode === 'grid'
+        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        : 'space-y-4';
+
+      // Find product template slot
+      const productTemplateSlot = Object.values(slots || {}).find(slot =>
+        slot.id === 'product_template' || slot.metadata?.isTemplate
+      );
+
+      // If we have a template, render products using the slot structure
+      if (productTemplateSlot) {
+        return (
+          <div className={`${className} ${gridClass} mb-8`} style={styles}>
+            {products.map((product, index) => (
+              <div key={product.id} className="product-slot-wrapper">
+                {renderProductFromSlots(product, index)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // Fallback to default product card rendering (shortened for products_grid)
+      return (
+        <div className={`${className} ${gridClass} mb-8`} style={styles}>
+          {products.map(product => (
+            <div key={product.id} className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow p-4">
+              <h3 className="font-semibold text-lg">{product.name}</h3>
+              <p className="text-xl font-bold text-green-600 mt-2">
+                {formatDisplayPrice(product.price, currencySymbol)}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Products container - render all child slots (sorting, products grid, pagination, etc.)
     if (id === 'products_container') {
+      return wrapWithParentClass(
+        <div className={className || "lg:col-span-3"} style={styles}>
+          {renderChildSlots(slots, id).map(childSlot => renderSlotContent(childSlot))}
+        </div>
+      );
+    }
+
+    // Legacy Products container handler (for backward compatibility)
+    if (id === 'products_container_old') {
       const gridClass = viewMode === 'grid'
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-4';
