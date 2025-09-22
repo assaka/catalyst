@@ -6,7 +6,7 @@ import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
-import { useSorting } from "@/hooks/useUrlUtils";
+import { usePagination, useSorting } from "@/hooks/useUrlUtils";
 import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -31,7 +31,7 @@ export default function Category() {
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
 
   const { storeCode, categorySlug } = useParams();
-  // Removed pagination hook - no pagination for now
+  const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();
 
   // Load category layout configuration directly
@@ -310,14 +310,22 @@ export default function Category() {
     }
   }, [filteredProducts, currentSort]);
 
-  // Use sortedProducts directly without pagination for now
-  const paginatedProducts = sortedProducts;
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedProducts.slice(startIndex, endIndex);
+  }, [sortedProducts, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
 
   const handleSortChange = (newSort) => {
     setSort(newSort);
   };
 
-  // Removed handlePageChange - no pagination for now
+  const handlePageChange = (page) => {
+    setPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Build breadcrumb items for category pages
   const getBreadcrumbItems = () => {
@@ -457,6 +465,8 @@ export default function Category() {
     filters: buildFilters(),
     filterableAttributes, // Pass filterable attributes for reference
     sortOption: currentSort,
+    currentPage,
+    totalPages,
     subcategories: [],
     breadcrumbs: getBreadcrumbItems(),
     selectedFilters: activeFilters,
@@ -468,7 +478,7 @@ export default function Category() {
     selectedCountry: null,
     handleFilterChange: setActiveFilters,
     handleSortChange: handleSortChange,
-    // handlePageChange removed - no pagination for now
+    handlePageChange: handlePageChange,
     clearFilters: () => setActiveFilters({}),
     formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',

@@ -501,6 +501,68 @@ export function CategorySlotRenderer({
       );
     }
 
+    // Pagination controls
+    if (id === 'pagination_container' || id === 'pagination_controls') {
+      if (!totalPages || totalPages <= 1) return null;
+
+      const pages = [];
+      const maxPagesToShow = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+      let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+      if (endPage - startPage + 1 < maxPagesToShow) {
+        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+      }
+
+      // Previous button
+      if (currentPage > 1) {
+        pages.push(
+          <Button
+            key="prev"
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange && handlePageChange(currentPage - 1)}
+          >
+            Previous
+          </Button>
+        );
+      }
+
+      // Page numbers
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(
+          <Button
+            key={i}
+            variant={currentPage === i ? "default" : "outline"}
+            size="sm"
+            onClick={() => handlePageChange && handlePageChange(i)}
+          >
+            {i}
+          </Button>
+        );
+      }
+
+      // Next button
+      if (currentPage < totalPages) {
+        pages.push(
+          <Button
+            key="next"
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange && handlePageChange(currentPage + 1)}
+          >
+            Next
+          </Button>
+        );
+      }
+
+      return wrapWithParentClass(
+        <div className={className || "flex justify-center items-center gap-2 mt-8"} style={styles}>
+          {pages}
+        </div>
+      );
+    }
+
     // Products container - render product slots dynamically
     if (id === 'products_container') {
       const gridClass = viewMode === 'grid'
