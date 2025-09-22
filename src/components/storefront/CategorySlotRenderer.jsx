@@ -14,7 +14,8 @@ import {
 import { Grid, List, Filter, Search, Tag, ChevronDown } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
-import Breadcrumb from '@/components/storefront/Breadcrumb';
+// Note: Removed Breadcrumb import to avoid useStore() context issues in editor
+// We'll use a simple implementation instead
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
@@ -120,35 +121,22 @@ export function CategorySlotRenderer({
         });
       }
 
-      // For editor mode, render a simple breadcrumb without StoreProvider dependency
-      const isEditorMode = !store || typeof window === 'undefined' || !window.location;
-
-      if (isEditorMode) {
-        return wrapWithParentClass(
-          <nav
-            className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
-            style={styles}
-            aria-label="Breadcrumb"
-          >
-            {breadcrumbItems.map((item, index) => (
-              <Fragment key={index}>
-                {index > 0 && <span className="text-gray-400">/</span>}
-                <span className={index === breadcrumbItems.length - 1 ? "text-gray-900 font-medium" : "text-gray-500 hover:text-gray-700"}>
-                  {item.name}
-                </span>
-              </Fragment>
-            ))}
-          </nav>
-        );
-      }
-
-      // Use the actual Breadcrumb component with dynamic styling for storefront
+      // Always use simple breadcrumb implementation to avoid context issues
       return wrapWithParentClass(
-        <Breadcrumb
-          items={breadcrumbItems}
+        <nav
           className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
           style={styles}
-        />
+          aria-label="Breadcrumb"
+        >
+          {breadcrumbItems.map((item, index) => (
+            <Fragment key={index}>
+              {index > 0 && <span className="text-gray-400 mx-1">/</span>}
+              <span className={index === breadcrumbItems.length - 1 ? "text-gray-900 font-medium" : "text-gray-500 hover:text-gray-700"}>
+                {item.name}
+              </span>
+            </Fragment>
+          ))}
+        </nav>
       );
     }
 
