@@ -279,7 +279,7 @@ export function CategorySlotRenderer({
                   ...option,
                   count: productCount
                 };
-              }); // Don't filter out options with 0 count - show all options
+              }).filter(option => option.count > 0); // Filter out options with 0 count
 
               options[filterKey] = {
                 name: filterKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -564,14 +564,15 @@ export function CategorySlotRenderer({
 
       return wrapWithParentClass(
         <div className={className || "mb-6"} style={styles}>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Active filters:</span>
+          <h3 className="text-sm font-medium text-gray-900 mb-3">Active Filters</h3>
+          <div className="space-y-2">
+            {/* Individual filter chips in vertical layout for sidebar */}
 
             {filterEntries.map(([filterKey, filterValue]) => {
               // Handle different filter types
               if (filterKey === 'priceRange' && Array.isArray(filterValue)) {
                 return (
-                  <div key={filterKey} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <div key={filterKey} className="flex items-center justify-between bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm">
                     <span>Price: {currencySymbol}{filterValue[0]} - {currencySymbol}{filterValue[1]}</span>
                     <button
                       onClick={() => {
@@ -579,7 +580,7 @@ export function CategorySlotRenderer({
                         delete newFilters.priceRange;
                         handleFilterChange && handleFilterChange(newFilters);
                       }}
-                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      className="ml-2 text-blue-600 hover:text-blue-800 text-lg leading-none"
                     >
                       ×
                     </button>
@@ -590,7 +591,7 @@ export function CategorySlotRenderer({
               // Handle array filters (multi-select)
               if (Array.isArray(filterValue)) {
                 return filterValue.map(value => (
-                  <div key={`${filterKey}-${value}`} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <div key={`${filterKey}-${value}`} className="flex items-center justify-between bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm">
                     <span>{filterKey}: {value}</span>
                     <button
                       onClick={() => {
@@ -603,7 +604,7 @@ export function CategorySlotRenderer({
                         }
                         handleFilterChange && handleFilterChange(newFilters);
                       }}
-                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      className="ml-2 text-blue-600 hover:text-blue-800 text-lg leading-none"
                     >
                       ×
                     </button>
@@ -613,7 +614,7 @@ export function CategorySlotRenderer({
 
               // Handle single value filters
               return (
-                <div key={filterKey} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                <div key={filterKey} className="flex items-center justify-between bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm">
                   <span>{filterKey}: {filterValue}</span>
                   <button
                     onClick={() => {
@@ -621,7 +622,7 @@ export function CategorySlotRenderer({
                       delete newFilters[filterKey];
                       handleFilterChange && handleFilterChange(newFilters);
                     }}
-                    className="ml-2 text-blue-600 hover:text-blue-800"
+                    className="ml-2 text-blue-600 hover:text-blue-800 text-lg leading-none"
                   >
                     ×
                   </button>
@@ -632,9 +633,9 @@ export function CategorySlotRenderer({
             {/* Clear All button */}
             <button
               onClick={() => clearFilters && clearFilters()}
-              className="text-sm text-red-600 hover:text-red-800 px-3 py-1 border border-red-300 rounded-full hover:bg-red-50"
+              className="w-full text-sm text-red-600 hover:text-red-800 px-3 py-2 border border-red-300 rounded hover:bg-red-50 text-center mt-2"
             >
-              Clear all
+              Clear all filters
             </button>
           </div>
         </div>
