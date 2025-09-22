@@ -545,7 +545,7 @@ export default function Category() {
   const pageTitle = currentCategory?.name || (categorySlug ? "Category Not Found" : "All Products");
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
       <SeoHeadManager
         pageType="category"
         pageData={currentCategory ? {
@@ -575,12 +575,14 @@ export default function Category() {
         ) : (
           <>
             {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? (
-              <CategorySlotRenderer
-                slots={categorySlots}
-                parentId={null}
-                viewMode="grid"
-                categoryContext={categoryContext}
-              />
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                <CategorySlotRenderer
+                  slots={categorySlots}
+                  parentId={null}
+                  viewMode="grid"
+                  categoryContext={categoryContext}
+                />
+              </div>
             ) : (
               <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
                 <Package className="w-16 h-16 text-gray-400 mb-4" />

@@ -126,71 +126,78 @@ const CategorySlotsEditor = ({
         </div>
       )}
 
-      {/* Main Content - Exact mirror of Category.jsx structure */}
-      <div className={`px-4 sm:px-6 lg:px-8 ${editor.isSidebarVisible && !editor.showPreview ? 'lg:pr-80' : ''} transition-all duration-300`}>
-        <div className="max-w-7xl mx-auto">
-          {editor.showPreview ? (
-            // Pure preview mode - exactly like Category.jsx
-            <CategorySlotRenderer
-              slots={editor.categoryLayoutConfig?.slots}
-              parentId={null}
-              viewMode={editor.viewMode}
-              categoryContext={editor.mockCategoryContext}
-            />
-          ) : (
-            // Edit mode with overlay
-            <div className="relative">
-              {/* Background content - CategorySlotRenderer */}
-              <div className="pointer-events-none">
+      {/* Main Content - Scrollable container with fixed header */}
+      <div
+        className={`overflow-y-auto ${editor.isSidebarVisible && !editor.showPreview ? 'lg:pr-80' : ''} transition-all duration-300`}
+        style={{
+          height: mode === 'edit' && !editor.showPreview ? 'calc(100vh - 180px)' : '100vh'
+        }}
+      >
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto">
+              {editor.showPreview ? (
+                // Pure preview mode - exactly like Category.jsx
                 <CategorySlotRenderer
                   slots={editor.categoryLayoutConfig?.slots}
                   parentId={null}
                   viewMode={editor.viewMode}
                   categoryContext={editor.mockCategoryContext}
                 />
-              </div>
+              ) : (
+                // Edit mode with overlay
+                <div className="relative min-h-[800px]">
+                  {/* Background content - CategorySlotRenderer */}
+                  <div className="pointer-events-none">
+                    <CategorySlotRenderer
+                      slots={editor.categoryLayoutConfig?.slots}
+                      parentId={null}
+                      viewMode={editor.viewMode}
+                      categoryContext={editor.mockCategoryContext}
+                    />
+                  </div>
 
-              {/* Overlay - HierarchicalSlotRenderer for editing */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="grid grid-cols-12 gap-2 auto-rows-min h-full">
-                  <HierarchicalSlotRenderer
-                    slots={editor.categoryLayoutConfig?.slots || {}}
-                    parentId={null}
-                    mode={mode}
-                    viewMode={editor.viewMode}
-                    showBorders={editor.showSlotBorders}
-                    currentDragInfo={editor.currentDragInfo}
-                    setCurrentDragInfo={editor.setCurrentDragInfo}
-                    onElementClick={editor.handleElementClick}
-                    onGridResize={editor.handleGridResize}
-                    onSlotHeightResize={editor.handleSlotHeightResize}
-                    onSlotDrop={editor.handleSlotDrop}
-                    onSlotDelete={editor.handleSlotDelete}
-                    onResizeStart={() => editor.setIsResizing(true)}
-                    onResizeEnd={() => {
-                      editor.lastResizeEndTime.current = Date.now();
-                      setTimeout(() => editor.setIsResizing(false), 100);
-                    }}
-                    selectedElementId={editor.selectedElement?.getAttribute?.('data-slot-id')}
-                    setPageConfig={editor.setCategoryLayoutConfig}
-                    saveConfiguration={editor.saveConfiguration}
-                    saveTimeoutRef={editor.saveTimeoutRef}
-                    customSlotRenderer={() => (
-                      <div
-                        className="w-full h-full bg-transparent pointer-events-auto"
-                        style={{
-                          minHeight: '20px',
-                          border: editor.showSlotBorders ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'
-                        }}
-                      />
-                    )}
-                  />
-                </div>
+                  {/* Overlay - HierarchicalSlotRenderer for editing */}
+                  <div className="absolute inset-0 pointer-events-none">
+                      <div className="grid grid-cols-12 gap-2 auto-rows-min h-full">
+                        <HierarchicalSlotRenderer
+                          slots={editor.categoryLayoutConfig?.slots || {}}
+                          parentId={null}
+                          mode={mode}
+                          viewMode={editor.viewMode}
+                          showBorders={editor.showSlotBorders}
+                          currentDragInfo={editor.currentDragInfo}
+                          setCurrentDragInfo={editor.setCurrentDragInfo}
+                          onElementClick={editor.handleElementClick}
+                          onGridResize={editor.handleGridResize}
+                          onSlotHeightResize={editor.handleSlotHeightResize}
+                          onSlotDrop={editor.handleSlotDrop}
+                          onSlotDelete={editor.handleSlotDelete}
+                          onResizeStart={() => editor.setIsResizing(true)}
+                          onResizeEnd={() => {
+                            editor.lastResizeEndTime.current = Date.now();
+                            setTimeout(() => editor.setIsResizing(false), 100);
+                          }}
+                          selectedElementId={editor.selectedElement?.getAttribute?.('data-slot-id')}
+                          setPageConfig={editor.setCategoryLayoutConfig}
+                          saveConfiguration={editor.saveConfiguration}
+                          saveTimeoutRef={editor.saveTimeoutRef}
+                          customSlotRenderer={() => (
+                            <div
+                              className="w-full h-full bg-transparent pointer-events-auto"
+                              style={{
+                                minHeight: '20px',
+                                border: editor.showSlotBorders ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'
+                              }}
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
       {/* Editor Sidebar - Mobile overlay, desktop fixed */}
       {mode === 'edit' && !editor.showPreview && editor.isSidebarVisible && editor.selectedElement && (
@@ -201,8 +208,14 @@ const CategorySlotsEditor = ({
             editor.setIsSidebarVisible(false);
           }} />
 
-          {/* Sidebar */}
-          <div className="fixed top-0 right-0 h-full w-80 z-50 lg:z-40">
+          {/* Sidebar - Independent scrolling */}
+          <div
+            className="fixed right-0 w-80 z-50 lg:z-40 overflow-y-auto bg-white shadow-lg"
+            style={{
+              top: mode === 'edit' && !editor.showPreview ? '180px' : '0px',
+              height: mode === 'edit' && !editor.showPreview ? 'calc(100vh - 180px)' : '100vh'
+            }}
+          >
             <EditorSidebar
               selectedElement={editor.selectedElement}
               slotId={editor.selectedElement?.getAttribute?.('data-slot-id')}
