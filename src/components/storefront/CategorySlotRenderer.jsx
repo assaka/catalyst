@@ -79,6 +79,26 @@ export function CategorySlotRenderer({
     return headerSlots.map(slot => renderSlotContent(slot));
   };
 
+  // Helper function to get child slots of a parent
+  const renderChildSlots = (allSlots, parentId) => {
+    if (!allSlots) return [];
+
+    const childSlots = Object.values(allSlots).filter(slot =>
+      slot.parentId === parentId
+    );
+
+    // Sort by position for proper rendering order
+    return childSlots.sort((a, b) => {
+      const posA = a.position || { col: 1, row: 1 };
+      const posB = b.position || { col: 1, row: 1 };
+
+      if (posA.row !== posB.row) {
+        return posA.row - posB.row;
+      }
+      return posA.col - posB.col;
+    });
+  };
+
   const renderSlotContent = (slot) => {
     const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
 
@@ -467,6 +487,32 @@ export function CategorySlotRenderer({
           >
             <List className="w-4 h-4" />
           </Button>
+        </div>
+      );
+    }
+
+    // Sorting controls container
+    if (id === 'sorting_controls') {
+      return wrapWithParentClass(
+        <div className={className || "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"} style={styles}>
+          {renderChildSlots(slots, id).map(childSlot => renderSlotContent(childSlot))}
+        </div>
+      );
+    }
+
+    // Product count info
+    if (id === 'product_count_info') {
+      const totalProducts = allProducts?.length || 0;
+      const startIndex = ((currentPage || 1) - 1) * 12 + 1;
+      const endIndex = Math.min(startIndex + (products?.length || 0) - 1, totalProducts);
+
+      return wrapWithParentClass(
+        <div className={className || "text-sm text-gray-600"} style={styles}>
+          {totalProducts > 0 ? (
+            `Showing ${startIndex}-${endIndex} of ${totalProducts} products`
+          ) : (
+            'No products found'
+          )}
         </div>
       );
     }
