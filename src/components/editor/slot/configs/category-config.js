@@ -202,16 +202,16 @@ export const categoryConfig = {
       }
     },
 
-    // Active filters display (moved to sidebar below filters)
+    // Active filters display (at top of sidebar below Filter By)
     active_filters: {
       id: 'active_filters',
       type: 'active_filters',
       content: '',
-      className: 'mb-6',
+      className: 'mb-4',
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {

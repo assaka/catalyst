@@ -253,7 +253,11 @@ export function CategorySlotRenderer({
           if (filterValues !== undefined) {
             if (filterValues.length > 0) {
               // Count products for each filter value using all products
-              const optionsWithCount = filterValues.map(option => {
+              const optionsWithCount = filterValues.map(optionRaw => {
+                // Normalize the option to ensure we have a consistent structure
+                const option = typeof optionRaw === 'object' && optionRaw.value
+                  ? optionRaw
+                  : { value: optionRaw, label: optionRaw };
                 const productCount = allProducts.filter(p => {
                   const productAttributes = p.attributes || p.attribute_values || {};
 
@@ -272,9 +276,8 @@ export function CategorySlotRenderer({
                     }
                   }
 
-                  // Handle object values properly
-                  const optionVal = typeof option.value === 'object' ? (option.value.value || option.value.name || option.value.label) : option.value;
-                  return String(attributeValue) === String(optionVal);
+                  // Compare with the normalized option value
+                  return String(attributeValue) === String(option.value);
                 }).length;
 
                 return {
@@ -337,6 +340,13 @@ export function CategorySlotRenderer({
             </div>
           </CardHeader>
           <CardContent>
+            {/* Render child slots at the top (e.g., active_filters) */}
+            {renderChildSlots(slots, id).map(childSlot => (
+              <div key={childSlot.id} className="mb-4">
+                {renderSlotContent(childSlot)}
+              </div>
+            ))}
+
             <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
               {/* Price Slider */}
               <AccordionItem value="price">
@@ -381,17 +391,16 @@ export function CategorySlotRenderer({
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {options.length > 0 ? (
                         options.map(option => (
-                          <div key={option.value} className="flex items-center justify-between">
+                          <div key={`${code}-${option.value}`} className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <Checkbox
-                                id={`attr-${code}-${typeof option.value === 'object' ? JSON.stringify(option.value) : option.value}`}
-                                checked={selectedFilters[code]?.includes(typeof option.value === 'object' ? (option.value.value || option.value.name || option.value.label) : option.value) || false}
+                                id={`attr-${code}-${option.value}`}
+                                checked={selectedFilters[code]?.includes(option.value) || false}
                                 onCheckedChange={(checked) => {
                                   const currentValues = selectedFilters[code] || [];
-                                  const optionVal = typeof option.value === 'object' ? (option.value.value || option.value.name || option.value.label) : option.value;
                                   const newValues = checked
-                                    ? [...currentValues, optionVal]
-                                    : currentValues.filter(v => v !== optionVal);
+                                    ? [...currentValues, option.value]
+                                    : currentValues.filter(v => v !== option.value);
 
                                   const newFilters = { ...selectedFilters };
                                   if (newValues.length > 0) {
@@ -402,8 +411,8 @@ export function CategorySlotRenderer({
                                   handleFilterChange(newFilters);
                                 }}
                               />
-                              <Label htmlFor={`attr-${code}-${typeof option.value === 'object' ? JSON.stringify(option.value) : option.value}`} className="text-sm">
-                                {typeof option.value === 'object' ? (option.value.name || option.value.label || JSON.stringify(option.value)) : option.value}
+                              <Label htmlFor={`attr-${code}-${option.value}`} className="text-sm">
+                                {option.label || option.value}
                               </Label>
                             </div>
                             <span className="text-xs text-gray-400">({option.count})</span>
@@ -417,13 +426,6 @@ export function CategorySlotRenderer({
                 </AccordionItem>
               ))}
             </Accordion>
-
-            {/* Render child slots (e.g., active_filters) */}
-            {renderChildSlots(slots, id).map(childSlot => (
-              <div key={childSlot.id} className="mt-4">
-                {renderSlotContent(childSlot)}
-              </div>
-            ))}
           </CardContent>
         </Card>
       );

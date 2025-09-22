@@ -497,8 +497,8 @@ export default function Category() {
   const pageTitle = currentCategory?.name || (categorySlug ? "Category Not Found" : "All Products");
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
-      <SeoHeadManager 
+    <div className="px-4 sm:px-6 lg:px-8">
+      <SeoHeadManager
         pageType="category"
         pageData={currentCategory ? {
           ...currentCategory,
