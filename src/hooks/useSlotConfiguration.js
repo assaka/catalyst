@@ -19,6 +19,16 @@ import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlot
  * @param {string} configModulePath - Path to the fallback config module (e.g., '@/components/editor/slot/configs/cart-config')
  * @returns {Object} - { layoutConfig, configLoaded, reloadConfig }
  */
+// Convert alias path to relative path for dynamic imports
+const resolveImportPath = (path) => {
+    // If path starts with @/, replace with relative path from hooks folder
+    if (path.startsWith('@/')) {
+        // From hooks folder, we need to go up one level to src, then to the rest of the path
+        return path.replace('@/', '../');
+    }
+    return path;
+};
+
 export function useLayoutConfig(store, pageType, configModulePath) {
     const [layoutConfig, setLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -55,9 +65,10 @@ export function useLayoutConfig(store, pageType, configModulePath) {
                 if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
 
                 // Fallback to config module
-                console.log(`Loading fallback config for ${pageType} from: ${configModulePath}`);
+                const resolvedPath = resolveImportPath(configModulePath);
+                console.log(`Loading fallback config for ${pageType} from: ${resolvedPath}`);
                 // Try to import with .js extension if path doesn't have it
-                const importPath = configModulePath.endsWith('.js') ? configModulePath : `${configModulePath}.js`;
+                const importPath = resolvedPath.endsWith('.js') ? resolvedPath : `${resolvedPath}.js`;
                 const configModule = await import(importPath);
                 const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
 
@@ -93,9 +104,10 @@ export function useLayoutConfig(store, pageType, configModulePath) {
 
             // Fallback to config module
             try {
-                console.log(`Loading error fallback config for ${pageType} from: ${configModulePath}`);
+                const resolvedPath = resolveImportPath(configModulePath);
+                console.log(`Loading error fallback config for ${pageType} from: ${resolvedPath}`);
                 // Try to import with .js extension if path doesn't have it
-                const importPath = configModulePath.endsWith('.js') ? configModulePath : `${configModulePath}.js`;
+                const importPath = resolvedPath.endsWith('.js') ? resolvedPath : `${resolvedPath}.js`;
                 const configModule = await import(importPath);
                 const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
 
