@@ -494,7 +494,7 @@ export default function Category() {
     formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
     navigate: (url) => window.location.href = url,
-    onProductClick: (product) => window.location.href = createProductUrl(store?.code, product.slug)
+    onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug)
   };
 
   if (storeLoading) {
