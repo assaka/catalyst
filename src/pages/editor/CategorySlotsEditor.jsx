@@ -95,18 +95,20 @@ const CategorySlotsEditor = ({
 
   // Validation function now provided by useSlotConfiguration hook
 
-  // State management - Initialize with empty config to avoid React error #130
+  // State management - Initialize with config from category-config.js
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState({
-    page_name: 'Category',
-    slot_type: 'category_layout',
-    slots: {},
+    page_name: categoryConfig.page_name,
+    slot_type: categoryConfig.slot_type,
+    slots: categoryConfig.slots,
     metadata: {
       created: new Date().toISOString(),
       lastModified: new Date().toISOString(),
       version: '1.0',
       pageType: 'category'
     },
-    cmsBlocks: []
+    cmsBlocks: categoryConfig.cmsBlocks || [],
+    views: categoryConfig.views,
+    microslots: categoryConfig.microslots
   });
 
   // Basic editor state
@@ -167,9 +169,9 @@ const CategorySlotsEditor = ({
     onSave
   });
 
-  // Configuration initialization hook
+  // Configuration initialization hook with base config
   const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
-    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
+    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus, categoryConfig
   );
 
   // Use generic editor initialization
@@ -218,124 +220,49 @@ const CategorySlotsEditor = ({
   // Create handler factory with page-specific dependencies
   const handlerFactory = createHandlerFactory(setCategoryLayoutConfig, saveConfiguration);
 
-  // Mock categoryContext for editor preview - matches what Category.jsx provides
-  const mockCategoryContext = {
-    category: {
-      id: 1,
-      name: 'Electronics',
-      description: 'Browse our latest electronics and gadgets',
-      slug: 'electronics',
-      image: 'https://images.unsplash.com/photo-1588508065123-287b28e013da?w=1200&h=400&fit=crop',
-      image_url: 'https://images.unsplash.com/photo-1588508065123-287b28e013da?w=1200&h=400&fit=crop'
-    },
-    products: [
-      {
-        id: 1,
-        name: 'Wireless Headphones',
-        description: 'High-quality wireless headphones with noise cancellation',
-        price: 199.99,
-        compare_price: 249.99,
-        images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'],
-        stock_status: 'in_stock',
-        rating: 4.5,
-        attributes: { color: 'Black', brand: 'TechCorp' }
-      },
-      {
-        id: 2,
-        name: 'Smartphone',
-        description: 'Latest model smartphone with advanced camera',
-        price: 799.99,
-        images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop'],
-        stock_status: 'in_stock',
-        rating: 4.8,
-        attributes: { color: 'Blue', brand: 'PhoneTech' }
-      },
-      {
-        id: 3,
-        name: 'Tablet',
-        description: 'Portable tablet perfect for work and entertainment',
-        price: 299.99,
-        images: ['https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop'],
-        stock_status: 'in_stock',
-        rating: 4.3,
-        attributes: { color: 'Silver', brand: 'TabletPro' }
-      },
-      {
-        id: 4,
-        name: 'Smart Watch',
-        description: 'Fitness tracking and notifications on your wrist',
-        price: 349.99,
-        compare_price: 399.99,
-        images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop'],
-        stock_status: 'in_stock',
-        rating: 4.6,
-        attributes: { color: 'Black', brand: 'WatchCo' }
-      },
-      {
-        id: 5,
-        name: 'Laptop',
-        description: 'Powerful laptop for professional work and gaming',
-        price: 1299.99,
-        images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop'],
-        stock_status: 'in_stock',
-        rating: 4.7,
-        attributes: { color: 'Gray', brand: 'CompTech' }
-      },
-      {
-        id: 6,
-        name: 'Wireless Earbuds',
-        description: 'Compact and comfortable true wireless earbuds',
-        price: 149.99,
-        images: ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop'],
-        stock_status: 'in_stock',
-        rating: 4.4,
-        attributes: { color: 'White', brand: 'AudioPro' }
-      }
-    ],
-    allProducts: [], // Will be set same as products
-    filters: {
-      color: [
-        { value: 'Black', label: 'Black', count: 1 },
-        { value: 'Blue', label: 'Blue', count: 1 },
-        { value: 'Silver', label: 'Silver', count: 1 }
-      ],
-      brand: [
-        { value: 'TechCorp', label: 'TechCorp', count: 1 },
-        { value: 'PhoneTech', label: 'PhoneTech', count: 1 },
-        { value: 'TabletPro', label: 'TabletPro', count: 1 }
-      ]
-    },
-    filterableAttributes: [
-      { code: 'color', name: 'Color', is_filterable: true },
-      { code: 'brand', name: 'Brand', is_filterable: true }
-    ],
-    sortOption: 'default',
-    currentPage: 1,
-    totalPages: 1,
-    subcategories: [],
-    breadcrumbs: [
-      { name: 'Home', url: '/' },
-      { name: 'Electronics', url: '/electronics' }
-    ],
-    selectedFilters: {},
-    priceRange: {},
-    currencySymbol: '$',
-    settings: { currency_symbol: '$', enable_inventory: true },
-    store: { id: 1, name: 'Demo Store', code: 'demo' },
-    taxes: [],
-    selectedCountry: null,
-    handleFilterChange: (filters) => console.log('Filter change:', filters),
-    handleSortChange: (sort) => console.log('Sort change:', sort),
-    handlePageChange: (page) => console.log('Page change:', page),
-    clearFilters: () => console.log('Clear filters'),
-    formatDisplayPrice: (price) => `$${price}`,
-    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
-    navigate: (url) => console.log('Navigate to:', url),
-    onProductClick: (product) => console.log('Product click:', product.name)
-  };
+  // Generate mock category context for editor preview
+  const mockCategoryContext = React.useMemo(() => {
+    const sampleProducts = Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1,
+      name: `Sample Product ${i + 1}`,
+      description: `Description for sample product ${i + 1}`,
+      price: 99.99 + (i * 50),
+      compare_price: i % 2 ? 99.99 + (i * 50) + 20 : null,
+      images: [`https://images.unsplash.com/photo-150574042${i}928-5e560c06d30e?w=400&h=400&fit=crop`],
+      stock_status: 'in_stock',
+      rating: 4.0 + (i % 10) * 0.1,
+      attributes: { color: ['Black', 'Blue', 'White'][i % 3], brand: `Brand${i + 1}` }
+    }));
 
-  // Set allProducts same as products for filter counting
-  mockCategoryContext.allProducts = mockCategoryContext.products;
+    return {
+      category: {
+        id: 1,
+        name: 'Sample Category',
+        description: 'This is a sample category for the editor preview',
+        slug: 'sample-category'
+      },
+      products: sampleProducts,
+      allProducts: sampleProducts,
+      filters: {},
+      filterableAttributes: [],
+      sortOption: 'default',
+      currentPage: 1,
+      totalPages: 1,
+      subcategories: [],
+      breadcrumbs: [{ name: 'Home', url: '/' }, { name: 'Sample Category', url: '/sample' }],
+      selectedFilters: {},
+      settings: { currency_symbol: '$' },
+      store: { id: 1, name: 'Demo Store', code: 'demo' },
+      handleFilterChange: () => {},
+      handleSortChange: () => {},
+      handlePageChange: () => {},
+      clearFilters: () => {},
+      formatDisplayPrice: (price) => `$${price}`,
+      getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
+      navigate: () => {},
+      onProductClick: () => {}
+    };
+  }, []);
 
   // Create all handlers using the factory
   const handleTextChange = handlerFactory.createTextChangeHandler(textChangeHandler);
@@ -404,7 +331,7 @@ const CategorySlotsEditor = ({
   const handleSlotDelete = handlerFactory.createSlotDeleteHandler(slotDeleteHandler);
   const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
 
-  // Use generic reset layout handler
+  // Use generic reset layout handler with base config
   const { handleResetLayout } = useResetLayoutHandler(
     'category',
     baseHandleResetLayout,
@@ -413,7 +340,8 @@ const CategorySlotsEditor = ({
       setHasUnsavedChanges,
       setConfigurationStatus,
       updateLastSavedConfig
-    }
+    },
+    categoryConfig
   );
   const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
 
@@ -456,33 +384,23 @@ const CategorySlotsEditor = ({
     }
   );
 
-  // Category-specific view mode adjustments
-  const categoryAdjustmentRules = {
-    filters: {
-      colSpan: {
-        shouldAdjust: (currentValue) => {
-          // Check if colSpan needs to be converted from number to object format
-          return typeof currentValue === 'number';
-        },
-        newValue: {
-          grid: 3,
-          list: 12
+  // Generate view mode adjustment rules from category config
+  const categoryAdjustmentRules = Object.keys(categoryConfig.slots).reduce((rules, slotId) => {
+    const slot = categoryConfig.slots[slotId];
+    const slotName = slotId.replace(/_container$/, '').replace(/_/g, '');
+
+    // Generate rules for slots that have responsive colSpan
+    if (slot.colSpan && typeof slot.colSpan === 'object') {
+      rules[slotName] = {
+        colSpan: {
+          shouldAdjust: (currentValue) => typeof currentValue === 'number',
+          newValue: slot.colSpan
         }
-      }
-    },
-    products: {
-      colSpan: {
-        shouldAdjust: (currentValue) => {
-          // Check if colSpan needs to be converted from number to object format
-          return typeof currentValue === 'number';
-        },
-        newValue: {
-          grid: 9,
-          list: 12
-        }
-      }
+      };
     }
-  };
+
+    return rules;
+  }, {});
 
   // Use generic view mode adjustments
   useViewModeAdjustments(categoryLayoutConfig, setCategoryLayoutConfig, viewMode, categoryAdjustmentRules);
@@ -500,28 +418,23 @@ const CategorySlotsEditor = ({
             <div className="flex items-center justify-between gap-4">
               {/* View Mode Tabs */}
               <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'grid'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  <Grid className="w-4 h-4 inline mr-1.5" />
-                  Grid View
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'list'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  <List className="w-4 h-4 inline mr-1.5" />
-                  List View
-                </button>
+                {categoryConfig.views.map((view) => {
+                  const IconComponent = view.icon;
+                  return (
+                    <button
+                      key={view.id}
+                      onClick={() => setViewMode(view.id)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        viewMode === view.id
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                      }`}
+                    >
+                      <IconComponent className="w-4 h-4 inline mr-1.5" />
+                      {view.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Edit mode controls */}
@@ -663,9 +576,10 @@ const CategorySlotsEditor = ({
               </div>
             )}
 
-            <CmsBlockRenderer position="category_above_products" />
-
-            <CmsBlockRenderer position="category_below_products" />
+            {/* Render CMS blocks from configuration */}
+            {categoryConfig.cmsBlocks.map((position) => (
+              <CmsBlockRenderer key={position} position={position} />
+            ))}
             </div>
           </ResponsiveContainer>
         </div>
