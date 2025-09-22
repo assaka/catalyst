@@ -23,13 +23,13 @@ export function useLayoutConfig(store, pageType, configModulePath) {
     const [layoutConfig, setLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 
-    const loadLayoutConfig = async () => {
+    const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
+            console.log(`Store not available for ${pageType} configuration`);
             return;
         }
-        if (configLoaded && layoutConfig) {
-            return;
-        }
+        // Remove the early return based on configLoaded to ensure config loads
+        console.log(`Starting to load ${pageType} configuration for store ${store.id}`);
 
         try {
             // Load published configuration using the new versioning API
@@ -120,7 +120,7 @@ export function useLayoutConfig(store, pageType, configModulePath) {
                 setConfigLoaded(true);
             }
         }
-    };
+    }, [store?.id, pageType, configModulePath]);
 
     useEffect(() => {
         loadLayoutConfig();
@@ -142,7 +142,7 @@ export function useLayoutConfig(store, pageType, configModulePath) {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, [store?.id]);
+    }, [store?.id, pageType, loadLayoutConfig]);
 
     return {
         layoutConfig,
