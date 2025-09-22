@@ -1312,8 +1312,9 @@ export function CategorySlotRenderer({
               key={id}
               src={imageUrl}
               alt={product.name}
-              className={className || "w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"}
+              className={`cursor-pointer ${className || "w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"}`}
               style={styles}
+              onClick={() => onProductClick && onProductClick(product)}
             />
           );
 
@@ -1326,7 +1327,12 @@ export function CategorySlotRenderer({
 
         case 'product_name':
           return (
-            <h3 key={id} className={className || "font-semibold text-lg truncate"} style={styles}>
+            <h3
+              key={id}
+              className={`cursor-pointer hover:underline ${className || "font-semibold text-lg truncate"}`}
+              style={styles}
+              onClick={() => onProductClick && onProductClick(product)}
+            >
               {product.name}
             </h3>
           );
