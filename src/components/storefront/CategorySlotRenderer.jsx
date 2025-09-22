@@ -486,7 +486,38 @@ export function CategorySlotRenderer({
             >
               <div className={viewMode === 'list' ? 'w-40 flex-shrink-0' : ''}>
                 <img
-                  src={getProductImageUrl(product)}
+                  src={(() => {
+                    // Handle different image formats
+                    const imageUrl = getProductImageUrl ? getProductImageUrl(product) : null;
+
+                    // If getProductImageUrl returns an object, extract the URL
+                    if (imageUrl && typeof imageUrl === 'object') {
+                      return imageUrl.url || imageUrl.src || imageUrl.image || '/placeholder-product.jpg';
+                    }
+
+                    // If it's already a string, use it
+                    if (typeof imageUrl === 'string') {
+                      return imageUrl;
+                    }
+
+                    // Fallback to direct product properties
+                    if (product.images && product.images.length > 0) {
+                      const firstImage = product.images[0];
+                      if (typeof firstImage === 'object') {
+                        return firstImage.url || firstImage.src || firstImage.image || '/placeholder-product.jpg';
+                      }
+                      return firstImage;
+                    }
+
+                    if (product.image) {
+                      if (typeof product.image === 'object') {
+                        return product.image.url || product.image.src || product.image.image || '/placeholder-product.jpg';
+                      }
+                      return product.image;
+                    }
+
+                    return '/placeholder-product.jpg';
+                  })()}
                   alt={product.name}
                   className={`w-full ${viewMode === 'list' ? 'h-32' : 'h-40'} object-cover ${viewMode === 'list' ? 'rounded-l-lg' : 'rounded-t-lg'}`}
                 />
@@ -690,6 +721,43 @@ export function CategorySlotRenderer({
     }
   };
 
+  // Helper function to render breadcrumbs
+  function renderBreadcrumbs() {
+    const breadcrumbSlot = headerSlots.find(slot =>
+      slot.id === 'breadcrumbs' || slot.id === 'breadcrumb_container'
+    );
+    if (breadcrumbSlot) {
+      return renderSlotContent(breadcrumbSlot);
+    }
+    // Default breadcrumbs if no slot defined
+    return (
+      <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
+        {breadcrumbs.map((item, index) => (
+          <Fragment key={index}>
+            {index > 0 && <span className="text-gray-400 mx-1">/</span>}
+            <span className={index === breadcrumbs.length - 1 ? "text-gray-900 font-medium" : "text-gray-500 hover:text-gray-700"}>
+              {item.name}
+            </span>
+          </Fragment>
+        ))}
+        {category && (
+          <>
+            {breadcrumbs.length > 0 && <span className="text-gray-400 mx-1">/</span>}
+            <span className="text-gray-900 font-medium">{category.name}</span>
+          </>
+        )}
+      </nav>
+    );
+  }
+
+  // Helper function to render other header slots (excluding breadcrumbs)
+  function renderOtherHeaderSlots() {
+    const otherSlots = headerSlots.filter(slot =>
+      slot.id !== 'breadcrumbs' && slot.id !== 'breadcrumb_container'
+    );
+    return otherSlots.map(slot => renderSlotContent(slot));
+  }
+
   // Helper function to render filters container
   function renderFiltersContainer() {
     const filtersSlot = mainSlots.find(slot => slot.id === 'filters_container');
@@ -713,7 +781,10 @@ export function CategorySlotRenderer({
     <div className="px-4 sm:px-6 lg:px-8 py-8">
       {/* Header Section */}
       <div className="mb-8 max-w-7xl mx-auto">
-        {/* Category Hero Section with Image and Title */}
+        {/* Render breadcrumbs first */}
+        {renderBreadcrumbs()}
+
+        {/* Category Hero Section with Image and Title - after breadcrumbs */}
         {(category?.image || category?.image_url || category?.name) && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
             {(category?.image || category?.image_url) && (
@@ -752,8 +823,8 @@ export function CategorySlotRenderer({
           </div>
         )}
 
-        {/* Render other header slots like breadcrumbs */}
-        {renderHeaderSlots()}
+        {/* Render other header slots except breadcrumbs */}
+        {renderOtherHeaderSlots()}
       </div>
 
       {/* Main Grid Layout */}

@@ -234,7 +234,7 @@ const CategorySlotsEditor = ({
         description: 'High-quality wireless headphones with noise cancellation',
         price: 199.99,
         compare_price: 249.99,
-        images: ['/sample-headphones.jpg'],
+        images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'],
         stock_status: 'in_stock',
         rating: 4.5,
         attributes: { color: 'Black', brand: 'TechCorp' }
@@ -244,7 +244,7 @@ const CategorySlotsEditor = ({
         name: 'Smartphone',
         description: 'Latest model smartphone with advanced camera',
         price: 799.99,
-        images: ['/sample-phone.jpg'],
+        images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop'],
         stock_status: 'in_stock',
         rating: 4.8,
         attributes: { color: 'Blue', brand: 'PhoneTech' }
@@ -254,10 +254,41 @@ const CategorySlotsEditor = ({
         name: 'Tablet',
         description: 'Portable tablet perfect for work and entertainment',
         price: 299.99,
-        images: ['/sample-tablet.jpg'],
+        images: ['https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop'],
         stock_status: 'in_stock',
         rating: 4.3,
         attributes: { color: 'Silver', brand: 'TabletPro' }
+      },
+      {
+        id: 4,
+        name: 'Smart Watch',
+        description: 'Fitness tracking and notifications on your wrist',
+        price: 349.99,
+        compare_price: 399.99,
+        images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop'],
+        stock_status: 'in_stock',
+        rating: 4.6,
+        attributes: { color: 'Black', brand: 'WatchCo' }
+      },
+      {
+        id: 5,
+        name: 'Laptop',
+        description: 'Powerful laptop for professional work and gaming',
+        price: 1299.99,
+        images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop'],
+        stock_status: 'in_stock',
+        rating: 4.7,
+        attributes: { color: 'Gray', brand: 'CompTech' }
+      },
+      {
+        id: 6,
+        name: 'Wireless Earbuds',
+        description: 'Compact and comfortable true wireless earbuds',
+        price: 149.99,
+        images: ['https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop'],
+        stock_status: 'in_stock',
+        rating: 4.4,
+        attributes: { color: 'White', brand: 'AudioPro' }
       }
     ],
     allProducts: [], // Will be set same as products
