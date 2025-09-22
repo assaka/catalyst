@@ -330,11 +330,11 @@ export default function Category() {
   // Build breadcrumb items for category pages
   const getBreadcrumbItems = () => {
     if (!currentCategory || !categories) return [];
-    
+
     // Build hierarchy from current category up to root
     let category = currentCategory;
     const categoryChain = [category];
-    
+
     // Find parent categories
     while (category?.parent_id) {
       const parent = categories.find(c => c.id === category.parent_id);
@@ -345,12 +345,18 @@ export default function Category() {
         break;
       }
     }
-    
+
     // Filter out root categories (categories with no parent_id or level 0)
     const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
-    
+
+    // Remove consecutive duplicates (when parent and child have same name)
+    const deduplicatedChain = filteredChain.filter((cat, index) => {
+      if (index === 0) return true;
+      return cat.name !== filteredChain[index - 1].name;
+    });
+
     // Convert to breadcrumb items
-    return filteredChain.map((cat) => ({
+    return deduplicatedChain.map((cat) => ({
       name: cat.name,
       url: createCategoryUrl(storeCode, cat.slug)
     }));
@@ -424,12 +430,23 @@ export default function Category() {
         }
 
         // IMPORTANT: Also add predefined options from attribute definition (like LayeredNavigation)
+        // Store as objects to preserve labels
+        const optionObjects = [];
         if (attr.options && Array.isArray(attr.options)) {
           attr.options.forEach(option => {
-            // Handle different option formats
-            const optionValue = option.value || option.label || option.name || option;
-            if (optionValue && optionValue !== '') {
-              values.add(String(optionValue));
+            if (typeof option === 'object' && option !== null) {
+              // Preserve the original structure
+              const value = String(option.value || option.label || option.name || '');
+              const label = option.label || option.name || value;
+              if (value !== '') {
+                optionObjects.push({ value, label });
+                values.add(value);
+              }
+            } else if (option !== null && option !== undefined && option !== '') {
+              // Simple value - use it for both value and label
+              const value = String(option);
+              optionObjects.push({ value, label: value });
+              values.add(value);
             }
           });
         }
@@ -437,9 +454,25 @@ export default function Category() {
         // Include all filterable attributes, even if they have no values yet
         // This ensures all 'use for filter' attributes are shown
         if (values.size > 0 || isFilterable) {
-          filters[filterKey] = Array.from(values).sort().map(value => ({
+          // Create a map to store the best label for each value
+          const valueToLabel = {};
+
+          // First, add labels from predefined options
+          optionObjects.forEach(opt => {
+            valueToLabel[opt.value] = opt.label;
+          });
+
+          // Then add any values found in products (these might not have labels)
+          Array.from(values).forEach(value => {
+            if (!valueToLabel[value]) {
+              valueToLabel[value] = value; // Use value as label if no label exists
+            }
+          });
+
+          // Create the final filter array with proper labels
+          filters[filterKey] = Object.entries(valueToLabel).sort(([a], [b]) => a.localeCompare(b)).map(([value, label]) => ({
             value,
-            label: value,
+            label,
             count: 0 // Will be calculated in CategorySlotRenderer
           }));
 
