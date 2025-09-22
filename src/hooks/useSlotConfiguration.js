@@ -56,7 +56,9 @@ export function useLayoutConfig(store, pageType, configModulePath) {
 
                 // Fallback to config module
                 console.log(`Loading fallback config for ${pageType} from: ${configModulePath}`);
-                const configModule = await import(configModulePath);
+                // Try to import with .js extension if path doesn't have it
+                const importPath = configModulePath.endsWith('.js') ? configModulePath : `${configModulePath}.js`;
+                const configModule = await import(importPath);
                 const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
 
                 if (!config || !config.slots) {
@@ -92,7 +94,9 @@ export function useLayoutConfig(store, pageType, configModulePath) {
             // Fallback to config module
             try {
                 console.log(`Loading error fallback config for ${pageType} from: ${configModulePath}`);
-                const configModule = await import(configModulePath);
+                // Try to import with .js extension if path doesn't have it
+                const importPath = configModulePath.endsWith('.js') ? configModulePath : `${configModulePath}.js`;
+                const configModule = await import(importPath);
                 const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
 
                 if (!config || !config.slots) {
