@@ -45,13 +45,7 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
-import {
-  CategoryHeaderSlot,
-  CategoryBreadcrumbsSlot,
-  CategoryFiltersSlot,
-  CategoryProductsSlot,
-  CategoryPaginationSlot
-} from '@/components/editor/slot/slotComponentsCategory';
+import { CategorySlotRenderer } from '@/components/storefront/CategorySlotRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 
@@ -193,13 +187,13 @@ const CategorySlotsEditor = ({
   // Create handler factory with page-specific dependencies
   const handlerFactory = createHandlerFactory(setCategoryLayoutConfig, saveConfiguration);
 
-  // Sample category data for editor preview
-  const sampleCategoryData = {
+  // Mock categoryContext for editor preview - matches what Category.jsx provides
+  const mockCategoryContext = {
     category: {
       id: 1,
       name: 'Electronics',
       description: 'Browse our latest electronics and gadgets',
-      parent: 'Home'
+      slug: 'electronics'
     },
     products: [
       {
@@ -207,24 +201,77 @@ const CategorySlotsEditor = ({
         name: 'Wireless Headphones',
         description: 'High-quality wireless headphones with noise cancellation',
         price: 199.99,
-        image: '/sample-headphones.jpg'
+        compare_price: 249.99,
+        images: ['/sample-headphones.jpg'],
+        stock_status: 'in_stock',
+        rating: 4.5,
+        attributes: { color: 'Black', brand: 'TechCorp' }
       },
       {
         id: 2,
         name: 'Smartphone',
         description: 'Latest model smartphone with advanced camera',
         price: 799.99,
-        image: '/sample-phone.jpg'
+        images: ['/sample-phone.jpg'],
+        stock_status: 'in_stock',
+        rating: 4.8,
+        attributes: { color: 'Blue', brand: 'PhoneTech' }
       },
       {
         id: 3,
         name: 'Tablet',
         description: 'Portable tablet perfect for work and entertainment',
         price: 299.99,
-        image: '/sample-tablet.jpg'
+        images: ['/sample-tablet.jpg'],
+        stock_status: 'in_stock',
+        rating: 4.3,
+        attributes: { color: 'Silver', brand: 'TabletPro' }
       }
-    ]
+    ],
+    allProducts: [], // Will be set same as products
+    filters: {
+      color: [
+        { value: 'Black', label: 'Black', count: 1 },
+        { value: 'Blue', label: 'Blue', count: 1 },
+        { value: 'Silver', label: 'Silver', count: 1 }
+      ],
+      brand: [
+        { value: 'TechCorp', label: 'TechCorp', count: 1 },
+        { value: 'PhoneTech', label: 'PhoneTech', count: 1 },
+        { value: 'TabletPro', label: 'TabletPro', count: 1 }
+      ]
+    },
+    filterableAttributes: [
+      { code: 'color', name: 'Color', is_filterable: true },
+      { code: 'brand', name: 'Brand', is_filterable: true }
+    ],
+    sortOption: 'default',
+    currentPage: 1,
+    totalPages: 1,
+    subcategories: [],
+    breadcrumbs: [
+      { name: 'Home', url: '/' },
+      { name: 'Electronics', url: '/electronics' }
+    ],
+    selectedFilters: {},
+    priceRange: {},
+    currencySymbol: '$',
+    settings: { currency_symbol: '$', enable_inventory: true },
+    store: { id: 1, name: 'Demo Store', code: 'demo' },
+    taxes: [],
+    selectedCountry: null,
+    handleFilterChange: (filters) => console.log('Filter change:', filters),
+    handleSortChange: (sort) => console.log('Sort change:', sort),
+    handlePageChange: (page) => console.log('Page change:', page),
+    clearFilters: () => console.log('Clear filters'),
+    formatDisplayPrice: (price) => `$${price}`,
+    getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
+    navigate: (url) => console.log('Navigate to:', url),
+    onProductClick: (product) => console.log('Product click:', product.name)
   };
+
+  // Set allProducts same as products for filter counting
+  mockCategoryContext.allProducts = mockCategoryContext.products;
 
   // Create all handlers using the factory
   const handleTextChange = handlerFactory.createTextChangeHandler(textChangeHandler);
@@ -482,57 +529,62 @@ const CategorySlotsEditor = ({
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
-            <div className="grid grid-cols-12 gap-2 auto-rows-min">
-              {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
-                <HierarchicalSlotRenderer
+            {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
+              showPreview ? (
+                // Preview mode: Use CategorySlotRenderer exactly like storefront
+                <CategorySlotRenderer
                   slots={categoryLayoutConfig.slots}
                   parentId={null}
-                  mode={showPreview ? 'view' : mode}
                   viewMode={viewMode}
-                  showBorders={showPreview ? false : showSlotBorders}
-                  currentDragInfo={currentDragInfo}
-                  setCurrentDragInfo={setCurrentDragInfo}
-                  onElementClick={showPreview ? null : handleElementClick}
-                  onGridResize={showPreview ? null : handleGridResize}
-                  onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
-                  onSlotDrop={showPreview ? null : handleSlotDrop}
-                  onSlotDelete={showPreview ? null : handleSlotDelete}
-                  onResizeStart={showPreview ? null : () => setIsResizing(true)}
-                  onResizeEnd={showPreview ? null : () => {
-                    lastResizeEndTime.current = Date.now();
-                    setTimeout(() => setIsResizing(false), 100);
-                  }}
-                  selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
-                  setPageConfig={setCategoryLayoutConfig}
-                  saveConfiguration={saveConfiguration}
-                  saveTimeoutRef={saveTimeoutRef}
-                  customSlotRenderer={(slot) => {
-                    const componentMap = {
-                      'header': CategoryHeaderSlot,
-                      'breadcrumbs': CategoryBreadcrumbsSlot,
-                      'filters': CategoryFiltersSlot,
-                      'products': CategoryProductsSlot,
-                      'pagination': CategoryPaginationSlot
-                    };
-                    const SlotComponent = componentMap[slot.id];
-                    if (SlotComponent) {
-                      return (
-                        <SlotComponent
-                          categoryData={sampleCategoryData}
-                          content={slot.content}
-                          config={{ viewMode }}
-                        />
-                      );
-                    }
-                    return null;
-                  }}
+                  categoryContext={mockCategoryContext}
                 />
               ) : (
-                <div className="col-span-12 text-center py-12 text-gray-500">
-                  {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
+                // Edit mode: Use HierarchicalSlotRenderer for editing capabilities
+                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                  <HierarchicalSlotRenderer
+                    slots={categoryLayoutConfig.slots}
+                    parentId={null}
+                    mode={mode}
+                    viewMode={viewMode}
+                    showBorders={showSlotBorders}
+                    currentDragInfo={currentDragInfo}
+                    setCurrentDragInfo={setCurrentDragInfo}
+                    onElementClick={handleElementClick}
+                    onGridResize={handleGridResize}
+                    onSlotHeightResize={handleSlotHeightResize}
+                    onSlotDrop={handleSlotDrop}
+                    onSlotDelete={handleSlotDelete}
+                    onResizeStart={() => setIsResizing(true)}
+                    onResizeEnd={() => {
+                      lastResizeEndTime.current = Date.now();
+                      setTimeout(() => setIsResizing(false), 100);
+                    }}
+                    selectedElementId={selectedElement ? selectedElement.getAttribute('data-slot-id') : null}
+                    setPageConfig={setCategoryLayoutConfig}
+                    saveConfiguration={saveConfiguration}
+                    saveTimeoutRef={saveTimeoutRef}
+                    customSlotRenderer={(slot) => {
+                      // For edit mode, render a simplified preview using CategorySlotRenderer
+                      // but wrap it in an editable container
+                      return (
+                        <div className="w-full h-full">
+                          <CategorySlotRenderer
+                            slots={{ [slot.id]: slot }}
+                            parentId={slot.parentId}
+                            viewMode={viewMode}
+                            categoryContext={mockCategoryContext}
+                          />
+                        </div>
+                      );
+                    }}
+                  />
                 </div>
-              )}
-            </div>
+              )
+            ) : (
+              <div className="col-span-12 text-center py-12 text-gray-500">
+                {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
+              </div>
+            )}
 
             <CmsBlockRenderer position="category_above_products" />
 
