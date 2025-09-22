@@ -47,6 +47,7 @@ import {
 } from '@/components/editor/slot/SlotComponents';
 import { CategorySlotRenderer } from '@/components/storefront/CategorySlotRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
 // Simple ErrorBoundary component to handle context issues
 class ErrorBoundary extends React.Component {
