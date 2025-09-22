@@ -5,7 +5,6 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { slotConfigurationService as apiService } from '@/lib/api/slot-configuration-service';
 import { SlotManager } from '@/utils/slotUtils';
 import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
 
@@ -34,7 +33,7 @@ export function useLayoutConfig(store, pageType, configModulePath) {
 
         try {
             // Load published configuration using the new versioning API
-            const response = await apiService.getPublishedConfiguration(store.id, pageType);
+            const response = await slotConfigurationService.getPublishedConfiguration(store.id, pageType);
 
             // Check for various "no published config" scenarios
             if (response.success && response.data &&
