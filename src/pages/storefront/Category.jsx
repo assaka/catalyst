@@ -331,31 +331,25 @@ export default function Category() {
   const getBreadcrumbItems = () => {
     if (!currentCategory || !categories) return [];
 
-    // Build hierarchy from current category up to root
+    // Build hierarchy from current category up to root (excluding current category)
     let category = currentCategory;
     const categoryChain = [];
 
-    // Find parent categories (don't include current category yet)
+    // Find parent categories only (don't include current category)
     while (category?.parent_id) {
       const parent = categories.find(c => c.id === category.parent_id);
       if (parent) {
-        // Only add parent if it has a different name than the current category we're viewing
-        if (parent.name !== currentCategory.name) {
-          categoryChain.unshift(parent);
-        }
+        categoryChain.unshift(parent);
         category = parent;
       } else {
         break;
       }
     }
 
-    // Always add the current category at the end
-    categoryChain.push(currentCategory);
-
     // Filter out root categories (categories with no parent_id or level 0)
     const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
 
-    // Convert to breadcrumb items
+    // Convert to breadcrumb items (not including current category)
     return filteredChain.map((cat) => ({
       name: cat.name,
       url: createCategoryUrl(storeCode, cat.slug)
