@@ -284,6 +284,18 @@ export function CategorySlotRenderer({
                     }
                   }
 
+                  // Debug logging for color filter
+                  if (filterKey === 'color' && option.value === 'Zwart') {
+                    console.log(`Debug ${filterKey} - ${option.value}:`, {
+                      productId: p.id,
+                      productName: p.name,
+                      productAttributes,
+                      possibleKeys,
+                      foundAttributeValue: attributeValue,
+                      match: String(attributeValue) === String(option.value)
+                    });
+                  }
+
                   // Compare with the normalized option value
                   return String(attributeValue) === String(option.value);
                 }).length;
