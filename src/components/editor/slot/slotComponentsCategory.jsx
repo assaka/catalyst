@@ -32,8 +32,8 @@ export function CategoryHeaderSlot({ categoryData, content }) {
 }
 
 // CategoryBreadcrumbsSlot Component
-export function CategoryBreadcrumbsSlot({ categoryData, content }) {
-  const { category } = categoryData || {};
+export function CategoryBreadcrumbsSlot({ categoryData, content, storeCode, categories }) {
+  const { category, breadcrumbs } = categoryData || {};
 
   return (
     <nav className="category-breadcrumbs">
@@ -42,16 +42,29 @@ export function CategoryBreadcrumbsSlot({ categoryData, content }) {
       ) : (
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <Link to="/" className="hover:text-gray-900">Home</Link>
-          <span>/</span>
-          {category?.parent && (
-            <>
-              <Link to={`/category/${category.parent}`} className="hover:text-gray-900">
-                {category.parent}
-              </Link>
-              <span>/</span>
-            </>
+          {breadcrumbs && breadcrumbs.length > 0 ? (
+            // Use the hierarchical breadcrumbs from the context
+            breadcrumbs.map((item, index) => (
+              <React.Fragment key={index}>
+                <span>/</span>
+                {item.url ? (
+                  <Link to={item.url} className="hover:text-gray-900">
+                    {item.name}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-gray-900">{item.name}</span>
+                )}
+              </React.Fragment>
+            ))
+          ) : (
+            // Fallback to simple category display
+            category?.name && (
+              <>
+                <span>/</span>
+                <span className="font-medium text-gray-900">{category.name}</span>
+              </>
+            )
           )}
-          <span className="text-gray-900">{category?.name || 'Category'}</span>
         </div>
       )}
     </nav>
