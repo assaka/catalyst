@@ -471,6 +471,36 @@ export function CategorySlotRenderer({
       );
     }
 
+    // Sort selector
+    if (id === 'sort_selector') {
+      const sortOptions = [
+        { value: '', label: 'Default' },
+        { value: 'name-asc', label: 'Name A-Z' },
+        { value: 'name-desc', label: 'Name Z-A' },
+        { value: 'price-asc', label: 'Price Low to High' },
+        { value: 'price-desc', label: 'Price High to Low' },
+        { value: 'newest', label: 'Newest First' },
+        { value: 'oldest', label: 'Oldest First' }
+      ];
+
+      return wrapWithParentClass(
+        <div className={className || "flex items-center gap-2"} style={styles}>
+          <Label className="text-sm font-medium">Sort by:</Label>
+          <select
+            value={sortOption || ''}
+            onChange={(e) => handleSortChange && handleSortChange(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+          >
+            {sortOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
     // Products container - render product slots dynamically
     if (id === 'products_container') {
       const gridClass = viewMode === 'grid'

@@ -310,22 +310,14 @@ export default function Category() {
     }
   }, [filteredProducts, currentSort]);
 
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return sortedProducts.slice(startIndex, endIndex);
-  }, [sortedProducts, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  // Use sortedProducts directly without pagination for now
+  const paginatedProducts = sortedProducts;
 
   const handleSortChange = (newSort) => {
     setSort(newSort);
   };
 
-  const handlePageChange = (page) => {
-    setPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // Removed handlePageChange - no pagination for now
 
   // Build breadcrumb items for category pages
   const getBreadcrumbItems = () => {
@@ -478,7 +470,7 @@ export default function Category() {
     selectedCountry: null,
     handleFilterChange: setActiveFilters,
     handleSortChange: handleSortChange,
-    handlePageChange: handlePageChange,
+    // handlePageChange removed - no pagination for now
     clearFilters: () => setActiveFilters({}),
     formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
