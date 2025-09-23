@@ -77,7 +77,7 @@ export const categoryConfig = {
       className: 'text-4xl font-bold text-gray-900 mb-2',
       parentClassName: '',
       styles: {},
-      parentId: 'category_header',
+      parentId: 'page_header',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
