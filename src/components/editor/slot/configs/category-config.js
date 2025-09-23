@@ -23,19 +23,19 @@ export const categoryConfig = {
     },
 
     // Breadcrumbs section
-    breadcrumbs: {
-      id: 'breadcrumbs',
-      type: 'container',
-      content: '',
-      className: 'w-full flex mb-6 items-center',
-      parentClassName: '',
-      styles: {},
-      parentId: 'page_header',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true }
-    },
+    // breadcrumbs: {
+    //   id: 'breadcrumbs',
+    //   type: 'container',
+    //   content: '',
+    //   className: 'w-full flex mb-6 items-center',
+    //   parentClassName: '',
+    //   styles: {},
+    //   parentId: 'page_header',
+    //   position: { col: 1, row: 1 },
+    //   colSpan: { grid: 12, list: 12 },
+    //   viewMode: ['grid', 'list'],
+    //   metadata: { hierarchical: true }
+    // },
 
     breadcrumbs_content: {
       id: 'breadcrumbs_content',
@@ -44,7 +44,7 @@ export const categoryConfig = {
       className: 'flex items-center space-x-2 text-sm text-gray-600',
       parentClassName: '',
       styles: {},
-      parentId: 'breadcrumbs',
+      parentId: 'page_header',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
@@ -56,19 +56,19 @@ export const categoryConfig = {
     },
 
     // Category header section
-    category_header: {
-      id: 'category_header',
-      type: 'container',
-      content: '',
-      className: 'mb-4',
-      parentClassName: '',
-      styles: {},
-      parentId: 'page_header',
-      position: { col: 1, row: 2 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true }
-    },
+    // category_header: {
+    //   id: 'category_header',
+    //   type: 'container',
+    //   content: '',
+    //   className: 'mb-4',
+    //   parentClassName: '',
+    //   styles: {},
+    //   parentId: 'page_header',
+    //   position: { col: 1, row: 2 },
+    //   colSpan: { grid: 12, list: 12 },
+    //   viewMode: ['grid', 'list'],
+    //   metadata: { hierarchical: true }
+    // },
 
     category_title: {
       id: 'category_title',
@@ -78,7 +78,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'category_header',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
@@ -94,8 +94,8 @@ export const categoryConfig = {
       className: 'text-gray-600',
       parentClassName: '',
       styles: {},
-      parentId: 'category_header',
-      position: { col: 1, row: 2 },
+      parentId: 'page_header',
+      position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
