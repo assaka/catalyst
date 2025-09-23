@@ -47,6 +47,7 @@ import {
 } from '@/components/editor/slot/SlotComponents';
 import {
   CategoryHeaderSlot,
+  CategoryBreadcrumbsSlot,
   CategoryFiltersSlot,
   CategoryProductsSlot,
   CategorySortingSlot,
@@ -505,7 +506,7 @@ const CategorySlotsEditor = ({
 
         {/* Category Layout - Hierarchical Structure */}
         <div
-          className="bg-gray-50 category-page"
+          className="bg-gray-50 category-page overflow-y-auto max-h-[calc(100vh-80px)]"
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
@@ -581,7 +582,7 @@ const CategorySlotsEditor = ({
 
                       const componentMap = {
                         // Breadcrumbs and headers
-                        'breadcrumbs': CategoryHeaderSlot,
+                        'breadcrumbs': CategoryBreadcrumbsSlot,
                         'category_title': CategoryHeaderSlot,
                         'category_header': CategoryHeaderSlot,
                         'category_description': CategoryHeaderSlot,
