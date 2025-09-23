@@ -41,7 +41,7 @@ export default function LayeredNavigation({
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
-    const collapseFilters = settings.hasOwnProperty('collapse_filters') ? settings.collapse_filters : false;
+    const collapseFilters = settings.collapse_filters !== false
     const maxVisibleAttributes = settings.max_visible_attributes || 5;
 
 
