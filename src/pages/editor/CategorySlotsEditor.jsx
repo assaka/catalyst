@@ -235,6 +235,11 @@ const CategorySlotsEditor = ({
       description: 'Browse our collection of products',
       image: '/sample-category.jpg'
     },
+    breadcrumbs: [
+      { name: 'Home', url: '/' },
+      { name: 'Electronics', url: '/electronics' },
+      { name: 'Sample Category', url: null }
+    ],
     products: viewMode === 'grid' ? [
       { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'M' } },
       { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L' } },
@@ -610,9 +615,9 @@ const CategorySlotsEditor = ({
                         return <div style={{background: 'red', padding: '20px', color: 'white'}}>LAYERED NAVIGATION TEST</div>;
                       }
 
-                      // Handle breadcrumbs container specifically BEFORE component mapping
-                      if (slot.id === 'breadcrumbs') {
-                        console.log('🍞 Rendering breadcrumbs container with CategoryBreadcrumbsSlot');
+                      // Handle breadcrumbs content specifically
+                      if (slot.id === 'breadcrumbs_content' || slot.type === 'breadcrumbs') {
+                        console.log('🍞 Rendering breadcrumbs content with CategoryBreadcrumbsSlot');
                         return (
                           <CategoryBreadcrumbsSlot
                             categoryData={sampleCategoryContext}
@@ -624,7 +629,7 @@ const CategorySlotsEditor = ({
 
                       const componentMap = {
                         // Breadcrumbs and headers
-                        'breadcrumbs': CategoryBreadcrumbsSlot,
+                        'breadcrumbs_content': CategoryBreadcrumbsSlot,
                         'category_title': CategoryHeaderSlot,
                         'category_header': CategoryHeaderSlot,
                         'category_description': CategoryHeaderSlot,

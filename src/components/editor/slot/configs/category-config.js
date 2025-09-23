@@ -19,21 +19,56 @@ export const categoryConfig = {
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false }
+      metadata: { hierarchical: true }
+    },
+
+    breadcrumbs_content: {
+      id: 'breadcrumbs_content',
+      type: 'breadcrumbs',
+      content: '',
+      className: 'flex items-center space-x-2 text-sm text-gray-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'breadcrumbs',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'CategoryBreadcrumbs',
+        displayName: 'Breadcrumb Navigation'
+      }
     },
 
     category_header: {
       id: 'category_header',
       type: 'container',
       content: '',
-      className: 'text-4xl font-bold mb-4',
+      className: 'mb-4',
       parentClassName: '',
       styles: {},
       parentId: null,
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false }
+      metadata: { hierarchical: true }
+    },
+
+    category_title: {
+      id: 'category_title',
+      type: 'text',
+      content: 'Category Name',
+      className: 'text-4xl font-bold text-gray-900',
+      parentClassName: '',
+      styles: {},
+      parentId: 'category_header',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Category Title'
+      }
     },
 
     category_description: {
@@ -684,8 +719,20 @@ export const categoryConfig = {
     'category_footer'
   ],
 
-  // Microslot definitions for product components
+  // Microslot definitions for category and product components
   microslots: {
+    breadcrumbs_content: {
+      type: 'breadcrumbs',
+      editable: true,
+      dataBinding: 'category.breadcrumbs',
+      categoryBinding: 'category'
+    },
+    category_title: {
+      type: 'text',
+      editable: true,
+      dataBinding: 'category.name',
+      fallback: 'Category Name'
+    },
     product_image: {
       type: 'image',
       editable: true,
