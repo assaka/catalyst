@@ -394,12 +394,32 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         component: 'PaginationComponent'
+      }
+    },
+
+    // Product Item Cards - Alternative product display
+    product_item_card: {
+      id: 'product_item_card',
+      type: 'product_item_card',
+      content: '',
+      className: 'mb-8',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 4 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ProductItemCard',
+        displayName: 'Product Item Cards',
+        itemsToShow: 3
       }
     },
 
@@ -412,7 +432,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 6 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {

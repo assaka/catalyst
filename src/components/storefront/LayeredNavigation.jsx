@@ -11,7 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export default function LayeredNavigation({ products, attributes, onFilterChange }) {
+export default function LayeredNavigation({ products, attributes, onFilterChange, showActiveFilters = true }) {
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
 
@@ -90,8 +90,86 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     };
 
     // Check if any filters are active
-    const hasActiveFilters = Object.keys(selectedFilters).length > 0 || 
+    const hasActiveFilters = Object.keys(selectedFilters).length > 0 ||
                            (priceRange[0] !== minPrice || priceRange[1] !== maxPrice);
+
+    // Active filters component
+    const renderActiveFilters = () => {
+        if (!showActiveFilters || !hasActiveFilters) {
+            return null;
+        }
+
+        const activeFilterElements = [];
+
+        // Add active attribute filters
+        Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
+            if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
+                filterValues.forEach(value => {
+                    activeFilterElements.push(
+                        <span
+                            key={`${filterKey}-${value}`}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 mr-2 mb-2"
+                        >
+                            {filterKey}: {value}
+                            <button
+                                onClick={() => {
+                                    const newValues = filterValues.filter(v => v !== value);
+                                    const newFilters = { ...selectedFilters };
+                                    if (newValues.length > 0) {
+                                        newFilters[filterKey] = newValues;
+                                    } else {
+                                        delete newFilters[filterKey];
+                                    }
+                                    setSelectedFilters(newFilters);
+                                }}
+                                className="ml-1 text-blue-600 hover:text-blue-800"
+                            >
+                                ×
+                            </button>
+                        </span>
+                    );
+                });
+            }
+        });
+
+        // Add price range filter if active
+        if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
+            const [min, max] = priceRange;
+            activeFilterElements.push(
+                <span
+                    key="price-range"
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
+                >
+                    Price: ${min} - ${max}
+                    <button
+                        onClick={() => {
+                            setPriceRange([minPrice, maxPrice]);
+                        }}
+                        className="ml-1 text-green-600 hover:text-green-800"
+                    >
+                        ×
+                    </button>
+                </span>
+            );
+        }
+
+        return (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex flex-wrap items-center">
+                    <span className="text-sm font-medium text-gray-700 mr-2">Active Filters:</span>
+                    {activeFilterElements}
+                    {activeFilterElements.length > 0 && (
+                        <button
+                            onClick={clearAllFilters}
+                            className="text-xs text-gray-500 hover:text-gray-700 underline ml-2"
+                        >
+                            Clear All
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     // FIXED: Extract ALL attribute values from products including all options
     const filterOptions = useMemo(() => {
@@ -192,23 +270,28 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center h-5">
-                    <CardTitle>Filter By</CardTitle>
-                    {hasActiveFilters && (
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={clearAllFilters}
-                            className="text-xs"
-                        >
-                            Clear All
-                        </Button>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent>
+        <>
+            {/* Active Filters */}
+            {renderActiveFilters()}
+
+            {/* Main Filter Card */}
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center h-5">
+                        <CardTitle>Filter By</CardTitle>
+                        {hasActiveFilters && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearAllFilters}
+                                className="text-xs"
+                            >
+                                Clear All
+                            </Button>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
                 <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
                     {/* FIXED: Price Slider */}
                     <AccordionItem value="price">
@@ -291,5 +374,6 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                 </Accordion>
             </CardContent>
         </Card>
+        </>
     );
 }

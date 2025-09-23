@@ -259,86 +259,9 @@ export function CategorySlotRenderer({
     }
 
     // Handle active_filters slot from category-config.js
+    // Note: Active filters are now handled directly within LayeredNavigation component
     if (id === 'active_filters') {
-      // Check if any filters are active
-      const hasActiveFilters = selectedFilters && Object.keys(selectedFilters).length > 0;
-
-      if (!hasActiveFilters) {
-        return null; // Don't render anything if no active filters
-      }
-
-      const activeFilterElements = [];
-
-      // Add active attribute filters
-      Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
-        if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
-          filterValues.forEach(value => {
-            activeFilterElements.push(
-              <span
-                key={`${filterKey}-${value}`}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 mr-2 mb-2"
-              >
-                {filterKey}: {value}
-                <button
-                  onClick={() => {
-                    const newValues = filterValues.filter(v => v !== value);
-                    const newFilters = { ...selectedFilters };
-                    if (newValues.length > 0) {
-                      newFilters[filterKey] = newValues;
-                    } else {
-                      delete newFilters[filterKey];
-                    }
-                    handleFilterChange && handleFilterChange(newFilters);
-                  }}
-                  className="ml-1 text-blue-600 hover:text-blue-800"
-                >
-                  ×
-                </button>
-              </span>
-            );
-          });
-        }
-      });
-
-      // Add price range filter if active
-      if (selectedFilters.priceRange) {
-        const [min, max] = selectedFilters.priceRange;
-        activeFilterElements.push(
-          <span
-            key="price-range"
-            className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
-          >
-            Price: ${min} - ${max}
-            <button
-              onClick={() => {
-                const newFilters = { ...selectedFilters };
-                delete newFilters.priceRange;
-                handleFilterChange && handleFilterChange(newFilters);
-              }}
-              className="ml-1 text-green-600 hover:text-green-800"
-            >
-              ×
-            </button>
-          </span>
-        );
-      }
-
-      return wrapWithParentClass(
-        <div className={className} style={styles}>
-          <div className="flex flex-wrap items-center">
-            <span className="text-sm font-medium text-gray-700 mr-2">Active Filters:</span>
-            {activeFilterElements}
-            {activeFilterElements.length > 0 && (
-              <button
-                onClick={() => clearFilters && clearFilters()}
-                className="text-xs text-gray-500 hover:text-gray-700 underline ml-2"
-              >
-                Clear All
-              </button>
-            )}
-          </div>
-        </div>
-      );
+      return null; // LayeredNavigation handles active filters display
     }
 
     // Main content container
