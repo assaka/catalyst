@@ -503,7 +503,27 @@ export const categoryConfig = {
       }
     },
 
-    // Products grid
+    // Main products display using ProductItemCard component
+    product_item_card: {
+      id: 'product_item_card',
+      type: 'product_grid',
+      content: '',
+      className: 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ProductItemCard',
+        displayName: 'Product Grid',
+        itemsToShow: 12
+      }
+    },
+
+    // Products grid (alternative layout - kept for flexibility)
     products_grid: {
       id: 'products_grid',
       type: 'container',
@@ -512,7 +532,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }

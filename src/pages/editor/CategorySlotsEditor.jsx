@@ -653,6 +653,20 @@ const CategorySlotsEditor = ({
                         );
                       }
 
+                      // Handle product_item_card specifically
+                      if (slot.id === 'product_item_card' || slot.type === 'product_grid') {
+                        console.log('🛍️ Rendering product_item_card with CategoryProductItemCardSlot');
+                        console.log('🛍️ Product slot details:', slot);
+                        return (
+                          <CategoryProductItemCardSlot
+                            categoryData={sampleCategoryContext}
+                            categoryContext={sampleCategoryContext}
+                            content={slot.content}
+                            config={{ viewMode }}
+                          />
+                        );
+                      }
+
                       const componentMap = {
                         // Breadcrumbs and headers
                         'breadcrumbs_content': CategoryBreadcrumbsSlot,
