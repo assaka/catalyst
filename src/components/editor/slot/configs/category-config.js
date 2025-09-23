@@ -41,7 +41,7 @@ export const categoryConfig = {
       id: 'breadcrumbs_content',
       type: 'breadcrumbs',
       content: '',
-      className: 'flex items-center space-x-2 text-sm text-gray-600',
+      className: 'flex items-center space-x-2 text-sm text-gray-600 mb-6',
       parentClassName: '',
       styles: {},
       parentId: 'page_header',

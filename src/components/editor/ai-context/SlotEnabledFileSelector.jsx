@@ -307,7 +307,7 @@ const SlotEnabledFileSelector = ({
                     {file.name}
                   </span>
                   {file.comingSoon && (
-                    <span className="text-xs text-gray-500 italic ml-1">(coming soon)</span>
+                    <span className="text-xs text-gray-500 italic ml-2">(coming soon)</span>
                   )}
                 </div>
 
