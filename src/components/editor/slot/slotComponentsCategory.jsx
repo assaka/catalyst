@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter, Grid, List, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import LayeredNavigation from '@/components/storefront/LayeredNavigation';
+import ProductItemCard from '@/components/storefront/ProductItemCard';
 
 // ============================================
 // Category-specific Slot Components
@@ -300,6 +302,78 @@ export function CategoryPaginationSlot({ categoryData, content }) {
   );
 }
 
+// CategoryLayeredNavigationSlot Component - Editable wrapper for LayeredNavigation
+export function CategoryLayeredNavigationSlot({ categoryContext, content, config }) {
+  const { allProducts, filterableAttributes } = categoryContext || {};
+
+  return (
+    <div className="category-layered-navigation">
+      {content?.html ? (
+        <div dangerouslySetInnerHTML={{ __html: content.html }} />
+      ) : (
+        <LayeredNavigation
+          products={allProducts || []}
+          attributes={filterableAttributes || []}
+          onFilterChange={(filters) => {
+            console.log('🔍 Filters changed:', filters);
+            // In edit mode, this would update the slot configuration
+            if (content?.onFilterUpdate) {
+              content.onFilterUpdate(filters);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// CategoryProductItemCardSlot Component - Editable wrapper for ProductItemCard
+export function CategoryProductItemCardSlot({ categoryContext, content, config }) {
+  const { products, currencySymbol, productLabels } = categoryContext || {};
+  const { viewMode = 'grid' } = config || {};
+
+  // Get configuration from content or use defaults
+  const {
+    itemsToShow = 3,
+    store = { slug: 'demo-store', id: 1 },
+    settings = {
+      currency_symbol: currencySymbol || '$',
+      theme: { add_to_cart_button_color: '#3B82F6' }
+    }
+  } = content || {};
+
+  return (
+    <div className="category-product-item-cards">
+      {content?.html ? (
+        <div dangerouslySetInnerHTML={{ __html: content.html }} />
+      ) : (
+        <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+          {(products || []).slice(0, itemsToShow).map((product) => (
+            <ProductItemCard
+              key={product.id}
+              product={product}
+              settings={settings}
+              store={store}
+              taxes={[]}
+              selectedCountry="US"
+              productLabels={productLabels || []}
+              viewMode={viewMode}
+              slotConfig={content || {}}
+              onAddToCartStateChange={(isAdding) => {
+                console.log('🛒 Add to cart state:', isAdding);
+                // In edit mode, this could show editing options
+                if (content?.onCartStateChange) {
+                  content.onCartStateChange(isAdding);
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Export all category slot components
 export default {
   CategoryHeaderSlot,
@@ -308,5 +382,7 @@ export default {
   CategoryMainContentSlot,
   CategorySortingSlot,
   CategoryProductsSlot,
-  CategoryPaginationSlot
+  CategoryPaginationSlot,
+  CategoryLayeredNavigationSlot,
+  CategoryProductItemCardSlot
 };

@@ -50,7 +50,9 @@ import {
   CategoryFiltersSlot,
   CategoryProductsSlot,
   CategorySortingSlot,
-  CategoryPaginationSlot
+  CategoryPaginationSlot,
+  CategoryLayeredNavigationSlot,
+  CategoryProductItemCardSlot
 } from '@/components/editor/slot/slotComponentsCategory';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
@@ -507,8 +509,11 @@ const CategorySlotsEditor = ({
                         'filters_container': CategoryFiltersSlot,
                         'products_container': CategoryProductsSlot,
                         'sort_controls': CategorySortingSlot,
-                        'pagination_controls': CategoryPaginationSlot
+                        'pagination_controls': CategoryPaginationSlot,
+                        'layered_navigation': CategoryLayeredNavigationSlot,
+                        'product_item_card': CategoryProductItemCardSlot
                       };
+
                       const SlotComponent = componentMap[slot.id];
                       if (SlotComponent) {
                         return (
