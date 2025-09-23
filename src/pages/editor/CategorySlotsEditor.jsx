@@ -563,6 +563,8 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
+                      console.log('🎨 customSlotRenderer called for slot:', slot.id, 'type:', slot.type, 'slot:', slot);
+
                       const componentMap = {
                         // Breadcrumbs and headers
                         'breadcrumbs': CategoryHeaderSlot,
@@ -593,7 +595,10 @@ const CategorySlotsEditor = ({
                       };
 
                       const SlotComponent = componentMap[slot.id];
+                      console.log('🎯 Component mapping for', slot.id, ':', SlotComponent?.name || 'None found');
+
                       if (SlotComponent) {
+                        console.log('✅ Rendering component for', slot.id);
                         return (
                           <SlotComponent
                             categoryContext={sampleCategoryContext}
@@ -602,6 +607,8 @@ const CategorySlotsEditor = ({
                           />
                         );
                       }
+
+                      console.log('🔄 Fallback rendering for', slot.id, 'type:', slot.type);
 
                       // For slots without specific components, render basic content
                       if (slot.type === 'text' && slot.content) {

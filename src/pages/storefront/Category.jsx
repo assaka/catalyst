@@ -487,16 +487,6 @@ export default function Category() {
     return filters;
   };
 
-  // Debug logging for products
-  console.log('Category: Product counts:', {
-    totalProducts: products.length,
-    filteredProducts: filteredProducts.length,
-    sortedProducts: sortedProducts.length,
-    paginatedProducts: paginatedProducts.length,
-    currentPage,
-    totalPages
-  });
-
   // Create category context for CategorySlotRenderer
   const categoryContext = {
     category: currentCategory,
