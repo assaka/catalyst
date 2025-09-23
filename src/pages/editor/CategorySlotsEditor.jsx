@@ -648,6 +648,8 @@ const CategorySlotsEditor = ({
                             categoryData={sampleCategoryContext}
                             categoryContext={sampleCategoryContext}
                             content={slot.content}
+                            className={slot.className}
+                            styles={slot.styles}
                             config={{ viewMode }}
                           />
                         );
@@ -706,6 +708,8 @@ const CategorySlotsEditor = ({
                             categoryData={sampleCategoryContext}
                             categoryContext={sampleCategoryContext}
                             content={slot.content}
+                            className={slot.className}
+                            styles={slot.styles}
                             config={{ viewMode }}
                           />
                         );

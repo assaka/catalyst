@@ -12,11 +12,11 @@ import ProductItemCard from '@/components/storefront/ProductItemCard';
 // ============================================
 
 // CategoryHeaderSlot Component
-export function CategoryHeaderSlot({ categoryData, content }) {
+export function CategoryHeaderSlot({ categoryData, content, className, styles }) {
   const { category } = categoryData || {};
 
   return (
-    <div className="category-header">
+    <div className={className || "category-header"} style={styles}>
       {content ? (
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
@@ -34,11 +34,11 @@ export function CategoryHeaderSlot({ categoryData, content }) {
 }
 
 // CategoryBreadcrumbsSlot Component
-export function CategoryBreadcrumbsSlot({ categoryData, content, storeCode, categories }) {
+export function CategoryBreadcrumbsSlot({ categoryData, content, storeCode, categories, className, styles }) {
   const { category, breadcrumbs } = categoryData || {};
 
   return (
-    <nav className="category-breadcrumbs">
+    <nav className={className || "category-breadcrumbs"} style={styles}>
       {content ? (
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
