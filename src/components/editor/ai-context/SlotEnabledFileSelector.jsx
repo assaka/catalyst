@@ -88,12 +88,17 @@ const SlotEnabledFileSelector = ({
       // Use files prop if provided, otherwise use default slotEnabledFiles
       const filesToProcess = files || slotEnabledFiles;
 
+      console.log('Original slotEnabledFiles:', slotEnabledFiles);
+      console.log('filesToProcess:', filesToProcess);
+
       // Mark all files as existing since we're not checking file_baselines anymore
       const existingFiles = filesToProcess.map(file => ({
         ...file,
         exists: true,
         hasSlotConfig: false // Will be updated below
       }));
+
+      console.log('existingFiles after mapping:', existingFiles);
 
       // Check slot configuration status for existing files
       if (selectedStore?.id) {
@@ -287,6 +292,9 @@ const SlotEnabledFileSelector = ({
           {slotFiles.map((file) => {
             const IconComponent = file.icon;
             const isCurrentFile = selectedFile?.path === file.path;
+
+            // Debug logging
+            console.log(`File: ${file.name}, comingSoon: ${file.comingSoon}`, file);
 
             return (
               <div

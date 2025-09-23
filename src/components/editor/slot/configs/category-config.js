@@ -91,7 +91,7 @@ export const categoryConfig = {
       id: 'category_description',
       type: 'text',
       content: 'Discover our amazing collection of products in this category. Browse through our curated selection and find exactly what you need.',
-      className: 'text-gray-600',
+      className: 'text-gray-600 mb-6',
       parentClassName: '',
       styles: {},
       parentId: 'page_header',
