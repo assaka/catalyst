@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Palette, Eye, Navigation, ShoppingBag } from 'lucide-react';
+import { Save, Palette, Eye, Navigation, ShoppingBag, Filter } from 'lucide-react';
 
 const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     for (let i = 0; i < maxRetries; i++) {
@@ -57,6 +57,9 @@ export default function ThemeLayout() {
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
                 ...(fullStore?.settings || {}),
+                // Category page defaults
+                collapse_filters: false,
+                max_visible_attributes: 5,
                 theme: {
                     primary_button_color: '#007bff',
                     secondary_button_color: '#6c757d',
@@ -281,6 +284,43 @@ export default function ThemeLayout() {
                                     <Label htmlFor="show_category_in_breadcrumb">Show Category in Breadcrumbs</Label>
                                 </div>
                                 <Switch id="show_category_in_breadcrumb" checked={!!store.settings.show_category_in_breadcrumb} onCheckedChange={(c) => handleSettingsChange('show_category_in_breadcrumb', c)} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5" /> Category Page</CardTitle>
+                            <CardDescription>Settings for category and filtering pages.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="collapse_filters">Collapse Filters</Label>
+                                    <p className="text-sm text-gray-500">Start with filter sections collapsed by default.</p>
+                                </div>
+                                <Switch
+                                    id="collapse_filters"
+                                    checked={!!store.settings.collapse_filters}
+                                    onCheckedChange={(c) => handleSettingsChange('collapse_filters', c)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="max_visible_attributes">Max Visible Attributes</Label>
+                                    <p className="text-sm text-gray-500">Show this many filter options before "Show More" button.</p>
+                                </div>
+                                <div className="w-20">
+                                    <Input
+                                        id="max_visible_attributes"
+                                        type="number"
+                                        min="1"
+                                        max="20"
+                                        value={store.settings.max_visible_attributes || 5}
+                                        onChange={(e) => handleSettingsChange('max_visible_attributes', parseInt(e.target.value) || 5)}
+                                        className="text-center"
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
