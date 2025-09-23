@@ -255,7 +255,7 @@ export default function LayeredNavigation({
                                             activeFilterElements.push(
                                                 <span
                                                     key={`${filterKey}-${value}`}
-                                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 mr-2 mb-2"
+                                                    className="inline-flex items-center px-2 rounded-full text-xs bg-blue-100 text-blue-800 mr-2 mb-2"
                                                 >
                                                     {filterKey}: {value}
                                                     <button
@@ -269,7 +269,7 @@ export default function LayeredNavigation({
                                                             }
                                                             setSelectedFilters(newFilters);
                                                         }}
-                                                        className="ml-1 text-blue-600 hover:text-blue-800"
+                                                        className="text-xl ml-2 text-blue-600 hover:text-blue-800"
                                                     >
                                                         ×
                                                     </button>
@@ -285,7 +285,7 @@ export default function LayeredNavigation({
                                     activeFilterElements.push(
                                         <span
                                             key="price-range"
-                                            className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
+                                            className="inline-flex items-center px-2 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
                                         >
                                             Price: ${min} - ${max}
                                             <button
