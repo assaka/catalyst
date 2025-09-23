@@ -573,6 +573,12 @@ const CategorySlotsEditor = ({
                       console.log('🎨 customSlotRenderer CALLED for slot:', slot.id, 'type:', slot.type);
                       console.log('🚨 CUSTOM SLOT RENDERER IS WORKING!');
 
+                      // Test: Always return something for layered_navigation to verify it's being called
+                      if (slot.id === 'layered_navigation') {
+                        console.log('🔥 RENDERING LAYERED NAVIGATION!');
+                        return <div style={{background: 'red', padding: '20px', color: 'white'}}>LAYERED NAVIGATION TEST</div>;
+                      }
+
                       const componentMap = {
                         // Breadcrumbs and headers
                         'breadcrumbs': CategoryHeaderSlot,
