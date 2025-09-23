@@ -120,7 +120,7 @@ export function CategorySlotRenderer({
       if (!imageUrl && !content) return null;
 
       return wrapWithParentClass(
-        <div className={className || "relative w-full h-64 mb-6 rounded-lg overflow-hidden"} style={styles}
+        <div className={className || "relative w-full h-64 mb-6 rounded-lg overflow-hidden"} style={styles}>
           {imageUrl ? (
             <img
               src={imageUrl}
