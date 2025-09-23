@@ -447,13 +447,33 @@ const CategorySlotsEditor = ({
 
               {/* Edit mode controls */}
               {mode === 'edit' && (
-                <EditModeControls
-                  localSaveStatus={localSaveStatus}
-                  publishStatus={publishStatus}
-                  saveConfiguration={saveConfiguration}
-                  onPublish={handlePublish}
-                  hasChanges={canPublish}
-                />
+                <div className="flex items-center gap-2">
+                  <EditModeControls
+                    localSaveStatus={localSaveStatus}
+                    publishStatus={publishStatus}
+                    saveConfiguration={saveConfiguration}
+                    onPublish={handlePublish}
+                    hasChanges={canPublish}
+                  />
+
+                  {/* Temporary button to load default config */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      console.log('🔄 Manually loading default config...');
+                      const defaultConfig = await createDefaultSlots();
+                      if (defaultConfig) {
+                        console.log('✅ Setting default config:', defaultConfig);
+                        setCategoryLayoutConfig(defaultConfig);
+                        setHasUnsavedChanges(true);
+                      }
+                    }}
+                    className="text-xs"
+                  >
+                    Load Default Config
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -515,7 +535,11 @@ const CategorySlotsEditor = ({
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
+                {(() => {
+                  console.log('🔍 CategorySlotsEditor render - categoryLayoutConfig:', categoryLayoutConfig);
+                  console.log('🔍 Slots available:', categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots) : 'No slots');
+                  return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
+                })() ? (
                   <HierarchicalSlotRenderer
                     slots={categoryLayoutConfig.slots}
                     parentId={null}
