@@ -1502,7 +1502,6 @@ export function HierarchicalSlotRenderer({
                       setPageConfig={setPageConfig}
                       saveConfiguration={saveConfiguration}
                       saveTimeoutRef={saveTimeoutRef}
-                      categoryData={categoryData}
                     />
                   )}
                 </EditableElement>

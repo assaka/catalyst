@@ -633,6 +633,20 @@ export function CategorySlotRenderer({
           </div>
         );
 
+      case 'breadcrumbs':
+        // Use unified breadcrumb renderer with auto-generation
+        return wrapWithParentClass(
+          <BreadcrumbRenderer
+            items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
+            pageType="category"
+            pageData={category}
+            storeCode={store?.slug || store?.code}
+            categories={categories}
+            settings={settings}
+            className={className}
+          />
+        );
+
       default:
         // For any unknown slot type, render as text
         return (
