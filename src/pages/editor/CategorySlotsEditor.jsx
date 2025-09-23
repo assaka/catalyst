@@ -149,8 +149,18 @@ const CategorySlotsEditor = ({
   const createDefaultSlots = useCallback(async () => {
     console.log('🏗️ Creating default category slots...');
     try {
-      const { categoryConfig } = await import('@/components/editor/slot/configs/category-config');
-      return {
+      const configModule = await import('@/components/editor/slot/configs/category-config');
+      console.log('📦 Imported config module:', configModule);
+
+      const categoryConfig = configModule.categoryConfig || configModule.default;
+      console.log('⚙️ Category config:', categoryConfig);
+
+      if (!categoryConfig || !categoryConfig.slots) {
+        console.error('❌ Invalid category config - no slots found');
+        return null;
+      }
+
+      const defaultConfig = {
         page_name: 'Category',
         slot_type: 'category_layout',
         slots: categoryConfig.slots,
@@ -162,6 +172,9 @@ const CategorySlotsEditor = ({
         },
         cmsBlocks: categoryConfig.cmsBlocks || []
       };
+
+      console.log('✅ Created default config with', Object.keys(defaultConfig.slots).length, 'slots');
+      return defaultConfig;
     } catch (error) {
       console.error('❌ Failed to load category config:', error);
       return null;
@@ -527,14 +540,32 @@ const CategorySlotsEditor = ({
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
                       const componentMap = {
+                        // Breadcrumbs and headers
                         'breadcrumbs': CategoryHeaderSlot,
                         'category_title': CategoryHeaderSlot,
+                        'category_header': CategoryHeaderSlot,
+                        'category_description': CategoryHeaderSlot,
+
+                        // Filters and navigation
                         'filters_container': CategoryFiltersSlot,
-                        'products_container': CategoryProductsSlot,
-                        'sort_controls': CategorySortingSlot,
-                        'pagination_controls': CategoryPaginationSlot,
                         'layered_navigation': CategoryLayeredNavigationSlot,
-                        'product_item_card': CategoryProductItemCardSlot
+                        'active_filters': CategoryLayeredNavigationSlot,
+
+                        // Products
+                        'products_container': CategoryProductsSlot,
+                        'products_grid': CategoryProductsSlot,
+                        'product_item_card': CategoryProductItemCardSlot,
+                        'product_template': CategoryProductItemCardSlot,
+
+                        // Sorting and controls
+                        'sort_controls': CategorySortingSlot,
+                        'sorting_controls': CategorySortingSlot,
+                        'product_count_info': CategorySortingSlot,
+                        'sort_selector': CategorySortingSlot,
+
+                        // Pagination
+                        'pagination_controls': CategoryPaginationSlot,
+                        'pagination_container': CategoryPaginationSlot
                       };
 
                       const SlotComponent = componentMap[slot.id];
@@ -547,6 +578,26 @@ const CategorySlotsEditor = ({
                           />
                         );
                       }
+
+                      // For slots without specific components, render basic content
+                      if (slot.type === 'text' && slot.content) {
+                        return (
+                          <div
+                            className={slot.className || "p-2"}
+                            dangerouslySetInnerHTML={{ __html: slot.content }}
+                          />
+                        );
+                      }
+
+                      // For container slots, render children if they exist
+                      if (slot.type === 'container') {
+                        return (
+                          <div className={slot.className || "w-full"}>
+                            {/* Container content would be rendered by HierarchicalSlotRenderer */}
+                          </div>
+                        );
+                      }
+
                       return null;
                     }}
                   />
