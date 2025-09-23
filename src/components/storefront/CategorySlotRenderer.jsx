@@ -94,7 +94,16 @@ export function CategorySlotRenderer({
   };
 
   const renderSlotContent = (slot) => {
-    const { id, type, content, className = '', styles = {}, parentClassName = '' } = slot;
+    // Extract slot configuration with defaults
+    const {
+      id,
+      type,
+      content,
+      className = '',
+      styles = {},
+      parentClassName = '',
+      metadata = {}
+    } = slot || {};
 
     // Helper function to wrap content with parent class if needed
     const wrapWithParentClass = (children) => {
@@ -111,7 +120,7 @@ export function CategorySlotRenderer({
       if (!imageUrl && !content) return null;
 
       return wrapWithParentClass(
-        <div className={className || "relative w-full h-64 mb-6 rounded-lg overflow-hidden"} style={styles}>
+        <div className={className || "relative w-full h-64 mb-6 rounded-lg overflow-hidden"} style={styles}
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -126,27 +135,25 @@ export function CategorySlotRenderer({
     }
 
     // Handle category header content - with dynamic content from categoryContext
-    if (id === 'header' || id === 'category_title') {
+    if (id === 'category_header' || id === 'header' || id === 'category_title') {
       // Use content from slot if provided, otherwise use category name
       const headerContent = content || category?.name || 'Products';
 
       return wrapWithParentClass(
-        <div className="mb-4">
-          <h1 className={className || "text-4xl font-bold text-gray-900"} style={styles}>
-            {headerContent}
-          </h1>
-        </div>
+        <h1 className={className} style={styles}>
+          {headerContent}
+        </h1>
       );
     }
 
-    if (id === 'header_description' || id === 'category_description') {
+    if (id === 'category_description' || id === 'header_description') {
       // Use content from slot if provided, otherwise use category description
       const descContent = content || category?.description || '';
 
       if (!descContent) return null;
 
       return wrapWithParentClass(
-        <p className={className || "text-gray-600 mt-2"} style={styles}>
+        <p className={className} style={styles}>
           {descContent}
         </p>
       );
@@ -157,7 +164,7 @@ export function CategorySlotRenderer({
       if (content && content.trim()) {
         return wrapWithParentClass(
           <div
-            className={className || "flex mb-4"}
+            className={className}
             style={styles}
             dangerouslySetInnerHTML={{ __html: content }}
           />
@@ -173,7 +180,7 @@ export function CategorySlotRenderer({
           storeCode={store?.slug || store?.code}
           categories={categories}
           settings={settings}
-          className={className || "flex items-center space-x-1 text-sm text-gray-500 mb-6"}
+          className={className}
         />
       );
     }
@@ -181,7 +188,7 @@ export function CategorySlotRenderer({
     // Search bar
     if (id === 'search_bar') {
       return wrapWithParentClass(
-        <div className={className || "relative mb-6"} style={styles}>
+        <div className={className} style={styles}>
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
             placeholder={content || "Search products..."}
@@ -458,7 +465,7 @@ export function CategorySlotRenderer({
       ];
 
       return wrapWithParentClass(
-        <div className={className || "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"} style={styles}>
+        <div className={className} style={styles}>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-600">
               Showing {products.length > 0 ? ((currentPage - 1) * 12 + 1) : 0}-{Math.min(currentPage * 12, products.length)} of {products.length} products
@@ -485,8 +492,13 @@ export function CategorySlotRenderer({
     // Sorting controls container
     if (id === 'sorting_controls') {
       return wrapWithParentClass(
-        <div className={className || "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"} style={styles}>
-          {renderChildSlots(slots, id).map(childSlot => renderSlotContent(childSlot))}
+        <div className={className} style={styles}>
+          <CategorySlotRenderer
+            slots={slots}
+            parentId={slot.id}
+            viewMode={viewMode}
+            categoryContext={categoryContext}
+          />
         </div>
       );
     }
@@ -498,7 +510,7 @@ export function CategorySlotRenderer({
       const endIndex = Math.min(startIndex + (products?.length || 0) - 1, totalProducts);
 
       return wrapWithParentClass(
-        <div className={className || "text-sm text-gray-600"} style={styles}>
+        <div className={className} style={styles}>
           {totalProducts > 0 ? (
             `Showing ${startIndex}-${endIndex} of ${totalProducts} products`
           ) : (
@@ -521,7 +533,7 @@ export function CategorySlotRenderer({
       ];
 
       return wrapWithParentClass(
-        <div className={className || "flex items-center gap-2"} style={styles}>
+        <div className={className} style={styles}>
           <Label className="text-sm font-medium">Sort by:</Label>
           <select
             value={sortOption || ''}
@@ -540,19 +552,32 @@ export function CategorySlotRenderer({
 
     // Products grid - render just the product items
     if (id === 'products_grid') {
-      const gridClass = viewMode === 'grid'
+      // Use the className from slot configuration if available, otherwise use default
+      const defaultGridClass = viewMode === 'grid'
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-4';
 
+      const finalClassName = className || defaultGridClass;
+
       // Full product card rendering with images and add to cart
       return (
-        <div className={`${className} ${gridClass} mb-8`} style={styles}>
-          {products.map(product => (
+        <div className={`${finalClassName} mb-8`} style={styles}>
+          {products.map(product => {
+            // Get product template slot configuration for styling
+            const productTemplateSlot = slots?.product_template || {};
+            const productImageSlot = slots?.product_image || {};
+            const productNameSlot = slots?.product_name || {};
+            const productPriceSlot = slots?.product_price || {};
+            const productComparePriceSlot = slots?.product_compare_price || {};
+            const productAddToCartSlot = slots?.product_add_to_cart || {};
+
+            return (
             <Card
               key={product.id}
-              className={`cursor-pointer hover:shadow-lg transition-shadow ${
+              className={productTemplateSlot.className || `cursor-pointer hover:shadow-lg transition-shadow ${
                 viewMode === 'list' ? 'flex' : ''
               }`}
+              style={productTemplateSlot.styles || {}}
               onClick={() => onProductClick && onProductClick(product)}
             >
               <div className={viewMode === 'list' ? 'w-40 flex-shrink-0' : ''}>
@@ -588,11 +613,12 @@ export function CategorySlotRenderer({
                     return '/placeholder-product.jpg';
                   })()}
                   alt={product.name}
-                  className={`w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover ${viewMode === 'list' ? 'rounded-l-lg' : 'rounded-t-lg'}`}
+                  className={productImageSlot.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover ${viewMode === 'list' ? 'rounded-l-lg' : 'rounded-t-lg'}`}
+                  style={productImageSlot.styles || {}}
                 />
               </div>
               <CardContent className={viewMode === 'list' ? 'p-4 flex-1' : 'p-4'}>
-                <h3 className="font-semibold text-lg truncate">
+                <h3 className={productNameSlot.className || "font-semibold text-lg truncate"} style={productNameSlot.styles || {}}>
                   {product.name}
                 </h3>
 
@@ -607,7 +633,7 @@ export function CategorySlotRenderer({
                   <div className="flex items-baseline gap-2">
                     {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                       <>
-                        <p className="font-bold text-red-600 text-xl">
+                        <p className={productPriceSlot.className || "font-bold text-red-600 text-xl"} style={productPriceSlot.styles || {}}>
                           {formatDisplayPrice(
                             Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
                             settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
@@ -616,7 +642,7 @@ export function CategorySlotRenderer({
                             selectedCountry
                           )}
                         </p>
-                        <p className="text-gray-500 line-through text-sm">
+                        <p className={productComparePriceSlot.className || "text-gray-500 line-through text-sm"} style={productComparePriceSlot.styles || {}}>
                           {formatDisplayPrice(
                             Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
                             settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
@@ -627,7 +653,7 @@ export function CategorySlotRenderer({
                         </p>
                       </>
                     ) : (
-                      <p className="font-bold text-xl text-gray-900">
+                      <p className={productPriceSlot.className || "font-bold text-xl text-gray-900"} style={productPriceSlot.styles || {}}>
                         {formatDisplayPrice(
                           parseFloat(product.price || 0),
                           settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
@@ -685,15 +711,16 @@ export function CategorySlotRenderer({
                         console.error("Failed to add to cart", error);
                       }
                     }}
-                    className="w-full text-white border-0 hover:brightness-90 transition-all duration-200"
+                    className={productAddToCartSlot.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
                     size="sm"
                     style={{
                       backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
-                      color: 'white'
+                      color: 'white',
+                      ...productAddToCartSlot.styles
                     }}
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
+                    {productAddToCartSlot.content || 'Add to Cart'}
                   </Button>
                 </div>
 
@@ -711,7 +738,8 @@ export function CategorySlotRenderer({
                 )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       );
     }
@@ -786,7 +814,7 @@ export function CategorySlotRenderer({
       }
 
       return wrapWithParentClass(
-        <div className={className || "flex justify-center items-center gap-2 mt-8"} style={styles}>
+        <div className={className} style={styles}>
           {pages}
         </div>
       );
