@@ -1457,17 +1457,21 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  {/* Render container content using custom renderer if available */}
-                  {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (() => {
-                    // Use custom renderer if provided (like Cart does)
+                  {/* First try custom renderer for ALL slot types */}
+                  {(() => {
                     if (customSlotRenderer) {
                       const customContent = customSlotRenderer(slot);
                       if (customContent) {
+                        console.log(`✅ Custom renderer provided content for slot: ${slot.id}`);
                         return customContent;
                       }
                     }
+                    return null;
+                  })()}
 
-                    // Fall back to default HTML content rendering
+                  {/* Render container content using custom renderer if available */}
+                  {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (() => {
+                    // Fall back to default HTML content rendering if custom renderer didn't provide content
                     if (slot.content) {
                       return <div dangerouslySetInnerHTML={{ __html: slot.content }} />;
                     }
