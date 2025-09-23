@@ -538,6 +538,13 @@ const CategorySlotsEditor = ({
                 {(() => {
                   console.log('🔍 CategorySlotsEditor render - categoryLayoutConfig:', categoryLayoutConfig);
                   console.log('🔍 Slots available:', categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots) : 'No slots');
+
+                  // Log specific slot types to debug
+                  if (categoryLayoutConfig?.slots) {
+                    console.log('🔍 layered_navigation slot:', categoryLayoutConfig.slots.layered_navigation);
+                    console.log('🔍 product_item_card slot:', categoryLayoutConfig.slots.product_item_card);
+                  }
+
                   return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
                 })() ? (
                   <HierarchicalSlotRenderer
