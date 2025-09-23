@@ -563,7 +563,8 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
-                      console.log('🎨 customSlotRenderer called for slot:', slot.id, 'type:', slot.type, 'slot:', slot);
+                      console.log('🎨 customSlotRenderer CALLED for slot:', slot.id, 'type:', slot.type);
+                      console.log('🚨 CUSTOM SLOT RENDERER IS WORKING!');
 
                       const componentMap = {
                         // Breadcrumbs and headers
