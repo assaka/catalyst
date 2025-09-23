@@ -519,7 +519,7 @@ export const categoryConfig = {
         hierarchical: false,
         component: 'ProductItemCard',
         displayName: 'Product Grid',
-        itemsToShow: 12
+        itemsToShow: 3
       }
     },
 
