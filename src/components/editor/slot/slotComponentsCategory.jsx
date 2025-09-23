@@ -186,23 +186,16 @@ export function CategorySortingSlot({ categoryData, content }) {
       {content ? (
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              Showing {products?.length > 0 ? 1 : 0}-{products?.length || 0} of {products?.length || 0} products
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
-            <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
-              <option>Featured</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Name: A-Z</option>
-              <option>Name: Z-A</option>
-              <option>Newest First</option>
-            </select>
-          </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Sort by:</span>
+          <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
+            <option>Featured</option>
+            <option>Price: Low to High</option>
+            <option>Price: High to Low</option>
+            <option>Name: A-Z</option>
+            <option>Name: Z-A</option>
+            <option>Newest First</option>
+          </select>
         </div>
       )}
     </div>

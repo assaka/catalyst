@@ -241,32 +241,32 @@ const CategorySlotsEditor = ({
       { name: 'Sample Category', url: null }
     ],
     products: viewMode === 'grid' ? [
-      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'M' } },
-      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L' } },
-      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'S' } },
-      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'XL' } },
-      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'M' } },
-      { id: 6, name: 'Product 6', price: 79.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'L' } }
+      { id: 1, name: 'iPhone 15 Pro', price: 999.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'M', brand: 'Apple' } },
+      { id: 2, name: 'Galaxy S24', price: 899.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'L', brand: 'Samsung' } },
+      { id: 3, name: 'Pixel 8', price: 699.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'S', brand: 'Google' } },
+      { id: 4, name: 'OnePlus 12', price: 799.99, images: ['/sample-product.jpg'], attributes: { color: 'Purple', size: 'XL', brand: 'OnePlus' } },
+      { id: 5, name: 'iPhone 15', price: 799.99, images: ['/sample-product.jpg'], attributes: { color: 'Yellow', size: 'M', brand: 'Apple' } },
+      { id: 6, name: 'Galaxy S24+', price: 999.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L', brand: 'Samsung' } }
     ] : [
-      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Red', size: 'M' } },
-      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Blue', size: 'L' } },
-      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Green', size: 'S' } }
+      { id: 1, name: 'iPhone 15 Pro', price: 999.99, images: ['/sample-product.jpg'], description: 'Latest iPhone with Pro features', attributes: { color: 'Blue', size: 'M', brand: 'Apple' } },
+      { id: 2, name: 'Galaxy S24', price: 899.99, images: ['/sample-product.jpg'], description: 'Samsung flagship smartphone', attributes: { color: 'Red', size: 'L', brand: 'Samsung' } },
+      { id: 3, name: 'Pixel 8', price: 699.99, images: ['/sample-product.jpg'], description: 'Google Pixel with AI features', attributes: { color: 'Green', size: 'S', brand: 'Google' } }
     ],
     allProducts: viewMode === 'grid' ? [
-      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'M' } },
-      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L' } },
-      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'S' } },
-      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'XL' } },
-      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'M' } },
-      { id: 6, name: 'Product 6', price: 79.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'L' } },
-      { id: 7, name: 'Product 7', price: 89.99, images: ['/sample-product.jpg'], attributes: { color: 'Yellow', size: 'S' } },
-      { id: 8, name: 'Product 8', price: 99.99, images: ['/sample-product.jpg'], attributes: { color: 'Purple', size: 'XL' } }
+      { id: 1, name: 'iPhone 15 Pro', price: 999.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'M', brand: 'Apple' } },
+      { id: 2, name: 'Galaxy S24', price: 899.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'L', brand: 'Samsung' } },
+      { id: 3, name: 'Pixel 8', price: 699.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'S', brand: 'Google' } },
+      { id: 4, name: 'OnePlus 12', price: 799.99, images: ['/sample-product.jpg'], attributes: { color: 'Purple', size: 'XL', brand: 'OnePlus' } },
+      { id: 5, name: 'iPhone 15', price: 799.99, images: ['/sample-product.jpg'], attributes: { color: 'Yellow', size: 'M', brand: 'Apple' } },
+      { id: 6, name: 'Galaxy S24+', price: 999.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L', brand: 'Samsung' } },
+      { id: 7, name: 'Pixel 8 Pro', price: 999.99, images: ['/sample-product.jpg'], attributes: { color: 'Yellow', size: 'S', brand: 'Google' } },
+      { id: 8, name: 'OnePlus 12 Pro', price: 899.99, images: ['/sample-product.jpg'], attributes: { color: 'Purple', size: 'XL', brand: 'OnePlus' } }
     ] : [
-      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Red', size: 'M' } },
-      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Blue', size: 'L' } },
-      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Green', size: 'S' } },
-      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Red', size: 'XL' } },
-      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Blue', size: 'M' } }
+      { id: 1, name: 'iPhone 15 Pro', price: 999.99, images: ['/sample-product.jpg'], description: 'Latest iPhone with Pro features', attributes: { color: 'Blue', size: 'M', brand: 'Apple' } },
+      { id: 2, name: 'Galaxy S24', price: 899.99, images: ['/sample-product.jpg'], description: 'Samsung flagship smartphone', attributes: { color: 'Red', size: 'L', brand: 'Samsung' } },
+      { id: 3, name: 'Pixel 8', price: 699.99, images: ['/sample-product.jpg'], description: 'Google Pixel with AI features', attributes: { color: 'Green', size: 'S', brand: 'Google' } },
+      { id: 4, name: 'OnePlus 12', price: 799.99, images: ['/sample-product.jpg'], description: 'OnePlus flagship with fast charging', attributes: { color: 'Purple', size: 'XL', brand: 'OnePlus' } },
+      { id: 5, name: 'iPhone 15', price: 799.99, images: ['/sample-product.jpg'], description: 'Standard iPhone model', attributes: { color: 'Yellow', size: 'M', brand: 'Apple' } }
     ],
     filters: {
       color: ['Red', 'Blue', 'Green', 'Yellow', 'Purple'],
@@ -278,6 +278,7 @@ const CategorySlotsEditor = ({
         code: 'color',
         name: 'Color',
         is_filterable: true,
+        use_for_filter: true,
         options: [
           { value: 'Red', label: 'Red' },
           { value: 'Blue', label: 'Blue' },
@@ -290,11 +291,24 @@ const CategorySlotsEditor = ({
         code: 'size',
         name: 'Size',
         is_filterable: true,
+        use_for_filter: true,
         options: [
           { value: 'S', label: 'Small' },
           { value: 'M', label: 'Medium' },
           { value: 'L', label: 'Large' },
           { value: 'XL', label: 'Extra Large' }
+        ]
+      },
+      {
+        code: 'brand',
+        name: 'Brand',
+        is_filterable: true,
+        use_for_filter: true,
+        options: [
+          { value: 'Apple', label: 'Apple' },
+          { value: 'Samsung', label: 'Samsung' },
+          { value: 'Google', label: 'Google' },
+          { value: 'OnePlus', label: 'OnePlus' }
         ]
       }
     ],
@@ -612,10 +626,7 @@ const CategorySlotsEditor = ({
                         return <div style={{background: 'green', padding: '15px', color: 'white', marginBottom: '20px', fontSize: '24px'}}>CATEGORY HEADER TEST WORKING!</div>;
                       }
 
-                      if (slot.id === 'layered_navigation') {
-                        console.log('🔥 RENDERING LAYERED NAVIGATION!');
-                        return <div style={{background: 'red', padding: '20px', color: 'white'}}>LAYERED NAVIGATION TEST</div>;
-                      }
+                      // Let layered_navigation be handled by the component mapping
 
                       // Handle breadcrumbs content specifically
                       if (slot.id === 'breadcrumbs_content' || slot.type === 'breadcrumbs') {
@@ -625,6 +636,7 @@ const CategorySlotsEditor = ({
                         return (
                           <CategoryBreadcrumbsSlot
                             categoryData={sampleCategoryContext}
+                            categoryContext={sampleCategoryContext}
                             content={slot.content}
                             config={{ viewMode }}
                           />
@@ -668,6 +680,7 @@ const CategorySlotsEditor = ({
                         return (
                           <SlotComponent
                             categoryData={sampleCategoryContext}
+                            categoryContext={sampleCategoryContext}
                             content={slot.content}
                             config={{ viewMode }}
                           />
