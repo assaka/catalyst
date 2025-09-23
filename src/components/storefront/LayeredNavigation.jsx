@@ -136,17 +136,21 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                                 // Extract value from object if needed
                                 let extractedValue = val;
                                 if (typeof val === 'object' && val !== null) {
-                                    extractedValue = val.value || val.label || val.name || String(val);
+                                    extractedValue = val.value || val.label || val.name;
                                 }
-                                if (extractedValue) values.add(String(extractedValue));
+                                if (extractedValue && extractedValue !== '[object Object]') {
+                                    values.add(String(extractedValue));
+                                }
                             });
                         } else {
                             // Extract value from object if needed
                             let extractedValue = attributeValue;
                             if (typeof attributeValue === 'object' && attributeValue !== null) {
-                                extractedValue = attributeValue.value || attributeValue.label || attributeValue.name || String(attributeValue);
+                                extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
                             }
-                            values.add(String(extractedValue));
+                            if (extractedValue && extractedValue !== '[object Object]') {
+                                values.add(String(extractedValue));
+                            }
                         }
                     }
                 });
@@ -252,12 +256,12 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                                                     // For arrays, check if any value matches
                                                     return attributeValue.some(val => {
                                                         const valToCheck = typeof val === 'object' && val !== null
-                                                            ? (val.value || val.label || val.name || String(val))
+                                                            ? (val.value || val.label || val.name)
                                                             : val;
-                                                        return String(valToCheck) === String(value);
+                                                        return valToCheck && String(valToCheck) === String(value);
                                                     });
                                                 } else {
-                                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name || String(attributeValue);
+                                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
                                                 }
                                             }
 
