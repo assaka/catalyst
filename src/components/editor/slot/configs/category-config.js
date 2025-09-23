@@ -508,7 +508,7 @@ export const categoryConfig = {
       id: 'product_item_card',
       type: 'container',
       content: '',
-      className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
@@ -544,22 +544,6 @@ export const categoryConfig = {
     //   }
     // },
 
-
-    // Products grid (alternative layout - kept for flexibility)
-    products_grid: {
-      id: 'products_grid',
-      type: 'container',
-      content: '',
-      className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 4 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true }
-    },
-
     // Single product template with microslots
     product_template: {
       id: 'product_template',
@@ -568,7 +552,7 @@ export const categoryConfig = {
       className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       parentClassName: '',
       styles: {},
-      parentId: 'products_grid',
+      parentId: 'product_item_card',
       position: { col: 1, row: 1 },
       colSpan: { grid: 4, list: 12 },
       viewMode: ['grid', 'list'],
@@ -587,7 +571,7 @@ export const categoryConfig = {
       className: 'relative overflow-hidden',
       parentClassName: '',
       styles: {},
-      parentId: 'product_template',
+      parentId: 'product_item_card',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 4 },
       viewMode: ['grid', 'list'],
@@ -629,7 +613,7 @@ export const categoryConfig = {
       className: 'font-semibold text-lg truncate',
       parentClassName: '',
       styles: {},
-      parentId: 'product_template',
+      parentId: 'product_item_card',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
@@ -643,7 +627,7 @@ export const categoryConfig = {
       className: 'flex items-baseline gap-2',
       parentClassName: '',
       styles: {},
-      parentId: 'product_template',
+      parentId: 'product_item_card',
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
@@ -685,7 +669,7 @@ export const categoryConfig = {
       className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
       parentClassName: '',
       styles: {},
-      parentId: 'product_template',
+      parentId: 'product_item_card',
       position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
