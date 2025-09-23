@@ -241,16 +241,10 @@ export default function LayeredNavigation({
                 {/* Active Filters - below Filter By title */}
                 {showActiveFilters && hasActiveFilters && (
                     <div
-                        className={filter_active_filters.className || "mb-4 p-3 bg-gray-50 rounded-lg"}
+                        className={filter_active_filters.className || "mb-4 p-2"}
                         style={filter_active_filters.styles || {}}
                     >
                         <div className="flex flex-wrap items-center">
-                            <span
-                                className={filter_active_filters_label.className || "text-sm font-medium text-gray-700 mr-2"}
-                                style={filter_active_filters_label.styles || {}}
-                            >
-                                {filter_active_filters_label.content || "Active Filters:"}
-                            </span>
                             {(() => {
                                 const activeFilterElements = [];
 
@@ -308,14 +302,6 @@ export default function LayeredNavigation({
 
                                 return activeFilterElements;
                             })()}
-                            {hasActiveFilters && (
-                                <button
-                                    onClick={clearAllFilters}
-                                    className="text-xs text-gray-500 hover:text-gray-700 underline ml-2"
-                                >
-                                    Clear All
-                                </button>
-                            )}
                         </div>
                     </div>
                 )}

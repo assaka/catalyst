@@ -455,6 +455,51 @@ export function CategorySlotRenderer({
       );
     }
 
+    // Handle product_item_card slot specifically
+    if (id === 'product_item_card') {
+      // Get configuration from slot content or use defaults
+      const itemsToShow = slot.metadata?.itemsToShow || 3;
+      const productsToShow = products.slice(0, itemsToShow);
+
+      // Use the className from slot configuration if available, otherwise use default
+      const defaultGridClass = viewMode === 'grid'
+        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        : 'space-y-4';
+
+      const finalClassName = className || defaultGridClass;
+
+      // Create slot configuration object for ProductItemCard
+      const slotConfig = {
+        productTemplate: slots?.product_template || {},
+        productImage: slots?.product_image || {},
+        productName: slots?.product_name || {},
+        productPrice: slots?.product_price || {},
+        productComparePrice: slots?.product_compare_price || {},
+        productAddToCart: slots?.product_add_to_cart || {}
+      };
+
+      return wrapWithParentClass(
+        <div className={`${finalClassName} mb-8`} style={styles}>
+          {productsToShow.map(product => (
+            <ProductItemCard
+              key={product.id}
+              product={product}
+              settings={settings}
+              store={store}
+              taxes={taxes}
+              selectedCountry={selectedCountry}
+              productLabels={productLabels}
+              viewMode={viewMode}
+              slotConfig={slotConfig}
+              onAddToCartStateChange={(isAdding) => {
+                console.log('🛒 Product item card - Add to cart state:', isAdding);
+              }}
+            />
+          ))}
+        </div>
+      );
+    }
+
     // Products container
     if (id === 'products_container') {
       return wrapWithParentClass(
