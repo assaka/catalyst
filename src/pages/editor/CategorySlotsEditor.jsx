@@ -145,8 +145,31 @@ const CategorySlotsEditor = ({
     'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
   );
 
-  // Use generic editor initialization
-  useEditorInitialization(initializeConfig, setCategoryLayoutConfig);
+  // Create default slots function for category layout
+  const createDefaultSlots = useCallback(async () => {
+    console.log('🏗️ Creating default category slots...');
+    try {
+      const { categoryConfig } = await import('@/components/editor/slot/configs/category-config');
+      return {
+        page_name: 'Category',
+        slot_type: 'category_layout',
+        slots: categoryConfig.slots,
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          version: '1.0',
+          pageType: 'category'
+        },
+        cmsBlocks: categoryConfig.cmsBlocks || []
+      };
+    } catch (error) {
+      console.error('❌ Failed to load category config:', error);
+      return null;
+    }
+  }, []);
+
+  // Use generic editor initialization with createDefaultSlots
+  useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
 
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(

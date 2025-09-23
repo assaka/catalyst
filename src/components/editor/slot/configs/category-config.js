@@ -97,9 +97,234 @@ export const categoryConfig = {
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
-        hierarchical: false,
+        hierarchical: true,
         component: 'LayeredNavigation',
         displayName: 'Product Filters (Price, Brand, Size, etc.)'
+      }
+    },
+
+    // LayeredNavigation Microslots
+    filter_card_header: {
+      id: 'filter_card_header',
+      type: 'text',
+      content: 'Filter By',
+      className: 'text-lg font-semibold',
+      parentClassName: '',
+      styles: {},
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Filter By Title'
+      }
+    },
+
+    filter_clear_all_button: {
+      id: 'filter_clear_all_button',
+      type: 'button',
+      content: 'Clear All',
+      className: 'text-xs border border-gray-300 hover:bg-gray-50 px-2 py-1 rounded',
+      parentClassName: '',
+      styles: {},
+      parentId: 'layered_navigation',
+      position: { col: 2, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Clear All Button'
+      }
+    },
+
+    filter_active_filters: {
+      id: 'filter_active_filters',
+      type: 'container',
+      content: '',
+      className: 'mb-4 p-4 bg-gray-50 rounded-lg',
+      parentClassName: '',
+      styles: {},
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Active Filters Container'
+      }
+    },
+
+    filter_active_filters_label: {
+      id: 'filter_active_filters_label',
+      type: 'text',
+      content: 'Active Filters:',
+      className: 'text-sm font-medium text-gray-700 mr-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_active_filters',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Active Filters Label'
+      }
+    },
+
+    filter_price_section: {
+      id: 'filter_price_section',
+      type: 'container',
+      content: '',
+      className: 'border-b border-gray-200 pb-4 mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Price Filter Section'
+      }
+    },
+
+    filter_price_title: {
+      id: 'filter_price_title',
+      type: 'text',
+      content: 'Price',
+      className: 'font-semibold text-base',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_price_section',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Price Filter Title'
+      }
+    },
+
+    filter_attribute_section: {
+      id: 'filter_attribute_section',
+      type: 'container',
+      content: '',
+      className: 'space-y-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 4 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Attribute Filters Section',
+        isTemplate: true,
+        repeatable: true
+      }
+    },
+
+    filter_attribute_title: {
+      id: 'filter_attribute_title',
+      type: 'text',
+      content: '',
+      className: 'font-semibold text-base',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_attribute_section',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Attribute Filter Title',
+        isTemplate: true
+      }
+    },
+
+    filter_attribute_option: {
+      id: 'filter_attribute_option',
+      type: 'container',
+      content: '',
+      className: 'flex items-center justify-between py-1',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_attribute_section',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Attribute Filter Option',
+        isTemplate: true,
+        repeatable: true
+      }
+    },
+
+    filter_option_checkbox: {
+      id: 'filter_option_checkbox',
+      type: 'checkbox',
+      content: '',
+      className: 'h-4 w-4 text-blue-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_attribute_option',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Filter Option Checkbox',
+        isTemplate: true
+      }
+    },
+
+    filter_option_label: {
+      id: 'filter_option_label',
+      type: 'text',
+      content: '',
+      className: 'text-sm text-gray-700',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_attribute_option',
+      position: { col: 2, row: 1 },
+      colSpan: { grid: 4, list: 4 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Filter Option Label',
+        isTemplate: true
+      }
+    },
+
+    filter_option_count: {
+      id: 'filter_option_count',
+      type: 'text',
+      content: '',
+      className: 'text-xs text-gray-400',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filter_attribute_option',
+      position: { col: 3, row: 1 },
+      colSpan: { grid: 2, list: 2 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Filter Option Count',
+        isTemplate: true
       }
     },
 

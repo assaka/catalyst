@@ -202,6 +202,22 @@ export function CategorySlotRenderer({
         options: attr.options || []
       })) || [];
 
+      // Create slot configuration for LayeredNavigation microslots
+      const layeredNavSlotConfig = {
+        filter_card_header: slots?.filter_card_header || {},
+        filter_clear_all_button: slots?.filter_clear_all_button || {},
+        filter_active_filters: slots?.filter_active_filters || {},
+        filter_active_filters_label: slots?.filter_active_filters_label || {},
+        filter_price_section: slots?.filter_price_section || {},
+        filter_price_title: slots?.filter_price_title || {},
+        filter_attribute_section: slots?.filter_attribute_section || {},
+        filter_attribute_title: slots?.filter_attribute_title || {},
+        filter_attribute_option: slots?.filter_attribute_option || {},
+        filter_option_checkbox: slots?.filter_option_checkbox || {},
+        filter_option_label: slots?.filter_option_label || {},
+        filter_option_count: slots?.filter_option_count || {}
+      };
+
       return wrapWithParentClass(
         <div className={className || "sticky top-4"} style={styles}>
           {/* Render child slots at the top */}
@@ -214,6 +230,7 @@ export function CategorySlotRenderer({
                     products={allProducts || products}
                     attributes={attributes}
                     onFilterChange={handleFilterChange}
+                    slotConfig={layeredNavSlotConfig}
                   />
                 </div>
               );
@@ -231,6 +248,7 @@ export function CategorySlotRenderer({
               products={allProducts || products}
               attributes={attributes}
               onFilterChange={handleFilterChange}
+              slotConfig={layeredNavSlotConfig}
             />
           )}
         </div>
@@ -247,12 +265,29 @@ export function CategorySlotRenderer({
         options: attr.options || []
       })) || [];
 
+      // Create slot configuration for LayeredNavigation microslots
+      const layeredNavSlotConfig = {
+        filter_card_header: slots?.filter_card_header || {},
+        filter_clear_all_button: slots?.filter_clear_all_button || {},
+        filter_active_filters: slots?.filter_active_filters || {},
+        filter_active_filters_label: slots?.filter_active_filters_label || {},
+        filter_price_section: slots?.filter_price_section || {},
+        filter_price_title: slots?.filter_price_title || {},
+        filter_attribute_section: slots?.filter_attribute_section || {},
+        filter_attribute_title: slots?.filter_attribute_title || {},
+        filter_attribute_option: slots?.filter_attribute_option || {},
+        filter_option_checkbox: slots?.filter_option_checkbox || {},
+        filter_option_label: slots?.filter_option_label || {},
+        filter_option_count: slots?.filter_option_count || {}
+      };
+
       return wrapWithParentClass(
         <div className={className} style={styles}>
           <LayeredNavigation
             products={allProducts || products}
             attributes={attributes}
             onFilterChange={handleFilterChange}
+            slotConfig={layeredNavSlotConfig}
           />
         </div>
       );

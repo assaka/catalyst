@@ -11,9 +11,31 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export default function LayeredNavigation({ products, attributes, onFilterChange, showActiveFilters = true }) {
+export default function LayeredNavigation({
+    products,
+    attributes,
+    onFilterChange,
+    showActiveFilters = true,
+    slotConfig = {}
+}) {
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
+
+    // Extract slot configurations for styling
+    const {
+        filter_card_header = {},
+        filter_clear_all_button = {},
+        filter_active_filters = {},
+        filter_active_filters_label = {},
+        filter_price_section = {},
+        filter_price_title = {},
+        filter_attribute_section = {},
+        filter_attribute_title = {},
+        filter_attribute_option = {},
+        filter_option_checkbox = {},
+        filter_option_label = {},
+        filter_option_count = {}
+    } = slotConfig;
 
 
 
@@ -154,16 +176,25 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
         }
 
         return (
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            <div
+                className={filter_active_filters.className || "mb-4 p-4 bg-gray-50 rounded-lg"}
+                style={filter_active_filters.styles || {}}
+            >
                 <div className="flex flex-wrap items-center">
-                    <span className="text-sm font-medium text-gray-700 mr-2">Active Filters:</span>
+                    <span
+                        className={filter_active_filters_label.className || "text-sm font-medium text-gray-700 mr-2"}
+                        style={filter_active_filters_label.styles || {}}
+                    >
+                        {filter_active_filters_label.content || "Active Filters:"}
+                    </span>
                     {activeFilterElements}
                     {activeFilterElements.length > 0 && (
                         <button
                             onClick={clearAllFilters}
-                            className="text-xs text-gray-500 hover:text-gray-700 underline ml-2"
+                            className={filter_clear_all_button.className || "text-xs text-gray-500 hover:text-gray-700 underline ml-2"}
+                            style={filter_clear_all_button.styles || {}}
                         >
-                            Clear All
+                            {filter_clear_all_button.content || "Clear All"}
                         </button>
                     )}
                 </div>
@@ -278,15 +309,21 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-center h-5">
-                        <CardTitle>Filter By</CardTitle>
+                        <CardTitle
+                            className={filter_card_header.className}
+                            style={filter_card_header.styles || {}}
+                        >
+                            {filter_card_header.content || "Filter By"}
+                        </CardTitle>
                         {hasActiveFilters && (
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={clearAllFilters}
-                                className="text-xs"
+                                className={filter_clear_all_button.className || "text-xs"}
+                                style={filter_clear_all_button.styles || {}}
                             >
-                                Clear All
+                                {filter_clear_all_button.content || "Clear All"}
                             </Button>
                         )}
                     </div>
@@ -295,7 +332,12 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                 <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
                     {/* FIXED: Price Slider */}
                     <AccordionItem value="price">
-                        <AccordionTrigger className="font-semibold">Price</AccordionTrigger>
+                        <AccordionTrigger
+                            className={filter_price_title.className || "font-semibold"}
+                            style={filter_price_title.styles || {}}
+                        >
+                            {filter_price_title.content || "Price"}
+                        </AccordionTrigger>
                         <AccordionContent>
                             <div className="space-y-4">
                                 <div className="px-2">
@@ -323,9 +365,17 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                     {/* FIXED: Attribute Filters with all options */}
                     {Object.entries(filterOptions).map(([code, { name, values }]) => (
                         <AccordionItem key={code} value={code}>
-                            <AccordionTrigger className="font-semibold">{name}</AccordionTrigger>
+                            <AccordionTrigger
+                                className={filter_attribute_title.className || "font-semibold"}
+                                style={filter_attribute_title.styles || {}}
+                            >
+                                {name}
+                            </AccordionTrigger>
                             <AccordionContent>
-                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                <div
+                                    className={filter_attribute_section.className || "space-y-2 max-h-48 overflow-y-auto"}
+                                    style={filter_attribute_section.styles || {}}
+                                >
                                     {values.map(value => {
                                         // Count products that have this attribute value
                                         const productCount = products.filter(p => {
@@ -352,18 +402,33 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                                         }).length;
                                         
                                         return (
-                                            <div key={value} className="flex items-center justify-between">
+                                            <div
+                                                key={value}
+                                                className={filter_attribute_option.className || "flex items-center justify-between"}
+                                                style={filter_attribute_option.styles || {}}
+                                            >
                                                 <div className="flex items-center space-x-2">
                                                     <Checkbox
                                                         id={`attr-${code}-${value}`}
                                                         checked={selectedFilters[code]?.includes(value) || false}
                                                         onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
+                                                        className={filter_option_checkbox.className || ""}
+                                                        style={filter_option_checkbox.styles || {}}
                                                     />
-                                                    <Label htmlFor={`attr-${code}-${value}`} className="text-sm">
+                                                    <Label
+                                                        htmlFor={`attr-${code}-${value}`}
+                                                        className={filter_option_label.className || "text-sm"}
+                                                        style={filter_option_label.styles || {}}
+                                                    >
                                                         {value}
                                                     </Label>
                                                 </div>
-                                                <span className="text-xs text-gray-400">({productCount})</span>
+                                                <span
+                                                    className={filter_option_count.className || "text-xs text-gray-400"}
+                                                    style={filter_option_count.styles || {}}
+                                                >
+                                                    ({productCount})
+                                                </span>
                                             </div>
                                         );
                                     })}
