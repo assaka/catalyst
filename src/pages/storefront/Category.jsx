@@ -364,11 +364,8 @@ export default function Category() {
     const filters = {};
 
     if (!filterableAttributes) {
-      console.log('CategoryPage: No filterableAttributes found');
       return filters;
     }
-
-    console.log('CategoryPage: filterableAttributes:', filterableAttributes);
 
     filterableAttributes.forEach(attr => {
       // Check if attribute is filterable (handle different possible properties)
@@ -376,7 +373,6 @@ export default function Category() {
 
       if (isFilterable) {
         const filterKey = attr.code || attr.name || attr.attribute_name;
-        console.log(`CategoryPage: Processing filterable attribute: ${filterKey}`, attr);
 
         const values = new Set();
 
@@ -484,13 +480,10 @@ export default function Category() {
             label,
             count: 0 // Will be calculated in CategorySlotRenderer
           }));
-
-          console.log(`CategoryPage: Added filter ${filterKey} with ${values.size} values:`, Array.from(values));
         }
       }
     });
 
-    console.log('CategoryPage: Built filters:', filters);
     return filters;
   };
 
