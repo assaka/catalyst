@@ -133,10 +133,20 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                     if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
                         if (Array.isArray(attributeValue)) {
                             attributeValue.forEach(val => {
-                                if (val) values.add(String(val));
+                                // Extract value from object if needed
+                                let extractedValue = val;
+                                if (typeof val === 'object' && val !== null) {
+                                    extractedValue = val.value || val.label || val.name || String(val);
+                                }
+                                if (extractedValue) values.add(String(extractedValue));
                             });
                         } else {
-                            values.add(String(attributeValue));
+                            // Extract value from object if needed
+                            let extractedValue = attributeValue;
+                            if (typeof attributeValue === 'object' && attributeValue !== null) {
+                                extractedValue = attributeValue.value || attributeValue.label || attributeValue.name || String(attributeValue);
+                            }
+                            values.add(String(extractedValue));
                         }
                     }
                 });
@@ -234,7 +244,24 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                                         const productCount = products.filter(p => {
                                             const productAttributes = p.attributes || p.attribute_values || {};
                                             const attributeValue = productAttributes[code] || p[code];
-                                            return String(attributeValue) === String(value);
+
+                                            // Extract value from object if needed
+                                            let extractedValue = attributeValue;
+                                            if (typeof attributeValue === 'object' && attributeValue !== null) {
+                                                if (Array.isArray(attributeValue)) {
+                                                    // For arrays, check if any value matches
+                                                    return attributeValue.some(val => {
+                                                        const valToCheck = typeof val === 'object' && val !== null
+                                                            ? (val.value || val.label || val.name || String(val))
+                                                            : val;
+                                                        return String(valToCheck) === String(value);
+                                                    });
+                                                } else {
+                                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name || String(attributeValue);
+                                                }
+                                            }
+
+                                            return String(extractedValue) === String(value);
                                         }).length;
                                         
                                         return (
