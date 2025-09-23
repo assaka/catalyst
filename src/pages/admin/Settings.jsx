@@ -222,7 +222,6 @@ export default function Settings() {
           display_tax_inclusive_prices: settings.hasOwnProperty('display_tax_inclusive_prices') ? settings.display_tax_inclusive_prices : false,
           calculate_tax_after_discount: settings.hasOwnProperty('calculate_tax_after_discount') ? settings.calculate_tax_after_discount : true,
           display_out_of_stock: settings.hasOwnProperty('display_out_of_stock') ? settings.display_out_of_stock : true,
-          enable_product_filters: settings.hasOwnProperty('enable_product_filters') ? settings.enable_product_filters : true,
           product_filter_attributes: settings.product_filter_attributes || [], // New: initialize as array
           enable_credit_updates: settings.hasOwnProperty('enable_credit_updates') ? settings.enable_credit_updates : false,
           enable_coupon_rules: settings.hasOwnProperty('enable_coupon_rules') ? settings.enable_coupon_rules : false, // New
@@ -374,7 +373,6 @@ export default function Settings() {
         display_tax_inclusive_prices: store.settings.display_tax_inclusive_prices,
         calculate_tax_after_discount: store.settings.calculate_tax_after_discount,
         display_out_of_stock: store.settings.display_out_of_stock,
-        enable_product_filters: store.settings.enable_product_filters,
         product_filter_attributes: store.settings.product_filter_attributes,
         enable_credit_updates: store.settings.enable_credit_updates,
         enable_coupon_rules: store.settings.enable_coupon_rules,
@@ -1118,24 +1116,6 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-4">Product Filtering</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="enable_product_filters" className="font-medium">Enable Product Filters</Label>
-                        <p className="text-sm text-gray-500">Show layered navigation with filterable attributes on category pages</p>
-                      </div>
-                      <Switch 
-                        id="enable_product_filters" 
-                        checked={store?.settings?.enable_product_filters !== undefined ? store.settings.enable_product_filters : true} 
-                        onCheckedChange={(checked) => handleSettingsChange('enable_product_filters', checked)} 
-                      />
-                    </div>
-                  </div>
-                </div>
 
                 <Separator />
 
