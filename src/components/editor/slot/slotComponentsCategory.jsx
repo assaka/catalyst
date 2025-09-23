@@ -295,9 +295,111 @@ export function CategoryPaginationSlot({ categoryData, content }) {
   );
 }
 
+// CategoryActiveFiltersSlot Component - Displays active filters with clear functionality
+export function CategoryActiveFiltersSlot({ categoryContext, content, config }) {
+  const { selectedFilters = {}, clearFilters, filterableAttributes = [] } = categoryContext || {};
+
+  // Check if there are any active filters
+  const hasActiveFilters = Object.keys(selectedFilters).length > 0;
+
+  if (!hasActiveFilters) {
+    return null; // Don't render anything if no active filters
+  }
+
+  return (
+    <div className="category-active-filters mb-4">
+      {content?.html ? (
+        <div dangerouslySetInnerHTML={{ __html: content.html }} />
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+
+          {/* Render active attribute filters */}
+          {Object.entries(selectedFilters).map(([filterKey, filterValues]) => {
+            if (filterKey === 'priceRange') {
+              const [min, max] = filterValues;
+              return (
+                <span
+                  key="price-range"
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800"
+                >
+                  Price: ${min} - ${max}
+                  <button
+                    onClick={() => {
+                      const newFilters = { ...selectedFilters };
+                      delete newFilters.priceRange;
+                      if (categoryContext?.handleFilterChange) {
+                        categoryContext.handleFilterChange(newFilters);
+                      }
+                    }}
+                    className="ml-2 text-green-600 hover:text-green-800"
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            }
+
+            if (Array.isArray(filterValues)) {
+              return filterValues.map(value => {
+                // Find the attribute to get the display name
+                const attribute = filterableAttributes.find(attr =>
+                  attr.code === filterKey || attr.name === filterKey
+                );
+                const attributeName = attribute?.name || filterKey;
+
+                return (
+                  <span
+                    key={`${filterKey}-${value}`}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                  >
+                    {attributeName}: {value}
+                    <button
+                      onClick={() => {
+                        const newValues = filterValues.filter(v => v !== value);
+                        const newFilters = { ...selectedFilters };
+                        if (newValues.length > 0) {
+                          newFilters[filterKey] = newValues;
+                        } else {
+                          delete newFilters[filterKey];
+                        }
+                        if (categoryContext?.handleFilterChange) {
+                          categoryContext.handleFilterChange(newFilters);
+                        }
+                      }}
+                      className="ml-2 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              });
+            }
+            return null;
+          })}
+
+          {/* Clear all filters button */}
+          <button
+            onClick={() => {
+              if (clearFilters) {
+                clearFilters();
+              } else if (categoryContext?.handleFilterChange) {
+                categoryContext.handleFilterChange({});
+              }
+            }}
+            className="text-sm text-gray-500 hover:text-gray-700 underline ml-2"
+          >
+            Clear All
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // CategoryLayeredNavigationSlot Component - Editable wrapper for LayeredNavigation
 export function CategoryLayeredNavigationSlot({ categoryContext, content, config }) {
-  const { allProducts, filterableAttributes } = categoryContext || {};
+  const { allProducts, filterableAttributes, handleFilterChange } = categoryContext || {};
 
   return (
     <div className="category-layered-navigation">
@@ -308,12 +410,12 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
           products={allProducts || []}
           attributes={filterableAttributes || []}
           onFilterChange={(filters) => {
-            console.log('🔍 Filters changed:', filters);
-            // In edit mode, this would update the slot configuration
-            if (content?.onFilterUpdate) {
-              content.onFilterUpdate(filters);
+            console.log('🔍 Filters changed in LayeredNavigation:', filters);
+            if (handleFilterChange) {
+              handleFilterChange(filters);
             }
           }}
+          showActiveFilters={false} // We handle active filters separately
         />
       )}
     </div>
@@ -371,6 +473,7 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
 export default {
   CategoryHeaderSlot,
   CategoryBreadcrumbsSlot,
+  CategoryActiveFiltersSlot,
   CategoryFiltersSlot,
   CategoryMainContentSlot,
   CategorySortingSlot,

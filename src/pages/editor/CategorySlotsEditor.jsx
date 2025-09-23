@@ -48,6 +48,7 @@ import {
 import {
   CategoryHeaderSlot,
   CategoryBreadcrumbsSlot,
+  CategoryActiveFiltersSlot,
   CategoryFiltersSlot,
   CategoryProductsSlot,
   CategorySortingSlot,
@@ -89,6 +90,9 @@ const CategorySlotsEditor = ({
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [showSlotBorders, setShowSlotBorders] = useState(true);
+
+  // Filter state management
+  const [selectedFilters, setSelectedFilters] = useState({});
   const [localSaveStatus, setLocalSaveStatus] = useState('');
   const [currentViewport, setCurrentViewport] = useState('desktop');
   const [isResizing, setIsResizing] = useState(false);
@@ -316,12 +320,18 @@ const CategorySlotsEditor = ({
     currentPage: 1,
     totalPages: 3,
     currencySymbol: '$',
-    selectedFilters: {},
+    selectedFilters: selectedFilters,
     productLabels: [],
-    handleFilterChange: () => {},
+    handleFilterChange: (filters) => {
+      console.log('🔍 Filter change in CategorySlotsEditor:', filters);
+      setSelectedFilters(filters);
+    },
     handleSortChange: () => {},
     handlePageChange: () => {},
-    clearFilters: () => {}
+    clearFilters: () => {
+      console.log('🧹 Clearing all filters');
+      setSelectedFilters({});
+    }
   };
 
   // Create all handlers using the factory
@@ -653,7 +663,7 @@ const CategorySlotsEditor = ({
                         // Filters and navigation
                         'filters_container': CategoryFiltersSlot,
                         'layered_navigation': CategoryLayeredNavigationSlot,
-                        'active_filters': CategoryLayeredNavigationSlot,
+                        'active_filters': CategoryActiveFiltersSlot,
 
                         // Products
                         'products_container': CategoryProductsSlot,

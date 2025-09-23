@@ -7,15 +7,30 @@ export const categoryConfig = {
 
   // Main layout slots
   slots: {
-    // Header section
+    // Main header container for all header elements
+    page_header: {
+      id: 'page_header',
+      type: 'container',
+      content: '',
+      className: 'w-full mb-8',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
+    // Breadcrumbs section
     breadcrumbs: {
       id: 'breadcrumbs',
       type: 'container',
       content: '',
-      className: 'w-full flex mb-8 items-center',
+      className: 'w-full flex mb-6 items-center',
       parentClassName: '',
       styles: {},
-      parentId: null,
+      parentId: 'page_header',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
@@ -40,6 +55,7 @@ export const categoryConfig = {
       }
     },
 
+    // Category header section
     category_header: {
       id: 'category_header',
       type: 'container',
@@ -47,7 +63,7 @@ export const categoryConfig = {
       className: 'mb-4',
       parentClassName: '',
       styles: {},
-      parentId: null,
+      parentId: 'page_header',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
@@ -58,7 +74,7 @@ export const categoryConfig = {
       id: 'category_title',
       type: 'text',
       content: 'Category Name',
-      className: 'text-4xl font-bold text-gray-900',
+      className: 'text-4xl font-bold text-gray-900 mb-2',
       parentClassName: '',
       styles: {},
       parentId: 'category_header',
@@ -75,14 +91,17 @@ export const categoryConfig = {
       id: 'category_description',
       type: 'text',
       content: 'Discover our amazing collection of products in this category. Browse through our curated selection and find exactly what you need.',
-      className: 'text-gray-600 mb-8',
+      className: 'text-gray-600',
       parentClassName: '',
       styles: {},
-      parentId: null,
-      position: { col: 1, row: 3 },
+      parentId: 'category_header',
+      position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false }
+      metadata: {
+        hierarchical: false,
+        displayName: 'Category Description'
+      }
     },
 
     // Filters section
@@ -94,7 +113,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: null,
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 2 },
       colSpan: { grid: 3, list: 12 },
       viewMode: ['grid'],
       metadata: { hierarchical: true }
@@ -390,7 +409,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: null,
-      position: { col: 4, row: 4 },
+      position: { col: 4, row: 2 },
       colSpan: { grid: 9, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
