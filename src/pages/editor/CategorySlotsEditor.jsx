@@ -610,6 +610,18 @@ const CategorySlotsEditor = ({
                         return <div style={{background: 'red', padding: '20px', color: 'white'}}>LAYERED NAVIGATION TEST</div>;
                       }
 
+                      // Handle breadcrumbs container specifically BEFORE component mapping
+                      if (slot.id === 'breadcrumbs') {
+                        console.log('🍞 Rendering breadcrumbs container with CategoryBreadcrumbsSlot');
+                        return (
+                          <CategoryBreadcrumbsSlot
+                            categoryData={sampleCategoryContext}
+                            content={slot.content}
+                            config={{ viewMode }}
+                          />
+                        );
+                      }
+
                       const componentMap = {
                         // Breadcrumbs and headers
                         'breadcrumbs': CategoryBreadcrumbsSlot,
@@ -646,7 +658,7 @@ const CategorySlotsEditor = ({
                         console.log('✅ Rendering component for', slot.id);
                         return (
                           <SlotComponent
-                            categoryContext={sampleCategoryContext}
+                            categoryData={sampleCategoryContext}
                             content={slot.content}
                             config={{ viewMode }}
                           />
