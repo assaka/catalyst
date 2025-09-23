@@ -10,7 +10,7 @@ export const categoryConfig = {
     // Header section
     breadcrumbs: {
       id: 'breadcrumbs',
-      type: 'text',
+      type: 'container',
       content: '',
       className: 'w-full flex mb-8 items-center',
       parentClassName: '',
@@ -24,7 +24,7 @@ export const categoryConfig = {
 
     category_header: {
       id: 'category_header',
-      type: 'text',
+      type: 'container',
       content: '',
       className: 'text-4xl font-bold mb-4',
       parentClassName: '',
@@ -39,7 +39,7 @@ export const categoryConfig = {
     category_description: {
       id: 'category_description',
       type: 'text',
-      content: '',
+      content: 'Discover our amazing collection of products in this category. Browse through our curated selection and find exactly what you need.',
       className: 'text-gray-600 mb-8',
       parentClassName: '',
       styles: {},
@@ -235,7 +235,7 @@ export const categoryConfig = {
     filter_attribute_title: {
       id: 'filter_attribute_title',
       type: 'text',
-      content: '',
+      content: 'Brand',
       className: 'font-semibold text-base',
       parentClassName: '',
       styles: {},
@@ -293,7 +293,7 @@ export const categoryConfig = {
     filter_option_label: {
       id: 'filter_option_label',
       type: 'text',
-      content: '',
+      content: 'Apple',
       className: 'text-sm text-gray-700',
       parentClassName: '',
       styles: {},
@@ -312,7 +312,7 @@ export const categoryConfig = {
     filter_option_count: {
       id: 'filter_option_count',
       type: 'text',
-      content: '',
+      content: '(12)',
       className: 'text-xs text-gray-400',
       parentClassName: '',
       styles: {},
@@ -399,7 +399,7 @@ export const categoryConfig = {
     product_count_info: {
       id: 'product_count_info',
       type: 'text',
-      content: '',
+      content: 'Showing 1-12 of 48 products',
       className: 'text-sm text-gray-600',
       parentClassName: '',
       styles: {},
@@ -543,7 +543,7 @@ export const categoryConfig = {
     product_name: {
       id: 'product_name',
       type: 'text',
-      content: '',
+      content: 'Sample Product Name',
       className: 'font-semibold text-lg truncate',
       parentClassName: '',
       styles: {},
@@ -571,7 +571,7 @@ export const categoryConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: '',
+      content: '$29.99',
       className: 'text-lg font-bold text-green-600',
       parentClassName: '',
       styles: {},
@@ -585,7 +585,7 @@ export const categoryConfig = {
     product_compare_price: {
       id: 'product_compare_price',
       type: 'text',
-      content: '',
+      content: '$39.99',
       className: 'text-sm text-gray-500 line-through',
       parentClassName: '',
       styles: {},
