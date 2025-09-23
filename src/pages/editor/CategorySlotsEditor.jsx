@@ -642,6 +642,8 @@ const CategorySlotsEditor = ({
                       if (slot.id === 'breadcrumbs_content') {
                         console.log('🍞 Rendering breadcrumbs content with CategoryBreadcrumbsSlot');
                         console.log('🍞 Breadcrumbs slot details:', slot);
+                        console.log('🍞 Breadcrumbs className:', slot.className);
+                        console.log('🍞 Breadcrumbs styles:', slot.styles);
                         console.log('🍞 Sample context breadcrumbs:', sampleCategoryContext.breadcrumbs);
                         return (
                           <CategoryBreadcrumbsSlot
