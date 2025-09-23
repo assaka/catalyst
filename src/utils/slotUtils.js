@@ -15,9 +15,20 @@ export class SlotManager {
   }
   
   static getChildSlots(slots, parentId) {
-    return Object.values(slots)
-      .filter(slot => slot.parentId === parentId)
-      .sort((a, b) => (a.position?.order || 0) - (b.position?.order || 0));
+    const allSlots = Object.values(slots);
+    console.log(`🔍 SlotManager.getChildSlots - parentId: ${parentId}, total slots: ${allSlots.length}`);
+
+    const childSlots = allSlots.filter(slot => {
+      const isChild = slot.parentId === parentId;
+      if (slot.id === 'breadcrumbs') {
+        console.log(`🍞 SlotManager checking breadcrumbs: parentId=${slot.parentId}, target=${parentId}, isChild=${isChild}`);
+      }
+      return isChild;
+    });
+
+    console.log(`🔍 SlotManager.getChildSlots result for parentId ${parentId}:`, childSlots.map(s => s.id));
+
+    return childSlots.sort((a, b) => (a.position?.order || 0) - (b.position?.order || 0));
   }
   
   static moveSlot(slots, slotId, newParentId, newPosition) {

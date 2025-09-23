@@ -542,8 +542,22 @@ const CategorySlotsEditor = ({
 
                   // Log specific slot types to debug
                   if (categoryLayoutConfig?.slots) {
+                    console.log('🔍 breadcrumbs slot:', categoryLayoutConfig.slots.breadcrumbs);
+                    console.log('🔍 category_header slot:', categoryLayoutConfig.slots.category_header);
                     console.log('🔍 layered_navigation slot:', categoryLayoutConfig.slots.layered_navigation);
                     console.log('🔍 product_item_card slot:', categoryLayoutConfig.slots.product_item_card);
+
+                    // Log ALL slots to see what's there
+                    Object.keys(categoryLayoutConfig.slots).forEach(slotId => {
+                      const slot = categoryLayoutConfig.slots[slotId];
+                      console.log(`🔍 SLOT [${slotId}]:`, {
+                        type: slot.type,
+                        parentId: slot.parentId,
+                        viewMode: slot.viewMode,
+                        position: slot.position,
+                        colSpan: slot.colSpan
+                      });
+                    });
                   }
 
                   return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
@@ -572,12 +586,18 @@ const CategorySlotsEditor = ({
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
                       console.log('🎨 customSlotRenderer CALLED for slot:', slot.id, 'type:', slot.type);
+                      console.log('🎨 Slot details:', JSON.stringify(slot, null, 2));
                       console.log('🚨 CUSTOM SLOT RENDERER IS WORKING!');
 
                       // Test: Always return something visible for key slots
                       if (slot.id === 'breadcrumbs') {
-                        console.log('🍞 RENDERING BREADCRUMBS!');
-                        return <div style={{background: 'blue', padding: '10px', color: 'white', marginBottom: '20px'}}>BREADCRUMBS TEST WORKING!</div>;
+                        console.log('🍞 RENDERING BREADCRUMBS SLOT!');
+                        console.log('🍞 Breadcrumbs slot content:', slot.content);
+                        console.log('🍞 Breadcrumbs slot className:', slot.className);
+                        console.log('🍞 Breadcrumbs slot viewMode:', slot.viewMode);
+                        console.log('🍞 Current viewMode:', viewMode);
+                        console.log('🍞 Should render breadcrumbs:', !slot.viewMode || slot.viewMode.includes(viewMode));
+                        return <div style={{background: 'blue', padding: '10px', color: 'white', marginBottom: '20px'}}>🍞 BREADCRUMBS TEST WORKING!</div>;
                       }
 
                       if (slot.id === 'category_header') {
