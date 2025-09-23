@@ -39,7 +39,7 @@ export const categoryConfig = {
 
     breadcrumbs_content: {
       id: 'breadcrumbs_content',
-      type: 'container',
+      type: 'breadcrumbs',
       content: '',
       className: 'flex items-center space-x-2 text-sm text-gray-600',
       parentClassName: '',
