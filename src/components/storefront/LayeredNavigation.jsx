@@ -44,6 +44,10 @@ export default function LayeredNavigation({
     const collapseFilters = settings.collapse_filters === true;
     const maxVisibleAttributes = settings.max_visible_attributes || 5;
 
+    // Debug logging
+    console.log('LayeredNavigation settings:', settings);
+    console.log('collapseFilters value:', collapseFilters, 'from settings.collapse_filters:', settings.collapse_filters);
+
 
 
 
@@ -372,7 +376,11 @@ export default function LayeredNavigation({
                 )}
                 <Accordion
                     type="multiple"
-                    defaultValue={collapseFilters ? [] : ['price', ...Object.keys(filterOptions)]}
+                    defaultValue={(() => {
+                        const defaultVal = collapseFilters ? [] : ['price', ...Object.keys(filterOptions)];
+                        console.log('Accordion defaultValue:', defaultVal, 'collapseFilters:', collapseFilters);
+                        return defaultVal;
+                    })()}
                     className="w-full"
                 >
                     {/* FIXED: Price Slider */}
