@@ -344,6 +344,7 @@ export const categoryConfig = {
       }
     },
 
+
     filter_option_label: {
       id: 'filter_option_label',
       type: 'text',
