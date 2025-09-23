@@ -642,12 +642,21 @@ const CategorySlotsEditor = ({
                         return (
                           <div className={`relative ${slot.className || "w-full"}`}>
                             <CmsBlockRenderer position={cmsPosition} />
+                            {/* Development dummy content when no CMS blocks exist */}
+                            <div className="min-h-[60px] bg-purple-50 border-2 border-purple-200 border-dashed rounded-md p-4 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="text-purple-600 font-medium text-sm mb-1">
+                                  {slot.metadata?.displayName || `CMS Block: ${cmsPosition}`}
+                                </div>
+                                <div className="text-purple-500 text-xs">
+                                  Dummy content for development - Position: {cmsPosition}
+                                </div>
+                              </div>
+                            </div>
                             {/* Editor overlay for CMS block identification */}
                             {mode === 'edit' && !showPreview && (
-                              <div className="absolute inset-0 bg-purple-100 bg-opacity-30 border-2 border-purple-300 border-dashed rounded-md flex items-center justify-center">
-                                <div className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-medium">
-                                  CMS: {slot.metadata?.displayName || cmsPosition}
-                                </div>
+                              <div className="absolute top-0 right-0 bg-purple-600 text-white px-2 py-1 rounded-bl text-xs font-medium z-10">
+                                CMS Block
                               </div>
                             )}
                           </div>
