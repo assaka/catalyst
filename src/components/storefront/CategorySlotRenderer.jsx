@@ -544,16 +544,173 @@ export function CategorySlotRenderer({
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-4';
 
-      // Fallback to default product card rendering
+      // Full product card rendering with images and add to cart
       return (
         <div className={`${className} ${gridClass} mb-8`} style={styles}>
           {products.map(product => (
-            <div key={product.id} className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow p-4">
-              <h3 className="font-semibold text-lg">{product.name}</h3>
-              <p className="text-xl font-bold text-green-600 mt-2">
-                {formatDisplayPrice(product.price, currencySymbol)}
-              </p>
-            </div>
+            <Card
+              key={product.id}
+              className={`cursor-pointer hover:shadow-lg transition-shadow ${
+                viewMode === 'list' ? 'flex' : ''
+              }`}
+              onClick={() => onProductClick && onProductClick(product)}
+            >
+              <div className={viewMode === 'list' ? 'w-40 flex-shrink-0' : ''}>
+                <img
+                  src={(() => {
+                    // Handle different image formats
+                    if (getProductImageUrl) {
+                      const imageUrl = getProductImageUrl(product);
+                      if (imageUrl && typeof imageUrl === 'object') {
+                        return imageUrl.url || imageUrl.src || imageUrl.image || '/placeholder-product.jpg';
+                      }
+                      if (typeof imageUrl === 'string') {
+                        return imageUrl;
+                      }
+                    }
+
+                    // Fallback to direct product properties
+                    if (product.images && product.images.length > 0) {
+                      const firstImage = product.images[0];
+                      if (typeof firstImage === 'object') {
+                        return firstImage.url || firstImage.src || firstImage.image || '/placeholder-product.jpg';
+                      }
+                      return firstImage;
+                    }
+
+                    if (product.image) {
+                      if (typeof product.image === 'object') {
+                        return product.image.url || product.image.src || product.image.image || '/placeholder-product.jpg';
+                      }
+                      return product.image;
+                    }
+
+                    return '/placeholder-product.jpg';
+                  })()}
+                  alt={product.name}
+                  className={`w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover ${viewMode === 'list' ? 'rounded-l-lg' : 'rounded-t-lg'}`}
+                />
+              </div>
+              <CardContent className={viewMode === 'list' ? 'p-4 flex-1' : 'p-4'}>
+                <h3 className="font-semibold text-lg truncate">
+                  {product.name}
+                </h3>
+
+                {viewMode === 'list' && product.description && (
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    {product.description}
+                  </p>
+                )}
+
+                <div className="mt-4 space-y-3">
+                  {/* Price display */}
+                  <div className="flex items-baseline gap-2">
+                    {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+                      <>
+                        <p className="font-bold text-red-600 text-xl">
+                          {formatDisplayPrice(
+                            Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                            settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
+                            store,
+                            taxes,
+                            selectedCountry
+                          )}
+                        </p>
+                        <p className="text-gray-500 line-through text-sm">
+                          {formatDisplayPrice(
+                            Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                            settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
+                            store,
+                            taxes,
+                            selectedCountry
+                          )}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="font-bold text-xl text-gray-900">
+                        {formatDisplayPrice(
+                          parseFloat(product.price || 0),
+                          settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
+                          store,
+                          taxes,
+                          selectedCountry
+                        )}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Add to Cart Button */}
+                  <Button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+
+                      try {
+                        if (!product || !product.id) {
+                          console.error('Invalid product for add to cart');
+                          return;
+                        }
+
+                        if (!store?.id) {
+                          console.error('Store ID is required for add to cart');
+                          return;
+                        }
+
+                        // Add to cart using cartService
+                        const result = await cartService.addItem(
+                          product.id,
+                          1, // quantity
+                          product.price || 0,
+                          [], // selectedOptions
+                          store.id
+                        );
+
+                        if (result.success !== false) {
+                          // Track add to cart event
+                          if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
+                            window.catalyst.trackAddToCart(product, 1);
+                          }
+
+                          // Show flash message
+                          window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                            detail: {
+                              type: 'success',
+                              message: `${product.name} added to cart successfully!`
+                            }
+                          }));
+                        } else {
+                          console.error('Failed to add to cart:', result.error);
+                        }
+                      } catch (error) {
+                        console.error("Failed to add to cart", error);
+                      }
+                    }}
+                    className="w-full text-white border-0 hover:brightness-90 transition-all duration-200"
+                    size="sm"
+                    style={{
+                      backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                      color: 'white'
+                    }}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Add to Cart
+                  </Button>
+                </div>
+
+                {/* Stock status for list view */}
+                {viewMode === 'list' && product.stock_status && (
+                  <div className="mt-2">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      product.stock_status === 'in_stock'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {product.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ))}
         </div>
       );
