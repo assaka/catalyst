@@ -231,6 +231,7 @@ export function CategorySlotRenderer({
                     attributes={attributes}
                     onFilterChange={handleFilterChange}
                     slotConfig={layeredNavSlotConfig}
+                    settings={settings}
                   />
                 </div>
               );
@@ -249,6 +250,7 @@ export function CategorySlotRenderer({
               attributes={attributes}
               onFilterChange={handleFilterChange}
               slotConfig={layeredNavSlotConfig}
+              settings={settings}
             />
           )}
         </div>
@@ -288,6 +290,7 @@ export function CategorySlotRenderer({
             attributes={attributes}
             onFilterChange={handleFilterChange}
             slotConfig={layeredNavSlotConfig}
+            settings={settings}
           />
         </div>
       );

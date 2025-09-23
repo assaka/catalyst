@@ -58,6 +58,7 @@ export default function ThemeLayout() {
             const settings = {
                 ...(fullStore?.settings || {}),
                 // Category page defaults
+                enable_product_filters: true,
                 collapse_filters: false,
                 max_visible_attributes: 5,
                 theme: {
@@ -294,6 +295,17 @@ export default function ThemeLayout() {
                             <CardDescription>Settings for category and filtering pages.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="enable_product_filters">Enable Product Filters</Label>
+                                    <p className="text-sm text-gray-500">Show filter sidebar on category pages.</p>
+                                </div>
+                                <Switch
+                                    id="enable_product_filters"
+                                    checked={!!store.settings.enable_product_filters}
+                                    onCheckedChange={(c) => handleSettingsChange('enable_product_filters', c)}
+                                />
+                            </div>
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <Label htmlFor="collapse_filters">Collapse Filters</Label>

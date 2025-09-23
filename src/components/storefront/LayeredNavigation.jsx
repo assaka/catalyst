@@ -16,10 +16,12 @@ export default function LayeredNavigation({
     attributes,
     onFilterChange,
     showActiveFilters = true,
-    slotConfig = {}
+    slotConfig = {},
+    settings = {}
 }) {
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
+    const [expandedAttributes, setExpandedAttributes] = useState({});
 
     // Extract slot configurations for styling
     const {
@@ -36,6 +38,11 @@ export default function LayeredNavigation({
         filter_option_label = {},
         filter_option_count = {}
     } = slotConfig;
+
+    // Extract store settings with defaults
+    const enableProductFilters = settings.enable_product_filters !== false; // Default to true
+    const collapseFilters = settings.collapse_filters || false;
+    const maxVisibleAttributes = settings.max_visible_attributes || 5;
 
 
 
@@ -254,6 +261,11 @@ export default function LayeredNavigation({
         return options;
     }, [products, attributes]);
 
+    // Don't render if filters are disabled
+    if (!enableProductFilters) {
+        return null;
+    }
+
     if (!products || products.length === 0) {
         return (
             <Card>
@@ -358,7 +370,11 @@ export default function LayeredNavigation({
                         </div>
                     </div>
                 )}
-                <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
+                <Accordion
+                    type="multiple"
+                    defaultValue={collapseFilters ? [] : ['price', ...Object.keys(filterOptions)]}
+                    className="w-full"
+                >
                     {/* FIXED: Price Slider */}
                     <AccordionItem value="price">
                         <AccordionTrigger
@@ -408,10 +424,18 @@ export default function LayeredNavigation({
                                 </AccordionTrigger>
                                 <AccordionContent>
                                 <div
-                                    className={filter_attribute_section.className || "space-y-2 max-h-48 overflow-y-auto"}
+                                    className={filter_attribute_section.className || "space-y-2"}
                                     style={filter_attribute_section.styles || {}}
                                 >
-                                    {values.map(value => {
+                                    {(() => {
+                                        const isExpanded = expandedAttributes[code];
+                                        const visibleValues = isExpanded ? values : values.slice(0, maxVisibleAttributes);
+                                        const hasMoreValues = values.length > maxVisibleAttributes;
+
+                                        return (
+                                            <>
+                                                <div className={hasMoreValues && !isExpanded ? "max-h-48 overflow-hidden" : "max-h-48 overflow-y-auto"}>
+                                                    {visibleValues.map(value => {
                                         // Count products that have this attribute value
                                         const productCount = products.filter(p => {
                                             const productAttributes = p.attributes || p.attribute_values || {};
@@ -472,6 +496,21 @@ export default function LayeredNavigation({
                                             </div>
                                         );
                                     })}
+                                                </div>
+                                                {hasMoreValues && (
+                                                    <button
+                                                        onClick={() => setExpandedAttributes(prev => ({
+                                                            ...prev,
+                                                            [code]: !prev[code]
+                                                        }))}
+                                                        className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2"
+                                                    >
+                                                        {isExpanded ? 'Show Less' : `Show More (${values.length - maxVisibleAttributes} more)`}
+                                                    </button>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
