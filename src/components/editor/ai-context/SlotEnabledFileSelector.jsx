@@ -63,7 +63,8 @@ const SlotEnabledFileSelector = ({
       pageType: 'checkout',
       icon: CreditCard,
       description: 'Checkout flow with payment integration',
-      color: 'text-orange-500'
+      color: 'text-orange-500',
+      comingSoon: true
     },
     {
       id: 'success',
@@ -72,7 +73,8 @@ const SlotEnabledFileSelector = ({
       pageType: 'success',
       icon: CheckCircle,
       description: 'Order confirmation and success page',
-      color: 'text-emerald-500'
+      color: 'text-emerald-500',
+      comingSoon: true
     }
   ];
 
@@ -141,6 +143,11 @@ const SlotEnabledFileSelector = ({
 
 
   const handleFileClick = async (file) => {
+    // Prevent clicking on coming soon items
+    if (file.comingSoon) {
+      return;
+    }
+
     if (!selectedStore?.id) {
       console.warn('No store selected');
       return;
@@ -284,25 +291,34 @@ const SlotEnabledFileSelector = ({
             return (
               <div
                 key={file.id}
-                className={`flex justify-between items-center rounded-lg border transition-all hover:bg-muted/50 cursor-pointer p-2 ${
-                  isCurrentFile ? 'bg-primary/10 border-primary' : 'border-border'
+                className={`flex justify-between items-center rounded-lg border transition-all p-2 ${
+                  file.comingSoon
+                    ? 'opacity-50 cursor-not-allowed border-gray-300'
+                    : isCurrentFile
+                      ? 'bg-primary/10 border-primary hover:bg-muted/50 cursor-pointer'
+                      : 'border-border hover:bg-muted/50 cursor-pointer'
                 }`}
                 onClick={() => handleFileClick(file)}
               >
                 {/* File Icon */}
-                <div className="flex gap-2">
-                  <IconComponent className={`w-5 h-5 ${file.color}`} />
-                  <span className="font-medium text-sm">{file.name}</span>
+                <div className="flex gap-2 items-center">
+                  <IconComponent className={`w-5 h-5 ${file.comingSoon ? 'text-gray-400' : file.color}`} />
+                  <span className={`font-medium text-sm ${file.comingSoon ? 'text-gray-500' : ''}`}>
+                    {file.name}
+                  </span>
+                  {file.comingSoon && (
+                    <span className="text-xs text-gray-500 italic ml-1">(coming soon)</span>
+                  )}
                 </div>
 
                 {/* File Info */}
                 <div className="flex justify-between">
                   {/* Unpublished Changes Indicator */}
-                  {file.hasUnpublishedChanges && (
+                  {!file.comingSoon && file.hasUnpublishedChanges && (
                       <span className="flex w-3 h-3 me-3 bg-yellow-300 rounded-full" title="Dot"></span>
                   )}
                   {/* Loading indicator */}
-                  {loadingDraft === file.id && (
+                  {!file.comingSoon && loadingDraft === file.id && (
                       <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                   )}
                 </div>
