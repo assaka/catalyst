@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, Fragment } from 'react';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,10 +16,7 @@ import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatDisplayPrice } from '@/utils/priceUtils';
-import { getPrimaryImageUrl } from '@/utils/imageUtils';
-import { createProductUrl } from '@/utils/urlUtils';
-import ProductLabelComponent from '@/components/storefront/ProductLabel';
-import cartService from '@/services/cartService';
+import ProductItemCard from '@/components/storefront/ProductItemCard';
 import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
 
 /**
@@ -554,7 +550,7 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Products grid - render using enhanced ProductCard logic
+    // Products grid - render using ProductItemCard component
     if (id === 'products_grid') {
       // Use the className from slot configuration if available, otherwise use default
       const defaultGridClass = viewMode === 'grid'
@@ -563,294 +559,38 @@ export function CategorySlotRenderer({
 
       const finalClassName = className || defaultGridClass;
 
-      // Product label logic - unified across all components
-      const renderProductLabels = (product) => {
-        // Filter labels that match the product conditions
-        const matchingLabels = productLabels?.filter((label) => {
-          let shouldShow = true; // Assume true, prove false (AND logic)
-
-          if (label.conditions && Object.keys(label.conditions).length > 0) {
-            // Check product_ids condition
-            if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
-              if (!label.conditions.product_ids.includes(product.id)) {
-                shouldShow = false;
-              }
-            }
-
-            // Check category_ids condition
-            if (shouldShow && label.conditions.category_ids && Array.isArray(label.conditions.category_ids) && label.conditions.category_ids.length > 0) {
-              if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
-                shouldShow = false;
-              }
-            }
-
-            // Check price conditions
-            if (shouldShow && label.conditions.price_conditions) {
-              const conditions = label.conditions.price_conditions;
-              if (conditions.has_sale_price) {
-                const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0;
-                const pricesAreDifferent = hasComparePrice && parseFloat(product.compare_price) !== parseFloat(product.price);
-                if (!pricesAreDifferent) {
-                  shouldShow = false;
-                }
-              }
-              if (shouldShow && conditions.is_new && conditions.days_since_created) {
-                const productCreatedDate = new Date(product.created_date);
-                const now = new Date();
-                const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
-                if (daysSince > conditions.days_since_created) {
-                  shouldShow = false;
-                }
-              }
-            }
-
-            // Check attribute conditions
-            if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
-              const attributeMatch = label.conditions.attribute_conditions.every(cond => {
-                if (product.attributes && product.attributes[cond.attribute_code]) {
-                  const productAttributeValue = String(product.attributes[cond.attribute_code]).toLowerCase();
-                  const conditionValue = String(cond.attribute_value).toLowerCase();
-                  return productAttributeValue === conditionValue;
-                }
-                return false;
-              });
-              if (!attributeMatch) {
-                shouldShow = false;
-              }
-            }
-          }
-
-          return shouldShow;
-        }) || [];
-
-        // Group labels by position and show one label per position
-        const labelsByPosition = matchingLabels.reduce((acc, label) => {
-          const position = label.position || 'top-right';
-          if (!acc[position]) {
-            acc[position] = [];
-          }
-          acc[position].push(label);
-          return acc;
-        }, {});
-
-        // For each position, sort by sort_order (ASC) then by priority (DESC) and take the first one
-        const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
-          const sortedLabels = positionLabels.sort((a, b) => {
-            const sortOrderA = a.sort_order || 0;
-            const sortOrderB = b.sort_order || 0;
-            if (sortOrderA !== sortOrderB) {
-              return sortOrderA - sortOrderB; // ASC
-            }
-            const priorityA = a.priority || 0;
-            const priorityB = b.priority || 0;
-            return priorityB - priorityA; // DESC
-          });
-          return sortedLabels[0]; // Return highest priority label for this position
-        }).filter(Boolean);
-
-        // Show all labels (one per position)
-        return labelsToShow.map(label => (
-          <ProductLabelComponent
-            key={label.id}
-            label={label}
-          />
-        ));
-      };
-
-      // State for preventing duplicate add to cart operations (outside of map)
+      // State for preventing duplicate add to cart operations
       const [addingToCartStates, setAddingToCartStates] = useState({});
 
-      // Enhanced ProductCard rendering
+      // Create slot configuration object for ProductItemCard
+      const slotConfig = {
+        productTemplate: slots?.product_template || {},
+        productImage: slots?.product_image || {},
+        productName: slots?.product_name || {},
+        productPrice: slots?.product_price || {},
+        productComparePrice: slots?.product_compare_price || {},
+        productAddToCart: slots?.product_add_to_cart || {}
+      };
+
       return (
         <div className={`${finalClassName} mb-8`} style={styles}>
-          {products.map(product => {
-            // Get product template slot configuration for styling
-            const productTemplateSlot = slots?.product_template || {};
-            const productImageSlot = slots?.product_image || {};
-            const productNameSlot = slots?.product_name || {};
-            const productPriceSlot = slots?.product_price || {};
-            const productComparePriceSlot = slots?.product_compare_price || {};
-            const productAddToCartSlot = slots?.product_add_to_cart || {};
-
-            // Check if this product is being added to cart
-            const isAddingToCart = addingToCartStates[product.id] || false;
-
-            const handleAddToCart = async (e) => {
-              e.preventDefault(); // Prevent navigation when clicking the button
-              e.stopPropagation();
-
-              // Prevent multiple rapid additions
-              if (isAddingToCart) {
-                return;
-              }
-
-              try {
-                setAddingToCartStates(prev => ({ ...prev, [product.id]: true }));
-
-                if (!product || !product.id) {
-                  console.error('Invalid product for add to cart');
-                  return;
-                }
-
-                if (!store?.id) {
-                  console.error('Store ID is required for add to cart');
-                  return;
-                }
-
-                // Add to cart using cartService
-                const result = await cartService.addItem(
-                  product.id,
-                  1, // quantity
-                  product.price || 0,
-                  [], // selectedOptions
-                  store.id
-                );
-
-                if (result.success !== false) {
-                  // Track add to cart event
-                  if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
-                    window.catalyst.trackAddToCart(product, 1);
-                  }
-
-                  // Show flash message
-                  window.dispatchEvent(new CustomEvent('showFlashMessage', {
-                    detail: {
-                      type: 'success',
-                      message: `${product.name} added to cart successfully!`
-                    }
-                  }));
-                } else {
-                  console.error('❌ Failed to add to cart:', result.error);
-
-                  // Show error flash message
-                  window.dispatchEvent(new CustomEvent('showFlashMessage', {
-                    detail: {
-                      type: 'error',
-                      message: `Failed to add ${product.name} to cart. Please try again.`
-                    }
-                  }));
-                }
-              } catch (error) {
-                console.error("❌ Failed to add to cart", error);
-
-                // Show error flash message for catch block
-                window.dispatchEvent(new CustomEvent('showFlashMessage', {
-                  detail: {
-                    type: 'error',
-                    message: `Error adding ${product.name} to cart. Please try again.`
-                  }
-                }));
-              } finally {
-                // Always reset the loading state after 2 seconds to prevent permanent lock
-                setTimeout(() => {
-                  setAddingToCartStates(prev => ({ ...prev, [product.id]: false }));
-                }, 2000);
-              }
-            };
-
-            return (
-              <Card
-                key={product.id}
-                className={productTemplateSlot.className || `group overflow-hidden cursor-pointer hover:shadow-lg transition-shadow ${
-                  viewMode === 'list' ? 'flex' : ''
-                }`}
-                style={productTemplateSlot.styles || {}}
-              >
-                <CardContent className="p-0">
-                  <Link to={createProductUrl(store?.slug || '', product.slug || product.id)}>
-                    <div className="relative">
-                      <img
-                        src={getPrimaryImageUrl(product.images) || '/placeholder-product.jpg'}
-                        alt={product.name}
-                        className={productImageSlot.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
-                        style={productImageSlot.styles || {}}
-                      />
-                      {/* Product labels */}
-                      {renderProductLabels(product)}
-                    </div>
-                  </Link>
-                  <div className={viewMode === 'list' ? 'p-4 flex-1' : 'p-4'}>
-                    <h3 className={productNameSlot.className || "font-semibold text-lg truncate mt-1"} style={productNameSlot.styles || {}}>
-                      <Link to={createProductUrl(store?.slug || '', product.slug || product.id)}>{product.name}</Link>
-                    </h3>
-
-                    {viewMode === 'list' && product.description && (
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                        {product.description}
-                      </p>
-                    )}
-
-                    <div className="space-y-3 mt-4">
-                      {/* Price display */}
-                      <div className="flex items-baseline gap-2">
-                        {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
-                          <>
-                            <p className={productPriceSlot.className || "font-bold text-red-600 text-xl"} style={productPriceSlot.styles || {}}>
-                              {formatDisplayPrice(
-                                Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
-                                store,
-                                taxes,
-                                selectedCountry
-                              )}
-                            </p>
-                            <p className={productComparePriceSlot.className || "text-gray-500 line-through text-sm"} style={productComparePriceSlot.styles || {}}>
-                              {formatDisplayPrice(
-                                Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
-                                store,
-                                taxes,
-                                selectedCountry
-                              )}
-                            </p>
-                          </>
-                        ) : (
-                          <p className={productPriceSlot.className || "font-bold text-xl text-gray-900"} style={productPriceSlot.styles || {}}>
-                            {formatDisplayPrice(
-                              parseFloat(product.price || 0),
-                              settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
-                              store,
-                              taxes,
-                              selectedCountry
-                            )}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Add to Cart Button */}
-                      <Button
-                        onClick={handleAddToCart}
-                        disabled={isAddingToCart}
-                        className={productAddToCartSlot.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
-                        size="sm"
-                        style={{
-                          backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
-                          color: 'white',
-                          ...productAddToCartSlot.styles
-                        }}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        {isAddingToCart ? 'Adding...' : (productAddToCartSlot.content || 'Add to Cart')}
-                      </Button>
-
-                      {/* Stock status for list view */}
-                      {viewMode === 'list' && product.stock_status && (
-                        <div className="mt-2">
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            product.stock_status === 'in_stock'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {product.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {products.map(product => (
+            <ProductItemCard
+              key={product.id}
+              product={product}
+              settings={settings}
+              store={store}
+              taxes={taxes}
+              selectedCountry={selectedCountry}
+              productLabels={productLabels}
+              viewMode={viewMode}
+              slotConfig={slotConfig}
+              isAddingToCart={addingToCartStates[product.id] || false}
+              onAddToCartStateChange={(isAdding) => {
+                setAddingToCartStates(prev => ({ ...prev, [product.id]: isAdding }));
+              }}
+            />
+          ))}
         </div>
       );
     }
