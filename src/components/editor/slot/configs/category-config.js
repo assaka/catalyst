@@ -87,7 +87,7 @@ export const categoryConfig = {
     // Layered Navigation (filters)
     layered_navigation: {
       id: 'layered_navigation',
-      type: 'layered_navigation',
+      type: 'container',
       content: '',
       className: 'space-y-6',
       parentClassName: '',
@@ -631,7 +631,7 @@ export const categoryConfig = {
     // Product Item Cards - Alternative product display
     product_item_card: {
       id: 'product_item_card',
-      type: 'product_item_card',
+      type: 'container',
       content: '',
       className: 'mb-8',
       parentClassName: '',
