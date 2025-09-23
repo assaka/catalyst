@@ -2,21 +2,13 @@ import React, { useState, useMemo, useEffect, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Grid, List, Filter, Search, Tag, ChevronDown, ShoppingCart } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-import { formatDisplayPrice } from '@/utils/priceUtils';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
+import LayeredNavigation from '@/components/storefront/LayeredNavigation';
 import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
 
 /**
@@ -200,242 +192,152 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Filters container - Column 1 (exact LayeredNavigation structure)
+    // Filters container - use LayeredNavigation component
     if (id === 'filters_container') {
-      // Calculate price range from all products (not just paginated)
-      const allProductsForFilter = categoryContext.allProducts || products;
+      // Prepare attributes for LayeredNavigation from filterableAttributes
+      const attributes = filterableAttributes?.map(attr => ({
+        code: attr.code || attr.name,
+        name: attr.name || attr.code,
+        is_filterable: true,
+        options: attr.options || []
+      })) || [];
 
-      const { minPrice, maxPrice } = (() => {
-        if (!allProductsForFilter || allProductsForFilter.length === 0) return { minPrice: 0, maxPrice: 1000 };
-
-        const prices = [];
-        allProductsForFilter.forEach(p => {
-          const price = parseFloat(p.price || 0);
-          if (price > 0) prices.push(price);
-
-          const comparePrice = parseFloat(p.compare_price || 0);
-          if (comparePrice > 0 && comparePrice !== price) {
-            prices.push(comparePrice);
-          }
-        });
-
-        if (prices.length === 0) return { minPrice: 0, maxPrice: 1000 };
-
-        return {
-          minPrice: Math.floor(Math.min(...prices)),
-          maxPrice: Math.ceil(Math.max(...prices))
-        };
-      })();
-
-      // Get current price range from selectedFilters or use full range
-      const currentPriceRange = selectedFilters.priceRange || [minPrice, maxPrice];
-
-      // Build filter options exactly like LayeredNavigation
-      const filterOptions = (() => {
-        const options = {};
-
-        Object.entries(filters).forEach(([filterKey, filterValues]) => {
-          if (filterValues !== undefined) {
-            if (filterValues.length > 0) {
-              // Count products for each filter value using all products
-              const optionsWithCount = filterValues.map(optionRaw => {
-                // Normalize the option to ensure we have a consistent structure
-                const option = typeof optionRaw === 'object' && optionRaw !== null
-                  ? {
-                      value: String(optionRaw.value || optionRaw.label || optionRaw.name || optionRaw),
-                      label: optionRaw.label || optionRaw.name || optionRaw.value || String(optionRaw)
-                    }
-                  : { value: String(optionRaw), label: String(optionRaw) };
-                const productCount = allProducts.filter(p => {
-                  const productAttributes = p.attributes || p.attribute_values || {};
-
-                  // Try multiple possible keys for the attribute
-                  const possibleKeys = [
-                    filterKey,
-                    filterKey.toLowerCase(),
-                    filterKey.toLowerCase().replace(/[_-\s]/g, ''),
-                  ];
-
-                  let attributeValue = null;
-                  for (const key of possibleKeys) {
-                    if (productAttributes[key] !== undefined || p[key] !== undefined) {
-                      attributeValue = productAttributes[key] || p[key];
-                      break;
-                    }
-                  }
-
-                  // Extract value from object if needed
-                  let extractedValue = attributeValue;
-                  if (typeof attributeValue === 'object' && attributeValue !== null) {
-                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                  } else if (Array.isArray(attributeValue)) {
-                    // For arrays, check if any value matches
-                    return attributeValue.some(val => {
-                      const valToCheck = typeof val === 'object' && val !== null
-                        ? (val.value || val.label || val.name)
-                        : val;
-                      return String(valToCheck) === String(option.value);
-                    });
-                  }
-
-                  // Compare with the normalized option value
-                  return String(extractedValue) === String(option.value);
-                }).length;
-
-                return {
-                  ...option,
-                  count: productCount
-                };
-              }).filter(option => option.count > 0); // Filter out options with 0 count
-
-              options[filterKey] = {
-                name: filterKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                values: optionsWithCount.map(opt => opt.value),
-                options: optionsWithCount
-              };
-            } else {
-              // Empty filter array - create section with no options but show the header
-              options[filterKey] = {
-                name: filterKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                values: [],
-                options: []
-              };
+      return wrapWithParentClass(
+        <div className={className || "sticky top-4"} style={styles}>
+          {/* Render child slots at the top */}
+          {renderChildSlots(slots, id).map(childSlot => {
+            // Handle layered navigation slot specifically
+            if (childSlot.type === 'layered_navigation' && childSlot.id === 'layered_navigation') {
+              return (
+                <div key={childSlot.id} className="mb-4">
+                  <LayeredNavigation
+                    products={allProducts || products}
+                    attributes={attributes}
+                    onFilterChange={handleFilterChange}
+                  />
+                </div>
+              );
             }
-          }
-        });
+            return (
+              <div key={childSlot.id} className="mb-4">
+                {renderSlotContent(childSlot)}
+              </div>
+            );
+          })}
 
-        return options;
-      })();
+          {/* Fallback: Render LayeredNavigation if no layered_navigation slot found */}
+          {!renderChildSlots(slots, id).some(slot => slot.type === 'layered_navigation') && (
+            <LayeredNavigation
+              products={allProducts || products}
+              attributes={attributes}
+              onFilterChange={handleFilterChange}
+            />
+          )}
+        </div>
+      );
+    }
 
+    // Handle layered_navigation slot specifically
+    if (id === 'layered_navigation') {
+      // Prepare attributes for LayeredNavigation from filterableAttributes
+      const attributes = filterableAttributes?.map(attr => ({
+        code: attr.code || attr.name,
+        name: attr.name || attr.code,
+        is_filterable: true,
+        options: attr.options || []
+      })) || [];
+
+      return wrapWithParentClass(
+        <div className={className} style={styles}>
+          <LayeredNavigation
+            products={allProducts || products}
+            attributes={attributes}
+            onFilterChange={handleFilterChange}
+          />
+        </div>
+      );
+    }
+
+    // Handle active_filters slot from category-config.js
+    if (id === 'active_filters') {
       // Check if any filters are active
-      const hasActiveFilters = Object.keys(selectedFilters).length > 0 ||
-                              (currentPriceRange[0] !== minPrice || currentPriceRange[1] !== maxPrice);
+      const hasActiveFilters = selectedFilters && Object.keys(selectedFilters).length > 0;
 
-      if (!allProducts || allProducts.length === 0) {
-        return wrapWithParentClass(
-          <Card className={className || "sticky top-4"} style={styles}>
-            <CardHeader>
-              <CardTitle>Filter By</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500">No products to filter</p>
-            </CardContent>
-          </Card>
+      if (!hasActiveFilters) {
+        return null; // Don't render anything if no active filters
+      }
+
+      const activeFilterElements = [];
+
+      // Add active attribute filters
+      Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
+        if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
+          filterValues.forEach(value => {
+            activeFilterElements.push(
+              <span
+                key={`${filterKey}-${value}`}
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 mr-2 mb-2"
+              >
+                {filterKey}: {value}
+                <button
+                  onClick={() => {
+                    const newValues = filterValues.filter(v => v !== value);
+                    const newFilters = { ...selectedFilters };
+                    if (newValues.length > 0) {
+                      newFilters[filterKey] = newValues;
+                    } else {
+                      delete newFilters[filterKey];
+                    }
+                    handleFilterChange && handleFilterChange(newFilters);
+                  }}
+                  className="ml-1 text-blue-600 hover:text-blue-800"
+                >
+                  ×
+                </button>
+              </span>
+            );
+          });
+        }
+      });
+
+      // Add price range filter if active
+      if (selectedFilters.priceRange) {
+        const [min, max] = selectedFilters.priceRange;
+        activeFilterElements.push(
+          <span
+            key="price-range"
+            className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 mr-2 mb-2"
+          >
+            Price: ${min} - ${max}
+            <button
+              onClick={() => {
+                const newFilters = { ...selectedFilters };
+                delete newFilters.priceRange;
+                handleFilterChange && handleFilterChange(newFilters);
+              }}
+              className="ml-1 text-green-600 hover:text-green-800"
+            >
+              ×
+            </button>
+          </span>
         );
       }
 
       return wrapWithParentClass(
-        <Card className={className || "sticky top-4"} style={styles}>
-          <CardHeader>
-            <div className="flex justify-between items-center h-5">
-              <CardTitle>Filter By</CardTitle>
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-xs"
-                >
-                  Clear All
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Render child slots at the top */}
-            {renderChildSlots(slots, id).map(childSlot => {
-              // Skip the actual layered navigation slot in filters - it's handled below
-              if (childSlot.type === 'layered_navigation' && childSlot.id === 'layered_navigation') {
-                return null;
-              }
-              return (
-                <div key={childSlot.id} className="mb-4">
-                  {renderSlotContent(childSlot)}
-                </div>
-              );
-            })}
-
-            <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
-              {/* Price Slider */}
-              <AccordionItem value="price">
-                <AccordionTrigger className="font-semibold">Price</AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4">
-                    <div className="px-2">
-                      <Slider
-                        min={minPrice}
-                        max={maxPrice}
-                        step={1}
-                        value={currentPriceRange}
-                        onValueChange={(range) => {
-                          const newFilters = { ...selectedFilters };
-                          if (range[0] !== minPrice || range[1] !== maxPrice) {
-                            newFilters.priceRange = range;
-                          } else {
-                            delete newFilters.priceRange;
-                          }
-                          handleFilterChange(newFilters);
-                        }}
-                        className="w-full"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>${currentPriceRange[0]}</span>
-                      <span>${currentPriceRange[1]}</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>Min: ${minPrice}</span>
-                      <span>Max: ${maxPrice}</span>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* Attribute Filters */}
-              {Object.entries(filterOptions).map(([code, { name, values, options }]) => (
-                <AccordionItem key={code} value={code}>
-                  <AccordionTrigger className="font-semibold">{name}</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {options.length > 0 ? (
-                        options.map(option => (
-                          <div key={`${code}-${option.value}`} className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`attr-${code}-${option.value}`}
-                                checked={selectedFilters[code]?.includes(option.value) || false}
-                                onCheckedChange={(checked) => {
-                                  const currentValues = selectedFilters[code] || [];
-                                  const newValues = checked
-                                    ? [...currentValues, option.value]
-                                    : currentValues.filter(v => v !== option.value);
-
-                                  const newFilters = { ...selectedFilters };
-                                  if (newValues.length > 0) {
-                                    newFilters[code] = newValues;
-                                  } else {
-                                    delete newFilters[code];
-                                  }
-                                  handleFilterChange(newFilters);
-                                }}
-                              />
-                              <Label htmlFor={`attr-${code}-${option.value}`} className="text-sm">
-                                {option.label || option.value}
-                              </Label>
-                            </div>
-                            <span className="text-xs text-gray-400">({option.count})</span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-gray-500">No options available</p>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </CardContent>
-        </Card>
+        <div className={className} style={styles}>
+          <div className="flex flex-wrap items-center">
+            <span className="text-sm font-medium text-gray-700 mr-2">Active Filters:</span>
+            {activeFilterElements}
+            {activeFilterElements.length > 0 && (
+              <button
+                onClick={() => clearFilters && clearFilters()}
+                className="text-xs text-gray-500 hover:text-gray-700 underline ml-2"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+        </div>
       );
     }
 

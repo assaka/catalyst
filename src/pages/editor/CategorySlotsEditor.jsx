@@ -197,27 +197,69 @@ const CategorySlotsEditor = ({
       image: '/sample-category.jpg'
     },
     products: viewMode === 'grid' ? [
-      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'] },
-      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'] },
-      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'] },
-      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'] },
-      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'] },
-      { id: 6, name: 'Product 6', price: 79.99, images: ['/sample-product.jpg'] }
+      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'M' } },
+      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L' } },
+      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'S' } },
+      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'XL' } },
+      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'M' } },
+      { id: 6, name: 'Product 6', price: 79.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'L' } }
     ] : [
-      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], description: 'Product description' },
-      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], description: 'Product description' },
-      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], description: 'Product description' }
+      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Red', size: 'M' } },
+      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Blue', size: 'L' } },
+      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Green', size: 'S' } }
+    ],
+    allProducts: viewMode === 'grid' ? [
+      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'M' } },
+      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'L' } },
+      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'S' } },
+      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'], attributes: { color: 'Red', size: 'XL' } },
+      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'], attributes: { color: 'Blue', size: 'M' } },
+      { id: 6, name: 'Product 6', price: 79.99, images: ['/sample-product.jpg'], attributes: { color: 'Green', size: 'L' } },
+      { id: 7, name: 'Product 7', price: 89.99, images: ['/sample-product.jpg'], attributes: { color: 'Yellow', size: 'S' } },
+      { id: 8, name: 'Product 8', price: 99.99, images: ['/sample-product.jpg'], attributes: { color: 'Purple', size: 'XL' } }
+    ] : [
+      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Red', size: 'M' } },
+      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Blue', size: 'L' } },
+      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Green', size: 'S' } },
+      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Red', size: 'XL' } },
+      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'], description: 'Product description', attributes: { color: 'Blue', size: 'M' } }
     ],
     filters: {
-      color: ['Red', 'Blue', 'Green'],
+      color: ['Red', 'Blue', 'Green', 'Yellow', 'Purple'],
       size: ['S', 'M', 'L', 'XL'],
       price: { min: 0, max: 100 }
     },
+    filterableAttributes: [
+      {
+        code: 'color',
+        name: 'Color',
+        is_filterable: true,
+        options: [
+          { value: 'Red', label: 'Red' },
+          { value: 'Blue', label: 'Blue' },
+          { value: 'Green', label: 'Green' },
+          { value: 'Yellow', label: 'Yellow' },
+          { value: 'Purple', label: 'Purple' }
+        ]
+      },
+      {
+        code: 'size',
+        name: 'Size',
+        is_filterable: true,
+        options: [
+          { value: 'S', label: 'Small' },
+          { value: 'M', label: 'Medium' },
+          { value: 'L', label: 'Large' },
+          { value: 'XL', label: 'Extra Large' }
+        ]
+      }
+    ],
     sortOption: 'name-asc',
     currentPage: 1,
     totalPages: 3,
     currencySymbol: '$',
     selectedFilters: {},
+    productLabels: [],
     handleFilterChange: () => {},
     handleSortChange: () => {},
     handlePageChange: () => {},
