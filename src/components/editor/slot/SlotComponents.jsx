@@ -985,7 +985,12 @@ export function HierarchicalSlotRenderer({
                   ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
                   display: 'inline-block',
                   // Use fit-content for w-fit elements, otherwise 100%
-                  width: slot.className?.includes('w-fit') ? 'fit-content' : '100%'
+                  width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
+                  // Debug: Force visible styling to test if styles are applied
+                  ...(slot.id === 'category_title' && {
+                    border: '3px solid red !important',
+                    backgroundColor: 'yellow !important'
+                  })
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
