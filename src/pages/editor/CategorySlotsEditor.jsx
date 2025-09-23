@@ -574,7 +574,17 @@ const CategorySlotsEditor = ({
                       console.log('🎨 customSlotRenderer CALLED for slot:', slot.id, 'type:', slot.type);
                       console.log('🚨 CUSTOM SLOT RENDERER IS WORKING!');
 
-                      // Test: Always return something for layered_navigation to verify it's being called
+                      // Test: Always return something visible for key slots
+                      if (slot.id === 'breadcrumbs') {
+                        console.log('🍞 RENDERING BREADCRUMBS!');
+                        return <div style={{background: 'blue', padding: '10px', color: 'white', marginBottom: '20px'}}>BREADCRUMBS TEST WORKING!</div>;
+                      }
+
+                      if (slot.id === 'category_header') {
+                        console.log('📄 RENDERING CATEGORY HEADER!');
+                        return <div style={{background: 'green', padding: '15px', color: 'white', marginBottom: '20px', fontSize: '24px'}}>CATEGORY HEADER TEST WORKING!</div>;
+                      }
+
                       if (slot.id === 'layered_navigation') {
                         console.log('🔥 RENDERING LAYERED NAVIGATION!');
                         return <div style={{background: 'red', padding: '20px', color: 'white'}}>LAYERED NAVIGATION TEST</div>;
@@ -624,6 +634,25 @@ const CategorySlotsEditor = ({
                       }
 
                       console.log('🔄 Fallback rendering for', slot.id, 'type:', slot.type);
+
+                      // Handle CMS block slots
+                      if (slot.type === 'cms_block') {
+                        const cmsPosition = slot.metadata?.cmsPosition;
+                        console.log('📄 Rendering CMS block for position:', cmsPosition);
+                        return (
+                          <div className={`relative ${slot.className || "w-full"}`}>
+                            <CmsBlockRenderer position={cmsPosition} />
+                            {/* Editor overlay for CMS block identification */}
+                            {mode === 'edit' && !showPreview && (
+                              <div className="absolute inset-0 bg-purple-100 bg-opacity-30 border-2 border-purple-300 border-dashed rounded-md flex items-center justify-center">
+                                <div className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-medium">
+                                  CMS: {slot.metadata?.displayName || cmsPosition}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
 
                       // For slots without specific components, render basic content
                       if (slot.type === 'text' && slot.content) {
