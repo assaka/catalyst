@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore, cachedApiCall } from '@/components/storefront/StoreProvider';
 import cartService from '@/services/cartService';
-import ProductCard from '@/components/storefront/ProductCard';
+import ProductItemCard from '@/components/storefront/ProductItemCard';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -283,7 +283,17 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
             <h2 className="text-3xl font-bold text-center mb-8">You Might Also Like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {products.map(product => (
-                    <ProductCard key={product.id} product={product} settings={settings || {}} />
+                    <ProductItemCard
+                        key={product.id}
+                        product={product}
+                        settings={settings || {}}
+                        store={store}
+                        taxes={taxes}
+                        selectedCountry={selectedCountry}
+                        productLabels={productLabels}
+                        viewMode="grid"
+                        slotConfig={{}}
+                    />
                 ))}
             </div>
         </div>

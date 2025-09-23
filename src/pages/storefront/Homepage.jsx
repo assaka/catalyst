@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { createCategoryUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
-import ProductCard from "@/components/storefront/ProductCard";
+import ProductItemCard from "@/components/storefront/ProductItemCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { Package } from "lucide-react";
@@ -134,11 +134,17 @@ export default function Homepage() {
             {featuredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {filteredProducts.slice(0, 8).map((product) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
+                  <ProductItemCard
+                    key={product.id}
+                    product={product}
                     settings={settings}
+                    store={store}
+                    taxes={taxes}
+                    selectedCountry={selectedCountry}
+                    productLabels={productLabels}
                     className="hover:shadow-lg transition-shadow rounded-lg"
+                    viewMode="grid"
+                    slotConfig={{}}
                   />
                 ))}
               </div>
