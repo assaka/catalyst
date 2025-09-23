@@ -696,7 +696,7 @@ export const categoryConfig = {
       id: 'product_add_to_cart',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
+      className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
       parentClassName: '',
       styles: {},
       parentId: 'product_content',
