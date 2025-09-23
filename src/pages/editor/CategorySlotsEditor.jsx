@@ -1,296 +1,577 @@
 /**
- * CategorySlotsEditor - Mirror of Category.jsx layout with editing capabilities
+ * Clean CategorySlotsEditor - Error-free version based on CartSlotsEditor structure
+ * - Resizing and dragging with minimal complexity
+ * - Click to open EditorSidebar
+ * - Maintainable structure matching CartSlotsEditor
  */
 
-import React from "react";
-import PropTypes from 'prop-types';
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Grid,
+  List,
+  Eye
+} from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import {
+  useSlotConfiguration,
+  useTimestampFormatting,
+  useDraftStatusManagement,
+  useConfigurationChangeDetection,
+  useBadgeRefresh,
+  useClickOutsidePanel,
+  usePreviewModeHandlers,
+  usePublishPanelHandlers,
+  useConfigurationInitialization,
+  usePublishHandler,
+  useResetLayoutHandler,
+  useSaveConfigurationHandler,
+  usePublishPanelHandlerWrappers,
+  useEditorInitialization,
+  useViewModeAdjustments
+} from '@/hooks/useSlotConfiguration';
+import {
+  HierarchicalSlotRenderer,
+  EditorToolbar,
   AddSlotModal,
   ResetLayoutModal,
   FilePickerModalWrapper,
-  CodeModal,
-  EditorToolbar,
   EditModeControls,
+  CodeModal,
   PublishPanelToggle,
   TimestampsRow,
-  HierarchicalSlotRenderer
+  ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
-import CategoryViewModeControls from '@/components/editor/CategoryViewModeControls';
-import { CategorySlotRenderer } from '@/components/storefront/CategorySlotRenderer';
-import { useCategoryEditor } from '@/hooks/useCategoryEditor';
-import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import {
+  CategoryHeaderSlot,
+  CategoryFiltersSlot,
+  CategoryProductsSlot,
+  CategorySortingSlot,
+  CategoryPaginationSlot
+} from '@/components/editor/slot/slotComponentsCategory';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
+// Main CategorySlotsEditor component - mirrors CartSlotsEditor structure exactly
 const CategorySlotsEditor = ({
   mode = 'edit',
   onSave,
   viewMode: propViewMode = 'grid'
 }) => {
-  const editor = useCategoryEditor({ mode, onSave, viewMode: propViewMode });
+  // Store context for database operations
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
+  // Global state to track current drag operation
+  const [currentDragInfo, setCurrentDragInfo] = useState(null);
+
+  // State management - Initialize with empty config to avoid React error
+  const [categoryLayoutConfig, setCategoryLayoutConfig] = useState({
+    page_name: 'Category',
+    slot_type: 'category_layout',
+    slots: {},
+    metadata: {
+      created: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      version: '1.0',
+      pageType: 'category'
+    },
+    cmsBlocks: []
+  });
+
+  // Basic editor state
+  const isDragOperationActiveRef = useRef(false);
+  const [viewMode, setViewMode] = useState(propViewMode);
+  const [selectedElement, setSelectedElement] = useState(null);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [showSlotBorders, setShowSlotBorders] = useState(true);
+  const [localSaveStatus, setLocalSaveStatus] = useState('');
+  const [currentViewport, setCurrentViewport] = useState('desktop');
+  const [isResizing, setIsResizing] = useState(false);
+  const [showAddSlotModal, setShowAddSlotModal] = useState(false);
+  const [showFilePickerModal, setShowFilePickerModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [showPublishPanel, setShowPublishPanel] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const lastResizeEndTime = useRef(0);
+  const publishPanelRef = useRef(null);
+
+  // Use extracted hooks
+  const { formatTimeAgo } = useTimestampFormatting();
+  const {
+    draftConfig, setDraftConfig,
+    latestPublished, setLatestPublished,
+    setConfigurationStatus,
+    hasUnsavedChanges, setHasUnsavedChanges,
+    loadDraftStatus
+  } = useDraftStatusManagement(getSelectedStoreId(), 'category');
+
+  // Database configuration hook with generic functions and handler factories
+  const {
+    handleResetLayout: resetLayoutFromHook,
+    handlePublishConfiguration,
+    getDraftOrStaticConfiguration,
+    createSlot,
+    handleSlotDrop: slotDropHandler,
+    handleSlotDelete: slotDeleteHandler,
+    handleGridResize: gridResizeHandler,
+    handleSlotHeightResize: slotHeightResizeHandler,
+    handleTextChange: textChangeHandler,
+    handleClassChange: classChangeHandler,
+    // Generic handler factories
+    createElementClickHandler,
+    createSaveConfigurationHandler,
+    createHandlerFactory
+  } = useSlotConfiguration({
+    pageType: 'category',
+    pageName: 'Category',
+    slotType: 'category_layout',
+    selectedStore,
+    updateConfiguration: async (config) => {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        await slotConfigurationService.saveConfiguration(storeId, config, 'category_layout');
+      }
+    },
+    onSave
+  });
+
+  // Configuration initialization hook
+  const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
+    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
+  );
+
+  // Use generic editor initialization
+  useEditorInitialization(initializeConfig, setCategoryLayoutConfig);
+
+  // Configuration change detection
+  const { updateLastSavedConfig } = useConfigurationChangeDetection(
+    configurationLoadedRef, categoryLayoutConfig, setHasUnsavedChanges
+  );
+
+  // Badge refresh
+  useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'category');
+
+  // Compute when Publish button should be enabled
+  const canPublish = hasUnsavedChanges;
+
+  // Save configuration using the generic factory
+  const baseSaveConfiguration = createSaveConfigurationHandler(
+    categoryLayoutConfig,
+    setCategoryLayoutConfig,
+    setLocalSaveStatus,
+    getSelectedStoreId,
+    'category'
+  );
+
+  // Use generic save configuration handler
+  const { saveConfiguration } = useSaveConfigurationHandler(
+    'category',
+    baseSaveConfiguration,
+    categoryLayoutConfig,
+    {
+      setConfigurationStatus,
+      updateLastSavedConfig
+    }
+  );
+
+  // Handle element selection using generic factory
+  const handleElementClick = createElementClickHandler(
+    isResizing,
+    lastResizeEndTime,
+    setSelectedElement,
+    setIsSidebarVisible
+  );
+
+  // Create handler factory with page-specific dependencies
+  const handlerFactory = createHandlerFactory(setCategoryLayoutConfig, saveConfiguration);
+
+  // Sample category data for editor preview
+  const sampleCategoryContext = {
+    category: {
+      id: 1,
+      name: 'Sample Category',
+      description: 'Browse our collection of products',
+      image: '/sample-category.jpg'
+    },
+    products: viewMode === 'grid' ? [
+      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'] },
+      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'] },
+      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'] },
+      { id: 4, name: 'Product 4', price: 59.99, images: ['/sample-product.jpg'] },
+      { id: 5, name: 'Product 5', price: 69.99, images: ['/sample-product.jpg'] },
+      { id: 6, name: 'Product 6', price: 79.99, images: ['/sample-product.jpg'] }
+    ] : [
+      { id: 1, name: 'Product 1', price: 29.99, images: ['/sample-product.jpg'], description: 'Product description' },
+      { id: 2, name: 'Product 2', price: 39.99, images: ['/sample-product.jpg'], description: 'Product description' },
+      { id: 3, name: 'Product 3', price: 49.99, images: ['/sample-product.jpg'], description: 'Product description' }
+    ],
+    filters: {
+      color: ['Red', 'Blue', 'Green'],
+      size: ['S', 'M', 'L', 'XL'],
+      price: { min: 0, max: 100 }
+    },
+    sortOption: 'name-asc',
+    currentPage: 1,
+    totalPages: 3,
+    currencySymbol: '$',
+    selectedFilters: {},
+    handleFilterChange: () => {},
+    handleSortChange: () => {},
+    handlePageChange: () => {},
+    clearFilters: () => {}
+  };
+
+  // Create all handlers using the factory
+  const handleTextChange = handlerFactory.createTextChangeHandler(textChangeHandler);
+  const handleClassChange = handlerFactory.createClassChangeHandler(classChangeHandler);
+
+  // Debounced save ref
+  const saveTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Create all handlers using the factory
+  const handleGridResize = handlerFactory.createGridResizeHandler(gridResizeHandler, saveTimeoutRef);
+  const handleSlotHeightResize = handlerFactory.createSlotHeightResizeHandler(slotHeightResizeHandler, saveTimeoutRef);
+  const handleSlotDrop = handlerFactory.createSlotDropHandler(slotDropHandler, isDragOperationActiveRef);
+  const handleSlotDelete = handlerFactory.createSlotDeleteHandler(slotDeleteHandler);
+  const baseHandleResetLayout = handlerFactory.createResetLayoutHandler(resetLayoutFromHook, setLocalSaveStatus);
+
+  // Use generic reset layout handler
+  const { handleResetLayout } = useResetLayoutHandler(
+    'category',
+    baseHandleResetLayout,
+    categoryLayoutConfig,
+    {
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
+    }
+  );
+  const handleCreateSlot = handlerFactory.createSlotCreateHandler(createSlot);
+
+  // Use generic publish handler
+  const { handlePublish, publishStatus } = usePublishHandler(
+    'category',
+    categoryLayoutConfig,
+    handlePublishConfiguration,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
+    }
+  );
+
+  // Click outside and preview mode handlers
+  useClickOutsidePanel(showPublishPanel, publishPanelRef, setShowPublishPanel);
+  usePreviewModeHandlers(showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel);
+
+  // Publish panel handlers
+  const basePublishPanelHandlers = usePublishPanelHandlers(
+    'category', getSelectedStoreId, getDraftOrStaticConfiguration, setCategoryLayoutConfig, slotConfigurationService
+  );
+
+  // Use generic publish panel handler wrappers
+  const { handlePublishPanelPublished, handlePublishPanelReverted } = usePublishPanelHandlerWrappers(
+    'category',
+    basePublishPanelHandlers,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setDraftConfig,
+      setConfigurationStatus,
+      setHasUnsavedChanges,
+      setLatestPublished,
+      setPageConfig: setCategoryLayoutConfig,
+      updateLastSavedConfig
+    }
+  );
+
+  // Category-specific view mode adjustments
+  const categoryAdjustmentRules = {
+    filters_container: {
+      colSpan: {
+        shouldAdjust: (currentValue) => {
+          return typeof currentValue === 'number';
+        },
+        newValue: {
+          grid: 'col-span-12 lg:col-span-3',
+          list: 'col-span-12 lg:col-span-3'
+        }
+      }
+    },
+    products_container: {
+      colSpan: {
+        shouldAdjust: (currentValue) => {
+          return typeof currentValue === 'number';
+        },
+        newValue: {
+          grid: 'col-span-12 lg:col-span-9',
+          list: 'col-span-12 lg:col-span-9'
+        }
+      }
+    }
+  };
+
+  // Use generic view mode adjustments
+  useViewModeAdjustments(categoryLayoutConfig, setCategoryLayoutConfig, viewMode, categoryAdjustmentRules);
+
+  // Main render - Clean and maintainable
   return (
-    <>
-      {/* Minimal Editor Header - only show when editing */}
-      {mode === 'edit' && !editor.showPreview && (
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto py-3">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                {/* Left section */}
-                <div className="flex items-center gap-6">
-                  <CategoryViewModeControls
-                    viewMode={editor.viewMode}
-                    onViewModeChange={editor.setViewMode}
-                  />
+    <div className={`min-h-screen bg-gray-50 ${
+      isSidebarVisible ? 'pr-80' : ''
+    }`}>
+      {/* Main Editor Area */}
+      <div className="flex flex-col">
+        {/* Editor Header */}
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
+              {/* View Mode Tabs */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <Grid className="w-4 h-4 inline mr-1.5" />
+                  Grid View
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'list'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <List className="w-4 h-4 inline mr-1.5" />
+                  List View
+                </button>
+              </div>
 
-                  <EditModeControls
-                    localSaveStatus={editor.localSaveStatus}
-                    publishStatus={editor.publishStatus}
-                    saveConfiguration={editor.saveConfiguration}
-                    onPublish={editor.handlePublish}
-                    hasChanges={editor.canPublish}
-                  />
-                </div>
+              {/* Edit mode controls */}
+              {mode === 'edit' && (
+                <EditModeControls
+                  localSaveStatus={localSaveStatus}
+                  publishStatus={publishStatus}
+                  saveConfiguration={saveConfiguration}
+                  onPublish={handlePublish}
+                  hasChanges={canPublish}
+                />
+              )}
+            </div>
 
-                {/* Right section */}
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={() => editor.setShowPreview(!editor.showPreview)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Preview
-                  </Button>
+            {/* Preview and Publish Buttons - Far Right */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowPreview(!showPreview)}
+                variant={showPreview ? "default" : "outline"}
+                size="sm"
+                className="flex items-center gap-1.5"
+                title={showPreview ? "Exit Preview" : "Preview without editing tools"}
+              >
+                <Eye className="w-4 h-4" />
+                {showPreview ? "Exit Preview" : "Preview"}
+              </Button>
 
-                  <PublishPanelToggle
-                    hasUnsavedChanges={editor.hasUnsavedChanges}
-                    showPublishPanel={editor.showPublishPanel}
-                    onTogglePublishPanel={editor.setShowPublishPanel}
-                    onClosePublishPanel={() => {
-                      editor.setIsSidebarVisible(false);
-                      editor.setSelectedElement(null);
+              <PublishPanelToggle
+                hasUnsavedChanges={hasUnsavedChanges}
+                showPublishPanel={showPublishPanel}
+                onTogglePublishPanel={setShowPublishPanel}
+                onClosePublishPanel={() => {
+                  setIsSidebarVisible(false);
+                  setSelectedElement(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Category Layout - Hierarchical Structure */}
+        <div
+          className="bg-gray-50 category-page"
+          style={{ backgroundColor: '#f9fafb' }}
+        >
+          {/* Timestamps Row */}
+          <TimestampsRow
+            draftConfig={draftConfig}
+            latestPublished={latestPublished}
+            formatTimeAgo={formatTimeAgo}
+            currentViewport={currentViewport}
+            onViewportChange={setCurrentViewport}
+          />
+
+          {!showPreview && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <EditorToolbar
+                showSlotBorders={showSlotBorders}
+                onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+                onResetLayout={() => setShowResetModal(true)}
+                onShowCode={() => setShowCodeModal(true)}
+                onAddSlot={() => setShowAddSlotModal(true)}
+              />
+            </div>
+          )}
+
+          <ResponsiveContainer
+            viewport={currentViewport}
+            className="bg-white"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                {categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0 ? (
+                  <HierarchicalSlotRenderer
+                    slots={categoryLayoutConfig.slots}
+                    parentId={null}
+                    mode={showPreview ? 'view' : mode}
+                    viewMode={viewMode}
+                    showBorders={showPreview ? false : showSlotBorders}
+                    currentDragInfo={currentDragInfo}
+                    setCurrentDragInfo={setCurrentDragInfo}
+                    onElementClick={showPreview ? null : handleElementClick}
+                    onGridResize={showPreview ? null : handleGridResize}
+                    onSlotHeightResize={showPreview ? null : handleSlotHeightResize}
+                    onSlotDrop={showPreview ? null : handleSlotDrop}
+                    onSlotDelete={showPreview ? null : handleSlotDelete}
+                    onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                    onResizeEnd={showPreview ? null : () => {
+                      lastResizeEndTime.current = Date.now();
+                      setTimeout(() => setIsResizing(false), 100);
+                    }}
+                    selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                    setPageConfig={setCategoryLayoutConfig}
+                    saveConfiguration={saveConfiguration}
+                    saveTimeoutRef={saveTimeoutRef}
+                    customSlotRenderer={(slot) => {
+                      const componentMap = {
+                        'breadcrumbs': CategoryHeaderSlot,
+                        'category_title': CategoryHeaderSlot,
+                        'filters_container': CategoryFiltersSlot,
+                        'products_container': CategoryProductsSlot,
+                        'sort_controls': CategorySortingSlot,
+                        'pagination_controls': CategoryPaginationSlot
+                      };
+                      const SlotComponent = componentMap[slot.id];
+                      if (SlotComponent) {
+                        return (
+                          <SlotComponent
+                            categoryContext={sampleCategoryContext}
+                            content={slot.content}
+                            config={{ viewMode }}
+                          />
+                        );
+                      }
+                      return null;
                     }}
                   />
-                </div>
-              </div>
-
-              {/* Timestamps and Editor Toolbar */}
-              <div className="border-t border-gray-100 pt-3 mt-3">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <TimestampsRow
-                    draftConfig={editor.draftConfig}
-                    latestPublished={editor.latestPublished}
-                    formatTimeAgo={editor.formatTimeAgo}
-                    currentViewport={editor.currentViewport}
-                    onViewportChange={editor.setCurrentViewport}
-                  />
-
-                  <EditorToolbar
-                    showSlotBorders={editor.showSlotBorders}
-                    onToggleBorders={() => editor.setShowSlotBorders(!editor.showSlotBorders)}
-                    onResetLayout={() => editor.setShowResetModal(true)}
-                    onShowCode={() => editor.setShowCodeModal(true)}
-                    onAddSlot={() => editor.setShowAddSlotModal(true)}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview mode header */}
-      {editor.showPreview && (
-        <div className="bg-blue-50 border-b border-blue-200 sticky top-0 z-40">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto py-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-700 font-medium">
-                  Preview Mode - This is how your category page will look to customers
-                </span>
-                <Button
-                  onClick={() => editor.setShowPreview(false)}
-                  variant="outline"
-                  size="sm"
-                  className="border-blue-200 text-blue-700 hover:bg-blue-100"
-                >
-                  Exit Preview
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content - Scrollable container with fixed header */}
-      <div
-        className={`overflow-y-auto ${editor.isSidebarVisible && !editor.showPreview ? 'lg:pr-80' : ''} transition-all duration-300`}
-        style={{
-          height: mode === 'edit' && !editor.showPreview ? 'calc(100vh - 180px)' : '100vh'
-        }}
-      >
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <div className="max-w-7xl mx-auto">
-              {editor.showPreview ? (
-                // Pure preview mode - exactly like Category.jsx
-                <CategorySlotRenderer
-                  slots={editor.categoryLayoutConfig?.slots}
-                  parentId={null}
-                  viewMode={editor.viewMode}
-                  categoryContext={editor.mockCategoryContext}
-                />
-              ) : (
-                // Edit mode with overlay
-                <div className="relative min-h-[800px]">
-                  {/* Background content - CategorySlotRenderer */}
-                  <div className="pointer-events-none">
-                    <CategorySlotRenderer
-                      slots={editor.categoryLayoutConfig?.slots}
-                      parentId={null}
-                      viewMode={editor.viewMode}
-                      categoryContext={editor.mockCategoryContext}
-                    />
-                  </div>
-
-                  {/* Overlay - HierarchicalSlotRenderer for editing */}
-                  <div className="absolute inset-0 pointer-events-none">
-                      <div className="grid grid-cols-12 gap-2 auto-rows-min h-full">
-                        <HierarchicalSlotRenderer
-                          slots={editor.categoryLayoutConfig?.slots || {}}
-                          parentId={null}
-                          mode={mode}
-                          viewMode={editor.viewMode}
-                          showBorders={editor.showSlotBorders}
-                          currentDragInfo={editor.currentDragInfo}
-                          setCurrentDragInfo={editor.setCurrentDragInfo}
-                          onElementClick={editor.handleElementClick}
-                          onGridResize={editor.handleGridResize}
-                          onSlotHeightResize={editor.handleSlotHeightResize}
-                          onSlotDrop={editor.handleSlotDrop}
-                          onSlotDelete={editor.handleSlotDelete}
-                          onResizeStart={() => editor.setIsResizing(true)}
-                          onResizeEnd={() => {
-                            editor.lastResizeEndTime.current = Date.now();
-                            setTimeout(() => editor.setIsResizing(false), 100);
-                          }}
-                          selectedElementId={editor.selectedElement?.getAttribute?.('data-slot-id')}
-                          setPageConfig={editor.setCategoryLayoutConfig}
-                          saveConfiguration={editor.saveConfiguration}
-                          saveTimeoutRef={editor.saveTimeoutRef}
-                          customSlotRenderer={() => (
-                            <div
-                              className="w-full h-full bg-transparent pointer-events-auto"
-                              style={{
-                                minHeight: '20px',
-                                border: editor.showSlotBorders ? '1px dashed rgba(59, 130, 246, 0.5)' : 'none'
-                              }}
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
+                ) : (
+                  <div className="col-span-12 text-center py-12 text-gray-500">
+                    {categoryLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
                   </div>
                 )}
               </div>
+
+              <CmsBlockRenderer position="category_above_products" />
+              <CmsBlockRenderer position="category_below_products" />
             </div>
-          </div>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-      {/* Editor Sidebar - Mobile overlay, desktop fixed */}
-      {mode === 'edit' && !editor.showPreview && editor.isSidebarVisible && editor.selectedElement && (
-        <>
-          {/* Mobile backdrop */}
-          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => {
-            editor.setSelectedElement(null);
-            editor.setIsSidebarVisible(false);
-          }} />
-
-          {/* Sidebar - Independent scrolling */}
-          <div
-            className="fixed right-0 w-80 z-50 lg:z-40 overflow-y-auto bg-white shadow-lg"
-            style={{
-              top: mode === 'edit' && !editor.showPreview ? '180px' : '0px',
-              height: mode === 'edit' && !editor.showPreview ? 'calc(100vh - 180px)' : '100vh'
-            }}
-          >
-            <EditorSidebar
-              selectedElement={editor.selectedElement}
-              slotId={editor.selectedElement?.getAttribute?.('data-slot-id')}
-              slotConfig={(() => {
-                const slotId = editor.selectedElement?.getAttribute?.('data-slot-id');
-                return editor.categoryLayoutConfig?.slots?.[slotId] || null;
-              })()}
-              onTextChange={editor.handleTextChange}
-              onClassChange={editor.handleClassChange}
-              onInlineClassChange={editor.handleClassChange}
-              onClearSelection={() => {
-                editor.setSelectedElement(null);
-                editor.setIsSidebarVisible(false);
-              }}
-              isVisible={true}
-            />
-          </div>
-        </>
+      {/* EditorSidebar - only show in edit mode and not in preview */}
+      {mode === 'edit' && !showPreview && isSidebarVisible && selectedElement && (
+        <EditorSidebar
+          selectedElement={selectedElement}
+          slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
+          slotConfig={(() => {
+            const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
+            const config = categoryLayoutConfig && categoryLayoutConfig.slots && slotId ? categoryLayoutConfig.slots[slotId] : null;
+            console.log('🏗️ CategorySlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, categoryLayoutConfig });
+            return config;
+          })()}
+          onTextChange={handleTextChange}
+          onClassChange={handleClassChange}
+          onInlineClassChange={handleClassChange}
+          onClearSelection={() => {
+            setSelectedElement(null);
+            setIsSidebarVisible(false);
+          }}
+          isVisible={true}
+        />
       )}
 
-      {/* Modals */}
+      {/* Add Slot Modal */}
       <AddSlotModal
-        isOpen={editor.showAddSlotModal}
-        onClose={() => editor.setShowAddSlotModal(false)}
-        onCreateSlot={editor.handleCreateSlot}
-        onShowFilePicker={() => editor.setShowFilePickerModal(true)}
+        isOpen={showAddSlotModal}
+        onClose={() => setShowAddSlotModal(false)}
+        onCreateSlot={handleCreateSlot}
+        onShowFilePicker={() => setShowFilePickerModal(true)}
       />
 
+      {/* File Picker Modal */}
       <FilePickerModalWrapper
-        isOpen={editor.showFilePickerModal}
-        onClose={() => editor.setShowFilePickerModal(false)}
-        onCreateSlot={editor.handleCreateSlot}
+        isOpen={showFilePickerModal}
+        onClose={() => setShowFilePickerModal(false)}
+        onCreateSlot={handleCreateSlot}
         fileType="image"
       />
 
+      {/* Reset Layout Confirmation Modal */}
       <ResetLayoutModal
-        isOpen={editor.showResetModal}
-        onClose={() => editor.setShowResetModal(false)}
-        onConfirm={editor.handleResetLayout}
-        isResetting={editor.localSaveStatus === 'saving'}
-      />
-
-      <CodeModal
-        isOpen={editor.showCodeModal}
-        onClose={() => editor.setShowCodeModal(false)}
-        configuration={editor.categoryLayoutConfig}
-        localSaveStatus={editor.localSaveStatus}
-        onSave={async (newConfiguration) => {
-          editor.setCategoryLayoutConfig(newConfiguration);
-          await editor.saveConfiguration(newConfiguration);
-          editor.setShowCodeModal(false);
-        }}
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleResetLayout}
+        isResetting={localSaveStatus === 'saving'}
       />
 
       {/* Floating Publish Panel */}
-      {editor.showPublishPanel && (
-        <div ref={editor.publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
+      {showPublishPanel && (
+        <div ref={publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
           <PublishPanel
-            draftConfig={editor.draftConfig}
-            storeId={editor.getSelectedStoreId()}
+            draftConfig={draftConfig}
+            storeId={getSelectedStoreId()}
             pageType="category"
-            onPublished={editor.handlePublishPanelPublished}
-            onReverted={editor.handlePublishPanelReverted}
-            hasUnsavedChanges={editor.hasUnsavedChanges}
+            onPublished={handlePublishPanelPublished}
+            onReverted={handlePublishPanelReverted}
+            hasUnsavedChanges={hasUnsavedChanges}
           />
         </div>
       )}
-    </>
-  );
-};
 
-CategorySlotsEditor.propTypes = {
-  mode: PropTypes.string,
-  onSave: PropTypes.func,
-  viewMode: PropTypes.string
+      {/* Code Modal */}
+      <CodeModal
+        isOpen={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+        configuration={categoryLayoutConfig}
+        localSaveStatus={localSaveStatus}
+        onSave={async (newConfiguration) => {
+          console.log('🎯 CodeModal onSave called with configuration:', newConfiguration);
+          setCategoryLayoutConfig(newConfiguration);
+          setHasUnsavedChanges(true);
+          console.log('🚀 Calling saveConfiguration...');
+          await saveConfiguration(newConfiguration);
+          console.log('✅ Save completed, closing modal');
+          setShowCodeModal(false);
+        }}
+      />
+    </div>
+  );
 };
 
 export default CategorySlotsEditor;
