@@ -292,7 +292,7 @@ export default function LayeredNavigation({
                                                 onClick={() => {
                                                     setPriceRange([minPrice, maxPrice]);
                                                 }}
-                                                className="ml-1 text-green-600 hover:text-green-800"
+                                                className="text-xl ml-2 text-green-600 hover:text-green-800"
                                             >
                                                 ×
                                             </button>

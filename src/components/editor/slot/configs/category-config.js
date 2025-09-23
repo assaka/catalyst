@@ -144,7 +144,7 @@ export const categoryConfig = {
       id: 'filter_active_filters',
       type: 'container',
       content: '',
-      className: 'mb-4 p-4 bg-gray-50 rounded-lg',
+      className: 'mb-4 p-2',
       parentClassName: '',
       styles: {},
       parentId: 'layered_navigation',
