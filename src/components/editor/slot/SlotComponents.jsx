@@ -988,8 +988,8 @@ export function HierarchicalSlotRenderer({
                   width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
                   // Debug: Force visible styling to test if styles are applied
                   ...(slot.id === 'category_title' && {
-                    border: '3px solid red !important',
-                    backgroundColor: 'yellow !important'
+                    border: '3px solid red',
+                    backgroundColor: 'yellow'
                   })
                 }}
                 onClick={(e) => {
