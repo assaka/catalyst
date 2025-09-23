@@ -639,7 +639,7 @@ const CategorySlotsEditor = ({
                       // Let layered_navigation be handled by the component mapping
 
                       // Handle breadcrumbs content specifically
-                      if (slot.id === 'breadcrumbs_content' || slot.type === 'breadcrumbs') {
+                      if (slot.id === 'breadcrumbs_content') {
                         console.log('🍞 Rendering breadcrumbs content with CategoryBreadcrumbsSlot');
                         console.log('🍞 Breadcrumbs slot details:', slot);
                         console.log('🍞 Sample context breadcrumbs:', sampleCategoryContext.breadcrumbs);
@@ -654,7 +654,7 @@ const CategorySlotsEditor = ({
                       }
 
                       // Handle product_item_card specifically
-                      if (slot.id === 'product_item_card' || slot.type === 'product_grid') {
+                      if (slot.id === 'product_item_card') {
                         console.log('🛍️ Rendering product_item_card with CategoryProductItemCardSlot');
                         console.log('🛍️ Product slot details:', slot);
                         return (

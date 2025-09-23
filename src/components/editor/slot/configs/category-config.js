@@ -39,7 +39,7 @@ export const categoryConfig = {
 
     breadcrumbs_content: {
       id: 'breadcrumbs_content',
-      type: 'breadcrumbs',
+      type: 'container',
       content: '',
       className: 'flex items-center space-x-2 text-sm text-gray-600',
       parentClassName: '',
@@ -506,7 +506,7 @@ export const categoryConfig = {
     // Main products display using ProductItemCard component
     product_item_card: {
       id: 'product_item_card',
-      type: 'product_grid',
+      type: 'container',
       content: '',
       className: 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]',
       parentClassName: '',
@@ -522,6 +522,28 @@ export const categoryConfig = {
         itemsToShow: 12
       }
     },
+
+
+    // Product Item Cards - Alternative product display
+    // product_item_card: {
+    //   id: 'product_item_card',
+    //   type: 'container',
+    //   content: '',
+    //   className: 'mb-8',
+    //   parentClassName: '',
+    //   styles: {},
+    //   parentId: 'products_container',
+    //   position: { col: 1, row: 4 },
+    //   colSpan: { grid: 12, list: 12 },
+    //   viewMode: ['grid', 'list'],
+    //   metadata: {
+    //     hierarchical: false,
+    //     component: 'ProductItemCard',
+    //     displayName: 'Product Item Cards',
+    //     itemsToShow: 3
+    //   }
+    // },
+
 
     // Products grid (alternative layout - kept for flexibility)
     products_grid: {
@@ -699,26 +721,6 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         component: 'PaginationComponent'
-      }
-    },
-
-    // Product Item Cards - Alternative product display
-    product_item_card: {
-      id: 'product_item_card',
-      type: 'container',
-      content: '',
-      className: 'mb-8',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 4 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        component: 'ProductItemCard',
-        displayName: 'Product Item Cards',
-        itemsToShow: 3
       }
     },
 
