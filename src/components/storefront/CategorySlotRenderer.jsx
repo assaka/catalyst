@@ -129,7 +129,7 @@ export function CategorySlotRenderer({
     // Handle category header content - with dynamic content from categoryContext
     if (id === 'category_header' || id === 'header' || id === 'category_title') {
       // Use content from slot if provided, otherwise use category name
-      const headerContent = content || category?.name || 'Products';
+      const headerContent = category?.name || content || 'Products';
 
       return wrapWithParentClass(
         <h1 className={className} style={styles}>
