@@ -986,11 +986,16 @@ export function HierarchicalSlotRenderer({
                   display: 'inline-block',
                   // Use fit-content for w-fit elements, otherwise 100%
                   width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
-                  // Debug: Force visible styling to test if styles are applied
-                  ...(slot.id === 'category_title' && {
-                    border: '3px solid red',
-                    backgroundColor: 'yellow'
-                  })
+                }}
+                ref={(el) => {
+                  if (slot.id === 'category_title' && el) {
+                    console.log('🎨 Category title element styles applied:', {
+                      slotId: slot.id,
+                      slotStyles: slot.styles,
+                      finalComputedStyles: window.getComputedStyle(el).backgroundColor,
+                      elementStyle: el.style.backgroundColor
+                    });
+                  }
                 }}
                 onClick={(e) => {
                   e.stopPropagation();

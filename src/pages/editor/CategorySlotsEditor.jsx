@@ -629,7 +629,15 @@ const CategorySlotsEditor = ({
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
                       console.log('🎨 customSlotRenderer CALLED for slot:', slot.id, 'type:', slot.type);
-                      console.log('🎨 Slot details:', JSON.stringify(slot, null, 2));
+                      if (slot.id === 'category_title') {
+                        console.log('🎨 CATEGORY TITLE SLOT DETAILED DEBUG:', {
+                          slotId: slot.id,
+                          styles: slot.styles,
+                          className: slot.className,
+                          content: slot.content,
+                          type: slot.type
+                        });
+                      }
                       console.log('🚨 CUSTOM SLOT RENDERER IS WORKING!');
 
                       // Test: Always return something visible for key slots
@@ -716,7 +724,7 @@ const CategorySlotsEditor = ({
                       console.log('🎯 Component mapping for', slot.id, ':', SlotComponent?.name || 'None found');
 
                       if (SlotComponent) {
-                        console.log('✅ Rendering component for', slot.id);
+                        console.log('✅ Rendering component for', slot.id, 'with styles:', slot.styles, 'className:', slot.className);
                         return (
                           <SlotComponent
                             categoryData={sampleCategoryContext}
