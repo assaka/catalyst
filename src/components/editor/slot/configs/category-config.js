@@ -719,5 +719,4 @@ export const categoryConfig = {
   }
 };
 
-export { categoryConfig };
 export default categoryConfig;
