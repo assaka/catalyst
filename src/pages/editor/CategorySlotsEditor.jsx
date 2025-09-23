@@ -548,7 +548,9 @@ const CategorySlotsEditor = ({
                   // Log specific slot types to debug
                   if (categoryLayoutConfig?.slots) {
                     console.log('🔍 breadcrumbs slot:', categoryLayoutConfig.slots.breadcrumbs);
+                    console.log('🔍 breadcrumbs_content slot:', categoryLayoutConfig.slots.breadcrumbs_content);
                     console.log('🔍 category_header slot:', categoryLayoutConfig.slots.category_header);
+                    console.log('🔍 category_title slot:', categoryLayoutConfig.slots.category_title);
                     console.log('🔍 layered_navigation slot:', categoryLayoutConfig.slots.layered_navigation);
                     console.log('🔍 product_item_card slot:', categoryLayoutConfig.slots.product_item_card);
 
@@ -618,6 +620,8 @@ const CategorySlotsEditor = ({
                       // Handle breadcrumbs content specifically
                       if (slot.id === 'breadcrumbs_content' || slot.type === 'breadcrumbs') {
                         console.log('🍞 Rendering breadcrumbs content with CategoryBreadcrumbsSlot');
+                        console.log('🍞 Breadcrumbs slot details:', slot);
+                        console.log('🍞 Sample context breadcrumbs:', sampleCategoryContext.breadcrumbs);
                         return (
                           <CategoryBreadcrumbsSlot
                             categoryData={sampleCategoryContext}

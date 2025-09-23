@@ -834,8 +834,8 @@ export function HierarchicalSlotRenderer({
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
     console.log(`🔍 Filtering slot [${slot.id}] - viewMode: ${viewMode}, slot.viewMode: ${JSON.stringify(slot.viewMode)}, shouldShow: ${shouldShow}`);
-    if (slot.id === 'breadcrumbs') {
-      console.log(`🍞 BREADCRUMBS FILTER RESULT: shouldShow=${shouldShow}, parentId=${parentId}`);
+    if (slot.id === 'breadcrumbs' || slot.id === 'breadcrumbs_content') {
+      console.log(`🍞 BREADCRUMBS FILTER RESULT: slot=${slot.id}, shouldShow=${shouldShow}, parentId=${parentId}`);
     }
     return shouldShow;
   });

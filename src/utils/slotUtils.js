@@ -20,8 +20,8 @@ export class SlotManager {
 
     const childSlots = allSlots.filter(slot => {
       const isChild = slot.parentId === parentId;
-      if (slot.id === 'breadcrumbs') {
-        console.log(`🍞 SlotManager checking breadcrumbs: parentId=${slot.parentId}, target=${parentId}, isChild=${isChild}`);
+      if (slot.id === 'breadcrumbs' || slot.id === 'breadcrumbs_content') {
+        console.log(`🍞 SlotManager checking ${slot.id}: parentId=${slot.parentId}, target=${parentId}, isChild=${isChild}`);
       }
       return isChild;
     });
