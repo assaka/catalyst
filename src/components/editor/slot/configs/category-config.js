@@ -622,20 +622,6 @@ export const categoryConfig = {
       metadata: { hierarchical: true, microslot: true, overlay: true }
     },
 
-    product_content: {
-      id: 'product_content',
-      type: 'container',
-      content: '',
-      className: 'p-4 space-y-3',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_template',
-      position: { col: 1, row: 2 },
-      colSpan: { grid: 12, list: 8 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true }
-    },
-
     product_name: {
       id: 'product_name',
       type: 'text',
@@ -643,8 +629,8 @@ export const categoryConfig = {
       className: 'font-semibold text-lg truncate',
       parentClassName: '',
       styles: {},
-      parentId: 'product_content',
-      position: { col: 1, row: 1 },
+      parentId: 'product_template',
+      position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: false, microslot: true }
@@ -657,8 +643,8 @@ export const categoryConfig = {
       className: 'flex items-baseline gap-2',
       parentClassName: '',
       styles: {},
-      parentId: 'product_content',
-      position: { col: 1, row: 2 },
+      parentId: 'product_template',
+      position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true, microslot: true }
@@ -699,8 +685,8 @@ export const categoryConfig = {
       className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
       parentClassName: '',
       styles: {},
-      parentId: 'product_content',
-      position: { col: 1, row: 3 },
+      parentId: 'product_template',
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: false, microslot: true }
@@ -712,7 +698,7 @@ export const categoryConfig = {
       type: 'pagination',
       content: '',
       className: 'flex justify-center mt-8',
-      parentClassName: '',
+      parentClassName: 'text-center',
       styles: {},
       parentId: 'products_container',
       position: { col: 1, row: 5 },
