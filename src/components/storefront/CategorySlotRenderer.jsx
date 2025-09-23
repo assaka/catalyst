@@ -19,17 +19,15 @@ import { formatDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 import cartService from '@/services/cartService';
 import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
-// Note: Removed Breadcrumb import to avoid useStore() context issues in editor
-// We'll use a simple implementation instead
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
- * Uses responsive grid layout with conditional filter sidebar
+ * Follows the same structure as CartSlotRenderer for consistency
  */
 export function CategorySlotRenderer({
   slots,
   parentId = null,
-  viewMode = 'list',
+  viewMode = 'grid',
   categoryContext = {}
 }) {
   const {
@@ -66,20 +64,14 @@ export function CategorySlotRenderer({
   // Check if filters should be enabled
   const filtersEnabled = settings?.enable_product_filters !== false && filterableAttributes?.length > 0;
 
-  // Get header slots (above the main grid)
-  const headerSlots = SlotManager.getChildSlots(slots, null).filter(slot =>
-    ['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container', 'category_image'].includes(slot.id)
-  );
+  // Get child slots for current parent
+  let childSlots = SlotManager.getChildSlots(slots, parentId);
 
-  // Get main content slots
-  const mainSlots = SlotManager.getChildSlots(slots, null).filter(slot =>
-    !['header', 'category_title', 'header_description', 'category_description', 'breadcrumbs', 'breadcrumb_container', 'category_image'].includes(slot.id)
-  );
+  // Filter by viewMode if applicable
+  const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
-  // Render header slots first
-  const renderHeaderSlots = () => {
-    return headerSlots.map(slot => renderSlotContent(slot));
-  };
+  // Sort slots using grid coordinates for precise positioning
+  const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
   // Helper function to get child slots of a parent
   const renderChildSlots = (allSlots, parentId) => {
@@ -204,13 +196,13 @@ export function CategorySlotRenderer({
     // Filters container - Column 1 (exact LayeredNavigation structure)
     if (id === 'filters_container') {
       // Calculate price range from all products (not just paginated)
-      const allProducts = categoryContext.allProducts || products;
+      const allProductsForFilter = categoryContext.allProducts || products;
 
       const { minPrice, maxPrice } = (() => {
-        if (!allProducts || allProducts.length === 0) return { minPrice: 0, maxPrice: 1000 };
+        if (!allProductsForFilter || allProductsForFilter.length === 0) return { minPrice: 0, maxPrice: 1000 };
 
         const prices = [];
-        allProducts.forEach(p => {
+        allProductsForFilter.forEach(p => {
           const price = parseFloat(p.price || 0);
           if (price > 0) prices.push(price);
 
@@ -234,12 +226,8 @@ export function CategorySlotRenderer({
       // Build filter options exactly like LayeredNavigation
       const filterOptions = (() => {
         const options = {};
-        console.log('CategorySlotRenderer: Processing filters:', filters);
 
         Object.entries(filters).forEach(([filterKey, filterValues]) => {
-          console.log(`CategorySlotRenderer: Processing filter ${filterKey}:`, filterValues);
-          // Include filters even if they have no values yet (empty array)
-          // This ensures all 'use for filter' attributes are shown
           if (filterValues !== undefined) {
             if (filterValues.length > 0) {
               // Count products for each filter value using all products
@@ -254,7 +242,7 @@ export function CategorySlotRenderer({
                 const productCount = allProducts.filter(p => {
                   const productAttributes = p.attributes || p.attribute_values || {};
 
-                  // Try multiple possible keys for the attribute (like LayeredNavigation)
+                  // Try multiple possible keys for the attribute
                   const possibleKeys = [
                     filterKey,
                     filterKey.toLowerCase(),
@@ -269,7 +257,7 @@ export function CategorySlotRenderer({
                     }
                   }
 
-                  // Extract value from object if needed (same logic as in Category.jsx)
+                  // Extract value from object if needed
                   let extractedValue = attributeValue;
                   if (typeof attributeValue === 'object' && attributeValue !== null) {
                     extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
@@ -280,20 +268,6 @@ export function CategorySlotRenderer({
                         ? (val.value || val.label || val.name)
                         : val;
                       return String(valToCheck) === String(option.value);
-                    });
-                  }
-
-                  // Debug logging for specific filters
-                  if ((filterKey === 'color' && option.value === 'Zwart') ||
-                      (filterKey === 'manufacturer' && option.value === 'Aga')) {
-                    console.log(`Debug ${filterKey} - ${option.value}:`, {
-                      productId: p.id,
-                      productName: p.name,
-                      productAttributes,
-                      possibleKeys,
-                      foundAttributeValue: attributeValue,
-                      extractedValue,
-                      match: String(extractedValue) === String(option.value)
                     });
                   }
 
@@ -323,7 +297,6 @@ export function CategorySlotRenderer({
           }
         });
 
-        console.log('CategorySlotRenderer: Final filterOptions:', options);
         return options;
       })();
 
@@ -362,7 +335,7 @@ export function CategorySlotRenderer({
             </div>
           </CardHeader>
           <CardContent>
-            {/* Render child slots at the top (e.g., active_filters, cms blocks, layered navigation placeholders) */}
+            {/* Render child slots at the top */}
             {renderChildSlots(slots, id).map(childSlot => {
               // Skip the actual layered navigation slot in filters - it's handled below
               if (childSlot.type === 'layered_navigation' && childSlot.id === 'layered_navigation') {
@@ -459,7 +432,7 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Main content container - Column 2
+    // Main content container
     if (id === 'main_content_container') {
       return wrapWithParentClass(
         <div className={className || "w-full"} style={styles}>
@@ -505,28 +478,6 @@ export function CategorySlotRenderer({
               ))}
             </select>
           </div>
-        </div>
-      );
-    }
-
-    // View mode toggles
-    if (id === 'view_mode_toggles') {
-      return wrapWithParentClass(
-        <div className={className || "flex items-center space-x-2 mb-6"} style={styles}>
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('viewMode', 'grid')}
-          >
-            <Grid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('viewMode', 'list')}
-          >
-            <List className="w-4 h-4" />
-          </Button>
         </div>
       );
     }
@@ -587,95 +538,42 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Active filters display
-    if (id === 'active_filters') {
-      // Only show if there are active filters
-      if (!selectedFilters || Object.keys(selectedFilters).length === 0) {
-        return null;
-      }
+    // Products grid - render just the product items
+    if (id === 'products_grid') {
+      const gridClass = viewMode === 'grid'
+        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        : 'space-y-4';
 
-      const filterEntries = Object.entries(selectedFilters).filter(([key, values]) =>
-        values && (Array.isArray(values) ? values.length > 0 : values !== null && values !== undefined)
-      );
-
-      if (filterEntries.length === 0) {
-        return null;
-      }
-
-      return wrapWithParentClass(
-        <div className={className || "mb-6"} style={styles}>
-          <h3 className="text-sm font-medium text-gray-900 mb-3">Active Filters</h3>
-          <div className="space-y-2">
-            {/* Individual filter chips in vertical layout for sidebar */}
-
-            {filterEntries.map(([filterKey, filterValue]) => {
-              // Handle different filter types
-              if (filterKey === 'priceRange' && Array.isArray(filterValue)) {
-                return (
-                  <div key={filterKey} className="flex items-center justify-between bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm">
-                    <span>Price: {currencySymbol}{filterValue[0]} - {currencySymbol}{filterValue[1]}</span>
-                    <button
-                      onClick={() => {
-                        const newFilters = { ...selectedFilters };
-                        delete newFilters.priceRange;
-                        handleFilterChange && handleFilterChange(newFilters);
-                      }}
-                      className="ml-2 text-blue-600 hover:text-blue-800 text-lg leading-none"
-                    >
-                      ×
-                    </button>
-                  </div>
-                );
-              }
-
-              // Handle array filters (multi-select)
-              if (Array.isArray(filterValue)) {
-                return filterValue.map(value => (
-                  <div key={`${filterKey}-${value}`} className="flex items-center justify-between bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm">
-                    <span>{filterKey}: {value}</span>
-                    <button
-                      onClick={() => {
-                        const newFilters = { ...selectedFilters };
-                        const newValues = filterValue.filter(v => v !== value);
-                        if (newValues.length > 0) {
-                          newFilters[filterKey] = newValues;
-                        } else {
-                          delete newFilters[filterKey];
-                        }
-                        handleFilterChange && handleFilterChange(newFilters);
-                      }}
-                      className="ml-2 text-blue-600 hover:text-blue-800 text-lg leading-none"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ));
-              }
-
-              // Handle single value filters
-              return (
-                <div key={filterKey} className="flex items-center justify-between bg-blue-100 text-blue-800 px-3 py-2 rounded text-sm">
-                  <span>{filterKey}: {filterValue}</span>
-                  <button
-                    onClick={() => {
-                      const newFilters = { ...selectedFilters };
-                      delete newFilters[filterKey];
-                      handleFilterChange && handleFilterChange(newFilters);
-                    }}
-                    className="ml-2 text-blue-600 hover:text-blue-800 text-lg leading-none"
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
-
-          </div>
+      // Fallback to default product card rendering
+      return (
+        <div className={`${className} ${gridClass} mb-8`} style={styles}>
+          {products.map(product => (
+            <div key={product.id} className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow p-4">
+              <h3 className="font-semibold text-lg">{product.name}</h3>
+              <p className="text-xl font-bold text-green-600 mt-2">
+                {formatDisplayPrice(product.price, currencySymbol)}
+              </p>
+            </div>
+          ))}
         </div>
       );
     }
 
-    // Pagination controls
+    // Products container
+    if (id === 'products_container') {
+      return wrapWithParentClass(
+        <div className={className || "w-full"} style={styles}>
+          <CategorySlotRenderer
+            slots={slots}
+            parentId={slot.id}
+            viewMode={viewMode}
+            categoryContext={categoryContext}
+          />
+        </div>
+      );
+    }
+
+    // Pagination container
     if (id === 'pagination_container' || id === 'pagination_controls') {
       if (!totalPages || totalPages <= 1) return null;
 
@@ -737,123 +635,6 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Products grid - render just the product items
-    if (id === 'products_grid') {
-      const gridClass = viewMode === 'grid'
-        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-        : 'space-y-4';
-
-      // Find product template slot
-      const productTemplateSlot = Object.values(slots || {}).find(slot =>
-        slot.id === 'product_template' || slot.metadata?.isTemplate
-      );
-
-      // If we have a template, render products using the slot structure
-      if (productTemplateSlot) {
-        return (
-          <div className={`${className} ${gridClass} mb-8`} style={styles}>
-            {products.map((product, index) => (
-              <div key={product.id} className="product-slot-wrapper">
-                {renderProductFromSlots(product, index)}
-              </div>
-            ))}
-          </div>
-        );
-      }
-
-      // Fallback to default product card rendering (shortened for products_grid)
-      return (
-        <div className={`${className} ${gridClass} mb-8`} style={styles}>
-          {products.map(product => (
-            <div key={product.id} className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow p-4">
-              <h3 className="font-semibold text-lg">{product.name}</h3>
-              <p className="text-xl font-bold text-green-600 mt-2">
-                {formatDisplayPrice(product.price, currencySymbol)}
-              </p>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Products container - render all child slots (sorting, products grid, pagination, etc.)
-    if (id === 'products_container') {
-      return wrapWithParentClass(
-        <div className={className || "lg:col-span-3"} style={styles}>
-          {renderChildSlots(slots, id).map(childSlot => renderSlotContent(childSlot))}
-        </div>
-      );
-    }
-
-    // Pagination
-    if (id === 'pagination_controls') {
-      return wrapWithParentClass(
-        <div className={className || "flex items-center justify-center space-x-2 mt-8"} style={styles}>
-          <Button
-            variant="outline"
-            disabled={currentPage <= 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-          >
-            Previous
-          </Button>
-
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const pageNum = Math.max(1, currentPage - 2) + i;
-            if (pageNum > totalPages) return null;
-
-            return (
-              <Button
-                key={pageNum}
-                variant={pageNum === currentPage ? 'default' : 'outline'}
-                onClick={() => handlePageChange(pageNum)}
-              >
-                {pageNum}
-              </Button>
-            );
-          })}
-
-          <Button
-            variant="outline"
-            disabled={currentPage >= totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      );
-    }
-
-    // Subcategories container
-    if (id === 'subcategories_container') {
-      return wrapWithParentClass(
-        <div className={className || "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8"} style={styles}>
-          {subcategories.map(subcategory => (
-            <Card
-              key={subcategory.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(subcategory.url)}
-            >
-              {subcategory.image && (
-                <img
-                  src={subcategory.image}
-                  alt={subcategory.name}
-                  className="w-full h-32 object-cover rounded-t-lg"
-                />
-              )}
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-center">{subcategory.name}</h3>
-                {subcategory.product_count && (
-                  <p className="text-sm text-gray-600 text-center mt-1">
-                    {subcategory.product_count} products
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      );
-    }
-
     // Handle container types (grid, flex, container)
     if (type === 'container' || type === 'grid' || type === 'flex') {
       const containerClass = type === 'grid' ? 'grid grid-cols-12 gap-2' :
@@ -891,17 +672,6 @@ export function CategorySlotRenderer({
           />
         );
 
-      case 'link':
-        return (
-          <a
-            href="#"
-            className={className}
-            style={styles}
-          >
-            {content || 'Link'}
-          </a>
-        );
-
       case 'button':
         return (
           <Button
@@ -913,32 +683,9 @@ export function CategorySlotRenderer({
         );
 
       case 'cms_block':
-        // Show CMS block position name
         return (
           <div className={className} style={styles}>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center text-gray-500">
-              <div className="text-sm font-medium mb-1">
-                {slot.metadata?.displayName || 'CMS Block'}
-              </div>
-              <div className="text-xs text-gray-400">
-                Position: {slot.metadata?.cmsPosition || 'undefined'}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'layered_navigation':
-        // Show layered navigation label
-        return (
-          <div className={className} style={styles}>
-            <div className="border-2 border-dashed border-blue-300 rounded-lg p-4">
-              <div className="text-sm font-medium text-blue-600 mb-2">
-                {slot.metadata?.displayName || 'Layered Navigation'}
-              </div>
-              <div className="text-xs text-gray-500">
-                Product filtering system will appear here
-              </div>
-            </div>
+            <CmsBlockRenderer position={slot.metadata?.cmsPosition || 'undefined'} />
           </div>
         );
 
@@ -952,348 +699,52 @@ export function CategorySlotRenderer({
     }
   };
 
-  // Helper function to render product using slots
-  function renderProductFromSlots(product, productIndex) {
-    // Get all product-related slots
-    const productSlots = Object.values(slots || {}).filter(slot =>
-      slot.parentId === 'product_template' ||
-      slot.id?.startsWith('product_') ||
-      slot.metadata?.microslot
-    );
-
-    // Create a unique instance of slots for this product
-    const productInstanceSlots = {};
-    productSlots.forEach(slot => {
-      const instanceId = `${slot.id}_${productIndex}`;
-      productInstanceSlots[instanceId] = {
-        ...slot,
-        id: instanceId,
-        // Replace parentId references
-        parentId: slot.parentId === 'product_template' ? `product_template_${productIndex}` :
-                 slot.parentId?.startsWith('product_') ? `${slot.parentId}_${productIndex}` : slot.parentId
-      };
-    });
-
-    // Add the template slot itself
-    const templateSlot = slots['product_template'];
-    if (templateSlot) {
-      productInstanceSlots[`product_template_${productIndex}`] = {
-        ...templateSlot,
-        id: `product_template_${productIndex}`,
-        parentId: null
-      };
-    }
-
-    // Render product slots with product data
-    return renderProductSlots(productInstanceSlots, `product_template_${productIndex}`, product);
-  }
-
-  // Helper function to render product slots recursively
-  function renderProductSlots(productSlots, parentId, product) {
-    const childSlots = Object.values(productSlots).filter(slot => slot.parentId === parentId);
-
-    if (childSlots.length === 0 && parentId === null) {
-      // No slots found, return null
-      return null;
-    }
-
-    return childSlots.map(slot => {
-      const { id, type, content, className = '', styles = {} } = slot;
-      const slotIdParts = id.split('_');
-      const baseSlotId = slotIdParts.slice(0, -1).join('_'); // Remove the product index
-
-      // Render based on slot type
-      switch (baseSlotId) {
-        case 'product_template':
-          return (
-            <Card
-              key={id}
-              className={`cursor-pointer ${className || "group overflow-hidden hover:shadow-lg transition-shadow"}`}
-              style={styles}
-              onClick={() => onProductClick && onProductClick(product)}
-            >
-              {renderProductSlots(productSlots, id, product)}
-            </Card>
-          );
-
-        case 'product_image_container':
-          return (
-            <div key={id} className={className || "relative overflow-hidden"} style={styles}>
-              {renderProductSlots(productSlots, id, product)}
-            </div>
-          );
-
-        case 'product_image':
-          const imageUrl = (() => {
-            if (product.images && product.images.length > 0) {
-              const firstImage = product.images[0];
-              if (typeof firstImage === 'object') {
-                return firstImage.url || firstImage.src || firstImage.image || '/placeholder-product.jpg';
-              }
-              return firstImage;
-            }
-            if (product.image) {
-              if (typeof product.image === 'object') {
-                return product.image.url || product.image.src || '/placeholder-product.jpg';
-              }
-              return product.image;
-            }
-            return '/placeholder-product.jpg';
-          })();
-
-          return (
-            <img
-              key={id}
-              src={imageUrl}
-              alt={product.name}
-              className={`cursor-pointer ${className || "w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"}`}
-              style={styles}
-              onClick={() => onProductClick && onProductClick(product)}
-            />
-          );
-
-        case 'product_content':
-          return (
-            <div key={id} className={className || "p-4 space-y-3"} style={styles}>
-              {renderProductSlots(productSlots, id, product)}
-            </div>
-          );
-
-        case 'product_name':
-          return (
-            <h3
-              key={id}
-              className={`cursor-pointer hover:underline ${className || "font-semibold text-lg truncate"}`}
-              style={styles}
-              onClick={() => onProductClick && onProductClick(product)}
-            >
-              {product.name}
-            </h3>
-          );
-
-        case 'product_price_container':
-          return (
-            <div key={id} className={className || "flex items-baseline gap-2"} style={styles}>
-              {renderProductSlots(productSlots, id, product)}
-            </div>
-          );
-
-        case 'product_price':
-          const displayPrice = product.compare_price && parseFloat(product.compare_price) > 0 &&
-                              parseFloat(product.compare_price) !== parseFloat(product.price)
-            ? Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0))
-            : parseFloat(product.price || 0);
-
-          return (
-            <span key={id} className={className || "text-lg font-bold text-green-600"} style={styles}>
-              {formatDisplayPrice(
-                displayPrice,
-                settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
-                store,
-                taxes,
-                selectedCountry
-              )}
-            </span>
-          );
-
-        case 'product_compare_price':
-          if (product.compare_price && parseFloat(product.compare_price) > 0 &&
-              parseFloat(product.compare_price) !== parseFloat(product.price)) {
-            const comparePrice = Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
-            return (
-              <span key={id} className={className || "text-sm text-gray-500 line-through"} style={styles}>
-                {formatDisplayPrice(
-                  comparePrice,
-                  settings?.hide_currency_product ? '' : (settings?.currency_symbol || currencySymbol || '$'),
-                  store,
-                  taxes,
-                  selectedCountry
-                )}
-              </span>
-            );
-          }
-          return null;
-
-        case 'product_add_to_cart':
-          return (
-            <Button
-              key={id}
-              onClick={async (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-
-                try {
-                  if (!product || !product.id || !store?.id) {
-                    console.error('Invalid product or store for add to cart');
-                    return;
-                  }
-
-                  const result = await cartService.addItem(
-                    product.id,
-                    1,
-                    product.price || 0,
-                    [],
-                    store.id
-                  );
-
-                  if (result.success !== false) {
-                    if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
-                      window.catalyst.trackAddToCart(product, 1);
-                    }
-
-                    window.dispatchEvent(new CustomEvent('showFlashMessage', {
-                      detail: {
-                        type: 'success',
-                        message: `${product.name} added to cart successfully!`
-                      }
-                    }));
-                  }
-                } catch (error) {
-                  console.error("Failed to add to cart", error);
-                }
-              }}
-              className={className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
-              size="sm"
-              style={{
-                backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
-                color: 'white',
-                ...styles
-              }}
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              {content || 'Add to Cart'}
-            </Button>
-          );
-
-        default:
-          // For containers and other slot types
-          if (type === 'container') {
-            return (
-              <div key={id} className={className} style={styles}>
-                {renderProductSlots(productSlots, id, product)}
-              </div>
-            );
-          }
-          return null;
-      }
-    });
-  }
-
-  // Helper function to render breadcrumbs
-  function renderBreadcrumbs() {
-    const breadcrumbSlot = headerSlots.find(slot =>
-      slot.id === 'breadcrumbs' || slot.id === 'breadcrumb_container'
-    );
-    if (breadcrumbSlot) {
-      return renderSlotContent(breadcrumbSlot);
-    }
-    // Default breadcrumbs if no slot defined
-    return (
-      <BreadcrumbRenderer
-        items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
-        pageType="category"
-        pageData={category}
-        storeCode={store?.slug || store?.code}
-        categories={categories}
-        settings={settings}
-      />
-    );
-  }
-
-  // Helper function to render other header slots (excluding breadcrumbs)
-  function renderOtherHeaderSlots() {
-    const otherSlots = headerSlots.filter(slot =>
-      slot.id !== 'breadcrumbs' && slot.id !== 'breadcrumb_container'
-    );
-    return otherSlots.map(slot => renderSlotContent(slot));
-  }
-
-  // Helper function to render filters container
-  function renderFiltersContainer() {
-    const filtersSlot = mainSlots.find(slot => slot.id === 'filters_container');
-    if (filtersSlot) {
-      return renderSlotContent(filtersSlot);
-    }
-    return null;
-  }
-
-  // Helper function to render main content (products, sorting, etc.)
-  function renderMainContent() {
-    const contentSlots = mainSlots.filter(slot => slot.id !== 'filters_container');
-    return contentSlots.map(slot => (
-      <div key={slot.id} className="mb-6">
-        {renderSlotContent(slot)}
-      </div>
-    ));
-  }
-
+  // Main render function - follows CartSlotRenderer structure
   return (
-        <div className="grid grid-cols-12 gap-2 auto-rows-min">
-          {/* Breadcrumbs - Full Width (12 columns) */}
-          <div className="col-span-12">
-            {renderBreadcrumbs()}
+    <>
+      {sortedSlots.map((slot) => {
+        // Handle number, object with viewMode, and Tailwind responsive classes
+        let colSpanClass = 'col-span-12'; // default Tailwind class
+        let gridColumn = 'span 12 / span 12'; // default grid style
+
+        if (typeof slot.colSpan === 'number') {
+          // Old format: direct number
+          colSpanClass = `col-span-${slot.colSpan}`;
+          gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
+        } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
+          // New format: object with viewMode keys
+          const viewModeValue = slot.colSpan[viewMode];
+
+          if (typeof viewModeValue === 'number') {
+            // Simple viewMode: number format
+            colSpanClass = `col-span-${viewModeValue}`;
+            gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
+          } else if (typeof viewModeValue === 'string') {
+            // Tailwind responsive class format: 'col-span-12 lg:col-span-8'
+            colSpanClass = viewModeValue;
+            // For Tailwind classes, we don't set gridColumn as it will be handled by CSS
+            gridColumn = null;
+          } else if (typeof viewModeValue === 'object' && viewModeValue !== null) {
+            // Legacy nested breakpoint format: { mobile: 12, tablet: 12, desktop: 8 }
+            const colSpanValue = viewModeValue.desktop || viewModeValue.tablet || viewModeValue.mobile || 12;
+            colSpanClass = `col-span-${colSpanValue}`;
+            gridColumn = `span ${colSpanValue} / span ${colSpanValue}`;
+          }
+        }
+
+        return (
+          <div
+            key={slot.id}
+            className={colSpanClass}
+            style={{
+              ...(gridColumn ? { gridColumn } : {}),
+              ...slot.containerStyles
+            }}
+          >
+            {renderSlotContent(slot)}
           </div>
-
-          {/* Header Section - Full Width (12 columns) */}
-          <div className="col-span-12 mb-8">
-            {/* Category Hero Section with Image and Title */}
-            {(category?.image || category?.image_url || category?.name) && (
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-                {(category?.image || category?.image_url) && (
-                  <div className="relative w-full h-48 sm:h-64 lg:h-80">
-                    <img
-                      src={category?.image || category?.image_url}
-                      alt={category?.name || 'Category'}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
-                        {category?.name || 'Products'}
-                      </h1>
-                      {category?.description && (
-                        <p className="mt-2 text-lg text-white/90 max-w-3xl">
-                          {category?.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* If no image, show title and description separately */}
-                {!(category?.image || category?.image_url) && category?.name && (
-                  <div className="p-6">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-                      {category?.name}
-                    </h1>
-                    {category?.description && (
-                      <p className="mt-2 text-lg text-gray-600">
-                        {category?.description}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Render other header slots except breadcrumbs */}
-            {renderOtherHeaderSlots()}
-          </div>
-
-          {/* Filter Sidebar - 3 columns */}
-          {filtersEnabled && (
-            <div className="col-span-12 lg:col-span-3 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
-              <CmsBlockRenderer position="category_above_filters" />
-              {renderFiltersContainer()}
-              <CmsBlockRenderer position="category_below_filters" />
-            </div>
-          )}
-
-          {/* Main Content Area - 9 columns when filters enabled, 12 when not */}
-          <div className={filtersEnabled ? "col-span-12 lg:col-span-9" : "col-span-12"}>
-            <CmsBlockRenderer position="category_above_products" />
-            {renderMainContent()}
-            <CmsBlockRenderer position="category_below_products" />
-          </div>
-        </div>
+        );
+      })}
+    </>
   );
 }
