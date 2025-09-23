@@ -189,6 +189,18 @@ const CategorySlotsEditor = ({
   // Use generic editor initialization with createDefaultSlots
   useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
 
+  // Debug: Log when configuration changes to see source
+  useEffect(() => {
+    if (categoryLayoutConfig?.slots) {
+      console.log('📊 Configuration loaded/changed:', {
+        source: categoryLayoutConfig.metadata?.source || 'unknown',
+        slotCount: Object.keys(categoryLayoutConfig.slots).length,
+        categoryTitleClassName: categoryLayoutConfig.slots.category_title?.className,
+        breadcrumbsClassName: categoryLayoutConfig.slots.breadcrumbs_content?.className
+      });
+    }
+  }, [categoryLayoutConfig]);
+
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(
     configurationLoadedRef, categoryLayoutConfig, setHasUnsavedChanges
