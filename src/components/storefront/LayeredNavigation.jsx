@@ -189,11 +189,64 @@ export default function LayeredNavigation({
                     });
                 }
 
+                // Only include attributes that have values with products
                 if (values.size > 0) {
-                    options[attr.code] = {
-                        name: attr.name,
-                        values: Array.from(values).sort()
-                    };
+                    const sortedValues = Array.from(values).sort();
+
+                    // Filter out values that have no products
+                    const valuesWithProducts = sortedValues.filter(value => {
+                        const productCount = products.filter(p => {
+                            const productAttributes = p.attributes || p.attribute_values || {};
+
+                            // Try multiple possible keys for the attribute
+                            const possibleKeys = [
+                                attr.code,
+                                attr.name,
+                                attr.code?.toLowerCase(),
+                                attr.name?.toLowerCase(),
+                                attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
+                                attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
+                                'color', 'Color', 'COLOR',
+                                'colour', 'Colour', 'COLOUR'
+                            ].filter(Boolean);
+
+                            let attributeValue = null;
+                            for (const key of possibleKeys) {
+                                if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
+                                    attributeValue = productAttributes[key] || p[key];
+                                    break;
+                                }
+                            }
+
+                            // Extract value from object if needed
+                            let extractedValue = attributeValue;
+                            if (typeof attributeValue === 'object' && attributeValue !== null) {
+                                if (Array.isArray(attributeValue)) {
+                                    // For arrays, check if any value matches
+                                    return attributeValue.some(val => {
+                                        const valToCheck = typeof val === 'object' && val !== null
+                                            ? (val.value || val.label || val.name)
+                                            : val;
+                                        return valToCheck && String(valToCheck) === String(value);
+                                    });
+                                } else {
+                                    extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+                                }
+                            }
+
+                            return extractedValue && String(extractedValue) === String(value);
+                        }).length;
+
+                        return productCount > 0;
+                    });
+
+                    // Only include this attribute if it has values with products
+                    if (valuesWithProducts.length > 0) {
+                        options[attr.code] = {
+                            name: attr.name,
+                            values: valuesWithProducts
+                        };
+                    }
                 }
             }
         });
@@ -339,15 +392,21 @@ export default function LayeredNavigation({
                     </AccordionItem>
 
                     {/* FIXED: Attribute Filters with all options */}
-                    {Object.entries(filterOptions).map(([code, { name, values }]) => (
-                        <AccordionItem key={code} value={code}>
-                            <AccordionTrigger
-                                className={filter_attribute_title.className || "font-semibold"}
-                                style={filter_attribute_title.styles || {}}
-                            >
-                                {name}
-                            </AccordionTrigger>
-                            <AccordionContent>
+                    {Object.entries(filterOptions).map(([code, { name, values }]) => {
+                        // Only render attribute sections that have values
+                        if (!values || values.length === 0) {
+                            return null;
+                        }
+
+                        return (
+                            <AccordionItem key={code} value={code}>
+                                <AccordionTrigger
+                                    className={filter_attribute_title.className || "font-semibold"}
+                                    style={filter_attribute_title.styles || {}}
+                                >
+                                    {name}
+                                </AccordionTrigger>
+                                <AccordionContent>
                                 <div
                                     className={filter_attribute_section.className || "space-y-2 max-h-48 overflow-y-auto"}
                                     style={filter_attribute_section.styles || {}}
@@ -374,9 +433,14 @@ export default function LayeredNavigation({
                                                 }
                                             }
 
-                                            return String(extractedValue) === String(value);
+                                            return extractedValue && String(extractedValue) === String(value);
                                         }).length;
-                                        
+
+                                        // Only render if there are products with this attribute value
+                                        if (productCount === 0) {
+                                            return null;
+                                        }
+
                                         return (
                                             <div
                                                 key={value}
@@ -411,7 +475,8 @@ export default function LayeredNavigation({
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
-                    ))}
+                        );
+                    })}
                 </Accordion>
             </CardContent>
         </Card>
