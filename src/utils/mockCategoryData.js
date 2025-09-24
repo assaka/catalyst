@@ -3,6 +3,11 @@
  */
 
 export const generateMockCategoryContext = () => {
+  const brands = ['Apple', 'Samsung', 'Google', 'OnePlus', 'Sony', 'LG'];
+  const colors = ['Black', 'White', 'Blue', 'Red', 'Silver', 'Gold'];
+  const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL'];
+  const materials = ['Cotton', 'Polyester', 'Leather', 'Metal', 'Plastic', 'Glass'];
+
   const sampleProducts = Array.from({ length: 6 }, (_, i) => {
     return {
       id: i + 1,
@@ -15,8 +20,10 @@ export const generateMockCategoryContext = () => {
       rating: 4.0 + (i % 10) * 0.1,
       slug: `sample-product-${i + 1}`,
       attributes: {
-        color: ['Black', 'Blue', 'White'][i % 3],
-        brand: `Brand${i + 1}`
+        color: colors[i % colors.length],
+        brand: brands[i % brands.length],
+        size: sizes[i % sizes.length],
+        material: materials[i % materials.length]
       }
     };
   });
@@ -31,7 +38,32 @@ export const generateMockCategoryContext = () => {
     products: sampleProducts,
     allProducts: sampleProducts,
     filters: {},
-    filterableAttributes: [],
+    filterableAttributes: [
+      {
+        code: 'color',
+        name: 'Color',
+        is_filterable: true,
+        options: colors.map(color => ({ value: color, label: color }))
+      },
+      {
+        code: 'brand',
+        name: 'Brand',
+        is_filterable: true,
+        options: brands.map(brand => ({ value: brand, label: brand }))
+      },
+      {
+        code: 'size',
+        name: 'Size',
+        is_filterable: true,
+        options: sizes.map(size => ({ value: size, label: size }))
+      },
+      {
+        code: 'material',
+        name: 'Material',
+        is_filterable: true,
+        options: materials.map(material => ({ value: material, label: material }))
+      }
+    ],
     sortOption: 'default',
     currentPage: 1,
     totalPages: 1,
