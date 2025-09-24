@@ -322,7 +322,11 @@ export default function LayeredNavigation({
                                             activeFilterElements.push(
                                                 <span
                                                     key={`${filterKey}-${value}`}
-                                                    className="inline-flex items-center px-2 rounded-full text-xs bg-blue-100 text-blue-800 mr-2 mb-2"
+                                                    className="inline-flex items-center px-2 rounded-full text-xs mr-2 mb-2"
+                                                    style={{
+                                                        backgroundColor: activeFilterBgColor,
+                                                        color: activeFilterTextColor
+                                                    }}
                                                 >
                                                     {filterKey}: {value}
                                                     <button
@@ -336,7 +340,10 @@ export default function LayeredNavigation({
                                                             }
                                                             setSelectedFilters(newFilters);
                                                         }}
-                                                        className="text-xl ml-2 text-blue-600 hover:text-blue-800"
+                                                        className="text-xl ml-2 hover:opacity-80 transition-opacity"
+                                                        style={{
+                                                            color: activeFilterTextColor
+                                                        }}
                                                     >
                                                         ×
                                                     </button>
@@ -423,6 +430,10 @@ export default function LayeredNavigation({
                             <AccordionItem key={code} value={code}>
                                 <AccordionTrigger
                                     className="font-semibold"
+                                    style={{
+                                        color: filter_attribute_titles[code]?.styles?.color || '#374151',
+                                        ...filter_attribute_titles[code]?.styles
+                                    }}
                                 >
                                     {filter_attribute_titles[code]?.content || name}
                                 </AccordionTrigger>
@@ -479,16 +490,31 @@ export default function LayeredNavigation({
                                                         checked={selectedFilters[code]?.includes(value) || false}
                                                         onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
                                                         className=""
+                                                        style={{
+                                                            accentColor: checkboxColor
+                                                        }}
                                                     />
                                                     <Label
                                                         htmlFor={`attr-${code}-${value}`}
-                                                        className="text-sm"
+                                                        className="text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                                                        style={{
+                                                            color: optionTextColor
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.target.style.color = optionHoverColor;
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.target.style.color = optionTextColor;
+                                                        }}
                                                     >
                                                         {value}
                                                     </Label>
                                                 </div>
                                                 <span
-                                                    className="text-xs text-gray-400"
+                                                    className="text-xs"
+                                                    style={{
+                                                        color: optionCountColor
+                                                    }}
                                                 >
                                                     ({productCount})
                                                 </span>
@@ -502,7 +528,10 @@ export default function LayeredNavigation({
                                                             ...prev,
                                                             [code]: !prev[code]
                                                         }))}
-                                                        className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2"
+                                                        className="text-sm font-medium mt-2 hover:opacity-80 transition-opacity"
+                                                        style={{
+                                                            color: checkboxColor
+                                                        }}
                                                     >
                                                         {isExpanded ? 'Show Less' : `Show More (${values.length - maxVisibleAttributes} more)`}
                                                     </button>
