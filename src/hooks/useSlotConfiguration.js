@@ -909,6 +909,18 @@ export function useSlotConfiguration({
         if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
           const dbConfig = savedConfig.data.configuration;
 
+          // Debug the raw database response for category_title
+          if (dbConfig.slots?.category_title) {
+            console.log('🗄️ RAW DATABASE RESPONSE - category_title:', {
+              rawSlot: JSON.stringify(dbConfig.slots.category_title, null, 2),
+              rawStyles: JSON.stringify(dbConfig.slots.category_title.styles),
+              rawColor: dbConfig.slots.category_title.styles?.color,
+              configLastModified: savedConfig.data.updated_at,
+              expectedGreen: '#00ff00',
+              hasGreenColor: dbConfig.slots.category_title.styles?.color === '#00ff00'
+            });
+          }
+
           // Merge saved config with static config, preserving viewMode and metadata from static
           const mergedSlots = {};
 
