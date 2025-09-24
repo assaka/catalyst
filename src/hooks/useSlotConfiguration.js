@@ -912,9 +912,12 @@ export function useSlotConfiguration({
         const draftConfig = savedConfig.data.configuration;
         const draftStatus = savedConfig.data.status;
 
-        // Check if draft needs initialization (status = 'init')
-        if (draftStatus === 'init') {
-          console.log('🏗️ EDITOR - Draft status is "init", populating with static config');
+        // Check if draft needs initialization (status = 'draft' but not populated)
+        const isPopulated = draftConfig.metadata?.populatedFromStatic === true;
+        const hasSlots = draftConfig.slots && Object.keys(draftConfig.slots).length > 0;
+
+        if (draftStatus === 'draft' && !isPopulated && !hasSlots) {
+          console.log('🏗️ EDITOR - Draft is empty (not populated), initializing with static config');
 
           // Load static config to populate init draft
           const staticConfig = await loadStaticConfiguration();
@@ -940,18 +943,18 @@ export function useSlotConfiguration({
               populatedConfig,
               false // not a reset
             );
-            console.log('✅ EDITOR - Populated config saved, status should change from "init" to "draft"');
+            console.log('✅ EDITOR - Populated config saved with populatedFromStatic flag');
           } catch (saveError) {
             console.warn('⚠️ EDITOR - Failed to save populated config:', saveError);
             // Continue with populated config even if save fails
           }
 
           return populatedConfig;
-        } else if (draftStatus === 'draft') {
-          console.log('✅ EDITOR - Using existing draft configuration from database');
+        } else if (draftStatus === 'draft' && (isPopulated || hasSlots)) {
+          console.log('✅ EDITOR - Using existing populated draft configuration');
           return draftConfig;
         } else {
-          console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
+          console.warn(`⚠️ EDITOR - Unexpected draft state: status=${draftStatus}, isPopulated=${isPopulated}, hasSlots=${hasSlots}`);
           return draftConfig;
         }
       } else {
