@@ -42,7 +42,7 @@ const EditableSlotElement = ({ slotKey, slot, onElementClick, children, classNam
       }}
       draggable="false"
     >
-      {slot.content || children}
+      {children}
     </div>
   );
 };
@@ -322,7 +322,7 @@ export default function LayeredNavigation({
     }
 
     return (
-        <Card style={{ width: '100%' }}>
+        <Card className="w-full">
             <CardHeader>
                 <div className="flex justify-between items-center h-5">
                     {isEditMode ? (
@@ -509,7 +509,7 @@ export default function LayeredNavigation({
                                 >
                                     {isEditMode ? (
                                         <EditableSlotElement
-                                            slotKey="attribute_filter_label"
+                                            slotKey={`${code}_filter_label`}
                                             slot={childSlots?.attribute_filter_label || childSlots?.[`${code}_filter_label`] || { content: name }}
                                             onElementClick={onElementClick}
                                             className="font-semibold"

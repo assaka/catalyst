@@ -405,7 +405,7 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
   // In edit mode, we need to render the layered navigation with child slots as editable elements
   if (mode === 'edit') {
     return (
-      <div className="category-layered-navigation">
+      <div className="category-layered-navigation w-full block">
         <LayeredNavigation
           products={allProducts || []}
           attributes={filterableAttributes || []}
@@ -455,7 +455,7 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
   };
 
   return (
-    <div className="category-layered-navigation">
+    <div className="category-layered-navigation w-full block">
       {content?.html ? (
         <div dangerouslySetInnerHTML={{ __html: content.html }} />
       ) : (
@@ -487,6 +487,7 @@ export function CategoryProductItemsSlot({ categoryContext, content, config, all
   const { products } = categoryContext || {};
   const { viewMode = 'grid' } = config || {};
 
+  console.log('🎯 ===== CategoryProductItemsSlot COMPONENT CALLED =====');
   console.log('🛍️ CategoryProductItemsSlot: Rendering multiple products');
 
   // Get grid configuration from the product_items slot metadata
@@ -507,15 +508,13 @@ export function CategoryProductItemsSlot({ categoryContext, content, config, all
   const gridClasses = getGridClasses();
   console.log('🎨 Generated grid classes:', gridClasses);
 
-  // Render 3 products
-  const productsToShow = products?.slice(0, 3) || [];
-
+  // Simply render 3 product cards
   return (
     <div className={gridClasses}>
-      {productsToShow.map((product, index) => (
+      {[1, 2, 3].map((index) => (
         <CategoryProductItemCardSlot
-          key={product.id || index}
-          categoryContext={{ ...categoryContext, products: [product] }}
+          key={index}
+          categoryContext={categoryContext}
           content={content}
           config={config}
         />

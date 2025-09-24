@@ -156,6 +156,7 @@ const CategorySlotsEditor = ({
   // Create default slots function for category layout
   const createDefaultSlots = useCallback(async () => {
     try {
+      console.log('🔧 LOADING CATEGORY CONFIG FROM createDefaultSlots...');
       const configModule = await import('@/components/editor/slot/configs/category-config');
 
       const categoryConfig = configModule.categoryConfig || configModule.default;
@@ -164,6 +165,10 @@ const CategorySlotsEditor = ({
         console.error('❌ Invalid category config - no slots found');
         return null;
       }
+
+      console.log('✅ Successfully loaded category config with slots:', Object.keys(categoryConfig.slots));
+      console.log('🔧 product_items slot config:', categoryConfig.slots.product_items);
+      console.log('🔧 FORCE RELOAD - CategorySlotsEditor');
 
       const defaultConfig = {
         page_name: 'Category',
