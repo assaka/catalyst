@@ -605,6 +605,29 @@ const CategorySlotsEditor = ({
 
                       // Let layered_navigation be handled by the component mapping
 
+                      // Handle product_items explicitly before component mapping
+                      if (slot.id === 'product_items') {
+                        console.log('🛍️ Rendering product_items with CategoryProductItemCardSlot');
+                        console.log('🛍️ Slot data:', slot);
+                        console.log('🛍️ Slot content:', slot.content);
+                        console.log('🛍️ Slot metadata:', slot.metadata);
+
+                        // Merge slot content with metadata to ensure itemsToShow is available
+                        const contentWithConfig = {
+                          ...slot.content,
+                          ...slot.metadata,
+                          itemsToShow: slot.metadata?.itemsToShow || 3
+                        };
+
+                        return (
+                          <CategoryProductItemCardSlot
+                            categoryContext={sampleCategoryContext}
+                            content={contentWithConfig}
+                            config={{ viewMode }}
+                          />
+                        );
+                      }
+
                       // Handle breadcrumbs content specifically
                       if (slot.id === 'breadcrumbs_content') {
                         return (
@@ -614,18 +637,6 @@ const CategorySlotsEditor = ({
                             content={slot.content}
                             className={slot.className}
                             styles={slot.styles}
-                            config={{ viewMode }}
-                          />
-                        );
-                      }
-
-                      // Handle product_items specifically (the main products container)
-                      if (slot.id === 'product_items') {
-                        return (
-                          <CategoryProductItemCardSlot
-                            categoryData={sampleCategoryContext}
-                            categoryContext={sampleCategoryContext}
-                            content={{ itemsToShow: 3 }}
                             config={{ viewMode }}
                           />
                         );

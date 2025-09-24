@@ -67,8 +67,18 @@ const EditorSidebar = ({
   useEffect(() => {
     if (onClassChange) {
       styleManager.setDatabaseSaveCallback((updates) => {
+        console.log('🔗 EDITOR SIDEBAR - Database callback triggered:', {
+          updateCount: Object.keys(updates).length,
+          updates,
+          onClassChangeAvailable: !!onClassChange
+        });
         // Convert our updates to the format expected by onClassChange
         Object.entries(updates).forEach(([elementId, data]) => {
+          console.log(`🔗 EDITOR SIDEBAR - Calling onClassChange for ${elementId}:`, {
+            className: data.className,
+            styles: data.styles,
+            metadata: data.metadata
+          });
           onClassChange(elementId, data.className, data.styles || {});
         });
       });
