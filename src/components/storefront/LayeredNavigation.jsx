@@ -322,7 +322,7 @@ export default function LayeredNavigation({
     }
 
     return (
-        <Card>
+        <Card className="w-full">
             <CardHeader>
                 <div className="flex justify-between items-center h-5">
                     {isEditMode ? (
@@ -494,14 +494,23 @@ export default function LayeredNavigation({
                                 <AccordionTrigger
                                     className="font-semibold"
                                     style={{
-                                        color: isEditMode ? 'inherit' : (filter_attribute_titles[code]?.styles?.color || '#374151'),
-                                        ...(!isEditMode ? filter_attribute_titles[code]?.styles : {})
+                                        color: isEditMode ? 'inherit' : (
+                                            // Try shared attribute_filter_label first, then individual label, then default
+                                            filter_attribute_titles.attribute_filter_label?.styles?.color ||
+                                            filter_attribute_titles[code]?.styles?.color ||
+                                            '#374151'
+                                        ),
+                                        ...(!isEditMode ? (
+                                            filter_attribute_titles.attribute_filter_label?.styles ||
+                                            filter_attribute_titles[code]?.styles ||
+                                            {}
+                                        ) : {})
                                     }}
                                 >
                                     {isEditMode ? (
                                         <EditableSlotElement
-                                            slotKey={`${code}_filter_label`}
-                                            slot={childSlots?.[`${code}_filter_label`]}
+                                            slotKey="attribute_filter_label"
+                                            slot={childSlots?.attribute_filter_label || childSlots?.[`${code}_filter_label`]}
                                             onElementClick={onElementClick}
                                             className="font-semibold"
                                         >

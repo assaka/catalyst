@@ -435,6 +435,8 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
     filter_card_header: allSlots?.filter_by_label || { content: 'Filter By' },
     filter_price_title: allSlots?.price_filter_label || { content: 'Price' },
     filter_attribute_titles: {
+      // Use shared attribute_filter_label first, then individual labels as fallback
+      attribute_filter_label: allSlots?.attribute_filter_label || { content: 'Attribute Filter' },
       brand: allSlots?.brand_filter_label || { content: 'Brand' },
       color: allSlots?.color_filter_label || { content: 'Color' },
       size: allSlots?.size_filter_label || { content: 'Size' },

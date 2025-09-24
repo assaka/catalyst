@@ -467,6 +467,29 @@ export const categoryConfig = {
       }
     },
 
+    // Shared attribute filter label for all attribute filters (Brand, Color, Size, Material)
+    attribute_filter_label: {
+      id: 'attribute_filter_label',
+      type: 'text',
+      content: 'Attribute Filter',
+      className: 'font-semibold text-base text-gray-900',
+      parentClassName: '',
+      styles: {
+        color: '#374151' // Default gray-700
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'All Attribute Filter Labels (Brand, Color, Size, Material)',
+        labelType: 'attribute_shared',
+        customizable: ['color', 'fontSize', 'fontWeight']
+      }
+    },
+
     brand_filter_label: {
       id: 'brand_filter_label',
       type: 'text',
@@ -477,7 +500,7 @@ export const categoryConfig = {
         color: '#374151' // Default gray-700
       },
       parentId: 'layered_navigation',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
@@ -499,7 +522,7 @@ export const categoryConfig = {
         color: '#374151' // Default gray-700
       },
       parentId: 'layered_navigation',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
@@ -521,7 +544,7 @@ export const categoryConfig = {
         color: '#374151' // Default gray-700
       },
       parentId: 'layered_navigation',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 6 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
@@ -543,7 +566,7 @@ export const categoryConfig = {
         color: '#374151' // Default gray-700
       },
       parentId: 'layered_navigation',
-      position: { col: 1, row: 6 },
+      position: { col: 1, row: 7 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
@@ -571,7 +594,7 @@ export const categoryConfig = {
         activeFilterTextColor: '#1E40AF' // Default blue-800 for active filter text
       },
       parentId: 'layered_navigation',
-      position: { col: 1, row: 7 },
+      position: { col: 1, row: 8 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
