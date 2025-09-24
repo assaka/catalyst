@@ -232,13 +232,15 @@ export function CategorySlotRenderer({
             if (childSlot.type === 'layered_navigation' && childSlot.id === 'layered_navigation') {
               return (
                 <div key={childSlot.id} className="mb-4">
-                  <LayeredNavigation
-                    products={allProducts || products}
-                    attributes={attributes}
-                    onFilterChange={handleFilterChange}
-                    slotConfig={layeredNavSlotConfig}
-                    settings={settings}
-                  />
+                  <div id="layer_1">
+                    <LayeredNavigation
+                        products={allProducts || products}
+                        attributes={attributes}
+                        onFilterChange={handleFilterChange}
+                        slotConfig={layeredNavSlotConfig}
+                        settings={settings}
+                    />
+                  </div>
                 </div>
               );
             }
@@ -251,13 +253,15 @@ export function CategorySlotRenderer({
 
           {/* Fallback: Render LayeredNavigation if no layered_navigation slot found */}
           {!renderChildSlots(slots, id).some(slot => slot.type === 'layered_navigation') && (
-            <LayeredNavigation
-              products={allProducts || products}
-              attributes={attributes}
-              onFilterChange={handleFilterChange}
-              slotConfig={layeredNavSlotConfig}
-              settings={settings}
-            />
+              <div id="layer_3">
+                <LayeredNavigation
+                    products={allProducts || products}
+                    attributes={attributes}
+                    onFilterChange={handleFilterChange}
+                    slotConfig={layeredNavSlotConfig}
+                    settings={settings}
+                />
+              </div>
           )}
         </div>
       );
@@ -291,13 +295,15 @@ export function CategorySlotRenderer({
 
       return wrapWithParentClass(
         <div className={className} style={styles}>
-          <LayeredNavigation
-            products={allProducts || products}
-            attributes={attributes}
-            onFilterChange={handleFilterChange}
-            slotConfig={layeredNavSlotConfig}
-            settings={settings}
-          />
+          <div id="layer_2">
+            <LayeredNavigation
+              products={allProducts || products}
+              attributes={attributes}
+              onFilterChange={handleFilterChange}
+              slotConfig={layeredNavSlotConfig}
+              settings={settings}
+            />
+          </div>
         </div>
       );
     }
@@ -341,7 +347,7 @@ export function CategorySlotRenderer({
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <label className="text-sm text-gray-600">Sort by:</label>
+            <label className="text-sm text-gray-600">Sort by1:</label>
             <select
               value={sortOption}
               onChange={(e) => handleSortChange(e.target.value)}
@@ -403,7 +409,7 @@ export function CategorySlotRenderer({
 
       return wrapWithParentClass(
         <div className={className} style={styles}>
-          <Label className="text-sm font-medium">Sort by:</Label>
+          <Label className="text-sm font-medium">Sort by2:</Label>
           <select
             value={sortOption || ''}
             onChange={(e) => handleSortChange && handleSortChange(e.target.value)}
