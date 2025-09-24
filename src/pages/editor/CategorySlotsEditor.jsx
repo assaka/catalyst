@@ -527,8 +527,51 @@ const CategorySlotsEditor = ({
                       if (slot.id === 'products_container') {
                         console.log('📦 PRODUCTS_CONTAINER EXPLICIT HANDLER RUNNING!');
                         console.log('📦 WILL RENDER CHILDREN RECURSIVELY');
-                        // Let the default container rendering handle this - it will render children
-                        return null; // Fall through to default rendering
+
+                        // Find the product_items child slot and render it explicitly
+                        const productItemsSlot = Object.values(categoryLayoutConfig?.slots || {}).find(s => s.id === 'product_items');
+
+                        if (productItemsSlot) {
+                          console.log('📦 FOUND product_items slot, rendering explicitly');
+                          console.log('📦 product_items metadata:', productItemsSlot.metadata);
+                          console.log('📦 product_items gridConfig:', productItemsSlot.metadata?.gridConfig);
+
+                          // Get microslot configurations from category config
+                          const microslotConfigs = {
+                            productAddToCart: categoryLayoutConfig?.slots?.product_add_to_cart || {
+                              className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
+                              content: 'Add to Cart'
+                            },
+                            productImage: categoryLayoutConfig?.slots?.product_image || {},
+                            productName: categoryLayoutConfig?.slots?.product_name || {},
+                            productPrice: categoryLayoutConfig?.slots?.product_price || {},
+                            productComparePrice: categoryLayoutConfig?.slots?.product_compare_price || {}
+                          };
+
+                          // Merge slot content with metadata and microslot configs
+                          const contentWithConfig = {
+                            ...productItemsSlot.content,
+                            ...productItemsSlot.metadata,
+                            ...microslotConfigs,
+                            itemsToShow: productItemsSlot.metadata?.itemsToShow || 3,
+                            gridConfig: productItemsSlot.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
+                          };
+
+                          console.log('📦 FINAL GRID CONFIG FOR PRODUCTS_CONTAINER:', contentWithConfig.gridConfig);
+
+                          return (
+                            <div className="products-container-wrapper">
+                              <CategoryProductItemCardSlot
+                                categoryContext={sampleCategoryContext}
+                                content={contentWithConfig}
+                                config={{ viewMode }}
+                              />
+                            </div>
+                          );
+                        }
+
+                        // If no product_items found, fall back to default rendering
+                        return null;
                       }
 
                       // Handle product_items explicitly before component mapping

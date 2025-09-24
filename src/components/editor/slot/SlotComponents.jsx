@@ -885,6 +885,10 @@ export function HierarchicalSlotRenderer({
 
 
   return sortedSlots.map(slot => {
+    // Debug: Log every slot being processed in map
+    if (slot.id === 'product_items' || slot.id === 'products_container' || parentId === 'products_container') {
+      console.log(`🗺️ PROCESSING SLOT IN MAP: ${slot.id} (parentId: ${slot.parentId}, parentIdBeingRendered: ${parentId})`);
+    }
     // Handle number, object with viewMode, and Tailwind responsive classes
     let colSpan = 12; // default value for non-Tailwind calculations
     let colSpanClass = 'col-span-12'; // default Tailwind class
@@ -1499,7 +1503,17 @@ export function HierarchicalSlotRenderer({
                   {/* First try custom renderer for ALL slot types */}
                   {(() => {
                     if (customSlotRenderer) {
+                      // Debug: Log when customSlotRenderer is about to be called
+                      if (slot.id === 'product_items' || slot.id === 'products_container') {
+                        console.log(`🎨 ABOUT TO CALL customSlotRenderer for: ${slot.id}`);
+                      }
+
                       const customContent = customSlotRenderer(slot);
+
+                      if (slot.id === 'product_items' || slot.id === 'products_container') {
+                        console.log(`🎨 customSlotRenderer RESULT for ${slot.id}:`, !!customContent);
+                      }
+
                       if (customContent) {
                         return customContent;
                       }
