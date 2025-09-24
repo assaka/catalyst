@@ -501,6 +501,7 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
+                      console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
 
                       // DON'T skip anything - let all slots render individually for now
                       // The hierarchical rendering wasn't working as expected
@@ -517,6 +518,8 @@ const CategorySlotsEditor = ({
                         console.log('🔥 EXPLICIT HANDLER CONFIRMED!');
                         console.log('🎯 SAMPLE CATEGORY CONTEXT HAS PRODUCTS:', !!sampleCategoryContext?.products);
                         console.log('🎯 PRODUCT COUNT:', sampleCategoryContext?.products?.length);
+                        console.log('📊 SLOT METADATA:', slot.metadata);
+                        console.log('📊 SLOT GRID CONFIG:', slot.metadata?.gridConfig);
 
                         // Get microslot configurations from category config
                         const microslotConfigs = {
@@ -540,6 +543,9 @@ const CategorySlotsEditor = ({
                           itemsToShow: slot.metadata?.itemsToShow || 3,
                           gridConfig: slot.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
                         };
+
+                        console.log('🎯 CONTENT WITH CONFIG:', contentWithConfig);
+                        console.log('🎯 FINAL GRID CONFIG BEING PASSED:', contentWithConfig.gridConfig);
 
                         return (
                           <CategoryProductItemCardSlot

@@ -1136,13 +1136,24 @@ const EditorSidebar = ({
               currentConfig={allSlots['product_items']?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }}
               onConfigChange={(newGridConfig) => {
                 console.log('🔧 Product grid config changed:', newGridConfig);
+                console.log('🎯 Updating slot: product_items');
+                console.log('🎯 Current product_items slot:', allSlots['product_items']);
+                console.log('🎯 Current metadata:', allSlots['product_items']?.metadata);
+
                 // Update product_items slot configuration with new grid config
                 if (onClassChange) {
                   const productItemsSlot = allSlots['product_items'];
-                  onClassChange('product_items', productItemsSlot?.className || '', productItemsSlot?.styles || {}, {
+                  const newMetadata = {
                     ...productItemsSlot?.metadata,
                     gridConfig: newGridConfig
-                  });
+                  };
+
+                  console.log('🎯 New metadata being saved:', newMetadata);
+                  console.log('🎯 Calling onClassChange with slotId: product_items');
+
+                  onClassChange('product_items', productItemsSlot?.className || '', productItemsSlot?.styles || {}, newMetadata);
+                } else {
+                  console.error('❌ No onClassChange handler available!');
                 }
               }}
             />
