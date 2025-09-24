@@ -106,11 +106,11 @@ const SlotConfiguration = sequelize.define('SlotConfiguration', {
   status: {
     type: DataTypes.STRING(20),
     allowNull: false,
-    defaultValue: 'draft',
+    defaultValue: 'init',
     validate: {
-      isIn: [['draft', 'acceptance', 'published', 'reverted']]
+      isIn: [['init', 'draft', 'acceptance', 'published', 'reverted']]
     },
-    comment: 'Status of the configuration version: draft -> acceptance -> published'
+    comment: 'Status of the configuration version: init -> draft -> acceptance -> published'
   },
   version_number: {
     type: DataTypes.INTEGER,
@@ -227,13 +227,13 @@ SlotConfiguration.findActiveByUserStore = async function(userId, storeId) {
   });
 };
 
-// Find the latest draft for editing
+// Find the latest draft for editing (includes both init and draft status)
 SlotConfiguration.findLatestDraft = async function(userId, storeId, pageType) {
   return this.findOne({
     where: {
       user_id: userId,
       store_id: storeId,
-      status: 'draft',
+      status: ['init', 'draft'],
       page_type: pageType
     },
     order: [['version_number', 'DESC']]
@@ -264,34 +264,54 @@ SlotConfiguration.findLatestAcceptance = async function(storeId, pageType) {
   });
 };
 
-// Create or update a draft - proper upsert logic
+// Create or update a draft - proper upsert logic with init->draft flow
 SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, configuration = null, isNewChanges = true, isReset = false) {
-  // Try to find existing draft
-  const existingDraft = await this.findOne({
+  console.log('🔄 BACKEND - upsertDraft called:', { userId, storeId, pageType, hasConfiguration: !!configuration, isNewChanges, isReset });
+
+  // Try to find existing draft or init record
+  const existingRecord = await this.findOne({
     where: {
       user_id: userId,
       store_id: storeId,
       page_type: pageType,
-      status: 'draft'
-    }
+      status: ['init', 'draft']
+    },
+    order: [['version_number', 'DESC']]
   });
 
-  if (existingDraft) {
+  if (existingRecord) {
+    console.log('📝 BACKEND - Found existing record:', {
+      id: existingRecord.id,
+      status: existingRecord.status,
+      hasSlots: !!existingRecord.configuration?.slots,
+      slotsCount: Object.keys(existingRecord.configuration?.slots || {}).length
+    });
+
+    // Handle init->draft transition
+    if (existingRecord.status === 'init' && configuration) {
+      console.log('🔄 BACKEND - Transitioning init->draft with full configuration');
+      existingRecord.configuration = configuration;
+      existingRecord.status = 'draft';
+      existingRecord.updated_at = new Date();
+      existingRecord.has_unpublished_changes = isReset ? false : true;
+      await existingRecord.save();
+      console.log('✅ BACKEND - Successfully transitioned to draft status');
+      return existingRecord;
+    }
+
     // Update existing draft
     if (configuration) {
-      existingDraft.configuration = configuration;
-      existingDraft.updated_at = new Date();
-      // For reset operations, always set has_unpublished_changes = false
-      // For other operations, use isNewChanges parameter
-      existingDraft.has_unpublished_changes = isReset ? false : isNewChanges;
-      await existingDraft.save();
+      console.log('📝 BACKEND - Updating existing configuration');
+      existingRecord.configuration = configuration;
+      existingRecord.updated_at = new Date();
+      existingRecord.has_unpublished_changes = isReset ? false : isNewChanges;
+      await existingRecord.save();
     }
-    return existingDraft;
+    return existingRecord;
   }
 
-  // No existing draft, create new one
-  const latestPublished = await this.findLatestPublished(storeId, pageType);
-  
+  console.log('🆕 BACKEND - No existing record found, creating new one');
+
   // Determine version number
   const maxVersion = await this.max('version_number', {
     where: {
@@ -300,59 +320,55 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     }
   });
 
-  // Dynamic configuration loader based on page type
-  const getDefaultConfig = async (pageType, staticConfig = null) => {
-    // Use provided static configuration if available
-    if (staticConfig) {
-      // Simply return the static config as-is with timestamps
-      // The frontend sends complete configuration with all properties
-      return {
-        ...staticConfig,
+  // If configuration is provided, create a draft; otherwise create an init record
+  if (configuration) {
+    console.log('📝 BACKEND - Creating new draft with full configuration');
+    const newDraft = await this.create({
+      user_id: userId,
+      store_id: storeId,
+      configuration: configuration,
+      version: '1.0',
+      is_active: true,
+      status: 'draft',
+      version_number: (maxVersion || 0) + 1,
+      page_type: pageType,
+      parent_version_id: null,
+      has_unpublished_changes: isReset ? false : true
+    });
+    return newDraft;
+  } else {
+    console.log('🏗️ BACKEND - Creating new init record with minimal configuration');
+    // Create minimal init record - will be populated later
+    const newInit = await this.create({
+      user_id: userId,
+      store_id: storeId,
+      configuration: {
+        page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
+        slot_type: `${pageType}_layout`,
+        slots: {},
         metadata: {
-          ...staticConfig.metadata,
           created: new Date().toISOString(),
-          lastModified: new Date().toISOString()
+          lastModified: new Date().toISOString(),
+          status: 'init'
         }
-      };
-    }
-
-    // Otherwise load from page config file
-    const config = await loadPageConfig(pageType);
-
-    return {
-      page_name: config.page_name,
-      slot_type: config.slot_type,
-      slots: config.slots || {},
-      metadata: {
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        ...config.metadata
-      }
-    };
-  };
-
-  // Use provided configuration, or latest published, or default config
-  const baseConfig = configuration || (latestPublished ? latestPublished.configuration : await getDefaultConfig(pageType));
-
-  const newDraft = await this.create({
-    user_id: userId,
-    store_id: storeId,
-    configuration: baseConfig,
-    version: latestPublished ? latestPublished.version : '1.0',
-    is_active: true,
-    status: 'draft',
-    version_number: (maxVersion || 0) + 1,
-    page_type: pageType,
-    parent_version_id: latestPublished ? latestPublished.id : null,
-    has_unpublished_changes: isReset ? false : false // New drafts start with no changes, reset operations explicitly false
-  });
-
-  return newDraft;
+      },
+      version: '1.0',
+      is_active: true,
+      status: 'init', // Starts as init, will become draft when populated
+      version_number: (maxVersion || 0) + 1,
+      page_type: pageType,
+      parent_version_id: null,
+      has_unpublished_changes: false
+    });
+    console.log('✅ BACKEND - Created init record:', newInit.id);
+    return newInit;
+  }
 };
 
-// Create draft - uses upsert logic
+// Create draft - uses upsert logic (creates init record first)
 SlotConfiguration.createDraft = async function(userId, storeId, pageType) {
-  return this.upsertDraft(userId, storeId, pageType);
+  console.log('🏗️ BACKEND - createDraft called, will create init record');
+  return this.upsertDraft(userId, storeId, pageType, null, false, false);
 };
 
 // Publish a draft to acceptance (preview environment)
