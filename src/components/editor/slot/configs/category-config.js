@@ -207,8 +207,8 @@ export const categoryConfig = {
       className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       parentClassName: '',
       styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 99 },  // Move to end so it doesn't interfere with main layout
+      parentId: 'product_items',
+      position: { col: 1, row: 1 },
       colSpan: { grid: 4, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
