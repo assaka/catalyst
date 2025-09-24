@@ -189,7 +189,7 @@ export const categoryConfig = {
       styles: {},
       parentId: 'products_container',
       position: { col: 1, row: 3 },
-      colSpan: { grid: 12, list: 12 },
+      colSpan: { grid: 'col-span-12 sm:col-span-6 lg:col-span-4', list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
