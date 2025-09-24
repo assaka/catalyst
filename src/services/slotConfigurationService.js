@@ -284,15 +284,22 @@ class SlotConfigurationService {
     }
   }
 
-  // Get initial configuration from cart-config.js
+  // Get initial configuration from appropriate config file based on pageType
   async getInitialConfiguration(pageType = 'cart', fileName = null) {
-    // Dynamic import to get the latest cart config
-    const { cartConfig } = await import('@/components/editor/slot/configs/cart-config.js');
+    // Dynamic import to get the appropriate config based on pageType
+    let config;
+    if (pageType === 'category') {
+      const { categoryConfig } = await import('@/components/editor/slot/configs/category-config.js');
+      config = categoryConfig;
+    } else {
+      const { cartConfig } = await import('@/components/editor/slot/configs/cart-config.js');
+      config = cartConfig;
+    }
 
     // Create clean slots with all properties preserved including position coordinates
     const cleanSlots = {};
-    if (cartConfig.slots) {
-      Object.entries(cartConfig.slots).forEach(([key, slot]) => {
+    if (config.slots) {
+      Object.entries(config.slots).forEach(([key, slot]) => {
         // Copy all serializable properties, ensure no undefined values
         cleanSlots[key] = {
           id: slot.id || key,
@@ -316,8 +323,8 @@ class SlotConfigurationService {
     // Use the new nested structure
     const initialConfig = {
       // Use the root slots and nested structure
-      rootSlots: cartConfig.rootSlots || [],
-      slotDefinitions: cartConfig.slotDefinitions || {},
+      rootSlots: config.rootSlots || [],
+      slotDefinitions: config.slotDefinitions || {},
       slots: cleanSlots,
 
       // Add metadata
@@ -329,9 +336,9 @@ class SlotConfigurationService {
         lastModified: new Date().toISOString(),
         pageType: pageType,
         fileName: fileName,
-        source: 'cart-config.js',
-        page_name: cartConfig.page_name,
-        slot_type: cartConfig.slot_type
+        source: pageType === 'category' ? 'category-config.js' : 'cart-config.js',
+        page_name: config.page_name,
+        slot_type: config.slot_type
       }
     };
 

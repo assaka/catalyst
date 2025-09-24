@@ -685,11 +685,17 @@ const CategorySlotsEditor = ({
 
                       const SlotComponent = componentMap[slot.id];
 
-                      // Debug: Check if we're looking for product_items
-                      if (slot.id === 'product_items') {
-                        console.log('🎯 FOUND product_items in component mapping!');
+                      // Debug: Check if we're looking for product_items or product_item_card
+                      if (slot.id === 'product_items' || slot.id === 'product_item_card') {
+                        console.log(`🎯 FOUND ${slot.id} in component mapping!`);
                         console.log('🎯 SlotComponent found:', !!SlotComponent);
                         console.log('🎯 SlotComponent name:', SlotComponent?.name);
+                        console.log('🎯 Slot details:', {
+                          id: slot.id,
+                          type: slot.type,
+                          parentId: slot.parentId,
+                          hasContent: !!slot.content
+                        });
                       }
 
                       if (SlotComponent) {
