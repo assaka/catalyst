@@ -684,7 +684,21 @@ const CategorySlotsEditor = ({
 
                       const SlotComponent = componentMap[slot.id];
 
+                      // Debug: Check if we're looking for product_items
+                      if (slot.id === 'product_items') {
+                        console.log('🎯 FOUND product_items in component mapping!');
+                        console.log('🎯 SlotComponent found:', !!SlotComponent);
+                        console.log('🎯 SlotComponent name:', SlotComponent?.name);
+                      }
+
                       if (SlotComponent) {
+                        // Debug: Log when we're about to render product_items
+                        if (slot.id === 'product_items') {
+                          console.log('🚀 About to render product_items with CategoryProductItemCardSlot');
+                          console.log('🚀 Content passed:', slot.content);
+                          console.log('🚀 Config passed:', { viewMode });
+                        }
+
                         return (
                           <SlotComponent
                             categoryData={sampleCategoryContext}
