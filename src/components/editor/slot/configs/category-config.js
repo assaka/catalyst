@@ -46,7 +46,9 @@ export const categoryConfig = {
       content: 'Category Name',
       className: 'text-4xl font-bold text-gray-900 mb-2',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#FF6B6B'  // Test color - light red/coral
+      },
       parentId: 'page_header',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },

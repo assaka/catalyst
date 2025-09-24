@@ -65,6 +65,9 @@ const EditorSidebar = ({
   console.log('🔵 EditorSidebar rendered with:', { selectedElement, slotId, slotConfig, isVisible });
   // Set up database save callback for SimpleStyleManager
   useEffect(() => {
+    console.log('🔧 EDITOR SIDEBAR - Setting up database callback:', {
+      hasOnClassChange: !!onClassChange
+    });
     if (onClassChange) {
       styleManager.setDatabaseSaveCallback((updates) => {
         console.log('🔗 EDITOR SIDEBAR - Database callback triggered:', {
@@ -902,7 +905,20 @@ const EditorSidebar = ({
         }
       }
 
+      console.log(`🎨 STYLE CHANGE - Applying ${property}: ${formattedValue} to element:`, {
+        elementSlotId,
+        targetElement: targetElement.tagName,
+        property,
+        formattedValue,
+        oldValue: targetElement.style[property]
+      });
+
       targetElement.style[property] = formattedValue;
+
+      console.log(`✅ STYLE CHANGE - Applied ${property}:`, {
+        newValue: targetElement.style[property],
+        cssText: targetElement.style.cssText
+      });
 
       // Special handling for border properties to ensure visibility
       if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
@@ -931,6 +947,13 @@ const EditorSidebar = ({
       }));
       
       // Save immediately using parent callback (for inline styles, we update classes to persist)
+      console.log(`💾 STYLE CHANGE - Saving to database:`, {
+        elementSlotId,
+        property,
+        formattedValue,
+        hasCallback: !!onInlineClassChange
+      });
+
       if (onInlineClassChange) {
         // Include auto-set border properties in save data
         const saveStyles = { [property]: formattedValue };
@@ -938,7 +961,14 @@ const EditorSidebar = ({
           saveStyles.borderStyle = targetElement.style.borderStyle;
           saveStyles.borderColor = targetElement.style.borderColor;
         }
+        console.log(`💾 STYLE CHANGE - Calling onInlineClassChange:`, {
+          elementSlotId,
+          className: selectedElement.className,
+          saveStyles
+        });
         onInlineClassChange(elementSlotId, selectedElement.className, saveStyles);
+      } else {
+        console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
     }
   }, [selectedElement, handleAlignmentChange, onInlineClassChange]);
