@@ -882,9 +882,20 @@ export function useSlotConfiguration({
           // Merge saved config with static config, preserving viewMode and metadata from static
           const mergedSlots = {};
 
+          console.log('🔄 STYLE LOADING DEBUG - Starting merge process');
+          console.log('📋 STYLE LOADING DEBUG - Database config slots:', Object.keys(dbConfig.slots || {}));
+          console.log('📋 STYLE LOADING DEBUG - Static config slots:', Object.keys(staticConfig.slots || {}));
+
           // Start with static config slots to ensure all viewMode arrays are preserved
           Object.entries(staticConfig.slots).forEach(([slotId, staticSlot]) => {
             const savedSlot = dbConfig.slots?.[slotId];
+
+            console.log(`🔄 STYLE LOADING DEBUG - Processing slot [${slotId}]:`, {
+              hasStaticStyles: !!staticSlot.styles,
+              staticStyles: staticSlot.styles,
+              hasSavedSlot: !!savedSlot,
+              savedStyles: savedSlot?.styles
+            });
 
             mergedSlots[slotId] = {
               ...staticSlot, // Start with static slot (includes viewMode, metadata, etc.)
@@ -900,6 +911,11 @@ export function useSlotConfiguration({
                 position: savedSlot.position ? { ...staticSlot.position, ...savedSlot.position } : staticSlot.position
               } : {})
             };
+
+            console.log(`✅ STYLE LOADING DEBUG - Final merged slot [${slotId}]:`, {
+              finalStyles: mergedSlots[slotId].styles,
+              stylesMerged: savedSlot?.styles ? 'YES - database styles merged' : 'NO - only static styles'
+            });
           });
 
           // Add any new slots that exist in database but not in static config
