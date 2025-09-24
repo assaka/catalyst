@@ -117,14 +117,43 @@ export default function Category() {
   // Extract slots from the loaded configuration
   const categorySlots = categoryLayoutConfig?.slots || null;
 
-  // Extract grid configuration from product_items slot metadata
+  // Generate grid classes from configuration
   const getGridClasses = () => {
-    const gridConfig = categoryLayoutConfig?.slots?.product_items?.metadata?.gridConfig;
-    if (gridConfig) {
-      const { mobile = 1, tablet = 2, desktop = 2 } = gridConfig;
-      return `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
+    const slot = categoryLayoutConfig?.slots?.product_items;
+
+    // First try to use pre-generated gridClasses
+    if (slot?.gridClasses) {
+      return slot.gridClasses;
     }
-    // Fallback to default grid (2 columns on desktop)
+
+    // Generate from gridConfig if available
+    if (slot?.gridConfig?.breakpoints) {
+      const { breakpoints, customBreakpoints = [] } = slot.gridConfig;
+      let classes = [];
+
+      // Add default (mobile) grid
+      if (breakpoints.default) {
+        classes.push(`grid-cols-${breakpoints.default}`);
+      }
+
+      // Add responsive breakpoints
+      Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+        if (breakpoint !== 'default' && columns) {
+          classes.push(`${breakpoint}:grid-cols-${columns}`);
+        }
+      });
+
+      // Add custom breakpoints
+      customBreakpoints.forEach(({ name, columns }) => {
+        if (name && columns) {
+          classes.push(`${name}:grid-cols-${columns}`);
+        }
+      });
+
+      return classes.join(' ');
+    }
+
+    // Fallback to default grid
     return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
   };
 

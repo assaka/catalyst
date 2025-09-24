@@ -22,14 +22,45 @@ export function CategorySlotRenderer({
   categoryContext = {}
 }) {
   // Helper function to generate dynamic grid classes
-  const getDynamicGridClasses = (slot, fallbackGrid = { mobile: 1, tablet: 2, desktop: 3 }) => {
+  const getDynamicGridClasses = (slot) => {
     if (viewMode === 'list') {
       return 'space-y-4';
     }
 
-    const gridConfig = slot?.metadata?.gridConfig || fallbackGrid;
-    const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
-    return `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
+    // First try to use pre-generated gridClasses
+    if (slot?.gridClasses) {
+      return `grid ${slot.gridClasses} gap-4`;
+    }
+
+    // Generate from gridConfig if available
+    if (slot?.gridConfig?.breakpoints) {
+      const { breakpoints, customBreakpoints = [] } = slot.gridConfig;
+      let classes = [];
+
+      // Add default (mobile) grid
+      if (breakpoints.default) {
+        classes.push(`grid-cols-${breakpoints.default}`);
+      }
+
+      // Add responsive breakpoints
+      Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+        if (breakpoint !== 'default' && columns) {
+          classes.push(`${breakpoint}:grid-cols-${columns}`);
+        }
+      });
+
+      // Add custom breakpoints
+      customBreakpoints.forEach(({ name, columns }) => {
+        if (name && columns) {
+          classes.push(`${name}:grid-cols-${columns}`);
+        }
+      });
+
+      return `grid ${classes.join(' ')} gap-4`;
+    }
+
+    // Default fallback
+    return 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4';
   };
 
   const {
