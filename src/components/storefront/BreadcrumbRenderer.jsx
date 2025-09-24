@@ -169,12 +169,12 @@ export default function BreadcrumbRenderer({
           {item.url ? (
             <a
               href={item.url}
-              className="text-gray-500 hover:text-gray-700 hover:underline"
+              className="text-gray-500 hover:text-gray-700 hover:underline whitespace-nowrap"
             >
               {item.name}
             </a>
           ) : (
-            <span className="text-gray-900 font-medium">
+            <span className="text-gray-900 font-medium whitespace-nowrap">
               {item.name}
             </span>
           )}

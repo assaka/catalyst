@@ -607,7 +607,8 @@ const CategorySlotsEditor = ({
                         parentId: slot.parentId,
                         row: slot.position?.row,
                         col: slot.position?.col,
-                        type: slot.type
+                        type: slot.type,
+                        timestamp: Date.now()
                       });
 
                       // Skip child slots - let them be rendered hierarchically by their parents
