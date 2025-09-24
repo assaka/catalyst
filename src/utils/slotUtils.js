@@ -18,18 +18,8 @@ export class SlotManager {
     const allSlots = Object.values(slots);
     const childSlots = allSlots.filter(slot => slot.parentId === parentId);
 
-    // Only log for products_container to debug ordering issue
-    if (parentId === 'products_container') {
-      console.log(`📊 products_container children:`, childSlots.map(s => `${s.id}(row${s.position?.row})`).join(' -> '));
-    }
-
     // Sort by position.row, fallback to 0
     const sorted = childSlots.sort((a, b) => (a.position?.row || 0) - (b.position?.row || 0));
-
-    if (parentId === 'products_container') {
-      console.log(`📊 After sorting:`, sorted.map(s => `${s.id}(row${s.position?.row})`).join(' -> '));
-    }
-
     return sorted;
   }
   

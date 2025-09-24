@@ -435,7 +435,9 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
     products: products,
     categoryContext: categoryContext,
     content: content,
-    config: config
+    config: config,
+    contentGridConfig: content?.gridConfig,
+    contentKeys: content ? Object.keys(content) : 'NO CONTENT'
   });
 
   // Get configuration from content or use defaults
@@ -448,6 +450,12 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
     },
     gridConfig = { mobile: 1, tablet: 2, desktop: 3 }
   } = content || {};
+
+  console.log('🔧 CategoryProductItemCardSlot GRID CONFIG:', {
+    gridConfigFromContent: content?.gridConfig,
+    finalGridConfig: gridConfig,
+    defaultUsed: !content?.gridConfig
+  });
 
   // Generate dynamic grid classes based on configuration
   const getGridClasses = () => {

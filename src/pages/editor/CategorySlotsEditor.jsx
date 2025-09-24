@@ -461,16 +461,18 @@ const CategorySlotsEditor = ({
                     // Log ALL slots to see what's there
                     Object.keys(categoryLayoutConfig.slots).forEach(slotId => {
                       const slot = categoryLayoutConfig.slots[slotId];
-                      console.info(`🔍 SLOT [${slotId}]:`, {
-                        type: slot.type,
-                        parentId: slot.parentId,
-                        viewMode: slot.viewMode,
-                        position: slot.position,
-                        colSpan: slot.colSpan,
-                        className: slot.className,
-                        styles: slot.styles,
-                        hasStyles: slot.styles && Object.keys(slot.styles).length > 0
-                      });
+                      if (slot.id === 'product_items') {
+                        console.info(`🔍 SLOT [${slotId}]:`, {
+                          type: slot.type,
+                          parentId: slot.parentId,
+                          viewMode: slot.viewMode,
+                          position: slot.position,
+                          colSpan: slot.colSpan,
+                          className: slot.className,
+                          styles: slot.styles,
+                          hasStyles: slot.styles && Object.keys(slot.styles).length > 0
+                        });
+                      }
                     });
                   }
 
@@ -499,15 +501,6 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
-                      // Test log to verify logging is working
-                      if (slot.id === 'product_items') {
-                        console.log('🚀 SLOT PROCESSING TEST - product_items slot detected!');
-                      }
-
-                      // Only log CMS and product slots to debug ordering issue
-                      if (slot.id.includes('products') || slot.id.includes('cms')) {
-                        console.log(`🎯 Processing: ${slot.id} (row ${slot.position?.row}, parent: ${slot.parentId})`);
-                      }
 
                       // DON'T skip anything - let all slots render individually for now
                       // The hierarchical rendering wasn't working as expected

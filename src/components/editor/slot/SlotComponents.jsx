@@ -1064,44 +1064,16 @@ export function HierarchicalSlotRenderer({
                     minHeight: 'auto',
                     display: 'inline-block'
                   };
-
-                  console.log(`🎨 BUTTON SLOT [${slot.id}] - Style object being applied:`, {
-                    slotStyles: slot.styles,
-                    finalStyles: finalStyles,
-                    hasSlotStyles: slot.styles && Object.keys(slot.styles).length > 0,
-                    styleKeys: slot.styles ? Object.keys(slot.styles) : [],
-                  });
-
                   return finalStyles;
                 })()}
                 ref={(el) => {
                   if (el) {
-                    console.log(`🔍 BUTTON SLOT [${slot.id}] - DOM element created:`, {
-                      slotStyles: slot.styles,
-                      hasStyles: slot.styles && Object.keys(slot.styles).length > 0,
-                      className: slot.className,
-                      elementClassName: el.className,
-                      inlineStyles: el.style.cssText,
-                      computedColor: window.getComputedStyle(el).color,
-                      computedBg: window.getComputedStyle(el).backgroundColor,
-                      // Check if Tailwind classes are overriding
-                      hasColorClass: el.className.includes('text-') || el.className.includes('bg-'),
-                      allComputedStyles: {
-                        color: window.getComputedStyle(el).color,
-                        backgroundColor: window.getComputedStyle(el).backgroundColor,
-                        fontSize: window.getComputedStyle(el).fontSize,
-                        fontWeight: window.getComputedStyle(el).fontWeight
-                      }
-                    });
-
                     // Try to force apply styles if they exist
                     if (slot.styles && Object.keys(slot.styles).length > 0) {
-                      console.log(`🔧 BUTTON SLOT [${slot.id}] - Force applying styles:`, slot.styles);
                       Object.entries(slot.styles).forEach(([property, value]) => {
                         if (value && property !== 'lastModified') {
                           const oldValue = el.style[property];
                           el.style[property] = value;
-                          console.log(`🔧 Applied ${property}: ${oldValue} -> ${value} (${el.style[property]})`);
                         }
                       });
                     }
