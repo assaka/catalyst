@@ -510,7 +510,7 @@ export default function LayeredNavigation({
                                     {isEditMode ? (
                                         <EditableSlotElement
                                             slotKey={`${code}_filter_label`}
-                                            slot={childSlots?.attribute_filter_label || childSlots?.[`${code}_filter_label`] || { content: name }}
+                                            slot={childSlots?.[`${code}_filter_label`] || childSlots?.attribute_filter_label || { content: name }}
                                             onElementClick={onElementClick}
                                             className="font-semibold"
                                         >
