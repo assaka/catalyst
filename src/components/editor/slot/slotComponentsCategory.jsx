@@ -459,12 +459,16 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
 
   // Generate dynamic grid classes based on configuration
   const getGridClasses = () => {
+    console.log('🔧 getGridClasses called with:', { gridConfig, viewMode });
+
     if (viewMode === 'list') {
       return 'grid-cols-1';
     }
 
     const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
-    return `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
+    const classes = `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
+    console.log('🔧 Generated grid classes:', classes);
+    return classes;
   };
 
   return (

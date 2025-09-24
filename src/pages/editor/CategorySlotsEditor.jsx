@@ -581,33 +581,16 @@ const CategorySlotsEditor = ({
                         return null;
                       }
 
-                      // Handle product_items container - apply grid layout classes to the container
+                      // Handle product_items container - load 4 products
                       if (slot.id === 'product_items') {
-                        console.log('🛍️ PRODUCT_ITEMS CONTAINER HANDLER RUNNING!');
+                        console.log('🛍️ PRODUCT_ITEMS: Loading 4 products');
 
-                        // Get the UPDATED product_items slot configuration for grid settings
-                        const updatedProductItemsSlot = categoryLayoutConfig?.slots?.product_items;
-                        const gridConfig = updatedProductItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 };
-
-                        console.log('📊 GRID CONFIG FROM DATABASE:', gridConfig);
-
-                        // Generate dynamic grid classes based on configuration
-                        const getGridClasses = () => {
-                          if (viewMode === 'list') {
-                            return 'space-y-4'; // List layout
-                          }
-                          const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
-                          return `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
-                        };
-
-                        const dynamicGridClasses = getGridClasses();
-                        console.log('🎨 DYNAMIC GRID CLASSES FOR CONTAINER:', dynamicGridClasses);
-
-                        // Render products using the grid container
-                        const products = sampleCategoryContext?.products?.slice(0, 6) || [];
+                        // Load exactly 4 products
+                        const products = sampleCategoryContext?.products?.slice(0, 4) || [];
+                        console.log('🛍️ Rendering 4 products:', products.length);
 
                         return (
-                          <div className={dynamicGridClasses}>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {products.map((product, index) => (
                               <ProductItemCard
                                 key={product.id}
