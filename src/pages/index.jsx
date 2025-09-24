@@ -63,6 +63,7 @@ export { default as ThemeLayout } from './admin/ThemeLayout';
 export { default as AIContextWindow } from './editor/AIContextWindow';
 export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CategorySlotsEditor } from './editor/CategorySlotsEditor';
+export { default as ProductSlotsEditor } from './editor/ProductSlotsEditor';
 
 // Storefront Pages
 export { default as Homepage } from './storefront/Homepage';

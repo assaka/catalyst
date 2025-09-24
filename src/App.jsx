@@ -286,6 +286,7 @@ function App() {
           {/* Editor routes */}
           <Route path="/editor" element={<Navigate to="/editor/ai-context-window" replace />} />
           <Route path="/editor/ai-context" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
+          <Route path="/editor/product" element={<PageWrapper Component={Pages.ProductSlotsEditor} pageName="ProductSlotsEditor" />} />
           
           {/* Public/Storefront routes with store code and dynamic parameters */}
           <Route path="/public/:storeCode/category/*" element={<PageWrapper Component={Pages.Category} pageName="Category" />} />

@@ -28,6 +28,11 @@ import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
 import BreadcrumbRenderer from "@/components/storefront/BreadcrumbRenderer";
 
+// Slot system imports
+import slotConfigurationService from '@/services/slotConfigurationService';
+import { ProductSlotRenderer } from '@/components/storefront/ProductSlotRenderer';
+import { productConfig } from '@/components/editor/slot/configs/product-config';
+
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
   if (!label || !label.text) return null;
@@ -114,6 +119,10 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState(0);
   // productLabels state is removed as it's now managed by the useStore context.
 
+  // State for product layout configuration
+  const [productLayoutConfig, setProductLayoutConfig] = useState(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
   // Load user once
   useEffect(() => {
     const loadUser = async () => {
@@ -133,6 +142,64 @@ export default function ProductDetail() {
       loadProductData();
     }
   }, [slug, store?.id, storeLoading]);
+
+  // Load product layout configuration directly
+  useEffect(() => {
+    const loadProductLayoutConfig = async () => {
+      if (!store?.id) {
+        return;
+      }
+
+      try {
+        // Load published configuration using the new versioning API
+        const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'product');
+
+        // Check for various "no published config" scenarios
+        if (response.success && response.data &&
+            response.data.configuration &&
+            response.data.configuration.slots &&
+            Object.keys(response.data.configuration.slots).length > 0) {
+
+          const publishedConfig = response.data;
+          setProductLayoutConfig(publishedConfig.configuration);
+          setConfigLoaded(true);
+
+        } else {
+          // Fallback to product-config.js
+          const fallbackConfig = {
+            slots: { ...productConfig.slots },
+            metadata: {
+              ...productConfig.metadata,
+              fallbackUsed: true,
+              fallbackReason: `No valid published configuration`
+            }
+          };
+
+          setProductLayoutConfig(fallbackConfig);
+          setConfigLoaded(true);
+        }
+      } catch (error) {
+        console.error('Failed to load product layout config:', error);
+
+        // Final fallback to default config
+        const fallbackConfig = {
+          slots: { ...productConfig.slots },
+          metadata: {
+            ...productConfig.metadata,
+            fallbackUsed: true,
+            fallbackReason: `Error loading configuration: ${error.message}`
+          }
+        };
+
+        setProductLayoutConfig(fallbackConfig);
+        setConfigLoaded(true);
+      }
+    };
+
+    if (!storeLoading) {
+      loadProductLayoutConfig();
+    }
+  }, [store?.id, storeLoading]);
 
   const loadProductData = async () => {
     try {
@@ -522,9 +589,9 @@ export default function ProductDetail() {
 
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div>
       {flashMessage && (
-        <div className="mb-6">
+        <div className="mb-6 max-w-6xl mx-auto px-4">
           <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         </div>
       )}
@@ -535,15 +602,79 @@ export default function ProductDetail() {
         pageTitle={product?.name}
       />
 
-      <BreadcrumbRenderer
-        pageType="product"
-        pageData={product}
-        storeCode={store?.slug || store?.code}
-        categories={categories}
-        settings={settings}
-      />
+      {/* CMS Block - Product Above */}
+      <CmsBlockRenderer position="product_above" />
 
-      <div className="grid md:grid-cols-2 gap-8">
+      {/* Check if we should use slot configuration or fallback to traditional layout */}
+      {(() => {
+        // Determine if we should render with slots
+        const hasConfig = productLayoutConfig && configLoaded;
+        const hasSlots = hasConfig && productLayoutConfig.slots && Object.keys(productLayoutConfig.slots).length > 0;
+        const slotCount = hasSlots ? Object.keys(productLayoutConfig.slots).length : 0;
+
+        const shouldRender = hasConfig && hasSlots && slotCount > 0;
+
+        return shouldRender;
+      })() ? (
+        <div className="grid grid-cols-12 gap-2 auto-rows-min">
+          <ProductSlotRenderer
+            slots={productLayoutConfig.slots}
+            parentId={null}
+            viewMode="default"
+            productContext={{
+              product,
+              productTabs,
+              customOptions: [], // TODO: Load custom options
+              relatedProducts: [], // TODO: Load related products
+              store,
+              settings,
+              breadcrumbs: [
+                { name: 'Home', url: '/' },
+                // Add dynamic breadcrumbs based on categories
+                ...(product?.category_ids?.map(catId => {
+                  const cat = categories?.find(c => c.id === catId);
+                  return cat ? { name: cat.name, url: `/category/${cat.slug}` } : null;
+                }).filter(Boolean) || []),
+                { name: product?.name, url: null }
+              ],
+              productLabels,
+              selectedOptions,
+              quantity,
+              activeImageIndex: activeImage,
+              activeTab,
+              isInWishlist,
+              currencySymbol: store?.currency_symbol || '$',
+              setQuantity,
+              setActiveImageIndex: setActiveImage,
+              setActiveTab,
+              setIsInWishlist,
+              handleAddToCart: handleAddToCart,
+              handleOptionChange: (optionId, selectedValue) => {
+                // Update selected options
+                const newSelectedOptions = selectedOptions.filter(opt => opt.option_id !== optionId);
+                if (selectedValue) {
+                  newSelectedOptions.push({
+                    option_id: optionId,
+                    option_value: selectedValue
+                  });
+                }
+                setSelectedOptions(newSelectedOptions);
+              }
+            }}
+          />
+        </div>
+      ) : (
+        // Fallback to traditional layout
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <BreadcrumbRenderer
+            pageType="product"
+            pageData={product}
+            storeCode={store?.slug || store?.code}
+            categories={categories}
+            settings={settings}
+          />
+
+          <div className="grid md:grid-cols-2 gap-8">
         {/* Product Images */}
         <div className="space-y-4">
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
@@ -915,16 +1046,21 @@ export default function ProductDetail() {
         </div>
       )}
 
-      <div className="mt-16">
-        {/* CMS Block Renderer for "above product tabs" position */}
-        <CmsBlockRenderer position="above_product_tabs" page="storefront_product" storeId={store?.id} />
-        {/* Recommended Products component */}
-        <RecommendedProducts 
-          product={product} 
-          storeId={store?.id} 
-          selectedOptions={selectedOptions} 
-        />
-      </div>
+          <div className="mt-16">
+            {/* CMS Block Renderer for "above product tabs" position */}
+            <CmsBlockRenderer position="above_product_tabs" page="storefront_product" storeId={store?.id} />
+            {/* Recommended Products component */}
+            <RecommendedProducts
+              product={product}
+              storeId={store?.id}
+              selectedOptions={selectedOptions}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* CMS Block - Product Below */}
+      <CmsBlockRenderer position="product_below" />
 
     </div>
   );
