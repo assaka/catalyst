@@ -480,83 +480,47 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
   );
 }
 
-// CategoryProductItemCardSlot Component - Editable wrapper for ProductItemCard
+// CategoryProductItemCardSlot Component - Renders a single product card
 export function CategoryProductItemCardSlot({ categoryContext, content, config }) {
   const { products, currencySymbol, productLabels } = categoryContext || {};
   const { viewMode = 'grid' } = config || {};
 
-  // Debug logging to see what we have
-  console.log('🛍️ CategoryProductItemCardSlot DEBUG:', {
-    hasProducts: !!products,
-    productsCount: products?.length || 0,
-    products: products,
-    categoryContext: categoryContext,
-    content: content,
-    config: config,
-    contentGridConfig: content?.gridConfig,
-    contentKeys: content ? Object.keys(content) : 'NO CONTENT'
-  });
+  console.log('🃏 CategoryProductItemCardSlot: Rendering single product card');
 
-  // Get configuration from content or use defaults
-  const {
-    itemsToShow = 3,
-    store = { slug: 'demo-store', id: 1 },
-    settings = {
-      currency_symbol: currencySymbol || '$',
-      theme: { add_to_cart_button_color: '#3B82F6' }
-    },
-    gridConfig = { mobile: 1, tablet: 2, desktop: 3 }
-  } = content || {};
-
-  console.log('🔧 CategoryProductItemCardSlot GRID CONFIG:', {
-    gridConfigFromContent: content?.gridConfig,
-    finalGridConfig: gridConfig,
-    defaultUsed: !content?.gridConfig
-  });
-
-  // Generate dynamic grid classes based on configuration
-  const getGridClasses = () => {
-    console.log('🔧 getGridClasses called with:', { gridConfig, viewMode });
-
-    if (viewMode === 'list') {
-      return 'grid-cols-1';
-    }
-
-    const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
-    const classes = `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
-    console.log('🔧 Generated grid classes:', classes);
-    return classes;
+  // Get the first product as a sample
+  const sampleProduct = products?.[0] || {
+    id: 1,
+    name: 'Sample Product',
+    description: 'Sample product description',
+    price: 99.99,
+    images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'],
+    stock_status: 'in_stock',
+    rating: 4.5,
+    slug: 'sample-product'
   };
 
+  const settings = {
+    currency_symbol: currencySymbol || '$',
+    theme: { add_to_cart_button_color: '#3B82F6' }
+  };
+
+  const store = { slug: 'demo-store', id: 1 };
+
   return (
-    <div className="category-product-item-cards">
-      {content?.html ? (
-        <div dangerouslySetInnerHTML={{ __html: content.html }} />
-      ) : (
-        <div className={`grid gap-4 ${getGridClasses()}`}>
-          {(products || []).slice(0, itemsToShow).map((product) => (
-            <ProductItemCard
-              key={product.id}
-              product={product}
-              settings={settings}
-              store={store}
-              taxes={[]}
-              selectedCountry="US"
-              productLabels={productLabels || []}
-              viewMode={viewMode}
-              slotConfig={content || {}}
-              onAddToCartStateChange={(isAdding) => {
-                console.log('🛒 Add to cart state:', isAdding);
-                // In edit mode, this could show editing options
-                if (content?.onCartStateChange) {
-                  content.onCartStateChange(isAdding);
-                }
-              }}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <ProductItemCard
+      key={sampleProduct.id}
+      product={sampleProduct}
+      settings={settings}
+      store={store}
+      taxes={[]}
+      selectedCountry="US"
+      productLabels={productLabels || []}
+      viewMode={viewMode}
+      slotConfig={content || {}}
+      onAddToCartStateChange={(isAdding) => {
+        console.log('🛒 Add to cart state:', isAdding);
+      }}
+    />
   );
 }
 

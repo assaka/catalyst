@@ -20,6 +20,7 @@ const EditableSlotElement = ({ slotKey, slot, onElementClick, children, classNam
   return (
     <div
       className={`slot-element ${className}`}
+      data-slot-id={slotKey}
       style={{
         cursor: 'pointer',
         userSelect: 'none',
@@ -31,14 +32,9 @@ const EditableSlotElement = ({ slotKey, slot, onElementClick, children, classNam
       }}
       onClick={(e) => {
         e.stopPropagation();
-        // Create a mock element with the data-slot-id attribute for the editor
-        const mockElement = {
-          getAttribute: (attr) => {
-            if (attr === 'data-slot-id') return slotKey;
-            return null;
-          }
-        };
-        onElementClick(mockElement);
+        console.log('🎯 EditableSlotElement clicked:', slotKey, 'calling onElementClick with currentTarget');
+        // Pass the actual DOM element (currentTarget) which has the data-slot-id attribute
+        onElementClick(e.currentTarget);
       }}
       onDragStart={(e) => {
         e.preventDefault();
@@ -563,16 +559,36 @@ export default function LayeredNavigation({
                                                 className="flex items-center justify-between"
                                             >
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        id={`attr-${code}-${value}`}
-                                                        checked={selectedFilters[code]?.includes(value) || false}
-                                                        onCheckedChange={isEditMode ? () => {} : (checked) => handleAttributeChange(code, value, checked)}
-                                                        disabled={isEditMode}
-                                                        className={isEditMode ? "pointer-events-none" : ""}
-                                                        style={{
-                                                            accentColor: checkboxColor
-                                                        }}
-                                                    />
+                                                    {isEditMode ? (
+                                                        <EditableSlotElement
+                                                            slotKey="filter_option_styles"
+                                                            slot={childSlots?.filter_option_styles}
+                                                            onElementClick={onElementClick}
+                                                            className=""
+                                                        >
+                                                            <Checkbox
+                                                                id={`attr-${code}-${value}`}
+                                                                checked={selectedFilters[code]?.includes(value) || false}
+                                                                onCheckedChange={() => {}}
+                                                                disabled={true}
+                                                                className="pointer-events-none"
+                                                                style={{
+                                                                    accentColor: checkboxColor
+                                                                }}
+                                                            />
+                                                        </EditableSlotElement>
+                                                    ) : (
+                                                        <Checkbox
+                                                            id={`attr-${code}-${value}`}
+                                                            checked={selectedFilters[code]?.includes(value) || false}
+                                                            onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
+                                                            disabled={false}
+                                                            className=""
+                                                            style={{
+                                                                accentColor: checkboxColor
+                                                            }}
+                                                        />
+                                                    )}
                                                     <Label
                                                         htmlFor={`attr-${code}-${value}`}
                                                         className="text-sm cursor-pointer hover:opacity-80 transition-opacity"
