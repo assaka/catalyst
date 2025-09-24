@@ -41,7 +41,7 @@ export const successConfig = {
         boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)"
       },
       parentId: "main_layout",
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -63,7 +63,7 @@ export const successConfig = {
         padding: "2rem 1rem"
       },
       parentId: "main_layout",
-      position: { order: 1 },
+      position: { col: 1, row: 2 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -84,7 +84,7 @@ export const successConfig = {
         marginBottom: "1.5rem"
       },
       parentId: "success_content",
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -107,7 +107,7 @@ export const successConfig = {
         marginBottom: "0.5rem"
       },
       parentId: "success_content",
-      position: { order: 1 },
+      position: { col: 1, row: 2 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -129,7 +129,7 @@ export const successConfig = {
         marginBottom: "1.5rem"
       },
       parentId: "success_content",
-      position: { order: 2 },
+      position: { col: 1, row: 3 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -153,7 +153,7 @@ export const successConfig = {
         marginBottom: "1.5rem"
       },
       parentId: "success_content",
-      position: { order: 3 },
+      position: { col: 1, row: 4 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["withOrder"],
@@ -176,7 +176,7 @@ export const successConfig = {
         marginBottom: "1rem"
       },
       parentId: "order_details",
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["withOrder"],
@@ -198,7 +198,7 @@ export const successConfig = {
         gap: "0.5rem"
       },
       parentId: "order_details",
-      position: { order: 1 },
+      position: { col: 1, row: 2 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["withOrder"],
@@ -221,7 +221,7 @@ export const successConfig = {
         justifyContent: "center"
       },
       parentId: "success_content",
-      position: { order: 4 },
+      position: { col: 1, row: 5 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -246,7 +246,7 @@ export const successConfig = {
         transition: "background-color 0.2s"
       },
       parentId: "actions_container",
-      position: { order: 0 },
+      position: { col: 1, row: 1 },
       colSpan: 6,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
@@ -271,7 +271,7 @@ export const successConfig = {
         transition: "background-color 0.2s"
       },
       parentId: "actions_container",
-      position: { order: 1 },
+      position: { col: 1, row: 2 },
       colSpan: 6,
       rowSpan: 1,
       viewMode: ["withOrder"],
@@ -293,7 +293,7 @@ export const successConfig = {
         marginTop: "auto"
       },
       parentId: "main_layout",
-      position: { order: 2 },
+      position: { col: 1, row: 3 },
       colSpan: 12,
       rowSpan: 1,
       viewMode: ["empty", "withOrder"],
