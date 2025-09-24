@@ -55,7 +55,8 @@ import {
   CategorySortingSlot,
   CategoryPaginationSlot,
   CategoryLayeredNavigationSlot,
-  CategoryProductItemCardSlot
+  CategoryProductItemCardSlot,
+  CategoryProductItemsSlot
 } from '@/components/editor/slot/slotComponentsCategory';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -668,7 +669,7 @@ const CategorySlotsEditor = ({
                         // Products
                         'products_container': CategoryProductsSlot,
                         'products_grid': CategoryProductsSlot,
-                        'product_items': CategoryProductItemCardSlot,
+                        'product_items': CategoryProductItemsSlot,
                         'product_item_card': CategoryProductItemCardSlot,
                         'product_template': CategoryProductItemCardSlot,
 

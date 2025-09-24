@@ -480,6 +480,48 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
   );
 }
 
+// CategoryProductItemsSlot Component - Renders multiple product cards in a grid
+export function CategoryProductItemsSlot({ categoryContext, content, config, allSlots }) {
+  const { products } = categoryContext || {};
+  const { viewMode = 'grid' } = config || {};
+
+  console.log('🛍️ CategoryProductItemsSlot: Rendering multiple products');
+
+  // Get grid configuration from the product_items slot metadata
+  const productItemsSlot = allSlots?.product_items;
+  const gridConfig = productItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 };
+
+  console.log('📊 Grid config from allSlots:', gridConfig);
+
+  // Generate dynamic grid classes based on configuration
+  const getGridClasses = () => {
+    if (viewMode === 'list') {
+      return 'space-y-4';
+    }
+    const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
+    return `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
+  };
+
+  const gridClasses = getGridClasses();
+  console.log('🎨 Generated grid classes:', gridClasses);
+
+  // Render 3 products
+  const productsToShow = products?.slice(0, 3) || [];
+
+  return (
+    <div className={gridClasses}>
+      {productsToShow.map((product, index) => (
+        <CategoryProductItemCardSlot
+          key={product.id || index}
+          categoryContext={{ ...categoryContext, products: [product] }}
+          content={content}
+          config={config}
+        />
+      ))}
+    </div>
+  );
+}
+
 // CategoryProductItemCardSlot Component - Renders a single product card
 export function CategoryProductItemCardSlot({ categoryContext, content, config }) {
   const { products, currencySymbol, productLabels } = categoryContext || {};
@@ -535,5 +577,6 @@ export default {
   CategoryProductsSlot,
   CategoryPaginationSlot,
   CategoryLayeredNavigationSlot,
-  CategoryProductItemCardSlot
+  CategoryProductItemCardSlot,
+  CategoryProductItemsSlot
 };
