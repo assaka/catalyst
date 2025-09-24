@@ -101,17 +101,102 @@ export default function ThemeLayout() {
         }));
     };
 
-    const handleGridChange = (breakpoint, columns) => {
+    const handleStandardBreakpointChange = (breakpoint, columns) => {
         setStore(prev => ({
             ...prev,
             settings: {
                 ...prev.settings,
                 product_grid: {
                     ...prev.settings.product_grid,
-                    [breakpoint]: columns
+                    breakpoints: {
+                        ...prev.settings.product_grid?.breakpoints,
+                        [breakpoint]: columns
+                    },
+                    customBreakpoints: prev.settings.product_grid?.customBreakpoints || []
                 }
             }
         }));
+    };
+
+    const handleAddCustomBreakpoint = () => {
+        setStore(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                product_grid: {
+                    ...prev.settings.product_grid,
+                    breakpoints: prev.settings.product_grid?.breakpoints || {},
+                    customBreakpoints: [
+                        ...(prev.settings.product_grid?.customBreakpoints || []),
+                        { name: '', columns: 2 }
+                    ]
+                }
+            }
+        }));
+    };
+
+    const handleCustomBreakpointChange = (index, field, value) => {
+        setStore(prev => {
+            const updatedCustomBreakpoints = [...(prev.settings.product_grid?.customBreakpoints || [])];
+            updatedCustomBreakpoints[index] = {
+                ...updatedCustomBreakpoints[index],
+                [field]: value
+            };
+
+            return {
+                ...prev,
+                settings: {
+                    ...prev.settings,
+                    product_grid: {
+                        ...prev.settings.product_grid,
+                        breakpoints: prev.settings.product_grid?.breakpoints || {},
+                        customBreakpoints: updatedCustomBreakpoints
+                    }
+                }
+            };
+        });
+    };
+
+    const handleRemoveCustomBreakpoint = (index) => {
+        setStore(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                product_grid: {
+                    ...prev.settings.product_grid,
+                    breakpoints: prev.settings.product_grid?.breakpoints || {},
+                    customBreakpoints: (prev.settings.product_grid?.customBreakpoints || []).filter((_, i) => i !== index)
+                }
+            }
+        }));
+    };
+
+    const generateGridClassesPreview = (gridConfig) => {
+        if (!gridConfig) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
+
+        let classes = [];
+        const breakpoints = gridConfig.breakpoints || {};
+        const customBreakpoints = gridConfig.customBreakpoints || [];
+
+        // Standard breakpoints
+        Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+            if (columns > 0) {
+                if (breakpoint === 'default') {
+                    classes.push(`grid-cols-${columns}`);
+                } else {
+                    classes.push(`${breakpoint}:grid-cols-${columns}`);
+                }
+            }
+        });
+
+        // Custom breakpoints
+        customBreakpoints.forEach(({ name, columns }) => {
+            if (name && columns > 0) {
+                classes.push(`${name}:grid-cols-${columns}`);
+            }
+        });
+
+        return classes.length > 0 ? classes.join(' ') : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
     };
 
     const handleThemeChange = (key, value) => {
@@ -350,61 +435,174 @@ export default function ThemeLayout() {
 
                             <Separator />
 
-                            <div className="p-3 border rounded-lg space-y-4">
+                            <div className="p-4 border rounded-lg space-y-6">
                                 <div>
                                     <Label className="text-base font-medium">Product Grid Layout</Label>
                                     <p className="text-sm text-gray-500">Configure how many products display per row at different screen sizes</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <Label htmlFor="grid_mobile">Mobile</Label>
-                                        <Select value={String(store.settings.product_grid?.mobile || 1)} onValueChange={(value) => handleGridChange('mobile', parseInt(value))}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="1">1 column</SelectItem>
-                                                <SelectItem value="2">2 columns</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                {/* Standard Tailwind Breakpoints */}
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div>
+                                            <Label htmlFor="grid_default">Default (Mobile)</Label>
+                                            <Select value={String(store.settings.product_grid?.breakpoints?.default || 1)} onValueChange={(value) => handleStandardBreakpointChange('default', parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1">1 column</SelectItem>
+                                                    <SelectItem value="2">2 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-                                    <div>
-                                        <Label htmlFor="grid_tablet">Tablet (sm)</Label>
-                                        <Select value={String(store.settings.product_grid?.tablet || 2)} onValueChange={(value) => handleGridChange('tablet', parseInt(value))}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="1">1 column</SelectItem>
-                                                <SelectItem value="2">2 columns</SelectItem>
-                                                <SelectItem value="3">3 columns</SelectItem>
-                                                <SelectItem value="4">4 columns</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                        <div>
+                                            <Label htmlFor="grid_sm">Small (sm)</Label>
+                                            <Select value={String(store.settings.product_grid?.breakpoints?.sm || 2)} onValueChange={(value) => handleStandardBreakpointChange('sm', parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">- (disabled)</SelectItem>
+                                                    <SelectItem value="1">1 column</SelectItem>
+                                                    <SelectItem value="2">2 columns</SelectItem>
+                                                    <SelectItem value="3">3 columns</SelectItem>
+                                                    <SelectItem value="4">4 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-                                    <div>
-                                        <Label htmlFor="grid_desktop">Desktop (lg)</Label>
-                                        <Select value={String(store.settings.product_grid?.desktop || 2)} onValueChange={(value) => handleGridChange('desktop', parseInt(value))}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="1">1 column</SelectItem>
-                                                <SelectItem value="2">2 columns</SelectItem>
-                                                <SelectItem value="3">3 columns</SelectItem>
-                                                <SelectItem value="4">4 columns</SelectItem>
-                                                <SelectItem value="5">5 columns</SelectItem>
-                                                <SelectItem value="6">6 columns</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <div>
+                                            <Label htmlFor="grid_md">Medium (md)</Label>
+                                            <Select value={String(store.settings.product_grid?.breakpoints?.md || 0)} onValueChange={(value) => handleStandardBreakpointChange('md', parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">- (disabled)</SelectItem>
+                                                    <SelectItem value="1">1 column</SelectItem>
+                                                    <SelectItem value="2">2 columns</SelectItem>
+                                                    <SelectItem value="3">3 columns</SelectItem>
+                                                    <SelectItem value="4">4 columns</SelectItem>
+                                                    <SelectItem value="5">5 columns</SelectItem>
+                                                    <SelectItem value="6">6 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="grid_lg">Large (lg)</Label>
+                                            <Select value={String(store.settings.product_grid?.breakpoints?.lg || 2)} onValueChange={(value) => handleStandardBreakpointChange('lg', parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">- (disabled)</SelectItem>
+                                                    <SelectItem value="1">1 column</SelectItem>
+                                                    <SelectItem value="2">2 columns</SelectItem>
+                                                    <SelectItem value="3">3 columns</SelectItem>
+                                                    <SelectItem value="4">4 columns</SelectItem>
+                                                    <SelectItem value="5">5 columns</SelectItem>
+                                                    <SelectItem value="6">6 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="grid_xl">Extra Large (xl)</Label>
+                                            <Select value={String(store.settings.product_grid?.breakpoints?.xl || 0)} onValueChange={(value) => handleStandardBreakpointChange('xl', parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">- (disabled)</SelectItem>
+                                                    <SelectItem value="1">1 column</SelectItem>
+                                                    <SelectItem value="2">2 columns</SelectItem>
+                                                    <SelectItem value="3">3 columns</SelectItem>
+                                                    <SelectItem value="4">4 columns</SelectItem>
+                                                    <SelectItem value="5">5 columns</SelectItem>
+                                                    <SelectItem value="6">6 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="grid_2xl">2X Large (2xl)</Label>
+                                            <Select value={String(store.settings.product_grid?.breakpoints?.['2xl'] || 0)} onValueChange={(value) => handleStandardBreakpointChange('2xl', parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">- (disabled)</SelectItem>
+                                                    <SelectItem value="1">1 column</SelectItem>
+                                                    <SelectItem value="2">2 columns</SelectItem>
+                                                    <SelectItem value="3">3 columns</SelectItem>
+                                                    <SelectItem value="4">4 columns</SelectItem>
+                                                    <SelectItem value="5">5 columns</SelectItem>
+                                                    <SelectItem value="6">6 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-50 p-2 rounded text-xs text-gray-600">
-                                    Preview: grid-cols-{store.settings.product_grid?.mobile || 1} sm:grid-cols-{store.settings.product_grid?.tablet || 2} lg:grid-cols-{store.settings.product_grid?.desktop || 2}
+                                {/* Custom Breakpoints */}
+                                <div className="border-t pt-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Label className="text-base font-medium">Custom Breakpoints</Label>
+                                        <Button type="button" variant="outline" size="sm" onClick={handleAddCustomBreakpoint}>
+                                            + Add Custom Breakpoint
+                                        </Button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {(store.settings.product_grid?.customBreakpoints || []).map((breakpoint, index) => (
+                                            <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                                                <div className="flex-1">
+                                                    <Label htmlFor={`custom_name_${index}`}>Name:</Label>
+                                                    <Input
+                                                        id={`custom_name_${index}`}
+                                                        value={breakpoint.name || ''}
+                                                        onChange={(e) => handleCustomBreakpointChange(index, 'name', e.target.value)}
+                                                        placeholder="e.g. tablet-lg"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <Label htmlFor={`custom_columns_${index}`}>Columns:</Label>
+                                                    <Select value={String(breakpoint.columns || 1)} onValueChange={(value) => handleCustomBreakpointChange(index, 'columns', parseInt(value))}>
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="1">1 column</SelectItem>
+                                                            <SelectItem value="2">2 columns</SelectItem>
+                                                            <SelectItem value="3">3 columns</SelectItem>
+                                                            <SelectItem value="4">4 columns</SelectItem>
+                                                            <SelectItem value="5">5 columns</SelectItem>
+                                                            <SelectItem value="6">6 columns</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <Button type="button" variant="destructive" size="sm" onClick={() => handleRemoveCustomBreakpoint(index)}>
+                                                    Remove ×
+                                                </Button>
+                                            </div>
+                                        ))}
+
+                                        {(!store.settings.product_grid?.customBreakpoints || store.settings.product_grid.customBreakpoints.length === 0) && (
+                                            <p className="text-sm text-gray-500 text-center py-4">No custom breakpoints defined. Click "Add Custom Breakpoint" to create one.</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Live Preview */}
+                                <div className="bg-gray-50 p-3 rounded">
+                                    <Label className="text-sm font-medium">Generated Classes Preview:</Label>
+                                    <div className="mt-2 text-xs text-gray-700 font-mono break-all">
+                                        {generateGridClassesPreview(store.settings.product_grid)}
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>

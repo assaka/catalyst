@@ -32,29 +32,39 @@ export function CategorySlotRenderer({
 
     if (gridConfig) {
       let classes = ['grid', 'gap-4'];
+      const breakpoints = gridConfig.breakpoints || {};
+      const customBreakpoints = gridConfig.customBreakpoints || [];
 
-      // Mobile classes
-      if (gridConfig.mobile === 1) classes.push('grid-cols-1');
-      else if (gridConfig.mobile === 2) classes.push('grid-cols-2');
-      else classes.push('grid-cols-1');
+      // Standard breakpoints
+      Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+        if (columns > 0) {
+          if (breakpoint === 'default') {
+            if (columns === 1) classes.push('grid-cols-1');
+            else if (columns === 2) classes.push('grid-cols-2');
+          } else {
+            if (columns === 1) classes.push(`${breakpoint}:grid-cols-1`);
+            else if (columns === 2) classes.push(`${breakpoint}:grid-cols-2`);
+            else if (columns === 3) classes.push(`${breakpoint}:grid-cols-3`);
+            else if (columns === 4) classes.push(`${breakpoint}:grid-cols-4`);
+            else if (columns === 5) classes.push(`${breakpoint}:grid-cols-5`);
+            else if (columns === 6) classes.push(`${breakpoint}:grid-cols-6`);
+          }
+        }
+      });
 
-      // Tablet classes
-      if (gridConfig.tablet === 1) classes.push('sm:grid-cols-1');
-      else if (gridConfig.tablet === 2) classes.push('sm:grid-cols-2');
-      else if (gridConfig.tablet === 3) classes.push('sm:grid-cols-3');
-      else if (gridConfig.tablet === 4) classes.push('sm:grid-cols-4');
-      else classes.push('sm:grid-cols-2');
+      // Custom breakpoints
+      customBreakpoints.forEach(({ name, columns }) => {
+        if (name && columns > 0) {
+          if (columns === 1) classes.push(`${name}:grid-cols-1`);
+          else if (columns === 2) classes.push(`${name}:grid-cols-2`);
+          else if (columns === 3) classes.push(`${name}:grid-cols-3`);
+          else if (columns === 4) classes.push(`${name}:grid-cols-4`);
+          else if (columns === 5) classes.push(`${name}:grid-cols-5`);
+          else if (columns === 6) classes.push(`${name}:grid-cols-6`);
+        }
+      });
 
-      // Desktop classes
-      if (gridConfig.desktop === 1) classes.push('lg:grid-cols-1');
-      else if (gridConfig.desktop === 2) classes.push('lg:grid-cols-2');
-      else if (gridConfig.desktop === 3) classes.push('lg:grid-cols-3');
-      else if (gridConfig.desktop === 4) classes.push('lg:grid-cols-4');
-      else if (gridConfig.desktop === 5) classes.push('lg:grid-cols-5');
-      else if (gridConfig.desktop === 6) classes.push('lg:grid-cols-6');
-      else classes.push('lg:grid-cols-2');
-
-      return classes.join(' ');
+      return classes.length > 0 ? classes.join(' ') : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4';
     }
 
     // Default fallback
