@@ -23,20 +23,11 @@ export default function LayeredNavigation({
     const [priceRange, setPriceRange] = useState([0, 1000]);
     const [expandedAttributes, setExpandedAttributes] = useState({});
 
-    // Extract slot configurations for styling
+    // Extract label configurations from simplified slot structure
     const {
-        filter_card_header = {},
-        filter_clear_all_button = {},
-        filter_active_filters = {},
-        filter_active_filters_label = {},
-        filter_price_section = {},
-        filter_price_title = {},
-        filter_attribute_section = {},
-        filter_attribute_title = {},
-        filter_attribute_option = {},
-        filter_option_checkbox = {},
-        filter_option_label = {},
-        filter_option_count = {}
+        filter_card_header = { content: 'Filter By' },
+        filter_price_title = { content: 'Price' },
+        filter_attribute_titles = {}
     } = slotConfig;
 
     // Extract store settings with defaults
@@ -284,7 +275,7 @@ export default function LayeredNavigation({
             <CardHeader>
                 <div className="flex justify-between items-center h-5">
                     <CardTitle
-                        className={filter_card_header.className}
+                        className={filter_card_header.className || ""}
                         style={filter_card_header.styles || {}}
                     >
                         {filter_card_header.content || "Filter By"}
@@ -294,10 +285,9 @@ export default function LayeredNavigation({
                             variant="outline"
                             size="sm"
                             onClick={clearAllFilters}
-                            className={filter_clear_all_button.className || "text-xs"}
-                            style={filter_clear_all_button.styles || {}}
+                            className="text-xs"
                         >
-                            {filter_clear_all_button.content || "Clear All"}
+                            Clear All
                         </Button>
                     )}
                 </div>
@@ -305,10 +295,7 @@ export default function LayeredNavigation({
             <CardContent>
                 {/* Active Filters - below Filter By title */}
                 {showActiveFilters && hasActiveFilters && (
-                    <div
-                        className={filter_active_filters.className || "mb-4 p-2"}
-                        style={filter_active_filters.styles || {}}
-                    >
+                    <div className="mb-4 p-2">
                         <div className="flex flex-wrap items-center">
                             {(() => {
                                 const activeFilterElements = [];
@@ -417,15 +404,13 @@ export default function LayeredNavigation({
                         return (
                             <AccordionItem key={code} value={code}>
                                 <AccordionTrigger
-                                    className={filter_attribute_title.className || "font-semibold"}
-                                    style={filter_attribute_title.styles || {}}
+                                    className="font-semibold"
                                 >
-                                    {name}
+                                    {filter_attribute_titles[code]?.content || name}
                                 </AccordionTrigger>
                                 <AccordionContent>
                                 <div
-                                    className={filter_attribute_section.className || "space-y-2"}
-                                    style={filter_attribute_section.styles || {}}
+                                    className="space-y-2"
                                 >
                                     {(() => {
                                         const isExpanded = expandedAttributes[code];
@@ -468,28 +453,24 @@ export default function LayeredNavigation({
                                         return (
                                             <div
                                                 key={value}
-                                                className={filter_attribute_option.className || "flex items-center justify-between"}
-                                                style={filter_attribute_option.styles || {}}
+                                                className="flex items-center justify-between"
                                             >
                                                 <div className="flex items-center space-x-2">
                                                     <Checkbox
                                                         id={`attr-${code}-${value}`}
                                                         checked={selectedFilters[code]?.includes(value) || false}
                                                         onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
-                                                        className={filter_option_checkbox.className || ""}
-                                                        style={filter_option_checkbox.styles || {}}
+                                                        className=""
                                                     />
                                                     <Label
                                                         htmlFor={`attr-${code}-${value}`}
-                                                        className={filter_option_label.className || "text-sm"}
-                                                        style={filter_option_label.styles || {}}
+                                                        className="text-sm"
                                                     >
                                                         {value}
                                                     </Label>
                                                 </div>
                                                 <span
-                                                    className={filter_option_count.className || "text-xs text-gray-400"}
-                                                    style={filter_option_count.styles || {}}
+                                                    className="text-xs text-gray-400"
                                                 >
                                                     ({productCount})
                                                 </span>

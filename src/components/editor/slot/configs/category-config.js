@@ -403,10 +403,10 @@ export const categoryConfig = {
       }
     },
 
-    // Layered Navigation (filters)
+    // Simplified Layered Navigation - Single container with editable labels
     layered_navigation: {
       id: 'layered_navigation',
-      type: 'container',
+      type: 'layered_navigation',
       content: '',
       className: 'space-y-6',
       parentClassName: '',
@@ -416,18 +416,18 @@ export const categoryConfig = {
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
-        hierarchical: true,
+        hierarchical: false,
         component: 'LayeredNavigation',
         displayName: 'Product Filters (Price, Brand, Size, etc.)'
       }
     },
 
-    // LayeredNavigation Microslots
-    filter_card_header: {
-      id: 'filter_card_header',
+    // Editable labels for layered navigation
+    filter_by_label: {
+      id: 'filter_by_label',
       type: 'text',
       content: 'Filter By',
-      className: 'text-lg font-semibold',
+      className: 'text-lg font-semibold text-gray-900',
       parentClassName: '',
       styles: {},
       parentId: 'layered_navigation',
@@ -437,33 +437,16 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Filter By Title'
+        displayName: 'Filter By Label',
+        labelType: 'header'
       }
     },
 
-    filter_clear_all_button: {
-      id: 'filter_clear_all_button',
-      type: 'button',
-      content: 'Clear All',
-      className: 'text-xs border border-gray-300 hover:bg-gray-50 px-2 py-1 rounded',
-      parentClassName: '',
-      styles: {},
-      parentId: 'layered_navigation',
-      position: { col: 2, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Clear All Button'
-      }
-    },
-
-    filter_active_filters: {
-      id: 'filter_active_filters',
-      type: 'container',
-      content: '',
-      className: 'mb-4 p-2',
+    price_filter_label: {
+      id: 'price_filter_label',
+      type: 'text',
+      content: 'Price',
+      className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
       styles: {},
       parentId: 'layered_navigation',
@@ -473,33 +456,16 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Active Filters Container'
+        displayName: 'Price Filter Label',
+        labelType: 'attribute'
       }
     },
 
-    filter_active_filters_label: {
-      id: 'filter_active_filters_label',
+    brand_filter_label: {
+      id: 'brand_filter_label',
       type: 'text',
-      content: 'Active Filters:',
-      className: 'text-sm font-medium text-gray-700 mr-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'filter_active_filters',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Active Filters Label'
-      }
-    },
-
-    filter_price_section: {
-      id: 'filter_price_section',
-      type: 'container',
-      content: '',
-      className: 'border-b border-gray-200 pb-4 mb-4',
+      content: 'Brand',
+      className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
       styles: {},
       parentId: 'layered_navigation',
@@ -509,33 +475,16 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Price Filter Section'
+        displayName: 'Brand Filter Label',
+        labelType: 'attribute'
       }
     },
 
-    filter_price_title: {
-      id: 'filter_price_title',
+    color_filter_label: {
+      id: 'color_filter_label',
       type: 'text',
-      content: 'Price',
-      className: 'font-semibold text-base',
-      parentClassName: '',
-      styles: {},
-      parentId: 'filter_price_section',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Price Filter Title'
-      }
-    },
-
-    filter_attribute_section: {
-      id: 'filter_attribute_section',
-      type: 'container',
-      content: '',
-      className: 'space-y-4',
+      content: 'Color',
+      className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
       styles: {},
       parentId: 'layered_navigation',
@@ -545,105 +494,46 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Attribute Filters Section',
-        isTemplate: true,
-        repeatable: true
+        displayName: 'Color Filter Label',
+        labelType: 'attribute'
       }
     },
 
-    filter_attribute_title: {
-      id: 'filter_attribute_title',
+    size_filter_label: {
+      id: 'size_filter_label',
       type: 'text',
-      content: 'Brand',
-      className: 'font-semibold text-base',
+      content: 'Size',
+      className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
       styles: {},
-      parentId: 'filter_attribute_section',
-      position: { col: 1, row: 1 },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Attribute Filter Title',
-        isTemplate: true
+        displayName: 'Size Filter Label',
+        labelType: 'attribute'
       }
     },
 
-    filter_attribute_option: {
-      id: 'filter_attribute_option',
-      type: 'container',
-      content: '',
-      className: 'flex items-center justify-between py-1',
+    material_filter_label: {
+      id: 'material_filter_label',
+      type: 'text',
+      content: 'Material',
+      className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
       styles: {},
-      parentId: 'filter_attribute_section',
-      position: { col: 1, row: 2 },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 6 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Attribute Filter Option',
-        isTemplate: true,
-        repeatable: true
-      }
-    },
-
-    filter_option_checkbox: {
-      id: 'filter_option_checkbox',
-      type: 'checkbox',
-      content: '',
-      className: 'h-4 w-4 text-blue-600',
-      parentClassName: '',
-      styles: {},
-      parentId: 'filter_attribute_option',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 6, list: 6 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Filter Option Checkbox',
-        isTemplate: true
-      }
-    },
-
-    filter_option_label: {
-      id: 'filter_option_label',
-      type: 'text',
-      content: 'Apple',
-      className: 'text-sm text-gray-700',
-      parentClassName: '',
-      styles: {},
-      parentId: 'filter_attribute_option',
-      position: { col: 2, row: 1 },
-      colSpan: { grid: 4, list: 4 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Filter Option Label',
-        isTemplate: true
-      }
-    },
-
-    filter_option_count: {
-      id: 'filter_option_count',
-      type: 'text',
-      content: '(12)',
-      className: 'text-xs text-gray-400',
-      parentClassName: '',
-      styles: {},
-      parentId: 'filter_attribute_option',
-      position: { col: 3, row: 1 },
-      colSpan: { grid: 2, list: 2 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Filter Option Count',
-        isTemplate: true
+        displayName: 'Material Filter Label',
+        labelType: 'attribute'
       }
     },
 

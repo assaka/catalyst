@@ -693,6 +693,7 @@ const CategorySlotsEditor = ({
                             className={slot.className}
                             styles={slot.styles}
                             config={{ viewMode }}
+                            allSlots={categoryLayoutConfig?.slots} // Pass all slots for label access
                           />
                         );
                       }

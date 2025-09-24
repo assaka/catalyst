@@ -398,9 +398,23 @@ export function CategoryActiveFiltersSlot({ categoryContext, content, config }) 
   );
 }
 
-// CategoryLayeredNavigationSlot Component - Editable wrapper for LayeredNavigation
-export function CategoryLayeredNavigationSlot({ categoryContext, content, config }) {
+// CategoryLayeredNavigationSlot Component - Simplified single container with editable labels
+export function CategoryLayeredNavigationSlot({ categoryContext, content, config, allSlots }) {
   const { allProducts, filterableAttributes, handleFilterChange } = categoryContext || {};
+
+  // Extract label configurations from the slot configuration
+  const labelConfigs = {
+    filter_card_header: allSlots?.filter_by_label || { content: 'Filter By' },
+    filter_price_title: allSlots?.price_filter_label || { content: 'Price' },
+    filter_attribute_titles: {
+      brand: allSlots?.brand_filter_label || { content: 'Brand' },
+      color: allSlots?.color_filter_label || { content: 'Color' },
+      size: allSlots?.size_filter_label || { content: 'Size' },
+      material: allSlots?.material_filter_label || { content: 'Material' }
+    }
+  };
+
+  console.log('🏷️ CategoryLayeredNavigationSlot label configs:', labelConfigs);
 
   return (
     <div className="category-layered-navigation">
@@ -417,6 +431,12 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
             }
           }}
           showActiveFilters={false} // We handle active filters separately
+          slotConfig={labelConfigs} // Pass label configurations
+          settings={{
+            enable_product_filters: true,
+            collapse_filters: false,
+            max_visible_attributes: 5
+          }}
         />
       )}
     </div>
