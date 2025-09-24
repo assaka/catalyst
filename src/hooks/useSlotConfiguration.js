@@ -1341,7 +1341,7 @@ export function useSlotConfiguration({
   }, []);
 
   // Generic class change handler
-  const handleClassChange = useCallback((slotId, className, styles, isAlignmentChange = false, slots) => {
+  const handleClassChange = useCallback((slotId, className, styles, metadata = null, isAlignmentChange = false, slots) => {
 
     const updatedSlots = { ...slots };
 
@@ -1366,6 +1366,7 @@ export function useSlotConfiguration({
           styles: mergedStyles,
           metadata: {
             ...updatedSlots[slotId].metadata,
+            ...metadata,
             lastModified: new Date().toISOString()
           }
         };
@@ -1378,6 +1379,7 @@ export function useSlotConfiguration({
           styles: mergedStyles,
           metadata: {
             ...updatedSlots[slotId].metadata,
+            ...metadata,
             lastModified: new Date().toISOString()
           }
         };
@@ -1463,9 +1465,9 @@ export function useSlotConfiguration({
         }, [textChangeHandler, saveConfigurationHandler]),
 
       createClassChangeHandler: (classChangeHandler) =>
-        useCallback((slotId, className, styles, isAlignmentChange = false) => {
+        useCallback((slotId, className, styles, metadata = null, isAlignmentChange = false) => {
           setPageConfig(prevConfig => {
-            const updatedSlots = classChangeHandler(slotId, className, styles, isAlignmentChange, prevConfig?.slots || {});
+            const updatedSlots = classChangeHandler(slotId, className, styles, metadata, isAlignmentChange, prevConfig?.slots || {});
             const updatedConfig = {
               ...prevConfig,
               slots: updatedSlots

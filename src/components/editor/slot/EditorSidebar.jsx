@@ -19,6 +19,7 @@ import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
+import GridLayoutControl from './GridLayoutControl';
 
 /**
  * Check if a class string contains bold styling
@@ -89,6 +90,7 @@ const EditorSidebar = ({
   }, [onClassChange]);
   const [expandedSections, setExpandedSections] = useState({
     content: true,
+    grid: true,
     text: true,
     layout: true,
     appearance: true,
@@ -1121,6 +1123,25 @@ const EditorSidebar = ({
             )}
           </div>
         </SectionHeader>
+
+        {/* Grid Layout Section - Only show for product containers */}
+        {(slotId === 'product_items' || slotId === 'product_grid' || (slotConfig && slotConfig.metadata?.component === 'ProductItemCard')) && (
+          <SectionHeader title="Grid Layout" section="grid">
+            <GridLayoutControl
+              currentConfig={slotConfig?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }}
+              onConfigChange={(newGridConfig) => {
+                console.log('🔧 Grid config changed:', newGridConfig);
+                // Update slot configuration with new grid config
+                if (onClassChange) {
+                  onClassChange(slotId, slotConfig?.className || '', slotConfig?.styles || {}, {
+                    ...slotConfig?.metadata,
+                    gridConfig: newGridConfig
+                  });
+                }
+              }}
+            />
+          </SectionHeader>
+        )}
 
             {/* Size Section */}
             <SectionHeader title="Size" section="size">

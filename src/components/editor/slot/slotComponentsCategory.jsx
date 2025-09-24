@@ -445,15 +445,26 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
     settings = {
       currency_symbol: currencySymbol || '$',
       theme: { add_to_cart_button_color: '#3B82F6' }
-    }
+    },
+    gridConfig = { mobile: 1, tablet: 2, desktop: 3 }
   } = content || {};
+
+  // Generate dynamic grid classes based on configuration
+  const getGridClasses = () => {
+    if (viewMode === 'list') {
+      return 'grid-cols-1';
+    }
+
+    const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
+    return `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
+  };
 
   return (
     <div className="category-product-item-cards">
       {content?.html ? (
         <div dangerouslySetInnerHTML={{ __html: content.html }} />
       ) : (
-        <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+        <div className={`grid gap-4 ${getGridClasses()}`}>
           {(products || []).slice(0, itemsToShow).map((product) => (
             <ProductItemCard
               key={product.id}

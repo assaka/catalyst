@@ -532,7 +532,8 @@ const CategorySlotsEditor = ({
                           ...slot.content,
                           ...slot.metadata,
                           ...microslotConfigs,
-                          itemsToShow: slot.metadata?.itemsToShow || 3
+                          itemsToShow: slot.metadata?.itemsToShow || 3,
+                          gridConfig: slot.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
                         };
 
                         return (

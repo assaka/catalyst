@@ -21,6 +21,17 @@ export function CategorySlotRenderer({
   viewMode = 'grid',
   categoryContext = {}
 }) {
+  // Helper function to generate dynamic grid classes
+  const getDynamicGridClasses = (slot, fallbackGrid = { mobile: 1, tablet: 2, desktop: 3 }) => {
+    if (viewMode === 'list') {
+      return 'space-y-4';
+    }
+
+    const gridConfig = slot?.metadata?.gridConfig || fallbackGrid;
+    const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
+    return `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
+  };
+
   const {
     category,
     products = [],
@@ -427,12 +438,9 @@ export function CategorySlotRenderer({
 
     // Products grid - render using ProductItemCard component
     if (id === 'products_grid') {
-      // Use the className from slot configuration if available, otherwise use default
-      const defaultGridClass = viewMode === 'grid'
-        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-        : 'space-y-4';
-
-      const finalClassName = className || defaultGridClass;
+      // Use the className from slot configuration if available, otherwise use dynamic grid
+      const dynamicGridClass = getDynamicGridClasses(slot);
+      const finalClassName = className || dynamicGridClass;
 
       // State for preventing duplicate add to cart operations
       const [addingToCartStates, setAddingToCartStates] = useState({});
@@ -476,13 +484,9 @@ export function CategorySlotRenderer({
       const itemsToShow = slot.metadata?.itemsToShow || 3;
       const productsToShow = products.slice(0, itemsToShow);
 
-
-      // Use the className from slot configuration if available, otherwise use default
-      const defaultGridClass = viewMode === 'grid'
-        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
-        : 'space-y-4';
-
-      const finalClassName = className || defaultGridClass;
+      // Use the className from slot configuration if available, otherwise use dynamic grid
+      const dynamicGridClass = getDynamicGridClasses(slot);
+      const finalClassName = className || dynamicGridClass;
 
       // Create slot configuration object for ProductItemCard
       const slotConfig = {
