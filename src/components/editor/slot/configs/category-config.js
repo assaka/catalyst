@@ -55,21 +55,6 @@ export const categoryConfig = {
       }
     },
 
-    // Category header section
-    // category_header: {
-    //   id: 'category_header',
-    //   type: 'container',
-    //   content: '',
-    //   className: 'mb-4',
-    //   parentClassName: '',
-    //   styles: {},
-    //   parentId: 'page_header',
-    //   position: { col: 1, row: 2 },
-    //   colSpan: { grid: 12, list: 12 },
-    //   viewMode: ['grid', 'list'],
-    //   metadata: { hierarchical: true }
-    // },
-
     category_title: {
       id: 'category_title',
       type: 'text',
@@ -424,7 +409,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
@@ -443,7 +428,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }

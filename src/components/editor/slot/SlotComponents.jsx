@@ -960,27 +960,58 @@ export function HierarchicalSlotRenderer({
             >
               <span
                 className={`${slot.parentClassName || ''} ${slot.className || ''}`}
-                style={{
-                  ...slot.styles,
-                  cursor: 'pointer',
-                  ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
-                  display: 'inline-block',
-                  // Use fit-content for w-fit elements, otherwise 100%
-                  width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
-                }}
+                style={(() => {
+                  const finalStyles = {
+                    ...slot.styles,
+                    cursor: 'pointer',
+                    ...(slot.className?.includes('italic') && { fontStyle: 'italic' }),
+                    display: 'inline-block',
+                    // Use fit-content for w-fit elements, otherwise 100%
+                    width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
+                  };
+
+                  console.log(`🎨 TEXT SLOT [${slot.id}] - Style object being applied:`, {
+                    slotStyles: slot.styles,
+                    finalStyles: finalStyles,
+                    hasSlotStyles: slot.styles && Object.keys(slot.styles).length > 0,
+                    styleKeys: slot.styles ? Object.keys(slot.styles) : [],
+                  });
+
+                  return finalStyles;
+                })()}
                 ref={(el) => {
-                  if (el && slot.styles && Object.keys(slot.styles).length > 0) {
-                    console.log(`🎨 TEXT SLOT [${slot.id}] - Applied styles on render:`, {
+                  if (el) {
+                    console.log(`🔍 TEXT SLOT [${slot.id}] - DOM element created:`, {
                       slotStyles: slot.styles,
+                      hasStyles: slot.styles && Object.keys(slot.styles).length > 0,
                       className: slot.className,
-                      parentClassName: slot.parentClassName,
-                      computedStyles: {
+                      elementClassName: el.className,
+                      inlineStyles: el.style.cssText,
+                      computedColor: window.getComputedStyle(el).color,
+                      computedBg: window.getComputedStyle(el).backgroundColor,
+                      computedFontSize: window.getComputedStyle(el).fontSize,
+                      computedFontWeight: window.getComputedStyle(el).fontWeight,
+                      // Check if Tailwind classes are overriding
+                      hasColorClass: el.className.includes('text-gray') || el.className.includes('text-'),
+                      allComputedStyles: {
                         color: window.getComputedStyle(el).color,
                         backgroundColor: window.getComputedStyle(el).backgroundColor,
                         fontSize: window.getComputedStyle(el).fontSize,
                         fontWeight: window.getComputedStyle(el).fontWeight
                       }
                     });
+
+                    // Try to force apply styles if they exist
+                    if (slot.styles && Object.keys(slot.styles).length > 0) {
+                      console.log(`🔧 TEXT SLOT [${slot.id}] - Force applying styles:`, slot.styles);
+                      Object.entries(slot.styles).forEach(([property, value]) => {
+                        if (value && property !== 'lastModified') {
+                          const oldValue = el.style[property];
+                          el.style[property] = value;
+                          console.log(`🔧 Applied ${property}: ${oldValue} -> ${value} (${el.style[property]})`);
+                        }
+                      });
+                    }
                   }
                 }}
                 onClick={(e) => {
@@ -1052,26 +1083,55 @@ export function HierarchicalSlotRenderer({
             >
               <button
                 className={`${slot.parentClassName || ''} ${slot.className}`}
-                style={{
-                  ...slot.styles,
-                  cursor: 'pointer',
-                  minWidth: 'auto',
-                  minHeight: 'auto',
-                  display: 'inline-block'
-                }}
+                style={(() => {
+                  const finalStyles = {
+                    ...slot.styles,
+                    cursor: 'pointer',
+                    minWidth: 'auto',
+                    minHeight: 'auto',
+                    display: 'inline-block'
+                  };
+
+                  console.log(`🎨 BUTTON SLOT [${slot.id}] - Style object being applied:`, {
+                    slotStyles: slot.styles,
+                    finalStyles: finalStyles,
+                    hasSlotStyles: slot.styles && Object.keys(slot.styles).length > 0,
+                    styleKeys: slot.styles ? Object.keys(slot.styles) : [],
+                  });
+
+                  return finalStyles;
+                })()}
                 ref={(el) => {
-                  if (el && slot.styles && Object.keys(slot.styles).length > 0) {
-                    console.log(`🎨 BUTTON SLOT [${slot.id}] - Applied styles on render:`, {
+                  if (el) {
+                    console.log(`🔍 BUTTON SLOT [${slot.id}] - DOM element created:`, {
                       slotStyles: slot.styles,
+                      hasStyles: slot.styles && Object.keys(slot.styles).length > 0,
                       className: slot.className,
-                      parentClassName: slot.parentClassName,
-                      computedStyles: {
+                      elementClassName: el.className,
+                      inlineStyles: el.style.cssText,
+                      computedColor: window.getComputedStyle(el).color,
+                      computedBg: window.getComputedStyle(el).backgroundColor,
+                      // Check if Tailwind classes are overriding
+                      hasColorClass: el.className.includes('text-') || el.className.includes('bg-'),
+                      allComputedStyles: {
                         color: window.getComputedStyle(el).color,
                         backgroundColor: window.getComputedStyle(el).backgroundColor,
                         fontSize: window.getComputedStyle(el).fontSize,
                         fontWeight: window.getComputedStyle(el).fontWeight
                       }
                     });
+
+                    // Try to force apply styles if they exist
+                    if (slot.styles && Object.keys(slot.styles).length > 0) {
+                      console.log(`🔧 BUTTON SLOT [${slot.id}] - Force applying styles:`, slot.styles);
+                      Object.entries(slot.styles).forEach(([property, value]) => {
+                        if (value && property !== 'lastModified') {
+                          const oldValue = el.style[property];
+                          el.style[property] = value;
+                          console.log(`🔧 Applied ${property}: ${oldValue} -> ${value} (${el.style[property]})`);
+                        }
+                      });
+                    }
                   }
                 }}
                 onClick={(e) => {

@@ -612,10 +612,23 @@ const CategorySlotsEditor = ({
                         console.log('🛍️ Slot content:', slot.content);
                         console.log('🛍️ Slot metadata:', slot.metadata);
 
-                        // Merge slot content with metadata to ensure itemsToShow is available
+                        // Get microslot configurations from category config
+                        const microslotConfigs = {
+                          productAddToCart: categoryLayoutConfig?.slots?.product_add_to_cart || {
+                            className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
+                            content: 'Add to Cart'
+                          },
+                          productImage: categoryLayoutConfig?.slots?.product_image || {},
+                          productName: categoryLayoutConfig?.slots?.product_name || {},
+                          productPrice: categoryLayoutConfig?.slots?.product_price || {},
+                          productComparePrice: categoryLayoutConfig?.slots?.product_compare_price || {}
+                        };
+
+                        // Merge slot content with metadata and microslot configs
                         const contentWithConfig = {
                           ...slot.content,
                           ...slot.metadata,
+                          ...microslotConfigs,
                           itemsToShow: slot.metadata?.itemsToShow || 3
                         };
 
