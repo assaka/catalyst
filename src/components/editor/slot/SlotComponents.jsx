@@ -1262,28 +1262,45 @@ export function HierarchicalSlotRenderer({
               )}
 
               {(slot.type === 'container' || slot.type === 'grid' || slot.type === 'flex') && (
-                <HierarchicalSlotRenderer
-                  slots={slots}
-                  parentId={slot.id}
-                  mode={mode}
-                  viewMode={viewMode}
-                  showBorders={showBorders}
-                  currentDragInfo={currentDragInfo}
-                  setCurrentDragInfo={setCurrentDragInfo}
-                  onElementClick={onElementClick}
-                  onGridResize={onGridResize}
-                  onSlotHeightResize={onSlotHeightResize}
-                  onSlotDrop={onSlotDrop}
-                  onSlotDelete={onSlotDelete}
-                  onResizeStart={onResizeStart}
-                  onResizeEnd={onResizeEnd}
-                  categoryData={categoryData}
-                  customSlotRenderer={customSlotRenderer}
-                  selectedElementId={selectedElementId}
-                  setPageConfig={setPageConfig}
-                  saveConfiguration={saveConfiguration}
-                  saveTimeoutRef={saveTimeoutRef}
-                />
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Don't open Editor Sidebar if we're in the middle of a drag operation
+                    if (!currentDragInfo && mode === 'edit') {
+                      onElementClick(slot.id, e.currentTarget);
+                    }
+                  }}
+                  data-slot-id={slot.id}
+                  data-editable={mode === 'edit'}
+                  style={{
+                    cursor: mode === 'edit' ? 'pointer' : 'default',
+                    width: '100%',
+                    height: '100%'
+                  }}
+                >
+                  <HierarchicalSlotRenderer
+                    slots={slots}
+                    parentId={slot.id}
+                    mode={mode}
+                    viewMode={viewMode}
+                    showBorders={showBorders}
+                    currentDragInfo={currentDragInfo}
+                    setCurrentDragInfo={setCurrentDragInfo}
+                    onElementClick={onElementClick}
+                    onGridResize={onGridResize}
+                    onSlotHeightResize={onSlotHeightResize}
+                    onSlotDrop={onSlotDrop}
+                    onSlotDelete={onSlotDelete}
+                    onResizeStart={onResizeStart}
+                    onResizeEnd={onResizeEnd}
+                    categoryData={categoryData}
+                    customSlotRenderer={customSlotRenderer}
+                    selectedElementId={selectedElementId}
+                    setPageConfig={setPageConfig}
+                    saveConfiguration={saveConfiguration}
+                    saveTimeoutRef={saveTimeoutRef}
+                  />
+                </div>
               )}
 
           {slot.type === 'image' && mode === 'edit' && (
