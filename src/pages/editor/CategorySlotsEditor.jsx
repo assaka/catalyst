@@ -581,18 +581,19 @@ const CategorySlotsEditor = ({
                         return null;
                       }
 
-                      // Handle product_items explicitly - render multiple product_item_card templates
-                      if (slot.id === 'product_items') {
-                        console.log('🛍️ PRODUCT_ITEMS CONTAINER HANDLER RUNNING!');
-                        console.log('🎯 SAMPLE CATEGORY CONTEXT HAS PRODUCTS:', !!sampleCategoryContext?.products);
-                        console.log('🎯 PRODUCT COUNT:', sampleCategoryContext?.products?.length);
+                      // Handle product_item_card - this is what gets rendered for each individual product
+                      if (slot.id === 'product_item_card') {
+                        console.log('🃏 PRODUCT_ITEM_CARD HANDLER RUNNING!');
 
-                        // Get the UPDATED product_items slot configuration from the database
+                        // Get the UPDATED product_items slot configuration for grid settings
                         const updatedProductItemsSlot = categoryLayoutConfig?.slots?.product_items;
                         const gridConfig = updatedProductItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 };
 
-                        console.log('📊 UPDATED PRODUCT_ITEMS SLOT:', updatedProductItemsSlot);
-                        console.log('📊 GRID CONFIG FROM DATABASE:', gridConfig);
+                        console.log('📊 GRID CONFIG FROM PRODUCT_ITEMS:', gridConfig);
+
+                        // Render multiple product cards using our mock data in a grid
+                        const products = sampleCategoryContext?.products?.slice(0, 6) || [];
+                        console.log('🛍️ Rendering products with grid config:', products.map(p => p.name));
 
                         // Generate dynamic grid classes based on configuration
                         const getGridClasses = () => {
@@ -604,20 +605,7 @@ const CategorySlotsEditor = ({
                         };
 
                         const dynamicGridClasses = getGridClasses();
-                        console.log('🎨 DYNAMIC GRID CLASSES:', dynamicGridClasses);
-
-                        // Get the product_item_card template
-                        const productItemCardTemplate = categoryLayoutConfig?.slots?.product_item_card;
-                        if (!productItemCardTemplate) {
-                          console.log('❌ No product_item_card template found');
-                          return null;
-                        }
-
-                        console.log('📄 Found product_item_card template:', productItemCardTemplate.className);
-
-                        // Render multiple product cards using our mock data
-                        const products = sampleCategoryContext?.products?.slice(0, 6) || [];
-                        console.log('🛍️ Rendering products:', products.map(p => p.name));
+                        console.log('🎨 DYNAMIC GRID CLASSES FOR PRODUCT CARDS:', dynamicGridClasses);
 
                         return (
                           <div className={dynamicGridClasses}>
@@ -634,7 +622,7 @@ const CategorySlotsEditor = ({
                                 selectedCountry="US"
                                 productLabels={sampleCategoryContext?.productLabels || []}
                                 viewMode={viewMode}
-                                slotConfig={{}}
+                                slotConfig={slot}
                                 onAddToCartStateChange={() => {}}
                               />
                             ))}

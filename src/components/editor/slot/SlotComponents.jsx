@@ -888,6 +888,7 @@ export function HierarchicalSlotRenderer({
     // Debug: Log every slot being processed in map
     if (slot.id === 'product_items' || slot.id === 'products_container' || parentId === 'products_container') {
       console.log(`🗺️ PROCESSING SLOT IN MAP: ${slot.id} (parentId: ${slot.parentId}, parentIdBeingRendered: ${parentId})`);
+      console.log(`🗺️ SLOT TYPE: ${slot.type}, HAS CHILDREN: ${slot.children?.length > 0}`);
     }
     // Handle number, object with viewMode, and Tailwind responsive classes
     let colSpan = 12; // default value for non-Tailwind calculations
@@ -1500,6 +1501,14 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
+                  {/* DEBUG: Force check for product_items */}
+                  {slot.id === 'product_items' && (() => {
+                    console.log('🚨🚨🚨 PRODUCT_ITEMS FOUND IN RENDERING! 🚨🚨🚨');
+                    console.log('🚨 Slot type:', slot.type);
+                    console.log('🚨 customSlotRenderer available:', !!customSlotRenderer);
+                    return null; // Continue normal rendering
+                  })()}
+
                   {/* First try custom renderer for ALL slot types */}
                   {(() => {
                     // Debug: Check if we reach this point for product_items
