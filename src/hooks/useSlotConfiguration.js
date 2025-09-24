@@ -910,14 +910,13 @@ export function useSlotConfiguration({
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
         const draftConfig = savedConfig.data.configuration;
+        const draftStatus = savedConfig.data.status;
 
-        // Check if draft is empty (first time creation)
-        const hasSlots = draftConfig.slots && Object.keys(draftConfig.slots).length > 0;
+        // Check if draft needs initialization (status = 'init')
+        if (draftStatus === 'init') {
+          console.log('🏗️ EDITOR - Draft status is "init", populating with static config');
 
-        if (!hasSlots) {
-          console.log('🏗️ EDITOR - Draft is empty, populating with static config');
-
-          // Load static config to populate empty draft
+          // Load static config to populate init draft
           const staticConfig = await loadStaticConfiguration();
 
           // Create complete configuration from static config
@@ -928,26 +927,31 @@ export function useSlotConfiguration({
             metadata: {
               ...draftConfig.metadata,
               populatedFromStatic: true,
-              populatedAt: new Date().toISOString()
+              populatedAt: new Date().toISOString(),
+              version: staticConfig.metadata?.version || '1.0'
             }
           };
 
           // Save the populated configuration back to database
+          // This should change status from 'init' to 'draft'
           try {
             await slotConfigurationService.updateDraftConfiguration(
               savedConfig.data.id,
               populatedConfig,
               false // not a reset
             );
-            console.log('✅ EDITOR - Saved populated config to database');
+            console.log('✅ EDITOR - Populated config saved, status should change from "init" to "draft"');
           } catch (saveError) {
             console.warn('⚠️ EDITOR - Failed to save populated config:', saveError);
             // Continue with populated config even if save fails
           }
 
           return populatedConfig;
-        } else {
+        } else if (draftStatus === 'draft') {
           console.log('✅ EDITOR - Using existing draft configuration from database');
+          return draftConfig;
+        } else {
+          console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
           return draftConfig;
         }
       } else {
