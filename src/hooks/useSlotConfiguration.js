@@ -886,7 +886,7 @@ export function useSlotConfiguration({
     return configToUse;
   }, [pageType, pageName, slotType]);
 
-  // Get draft configuration for editor (no fallback needed - draft always exists in editor context)
+  // Get draft configuration for editor - populate with static config if empty
   const getDraftConfiguration = useCallback(async () => {
     const storeId = selectedStore?.id;
 
@@ -897,19 +897,59 @@ export function useSlotConfiguration({
     try {
       console.log('🏪 EDITOR - Loading draft config for:', { storeId, pageType });
 
-      // Editor context: Always get pure draft from database (no static config merging)
+      // Get draft from database (may be empty on first load)
       const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
 
       console.log('📥 EDITOR - Draft config response:', {
         success: savedConfig?.success,
         hasData: !!savedConfig?.data,
         configId: savedConfig?.data?.id,
-        status: savedConfig?.data?.status
+        status: savedConfig?.data?.status,
+        hasSlots: !!(savedConfig?.data?.configuration?.slots && Object.keys(savedConfig.data.configuration.slots).length > 0)
       });
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
-        console.log('✅ EDITOR - Using draft configuration from database');
-        return savedConfig.data.configuration;
+        const draftConfig = savedConfig.data.configuration;
+
+        // Check if draft is empty (first time creation)
+        const hasSlots = draftConfig.slots && Object.keys(draftConfig.slots).length > 0;
+
+        if (!hasSlots) {
+          console.log('🏗️ EDITOR - Draft is empty, populating with static config');
+
+          // Load static config to populate empty draft
+          const staticConfig = await loadStaticConfiguration();
+
+          // Create complete configuration from static config
+          const populatedConfig = {
+            ...draftConfig,
+            slots: staticConfig.slots,
+            cmsBlocks: staticConfig.cmsBlocks || [],
+            metadata: {
+              ...draftConfig.metadata,
+              populatedFromStatic: true,
+              populatedAt: new Date().toISOString()
+            }
+          };
+
+          // Save the populated configuration back to database
+          try {
+            await slotConfigurationService.updateDraftConfiguration(
+              savedConfig.data.id,
+              populatedConfig,
+              false // not a reset
+            );
+            console.log('✅ EDITOR - Saved populated config to database');
+          } catch (saveError) {
+            console.warn('⚠️ EDITOR - Failed to save populated config:', saveError);
+            // Continue with populated config even if save fails
+          }
+
+          return populatedConfig;
+        } else {
+          console.log('✅ EDITOR - Using existing draft configuration from database');
+          return draftConfig;
+        }
       } else {
         throw new Error('No valid draft configuration found - this should not happen in editor context');
       }
@@ -917,7 +957,7 @@ export function useSlotConfiguration({
       console.error('❌ EDITOR - Failed to load draft configuration:', error);
       throw error;
     }
-  }, [selectedStore, pageType]);
+  }, [selectedStore, pageType, loadStaticConfiguration]);
 
   // Generic validation function for slot configurations
   const validateSlotConfiguration = useCallback((slots) => {
