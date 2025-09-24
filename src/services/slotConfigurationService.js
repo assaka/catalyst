@@ -6,9 +6,29 @@ class SlotConfigurationService {
   // Get or create draft configuration for editing
   async getDraftConfiguration(storeId, pageType = 'cart', staticConfig = null) {
     try {
-      const response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, {
+      // Debug what we're sending to the API
+      const payload = {
         staticConfiguration: staticConfig
+      };
+
+      console.log('🌐 API CALL - getDraftConfiguration:', {
+        url: `${API_BASE}/draft/${storeId}/${pageType}`,
+        storeId,
+        pageType,
+        hasStaticConfig: !!staticConfig,
+        staticConfigSlots: staticConfig?.slots ? Object.keys(staticConfig.slots).length : 0,
+        categoryTitleInStatic: staticConfig?.slots?.category_title?.styles?.color || 'not found'
       });
+
+      const response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, payload);
+
+      console.log('🌐 API RESPONSE - getDraftConfiguration:', {
+        success: response?.success,
+        hasData: !!response?.data,
+        returnedConfigId: response?.data?.id,
+        categoryTitleInResponse: response?.data?.configuration?.slots?.category_title?.styles?.color || 'not found'
+      });
+
       return response;
     } catch (error) {
       console.error('Error getting draft configuration:', error);
