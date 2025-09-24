@@ -59,11 +59,33 @@ export function CategorySlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug logging for products_container children
+  if (parentId === 'products_container') {
+    console.log('🏗️ CATEGORY SLOT RENDERER - products_container children:', {
+      childSlots: childSlots.map(s => ({ id: s.id, row: s.position?.row, col: s.position?.col })),
+      parentId
+    });
+  }
+
   // Filter by viewMode if applicable
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
+  // Debug logging after filtering
+  if (parentId === 'products_container') {
+    console.log('🔍 CATEGORY SLOT RENDERER - after viewMode filtering:', {
+      filteredSlots: filteredSlots.map(s => ({ id: s.id, row: s.position?.row, col: s.position?.col })),
+    });
+  }
+
   // Sort slots using grid coordinates for precise positioning
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
+
+  // Debug logging after sorting
+  if (parentId === 'products_container') {
+    console.log('📊 CATEGORY SLOT RENDERER - after grid sorting:', {
+      sortedSlots: sortedSlots.map(s => ({ id: s.id, row: s.position?.row, col: s.position?.col })),
+    });
+  }
 
   // Helper function to get child slots of a parent
   const renderChildSlots = (allSlots, parentId) => {
