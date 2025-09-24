@@ -149,7 +149,7 @@ export const categoryConfig = {
       type: 'select',
       content: '',
       className: 'flex items-center gap-2',
-      parentClassName: '',
+      parentClassName: 'text-right',
       styles: {},
       parentId: 'sorting_controls',
       position: { col: 7, row: 1 },

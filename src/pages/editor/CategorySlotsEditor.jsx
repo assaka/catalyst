@@ -16,6 +16,7 @@ import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import {
   useSlotConfiguration,
   useTimestampFormatting,

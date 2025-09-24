@@ -428,6 +428,16 @@ export function CategoryProductItemCardSlot({ categoryContext, content, config }
   const { products, currencySymbol, productLabels } = categoryContext || {};
   const { viewMode = 'grid' } = config || {};
 
+  // Debug logging to see what we have
+  console.log('🛍️ CategoryProductItemCardSlot DEBUG:', {
+    hasProducts: !!products,
+    productsCount: products?.length || 0,
+    products: products,
+    categoryContext: categoryContext,
+    content: content,
+    config: config
+  });
+
   // Get configuration from content or use defaults
   const {
     itemsToShow = 3,
