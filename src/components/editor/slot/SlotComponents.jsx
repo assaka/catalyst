@@ -981,6 +981,18 @@ export function HierarchicalSlotRenderer({
                         fontWeight: window.getComputedStyle(el).fontWeight
                       }
                     });
+
+                    // Ensure database styles are applied to the DOM element
+                    Object.entries(slot.styles).forEach(([property, value]) => {
+                      if (value && value !== '' && property !== 'lastModified') {
+                        try {
+                          el.style[property] = value;
+                          console.log(`🔧 TEXT SLOT [${slot.id}] - Applied style ${property}: ${value}`);
+                        } catch (error) {
+                          console.warn(`Failed to apply style ${property}: ${value}`, error);
+                        }
+                      }
+                    });
                   }
                 }}
                 onClick={(e) => {
@@ -1070,6 +1082,18 @@ export function HierarchicalSlotRenderer({
                         backgroundColor: window.getComputedStyle(el).backgroundColor,
                         fontSize: window.getComputedStyle(el).fontSize,
                         fontWeight: window.getComputedStyle(el).fontWeight
+                      }
+                    });
+
+                    // Ensure database styles are applied to the DOM element
+                    Object.entries(slot.styles).forEach(([property, value]) => {
+                      if (value && value !== '' && property !== 'lastModified') {
+                        try {
+                          el.style[property] = value;
+                          console.log(`🔧 BUTTON SLOT [${slot.id}] - Applied style ${property}: ${value}`);
+                        } catch (error) {
+                          console.warn(`Failed to apply style ${property}: ${value}`, error);
+                        }
                       }
                     });
                   }

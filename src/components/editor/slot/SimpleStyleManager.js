@@ -221,18 +221,42 @@ class SimpleStyleManager {
   // Apply saved changes to DOM
   applySavedChanges() {
     const saved = this.loadChanges();
-    
+
+    console.log('🔄 SimpleStyleManager - Applying saved changes:', {
+      savedChangesCount: Object.keys(saved).length,
+      changes: saved
+    });
+
     Object.entries(saved).forEach(([elementId, changes]) => {
       const element = document.querySelector(`[data-slot-id="${elementId}"]`) ||
                      document.getElementById(elementId);
 
+      console.log(`🔍 SimpleStyleManager - Looking for element ${elementId}:`, {
+        found: !!element,
+        changes: changes,
+        hasStyles: changes.styles && Object.keys(changes.styles).length > 0
+      });
+
       if (element && changes) {
-        Object.entries(changes).forEach(([property, value]) => {
-          if (property !== 'lastModified') {
-            // The applyStyle method will now handle finding the correct target element
-            this.applyStyle(element, property, value);
-          }
-        });
+        // Apply styles from the saved configuration
+        if (changes.styles && typeof changes.styles === 'object') {
+          Object.entries(changes.styles).forEach(([property, value]) => {
+            if (value && value !== '' && property !== 'lastModified') {
+              try {
+                element.style[property] = value;
+                console.log(`✅ SimpleStyleManager - Applied ${property}: ${value} to ${elementId}`);
+              } catch (error) {
+                console.warn(`❌ SimpleStyleManager - Failed to apply ${property}: ${value}`, error);
+              }
+            }
+          });
+        }
+
+        // Apply className if available
+        if (changes.className && changes.className !== element.className) {
+          element.className = changes.className;
+          console.log(`✅ SimpleStyleManager - Applied className: ${changes.className} to ${elementId}`);
+        }
       }
     });
   }

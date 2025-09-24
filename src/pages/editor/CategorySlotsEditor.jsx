@@ -57,6 +57,7 @@ import {
   CategoryProductItemCardSlot
 } from '@/components/editor/slot/slotComponentsCategory';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { styleManager } from '@/components/editor/slot/SimpleStyleManager';
 
 // Main CategorySlotsEditor component - mirrors CartSlotsEditor structure exactly
 const CategorySlotsEditor = ({
@@ -431,6 +432,19 @@ const CategorySlotsEditor = ({
 
   // Use generic view mode adjustments
   useViewModeAdjustments(categoryLayoutConfig, setCategoryLayoutConfig, viewMode, categoryAdjustmentRules);
+
+  // Apply saved styles when configuration is loaded
+  useEffect(() => {
+    if (categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0) {
+      // Give DOM elements time to render before applying styles
+      const timeout = setTimeout(() => {
+        console.log('🎨 CategorySlotsEditor - Applying saved styles after configuration load');
+        styleManager.applySavedChanges();
+      }, 100);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [categoryLayoutConfig]);
 
   // Main render - Clean and maintainable
   return (
