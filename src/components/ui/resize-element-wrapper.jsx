@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 
-const ResizeWrapper = ({ 
+const ResizeWrapper = ({
   children,
   className,
   minWidth = 50,
@@ -14,7 +14,8 @@ const ResizeWrapper = ({
   initialWidth,
   initialHeight,
   disabled = false,
-  ...props 
+  hideBorder = false,
+  ...props
 }) => {
   // Check if element has w-fit class to determine initial units
   const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
@@ -334,7 +335,7 @@ const ResizeWrapper = ({
           height: `${size.height}${size.heightUnit || 'px'}`
         }),
         boxSizing: 'border-box',
-        border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
+        border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
         transition: 'border-color 0.2s ease-in-out',
         position: 'relative',
         // Ensure button displays properly during resize
@@ -455,7 +456,7 @@ const ResizeWrapper = ({
           }),
           boxSizing: 'border-box',
           display: children.props.style?.display || 'block',
-          border: isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent',
+          border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
           borderRadius: '4px',
           transition: 'border-color 0.2s ease-in-out',
           position: 'relative',

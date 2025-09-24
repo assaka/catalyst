@@ -611,8 +611,14 @@ const CategorySlotsEditor = ({
                       });
 
                       // Skip child slots - let them be rendered hierarchically by their parents
-                      // Exception: breadcrumbs_content and other top-level necessary slots
-                      if (slot.parentId && slot.parentId !== 'page_header') {
+                      // Exceptions:
+                      // - breadcrumbs_content and other page_header children (need custom handling)
+                      // - cms_block types (need explicit CMS renderer)
+                      // - product_items (needs explicit handler with microslot configs)
+                      if (slot.parentId &&
+                          slot.parentId !== 'page_header' &&
+                          slot.type !== 'cms_block' &&
+                          slot.id !== 'product_items') {
                         console.log(`⏭️ SKIPPING ${slot.id} - child slot, will be rendered by parent ${slot.parentId}`);
                         return null;
                       }
@@ -637,6 +643,12 @@ const CategorySlotsEditor = ({
                           productPrice: categoryLayoutConfig?.slots?.product_price || {},
                           productComparePrice: categoryLayoutConfig?.slots?.product_compare_price || {}
                         };
+
+                        console.log('🛒 Add to Cart microslot config:', {
+                          productAddToCart: microslotConfigs.productAddToCart,
+                          hasClassName: !!microslotConfigs.productAddToCart?.className,
+                          className: microslotConfigs.productAddToCart?.className
+                        });
 
                         // Merge slot content with metadata and microslot configs
                         const contentWithConfig = {
