@@ -1553,22 +1553,20 @@ export function HierarchicalSlotRenderer({
                   {/* DIRECT OVERRIDE FOR PRODUCT_ITEMS */}
                   {slot.id === 'product_items' && (() => {
                     console.log('🎯 DIRECT PRODUCT_ITEMS OVERRIDE IN SLOTCOMPONENTS!');
+                    console.log('🎯 This should show up if product_items reaches here');
 
-                    // Try to get the updated grid config from categoryData if available
-                    if (categoryData && categoryData.gridConfig) {
-                      const { mobile = 1, tablet = 2, desktop = 3 } = categoryData.gridConfig;
-                      const gridClasses = `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
-                      console.log('🎯 APPLYING DIRECT GRID CLASSES:', gridClasses);
-
-                      return (
-                        <div className={gridClasses}>
-                          {/* This will be replaced by child product cards */}
-                          <div>Product grid with dynamic classes applied!</div>
-                        </div>
-                      );
-                    }
-
-                    return null; // Let default rendering continue
+                    // Just return a simple test div to see if this works
+                    return (
+                      <div style={{ background: 'yellow', padding: '20px', margin: '10px' }}>
+                        <strong>PRODUCT_ITEMS DIRECT OVERRIDE WORKING!</strong>
+                        <br />
+                        This proves product_items is being processed here.
+                        <div>TEST PRODUCT 1</div>
+                        <div>TEST PRODUCT 2</div>
+                        <div>TEST PRODUCT 3</div>
+                        <div>TEST PRODUCT 4</div>
+                      </div>
+                    );
                   })()}
 
                   {/* Render child slots */}
