@@ -597,6 +597,21 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
           };
         }
 
+        console.log('🚀 EDITOR INITIALIZATION - Setting final configuration:');
+        console.log('📋 EDITOR INITIALIZATION - Total slots:', Object.keys(finalConfig.slots || {}).length);
+
+        // Check specifically for category_title to debug the color issue
+        if (finalConfig.slots?.category_title) {
+          console.log('🎨 EDITOR INITIALIZATION - category_title slot found:', {
+            content: finalConfig.slots.category_title.content,
+            styles: finalConfig.slots.category_title.styles,
+            hasColorStyle: !!finalConfig.slots.category_title.styles?.color,
+            colorValue: finalConfig.slots.category_title.styles?.color
+          });
+        } else {
+          console.log('❌ EDITOR INITIALIZATION - category_title slot NOT found in final config');
+        }
+
         setPageConfig(finalConfig);
       }
     };
