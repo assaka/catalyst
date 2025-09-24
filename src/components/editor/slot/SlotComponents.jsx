@@ -238,7 +238,8 @@ export function GridColumn({
   setCurrentDragInfo,
   children,
   isNested = false,
-  slots = {} // Add slots prop for enhanced feedback
+  slots = {}, // Add slots prop for enhanced feedback
+  selectedElementId = null // Add selectedElementId prop
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -920,6 +921,7 @@ export function HierarchicalSlotRenderer({
         viewMode={viewMode}
         showBorders={showBorders}
         isNested={true}
+        selectedElementId={selectedElementId}
       >
           {slot.type === 'text' && mode === 'edit' && (
             <div
@@ -928,6 +930,7 @@ export function HierarchicalSlotRenderer({
               <ResizeWrapper
                 minWidth={20}
                 minHeight={16}
+                hideBorder={selectedElementId === slot.id}
                 onResize={(newSize) => {
                 setPageConfig(prevConfig => {
                   const updatedSlots = { ...prevConfig?.slots };
