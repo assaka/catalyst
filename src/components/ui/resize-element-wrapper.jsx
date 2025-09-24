@@ -161,11 +161,20 @@ const ResizeWrapper = ({
         // Check if element has w-fit class (should use pixels for natural sizing)
         const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
+        // Check if this is a button element - buttons should always use pixels
+        const isButton = children?.type === 'button' ||
+                        children?.props?.type === 'button' ||
+                        (children?.props?.className && (
+                          children.props.className.includes('btn') ||
+                          children.props.className.includes('button') ||
+                          children.props.className.includes('Add to Cart')
+                        ));
+
         setNaturalSize({ width: rect.width, height: rect.height });
         setSize(prev => ({
           ...prev,
-          width: hasWFitClass ? rect.width : Math.round(naturalPercentage * 10) / 10,
-          widthUnit: hasWFitClass ? 'px' : '%'
+          width: (hasWFitClass || isButton) ? rect.width : Math.round(naturalPercentage * 10) / 10,
+          widthUnit: (hasWFitClass || isButton) ? 'px' : '%'
         }));
       }
     }
