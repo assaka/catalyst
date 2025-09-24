@@ -587,6 +587,25 @@ const CategorySlotsEditor = ({
                         console.log('🎯 SAMPLE CATEGORY CONTEXT HAS PRODUCTS:', !!sampleCategoryContext?.products);
                         console.log('🎯 PRODUCT COUNT:', sampleCategoryContext?.products?.length);
 
+                        // Get the UPDATED product_items slot configuration from the database
+                        const updatedProductItemsSlot = categoryLayoutConfig?.slots?.product_items;
+                        const gridConfig = updatedProductItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 };
+
+                        console.log('📊 UPDATED PRODUCT_ITEMS SLOT:', updatedProductItemsSlot);
+                        console.log('📊 GRID CONFIG FROM DATABASE:', gridConfig);
+
+                        // Generate dynamic grid classes based on configuration
+                        const getGridClasses = () => {
+                          if (viewMode === 'list') {
+                            return 'grid-cols-1';
+                          }
+                          const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
+                          return `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
+                        };
+
+                        const dynamicGridClasses = getGridClasses();
+                        console.log('🎨 DYNAMIC GRID CLASSES:', dynamicGridClasses);
+
                         // Get the product_item_card template
                         const productItemCardTemplate = categoryLayoutConfig?.slots?.product_item_card;
                         if (!productItemCardTemplate) {
@@ -601,7 +620,7 @@ const CategorySlotsEditor = ({
                         console.log('🛍️ Rendering products:', products.map(p => p.name));
 
                         return (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className={dynamicGridClasses}>
                             {products.map((product, index) => (
                               <ProductItemCard
                                 key={product.id}
@@ -740,17 +759,6 @@ const CategorySlotsEditor = ({
               <CmsBlockRenderer position="category_above_products" />
               <CmsBlockRenderer position="category_below_products" />
 
-              {/* Product Items - Direct rendering for reliable display */}
-              <div className="col-span-12 lg:col-span-9 mt-8">
-                <CategoryProductItemCardSlot
-                  categoryContext={sampleCategoryContext}
-                  content={{
-                    itemsToShow: 6,
-                    gridConfig: { mobile: 1, tablet: 2, desktop: 3 }
-                  }}
-                  config={{ viewMode }}
-                />
-              </div>
             </div>
           </ResponsiveContainer>
         </div>

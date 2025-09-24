@@ -1502,6 +1502,12 @@ export function HierarchicalSlotRenderer({
                 >
                   {/* First try custom renderer for ALL slot types */}
                   {(() => {
+                    // Debug: Check if we reach this point for product_items
+                    if (slot.id === 'product_items' || slot.id === 'products_container') {
+                      console.log(`🏁 REACHED CUSTOM RENDERER SECTION for: ${slot.id}`);
+                      console.log(`🏁 customSlotRenderer exists:`, !!customSlotRenderer);
+                    }
+
                     if (customSlotRenderer) {
                       // Debug: Log when customSlotRenderer is about to be called
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
@@ -1516,6 +1522,10 @@ export function HierarchicalSlotRenderer({
 
                       if (customContent) {
                         return customContent;
+                      }
+                    } else {
+                      if (slot.id === 'product_items' || slot.id === 'products_container') {
+                        console.log(`❌ NO customSlotRenderer for: ${slot.id}`);
                       }
                     }
                     return null;
