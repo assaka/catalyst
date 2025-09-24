@@ -16,30 +16,18 @@ export class SlotManager {
   
   static getChildSlots(slots, parentId) {
     const allSlots = Object.values(slots);
-    console.log(`🔍 SlotManager.getChildSlots - parentId: ${parentId}, total slots: ${allSlots.length}`);
+    const childSlots = allSlots.filter(slot => slot.parentId === parentId);
 
-    const childSlots = allSlots.filter(slot => {
-      const isChild = slot.parentId === parentId;
-      if (slot.id.includes('products') || slot.id.includes('cms')) {
-        console.log(`🎯 SlotManager checking ${slot.id}: parentId=${slot.parentId}, target=${parentId}, isChild=${isChild}, row=${slot.position?.row}`);
-      }
-      return isChild;
-    });
-
-    console.log(`🔍 SlotManager.getChildSlots result for parentId ${parentId}:`, childSlots.map(s => ({ id: s.id, row: s.position?.row })));
+    // Only log for products_container to debug ordering issue
+    if (parentId === 'products_container') {
+      console.log(`📊 products_container children:`, childSlots.map(s => `${s.id}(row${s.position?.row})`).join(' -> '));
+    }
 
     // Sort by position.row, fallback to 0
-    const sorted = childSlots.sort((a, b) => {
-      const aRow = a.position?.row || 0;
-      const bRow = b.position?.row || 0;
-      if (parentId === 'products_container' || childSlots.some(s => s.id.includes('products'))) {
-        console.log(`🔄 Sorting ${a.id} (row ${aRow}) vs ${b.id} (row ${bRow})`);
-      }
-      return aRow - bRow;
-    });
+    const sorted = childSlots.sort((a, b) => (a.position?.row || 0) - (b.position?.row || 0));
 
     if (parentId === 'products_container') {
-      console.log(`📊 Final sorted order for products_container:`, sorted.map(s => ({ id: s.id, row: s.position?.row })));
+      console.log(`📊 After sorting:`, sorted.map(s => `${s.id}(row${s.position?.row})`).join(' -> '));
     }
 
     return sorted;

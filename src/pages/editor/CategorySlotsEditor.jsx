@@ -586,15 +586,10 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
-                      // Debug: log all slots being processed by customSlotRenderer
-                      console.log('🎯 CUSTOM SLOT RENDERER processing:', {
-                        slotId: slot.id,
-                        parentId: slot.parentId,
-                        row: slot.position?.row,
-                        col: slot.position?.col,
-                        type: slot.type,
-                        timestamp: Date.now()
-                      });
+                      // Only log CMS and product slots to debug ordering issue
+                      if (slot.id.includes('products') || slot.id.includes('cms')) {
+                        console.log(`🎯 Processing: ${slot.id} (row ${slot.position?.row}, parent: ${slot.parentId})`);
+                      }
 
                       // Skip child slots - let them be rendered hierarchically by their parents
                       // Exceptions:
@@ -630,11 +625,7 @@ const CategorySlotsEditor = ({
                           productComparePrice: categoryLayoutConfig?.slots?.product_compare_price || {}
                         };
 
-                        console.log('🛒 Add to Cart microslot config:', {
-                          productAddToCart: microslotConfigs.productAddToCart,
-                          hasClassName: !!microslotConfigs.productAddToCart?.className,
-                          className: microslotConfigs.productAddToCart?.className
-                        });
+                        console.log('🛒 Add to Cart button config:', microslotConfigs.productAddToCart?.className || 'NO CLASSNAME');
 
                         // Merge slot content with metadata and microslot configs
                         const contentWithConfig = {

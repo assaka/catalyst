@@ -59,44 +59,15 @@ export function CategorySlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
-  // Debug logging for products_container children
-  if (parentId === 'products_container') {
-    console.log('🏗️ CATEGORY SLOT RENDERER - products_container children:', {
-      childSlots: childSlots.map(s => ({ id: s.id, row: s.position?.row, col: s.position?.col, type: s.type })),
-      parentId
-    });
-  }
-
   // Filter by viewMode if applicable
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
-
-  // Debug logging after filtering
-  if (parentId === 'products_container') {
-    console.log('🔍 CATEGORY SLOT RENDERER - after viewMode filtering:', {
-      filteredSlots: filteredSlots.map(s => ({ id: s.id, row: s.position?.row, col: s.position?.col, type: s.type })),
-    });
-  }
 
   // Sort slots using grid coordinates for precise positioning
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
-  // Debug logging after sorting
+  // Only log final render order for products_container
   if (parentId === 'products_container') {
-    console.log('📊 CATEGORY SLOT RENDERER - after grid sorting:', {
-      sortedSlots: sortedSlots.map(s => ({ id: s.id, row: s.position?.row, col: s.position?.col, type: s.type })),
-    });
-  }
-
-  // Debug logging for rendering order
-  if (parentId === 'products_container') {
-    console.log('🎬 CATEGORY SLOT RENDERER - about to render slots in this order:',
-      sortedSlots.map((s, index) => ({
-        index,
-        id: s.id,
-        row: s.position?.row,
-        type: s.type
-      }))
-    );
+    console.log('🎬 Rendering order:', sortedSlots.map(s => `${s.id}(row${s.position?.row})`).join(' -> '));
   }
 
   // Helper function to get child slots of a parent
