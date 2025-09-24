@@ -949,6 +949,20 @@ export function useSlotConfiguration({
               });
             }
 
+            // Debug the styles merge operation for category_title
+            let mergedStyles = staticSlot.styles;
+            if (savedSlot && savedSlot.styles) {
+              mergedStyles = { ...staticSlot.styles, ...savedSlot.styles };
+              if (slotId === 'category_title') {
+                console.log('🔀 STYLES MERGE OPERATION:', {
+                  staticStyles: staticSlot.styles,
+                  savedStyles: savedSlot.styles,
+                  mergedResult: mergedStyles,
+                  colorOverride: savedSlot.styles.color ? `${staticSlot.styles?.color} → ${savedSlot.styles.color}` : 'No color override'
+                });
+              }
+            }
+
             mergedSlots[slotId] = {
               ...staticSlot, // Start with static slot (includes viewMode, metadata, etc.)
               ...(savedSlot ? {
@@ -957,7 +971,7 @@ export function useSlotConfiguration({
                 className: savedSlot.className !== undefined ? savedSlot.className : staticSlot.className,
                 parentClassName: savedSlot.parentClassName !== undefined ? savedSlot.parentClassName : staticSlot.parentClassName,
                 parentId: savedSlot.parentId !== undefined ? savedSlot.parentId : staticSlot.parentId,
-                styles: savedSlot.styles ? { ...staticSlot.styles, ...savedSlot.styles } : staticSlot.styles,
+                styles: mergedStyles,
                 colSpan: savedSlot.colSpan !== undefined ? savedSlot.colSpan : staticSlot.colSpan,
                 rowSpan: savedSlot.rowSpan !== undefined ? savedSlot.rowSpan : staticSlot.rowSpan,
                 position: savedSlot.position ? { ...staticSlot.position, ...savedSlot.position } : staticSlot.position

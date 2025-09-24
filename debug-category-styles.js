@@ -1,57 +1,54 @@
-// Debug script to check what's actually saved in database for category styles
-import { createClient } from '@supabase/supabase-js';
+// Debug script to check specific configuration ID from the debug output
+console.log('🔍 Checking database for specific configuration...');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jqqfjfoigtwdpnlicjmh.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxcWZqZm9pZ3R3ZHBubGljam1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4MzQ5NDEsImV4cCI6MjA0MjQxMDk0MX0.Lgr5ovbpji64CooD';
+// Function to check the specific configuration we saw in debug
+function checkSpecificConfig() {
+  // This should be called from browser console where supabase client is available
+  if (typeof window !== 'undefined') {
+    console.log('Run this in browser console:');
+    console.log(`
+// Check specific configuration
+const storeId = '157d4590-49bf-4b0b-bd77-abe131909528';
+const configId = 'fce16eb1-45a8-4806-8fa1-b87cc3f4d075';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function debugCategoryStyles() {
-  try {
-    // Get all category configurations
-    const { data, error } = await supabase
-      .from('slot_configurations')
-      .select('*')
-      .eq('page_type', 'category')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    console.log('=== CATEGORY CONFIGURATIONS DEBUG ===');
-    console.log('Total configurations found:', data?.length || 0);
-
-    data?.forEach((config, index) => {
-      console.log(`\n--- Configuration ${index + 1} ---`);
-      console.log('ID:', config.id);
-      console.log('Status:', config.status);
-      console.log('Store ID:', config.store_id);
-      console.log('Created:', config.created_at);
-      console.log('Has unpublished changes:', config.has_unpublished_changes);
-
-      if (config.configuration && config.configuration.slots) {
-        const categoryTitle = config.configuration.slots.category_title;
-        if (categoryTitle) {
-          console.log('category_title slot found:');
-          console.log('  - content:', categoryTitle.content);
-          console.log('  - styles:', categoryTitle.styles);
-          console.log('  - className:', categoryTitle.className);
-        } else {
-          console.log('category_title slot NOT found in this configuration');
-        }
-      } else {
-        console.log('No slots in configuration');
-      }
-    });
-
-    return data;
-  } catch (error) {
-    console.error('Error checking database:', error);
+// You can run this in browser dev tools console where supabase is available:
+// First ensure you have access to the supabase client in your app
+console.log('Checking configuration:', configId);
+console.log('For store:', storeId);
+console.log('Expected to find coral or green color for category_title slot');
+`);
   }
 }
 
-// Execute if run directly
-if (typeof window === 'undefined') {
-  debugCategoryStyles();
+checkSpecificConfig();
+
+// Helper to add to browser console for direct database check
+const browserDebugScript = `
+// Run this in browser console to check the specific configuration
+async function checkCategoryTitleColor() {
+  try {
+    // This assumes your app has supabase client available globally
+    // You might need to adapt this to access your app's supabase instance
+
+    const configId = 'fce16eb1-45a8-4806-8fa1-b87cc3f4d075';
+
+    console.log('🔍 Fetching configuration from database...');
+
+    // You would need to access your app's supabase client here
+    // const result = await supabaseClient.from('slot_configurations').select('*').eq('id', configId).single();
+
+    console.log('To check the database, inspect the Network tab when loading the category editor');
+    console.log('Look for a request to slot_configurations or getDraftConfiguration');
+    console.log('Configuration ID to look for:', configId);
+
+    return configId;
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
-export { debugCategoryStyles };
+checkCategoryTitleColor();
+`;
+
+console.log('Browser debug script:');
+console.log(browserDebugScript);
