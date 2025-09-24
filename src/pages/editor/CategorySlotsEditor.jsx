@@ -57,6 +57,7 @@ import {
   CategoryLayeredNavigationSlot,
   CategoryProductItemCardSlot
 } from '@/components/editor/slot/slotComponentsCategory';
+import ProductItemCard from '@/components/storefront/ProductItemCard';
 import slotConfigurationService from '@/services/slotConfigurationService';
 // Main CategorySlotsEditor component - mirrors CartSlotsEditor structure exactly
 const CategorySlotsEditor = ({
@@ -580,54 +581,46 @@ const CategorySlotsEditor = ({
                         return null;
                       }
 
-                      // Handle product_items explicitly - this should be called based on the logs
+                      // Handle product_items explicitly - render multiple product_item_card templates
                       if (slot.id === 'product_items') {
-                        console.log('🛍️ PRODUCT_ITEMS EXPLICIT HANDLER RUNNING!');
-                        console.log('🔥 EXPLICIT HANDLER CONFIRMED!');
+                        console.log('🛍️ PRODUCT_ITEMS CONTAINER HANDLER RUNNING!');
                         console.log('🎯 SAMPLE CATEGORY CONTEXT HAS PRODUCTS:', !!sampleCategoryContext?.products);
                         console.log('🎯 PRODUCT COUNT:', sampleCategoryContext?.products?.length);
 
-                        // Get the UPDATED slot data from categoryLayoutConfig instead of the slot parameter
-                        const updatedProductItemsSlot = categoryLayoutConfig?.slots?.product_items;
-                        console.log('📊 UPDATED SLOT METADATA:', updatedProductItemsSlot?.metadata);
-                        console.log('📊 UPDATED SLOT GRID CONFIG:', updatedProductItemsSlot?.metadata?.gridConfig);
+                        // Get the product_item_card template
+                        const productItemCardTemplate = categoryLayoutConfig?.slots?.product_item_card;
+                        if (!productItemCardTemplate) {
+                          console.log('❌ No product_item_card template found');
+                          return null;
+                        }
 
-                        // Get microslot configurations from category config
-                        const microslotConfigs = {
-                          productAddToCart: categoryLayoutConfig?.slots?.product_add_to_cart || {
-                            className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
-                            content: 'Add to Cart'
-                          },
-                          productImage: categoryLayoutConfig?.slots?.product_image || {},
-                          productName: categoryLayoutConfig?.slots?.product_name || {},
-                          productPrice: categoryLayoutConfig?.slots?.product_price || {},
-                          productComparePrice: categoryLayoutConfig?.slots?.product_compare_price || {}
-                        };
+                        console.log('📄 Found product_item_card template:', productItemCardTemplate.className);
 
-                        console.log('🛒 Add to Cart button config:', microslotConfigs.productAddToCart?.className || 'NO CLASSNAME');
+                        // Render multiple product cards using our mock data
+                        const products = sampleCategoryContext?.products?.slice(0, 6) || [];
+                        console.log('🛍️ Rendering products:', products.map(p => p.name));
 
-                        // Use the UPDATED slot metadata instead of the slot parameter
-                        const contentWithConfig = {
-                          ...updatedProductItemsSlot?.content,
-                          ...updatedProductItemsSlot?.metadata,
-                          ...microslotConfigs,
-                          itemsToShow: updatedProductItemsSlot?.metadata?.itemsToShow || 3,
-                          gridConfig: updatedProductItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
-                        };
-
-                        console.log('🎯 CONTENT WITH CONFIG (FROM UPDATED SLOT):', contentWithConfig);
-                        console.log('🎯 FINAL GRID CONFIG BEING PASSED:', contentWithConfig.gridConfig);
-
-                        const productSlot = (
-                          <CategoryProductItemCardSlot
-                            categoryContext={sampleCategoryContext}
-                            content={contentWithConfig}
-                            config={{ viewMode }}
-                          />
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {products.map((product, index) => (
+                              <ProductItemCard
+                                key={product.id}
+                                product={product}
+                                settings={{
+                                  currency_symbol: '$',
+                                  theme: { add_to_cart_button_color: '#3B82F6' }
+                                }}
+                                store={{ slug: 'demo-store', id: 1 }}
+                                taxes={[]}
+                                selectedCountry="US"
+                                productLabels={sampleCategoryContext?.productLabels || []}
+                                viewMode={viewMode}
+                                slotConfig={{}}
+                                onAddToCartStateChange={() => {}}
+                              />
+                            ))}
+                          </div>
                         );
-
-                        console.log('🎯 RETURNING PRODUCT SLOT:', !!productSlot);
-                        return productSlot;
                       }
 
                       // Handle breadcrumbs content specifically
@@ -746,6 +739,18 @@ const CategorySlotsEditor = ({
 
               <CmsBlockRenderer position="category_above_products" />
               <CmsBlockRenderer position="category_below_products" />
+
+              {/* Product Items - Direct rendering for reliable display */}
+              <div className="col-span-12 lg:col-span-9 mt-8">
+                <CategoryProductItemCardSlot
+                  categoryContext={sampleCategoryContext}
+                  content={{
+                    itemsToShow: 6,
+                    gridConfig: { mobile: 1, tablet: 2, desktop: 3 }
+                  }}
+                  config={{ viewMode }}
+                />
+              </div>
             </div>
           </ResponsiveContainer>
         </div>
