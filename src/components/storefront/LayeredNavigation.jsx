@@ -322,13 +322,13 @@ export default function LayeredNavigation({
     }
 
     return (
-        <Card className="w-full">
+        <Card style={{ width: '100%' }}>
             <CardHeader>
                 <div className="flex justify-between items-center h-5">
                     {isEditMode ? (
                         <EditableSlotElement
                             slotKey="filter_by_label"
-                            slot={childSlots?.filter_by_label}
+                            slot={childSlots?.filter_by_label || { content: 'Filter By' }}
                             onElementClick={onElementClick}
                             className="text-lg font-semibold"
                         >
@@ -447,7 +447,7 @@ export default function LayeredNavigation({
                             {isEditMode ? (
                                 <EditableSlotElement
                                     slotKey="price_filter_label"
-                                    slot={childSlots?.price_filter_label}
+                                    slot={childSlots?.price_filter_label || { content: 'Price' }}
                                     onElementClick={onElementClick}
                                     className="font-semibold"
                                 >
@@ -510,7 +510,7 @@ export default function LayeredNavigation({
                                     {isEditMode ? (
                                         <EditableSlotElement
                                             slotKey="attribute_filter_label"
-                                            slot={childSlots?.attribute_filter_label || childSlots?.[`${code}_filter_label`]}
+                                            slot={childSlots?.attribute_filter_label || childSlots?.[`${code}_filter_label`] || { content: name }}
                                             onElementClick={onElementClick}
                                             className="font-semibold"
                                         >

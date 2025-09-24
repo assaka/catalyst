@@ -478,6 +478,8 @@ const CategorySlotsEditor = ({
                     });
                   }
 
+                  console.log('🔍 CATEGORY LAYOUT CONFIG SLOTS:', categoryLayoutConfig ? Object.keys(categoryLayoutConfig.slots || {}) : 'NO CONFIG');
+                  console.log('🔍 LOOKING FOR product_items:', categoryLayoutConfig?.slots?.product_items ? 'FOUND' : 'NOT FOUND');
                   return categoryLayoutConfig && categoryLayoutConfig.slots && Object.keys(categoryLayoutConfig.slots).length > 0;
                 })() ? (
                   <HierarchicalSlotRenderer
