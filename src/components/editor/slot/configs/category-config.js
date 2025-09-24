@@ -22,21 +22,6 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Breadcrumbs section
-    // breadcrumbs: {
-    //   id: 'breadcrumbs',
-    //   type: 'container',
-    //   content: '',
-    //   className: 'w-full flex mb-6 items-center',
-    //   parentClassName: '',
-    //   styles: {},
-    //   parentId: 'page_header',
-    //   position: { col: 1, row: 1 },
-    //   colSpan: { grid: 12, list: 12 },
-    //   viewMode: ['grid', 'list'],
-    //   metadata: { hierarchical: true }
-    // },
-
     breadcrumbs_content: {
       id: 'breadcrumbs_content',
       type: 'breadcrumbs',
@@ -86,6 +71,298 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         displayName: 'Category Description'
+      }
+    },
+
+    // Products section
+    products_container: {
+      id: 'products_container',
+      type: 'container',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 4, row: 2 },
+      colSpan: { grid: 9, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
+    // Sorting controls and product count
+    sorting_controls: {
+      id: 'sorting_controls',
+      type: 'container',
+      content: '',
+      className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true }
+    },
+
+    // CMS blocks above products
+    products_above_cms: {
+      id: 'products_above_cms',
+      type: 'cms_block',
+      content: '',
+      className: 'mb-6',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        cmsPosition: 'category_above_products',
+        displayName: 'CMS Block - Above Products'
+      }
+    },
+
+    // Product count info
+    product_count_info: {
+      id: 'product_count_info',
+      type: 'text',
+      content: 'Showing 1-12 of 48 products',
+      className: 'text-sm text-gray-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 6, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ProductCountInfo'
+      }
+    },
+
+    // Sort selector
+    sort_selector: {
+      id: 'sort_selector',
+      type: 'select',
+      content: '',
+      className: 'flex items-center gap-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 7, row: 1 },
+      colSpan: { grid: 6, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'SortSelector'
+      }
+    },
+
+    // Active filters display (at top of sidebar below Filter By)
+    active_filters: {
+      id: 'active_filters',
+      type: 'active_filters',
+      content: '',
+      className: 'mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filters_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        component: 'ActiveFilters'
+      }
+    },
+
+    // Main products display using ProductItemCard component
+    product_items: {
+      id: 'product_items',
+      type: 'container',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ProductItemCard',
+        displayName: 'Product Grid',
+        itemsToShow: 3
+      }
+    },
+
+    // Single product template with microslots (for products_grid alternative)
+    product_item_card: {
+      id: 'product_item_card',
+      type: 'container',
+      content: '',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 4, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        isTemplate: true,
+        repeatable: true
+      }
+    },
+
+    // Product microslots
+    product_image_container: {
+      id: 'product_image_container',
+      type: 'container',
+      content: '',
+      className: 'relative overflow-hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_item_card',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 4 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true, microslot: true }
+    },
+
+    product_image: {
+      id: 'product_image',
+      type: 'image',
+      content: '',
+      className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_image_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: false, microslot: true }
+    },
+
+    product_labels: {
+      id: 'product_labels',
+      type: 'container',
+      content: '',
+      className: 'absolute top-2 left-2 z-10 flex flex-col gap-1',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_image_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true, microslot: true, overlay: true }
+    },
+
+    product_name: {
+      id: 'product_name',
+      type: 'text',
+      content: 'Sample Product Name',
+      className: 'font-semibold text-lg truncate',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_item_card',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: false, microslot: true }
+    },
+
+    product_price_container: {
+      id: 'product_price_container',
+      type: 'container',
+      content: '',
+      className: 'flex items-baseline gap-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_item_card',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: true, microslot: true }
+    },
+
+    product_price: {
+      id: 'product_price',
+      type: 'text',
+      content: '$29.99',
+      className: 'text-lg font-bold text-green-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_price_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: false, microslot: true }
+    },
+
+    product_compare_price: {
+      id: 'product_compare_price',
+      type: 'text',
+      content: '$39.99',
+      className: 'text-sm text-gray-500 line-through',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_price_container',
+      position: { col: 7, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: false, microslot: true }
+    },
+
+    product_add_to_cart: {
+      id: 'product_add_to_cart',
+      type: 'button',
+      content: 'Add to Cart',
+      className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_item_card',
+      position: { col: 1, row: 4 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: { hierarchical: false, microslot: true }
+    },
+
+    // Pagination
+    pagination_container: {
+      id: 'pagination_container',
+      type: 'pagination',
+      content: '',
+      className: 'flex justify-center mt-8',
+      parentClassName: 'text-center',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 6 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'PaginationComponent'
+      }
+    },
+
+    // CMS blocks below products
+    products_below_cms: {
+      id: 'products_below_cms',
+      type: 'cms_block',
+      content: '',
+      className: 'mt-8',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 5 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        cmsPosition: 'category_below_products',
+        displayName: 'CMS Block - Below Products'
       }
     },
 
@@ -383,299 +660,8 @@ export const categoryConfig = {
         cmsPosition: 'category_below_filters',
         displayName: 'CMS Block - Below Filters'
       }
-    },
-
-    // Products section
-    products_container: {
-      id: 'products_container',
-      type: 'container',
-      content: '',
-      className: '',
-      parentClassName: '',
-      styles: {},
-      parentId: null,
-      position: { col: 4, row: 2 },
-      colSpan: { grid: 9, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true }
-    },
-
-    // CMS blocks above products
-    products_above_cms: {
-      id: 'products_above_cms',
-      type: 'cms_block',
-      content: '',
-      className: 'mb-6',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 2 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        cmsPosition: 'category_above_products',
-        displayName: 'CMS Block - Above Products'
-      }
-    },
-
-    // Sorting controls and product count
-    sorting_controls: {
-      id: 'sorting_controls',
-      type: 'container',
-      content: '',
-      className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true }
-    },
-
-    // Product count info
-    product_count_info: {
-      id: 'product_count_info',
-      type: 'text',
-      content: 'Showing 1-12 of 48 products',
-      className: 'text-sm text-gray-600',
-      parentClassName: '',
-      styles: {},
-      parentId: 'sorting_controls',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 6, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        component: 'ProductCountInfo'
-      }
-    },
-
-    // Sort selector
-    sort_selector: {
-      id: 'sort_selector',
-      type: 'select',
-      content: '',
-      className: 'flex items-center gap-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'sorting_controls',
-      position: { col: 7, row: 1 },
-      colSpan: { grid: 6, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        component: 'SortSelector'
-      }
-    },
-
-    // Active filters display (at top of sidebar below Filter By)
-    active_filters: {
-      id: 'active_filters',
-      type: 'active_filters',
-      content: '',
-      className: 'mb-4',
-      parentClassName: '',
-      styles: {},
-      parentId: 'filters_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
-      metadata: {
-        hierarchical: false,
-        component: 'ActiveFilters'
-      }
-    },
-
-    // Main products display using ProductItemCard component
-    product_items: {
-      id: 'product_items',
-      type: 'container',
-      content: '',
-      className: '',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 3 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        component: 'ProductItemCard',
-        displayName: 'Product Grid',
-        itemsToShow: 3
-      }
-    },
-
-    // Single product template with microslots (for products_grid alternative)
-    product_item_card: {
-      id: 'product_item_card',
-      type: 'container',
-      content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 4, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: true,
-        isTemplate: true,
-        repeatable: true
-      }
-    },
-
-    // Product microslots
-    product_image_container: {
-      id: 'product_image_container',
-      type: 'container',
-      content: '',
-      className: 'relative overflow-hidden',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 4 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true }
-    },
-
-    product_image: {
-      id: 'product_image',
-      type: 'image',
-      content: '',
-      className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_image_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_labels: {
-      id: 'product_labels',
-      type: 'container',
-      content: '',
-      className: 'absolute top-2 left-2 z-10 flex flex-col gap-1',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_image_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true, overlay: true }
-    },
-
-    product_name: {
-      id: 'product_name',
-      type: 'text',
-      content: 'Sample Product Name',
-      className: 'font-semibold text-lg truncate',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 2 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_price_container: {
-      id: 'product_price_container',
-      type: 'container',
-      content: '',
-      className: 'flex items-baseline gap-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 3 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true }
-    },
-
-    product_price: {
-      id: 'product_price',
-      type: 'text',
-      content: '$29.99',
-      className: 'text-lg font-bold text-green-600',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_price_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 6, list: 6 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_compare_price: {
-      id: 'product_compare_price',
-      type: 'text',
-      content: '$39.99',
-      className: 'text-sm text-gray-500 line-through',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_price_container',
-      position: { col: 7, row: 1 },
-      colSpan: { grid: 6, list: 6 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_add_to_cart: {
-      id: 'product_add_to_cart',
-      type: 'button',
-      content: 'Add to Cart',
-      className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 4 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    // Pagination
-    pagination_container: {
-      id: 'pagination_container',
-      type: 'pagination',
-      content: '',
-      className: 'flex justify-center mt-8',
-      parentClassName: 'text-center',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 5 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        component: 'PaginationComponent'
-      }
-    },
-
-    // CMS blocks below products
-    products_below_cms: {
-      id: 'products_below_cms',
-      type: 'cms_block',
-      content: '',
-      className: 'mt-8',
-      parentClassName: '',
-      styles: {},
-      parentId: 'products_container',
-      position: { col: 1, row: 6 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        cmsPosition: 'category_below_products',
-        displayName: 'CMS Block - Below Products'
-      }
     }
+
   },
 
   // View configuration
