@@ -209,7 +209,7 @@ export const categoryConfig = {
       styles: {},
       parentId: 'product_items',
       position: { col: 1, row: 1 },
-      colSpan: { grid: 4, list: 12 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
