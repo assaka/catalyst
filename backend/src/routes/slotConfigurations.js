@@ -204,10 +204,10 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
       });
     }
 
-    if (draft.status !== 'draft') {
+    if (!['init', 'draft'].includes(draft.status)) {
       return res.status(400).json({
         success: false,
-        error: 'Can only update draft configurations'
+        error: 'Can only update draft or init configurations'
       });
     }
 
@@ -216,6 +216,12 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
         success: false,
         error: 'Unauthorized to edit this draft'
       });
+    }
+
+    // Handle init->draft transition
+    if (draft.status === 'init') {
+      console.log('🔄 ROUTE - Transitioning init->draft for config:', configId);
+      draft.status = 'draft';
     }
 
     draft.configuration = configuration;
