@@ -101,6 +101,19 @@ export default function ThemeLayout() {
         }));
     };
 
+    const handleGridChange = (breakpoint, columns) => {
+        setStore(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                product_grid: {
+                    ...prev.settings.product_grid,
+                    [breakpoint]: columns
+                }
+            }
+        }));
+    };
+
     const handleThemeChange = (key, value) => {
         setStore(prev => ({
             ...prev,
@@ -332,6 +345,66 @@ export default function ThemeLayout() {
                                         onChange={(e) => handleSettingsChange('max_visible_attributes', parseInt(e.target.value) || 5)}
                                         className="text-center"
                                     />
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="p-3 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Product Grid Layout</Label>
+                                    <p className="text-sm text-gray-500">Configure how many products display per row at different screen sizes</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <Label htmlFor="grid_mobile">Mobile</Label>
+                                        <Select value={String(store.settings.product_grid?.mobile || 1)} onValueChange={(value) => handleGridChange('mobile', parseInt(value))}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">1 column</SelectItem>
+                                                <SelectItem value="2">2 columns</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="grid_tablet">Tablet (sm)</Label>
+                                        <Select value={String(store.settings.product_grid?.tablet || 2)} onValueChange={(value) => handleGridChange('tablet', parseInt(value))}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">1 column</SelectItem>
+                                                <SelectItem value="2">2 columns</SelectItem>
+                                                <SelectItem value="3">3 columns</SelectItem>
+                                                <SelectItem value="4">4 columns</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="grid_desktop">Desktop (lg)</Label>
+                                        <Select value={String(store.settings.product_grid?.desktop || 2)} onValueChange={(value) => handleGridChange('desktop', parseInt(value))}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">1 column</SelectItem>
+                                                <SelectItem value="2">2 columns</SelectItem>
+                                                <SelectItem value="3">3 columns</SelectItem>
+                                                <SelectItem value="4">4 columns</SelectItem>
+                                                <SelectItem value="5">5 columns</SelectItem>
+                                                <SelectItem value="6">6 columns</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 p-2 rounded text-xs text-gray-600">
+                                    Preview: grid-cols-{store.settings.product_grid?.mobile || 1} sm:grid-cols-{store.settings.product_grid?.tablet || 2} lg:grid-cols-{store.settings.product_grid?.desktop || 2}
                                 </div>
                             </div>
                         </CardContent>

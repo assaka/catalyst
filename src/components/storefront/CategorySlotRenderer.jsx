@@ -27,36 +27,34 @@ export function CategorySlotRenderer({
       return 'space-y-4';
     }
 
-    // First try to use pre-generated gridClasses
-    if (slot?.gridClasses) {
-      return `grid ${slot.gridClasses} gap-4`;
-    }
+    // Use store settings for grid configuration
+    const gridConfig = settings?.product_grid;
 
-    // Generate from gridConfig if available
-    if (slot?.gridConfig?.breakpoints) {
-      const { breakpoints, customBreakpoints = [] } = slot.gridConfig;
-      let classes = [];
+    if (gridConfig) {
+      let classes = ['grid', 'gap-4'];
 
-      // Add default (mobile) grid
-      if (breakpoints.default) {
-        classes.push(`grid-cols-${breakpoints.default}`);
-      }
+      // Mobile classes
+      if (gridConfig.mobile === 1) classes.push('grid-cols-1');
+      else if (gridConfig.mobile === 2) classes.push('grid-cols-2');
+      else classes.push('grid-cols-1');
 
-      // Add responsive breakpoints
-      Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
-        if (breakpoint !== 'default' && columns) {
-          classes.push(`${breakpoint}:grid-cols-${columns}`);
-        }
-      });
+      // Tablet classes
+      if (gridConfig.tablet === 1) classes.push('sm:grid-cols-1');
+      else if (gridConfig.tablet === 2) classes.push('sm:grid-cols-2');
+      else if (gridConfig.tablet === 3) classes.push('sm:grid-cols-3');
+      else if (gridConfig.tablet === 4) classes.push('sm:grid-cols-4');
+      else classes.push('sm:grid-cols-2');
 
-      // Add custom breakpoints
-      customBreakpoints.forEach(({ name, columns }) => {
-        if (name && columns) {
-          classes.push(`${name}:grid-cols-${columns}`);
-        }
-      });
+      // Desktop classes
+      if (gridConfig.desktop === 1) classes.push('lg:grid-cols-1');
+      else if (gridConfig.desktop === 2) classes.push('lg:grid-cols-2');
+      else if (gridConfig.desktop === 3) classes.push('lg:grid-cols-3');
+      else if (gridConfig.desktop === 4) classes.push('lg:grid-cols-4');
+      else if (gridConfig.desktop === 5) classes.push('lg:grid-cols-5');
+      else if (gridConfig.desktop === 6) classes.push('lg:grid-cols-6');
+      else classes.push('lg:grid-cols-2');
 
-      return `grid ${classes.join(' ')} gap-4`;
+      return classes.join(' ');
     }
 
     // Default fallback

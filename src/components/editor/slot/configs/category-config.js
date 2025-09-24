@@ -191,25 +191,10 @@ export const categoryConfig = {
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
-      gridClasses: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2',
-      gridConfig: {
-        breakpoints: {
-          'default': 1,
-          'sm': 2,
-          'lg': 2
-        },
-        availableColumns: [1, 2, 3, 4, 5, 6],
-        availableBreakpoints: ['default', 'sm', 'md', 'lg', 'xl', '2xl'],
-        customBreakpoints: []
-      },
       metadata: {
         hierarchical: false,
         component: 'ProductItemCard',
-        displayName: 'Product Grid',
-        configurable: true,
-        configType: 'grid',
-        adminLabel: 'Product Grid Layout',
-        adminDescription: 'Configure how many products display per row at different screen sizes'
+        displayName: 'Product Grid'
       }
     },
 
