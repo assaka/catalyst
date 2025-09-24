@@ -628,43 +628,12 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
-                      console.log('🎨 customSlotRenderer CALLED for slot:', slot.id, 'type:', slot.type);
-                      if (slot.id === 'category_title') {
-                        console.log('🎨 CATEGORY TITLE SLOT DETAILED DEBUG:', {
-                          slotId: slot.id,
-                          styles: slot.styles,
-                          className: slot.className,
-                          content: slot.content,
-                          type: slot.type
-                        });
-                      }
-                      console.log('🚨 CUSTOM SLOT RENDERER IS WORKING!');
 
-                      // Test: Always return something visible for key slots
-                      if (slot.id === 'breadcrumbs') {
-                        console.log('🍞 RENDERING BREADCRUMBS SLOT!');
-                        console.log('🍞 Breadcrumbs slot content:', slot.content);
-                        console.log('🍞 Breadcrumbs slot className:', slot.className);
-                        console.log('🍞 Breadcrumbs slot viewMode:', slot.viewMode);
-                        console.log('🍞 Current viewMode:', viewMode);
-                        console.log('🍞 Should render breadcrumbs:', !slot.viewMode || slot.viewMode.includes(viewMode));
-                        return <div style={{background: 'blue', padding: '10px', color: 'white', marginBottom: '20px'}}>🍞 BREADCRUMBS TEST WORKING!</div>;
-                      }
-
-                      if (slot.id === 'category_header') {
-                        console.log('📄 RENDERING CATEGORY HEADER!');
-                        return <div style={{background: 'green', padding: '15px', color: 'white', marginBottom: '20px', fontSize: '24px'}}>CATEGORY HEADER TEST WORKING!</div>;
-                      }
 
                       // Let layered_navigation be handled by the component mapping
 
                       // Handle breadcrumbs content specifically
                       if (slot.id === 'breadcrumbs_content') {
-                        console.log('🍞 Rendering breadcrumbs content with CategoryBreadcrumbsSlot');
-                        console.log('🍞 Breadcrumbs slot details:', slot);
-                        console.log('🍞 Breadcrumbs className:', slot.className);
-                        console.log('🍞 Breadcrumbs styles:', slot.styles);
-                        console.log('🍞 Sample context breadcrumbs:', sampleCategoryContext.breadcrumbs);
                         return (
                           <CategoryBreadcrumbsSlot
                             categoryData={sampleCategoryContext}
@@ -677,15 +646,13 @@ const CategorySlotsEditor = ({
                         );
                       }
 
-                      // Handle product_item_card specifically
-                      if (slot.id === 'product_item_card') {
-                        console.log('🛍️ Rendering product_item_card with CategoryProductItemCardSlot');
-                        console.log('🛍️ Product slot details:', slot);
+                      // Handle product_items specifically (the main products container)
+                      if (slot.id === 'product_items') {
                         return (
                           <CategoryProductItemCardSlot
                             categoryData={sampleCategoryContext}
                             categoryContext={sampleCategoryContext}
-                            content={slot.content}
+                            content={{ itemsToShow: 3 }}
                             config={{ viewMode }}
                           />
                         );
@@ -706,6 +673,7 @@ const CategorySlotsEditor = ({
                         // Products
                         'products_container': CategoryProductsSlot,
                         'products_grid': CategoryProductsSlot,
+                        'product_items': CategoryProductItemCardSlot,
                         'product_item_card': CategoryProductItemCardSlot,
                         'product_template': CategoryProductItemCardSlot,
 
@@ -721,10 +689,8 @@ const CategorySlotsEditor = ({
                       };
 
                       const SlotComponent = componentMap[slot.id];
-                      console.log('🎯 Component mapping for', slot.id, ':', SlotComponent?.name || 'None found');
 
                       if (SlotComponent) {
-                        console.log('✅ Rendering component for', slot.id, 'with styles:', slot.styles, 'className:', slot.className);
                         return (
                           <SlotComponent
                             categoryData={sampleCategoryContext}
@@ -736,8 +702,6 @@ const CategorySlotsEditor = ({
                           />
                         );
                       }
-
-                      console.log('🔄 Fallback rendering for', slot.id, 'type:', slot.type);
 
                       // Handle CMS block slots
                       if (slot.type === 'cms_block') {

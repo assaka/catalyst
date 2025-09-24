@@ -240,9 +240,6 @@ export function GridColumn({
   isNested = false,
   slots = {} // Add slots prop for enhanced feedback
 }) {
-  if (slotId === 'breadcrumbs') {
-    console.log(`🍞 GridColumn rendering breadcrumbs - slotId: ${slotId}, colSpanClass: ${colSpanClass}, children:`, children);
-  }
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropZone, setDropZone] = useState(null);
@@ -600,9 +597,6 @@ export function GridColumn({
     )
   };
 
-  if (slotId === 'breadcrumbs') {
-    console.log(`🍞 GridColumn about to return JSX for breadcrumbs - className will include: ${colSpanClass}`);
-  }
 
   return (
     <div
@@ -833,10 +827,6 @@ export function HierarchicalSlotRenderer({
 
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
-    console.log(`🔍 Filtering slot [${slot.id}] - viewMode: ${viewMode}, slot.viewMode: ${JSON.stringify(slot.viewMode)}, shouldShow: ${shouldShow}`);
-    if (slot.id === 'breadcrumbs' || slot.id === 'breadcrumbs_content') {
-      console.log(`🍞 BREADCRUMBS FILTER RESULT: slot=${slot.id}, shouldShow=${shouldShow}, parentId=${parentId}`);
-    }
     return shouldShow;
   });
 
@@ -870,11 +860,6 @@ export function HierarchicalSlotRenderer({
     return 0;
   });
 
-  console.log(`🎯 HierarchicalSlotRenderer [parentId: ${parentId}] - Final sorted slots to render:`, sortedSlots.map(s => s.id));
-
-  if (sortedSlots.find(s => s.id === 'breadcrumbs')) {
-    console.log(`🍞 BREADCRUMBS FOUND IN FINAL SORTED SLOTS - parentId: ${parentId}`);
-  }
 
   return sortedSlots.map(slot => {
     // Handle number, object with viewMode, and Tailwind responsive classes
@@ -912,9 +897,6 @@ export function HierarchicalSlotRenderer({
     const rowSpan = slot.rowSpan || 1;
     const height = slot.styles?.minHeight ? parseInt(slot.styles.minHeight) : undefined;
 
-    if (slot.id === 'breadcrumbs') {
-      console.log(`🍞 About to render GridColumn for breadcrumbs - colSpan: ${colSpan}, colSpanClass: ${colSpanClass}`);
-    }
 
     return (
       <GridColumn
@@ -986,16 +968,6 @@ export function HierarchicalSlotRenderer({
                   display: 'inline-block',
                   // Use fit-content for w-fit elements, otherwise 100%
                   width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
-                }}
-                ref={(el) => {
-                  if (slot.id === 'category_title' && el) {
-                    console.log('🎨 Category title element styles applied:', {
-                      slotId: slot.id,
-                      slotStyles: slot.styles,
-                      finalComputedStyles: window.getComputedStyle(el).backgroundColor,
-                      elementStyle: el.style.backgroundColor
-                    });
-                  }
                 }}
                 onClick={(e) => {
                   e.stopPropagation();

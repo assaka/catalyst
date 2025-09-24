@@ -37,9 +37,6 @@ export function CategoryHeaderSlot({ categoryData, content, className, styles })
 export function CategoryBreadcrumbsSlot({ categoryData, content, storeCode, categories, className, styles }) {
   const { category, breadcrumbs } = categoryData || {};
 
-  // Debug log to check if className is being received
-  console.log('🔍 CategoryBreadcrumbsSlot received className:', className);
-  console.log('🔍 CategoryBreadcrumbsSlot received styles:', styles);
 
   return (
     <nav className={className || "category-breadcrumbs"} style={styles}>

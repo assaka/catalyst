@@ -97,15 +97,6 @@ export function CategorySlotRenderer({
       metadata = {}
     } = slot || {};
 
-    // Debug log for product-related slots
-    if (id && (id.includes('product_') || id === 'product_item_card')) {
-      console.log(`🔍 Rendering slot: ${id}`, {
-        type,
-        className,
-        metadata,
-        productsLength: products?.length || 0
-      });
-    }
 
     // Helper function to wrap content with parent class if needed
     const wrapWithParentClass = (children) => {
@@ -474,15 +465,6 @@ export function CategorySlotRenderer({
       const itemsToShow = slot.metadata?.itemsToShow || 3;
       const productsToShow = products.slice(0, itemsToShow);
 
-      console.log('🔍 CategorySlotRenderer - product_item_card:', {
-        slotId: id,
-        itemsToShow,
-        totalProducts: products.length,
-        productsToShow: productsToShow.length,
-        finalClassName,
-        viewMode,
-        slot: slot
-      });
 
       // Use the className from slot configuration if available, otherwise use default
       const defaultGridClass = viewMode === 'grid'

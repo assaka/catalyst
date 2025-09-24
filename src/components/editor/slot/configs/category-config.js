@@ -606,7 +606,7 @@ export const categoryConfig = {
       className: 'flex items-baseline gap-2',
       parentClassName: '',
       styles: {},
-      parentId: 'product_template',
+      parentId: 'product_item_card',
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
