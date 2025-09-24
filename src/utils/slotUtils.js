@@ -11,7 +11,11 @@ export class SlotManager {
   static getRootSlots(slots) {
     return Object.values(slots)
       .filter(slot => slot.parentId === null)
-      .sort((a, b) => (a.position?.order || 0) - (b.position?.order || 0));
+      .sort((a, b) => {
+        const aOrder = a.position?.order ?? a.position?.row ?? 0;
+        const bOrder = b.position?.order ?? b.position?.row ?? 0;
+        return aOrder - bOrder;
+      });
   }
   
   static getChildSlots(slots, parentId) {
@@ -28,7 +32,13 @@ export class SlotManager {
 
     console.info(`🔍 SlotManager.getChildSlots result for parentId ${parentId}:`, childSlots.map(s => s.id));
 
-    return childSlots.sort((a, b) => (a.position?.order || 0) - (b.position?.order || 0));
+    // Sort by position.order if available, otherwise by position.row, fallback to 0
+    return childSlots.sort((a, b) => {
+      const aOrder = a.position?.order ?? a.position?.row ?? 0;
+      const bOrder = b.position?.order ?? b.position?.row ?? 0;
+      console.info(`🔄 Sorting ${a.id} (${aOrder}) vs ${b.id} (${bOrder})`);
+      return aOrder - bOrder;
+    });
   }
   
   static moveSlot(slots, slotId, newParentId, newPosition) {
