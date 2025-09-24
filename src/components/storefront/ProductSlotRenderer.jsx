@@ -54,7 +54,34 @@ export function ProductSlotRenderer({
     if (!product || !product.images || !product.images[imageIndex]) {
       return 'https://placehold.co/600x600?text=No+Image';
     }
-    return product.images[imageIndex];
+
+    const image = product.images[imageIndex];
+
+    // If it's already a string URL, return it
+    if (typeof image === 'string') {
+      return image;
+    }
+
+    // If it's an object, try to extract the URL from common property names
+    if (typeof image === 'object' && image !== null) {
+      // Try common property names for image URLs
+      const url = image.url || image.src || image.path || image.image_url || image.uri || image.file_url;
+
+      if (typeof url === 'string') {
+        return url;
+      }
+
+      // If the object has a toString method that returns a URL
+      if (image.toString && typeof image.toString === 'function') {
+        const stringValue = image.toString();
+        if (stringValue && stringValue !== '[object Object]') {
+          return stringValue;
+        }
+      }
+    }
+
+    // Fallback to placeholder if we can't extract a valid URL
+    return 'https://placehold.co/600x600?text=No+Image';
   };
 
   // Get child slots for current parent
@@ -74,10 +101,7 @@ export function ProductSlotRenderer({
     if (id === 'breadcrumbs') {
       return (
         <nav className={className} style={styles}>
-          {content ? (
-            <div dangerouslySetInnerHTML={{ __html: content }} />
-          ) : (
-            breadcrumbs?.map((crumb, index) => (
+          { breadcrumbs?.map((crumb, index) => (
               <span key={index}>
                 {crumb.url ? (
                   <Link to={crumb.url} className="hover:text-gray-900">
@@ -88,7 +112,7 @@ export function ProductSlotRenderer({
                 )}
                 {index < breadcrumbs.length - 1 && <span className="mx-2">&gt;</span>}
               </span>
-            )) || 'Home > Category > Product'
+            )
           )}
         </nav>
       );
@@ -108,25 +132,25 @@ export function ProductSlotRenderer({
     }
 
     // Product Labels
-    if (id === 'product_labels') {
-      return (
-        <div className={className} style={styles}>
-          {product?.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
-            <Badge variant="destructive" className="bg-red-600 text-white">
-              SALE
-            </Badge>
-          )}
-          {productLabels?.map(label => (
-            <Badge key={label.id} className="ml-2" style={{
-              backgroundColor: label.background_color,
-              color: label.text_color
-            }}>
-              {label.text}
-            </Badge>
-          ))}
-        </div>
-      );
-    }
+    // if (id === 'product_labels') {
+    //   return (
+    //     <div className={className} style={styles}>
+    //       {product?.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
+    //         <Badge variant="destructive" className="bg-red-600 text-white">
+    //           SALE
+    //         </Badge>
+    //       )}
+    //       {productLabels?.map(label => (
+    //         <Badge key={label.id} className="ml-2" style={{
+    //           backgroundColor: label.background_color,
+    //           color: label.text_color
+    //         }}>
+    //           {label.text}
+    //         </Badge>
+    //       ))}
+    //     </div>
+    //   );
+    // }
 
     // Thumbnail Gallery
     if (id === 'thumbnail_gallery') {
@@ -134,21 +158,29 @@ export function ProductSlotRenderer({
 
       return (
         <div className={className} style={styles}>
-          {product.images.map((image, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                (activeImageIndex || 0) === index ? 'border-blue-500' : 'border-gray-300'
-              }`}
-            >
-              <img
-                src={image}
-                alt={`${product.name} ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </button>
-          ))}
+          {product.images.map((image, index) => {
+            // Extract URL if image is an object
+            let imageUrl = image;
+            if (typeof image === 'object' && image !== null) {
+              imageUrl = image.url || image.src || image.path || image.image_url || image.uri || image.file_url || 'https://placehold.co/100x100?text=No+Image';
+            }
+
+            return (
+              <button
+                key={index}
+                onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
+                  (activeImageIndex || 0) === index ? 'border-blue-500' : 'border-gray-300'
+                }`}
+              >
+                <img
+                  src={imageUrl}
+                  alt={`${product.name} ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            );
+          })}
         </div>
       );
     }
@@ -157,7 +189,7 @@ export function ProductSlotRenderer({
     if (id === 'product_title') {
       return (
         <h1 className={className} style={styles}>
-          {content || product?.name || 'Product Name'}
+          {product?.name || content || 'Product Name'}
         </h1>
       );
     }
@@ -167,7 +199,7 @@ export function ProductSlotRenderer({
       const displayPrice = product?.price || '0.00';
       return (
         <span className={className} style={styles}>
-          {content || `${currencySymbol || '$'}${parseFloat(displayPrice).toFixed(2)}`}
+          {`${currencySymbol || '$'}${parseFloat(displayPrice).toFixed(2)}`}
         </span>
       );
     }
@@ -179,7 +211,7 @@ export function ProductSlotRenderer({
       }
       return (
         <span className={className} style={styles}>
-          {content || `${currencySymbol || '$'}${parseFloat(product.compare_price).toFixed(2)}`}
+          {`${currencySymbol || '$'}${parseFloat(product.compare_price).toFixed(2)}`}
         </span>
       );
     }
@@ -214,7 +246,7 @@ export function ProductSlotRenderer({
       if (!product?.sku) return null;
       return (
         <p className={className} style={styles}>
-          {content || `SKU: ${product.sku}`}
+          {content || 'SKU:'} {product.sku}
         </p>
       );
     }
@@ -409,14 +441,26 @@ export function ProductSlotRenderer({
 
       return (
         <div className={className} style={styles}>
-          {relatedProducts.slice(0, 4).map((relatedProduct) => (
-            <Card key={relatedProduct.id} className="group hover:shadow-lg transition-shadow duration-200">
-              <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                <img
-                  src={relatedProduct.images?.[0] || 'https://placehold.co/300x300?text=No+Image'}
-                  alt={relatedProduct.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                />
+          {relatedProducts.slice(0, 4).map((relatedProduct) => {
+            // Extract URL from first image if it's an object
+            let relatedImageUrl = 'https://placehold.co/300x300?text=No+Image';
+            if (relatedProduct.images && relatedProduct.images[0]) {
+              const firstImage = relatedProduct.images[0];
+              if (typeof firstImage === 'string') {
+                relatedImageUrl = firstImage;
+              } else if (typeof firstImage === 'object' && firstImage !== null) {
+                relatedImageUrl = firstImage.url || firstImage.src || firstImage.path || firstImage.image_url || firstImage.uri || firstImage.file_url || relatedImageUrl;
+              }
+            }
+
+            return (
+              <Card key={relatedProduct.id} className="group hover:shadow-lg transition-shadow duration-200">
+                <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                  <img
+                    src={relatedImageUrl}
+                    alt={relatedProduct.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
                 {relatedProduct.compare_price && parseFloat(relatedProduct.compare_price) > parseFloat(relatedProduct.price) && (
                   <div className="absolute top-2 right-2">
                     <Badge variant="destructive" className="bg-red-600 text-white text-xs">
@@ -458,7 +502,8 @@ export function ProductSlotRenderer({
                 )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       );
     }
@@ -491,9 +536,22 @@ export function ProductSlotRenderer({
         );
 
       case 'image':
+        // Ensure content is a string URL
+        let imageSrc = content || getProductImageUrl();
+
+        // If content is an object, try to extract the URL
+        if (typeof imageSrc === 'object' && imageSrc !== null) {
+          imageSrc = imageSrc.url || imageSrc.src || imageSrc.path || imageSrc.image_url || imageSrc.uri || imageSrc.file_url || getProductImageUrl();
+        }
+
+        // Ensure we have a string
+        if (typeof imageSrc !== 'string') {
+          imageSrc = getProductImageUrl();
+        }
+
         return (
           <img
-            src={content || getProductImageUrl()}
+            src={imageSrc}
             alt={product?.name || 'Product'}
             className={className}
             style={styles}
