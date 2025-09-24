@@ -121,11 +121,11 @@ export default function Category() {
   const getGridClasses = () => {
     const gridConfig = categoryLayoutConfig?.slots?.product_items?.metadata?.gridConfig;
     if (gridConfig) {
-      const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
+      const { mobile = 1, tablet = 2, desktop = 2 } = gridConfig;
       return `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
     }
-    // Fallback to default grid
-    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+    // Fallback to default grid (2 columns on desktop)
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
   };
 
     useEffect(() => {
