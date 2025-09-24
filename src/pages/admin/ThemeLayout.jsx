@@ -61,6 +61,18 @@ export default function ThemeLayout() {
                 enable_product_filters: true,
                 collapse_filters: false,
                 max_visible_attributes: 5,
+                product_grid: {
+                    breakpoints: {
+                        default: 1,
+                        sm: 2,
+                        md: 0,
+                        lg: 2,
+                        xl: 0,
+                        '2xl': 0
+                    },
+                    customBreakpoints: [],
+                    ...((fullStore?.settings || {}).product_grid || {})
+                },
                 theme: {
                     primary_button_color: '#007bff',
                     secondary_button_color: '#6c757d',
