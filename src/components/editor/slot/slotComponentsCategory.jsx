@@ -44,18 +44,18 @@ export function CategoryBreadcrumbsSlot({ categoryData, content, storeCode, cate
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
         <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <Link to="/" className="hover:text-gray-900">Home</Link>
+          <Link to="/" className="hover:text-gray-900 whitespace-nowrap">Home</Link>
           {breadcrumbs && breadcrumbs.length > 0 ? (
             // Use the hierarchical breadcrumbs from the context
             breadcrumbs.map((item, index) => (
               <React.Fragment key={index}>
                 <span>/</span>
                 {item.url ? (
-                  <Link to={item.url} className="hover:text-gray-900">
+                  <Link to={item.url} className="hover:text-gray-900 whitespace-nowrap">
                     {item.name}
                   </Link>
                 ) : (
-                  <span className="font-medium text-gray-900">{item.name}</span>
+                  <span className="font-medium text-gray-900 whitespace-nowrap">{item.name}</span>
                 )}
               </React.Fragment>
             ))
@@ -64,7 +64,7 @@ export function CategoryBreadcrumbsSlot({ categoryData, content, storeCode, cate
             category?.name && (
               <>
                 <span>/</span>
-                <span className="font-medium text-gray-900">{category.name}</span>
+                <span className="font-medium text-gray-900 whitespace-nowrap">{category.name}</span>
               </>
             )
           )}
@@ -188,7 +188,7 @@ export function CategorySortingSlot({ categoryData, content }) {
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Sort by:</span>
+          <span className="text-sm text-gray-600 whitespace-nowrap">Sort by:</span>
           <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
             <option>Featured</option>
             <option>Price: Low to High</option>
