@@ -118,7 +118,7 @@ const CategorySlotsEditor = ({
   const {
     handleResetLayout: resetLayoutFromHook,
     handlePublishConfiguration,
-    getDraftOrStaticConfiguration,
+    getDraftConfiguration,
     createSlot,
     handleSlotDrop: slotDropHandler,
     handleSlotDelete: slotDeleteHandler,
@@ -146,7 +146,7 @@ const CategorySlotsEditor = ({
 
   // Configuration initialization hook
   const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
-    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
+    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus
   );
 
   // Create default slots function for category layout

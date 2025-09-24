@@ -518,15 +518,15 @@ export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOr
 };
 
 // Configuration initialization hook
-export const useConfigurationInitialization = (pageType, pageName, slotType, getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus) => {
+export const useConfigurationInitialization = (pageType, pageName, slotType, getSelectedStoreId, getDraftConfiguration, loadDraftStatus) => {
   const configurationLoadedRef = useRef(false);
 
   const initializeConfig = useCallback(async () => {
     if (configurationLoadedRef.current) return null;
 
     try {
-      // Use the hook function to get configuration (either draft or static)
-      const configToUse = await getDraftOrStaticConfiguration();
+      // Use the hook function to get draft configuration
+      const configToUse = await getDraftConfiguration();
 
       if (!configToUse) {
         throw new Error(`Failed to load ${pageType} configuration`);
@@ -886,155 +886,38 @@ export function useSlotConfiguration({
     return configToUse;
   }, [pageType, pageName, slotType]);
 
-  // Generic get draft or static configuration
-  const getDraftOrStaticConfiguration = useCallback(async () => {
+  // Get draft configuration for editor (no fallback needed - draft always exists in editor context)
+  const getDraftConfiguration = useCallback(async () => {
     const storeId = selectedStore?.id;
-    let configToUse = null;
 
-    // Always load the static configuration first to get the base structure
-    const staticConfig = await loadStaticConfiguration();
+    if (!storeId) {
+      throw new Error('No store selected - cannot load draft configuration');
+    }
 
-    // Try to load from database and merge with static config
-    if (storeId) {
-      try {
-        console.log('🏪 STORE DEBUG - Loading config for:', { storeId, pageType });
-        // CRITICAL FIX: Do NOT send staticConfig to API - it overwrites existing drafts!
-        // Only send storeId and pageType to get existing draft without overwriting it
-        const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
-        console.log('📥 DRAFT CONFIG RESPONSE:', {
-          success: savedConfig?.success,
-          hasData: !!savedConfig?.data,
-          configId: savedConfig?.data?.id,
-          status: savedConfig?.data?.status
-        });
+    try {
+      console.log('🏪 EDITOR - Loading draft config for:', { storeId, pageType });
 
-        if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
-          const dbConfig = savedConfig.data.configuration;
+      // Editor context: Always get pure draft from database (no static config merging)
+      const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
 
-          // Debug the raw database response for category_title
-          if (dbConfig.slots?.category_title) {
-            console.log('🗄️ RAW DATABASE RESPONSE - category_title:', {
-              rawSlot: JSON.stringify(dbConfig.slots.category_title, null, 2),
-              rawStyles: JSON.stringify(dbConfig.slots.category_title.styles),
-              rawColor: dbConfig.slots.category_title.styles?.color,
-              configLastModified: savedConfig.data.updated_at,
-              expectedGreen: '#00ff00',
-              hasGreenColor: dbConfig.slots.category_title.styles?.color === '#00ff00'
-            });
-          }
+      console.log('📥 EDITOR - Draft config response:', {
+        success: savedConfig?.success,
+        hasData: !!savedConfig?.data,
+        configId: savedConfig?.data?.id,
+        status: savedConfig?.data?.status
+      });
 
-          // Merge saved config with static config, preserving viewMode and metadata from static
-          const mergedSlots = {};
-
-          console.log('🔄 STYLE LOADING DEBUG - Starting merge process');
-          console.log('📋 STYLE LOADING DEBUG - Database config slots:', Object.keys(dbConfig.slots || {}));
-          console.log('📋 STYLE LOADING DEBUG - Static config slots:', Object.keys(staticConfig.slots || {}));
-
-          // Debug which database configuration is being loaded
-          console.log('🗃️ DATABASE CONFIG DEBUG:', {
-            savedConfigData: savedConfig.data,
-            configurationId: savedConfig.data?.id,
-            storeId: savedConfig.data?.store_id,
-            status: savedConfig.data?.status,
-            hasUnpublishedChanges: savedConfig.data?.has_unpublished_changes,
-            createdAt: savedConfig.data?.created_at,
-            lastModified: savedConfig.data?.updated_at
-          });
-
-          // Start with static config slots to ensure all viewMode arrays are preserved
-          Object.entries(staticConfig.slots).forEach(([slotId, staticSlot]) => {
-            const savedSlot = dbConfig.slots?.[slotId];
-
-            console.log(`🔄 STYLE LOADING DEBUG - Processing slot [${slotId}]:`, {
-              hasStaticStyles: !!staticSlot.styles,
-              staticStyles: staticSlot.styles,
-              hasSavedSlot: !!savedSlot,
-              savedStyles: savedSlot?.styles
-            });
-
-            // Special detailed logging for category_title to track the exact issue
-            if (slotId === 'category_title') {
-              console.log(`🎯 CATEGORY_TITLE SPECIFIC DEBUG:`, {
-                staticSlotStyles: JSON.stringify(staticSlot.styles),
-                savedSlotStyles: JSON.stringify(savedSlot?.styles),
-                hasSavedColor: savedSlot?.styles?.color,
-                staticColor: staticSlot.styles?.color,
-                willMerge: !!savedSlot?.styles
-              });
-            }
-
-            // Debug the styles merge operation for category_title
-            let mergedStyles = staticSlot.styles;
-            if (savedSlot && savedSlot.styles) {
-              mergedStyles = { ...staticSlot.styles, ...savedSlot.styles };
-              if (slotId === 'category_title') {
-                console.log('🔀 STYLES MERGE OPERATION:', {
-                  staticStyles: staticSlot.styles,
-                  savedStyles: savedSlot.styles,
-                  mergedResult: mergedStyles,
-                  colorOverride: savedSlot.styles.color ? `${staticSlot.styles?.color} → ${savedSlot.styles.color}` : 'No color override'
-                });
-              }
-            }
-
-            mergedSlots[slotId] = {
-              ...staticSlot, // Start with static slot (includes viewMode, metadata, etc.)
-              ...(savedSlot ? {
-                // Only override with saved properties that should be persisted
-                content: savedSlot.content !== undefined ? savedSlot.content : staticSlot.content,
-                className: savedSlot.className !== undefined ? savedSlot.className : staticSlot.className,
-                parentClassName: savedSlot.parentClassName !== undefined ? savedSlot.parentClassName : staticSlot.parentClassName,
-                parentId: savedSlot.parentId !== undefined ? savedSlot.parentId : staticSlot.parentId,
-                styles: mergedStyles,
-                colSpan: savedSlot.colSpan !== undefined ? savedSlot.colSpan : staticSlot.colSpan,
-                rowSpan: savedSlot.rowSpan !== undefined ? savedSlot.rowSpan : staticSlot.rowSpan,
-                position: savedSlot.position ? { ...staticSlot.position, ...savedSlot.position } : staticSlot.position
-              } : {})
-            };
-
-            console.log(`✅ STYLE LOADING DEBUG - Final merged slot [${slotId}]:`, {
-              finalStyles: mergedSlots[slotId].styles,
-              stylesMerged: savedSlot?.styles ? 'YES - database styles merged' : 'NO - only static styles'
-            });
-
-            // Special detailed logging for category_title merged result
-            if (slotId === 'category_title') {
-              console.log(`🎯 CATEGORY_TITLE FINAL MERGED:`, {
-                finalMergedStyles: JSON.stringify(mergedSlots[slotId].styles),
-                finalColor: mergedSlots[slotId].styles?.color,
-                mergedCorrectly: mergedSlots[slotId].styles?.color === savedSlot?.styles?.color
-              });
-            }
-          });
-
-          // Add any new slots that exist in database but not in static config
-          if (dbConfig.slots) {
-            Object.entries(dbConfig.slots).forEach(([slotId, savedSlot]) => {
-              if (!staticConfig.slots[slotId]) {
-                mergedSlots[slotId] = savedSlot;
-              }
-            });
-          }
-
-          configToUse = {
-            ...staticConfig,
-            ...dbConfig,
-            slots: mergedSlots
-          };
-
-        }
-      } catch (dbError) {
-        // No saved configuration found, will use static config as fallback
+      if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
+        console.log('✅ EDITOR - Using draft configuration from database');
+        return savedConfig.data.configuration;
+      } else {
+        throw new Error('No valid draft configuration found - this should not happen in editor context');
       }
+    } catch (error) {
+      console.error('❌ EDITOR - Failed to load draft configuration:', error);
+      throw error;
     }
-
-    // If no saved config found or merging failed, use the static configuration
-    if (!configToUse) {
-      configToUse = staticConfig;
-    }
-
-    return configToUse;
-  }, [selectedStore, pageType, loadStaticConfiguration]);
+  }, [selectedStore, pageType]);
 
   // Generic validation function for slot configurations
   const validateSlotConfiguration = useCallback((slots) => {
@@ -1703,7 +1586,7 @@ export function useSlotConfiguration({
   return {
     handleResetLayout,
     handlePublishConfiguration,
-    getDraftOrStaticConfiguration,
+    getDraftConfiguration,
     createSlot,
     handleSlotDrop,
     handleSlotDelete,
