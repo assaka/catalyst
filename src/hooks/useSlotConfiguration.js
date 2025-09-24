@@ -608,6 +608,14 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
             hasColorStyle: !!finalConfig.slots.category_title.styles?.color,
             colorValue: finalConfig.slots.category_title.styles?.color
           });
+
+          console.log('🎯 EDITOR INITIALIZATION DETAILED - category_title:', {
+            fullSlot: JSON.stringify(finalConfig.slots.category_title, null, 2),
+            stylesStringified: JSON.stringify(finalConfig.slots.category_title.styles),
+            expectedGreen: '#008040',
+            actualColor: finalConfig.slots.category_title.styles?.color,
+            isCorrectColor: finalConfig.slots.category_title.styles?.color === '#008040'
+          });
         } else {
           console.log('❌ EDITOR INITIALIZATION - category_title slot NOT found in final config');
         }
@@ -912,6 +920,17 @@ export function useSlotConfiguration({
               savedStyles: savedSlot?.styles
             });
 
+            // Special detailed logging for category_title to track the exact issue
+            if (slotId === 'category_title') {
+              console.log(`🎯 CATEGORY_TITLE SPECIFIC DEBUG:`, {
+                staticSlotStyles: JSON.stringify(staticSlot.styles),
+                savedSlotStyles: JSON.stringify(savedSlot?.styles),
+                hasSavedColor: savedSlot?.styles?.color,
+                staticColor: staticSlot.styles?.color,
+                willMerge: !!savedSlot?.styles
+              });
+            }
+
             mergedSlots[slotId] = {
               ...staticSlot, // Start with static slot (includes viewMode, metadata, etc.)
               ...(savedSlot ? {
@@ -931,6 +950,15 @@ export function useSlotConfiguration({
               finalStyles: mergedSlots[slotId].styles,
               stylesMerged: savedSlot?.styles ? 'YES - database styles merged' : 'NO - only static styles'
             });
+
+            // Special detailed logging for category_title merged result
+            if (slotId === 'category_title') {
+              console.log(`🎯 CATEGORY_TITLE FINAL MERGED:`, {
+                finalMergedStyles: JSON.stringify(mergedSlots[slotId].styles),
+                finalColor: mergedSlots[slotId].styles?.color,
+                mergedCorrectly: mergedSlots[slotId].styles?.color === savedSlot?.styles?.color
+              });
+            }
           });
 
           // Add any new slots that exist in database but not in static config
