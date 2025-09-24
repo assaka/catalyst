@@ -581,31 +581,30 @@ const CategorySlotsEditor = ({
                         return null;
                       }
 
-                      // Handle product_item_card - this is what gets rendered for each individual product
-                      if (slot.id === 'product_item_card') {
-                        console.log('🃏 PRODUCT_ITEM_CARD HANDLER RUNNING!');
+                      // Handle product_items container - apply grid layout classes to the container
+                      if (slot.id === 'product_items') {
+                        console.log('🛍️ PRODUCT_ITEMS CONTAINER HANDLER RUNNING!');
 
                         // Get the UPDATED product_items slot configuration for grid settings
                         const updatedProductItemsSlot = categoryLayoutConfig?.slots?.product_items;
                         const gridConfig = updatedProductItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 };
 
-                        console.log('📊 GRID CONFIG FROM PRODUCT_ITEMS:', gridConfig);
-
-                        // Render multiple product cards using our mock data in a grid
-                        const products = sampleCategoryContext?.products?.slice(0, 6) || [];
-                        console.log('🛍️ Rendering products with grid config:', products.map(p => p.name));
+                        console.log('📊 GRID CONFIG FROM DATABASE:', gridConfig);
 
                         // Generate dynamic grid classes based on configuration
                         const getGridClasses = () => {
                           if (viewMode === 'list') {
-                            return 'grid-cols-1';
+                            return 'space-y-4'; // List layout
                           }
                           const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
                           return `grid grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop} gap-4`;
                         };
 
                         const dynamicGridClasses = getGridClasses();
-                        console.log('🎨 DYNAMIC GRID CLASSES FOR PRODUCT CARDS:', dynamicGridClasses);
+                        console.log('🎨 DYNAMIC GRID CLASSES FOR CONTAINER:', dynamicGridClasses);
+
+                        // Render products using the grid container
+                        const products = sampleCategoryContext?.products?.slice(0, 6) || [];
 
                         return (
                           <div className={dynamicGridClasses}>
@@ -627,6 +626,33 @@ const CategorySlotsEditor = ({
                               />
                             ))}
                           </div>
+                        );
+                      }
+
+                      // Handle individual product_item_card if needed (fallback for individual card rendering)
+                      if (slot.id === 'product_item_card') {
+                        console.log('🃏 PRODUCT_ITEM_CARD HANDLER RUNNING!');
+
+                        // For individual card rendering, just render a single sample card
+                        const sampleProduct = sampleCategoryContext?.products?.[0];
+                        if (!sampleProduct) return null;
+
+                        return (
+                          <ProductItemCard
+                            key={sampleProduct.id}
+                            product={sampleProduct}
+                            settings={{
+                              currency_symbol: '$',
+                              theme: { add_to_cart_button_color: '#3B82F6' }
+                            }}
+                            store={{ slug: 'demo-store', id: 1 }}
+                            taxes={[]}
+                            selectedCountry="US"
+                            productLabels={sampleCategoryContext?.productLabels || []}
+                            viewMode={viewMode}
+                            slotConfig={slot}
+                            onAddToCartStateChange={() => {}}
+                          />
                         );
                       }
 
