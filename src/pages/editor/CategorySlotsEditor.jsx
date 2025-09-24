@@ -708,6 +708,7 @@ const CategorySlotsEditor = ({
                             styles={slot.styles}
                             config={{ viewMode }}
                             allSlots={categoryLayoutConfig?.slots} // Pass all slots for label access
+                            mode={showPreview ? 'view' : mode} // Pass mode for edit/view state
                           />
                         );
                       }

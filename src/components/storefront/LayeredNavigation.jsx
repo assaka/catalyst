@@ -17,7 +17,8 @@ export default function LayeredNavigation({
     onFilterChange,
     showActiveFilters = true,
     slotConfig = {},
-    settings = {}
+    settings = {},
+    isEditMode = false
 }) {
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
@@ -299,8 +300,9 @@ export default function LayeredNavigation({
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={clearAllFilters}
-                            className="text-xs"
+                            onClick={isEditMode ? () => {} : clearAllFilters}
+                            disabled={isEditMode}
+                            className={`text-xs ${isEditMode ? "pointer-events-none" : ""}`}
                         >
                             Clear All
                         </Button>
@@ -403,8 +405,9 @@ export default function LayeredNavigation({
                                         max={maxPrice}
                                         step={1}
                                         value={priceRange}
-                                        onValueChange={handlePriceRangeChange}
-                                        className="w-full"
+                                        onValueChange={isEditMode ? () => {} : handlePriceRangeChange}
+                                        disabled={isEditMode}
+                                        className={`w-full ${isEditMode ? "pointer-events-none" : ""}`}
                                     />
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">
@@ -488,8 +491,9 @@ export default function LayeredNavigation({
                                                     <Checkbox
                                                         id={`attr-${code}-${value}`}
                                                         checked={selectedFilters[code]?.includes(value) || false}
-                                                        onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
-                                                        className=""
+                                                        onCheckedChange={isEditMode ? () => {} : (checked) => handleAttributeChange(code, value, checked)}
+                                                        disabled={isEditMode}
+                                                        className={isEditMode ? "pointer-events-none" : ""}
                                                         style={{
                                                             accentColor: checkboxColor
                                                         }}
@@ -524,11 +528,12 @@ export default function LayeredNavigation({
                                                 </div>
                                                 {hasMoreValues && (
                                                     <button
-                                                        onClick={() => setExpandedAttributes(prev => ({
+                                                        onClick={isEditMode ? () => {} : () => setExpandedAttributes(prev => ({
                                                             ...prev,
                                                             [code]: !prev[code]
                                                         }))}
-                                                        className="text-sm font-medium mt-2 hover:opacity-80 transition-opacity"
+                                                        disabled={isEditMode}
+                                                        className={`text-sm font-medium mt-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
                                                         style={{
                                                             color: checkboxColor
                                                         }}

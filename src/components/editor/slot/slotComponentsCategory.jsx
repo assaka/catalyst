@@ -399,7 +399,7 @@ export function CategoryActiveFiltersSlot({ categoryContext, content, config }) 
 }
 
 // CategoryLayeredNavigationSlot Component - Simplified single container with editable labels
-export function CategoryLayeredNavigationSlot({ categoryContext, content, config, allSlots }) {
+export function CategoryLayeredNavigationSlot({ categoryContext, content, config, allSlots, mode }) {
   const { allProducts, filterableAttributes, handleFilterChange } = categoryContext || {};
 
   // Extract label configurations and styles from the slot configuration
@@ -448,6 +448,7 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
             collapse_filters: false,
             max_visible_attributes: 5
           }}
+          isEditMode={mode === 'edit'} // Pass edit mode to disable interactivity
         />
       )}
     </div>
