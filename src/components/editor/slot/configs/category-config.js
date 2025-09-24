@@ -322,7 +322,7 @@ export const categoryConfig = {
       type: 'button',
       content: 'Add to Cart',
       className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
-      parentClassName: '',
+      parentClassName: 'text-center',
       styles: {},
       parentId: 'product_item_card',
       position: { col: 1, row: 4 },
