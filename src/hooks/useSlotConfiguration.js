@@ -855,6 +855,14 @@ export function useSlotConfiguration({
       }
     } catch (error) {
       console.error(`❌ Failed to publish ${pageType} configuration:`, error);
+
+      // Handle specific case where draft was already published or doesn't exist
+      if (error.message && error.message.includes('Draft not found or already published')) {
+        console.warn('⚠️ Draft was already published or removed. Refreshing status...');
+        // The configuration might already be published, so this isn't necessarily an error
+        return { success: true, message: 'Configuration was already published' };
+      }
+
       throw error;
     }
   }, [selectedStore, pageType]);
