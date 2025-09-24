@@ -503,6 +503,12 @@ const CategorySlotsEditor = ({
                     customSlotRenderer={(slot) => {
                       console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
 
+                      // IMMEDIATELY check for product_items
+                      if (slot.id === 'product_items') {
+                        console.log('🚨 PRODUCT_ITEMS REACHED CUSTOM SLOT RENDERER!');
+                        console.log('🚨 This should trigger our handler');
+                      }
+
                       // Log specifically for product-related slots
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
                         console.log(`🔍 PRODUCT-RELATED SLOT RENDERER:`, {
@@ -574,14 +580,17 @@ const CategorySlotsEditor = ({
                         return null;
                       }
 
-                      // Handle product_items explicitly before component mapping
+                      // Handle product_items explicitly - this should be called based on the logs
                       if (slot.id === 'product_items') {
                         console.log('🛍️ PRODUCT_ITEMS EXPLICIT HANDLER RUNNING!');
                         console.log('🔥 EXPLICIT HANDLER CONFIRMED!');
                         console.log('🎯 SAMPLE CATEGORY CONTEXT HAS PRODUCTS:', !!sampleCategoryContext?.products);
                         console.log('🎯 PRODUCT COUNT:', sampleCategoryContext?.products?.length);
-                        console.log('📊 SLOT METADATA:', slot.metadata);
-                        console.log('📊 SLOT GRID CONFIG:', slot.metadata?.gridConfig);
+
+                        // Get the UPDATED slot data from categoryLayoutConfig instead of the slot parameter
+                        const updatedProductItemsSlot = categoryLayoutConfig?.slots?.product_items;
+                        console.log('📊 UPDATED SLOT METADATA:', updatedProductItemsSlot?.metadata);
+                        console.log('📊 UPDATED SLOT GRID CONFIG:', updatedProductItemsSlot?.metadata?.gridConfig);
 
                         // Get microslot configurations from category config
                         const microslotConfigs = {
@@ -597,16 +606,16 @@ const CategorySlotsEditor = ({
 
                         console.log('🛒 Add to Cart button config:', microslotConfigs.productAddToCart?.className || 'NO CLASSNAME');
 
-                        // Merge slot content with metadata and microslot configs
+                        // Use the UPDATED slot metadata instead of the slot parameter
                         const contentWithConfig = {
-                          ...slot.content,
-                          ...slot.metadata,
+                          ...updatedProductItemsSlot?.content,
+                          ...updatedProductItemsSlot?.metadata,
                           ...microslotConfigs,
-                          itemsToShow: slot.metadata?.itemsToShow || 3,
-                          gridConfig: slot.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
+                          itemsToShow: updatedProductItemsSlot?.metadata?.itemsToShow || 3,
+                          gridConfig: updatedProductItemsSlot?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }
                         };
 
-                        console.log('🎯 CONTENT WITH CONFIG:', contentWithConfig);
+                        console.log('🎯 CONTENT WITH CONFIG (FROM UPDATED SLOT):', contentWithConfig);
                         console.log('🎯 FINAL GRID CONFIG BEING PASSED:', contentWithConfig.gridConfig);
 
                         const productSlot = (
