@@ -897,7 +897,14 @@ export function useSlotConfiguration({
     // Try to load from database and merge with static config
     if (storeId) {
       try {
+        console.log('🏪 STORE DEBUG - Loading config for:', { storeId, pageType });
         const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, staticConfig);
+        console.log('📥 DRAFT CONFIG RESPONSE:', {
+          success: savedConfig?.success,
+          hasData: !!savedConfig?.data,
+          configId: savedConfig?.data?.id,
+          status: savedConfig?.data?.status
+        });
 
         if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
           const dbConfig = savedConfig.data.configuration;
@@ -908,6 +915,17 @@ export function useSlotConfiguration({
           console.log('🔄 STYLE LOADING DEBUG - Starting merge process');
           console.log('📋 STYLE LOADING DEBUG - Database config slots:', Object.keys(dbConfig.slots || {}));
           console.log('📋 STYLE LOADING DEBUG - Static config slots:', Object.keys(staticConfig.slots || {}));
+
+          // Debug which database configuration is being loaded
+          console.log('🗃️ DATABASE CONFIG DEBUG:', {
+            savedConfigData: savedConfig.data,
+            configurationId: savedConfig.data?.id,
+            storeId: savedConfig.data?.store_id,
+            status: savedConfig.data?.status,
+            hasUnpublishedChanges: savedConfig.data?.has_unpublished_changes,
+            createdAt: savedConfig.data?.created_at,
+            lastModified: savedConfig.data?.updated_at
+          });
 
           // Start with static config slots to ensure all viewMode arrays are preserved
           Object.entries(staticConfig.slots).forEach(([slotId, staticSlot]) => {
