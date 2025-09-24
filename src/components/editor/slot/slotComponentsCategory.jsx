@@ -402,7 +402,7 @@ export function CategoryActiveFiltersSlot({ categoryContext, content, config }) 
 export function CategoryLayeredNavigationSlot({ categoryContext, content, config, allSlots }) {
   const { allProducts, filterableAttributes, handleFilterChange } = categoryContext || {};
 
-  // Extract label configurations from the slot configuration
+  // Extract label configurations and styles from the slot configuration
   const labelConfigs = {
     filter_card_header: allSlots?.filter_by_label || { content: 'Filter By' },
     filter_price_title: allSlots?.price_filter_label || { content: 'Price' },
@@ -411,6 +411,17 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
       color: allSlots?.color_filter_label || { content: 'Color' },
       size: allSlots?.size_filter_label || { content: 'Size' },
       material: allSlots?.material_filter_label || { content: 'Material' }
+    },
+    // Extract custom styling for filter options
+    filter_option_styles: allSlots?.filter_option_styles || {
+      styles: {
+        optionTextColor: '#374151',
+        optionHoverColor: '#1F2937',
+        optionCountColor: '#9CA3AF',
+        checkboxColor: '#3B82F6',
+        activeFilterBgColor: '#DBEAFE',
+        activeFilterTextColor: '#1E40AF'
+      }
     }
   };
 

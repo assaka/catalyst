@@ -23,12 +23,24 @@ export default function LayeredNavigation({
     const [priceRange, setPriceRange] = useState([0, 1000]);
     const [expandedAttributes, setExpandedAttributes] = useState({});
 
-    // Extract label configurations from simplified slot structure
+    // Extract label configurations and styles from simplified slot structure
     const {
         filter_card_header = { content: 'Filter By' },
         filter_price_title = { content: 'Price' },
-        filter_attribute_titles = {}
+        filter_attribute_titles = {},
+        filter_option_styles = { styles: {} }
     } = slotConfig;
+
+    // Extract custom styling for filter options
+    const optionStyles = filter_option_styles.styles || {};
+    const {
+        optionTextColor = '#374151',
+        optionHoverColor = '#1F2937',
+        optionCountColor = '#9CA3AF',
+        checkboxColor = '#3B82F6',
+        activeFilterBgColor = '#DBEAFE',
+        activeFilterTextColor = '#1E40AF'
+    } = optionStyles;
 
     // Extract store settings with defaults
     const enableProductFilters = settings.enable_product_filters !== false; // Default to true
@@ -275,8 +287,11 @@ export default function LayeredNavigation({
             <CardHeader>
                 <div className="flex justify-between items-center h-5">
                     <CardTitle
-                        className={filter_card_header.className || ""}
-                        style={filter_card_header.styles || {}}
+                        className="text-lg font-semibold"
+                        style={{
+                            color: filter_card_header.styles?.color || '#1F2937',
+                            ...filter_card_header.styles
+                        }}
                     >
                         {filter_card_header.content || "Filter By"}
                     </CardTitle>
@@ -365,8 +380,11 @@ export default function LayeredNavigation({
                     {/* FIXED: Price Slider */}
                     <AccordionItem value="price">
                         <AccordionTrigger
-                            className={filter_price_title.className || "font-semibold"}
-                            style={filter_price_title.styles || {}}
+                            className="font-semibold"
+                            style={{
+                                color: filter_price_title.styles?.color || '#374151',
+                                ...filter_price_title.styles
+                            }}
                         >
                             {filter_price_title.content || "Price"}
                         </AccordionTrigger>

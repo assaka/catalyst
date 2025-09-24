@@ -422,14 +422,16 @@ export const categoryConfig = {
       }
     },
 
-    // Editable labels for layered navigation
+    // Editable labels for layered navigation with color customization
     filter_by_label: {
       id: 'filter_by_label',
       type: 'text',
       content: 'Filter By',
       className: 'text-lg font-semibold text-gray-900',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#1F2937' // Default dark gray
+      },
       parentId: 'layered_navigation',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
@@ -438,7 +440,8 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Filter By Label',
-        labelType: 'header'
+        labelType: 'header',
+        customizable: ['color', 'fontSize', 'fontWeight']
       }
     },
 
@@ -448,7 +451,9 @@ export const categoryConfig = {
       content: 'Price',
       className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#374151' // Default gray-700
+      },
       parentId: 'layered_navigation',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
@@ -457,7 +462,8 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Price Filter Label',
-        labelType: 'attribute'
+        labelType: 'attribute',
+        customizable: ['color', 'fontSize', 'fontWeight']
       }
     },
 
@@ -467,7 +473,9 @@ export const categoryConfig = {
       content: 'Brand',
       className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#374151' // Default gray-700
+      },
       parentId: 'layered_navigation',
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
@@ -476,7 +484,8 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Brand Filter Label',
-        labelType: 'attribute'
+        labelType: 'attribute',
+        customizable: ['color', 'fontSize', 'fontWeight']
       }
     },
 
@@ -486,7 +495,9 @@ export const categoryConfig = {
       content: 'Color',
       className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#374151' // Default gray-700
+      },
       parentId: 'layered_navigation',
       position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
@@ -495,7 +506,8 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Color Filter Label',
-        labelType: 'attribute'
+        labelType: 'attribute',
+        customizable: ['color', 'fontSize', 'fontWeight']
       }
     },
 
@@ -505,7 +517,9 @@ export const categoryConfig = {
       content: 'Size',
       className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#374151' // Default gray-700
+      },
       parentId: 'layered_navigation',
       position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
@@ -514,7 +528,8 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Size Filter Label',
-        labelType: 'attribute'
+        labelType: 'attribute',
+        customizable: ['color', 'fontSize', 'fontWeight']
       }
     },
 
@@ -524,7 +539,9 @@ export const categoryConfig = {
       content: 'Material',
       className: 'font-semibold text-base text-gray-900',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#374151' // Default gray-700
+      },
       parentId: 'layered_navigation',
       position: { col: 1, row: 6 },
       colSpan: { grid: 12, list: 12 },
@@ -533,7 +550,36 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Material Filter Label',
-        labelType: 'attribute'
+        labelType: 'attribute',
+        customizable: ['color', 'fontSize', 'fontWeight']
+      }
+    },
+
+    // Customizable filter option styles
+    filter_option_styles: {
+      id: 'filter_option_styles',
+      type: 'style_config',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {
+        optionTextColor: '#374151', // Default gray-700 for option text
+        optionHoverColor: '#1F2937', // Default gray-800 for hover
+        optionCountColor: '#9CA3AF', // Default gray-400 for count
+        checkboxColor: '#3B82F6', // Default blue-500 for checkbox
+        activeFilterBgColor: '#DBEAFE', // Default blue-100 for active filter background
+        activeFilterTextColor: '#1E40AF' // Default blue-800 for active filter text
+      },
+      parentId: 'layered_navigation',
+      position: { col: 1, row: 7 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Filter Options Styling',
+        labelType: 'styling',
+        customizable: ['optionTextColor', 'optionHoverColor', 'optionCountColor', 'checkboxColor', 'activeFilterBgColor', 'activeFilterTextColor']
       }
     },
 
