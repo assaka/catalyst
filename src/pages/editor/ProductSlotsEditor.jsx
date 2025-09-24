@@ -106,137 +106,63 @@ const ProductSlotsEditor = ({
     setProductContext(mockContext);
   }, []);
 
-  // Slot configuration hooks
+  // Use extracted hooks
+  const { formatTimeAgo } = useTimestampFormatting();
   const {
-    slotConfigurations,
-    setSlotConfigurations,
-    draftStatus,
-    setDraftStatus,
-    publishedConfig,
-    setPublishedConfig,
-    hasDraftConfiguration,
-    setHasDraftConfiguration,
-    lastModified,
-    setLastModified,
-    lastPublished,
-    setLastPublished,
-    configChangeCount,
-    setConfigChangeCount,
-    isUnlocked,
-    setIsUnlocked
-  } = useSlotConfiguration('product');
+    draftConfig, setDraftConfig,
+    latestPublished, setLatestPublished,
+    setConfigurationStatus,
+    hasUnsavedChanges, setHasUnsavedChanges,
+    loadDraftStatus
+  } = useDraftStatusManagement(getSelectedStoreId(), 'product');
 
+  // Database configuration hook with generic functions and handler factories
   const {
-    formattedLastModified,
-    formattedLastPublished
-  } = useTimestampFormatting(lastModified, lastPublished);
-
-  const {
-    updateDraftStatus,
-    getStatusBadgeText,
-    getStatusBadgeVariant
-  } = useDraftStatusManagement(draftStatus, hasDraftConfiguration);
-
-  const {
-    shouldShowChangeIndicator
-  } = useConfigurationChangeDetection(configChangeCount);
-
-  const {
-    refreshBadge
-  } = useBadgeRefresh(selectedStore?.id, 'product');
-
-  const {
-    handleClickOutside
-  } = useClickOutsidePanel(setShowPublishPanel);
-
-  const {
-    handlePreviewModeToggle,
-    handleViewportChange
-  } = usePreviewModeHandlers(mode, setCurrentViewport, currentViewport);
-
-  const {
-    handleTogglePublishPanel,
-    handleClosePublishPanel
-  } = usePublishPanelHandlers(setShowPublishPanel, showPublishPanel);
-
-  const {
-    initializeConfiguration
-  } = useConfigurationInitialization(
+    handleResetLayout: resetLayoutFromHook,
+    handlePublishConfiguration,
+    getDraftConfiguration,
+    createSlot,
+    handleSlotDrop: slotDropHandler,
+    handleSlotDelete: slotDeleteHandler,
+    handleGridResize: gridResizeHandler,
+    handleSlotHeightResize: slotHeightResizeHandler,
+    handleTextChange: textChangeHandler,
+    handleClassChange: classChangeHandler,
+    // Generic handler factories
+    createElementClickHandler,
+    createSaveConfigurationHandler,
+    createHandlerFactory
+  } = useSlotConfiguration({
+    pageType: 'product',
+    pageName: 'Product Detail',
+    slotType: 'product_layout',
     selectedStore,
-    'product',
-    setSlotConfigurations,
-    setDraftStatus,
-    setPublishedConfig,
-    setHasDraftConfiguration,
-    setLastModified,
-    setLastPublished,
-    setProductLayoutConfig
+    updateConfiguration: async (config) => {
+      const storeId = getSelectedStoreId();
+      if (storeId) {
+        await slotConfigurationService.saveConfiguration(storeId, config, 'product_layout');
+      }
+    },
+    onSave
+  });
+
+  // Configuration initialization hook
+  const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
+    'product', 'Product Detail', 'product_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus
   );
 
-  const {
-    handlePublish
-  } = usePublishHandler(
-    selectedStore,
-    'product',
-    slotConfigurations,
-    setDraftStatus,
-    setLastPublished,
-    setConfigChangeCount,
-    refreshBadge
+  // Configuration change detection
+  const { updateLastSavedConfig } = useConfigurationChangeDetection(
+    configurationLoadedRef, productLayoutConfig, setHasUnsavedChanges
   );
 
-  const {
-    handleResetLayout
-  } = useResetLayoutHandler(
-    selectedStore,
-    'product',
-    setSlotConfigurations,
-    setDraftStatus,
-    setConfigChangeCount,
-    setProductLayoutConfig,
-    setShowResetModal
-  );
-
-  const {
-    saveConfiguration
-  } = useSaveConfigurationHandler(
-    selectedStore,
-    'product',
-    slotConfigurations,
-    productLayoutConfig,
-    setLocalSaveStatus,
-    updateDraftStatus,
-    setConfigChangeCount
-  );
-
-  const {
-    handlePublishWithSave,
-    handleCancelPublish,
-    handleResetLayoutWithModal
-  } = usePublishPanelHandlerWrappers(
-    saveConfiguration,
-    handlePublish,
-    handleClosePublishPanel,
-    handleResetLayout,
-    setShowResetModal
-  );
-
-  const {
-    handleEditorInitialization
-  } = useEditorInitialization(
-    selectedStore,
-    initializeConfiguration
-  );
-
-  const {
-    getResponsiveClasses,
-    getViewportSpecificClasses
-  } = useViewModeAdjustments(currentViewport, viewMode);
+  // Badge refresh
+  useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'product');
 
   // Initialize editor when component mounts or store changes
   useEffect(() => {
-    handleEditorInitialization();
-  }, [handleEditorInitialization]);
+    initializeConfig();
+  }, [initializeConfig]);
 
   // Handle element selection for sidebar
   const handleElementClick = useCallback((event) => {
@@ -262,64 +188,10 @@ const ProductSlotsEditor = ({
     setIsSidebarVisible(false);
   }, []);
 
-  // Handle class changes from sidebar
-  const handleClassChange = useCallback((slotId, newClassName, styles = {}, metadata = null) => {
-    console.log('🎨 ProductSlotsEditor: Class change requested:', { slotId, newClassName, styles, metadata });
-
-    setSlotConfigurations(prev => {
-      const updated = {
-        ...prev,
-        [slotId]: {
-          ...prev[slotId],
-          className: newClassName,
-          styles: { ...(prev[slotId]?.styles || {}), ...styles },
-          ...(metadata && { metadata: { ...(prev[slotId]?.metadata || {}), ...metadata } })
-        }
-      };
-      console.log('🔄 ProductSlotsEditor: Updated slot configurations:', updated);
-      return updated;
-    });
-
-    // Auto-save after a delay
-    setTimeout(() => saveConfiguration(), 500);
-  }, [saveConfiguration, setSlotConfigurations]);
-
-  // Handle inline class changes (alignment, quick styles)
-  const handleInlineClassChange = useCallback((slotId, newClassName, styles = {}, immediate = false) => {
-    console.log('⚡ ProductSlotsEditor: Inline class change:', { slotId, newClassName, styles, immediate });
-
-    setSlotConfigurations(prev => ({
-      ...prev,
-      [slotId]: {
-        ...prev[slotId],
-        className: newClassName,
-        styles: { ...(prev[slotId]?.styles || {}), ...styles }
-      }
-    }));
-
-    // Auto-save immediately or after delay
-    if (immediate) {
-      saveConfiguration();
-    } else {
-      setTimeout(() => saveConfiguration(), 300);
-    }
-  }, [saveConfiguration, setSlotConfigurations]);
-
-  // Handle text content changes
-  const handleTextChange = useCallback((slotId, newContent) => {
-    console.log('📝 ProductSlotsEditor: Text change requested:', { slotId, newContent });
-
-    setSlotConfigurations(prev => ({
-      ...prev,
-      [slotId]: {
-        ...prev[slotId],
-        content: newContent
-      }
-    }));
-
-    // Auto-save after a delay
-    setTimeout(() => saveConfiguration(), 1000);
-  }, [saveConfiguration, setSlotConfigurations]);
+  // Use the handlers from the main hook
+  const handleClassChange = classChangeHandler;
+  const handleInlineClassChange = classChangeHandler; // Same handler
+  const handleTextChange = textChangeHandler;
 
   // Component validation function
   const validateSlotConfiguration = useCallback((config) => {
@@ -400,28 +272,59 @@ const ProductSlotsEditor = ({
               {/* CMS Block - Product Above */}
               <CmsBlockRenderer position="product_above" />
 
-              {/* Hierarchical Slot Renderer */}
-              <HierarchicalSlotRenderer
-                slotConfigurations={slotConfigurations}
-                isEditMode={mode === 'edit'}
-                showBorders={showSlotBorders}
-                onElementClick={handleElementClick}
-                isDragOperationActiveRef={isDragOperationActiveRef}
-                currentDragInfo={currentDragInfo}
-                setCurrentDragInfo={setCurrentDragInfo}
-                context={productContext}
-                pageType="product"
-                slotComponents={{
-                  ProductGallerySlot,
-                  ProductInfoSlot,
-                  ProductOptionsSlot,
-                  ProductActionsSlot,
-                  ProductTabsSlot,
-                  ProductRecommendationsSlot,
-                  ProductBreadcrumbsSlot
-                }}
-                validateConfiguration={validateSlotConfiguration}
-              />
+              {/* Check if configuration is loaded */}
+              {(() => {
+                return productLayoutConfig && productLayoutConfig.slots && Object.keys(productLayoutConfig.slots).length > 0;
+              })() ? (
+                <HierarchicalSlotRenderer
+                  slots={productLayoutConfig.slots}
+                  parentId={null}
+                  mode={mode}
+                  viewMode={viewMode}
+                  showBorders={showSlotBorders}
+                  currentDragInfo={currentDragInfo}
+                  setCurrentDragInfo={setCurrentDragInfo}
+                  onElementClick={handleElementClick}
+                  onGridResize={gridResizeHandler}
+                  onSlotHeightResize={slotHeightResizeHandler}
+                  onSlotDrop={slotDropHandler}
+                  onSlotDelete={slotDeleteHandler}
+                  onResizeStart={() => setIsResizing(true)}
+                  onResizeEnd={() => {
+                    setTimeout(() => setIsResizing(false), 100);
+                  }}
+                  selectedElementId={selectedElement && typeof selectedElement.getAttribute === 'function' ? selectedElement.getAttribute('data-slot-id') : null}
+                  setPageConfig={setProductLayoutConfig}
+                  saveConfiguration={createSaveConfigurationHandler(setProductLayoutConfig, updateLastSavedConfig)}
+                  context={productContext}
+                  slotComponents={{
+                    ProductGallerySlot,
+                    ProductInfoSlot,
+                    ProductOptionsSlot,
+                    ProductActionsSlot,
+                    ProductTabsSlot,
+                    ProductRecommendationsSlot,
+                    ProductBreadcrumbsSlot,
+                    // Render function fallback for unknown slots
+                    defaultSlotRenderer: (slot, context) => {
+                      // For container slots, render children if they exist
+                      if (slot.type === 'container') {
+                        return (
+                          <div className={slot.className || "w-full"}>
+                            {/* Container content would be rendered by HierarchicalSlotRenderer */}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    }
+                  }}
+                />
+              ) : (
+                <div className="col-span-12 text-center py-12 text-gray-500">
+                  {productLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
+                </div>
+              )}
 
               {/* CMS Block - Product Below */}
               <CmsBlockRenderer position="product_below" />

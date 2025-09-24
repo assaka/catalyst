@@ -62,7 +62,7 @@ export const productConfig = {
       id: 'content_area',
       type: 'grid',
       content: '',
-      className: 'content-area grid md:grid-cols-2 gap-8',
+      className: 'content-area grid md:grid-cols-12 gap-8',
       styles: { gridRow: '2' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
