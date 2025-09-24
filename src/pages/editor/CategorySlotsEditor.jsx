@@ -480,21 +480,6 @@ const CategorySlotsEditor = ({
                     hasChanges={canPublish}
                   />
 
-                  {/* Temporary button to load default config */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      const defaultConfig = await createDefaultSlots();
-                      if (defaultConfig) {
-                        setCategoryLayoutConfig(defaultConfig);
-                        setHasUnsavedChanges(true);
-                      }
-                    }}
-                    className="text-xs"
-                  >
-                    Load Default Config
-                  </Button>
                 </div>
               )}
             </div>

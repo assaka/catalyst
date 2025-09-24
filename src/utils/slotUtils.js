@@ -16,25 +16,33 @@ export class SlotManager {
   
   static getChildSlots(slots, parentId) {
     const allSlots = Object.values(slots);
-    console.info(`🔍 SlotManager.getChildSlots - parentId: ${parentId}, total slots: ${allSlots.length}`);
+    console.log(`🔍 SlotManager.getChildSlots - parentId: ${parentId}, total slots: ${allSlots.length}`);
 
     const childSlots = allSlots.filter(slot => {
       const isChild = slot.parentId === parentId;
-      if (slot.id === 'breadcrumbs' || slot.id === 'breadcrumbs_content') {
-        console.info(`🍞 SlotManager checking ${slot.id}: parentId=${slot.parentId}, target=${parentId}, isChild=${isChild}`);
+      if (slot.id.includes('products') || slot.id.includes('cms')) {
+        console.log(`🎯 SlotManager checking ${slot.id}: parentId=${slot.parentId}, target=${parentId}, isChild=${isChild}, row=${slot.position?.row}`);
       }
       return isChild;
     });
 
-    console.info(`🔍 SlotManager.getChildSlots result for parentId ${parentId}:`, childSlots.map(s => s.id));
+    console.log(`🔍 SlotManager.getChildSlots result for parentId ${parentId}:`, childSlots.map(s => ({ id: s.id, row: s.position?.row })));
 
     // Sort by position.row, fallback to 0
-    return childSlots.sort((a, b) => {
+    const sorted = childSlots.sort((a, b) => {
       const aRow = a.position?.row || 0;
       const bRow = b.position?.row || 0;
-      console.info(`🔄 Sorting ${a.id} (row ${aRow}) vs ${b.id} (row ${bRow})`);
+      if (parentId === 'products_container' || childSlots.some(s => s.id.includes('products'))) {
+        console.log(`🔄 Sorting ${a.id} (row ${aRow}) vs ${b.id} (row ${bRow})`);
+      }
       return aRow - bRow;
     });
+
+    if (parentId === 'products_container') {
+      console.log(`📊 Final sorted order for products_container:`, sorted.map(s => ({ id: s.id, row: s.position?.row })));
+    }
+
+    return sorted;
   }
   
   static moveSlot(slots, slotId, newParentId, newPosition) {

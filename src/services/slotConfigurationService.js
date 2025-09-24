@@ -11,15 +11,6 @@ class SlotConfigurationService {
         staticConfiguration: staticConfig
       };
 
-      console.log('🌐 API CALL - getDraftConfiguration:', {
-        url: `${API_BASE}/draft/${storeId}/${pageType}`,
-        storeId,
-        pageType,
-        hasStaticConfig: !!staticConfig,
-        staticConfigSlots: staticConfig?.slots ? Object.keys(staticConfig.slots).length : 0,
-        categoryTitleInStatic: staticConfig?.slots?.category_title?.styles?.color || 'not found'
-      });
-
       const response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, payload)
 
       return response;
