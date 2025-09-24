@@ -64,6 +64,7 @@ const CategorySlotsEditor = ({
   onSave,
   viewMode: propViewMode = 'grid'
 }) => {
+  console.log('🚀 CategorySlotsEditor COMPONENT LOADED');
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
@@ -229,6 +230,15 @@ const CategorySlotsEditor = ({
 
   // Use proper mock category data with 6 products
   const sampleCategoryContext = generateMockCategoryContext();
+
+  // Debug: Log the mock data to verify it's correct
+  console.log('🔥 MOCK CATEGORY CONTEXT:', {
+    hasProducts: !!sampleCategoryContext?.products,
+    productCount: sampleCategoryContext?.products?.length,
+    hasProductLabels: !!sampleCategoryContext?.productLabels,
+    labelCount: sampleCategoryContext?.productLabels?.length,
+    firstProduct: sampleCategoryContext?.products?.[0]
+  });
 
   // Create all handlers using the factory
   const handleTextChange = handlerFactory.createTextChangeHandler(textChangeHandler);
@@ -512,6 +522,8 @@ const CategorySlotsEditor = ({
                       if (slot.id === 'product_items') {
                         console.log('🛍️ PRODUCT_ITEMS EXPLICIT HANDLER RUNNING!');
                         console.log('🔥 EXPLICIT HANDLER CONFIRMED!');
+                        console.log('🎯 SAMPLE CATEGORY CONTEXT HAS PRODUCTS:', !!sampleCategoryContext?.products);
+                        console.log('🎯 PRODUCT COUNT:', sampleCategoryContext?.products?.length);
 
                         // Get microslot configurations from category config
                         const microslotConfigs = {

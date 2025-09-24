@@ -24,14 +24,19 @@ const GridLayoutControl = ({
 
   // Handle configuration changes
   const handleConfigChange = (device, columns) => {
+    console.log('🔧 GridLayoutControl: Configuration change requested', { device, columns, currentConfig: gridConfig });
     const newConfig = {
       ...gridConfig,
       [device]: parseInt(columns)
     };
     setGridConfig(newConfig);
 
+    console.log('🔧 GridLayoutControl: New configuration', newConfig);
     if (onConfigChange) {
+      console.log('🔧 GridLayoutControl: Calling onConfigChange callback');
       onConfigChange(newConfig);
+    } else {
+      console.warn('🔧 GridLayoutControl: No onConfigChange callback provided');
     }
   };
 
@@ -88,6 +93,8 @@ const GridLayoutControl = ({
     }
   ];
 
+  console.log('🔧 GridLayoutControl: Rendering with config', { gridConfig, currentConfig });
+
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="flex items-center justify-between">
@@ -126,21 +133,49 @@ const GridLayoutControl = ({
 
               {/* Column Selector */}
               <div className="flex-shrink-0 w-16">
+                {/* Temporarily using HTML select for debugging */}
+                <select
+                  value={device.value.toString()}
+                  onChange={(e) => {
+                    console.log('🔧 HTML Select onChange triggered', { device: device.key, value: e.target.value, currentValue: device.value });
+                    handleConfigChange(device.key, e.target.value);
+                  }}
+                  className="h-8 text-xs border border-gray-300 rounded-md w-full bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  onClick={() => console.log('🔧 HTML Select clicked for', device.key)}
+                >
+                  {device.options.map((option) => (
+                    <option key={option} value={option.toString()}>
+                      {option} col{option !== 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+                {/* Original shadcn Select - commented out for debugging
                 <Select
                   value={device.value.toString()}
-                  onValueChange={(value) => handleConfigChange(device.key, value)}
+                  onValueChange={(value) => {
+                    console.log('🔧 Select onValueChange triggered', { device: device.key, value, currentValue: device.value });
+                    handleConfigChange(device.key, value);
+                  }}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger
+                    className="h-8 text-xs"
+                    onClick={() => console.log('🔧 SelectTrigger clicked for', device.key)}
+                  >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999]">
                     {device.options.map((option) => (
-                      <SelectItem key={option} value={option.toString()}>
+                      <SelectItem
+                        key={option}
+                        value={option.toString()}
+                        onClick={() => console.log('🔧 SelectItem clicked', { device: device.key, option })}
+                      >
                         {option} col{option !== 1 ? 's' : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                */}
               </div>
             </div>
           );
