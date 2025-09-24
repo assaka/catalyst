@@ -898,7 +898,9 @@ export function useSlotConfiguration({
     if (storeId) {
       try {
         console.log('🏪 STORE DEBUG - Loading config for:', { storeId, pageType });
-        const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, staticConfig);
+        // CRITICAL FIX: Do NOT send staticConfig to API - it overwrites existing drafts!
+        // Only send storeId and pageType to get existing draft without overwriting it
+        const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
         console.log('📥 DRAFT CONFIG RESPONSE:', {
           success: savedConfig?.success,
           hasData: !!savedConfig?.data,
