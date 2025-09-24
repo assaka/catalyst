@@ -221,6 +221,104 @@ const ProductSlotsEditor = ({
   const handleInlineClassChange = classChangeHandler; // Same handler
   const handleTextChange = textChangeHandler;
 
+  // Simple handler functions
+  const handleClickOutside = useCallback((event) => {
+    // Prevent closing when clicking on toolbar or panels
+    if (event.target.closest('.editor-toolbar') || event.target.closest('.publish-panel')) {
+      return;
+    }
+  }, []);
+
+  const handlePreviewModeToggle = useCallback(() => {
+    setShowPreview(!showPreview);
+  }, [showPreview]);
+
+  const handleViewportChange = useCallback((viewport) => {
+    setCurrentViewport(viewport);
+  }, []);
+
+  // Status badge functions and computed values
+  const getStatusBadgeText = useCallback(() => {
+    if (hasUnsavedChanges) {
+      return 'Unsaved Changes';
+    }
+    if (draftConfig?.status === 'published') {
+      return 'Published';
+    }
+    return 'Draft';
+  }, [hasUnsavedChanges, draftConfig?.status]);
+
+  const getStatusBadgeVariant = useCallback(() => {
+    if (hasUnsavedChanges) {
+      return 'destructive';
+    }
+    if (draftConfig?.status === 'published') {
+      return 'default';
+    }
+    return 'secondary';
+  }, [hasUnsavedChanges, draftConfig?.status]);
+
+  const shouldShowChangeIndicator = useCallback(() => {
+    return hasUnsavedChanges;
+  }, [hasUnsavedChanges]);
+
+  const getResponsiveClasses = useCallback(() => {
+    const baseClasses = 'transition-all duration-300';
+    switch (currentViewport) {
+      case 'mobile':
+        return `${baseClasses} max-w-sm mx-auto`;
+      case 'tablet':
+        return `${baseClasses} max-w-2xl mx-auto`;
+      default:
+        return `${baseClasses} max-w-full`;
+    }
+  }, [currentViewport]);
+
+  // Formatted timestamps
+  const formattedLastModified = useMemo(() => {
+    return draftConfig?.updated_at ? formatTimeAgo(new Date(draftConfig.updated_at)) : 'Never';
+  }, [draftConfig?.updated_at, formatTimeAgo]);
+
+  const formattedLastPublished = useMemo(() => {
+    return latestPublished?.updated_at ? formatTimeAgo(new Date(latestPublished.updated_at)) : 'Never';
+  }, [latestPublished?.updated_at, formatTimeAgo]);
+
+  // Publish panel toggle handlers
+  const handleTogglePublishPanel = useCallback(() => {
+    setShowPublishPanel(!showPublishPanel);
+  }, [showPublishPanel]);
+
+  const handlePublishWithSave = useCallback(async () => {
+    return await handlePublishPanelPublished();
+  }, [handlePublishPanelPublished]);
+
+  const handleCancelPublish = useCallback(() => {
+    setShowPublishPanel(false);
+  }, []);
+
+  const handleResetLayoutWithModal = useCallback(() => {
+    setShowResetModal(true);
+  }, []);
+
+  const handleResetLayout = resetLayoutFromHook;
+
+  // Missing state variables and computed values
+  const slotConfigurations = useMemo(() => {
+    return productLayoutConfig?.slots || {};
+  }, [productLayoutConfig?.slots]);
+
+  const draftStatus = useMemo(() => {
+    return draftConfig?.status || 'draft';
+  }, [draftConfig?.status]);
+
+  const hasDraftConfiguration = useMemo(() => {
+    return draftConfig != null;
+  }, [draftConfig]);
+
+  const configChangeCount = useMemo(() => {
+    return hasUnsavedChanges ? 1 : 0;
+  }, [hasUnsavedChanges]);
+
   // Component validation function
   const validateSlotConfiguration = useCallback((config) => {
     const errors = [];
@@ -376,16 +474,18 @@ const ProductSlotsEditor = ({
 
         {/* Publish Panel */}
         {showPublishPanel && (
-          <PublishPanel
-            onPublish={handlePublishWithSave}
-            onCancel={handleCancelPublish}
-            onResetLayout={handleResetLayoutWithModal}
-            draftStatus={draftStatus}
-            lastModified={formattedLastModified}
-            lastPublished={formattedLastPublished}
-            pageType="product"
-            configChangeCount={configChangeCount}
-          />
+          <div ref={publishPanelRef}>
+            <PublishPanel
+              onPublish={handlePublishWithSave}
+              onCancel={handleCancelPublish}
+              onResetLayout={handleResetLayoutWithModal}
+              draftStatus={draftStatus}
+              lastModified={formattedLastModified}
+              lastPublished={formattedLastPublished}
+              pageType="product"
+              configChangeCount={configChangeCount}
+            />
+          </div>
         )}
 
         {/* Editor Sidebar */}
