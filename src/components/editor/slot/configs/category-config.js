@@ -507,8 +507,8 @@ export const categoryConfig = {
     product_items: {
       id: 'product_items',
       type: 'container',
-      content: 'asfasfd',
-      className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]',
+      content: '',
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
@@ -523,7 +523,7 @@ export const categoryConfig = {
       }
     },
 
-    // Single product template with microslots
+    // Single product template with microslots (for products_grid alternative)
     product_item_card: {
       id: 'product_item_card',
       type: 'container',
@@ -531,7 +531,7 @@ export const categoryConfig = {
       className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
       parentClassName: '',
       styles: {},
-      parentId: 'product_items',
+      parentId: 'products_grid',
       position: { col: 1, row: 1 },
       colSpan: { grid: 4, list: 12 },
       viewMode: ['grid', 'list'],

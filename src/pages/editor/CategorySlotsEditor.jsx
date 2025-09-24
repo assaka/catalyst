@@ -568,7 +568,10 @@ const CategorySlotsEditor = ({
                         parentId: slot.parentId,
                         viewMode: slot.viewMode,
                         position: slot.position,
-                        colSpan: slot.colSpan
+                        colSpan: slot.colSpan,
+                        className: slot.className,
+                        styles: slot.styles,
+                        hasStyles: slot.styles && Object.keys(slot.styles).length > 0
                       });
                     });
                   }

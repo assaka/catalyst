@@ -326,12 +326,14 @@ const EditorSidebar = ({
       const storedStyles = slotConfig.styles || {};
       
       // Debug logging to help diagnose configuration loading issues
-      console.log('EditorSidebar: Loading configuration for slot:', {
+      console.log('🔧 EDITOR SIDEBAR - Loading configuration for slot:', {
         slotId,
         slotConfigKeys: slotConfig ? Object.keys(slotConfig) : 'no slotConfig',
         storedClassName,
         storedStyles,
-        fullSlotConfig: slotConfig
+        fullSlotConfig: slotConfig,
+        hasStyles: storedStyles && Object.keys(storedStyles).length > 0,
+        selectedElementTagName: selectedElement?.tagName
       });
       
       // Initialize local text content with slot content

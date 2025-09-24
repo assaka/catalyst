@@ -968,6 +968,21 @@ export function HierarchicalSlotRenderer({
                   // Use fit-content for w-fit elements, otherwise 100%
                   width: slot.className?.includes('w-fit') ? 'fit-content' : '100%',
                 }}
+                ref={(el) => {
+                  if (el && slot.styles && Object.keys(slot.styles).length > 0) {
+                    console.log(`🎨 TEXT SLOT [${slot.id}] - Applied styles on render:`, {
+                      slotStyles: slot.styles,
+                      className: slot.className,
+                      parentClassName: slot.parentClassName,
+                      computedStyles: {
+                        color: window.getComputedStyle(el).color,
+                        backgroundColor: window.getComputedStyle(el).backgroundColor,
+                        fontSize: window.getComputedStyle(el).fontSize,
+                        fontWeight: window.getComputedStyle(el).fontWeight
+                      }
+                    });
+                  }
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   // Don't open Editor Sidebar if we're in the middle of a drag operation
@@ -1043,6 +1058,21 @@ export function HierarchicalSlotRenderer({
                   minWidth: 'auto',
                   minHeight: 'auto',
                   display: 'inline-block'
+                }}
+                ref={(el) => {
+                  if (el && slot.styles && Object.keys(slot.styles).length > 0) {
+                    console.log(`🎨 BUTTON SLOT [${slot.id}] - Applied styles on render:`, {
+                      slotStyles: slot.styles,
+                      className: slot.className,
+                      parentClassName: slot.parentClassName,
+                      computedStyles: {
+                        color: window.getComputedStyle(el).color,
+                        backgroundColor: window.getComputedStyle(el).backgroundColor,
+                        fontSize: window.getComputedStyle(el).fontSize,
+                        fontWeight: window.getComputedStyle(el).fontWeight
+                      }
+                    });
+                  }
                 }}
                 onClick={(e) => {
                   e.preventDefault();

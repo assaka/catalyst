@@ -189,10 +189,11 @@ class SimpleStyleManager {
       
       // Save to database if callback is available
       if (this.databaseSaveCallback && Object.keys(databaseUpdates).length > 0) {
-        console.log('💾 Saving to database:', databaseUpdates);
+        console.log('💾 STYLE PERSISTENCE - Saving to database:', databaseUpdates);
         this.databaseSaveCallback(databaseUpdates);
       } else {
-        console.log('💾 Persisted to localStorage only:', databaseUpdates);
+        console.log('💾 STYLE PERSISTENCE - Persisted to localStorage only:', databaseUpdates);
+        console.log('💾 STYLE PERSISTENCE - Database callback available?', !!this.databaseSaveCallback);
       }
       
     } catch (error) {
