@@ -601,7 +601,21 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
+                      // Debug: log all slots being processed by customSlotRenderer
+                      console.log('🎯 CUSTOM SLOT RENDERER processing:', {
+                        slotId: slot.id,
+                        parentId: slot.parentId,
+                        row: slot.position?.row,
+                        col: slot.position?.col,
+                        type: slot.type
+                      });
 
+                      // Skip child slots - let them be rendered hierarchically by their parents
+                      // Exception: breadcrumbs_content and other top-level necessary slots
+                      if (slot.parentId && slot.parentId !== 'page_header') {
+                        console.log(`⏭️ SKIPPING ${slot.id} - child slot, will be rendered by parent ${slot.parentId}`);
+                        return null;
+                      }
 
                       // Let layered_navigation be handled by the component mapping
 
