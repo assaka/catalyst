@@ -709,6 +709,7 @@ const CategorySlotsEditor = ({
                             config={{ viewMode }}
                             allSlots={categoryLayoutConfig?.slots} // Pass all slots for label access
                             mode={showPreview ? 'view' : mode} // Pass mode for edit/view state
+                            onElementClick={showPreview ? null : handleElementClick} // Pass element click handler for edit mode
                           />
                         );
                       }

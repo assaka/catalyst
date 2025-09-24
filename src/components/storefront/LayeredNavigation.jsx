@@ -11,6 +11,39 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// Helper component to render editable slot elements in edit mode
+const EditableSlotElement = ({ slotKey, slot, onElementClick, children, className = "", style = {} }) => {
+  if (!slot) {
+    return children;
+  }
+
+  return (
+    <div
+      className={`slot-element ${className}`}
+      style={{
+        cursor: 'pointer',
+        userSelect: 'none',
+        outline: '1px dashed #ccc',
+        padding: '2px 4px',
+        borderRadius: '2px',
+        ...style,
+        ...slot.styles
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onElementClick(slotKey, slot);
+      }}
+      onDragStart={(e) => {
+        e.preventDefault();
+        return false;
+      }}
+      draggable="false"
+    >
+      {slot.content || children}
+    </div>
+  );
+};
+
 export default function LayeredNavigation({
     products,
     attributes,
@@ -18,7 +51,9 @@ export default function LayeredNavigation({
     showActiveFilters = true,
     slotConfig = {},
     settings = {},
-    isEditMode = false
+    isEditMode = false,
+    childSlots = {},
+    onElementClick = () => {}
 }) {
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
@@ -287,15 +322,26 @@ export default function LayeredNavigation({
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center h-5">
-                    <CardTitle
-                        className="text-lg font-semibold"
-                        style={{
-                            color: filter_card_header.styles?.color || '#1F2937',
-                            ...filter_card_header.styles
-                        }}
-                    >
-                        {filter_card_header.content || "Filter By"}
-                    </CardTitle>
+                    {isEditMode ? (
+                        <EditableSlotElement
+                            slotKey="filter_by_label"
+                            slot={childSlots?.filter_by_label}
+                            onElementClick={onElementClick}
+                            className="text-lg font-semibold"
+                        >
+                            Filter By
+                        </EditableSlotElement>
+                    ) : (
+                        <CardTitle
+                            className="text-lg font-semibold"
+                            style={{
+                                color: filter_card_header.styles?.color || '#1F2937',
+                                ...filter_card_header.styles
+                            }}
+                        >
+                            {filter_card_header.content || "Filter By"}
+                        </CardTitle>
+                    )}
                     {hasActiveFilters && (
                         <Button
                             variant="outline"
@@ -391,11 +437,22 @@ export default function LayeredNavigation({
                         <AccordionTrigger
                             className="font-semibold"
                             style={{
-                                color: filter_price_title.styles?.color || '#374151',
-                                ...filter_price_title.styles
+                                color: isEditMode ? 'inherit' : (filter_price_title.styles?.color || '#374151'),
+                                ...(!isEditMode ? filter_price_title.styles : {})
                             }}
                         >
-                            {filter_price_title.content || "Price"}
+                            {isEditMode ? (
+                                <EditableSlotElement
+                                    slotKey="price_filter_label"
+                                    slot={childSlots?.price_filter_label}
+                                    onElementClick={onElementClick}
+                                    className="font-semibold"
+                                >
+                                    Price
+                                </EditableSlotElement>
+                            ) : (
+                                filter_price_title.content || "Price"
+                            )}
                         </AccordionTrigger>
                         <AccordionContent>
                             <div className="space-y-4">
@@ -434,11 +491,22 @@ export default function LayeredNavigation({
                                 <AccordionTrigger
                                     className="font-semibold"
                                     style={{
-                                        color: filter_attribute_titles[code]?.styles?.color || '#374151',
-                                        ...filter_attribute_titles[code]?.styles
+                                        color: isEditMode ? 'inherit' : (filter_attribute_titles[code]?.styles?.color || '#374151'),
+                                        ...(!isEditMode ? filter_attribute_titles[code]?.styles : {})
                                     }}
                                 >
-                                    {filter_attribute_titles[code]?.content || name}
+                                    {isEditMode ? (
+                                        <EditableSlotElement
+                                            slotKey={`${code}_filter_label`}
+                                            slot={childSlots?.[`${code}_filter_label`]}
+                                            onElementClick={onElementClick}
+                                            className="font-semibold"
+                                        >
+                                            {name}
+                                        </EditableSlotElement>
+                                    ) : (
+                                        filter_attribute_titles[code]?.content || name
+                                    )}
                                 </AccordionTrigger>
                                 <AccordionContent>
                                 <div

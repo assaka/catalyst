@@ -398,11 +398,39 @@ export function CategoryActiveFiltersSlot({ categoryContext, content, config }) 
   );
 }
 
-// CategoryLayeredNavigationSlot Component - Simplified single container with editable labels
-export function CategoryLayeredNavigationSlot({ categoryContext, content, config, allSlots, mode }) {
+// CategoryLayeredNavigationSlot Component - Wrapper that renders child label slots
+export function CategoryLayeredNavigationSlot({ categoryContext, content, config, allSlots, mode, onElementClick }) {
   const { allProducts, filterableAttributes, handleFilterChange } = categoryContext || {};
 
-  // Extract label configurations and styles from the slot configuration
+  // In edit mode, we need to render the layered navigation with child slots as editable elements
+  if (mode === 'edit') {
+    return (
+      <div className="category-layered-navigation">
+        <LayeredNavigation
+          products={allProducts || []}
+          attributes={filterableAttributes || []}
+          onFilterChange={(filters) => {
+            console.log('🔍 Filters changed in LayeredNavigation:', filters);
+            if (handleFilterChange) {
+              handleFilterChange(filters);
+            }
+          }}
+          showActiveFilters={false}
+          settings={{
+            enable_product_filters: true,
+            collapse_filters: false,
+            max_visible_attributes: 5
+          }}
+          isEditMode={true}
+          // Pass the child slots to render as editable elements
+          childSlots={allSlots}
+          onElementClick={onElementClick}
+        />
+      </div>
+    );
+  }
+
+  // In view/preview mode, render normally with label configs
   const labelConfigs = {
     filter_card_header: allSlots?.filter_by_label || { content: 'Filter By' },
     filter_price_title: allSlots?.price_filter_label || { content: 'Price' },
@@ -412,7 +440,6 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
       size: allSlots?.size_filter_label || { content: 'Size' },
       material: allSlots?.material_filter_label || { content: 'Material' }
     },
-    // Extract custom styling for filter options
     filter_option_styles: allSlots?.filter_option_styles || {
       styles: {
         optionTextColor: '#374151',
@@ -424,8 +451,6 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
       }
     }
   };
-
-  console.log('🏷️ CategoryLayeredNavigationSlot label configs:', labelConfigs);
 
   return (
     <div className="category-layered-navigation">
@@ -441,14 +466,14 @@ export function CategoryLayeredNavigationSlot({ categoryContext, content, config
               handleFilterChange(filters);
             }
           }}
-          showActiveFilters={false} // We handle active filters separately
-          slotConfig={labelConfigs} // Pass label configurations
+          showActiveFilters={false}
+          slotConfig={labelConfigs}
           settings={{
             enable_product_filters: true,
             collapse_filters: false,
             max_visible_attributes: 5
           }}
-          isEditMode={mode === 'edit'} // Pass edit mode to disable interactivity
+          isEditMode={false}
         />
       )}
     </div>
