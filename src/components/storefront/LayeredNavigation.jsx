@@ -513,6 +513,11 @@ export default function LayeredNavigation({
                                             slot={childSlots?.[`${code}_filter_label`] || childSlots?.attribute_filter_label || { content: name }}
                                             onElementClick={onElementClick}
                                             className="font-semibold"
+                                            style={{
+                                                // Apply shared styles from attribute_filter_label or individual label
+                                                ...(childSlots?.attribute_filter_label?.styles || {}),
+                                                ...(childSlots?.[`${code}_filter_label`]?.styles || {})
+                                            }}
                                         >
                                             {name}
                                         </EditableSlotElement>

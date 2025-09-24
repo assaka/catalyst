@@ -379,7 +379,7 @@ export const categoryConfig = {
       styles: {},
       parentId: null,
       position: { col: 1, row: 2 },
-      colSpan: { grid: 3, list: 12 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid'],
       metadata: { hierarchical: true }
     },
