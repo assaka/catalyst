@@ -20,14 +20,7 @@ class SlotConfigurationService {
         categoryTitleInStatic: staticConfig?.slots?.category_title?.styles?.color || 'not found'
       });
 
-      const response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, payload);
-
-      console.log('🌐 API RESPONSE - getDraftConfiguration:', {
-        success: response?.success,
-        hasData: !!response?.data,
-        returnedConfigId: response?.data?.id,
-        categoryTitleInResponse: response?.data?.configuration?.slots?.category_title?.styles?.color || 'not found'
-      });
+      const response = await apiClient.post(`${API_BASE}/draft/${storeId}/${pageType}`, payload)
 
       return response;
     } catch (error) {

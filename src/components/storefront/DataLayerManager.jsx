@@ -76,9 +76,6 @@ export const trackActivity = async (activityType, data = {}) => {
     if (storeId) {
       console.log('📊 Tracking activity:', activityType, activityData);
       
-      // CRITICAL DEBUG: Add explicit check for execution path
-      console.log('🚀 ENTERING API CALL SECTION - storeId check passed:', storeId);
-      
       try {
         // Use direct fetch instead of CustomerActivity.create to avoid auth issues
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
