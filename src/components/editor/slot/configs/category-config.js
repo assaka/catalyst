@@ -195,7 +195,6 @@ export const categoryConfig = {
         hierarchical: false,
         component: 'ProductItemCard',
         displayName: 'Product Grid',
-        itemsToShow: 3,
         gridConfig: { mobile: 1, tablet: 2, desktop: 2 }
       }
     },
