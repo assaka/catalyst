@@ -208,7 +208,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 99 },  // Move to end so it doesn't interfere with main layout
       colSpan: { grid: 4, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {

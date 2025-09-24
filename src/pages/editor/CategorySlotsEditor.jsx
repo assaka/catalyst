@@ -591,18 +591,12 @@ const CategorySlotsEditor = ({
                         console.log(`🎯 Processing: ${slot.id} (row ${slot.position?.row}, parent: ${slot.parentId})`);
                       }
 
-                      // Skip child slots - let them be rendered hierarchically by their parents
-                      // Exceptions:
-                      // - breadcrumbs_content and other page_header children (need custom handling)
-                      // - cms_block types (need explicit CMS renderer)
-                      // - product_items (needs explicit handler with microslot configs)
-                      if (slot.parentId &&
-                          slot.parentId !== 'page_header' &&
-                          slot.type !== 'cms_block' &&
-                          slot.id !== 'product_items') {
-                        console.log(`⏭️ SKIPPING ${slot.id} - child slot, will be rendered by parent ${slot.parentId}`);
-                        return null;
-                      }
+                      // DON'T skip anything - let all slots render individually for now
+                      // The hierarchical rendering wasn't working as expected
+                      // if (slot.parentId && slot.parentId !== 'page_header' && slot.type !== 'cms_block' && slot.id !== 'product_items') {
+                      //   console.log(`⏭️ SKIPPING ${slot.id} - child slot, will be rendered by parent ${slot.parentId}`);
+                      //   return null;
+                      // }
 
                       // Let layered_navigation be handled by the component mapping
 
