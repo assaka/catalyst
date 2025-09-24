@@ -5,7 +5,7 @@
  * - Maintainable structure matching CategorySlotsEditor
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Package,
@@ -85,6 +85,7 @@ const ProductSlotsEditor = ({
 
   // Basic editor state
   const isDragOperationActiveRef = useRef(false);
+  const publishPanelRef = useRef(null);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -97,6 +98,8 @@ const ProductSlotsEditor = ({
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(true);
 
   // Generate mock product context for preview
   const [productContext, setProductContext] = useState(null);
@@ -158,6 +161,31 @@ const ProductSlotsEditor = ({
 
   // Badge refresh
   useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'product');
+
+  // Click outside and preview mode handlers
+  useClickOutsidePanel(showPublishPanel, publishPanelRef, setShowPublishPanel);
+  usePreviewModeHandlers(showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel);
+
+  // Publish panel handlers
+  const basePublishPanelHandlers = usePublishPanelHandlers(
+    'product', getSelectedStoreId, getDraftConfiguration, setProductLayoutConfig, slotConfigurationService
+  );
+
+  // Use generic publish panel handler wrappers
+  const { handlePublishPanelPublished, handlePublishPanelReverted } = usePublishPanelHandlerWrappers(
+    'product',
+    basePublishPanelHandlers,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setDraftConfig,
+      setConfigurationStatus,
+      setHasUnsavedChanges,
+      setLatestPublished,
+      setPageConfig: setProductLayoutConfig,
+      updateLastSavedConfig
+    }
+  );
 
   // Initialize editor when component mounts or store changes
   useEffect(() => {

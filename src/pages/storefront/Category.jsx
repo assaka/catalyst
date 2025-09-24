@@ -117,6 +117,17 @@ export default function Category() {
   // Extract slots from the loaded configuration
   const categorySlots = categoryLayoutConfig?.slots || null;
 
+  // Extract grid configuration from product_items slot metadata
+  const getGridClasses = () => {
+    const gridConfig = categoryLayoutConfig?.slots?.product_items?.metadata?.gridConfig;
+    if (gridConfig) {
+      const { mobile = 1, tablet = 2, desktop = 3 } = gridConfig;
+      return `grid-cols-${mobile} sm:grid-cols-${tablet} lg:grid-cols-${desktop}`;
+    }
+    // Fallback to default grid
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+  };
+
     useEffect(() => {
     if (!storeLoading && store?.id && categorySlug) {
       loadCategoryProducts();
@@ -542,7 +553,7 @@ export default function Category() {
       {/* Dynamic layout using CategorySlotRenderer for everything below header */}
       <div className="max-w-7xl mx-auto">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[400px]">
+          <div className={`grid ${getGridClasses()} gap-8 min-h-[400px]`}>
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
