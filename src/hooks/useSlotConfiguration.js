@@ -590,22 +590,11 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
 
       if (finalConfig && isMounted) {
         // If createDefaultSlots is provided (for CategorySlotsEditor), check if we need default slots
-        // IMPORTANT: Only create defaults if NO configuration exists at all, not if draft exists with empty/partial slots
-        const shouldCreateDefaults = createDefaultSlots && (
-          !finalConfig.slots ||
-          Object.keys(finalConfig.slots).length === 0 ||
-          // Additional check: only create defaults if this is truly a fallback scenario (no database config was loaded)
-          (finalConfig.metadata?.fallbackUsed === true)
-        );
-
-        if (shouldCreateDefaults) {
-          console.log('🏗️ CREATING DEFAULT SLOTS - No valid configuration found, using static defaults');
+        if (createDefaultSlots && (!finalConfig.slots || Object.keys(finalConfig.slots).length === 0)) {
           finalConfig = {
             ...finalConfig,
             slots: createDefaultSlots()
           };
-        } else if (finalConfig.slots && Object.keys(finalConfig.slots).length > 0) {
-          console.log('✅ PRESERVING EXISTING SLOTS - Found valid configuration with', Object.keys(finalConfig.slots).length, 'slots');
         }
 
         console.log('🚀 EDITOR INITIALIZATION - Setting final configuration:');
