@@ -419,7 +419,7 @@ export const usePreviewModeHandlers = (showPreview, setIsSidebarVisible, setSele
 };
 
 // Publish panel handlers hook
-export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOrStaticConfiguration, setPageConfig, slotConfigurationService) => {
+export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftConfiguration, setPageConfig, slotConfigurationService) => {
   const handlePublishPanelPublished = useCallback(async () => {
     console.log(`📋 handlePublishPanelPublished called for ${pageType} - closing sidebar`);
 
@@ -461,7 +461,7 @@ export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOr
       if (storeId) {
         if (revertedConfig === null) {
           // Draft was completely deleted
-          const configToUse = await getDraftOrStaticConfiguration();
+          const configToUse = await getDraftConfiguration();
           if (configToUse) {
             const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
             return {
@@ -473,7 +473,7 @@ export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOr
           }
         } else if (revertedConfig && revertedConfig.status === 'draft' && !revertedConfig.current_edit_id) {
           // Previous draft state was restored
-          const configToUse = await getDraftOrStaticConfiguration();
+          const configToUse = await getDraftConfiguration();
           if (configToUse) {
             const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
             return {
@@ -487,7 +487,7 @@ export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOr
           // Normal revert draft creation
           const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
           if (draftResponse && draftResponse.success && draftResponse.data) {
-            const configToUse = await getDraftOrStaticConfiguration();
+            const configToUse = await getDraftConfiguration();
             if (configToUse) {
               const finalConfig = slotConfigurationService.transformFromSlotConfigFormat(configToUse);
               return {
@@ -512,7 +512,7 @@ export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftOr
       console.error('Failed to reload configuration after revert/undo:', error);
       throw error;
     }
-  }, [pageType, getSelectedStoreId, getDraftOrStaticConfiguration]);
+  }, [pageType, getSelectedStoreId, getDraftConfiguration]);
 
   return { handlePublishPanelPublished, handlePublishPanelReverted };
 };
@@ -573,7 +573,7 @@ export const useConfigurationInitialization = (pageType, pageName, slotType, get
       configurationLoadedRef.current = true;
       return fallbackConfig;
     }
-  }, [pageType, pageName, slotType, getDraftOrStaticConfiguration, loadDraftStatus]);
+  }, [pageType, pageName, slotType, getDraftConfiguration, loadDraftStatus]);
 
   return { initializeConfig, configurationLoadedRef };
 };

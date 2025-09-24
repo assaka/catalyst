@@ -383,7 +383,7 @@ const CategorySlotsEditor = ({
 
   // Publish panel handlers
   const basePublishPanelHandlers = usePublishPanelHandlers(
-    'category', getSelectedStoreId, getDraftOrStaticConfiguration, setCategoryLayoutConfig, slotConfigurationService
+    'category', getSelectedStoreId, getDraftConfiguration, setCategoryLayoutConfig, slotConfigurationService
   );
 
   // Use generic publish panel handler wrappers

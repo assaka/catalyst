@@ -116,7 +116,7 @@ const CartSlotsEditor = ({
   const {
     handleResetLayout: resetLayoutFromHook,
     handlePublishConfiguration,
-    getDraftOrStaticConfiguration,
+    getDraftConfiguration,
     createSlot,
     handleSlotDrop: slotDropHandler,
     handleSlotDelete: slotDeleteHandler,
@@ -144,7 +144,7 @@ const CartSlotsEditor = ({
 
   // Configuration initialization hook
   const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
-    'cart', 'Cart', 'cart_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus
+    'cart', 'Cart', 'cart_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus
   );
 
   // Use generic editor initialization
@@ -286,7 +286,7 @@ const CartSlotsEditor = ({
 
   // Publish panel handlers
   const basePublishPanelHandlers = usePublishPanelHandlers(
-    'cart', getSelectedStoreId, getDraftOrStaticConfiguration, setCartLayoutConfig, slotConfigurationService
+    'cart', getSelectedStoreId, getDraftConfiguration, setCartLayoutConfig, slotConfigurationService
   );
 
   // Use generic publish panel handler wrappers

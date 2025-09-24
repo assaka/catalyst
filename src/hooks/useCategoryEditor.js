@@ -80,7 +80,7 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
   const {
     handleResetLayout: resetLayoutFromHook,
     handlePublishConfiguration,
-    getDraftOrStaticConfiguration,
+    getDraftConfiguration,
     createSlot,
     handleSlotDrop: slotDropHandler,
     handleSlotDelete: slotDeleteHandler,
@@ -107,7 +107,7 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
 
   // Configuration initialization
   const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
-    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftOrStaticConfiguration, loadDraftStatus, categoryConfig
+    'category', 'Category', 'category_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus, categoryConfig
   );
 
   // Editor initialization
@@ -255,7 +255,7 @@ export const useCategoryEditor = ({ mode, onSave, viewMode: propViewMode }) => {
 
   // Publish panel handlers
   const basePublishPanelHandlers = usePublishPanelHandlers(
-    'category', getSelectedStoreId, getDraftOrStaticConfiguration, setCategoryLayoutConfig, slotConfigurationService
+    'category', getSelectedStoreId, getDraftConfiguration, setCategoryLayoutConfig, slotConfigurationService
   );
 
   const { handlePublishPanelPublished, handlePublishPanelReverted } = usePublishPanelHandlerWrappers(
