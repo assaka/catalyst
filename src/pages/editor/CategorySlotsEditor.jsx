@@ -497,7 +497,7 @@ const CategorySlotsEditor = ({
                       lastResizeEndTime.current = Date.now();
                       setTimeout(() => setIsResizing(false), 100);
                     }}
-                    selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                    selectedElementId={showPreview ? null : (selectedElement && typeof selectedElement.getAttribute === 'function' ? selectedElement.getAttribute('data-slot-id') : null)}
                     setPageConfig={setCategoryLayoutConfig}
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}

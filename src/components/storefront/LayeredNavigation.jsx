@@ -31,7 +31,14 @@ const EditableSlotElement = ({ slotKey, slot, onElementClick, children, classNam
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onElementClick(slotKey, slot);
+        // Create a mock element with the data-slot-id attribute for the editor
+        const mockElement = {
+          getAttribute: (attr) => {
+            if (attr === 'data-slot-id') return slotKey;
+            return null;
+          }
+        };
+        onElementClick(mockElement);
       }}
       onDragStart={(e) => {
         e.preventDefault();
