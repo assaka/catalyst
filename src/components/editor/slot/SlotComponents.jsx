@@ -825,8 +825,31 @@ export function HierarchicalSlotRenderer({
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug: Log when HierarchicalSlotRenderer is called
+  if (parentId === 'products_container' || parentId === null) {
+    console.log(`🏗️ HIERARCHICAL RENDERER CALLED with parentId: ${parentId || 'ROOT'}`);
+    console.log(`🏗️ Found ${childSlots.length} child slots:`, childSlots.map(s => s.id));
+  }
+
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
+
+    // Debug logging for product_items
+    if (slot.id === 'product_items' || slot.id === 'products_container') {
+      console.log(`🔍 FILTERING ${slot.id}:`, {
+        slotId: slot.id,
+        parentId: slot.parentId,
+        parentIdBeingRendered: parentId,
+        slotViewMode: slot.viewMode,
+        currentViewMode: viewMode,
+        shouldShow: shouldShow,
+        reason: !slot.viewMode ? 'no viewMode' :
+                !Array.isArray(slot.viewMode) ? 'viewMode not array' :
+                slot.viewMode.length === 0 ? 'empty viewMode array' :
+                slot.viewMode.includes(viewMode) ? 'viewMode matches' : 'viewMode does not match'
+      });
+    }
+
     return shouldShow;
   });
 

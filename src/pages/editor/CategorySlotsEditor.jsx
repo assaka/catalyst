@@ -461,7 +461,7 @@ const CategorySlotsEditor = ({
                     // Log ALL slots to see what's there
                     Object.keys(categoryLayoutConfig.slots).forEach(slotId => {
                       const slot = categoryLayoutConfig.slots[slotId];
-                      if (slot.id === 'product_items') {
+                      if (slot.id === 'product_items' || slot.id === 'products_container') {
                         console.info(`🔍 SLOT [${slotId}]:`, {
                           type: slot.type,
                           parentId: slot.parentId,
@@ -503,6 +503,17 @@ const CategorySlotsEditor = ({
                     customSlotRenderer={(slot) => {
                       console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
 
+                      // Log specifically for product-related slots
+                      if (slot.id === 'product_items' || slot.id === 'products_container') {
+                        console.log(`🔍 PRODUCT-RELATED SLOT RENDERER:`, {
+                          slotId: slot.id,
+                          type: slot.type,
+                          parentId: slot.parentId,
+                          hasMetadata: !!slot.metadata,
+                          gridConfig: slot.metadata?.gridConfig
+                        });
+                      }
+
                       // DON'T skip anything - let all slots render individually for now
                       // The hierarchical rendering wasn't working as expected
                       // if (slot.parentId && slot.parentId !== 'page_header' && slot.type !== 'cms_block' && slot.id !== 'product_items') {
@@ -511,6 +522,14 @@ const CategorySlotsEditor = ({
                       // }
 
                       // Let layered_navigation be handled by the component mapping
+
+                      // Handle products_container explicitly
+                      if (slot.id === 'products_container') {
+                        console.log('📦 PRODUCTS_CONTAINER EXPLICIT HANDLER RUNNING!');
+                        console.log('📦 WILL RENDER CHILDREN RECURSIVELY');
+                        // Let the default container rendering handle this - it will render children
+                        return null; // Fall through to default rendering
+                      }
 
                       // Handle product_items explicitly before component mapping
                       if (slot.id === 'product_items') {
@@ -547,13 +566,16 @@ const CategorySlotsEditor = ({
                         console.log('🎯 CONTENT WITH CONFIG:', contentWithConfig);
                         console.log('🎯 FINAL GRID CONFIG BEING PASSED:', contentWithConfig.gridConfig);
 
-                        return (
+                        const productSlot = (
                           <CategoryProductItemCardSlot
                             categoryContext={sampleCategoryContext}
                             content={contentWithConfig}
                             config={{ viewMode }}
                           />
                         );
+
+                        console.log('🎯 RETURNING PRODUCT SLOT:', !!productSlot);
+                        return productSlot;
                       }
 
                       // Handle breadcrumbs content specifically
