@@ -676,6 +676,7 @@ const CategorySlotsEditor = ({
             const config = categoryLayoutConfig && categoryLayoutConfig.slots && slotId ? categoryLayoutConfig.slots[slotId] : null;
             return config;
           })()}
+          allSlots={categoryLayoutConfig?.slots || {}}
           onTextChange={handleTextChange}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}

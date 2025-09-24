@@ -501,6 +501,7 @@ const CartSlotsEditor = ({
             console.log('🏗️ CartSlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, cartLayoutConfig });
             return config;
           })()}
+          allSlots={cartLayoutConfig?.slots || {}}
           onTextChange={handleTextChange}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}

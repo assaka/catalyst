@@ -61,6 +61,7 @@ const EditorSidebar = ({
   onTextChange,   // New prop for text content changes
   slotId,        // Current slot ID
   slotConfig,    // Current slot configuration from database
+  allSlots = {}, // All slots configuration to check for product_items
   isVisible = true
 }) => {
   console.log('🔵 EditorSidebar rendered with:', { selectedElement, slotId, slotConfig, isVisible });
@@ -1124,17 +1125,22 @@ const EditorSidebar = ({
           </div>
         </SectionHeader>
 
-        {/* Grid Layout Section - Only show for product containers */}
-        {(slotId === 'product_items' || slotId === 'product_grid' || (slotConfig && slotConfig.metadata?.component === 'ProductItemCard')) && (
-          <SectionHeader title="Grid Layout" section="grid">
+        {/* Grid Layout Section - Only show when product_items slot exists and we're working on product-related content */}
+        {allSlots['product_items'] && (
+          <SectionHeader title="Product Grid Layout" section="grid">
+            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+              <strong>Product Grid Configuration</strong><br/>
+              Configure how products are displayed across different devices. This only affects the product grid layout.
+            </div>
             <GridLayoutControl
-              currentConfig={slotConfig?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }}
+              currentConfig={allSlots['product_items']?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }}
               onConfigChange={(newGridConfig) => {
-                console.log('🔧 Grid config changed:', newGridConfig);
-                // Update slot configuration with new grid config
+                console.log('🔧 Product grid config changed:', newGridConfig);
+                // Update product_items slot configuration with new grid config
                 if (onClassChange) {
-                  onClassChange(slotId, slotConfig?.className || '', slotConfig?.styles || {}, {
-                    ...slotConfig?.metadata,
+                  const productItemsSlot = allSlots['product_items'];
+                  onClassChange('product_items', productItemsSlot?.className || '', productItemsSlot?.styles || {}, {
+                    ...productItemsSlot?.metadata,
                     gridConfig: newGridConfig
                   });
                 }
