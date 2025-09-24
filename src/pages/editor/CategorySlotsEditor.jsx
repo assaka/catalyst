@@ -586,6 +586,11 @@ const CategorySlotsEditor = ({
                     saveConfiguration={saveConfiguration}
                     saveTimeoutRef={saveTimeoutRef}
                     customSlotRenderer={(slot) => {
+                      // Test log to verify logging is working
+                      if (slot.id === 'product_items') {
+                        console.log('🚀 SLOT PROCESSING TEST - product_items slot detected!');
+                      }
+
                       // Only log CMS and product slots to debug ordering issue
                       if (slot.id.includes('products') || slot.id.includes('cms')) {
                         console.log(`🎯 Processing: ${slot.id} (row ${slot.position?.row}, parent: ${slot.parentId})`);
@@ -602,10 +607,8 @@ const CategorySlotsEditor = ({
 
                       // Handle product_items explicitly before component mapping
                       if (slot.id === 'product_items') {
-                        console.log('🛍️ Rendering product_items with CategoryProductItemCardSlot');
-                        console.log('🛍️ Slot data:', slot);
-                        console.log('🛍️ Slot content:', slot.content);
-                        console.log('🛍️ Slot metadata:', slot.metadata);
+                        console.log('🛍️ PRODUCT_ITEMS EXPLICIT HANDLER RUNNING!');
+                        console.log('🔥 EXPLICIT HANDLER CONFIRMED!');
 
                         // Get microslot configurations from category config
                         const microslotConfigs = {

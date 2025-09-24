@@ -30,11 +30,26 @@ const ResizeWrapper = ({
     let height = initialHeight || 'auto';
     let heightUnit = 'px';
 
+    // Check if this is a button element (simplified check without helper function)
+    const isButton = children?.type === 'button' ||
+                     children?.props?.type === 'button' ||
+                     (children?.props?.className && (
+                       children.props.className.includes('btn') ||
+                       children.props.className.includes('button') ||
+                       children.props.className.includes('Add to Cart')
+                     ));
+
     if (existingWidth && existingWidth !== 'auto') {
       const match = existingWidth.match(/^(\d+(?:\.\d+)?)(.*)/);
       if (match) {
         width = parseFloat(match[1]);
         widthUnit = match[2] || 'px';
+
+        // For buttons with percentage width, reset to auto to recalculate in pixels
+        if (isButton && widthUnit === '%') {
+          width = 'auto';
+          widthUnit = 'auto';
+        }
       }
     } else if (initialWidth) {
       widthUnit = hasWFitClass ? 'px' : '%';
