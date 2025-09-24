@@ -823,7 +823,6 @@ export function HierarchicalSlotRenderer({
   customSlotRenderer = null // Add custom slot renderer function
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
-  console.log(`🏗️ HierarchicalSlotRenderer [parentId: ${parentId}] - childSlots:`, childSlots.map(s => s.id));
 
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
@@ -1444,7 +1443,6 @@ export function HierarchicalSlotRenderer({
                     if (customSlotRenderer) {
                       const customContent = customSlotRenderer(slot);
                       if (customContent) {
-                        console.log(`✅ Custom renderer provided content for slot: ${slot.id}`);
                         return customContent;
                       }
                     }

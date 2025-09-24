@@ -152,13 +152,10 @@ const CategorySlotsEditor = ({
 
   // Create default slots function for category layout
   const createDefaultSlots = useCallback(async () => {
-    console.log('🏗️ Creating default category slots...');
     try {
       const configModule = await import('@/components/editor/slot/configs/category-config');
-      console.log('📦 Imported config module:', configModule);
 
       const categoryConfig = configModule.categoryConfig || configModule.default;
-      console.log('⚙️ Category config:', categoryConfig);
 
       if (!categoryConfig || !categoryConfig.slots) {
         console.error('❌ Invalid category config - no slots found');
@@ -178,7 +175,6 @@ const CategorySlotsEditor = ({
         cmsBlocks: categoryConfig.cmsBlocks || []
       };
 
-      console.log('✅ Created default config with', Object.keys(defaultConfig.slots).length, 'slots');
       return defaultConfig;
     } catch (error) {
       console.error('❌ Failed to load category config:', error);
@@ -188,18 +184,6 @@ const CategorySlotsEditor = ({
 
   // Use generic editor initialization with createDefaultSlots
   useEditorInitialization(initializeConfig, setCategoryLayoutConfig, createDefaultSlots);
-
-  // Debug: Log when configuration changes to see source
-  useEffect(() => {
-    if (categoryLayoutConfig?.slots) {
-      console.log('📊 Configuration loaded/changed:', {
-        source: categoryLayoutConfig.metadata?.source || 'unknown',
-        slotCount: Object.keys(categoryLayoutConfig.slots).length,
-        categoryTitleClassName: categoryLayoutConfig.slots.category_title?.className,
-        breadcrumbsClassName: categoryLayoutConfig.slots.breadcrumbs_content?.className
-      });
-    }
-  }, [categoryLayoutConfig]);
 
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(
@@ -335,13 +319,11 @@ const CategorySlotsEditor = ({
     selectedFilters: selectedFilters,
     productLabels: [],
     handleFilterChange: (filters) => {
-      console.log('🔍 Filter change in CategorySlotsEditor:', filters);
       setSelectedFilters(filters);
     },
     handleSortChange: () => {},
     handlePageChange: () => {},
     clearFilters: () => {
-      console.log('🧹 Clearing all filters');
       setSelectedFilters({});
     }
   };
@@ -503,10 +485,8 @@ const CategorySlotsEditor = ({
                     variant="outline"
                     size="sm"
                     onClick={async () => {
-                      console.log('🔄 Manually loading default config...');
                       const defaultConfig = await createDefaultSlots();
                       if (defaultConfig) {
-                        console.log('✅ Setting default config:', defaultConfig);
                         setCategoryLayoutConfig(defaultConfig);
                         setHasUnsavedChanges(true);
                       }
@@ -578,22 +558,12 @@ const CategorySlotsEditor = ({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 {(() => {
-                  console.log('🔍 CategorySlotsEditor render - categoryLayoutConfig:', categoryLayoutConfig);
-                  console.log('🔍 Slots available:', categoryLayoutConfig?.slots ? Object.keys(categoryLayoutConfig.slots) : 'No slots');
-
                   // Log specific slot types to debug
                   if (categoryLayoutConfig?.slots) {
-                    console.log('🔍 breadcrumbs slot:', categoryLayoutConfig.slots.breadcrumbs);
-                    console.log('🔍 breadcrumbs_content slot:', categoryLayoutConfig.slots.breadcrumbs_content);
-                    console.log('🔍 category_header slot:', categoryLayoutConfig.slots.category_header);
-                    console.log('🔍 category_title slot:', categoryLayoutConfig.slots.category_title);
-                    console.log('🔍 layered_navigation slot:', categoryLayoutConfig.slots.layered_navigation);
-                    console.log('🔍 product_item_card slot:', categoryLayoutConfig.slots.product_item_card);
-
                     // Log ALL slots to see what's there
                     Object.keys(categoryLayoutConfig.slots).forEach(slotId => {
                       const slot = categoryLayoutConfig.slots[slotId];
-                      console.log(`🔍 SLOT [${slotId}]:`, {
+                      console.info(`🔍 SLOT [${slotId}]:`, {
                         type: slot.type,
                         parentId: slot.parentId,
                         viewMode: slot.viewMode,
@@ -706,7 +676,6 @@ const CategorySlotsEditor = ({
                       // Handle CMS block slots
                       if (slot.type === 'cms_block') {
                         const cmsPosition = slot.metadata?.cmsPosition;
-                        console.log('📄 Rendering CMS block for position:', cmsPosition);
                         return (
                           <div className={`relative ${slot.className || "w-full"}`}>
                             <CmsBlockRenderer position={cmsPosition} />
@@ -775,7 +744,6 @@ const CategorySlotsEditor = ({
           slotConfig={(() => {
             const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
             const config = categoryLayoutConfig && categoryLayoutConfig.slots && slotId ? categoryLayoutConfig.slots[slotId] : null;
-            console.log('🏗️ CategorySlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, categoryLayoutConfig });
             return config;
           })()}
           onTextChange={handleTextChange}
@@ -834,12 +802,9 @@ const CategorySlotsEditor = ({
         configuration={categoryLayoutConfig}
         localSaveStatus={localSaveStatus}
         onSave={async (newConfiguration) => {
-          console.log('🎯 CodeModal onSave called with configuration:', newConfiguration);
           setCategoryLayoutConfig(newConfiguration);
           setHasUnsavedChanges(true);
-          console.log('🚀 Calling saveConfiguration...');
           await saveConfiguration(newConfiguration);
-          console.log('✅ Save completed, closing modal');
           setShowCodeModal(false);
         }}
       />
