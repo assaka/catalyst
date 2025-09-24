@@ -579,7 +579,6 @@ const CategorySlotsEditor = ({
                         'product_template': CategoryProductItemCardSlot,
 
                         // Sorting and controls
-                        'sort_controls': CategorySortingSlot,
                         'sorting_controls': CategorySortingSlot,
                         'product_count_info': CategorySortingSlot,
                         'sort_selector': CategorySortingSlot,

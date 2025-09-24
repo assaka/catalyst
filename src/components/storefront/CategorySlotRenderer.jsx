@@ -209,75 +209,6 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Filters container - use LayeredNavigation component
-    if (id === 'filters_container') {
-      // Prepare attributes for LayeredNavigation from filterableAttributes
-      const attributes = filterableAttributes?.map(attr => ({
-        code: attr.code || attr.name,
-        name: attr.name || attr.code,
-        is_filterable: true,
-        options: attr.options || []
-      })) || [];
-
-      // Create slot configuration for LayeredNavigation microslots
-      const layeredNavSlotConfig = {
-        filter_card_header: slots?.filter_card_header || {},
-        filter_clear_all_button: slots?.filter_clear_all_button || {},
-        filter_active_filters: slots?.filter_active_filters || {},
-        filter_active_filters_label: slots?.filter_active_filters_label || {},
-        filter_price_section: slots?.filter_price_section || {},
-        filter_price_title: slots?.filter_price_title || {},
-        filter_attribute_section: slots?.filter_attribute_section || {},
-        filter_attribute_title: slots?.filter_attribute_title || {},
-        filter_attribute_option: slots?.filter_attribute_option || {},
-        filter_option_checkbox: slots?.filter_option_checkbox || {},
-        filter_option_label: slots?.filter_option_label || {},
-        filter_option_count: slots?.filter_option_count || {}
-      };
-
-      return wrapWithParentClass(
-        <div className={className || "sticky top-4"} style={styles}>
-          {/* Render child slots at the top */}
-          {renderChildSlots(slots, id).map(childSlot => {
-            // Handle layered navigation slot specifically
-            if (childSlot.type === 'layered_navigation' && childSlot.id === 'layered_navigation') {
-              return (
-                <div key={childSlot.id} className="mb-4">
-                  <div id="layer_1">
-                    <LayeredNavigation
-                        products={allProducts || products}
-                        attributes={attributes}
-                        onFilterChange={handleFilterChange}
-                        slotConfig={layeredNavSlotConfig}
-                        settings={settings}
-                    />
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div key={childSlot.id} className="mb-4">
-                {renderSlotContent(childSlot)}
-              </div>
-            );
-          })}
-
-          {/* Fallback: Render LayeredNavigation if no layered_navigation slot found */}
-          {!renderChildSlots(slots, id).some(slot => slot.type === 'layered_navigation') && (
-              <div id="layer_3">
-                <LayeredNavigation
-                    products={allProducts || products}
-                    attributes={attributes}
-                    onFilterChange={handleFilterChange}
-                    slotConfig={layeredNavSlotConfig}
-                    settings={settings}
-                />
-              </div>
-          )}
-        </div>
-      );
-    }
-
     // Handle layered_navigation slot specifically
     if (id === 'layered_navigation') {
       // Prepare attributes for LayeredNavigation from filterableAttributes
@@ -339,42 +270,6 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Sort controls and product count
-    if (id === 'sort_controls') {
-      const sortOptions = [
-        { value: 'name_asc', label: 'Name A-Z' },
-        { value: 'name_desc', label: 'Name Z-A' },
-        { value: 'price_asc', label: 'Price Low to High' },
-        { value: 'price_desc', label: 'Price High to Low' },
-        { value: 'newest', label: 'Newest First' },
-        { value: 'popular', label: 'Most Popular' }
-      ];
-
-      return wrapWithParentClass(
-        <div className={className} style={styles}>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              Showing {products.length > 0 ? ((currentPage - 1) * 12 + 1) : 0}-{Math.min(currentPage * 12, products.length)} of {products.length} products
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <label className="text-sm text-gray-600">Sort by1:</label>
-            <select
-              value={sortOption}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-1 text-sm bg-white"
-            >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      );
-    }
-
     // Sorting controls container
     if (id === 'sorting_controls') {
       return wrapWithParentClass(
@@ -420,7 +315,7 @@ export function CategorySlotRenderer({
 
       return wrapWithParentClass(
         <div className={className} style={styles}>
-          <Label className="text-sm font-medium">Sort by2:</Label>
+          <Label className="text-sm font-medium">Sort by:</Label>
           <select
             value={sortOption || ''}
             onChange={(e) => handleSortChange && handleSortChange(e.target.value)}

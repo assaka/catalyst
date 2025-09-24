@@ -4,13 +4,6 @@
 
 export const generateMockCategoryContext = () => {
   const sampleProducts = Array.from({ length: 6 }, (_, i) => {
-    // Assign labels to products
-    let labels = [];
-    if (i === 0) labels = ['new', 'bestseller'];
-    else if (i === 1) labels = ['sale'];
-    else if (i === 2) labels = ['new'];
-    else if (i === 3) labels = ['bestseller'];
-
     return {
       id: i + 1,
       name: `Sample Product ${i + 1}`,
@@ -20,7 +13,7 @@ export const generateMockCategoryContext = () => {
       images: [`https://images.unsplash.com/photo-150574042${i}928-5e560c06d30e?w=400&h=400&fit=crop`],
       stock_status: 'in_stock',
       rating: 4.0 + (i % 10) * 0.1,
-      labels: labels,
+      slug: `sample-product-${i + 1}`,
       attributes: {
         color: ['Black', 'Blue', 'White'][i % 3],
         brand: `Brand${i + 1}`
@@ -51,9 +44,45 @@ export const generateMockCategoryContext = () => {
     settings: { currency_symbol: '$' },
     store: { id: 1, name: 'Demo Store', code: 'demo' },
     productLabels: [
-      { id: 'new', name: 'New', color: '#10B981', textColor: '#FFFFFF' },
-      { id: 'sale', name: 'Sale', color: '#EF4444', textColor: '#FFFFFF' },
-      { id: 'bestseller', name: 'Bestseller', color: '#F59E0B', textColor: '#FFFFFF' }
+      {
+        id: 'new',
+        name: 'New',
+        text: 'New',
+        background_color: '#10B981',
+        color: '#FFFFFF',
+        text_color: '#FFFFFF',
+        position: 'top-left',
+        priority: 1,
+        conditions: {
+          product_ids: [1, 3]  // Products 1 and 3 get "New" label
+        }
+      },
+      {
+        id: 'sale',
+        name: 'Sale',
+        text: 'Sale',
+        background_color: '#EF4444',
+        color: '#FFFFFF',
+        text_color: '#FFFFFF',
+        position: 'top-left',
+        priority: 2,
+        conditions: {
+          product_ids: [2]  // Product 2 gets "Sale" label
+        }
+      },
+      {
+        id: 'bestseller',
+        name: 'Bestseller',
+        text: 'Bestseller',
+        background_color: '#F59E0B',
+        color: '#FFFFFF',
+        text_color: '#FFFFFF',
+        position: 'top-right',
+        priority: 1,
+        conditions: {
+          product_ids: [1, 4]  // Products 1 and 4 get "Bestseller" label
+        }
+      }
     ],
     handleFilterChange: () => {},
     handleSortChange: () => {},
