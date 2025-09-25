@@ -31,6 +31,7 @@ import BreadcrumbRenderer from "@/components/storefront/BreadcrumbRenderer";
 // Slot system imports
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
+import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { productConfig } from '@/components/editor/slot/configs/product-config';
 
 // Product Label Component

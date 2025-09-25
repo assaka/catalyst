@@ -17,8 +17,7 @@ import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSl
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 
-// Import unified components to register them
-import './UnifiedSlotComponents';
+// Components will be registered when UnifiedSlotComponents is imported elsewhere
 
 /**
  * Component Registry Interface
