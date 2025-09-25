@@ -702,10 +702,18 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Live Preview */}
-                                <div className="bg-gray-50 p-3 rounded">
-                                    <Label className="text-sm font-medium">Generated Classes Preview:</Label>
-                                    <div className="mt-2 text-xs text-gray-700 font-mono break-all">
-                                        {generateGridClassesPreview(store.settings.product_grid)}
+                                <div className="bg-gray-50 p-3 rounded space-y-3">
+                                    <div>
+                                        <Label className="text-sm font-medium">Generated Classes Preview:</Label>
+                                        <div className="mt-2 text-xs text-gray-700 font-mono break-all">
+                                            {generateGridClassesPreview(store.settings.product_grid)}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Label className="text-sm font-medium">Products Per Page:</Label>
+                                        <div className="mt-2 text-sm text-gray-700">
+                                            {calculateProductsPerPage(store.settings.product_grid).description}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -26,7 +26,28 @@ export default function Category() {
   const [currentCategory, setCurrentCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
-  const [itemsPerPage] = useState(12);
+  // Calculate dynamic items per page based on grid configuration
+  const calculateItemsPerPage = () => {
+    const gridConfig = settings?.product_grid;
+    if (!gridConfig) return 12;
+
+    const rows = gridConfig.rows || 4;
+    if (rows === 0) return -1; // Infinite scroll
+
+    const breakpoints = gridConfig.breakpoints || {};
+
+    // Find the maximum columns across all active breakpoints
+    let maxColumns = 1;
+    Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+      if (columns > 0 && columns > maxColumns) {
+        maxColumns = columns;
+      }
+    });
+
+    return maxColumns * rows;
+  };
+
+  const itemsPerPage = calculateItemsPerPage();
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
 
@@ -123,6 +144,7 @@ export default function Category() {
 
     // Debug: Log the grid configuration
     console.log('Category.jsx - Grid Config:', gridConfig);
+    console.log('Category.jsx - Items per page:', itemsPerPage);
 
     if (gridConfig) {
       let classes = [];
@@ -383,12 +405,17 @@ export default function Category() {
   }, [filteredProducts, currentSort]);
 
   const paginatedProducts = useMemo(() => {
+    // If infinite scroll is enabled (itemsPerPage = -1), show all products
+    if (itemsPerPage === -1) {
+      return sortedProducts;
+    }
+
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return sortedProducts.slice(startIndex, endIndex);
   }, [sortedProducts, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const totalPages = itemsPerPage === -1 ? 1 : Math.ceil(sortedProducts.length / itemsPerPage);
 
   const handleSortChange = (newSort) => {
     setSort(newSort);
