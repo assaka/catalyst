@@ -89,6 +89,18 @@ function processSimpleVariables(content, context, pageData) {
 
   return content.replace(variableRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
+
+    // Handle formatted price paths directly when they don't exist in data
+    if (trimmedPath === 'product.compare_price_formatted' || trimmedPath === 'product.price_formatted') {
+      const value = getNestedValue(trimmedPath, context, pageData);
+
+      // If formatted price doesn't exist, process it anyway
+      if (value === null) {
+        return formatValue(null, trimmedPath, context, pageData);
+      }
+      return formatValue(value, trimmedPath, context, pageData);
+    }
+
     const value = getNestedValue(trimmedPath, context, pageData);
     return formatValue(value, trimmedPath, context, pageData);
   });
@@ -137,19 +149,6 @@ function evaluateCondition(condition, context, pageData) {
 function getNestedValue(path, context, pageData) {
   const fullData = { ...pageData, ...context };
 
-  // Special handling for formatted price paths that don't exist in data
-  if (path === 'product.compare_price_formatted' || path === 'product.price_formatted') {
-    const result = path.split('.').reduce((obj, key) => {
-      return obj && obj[key] !== undefined ? obj[key] : null;
-    }, fullData);
-
-    // If formatted price doesn't exist, return a marker so formatValue gets called
-    if (result === null) {
-      return '[FORMAT_NEEDED]';
-    }
-    return result;
-  }
-
   return path.split('.').reduce((obj, key) => {
     return obj && obj[key] !== undefined ? obj[key] : null;
   }, fullData);
@@ -159,19 +158,8 @@ function getNestedValue(path, context, pageData) {
  * Format values based on their type and path
  */
 function formatValue(value, path, context, pageData) {
-  // Debug: Log what's being processed
-  if (path.includes('price')) {
-    console.log('formatValue called with:', { path, value, hasProduct: !!(pageData.product || context.product) });
-  }
-
   if (value === null || value === undefined) {
     return '';
-  }
-
-  // Handle special marker for formatted prices that need processing
-  if (value === '[FORMAT_NEEDED]' && (path.includes('price_formatted') || path.includes('compare_price_formatted'))) {
-    // Force processing through the price formatting logic below
-    value = null;
   }
 
   // Special handling for compare_price_formatted

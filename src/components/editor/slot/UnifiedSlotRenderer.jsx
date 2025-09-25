@@ -179,16 +179,6 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
-    // Debug: Check if prices are being processed correctly
-    if (isPriceSlot) {
-      console.log(`AFTER FIX - Slot ${id}:`, {
-        originalContent: content,
-        processedContent: processedContent,
-        productPrice: variableContext.product?.price,
-        productComparePrice: variableContext.product?.compare_price,
-        currency: variableContext.settings?.currency_symbol
-      });
-    }
 
     // Text Element
     if (type === 'text') {
@@ -429,13 +419,6 @@ export function UnifiedSlotRenderer({
     );
   };
 
-  // Debug: Check if slots are being rendered at all
-  console.log('UnifiedSlotRenderer rendering:', {
-    context,
-    slotCount: sortedSlots.length,
-    slotIds: sortedSlots.map(s => s.id),
-    productExists: !!productContext?.product
-  });
 
   return (
     <>
