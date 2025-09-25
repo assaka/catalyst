@@ -441,7 +441,7 @@ const ProductSlotsEditor = ({
 
         {/* Product Layout - Hierarchical Structure */}
         <div
-          className="bg-gray-50 product-page flex-1 overflow-auto"
+          className="bg-gray-50 product-page flex-1 overflow-y-auto"
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}

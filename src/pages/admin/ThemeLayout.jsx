@@ -71,7 +71,8 @@ export default function ThemeLayout() {
                         xl: fullStore?.settings?.product_grid?.breakpoints?.xl ?? 0,
                         '2xl': fullStore?.settings?.product_grid?.breakpoints?.['2xl'] ?? 0
                     },
-                    customBreakpoints: fullStore?.settings?.product_grid?.customBreakpoints || []
+                    customBreakpoints: fullStore?.settings?.product_grid?.customBreakpoints || [],
+                    rows: fullStore?.settings?.product_grid?.rows ?? 4
                 },
                 theme: {
                     primary_button_color: '#007bff',
@@ -132,7 +133,8 @@ export default function ThemeLayout() {
                             ...prev.settings.product_grid?.breakpoints,
                             [breakpoint]: columns
                         },
-                        customBreakpoints: prev.settings.product_grid?.customBreakpoints || []
+                        customBreakpoints: prev.settings.product_grid?.customBreakpoints || [],
+                        rows: prev.settings.product_grid?.rows ?? 4
                     }
                 }
             };
@@ -140,6 +142,23 @@ export default function ThemeLayout() {
             console.log('ThemeLayout - New store state:', newStore.settings.product_grid);
             return newStore;
         });
+    };
+
+    const handleRowsChange = (rows) => {
+        console.log(`ThemeLayout - Changing rows to ${rows}`);
+
+        setStore(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                product_grid: {
+                    ...prev.settings.product_grid,
+                    breakpoints: prev.settings.product_grid?.breakpoints || {},
+                    customBreakpoints: prev.settings.product_grid?.customBreakpoints || [],
+                    rows: rows
+                }
+            }
+        }));
     };
 
     const handleAddCustomBreakpoint = () => {
@@ -153,7 +172,8 @@ export default function ThemeLayout() {
                     customBreakpoints: [
                         ...(prev.settings.product_grid?.customBreakpoints || []),
                         { name: '', columns: 2 }
-                    ]
+                    ],
+                    rows: prev.settings.product_grid?.rows ?? 4
                 }
             }
         }));
@@ -174,7 +194,8 @@ export default function ThemeLayout() {
                     product_grid: {
                         ...prev.settings.product_grid,
                         breakpoints: prev.settings.product_grid?.breakpoints || {},
-                        customBreakpoints: updatedCustomBreakpoints
+                        customBreakpoints: updatedCustomBreakpoints,
+                        rows: prev.settings.product_grid?.rows ?? 4
                     }
                 }
             };
@@ -189,7 +210,8 @@ export default function ThemeLayout() {
                 product_grid: {
                     ...prev.settings.product_grid,
                     breakpoints: prev.settings.product_grid?.breakpoints || {},
-                    customBreakpoints: (prev.settings.product_grid?.customBreakpoints || []).filter((_, i) => i !== index)
+                    customBreakpoints: (prev.settings.product_grid?.customBreakpoints || []).filter((_, i) => i !== index),
+                    rows: prev.settings.product_grid?.rows ?? 4
                 }
             }
         }));
@@ -221,6 +243,31 @@ export default function ThemeLayout() {
         });
 
         return classes.length > 0 ? classes.join(' ') : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
+    };
+
+    const calculateProductsPerPage = (gridConfig) => {
+        if (!gridConfig) return { max: 12, description: 'Default: 12 products per page' };
+
+        const breakpoints = gridConfig.breakpoints || {};
+        const rows = gridConfig.rows || 4;
+
+        if (rows === 0) {
+            return { max: 'infinite', description: 'Infinite scroll enabled' };
+        }
+
+        // Find the maximum columns across all active breakpoints
+        let maxColumns = 1;
+        Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+            if (columns > 0 && columns > maxColumns) {
+                maxColumns = columns;
+            }
+        });
+
+        const productsPerPage = maxColumns * rows;
+        return {
+            max: productsPerPage,
+            description: `${maxColumns} columns × ${rows} rows = ${productsPerPage} products per page`
+        };
     };
 
     const handleThemeChange = (key, value) => {
@@ -570,6 +617,34 @@ export default function ThemeLayout() {
                                                     <SelectItem value="4">4 columns</SelectItem>
                                                     <SelectItem value="5">5 columns</SelectItem>
                                                     <SelectItem value="6">6 columns</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Rows Configuration */}
+                                <div className="border-t pt-4">
+                                    <div className="flex items-center gap-4">
+                                        <div>
+                                            <Label htmlFor="grid_rows">Number of Rows</Label>
+                                            <p className="text-sm text-gray-500">How many rows of products to show per page (0 = infinite scroll)</p>
+                                        </div>
+                                        <div className="w-32">
+                                            <Select value={String(store.settings.product_grid?.rows || 4)} onValueChange={(value) => handleRowsChange(parseInt(value))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0">Infinite scroll</SelectItem>
+                                                    <SelectItem value="1">1 row</SelectItem>
+                                                    <SelectItem value="2">2 rows</SelectItem>
+                                                    <SelectItem value="3">3 rows</SelectItem>
+                                                    <SelectItem value="4">4 rows</SelectItem>
+                                                    <SelectItem value="5">5 rows</SelectItem>
+                                                    <SelectItem value="6">6 rows</SelectItem>
+                                                    <SelectItem value="8">8 rows</SelectItem>
+                                                    <SelectItem value="10">10 rows</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
