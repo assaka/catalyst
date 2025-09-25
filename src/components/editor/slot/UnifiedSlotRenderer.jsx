@@ -16,6 +16,7 @@ import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
+import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 // Components will be registered when UnifiedSlotComponents is imported elsewhere
 
@@ -89,11 +90,20 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles } = slot;
 
+    // Prepare context for variable processing
+    const variableContext = context === 'editor' ?
+      generateDemoData('product') :
+      { product: productContext.product, category: categoryData, cart: cartData };
+
+    // Process variables in content and className
+    const processedContent = processVariables(content, variableContext);
+    const processedClassName = processVariables(className, variableContext);
+
     // Text Element
     if (type === 'text') {
-      const textContent = content || '[Text placeholder]';
+      const textContent = processedContent || '[Text placeholder]';
       return (
-        <div className={className} style={styles}>
+        <div className={processedClassName} style={styles}>
           {context === 'storefront' ? (
             <span dangerouslySetInnerHTML={{ __html: textContent }} />
           ) : (
@@ -105,13 +115,13 @@ export function UnifiedSlotRenderer({
 
     // Button Element
     if (type === 'button') {
-      const buttonContent = content || 'Button';
+      const buttonContent = processedContent || 'Button';
 
       if (context === 'storefront') {
         // Storefront: Full functionality
         return (
           <Button
-            className={className}
+            className={processedClassName}
             style={styles}
             onClick={() => {
               // Handle different button actions based on slot id or configuration
@@ -130,7 +140,7 @@ export function UnifiedSlotRenderer({
       } else {
         // Editor: Visual preview only
         return (
-          <button className={className} style={styles}>
+          <button className={processedClassName} style={styles}>
             {buttonContent}
           </button>
         );
@@ -139,7 +149,7 @@ export function UnifiedSlotRenderer({
 
     // Image Element
     if (type === 'image') {
-      let imageSrc = content;
+      let imageSrc = processedContent || content;
 
       // Handle product-specific images
       if (id === 'product_image' && productContext.product) {
@@ -156,8 +166,8 @@ export function UnifiedSlotRenderer({
       return (
         <img
           src={imageSrc}
-          alt={productContext.product?.name || 'Image'}
-          className={className}
+          alt={variableContext.product?.name || 'Image'}
+          className={processedClassName}
           style={styles}
         />
       );
@@ -169,7 +179,7 @@ export function UnifiedSlotRenderer({
                             type === 'flex' ? 'flex' : '';
 
       return (
-        <div className={`${containerClass} ${className || ''}`} style={styles}>
+        <div className={`${containerClass} ${processedClassName || ''}`} style={styles}>
           <UnifiedSlotRenderer
             slots={slots}
             parentId={id}
@@ -199,7 +209,7 @@ export function UnifiedSlotRenderer({
 
     // Component Element
     if (type === 'component') {
-      const componentName = content || slot.metadata?.component;
+      const componentName = processedContent || content || slot.metadata?.component;
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);
@@ -213,14 +223,15 @@ export function UnifiedSlotRenderer({
           categoryData,
           cartData,
           context,
-          className,
-          styles
+          className: processedClassName,
+          styles,
+          variableContext
         });
       }
 
       // Fallback for unregistered components
       return (
-        <div className={className} style={styles}>
+        <div className={processedClassName} style={styles}>
           {componentName ? `[${componentName} component]` : '[Unknown component]'}
         </div>
       );
@@ -228,8 +239,8 @@ export function UnifiedSlotRenderer({
 
     // Default fallback
     return (
-      <div className={className} style={styles}>
-        {content || `[${type} slot]`}
+      <div className={processedClassName} style={styles}>
+        {processedContent || `[${type} slot]`}
       </div>
     );
   };

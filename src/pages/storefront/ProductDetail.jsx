@@ -167,6 +167,7 @@ export default function ProductDetail() {
 
         } else {
           // Fallback to product-config.js
+          console.log('📋 No published config found, using default product-config.js');
           const fallbackConfig = {
             slots: { ...productConfig.slots },
             metadata: {
@@ -178,6 +179,7 @@ export default function ProductDetail() {
 
           setProductLayoutConfig(fallbackConfig);
           setConfigLoaded(true);
+          console.log('📋 Fallback config loaded:', fallbackConfig);
         }
       } catch (error) {
         console.error('Failed to load product layout config:', error);
@@ -614,6 +616,17 @@ export default function ProductDetail() {
         const slotCount = hasSlots ? Object.keys(productLayoutConfig.slots).length : 0;
 
         const shouldRender = hasConfig && hasSlots && slotCount > 0;
+
+        // Debug logging
+        console.log('🎯 Slot System Check:', {
+          productLayoutConfig: !!productLayoutConfig,
+          configLoaded,
+          hasConfig,
+          hasSlots,
+          slotCount,
+          shouldRender,
+          slots: productLayoutConfig?.slots ? Object.keys(productLayoutConfig.slots) : 'none'
+        });
 
         return shouldRender;
       })() ? (

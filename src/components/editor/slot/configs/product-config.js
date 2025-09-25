@@ -44,7 +44,7 @@ export const productConfig = {
     breadcrumbs: {
       id: 'breadcrumbs',
       type: 'text',
-      content: '<nav>Home > Category > Product</nav>',
+      content: '<nav>Home > {{#if category.name}}{{category.name}}{{else}}Category{{/if}} > {{product.name}}</nav>',
       className: 'w-fit text-sm text-gray-600',
       parentClassName: '',
       styles: {},
@@ -176,7 +176,7 @@ export const productConfig = {
     product_title: {
       id: 'product_title',
       type: 'text',
-      content: 'Product Name',
+      content: '{{product.name}}',
       className: 'w-fit text-3xl font-bold text-gray-900 mb-2',
       parentClassName: '',
       styles: {},
@@ -208,8 +208,8 @@ export const productConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: '$99.99',
-      className: 'w-fit text-3xl font-bold text-green-600',
+      content: '{{#if product.on_sale}}{{product.price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
+      className: 'w-fit text-3xl font-bold {{#if product.on_sale}}text-red-600{{else}}text-green-600{{/if}}',
       parentClassName: '',
       styles: {},
       parentId: 'price_container',
@@ -224,7 +224,7 @@ export const productConfig = {
     compare_price: {
       id: 'compare_price',
       type: 'text',
-      content: '$129.99',
+      content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{/if}}',
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -240,8 +240,8 @@ export const productConfig = {
     stock_status: {
       id: 'stock_status',
       type: 'text',
-      content: 'In Stock',
-      className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800',
+      content: '{{product.stock_status}}',
+      className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs {{#if product.stock_quantity > 0}}bg-green-100 text-green-800{{else}}bg-red-100 text-red-800{{/if}}',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
@@ -256,12 +256,44 @@ export const productConfig = {
     product_sku: {
       id: 'product_sku',
       type: 'text',
-      content: 'SKU: PROD123',
+      content: 'SKU: {{product.sku}}',
       className: 'w-fit text-sm text-gray-600',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 4 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: { hierarchical: true }
+    },
+
+    product_description: {
+      id: 'product_description',
+      type: 'text',
+      content: '{{product.short_description}}',
+      className: 'w-fit text-gray-700 leading-relaxed',
+      parentClassName: '',
+      styles: {},
+      parentId: 'info_container',
+      position: { col: 1, row: 5 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: { hierarchical: true }
+    },
+
+    product_labels: {
+      id: 'product_labels',
+      type: 'text',
+      content: '{{#each product.labels}}<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">{{this}}</span>{{/each}}',
+      className: 'product-labels absolute top-2 right-2',
+      parentClassName: '',
+      styles: {},
+      parentId: 'main_image',
+      position: { col: 1, row: 1 },
       colSpan: {
         default: 12
       },
