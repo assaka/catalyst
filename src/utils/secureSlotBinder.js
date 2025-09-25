@@ -25,6 +25,7 @@ export class ProductDetailController {
    */
   initialize() {
     this.calculateInitialPrice();
+    this.updateStockDisplay();
     this.bindAllElements();
   }
 
@@ -334,6 +335,129 @@ export class ProductDetailController {
     if (this.productContext.handleWishlistToggle) {
       this.productContext.handleWishlistToggle(product);
     }
+  }
+
+  /**
+   * Helper function to get stock label based on settings and quantity
+   */
+  getStockLabel(product, settings) {
+    // Check if stock labels should be shown at all
+    const showStockLabel = settings?.stock_settings?.show_stock_label !== false;
+    if (!showStockLabel) return null;
+
+    // Default behavior if no stock settings are found
+    if (!settings?.stock_settings) {
+      if (product.stock_quantity <= 0 && !product.infinite_stock) {
+        return "Out of Stock";
+      }
+      return "In Stock";
+    }
+
+    const stockSettings = settings.stock_settings;
+
+    // Handle infinite stock
+    if (product.infinite_stock) {
+      const label = stockSettings.in_stock_label || "In Stock";
+      // Remove quantity placeholder if present, as it's not applicable
+      // Updated regex to handle {({quantity})} format
+      return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
+    }
+
+    // Handle out of stock
+    if (product.stock_quantity <= 0) {
+      return stockSettings.out_of_stock_label || "Out of Stock";
+    }
+
+    // Check if stock quantity should be hidden
+    const hideStockQuantity = settings?.hide_stock_quantity === true;
+
+    // Handle low stock
+    const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
+    if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
+      const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
+      if (hideStockQuantity) {
+        // Remove quantity placeholder and any parentheses with numbers when hiding stock quantity
+        // Updated regex to handle {({quantity})} format
+        return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
+      }
+      // Replace {quantity} or ({quantity}) with actual number - handle both formats
+      // Updated to handle {({quantity})} pattern and ({quantity}) pattern
+      return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
+        if (match === '{({quantity})}') {
+          return `(${product.stock_quantity})`;
+        }
+        if (match === '({quantity})') {
+          return `(${product.stock_quantity})`;
+        }
+        return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
+      });
+    }
+
+    // Handle regular in stock
+    const label = stockSettings.in_stock_label || "In Stock";
+    if (hideStockQuantity) {
+      // Remove quantity placeholder and any parentheses with numbers when hiding stock quantity
+      // Updated regex to handle {({quantity})} format
+      return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
+    }
+    // Replace {quantity} or ({quantity}) with actual number - handle both formats
+    // Updated to handle {({quantity})} pattern and ({quantity}) pattern
+    return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
+      if (match === '{({quantity})}') {
+        return `(${product.stock_quantity})`;
+      }
+      if (match === '({quantity})') {
+        return `(${product.stock_quantity})`;
+      }
+      return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
+    });
+  }
+
+  /**
+   * Helper function to get stock variant (for styling)
+   */
+  getStockVariant(product, settings) {
+    if (product.infinite_stock) return "outline";
+    if (product.stock_quantity <= 0) return "destructive";
+
+    const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
+    if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
+      return "secondary"; // Warning color for low stock
+    }
+
+    return "outline"; // Default for in stock
+  }
+
+  /**
+   * Update stock display elements
+   */
+  updateStockDisplay() {
+    const { product, settings } = this.productContext;
+    if (!product) return;
+
+    const stockLabel = this.getStockLabel(product, settings);
+    const stockVariant = this.getStockVariant(product, settings);
+
+    // Update all stock status displays
+    document.querySelectorAll('[data-bind="stock-status"]').forEach(el => {
+      if (stockLabel) {
+        el.textContent = stockLabel;
+        el.classList.remove('hidden');
+
+        // Apply styling based on variant
+        el.classList.remove('bg-green-100', 'text-green-800', 'bg-yellow-100', 'text-yellow-800', 'bg-red-100', 'text-red-800');
+
+        if (stockVariant === 'destructive') {
+          el.classList.add('bg-red-100', 'text-red-800');
+        } else if (stockVariant === 'secondary') {
+          el.classList.add('bg-yellow-100', 'text-yellow-800');
+        } else {
+          el.classList.add('bg-green-100', 'text-green-800');
+        }
+      } else {
+        el.classList.add('hidden');
+      }
+    });
   }
 
   /**
