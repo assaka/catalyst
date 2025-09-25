@@ -64,7 +64,12 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Don't show placeholder for intentionally empty content (like conditional price displays)
   let textContent = processedContent;
 
-  if (context === 'editor' && (!processedContent || processedContent === '')) {
+  // Debug: Let's see what we're actually getting
+  if (isPriceSlot || slot.id === 'stock_status') {
+    console.log(`Slot ${slot.id} - processedContent:`, processedContent, 'context:', context);
+  }
+
+  if (context === 'editor' && !processedContent) {
     if (isPriceSlot) {
       // Show example price in editor for price slots
       if (slot.id === 'product_price') {
@@ -78,9 +83,8 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     } else {
       textContent = '[Text placeholder]';
     }
-  } else if (context === 'storefront' && (!processedContent || processedContent === '')) {
-    // Don't render empty slots in storefront - return null instead of showing placeholder
-    return null;
+  } else if (!processedContent) {
+    textContent = '[Text placeholder]';
   }
 
   return (
