@@ -73,8 +73,9 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
         textContent = '<span data-original-price class="original-price">$129.99</span>';
       }
     } else if (slot.id === 'stock_status') {
-      // Show example stock status in editor
-      textContent = '<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800" data-bind="stock-status">In Stock</span>';
+      // Show example stock status in editor - using admin settings if available
+      const stockLabel = variableContext?.settings?.stock_settings?.in_stock_label || 'In Stock';
+      textContent = `<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800" data-bind="stock-status">${stockLabel}</span>`;
     } else {
       textContent = '[Text placeholder]';
     }
