@@ -192,8 +192,8 @@ export const productConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: '{{#if product.price_formatted}}{{product.price_formatted}}{{else}}{{product.price}}{{/if}}',
-      className: 'w-fit text-3xl font-bold {{#if product.on_sale}}text-red-600{{else}}text-green-600{{/if}}',
+      content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
+      className: 'w-fit text-3xl font-bold {{#if product.compare_price}}text-red-600{{else}}text-green-600{{/if}}',
       parentClassName: '',
       styles: {},
       parentId: 'price_container',
@@ -205,10 +205,10 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    compare_price: {
-      id: 'compare_price',
+    original_price: {
+      id: 'original_price',
       type: 'text',
-      content: '{{product.compare_price_formatted}}',
+      content: '{{#if product.compare_price}}{{product.price_formatted}}{{/if}}',
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},

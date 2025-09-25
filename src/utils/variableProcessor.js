@@ -88,8 +88,9 @@ function processSimpleVariables(content, context, pageData) {
   const variableRegex = /\{\{([^#\/][^}]*)\}\}/g;
 
   return content.replace(variableRegex, (match, variablePath) => {
-    const value = getNestedValue(variablePath.trim(), context, pageData);
-    return formatValue(value, variablePath, context, pageData);
+    const trimmedPath = variablePath.trim();
+    const value = getNestedValue(trimmedPath, context, pageData);
+    return formatValue(value, trimmedPath, context, pageData);
   });
 }
 
@@ -150,37 +151,49 @@ function formatValue(value, path, context, pageData) {
   }
 
   // Special handling for compare_price_formatted
-  if (path.includes('compare_price_formatted')) {
+  if (path.trim() === 'product.compare_price_formatted') {
     const product = pageData.product || context.product;
-    if (!product || (!product.compare_price && product.compare_price !== 0)) {
+    if (!product || !product.compare_price) {
       return ''; // Don't show compare price if it doesn't exist
     }
 
-    // If we have a formatted version, use it
-    if (value && value !== '[Text placeholder]') {
-      return value;
+    // Check if we already have a formatted version
+    if (product.compare_price_formatted && typeof product.compare_price_formatted === 'string' &&
+        product.compare_price_formatted !== '[Text placeholder]') {
+      return product.compare_price_formatted;
     }
 
-    // Otherwise format the raw compare_price
-    if (typeof product.compare_price === 'number') {
-      const currency = context.settings?.currency_symbol || '$';
-      return `${currency}${product.compare_price.toFixed(2)}`;
+    // Otherwise format the raw compare_price with currency
+    const currency = context.settings?.currency_symbol || '$';
+    const price = typeof product.compare_price === 'number' ? product.compare_price : parseFloat(product.compare_price);
+    if (!isNaN(price)) {
+      return `${currency}${price.toFixed(2)}`;
     }
 
-    return String(product.compare_price);
+    return '';
   }
 
-  // Handle other formatted prices (already formatted strings)
-  if (path.includes('price_formatted')) {
-    // If we get a placeholder, try to format the raw price
-    if (!value || value === '[Text placeholder]') {
-      const product = pageData.product || context.product;
-      if (product && typeof product.price === 'number') {
-        const currency = context.settings?.currency_symbol || '$';
-        return `${currency}${product.price.toFixed(2)}`;
-      }
+  // Handle price_formatted (original price, shown with strikethrough when compare_price exists)
+  if (path.trim() === 'product.price_formatted') {
+    const product = pageData.product || context.product;
+    if (!product || !product.price) {
+      return '';
     }
-    return value; // Return as-is if already formatted
+
+    // Check if we already have a formatted version
+    if (product.price_formatted && typeof product.price_formatted === 'string' &&
+        product.price_formatted !== '[Text placeholder]') {
+      return product.price_formatted;
+    }
+
+    // Otherwise format the raw price with currency
+    const currency = context.settings?.currency_symbol || '$';
+    const price = typeof product.price === 'number' ? product.price : parseFloat(product.price);
+    if (!isNaN(price)) {
+      return `${currency}${price.toFixed(2)}`;
+    }
+
+    return '';
   }
 
   // Handle raw price numbers
@@ -246,10 +259,10 @@ export const generateDemoData = (pageType) => {
   const demoData = {
     product: {
       name: 'Sample Product Name',
-      price: 99.99,
-      price_formatted: '$99.99',
-      compare_price: 129.99,
-      compare_price_formatted: '$129.99',
+      price: 129.99,  // Original price (shown with strikethrough)
+      price_formatted: '$129.99',
+      compare_price: 99.99,  // Special/sale price (shown as main price)
+      compare_price_formatted: '$99.99',
       on_sale: true,
       stock_quantity: 15,
       stock_status: 'In Stock',
