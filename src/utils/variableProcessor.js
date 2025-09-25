@@ -95,6 +95,15 @@ function processSimpleVariables(content, context, pageData) {
   return content.replace(variableRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
 
+    // Debug specific paths
+    if (trimmedPath === 'product.description') {
+      console.log('Processing product.description:', {
+        hasProduct: !!(context.product || pageData.product),
+        descriptionExists: !!(context.product?.description || pageData.product?.description),
+        descriptionLength: (context.product?.description || pageData.product?.description)?.length
+      });
+    }
+
     // Handle formatted price paths directly when they don't exist in data
     if (trimmedPath === 'product.compare_price_formatted' || trimmedPath === 'product.price_formatted') {
       const value = getNestedValue(trimmedPath, context, pageData);

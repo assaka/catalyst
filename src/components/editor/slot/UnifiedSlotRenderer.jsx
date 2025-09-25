@@ -80,7 +80,9 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
       textContent = '[Text placeholder]';
     }
   } else if (!processedContent) {
-    textContent = '[Text placeholder]';
+    // Debug: Show what slot this is when content is empty
+    console.log('Empty slot content:', slot.id, 'returning placeholder');
+    textContent = `[Empty: ${slot.id}]`;
   }
 
   return (
