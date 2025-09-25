@@ -61,17 +61,17 @@ export default function ThemeLayout() {
                 enable_product_filters: true,
                 collapse_filters: false,
                 max_visible_attributes: 5,
+                // Product grid - merge breakpoints properly
                 product_grid: {
                     breakpoints: {
-                        default: 1,
-                        sm: 2,
-                        md: 0,
-                        lg: 2,
-                        xl: 0,
-                        '2xl': 0
+                        default: fullStore?.settings?.product_grid?.breakpoints?.default ?? 1,
+                        sm: fullStore?.settings?.product_grid?.breakpoints?.sm ?? 2,
+                        md: fullStore?.settings?.product_grid?.breakpoints?.md ?? 0,
+                        lg: fullStore?.settings?.product_grid?.breakpoints?.lg ?? 2,
+                        xl: fullStore?.settings?.product_grid?.breakpoints?.xl ?? 0,
+                        '2xl': fullStore?.settings?.product_grid?.breakpoints?.['2xl'] ?? 0
                     },
-                    customBreakpoints: [],
-                    ...((fullStore?.settings || {}).product_grid || {})
+                    customBreakpoints: fullStore?.settings?.product_grid?.customBreakpoints || []
                 },
                 theme: {
                     primary_button_color: '#007bff',
@@ -86,11 +86,16 @@ export default function ThemeLayout() {
             };
             
             // Use the full store data instead of selectedStore, but ensure we have the ID
-            setStore({ 
-                ...fullStore, 
+            const finalStore = {
+                ...fullStore,
                 id: fullStore?.id || actualStoreId, // Ensure we have the store ID
-                settings 
-            });
+                settings
+            };
+
+            console.log('ThemeLayout - Initial store settings:', settings);
+            console.log('ThemeLayout - Initial product_grid:', settings.product_grid);
+
+            setStore(finalStore);
         } catch (error) {
             console.error("Failed to load store:", error);
             setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -114,20 +119,27 @@ export default function ThemeLayout() {
     };
 
     const handleStandardBreakpointChange = (breakpoint, columns) => {
-        setStore(prev => ({
-            ...prev,
-            settings: {
-                ...prev.settings,
-                product_grid: {
-                    ...prev.settings.product_grid,
-                    breakpoints: {
-                        ...prev.settings.product_grid?.breakpoints,
-                        [breakpoint]: columns
-                    },
-                    customBreakpoints: prev.settings.product_grid?.customBreakpoints || []
+        console.log(`ThemeLayout - Changing ${breakpoint} to ${columns} columns`);
+
+        setStore(prev => {
+            const newStore = {
+                ...prev,
+                settings: {
+                    ...prev.settings,
+                    product_grid: {
+                        ...prev.settings.product_grid,
+                        breakpoints: {
+                            ...prev.settings.product_grid?.breakpoints,
+                            [breakpoint]: columns
+                        },
+                        customBreakpoints: prev.settings.product_grid?.customBreakpoints || []
+                    }
                 }
-            }
-        }));
+            };
+
+            console.log('ThemeLayout - New store state:', newStore.settings.product_grid);
+            return newStore;
+        });
     };
 
     const handleAddCustomBreakpoint = () => {

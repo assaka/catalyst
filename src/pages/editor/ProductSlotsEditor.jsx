@@ -465,8 +465,11 @@ const ProductSlotsEditor = ({
             </div>
           )}
 
-          <ResponsiveContainer currentViewport={currentViewport}>
-            <div className={`min-h-screen bg-white ${getResponsiveClasses()}`}>
+          <ResponsiveContainer
+            viewport={currentViewport}
+            className="bg-white"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}
               <div id="flash-messages-area"></div>
 
