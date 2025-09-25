@@ -51,7 +51,8 @@ import {
   ProductOptionsSlot,
   ProductTabsSlot,
   ProductRecommendationsSlot,
-  ProductBreadcrumbsSlot
+  ProductBreadcrumbsSlot,
+  QuantitySelector
 } from '@/components/editor/slot/slotComponentsProduct';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
@@ -63,8 +64,6 @@ const ProductSlotsEditor = ({
 }) => {
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
-
-  // Global state to track current drag operation
   const [currentDragInfo, setCurrentDragInfo] = useState(null);
 
   // State management - Initialize with empty config to avoid React error
@@ -391,6 +390,7 @@ const ProductSlotsEditor = ({
                       ProductTabsSlot,
                       ProductRecommendationsSlot,
                       ProductBreadcrumbsSlot,
+                      QuantitySelector,
                       // Render function fallback for unknown slots
                       defaultSlotRenderer: (slot, context) => {
                         // For container slots, render children if they exist
