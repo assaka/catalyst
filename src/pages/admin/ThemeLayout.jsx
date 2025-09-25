@@ -269,7 +269,7 @@ export default function ThemeLayout() {
                 console.warn('Failed to clear cache from storage:', e);
             }
             
-            setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+            setFlashMessage({ type: 'success', message: 'Settings saved successfully! Visit a category page to see changes.' });
             
         } catch (error) {
             console.error("Failed to save settings:", error);

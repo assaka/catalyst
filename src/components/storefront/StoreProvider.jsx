@@ -183,10 +183,11 @@ export const StoreProvider = ({ children }) => {
       const forceRefresh = localStorage.getItem('forceRefreshStore') || seoRefreshParam;
       
       if (forceRefresh) {
+        console.log('StoreProvider - Force refresh detected, clearing cache');
         apiCache.clear();
         localStorage.removeItem('storeProviderCache');
-        // DON'T remove forceRefreshStore flag yet - need it for SEO settings
-      } else {
+        // Clear the force refresh flag after using it
+        localStorage.removeItem('forceRefreshStore');
       }
       
       // Get store first with ultra-aggressive caching
