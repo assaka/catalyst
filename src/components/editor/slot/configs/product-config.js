@@ -247,8 +247,8 @@ export const productConfig = {
     stock_status: {
       id: 'stock_status',
       type: 'text',
-      content: `<span class="stock-badge">{{#if product.stock_status}}{{product.stock_status}}{{else}}{{#if product.stock_quantity}}{{#if product.stock_quantity > 0}}In Stock{{else}}Out of Stock{{/if}}{{else}}In Stock{{/if}}{{/if}}</span>`,
-      className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs {{#if product.stock_quantity}}{{#if product.stock_quantity > 0}}bg-green-100 text-green-800{{else}}bg-red-100 text-red-800{{/if}}{{else}}bg-green-100 text-green-800{{/if}}',
+      content: `<span class="stock-badge">{{#if product.stock_status}}{{product.stock_status}}{{else}}{{#if product.stock_quantity}}{{#if product.stock_quantity > 10}}In Stock{{else}}{{#if product.stock_quantity > 0}}Low Stock{{else}}Out of Stock{{/if}}{{/if}}{{else}}{{#if product.track_quantity}}Out of Stock{{else}}In Stock{{/if}}{{/if}}{{/if}}</span>`,
+      className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs {{#if product.stock_status}}{{#if product.stock_status == "In Stock"}}bg-green-100 text-green-800{{else}}{{#if product.stock_status == "Low Stock"}}bg-yellow-100 text-yellow-800{{else}}bg-red-100 text-red-800{{/if}}{{/if}}{{else}}{{#if product.stock_quantity}}{{#if product.stock_quantity > 10}}bg-green-100 text-green-800{{else}}{{#if product.stock_quantity > 0}}bg-yellow-100 text-yellow-800{{else}}bg-red-100 text-red-800{{/if}}{{/if}}{{else}}{{#if product.track_quantity}}bg-red-100 text-red-800{{else}}bg-green-100 text-green-800{{/if}}{{/if}}{{/if}}',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
