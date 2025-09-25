@@ -179,6 +179,18 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
+    // Debug: Check problematic slots
+    if (['product_description', 'product_labels', 'quantity_selector'].includes(id)) {
+      console.log(`DEBUG ${id}:`, {
+        originalContent: content,
+        processedContent: processedContent,
+        hasProduct: !!variableContext.product,
+        productDescription: variableContext.product?.description,
+        productShortDescription: variableContext.product?.short_description,
+        productLabels: variableContext.product?.labels
+      });
+    }
+
 
     // Text Element
     if (type === 'text') {
