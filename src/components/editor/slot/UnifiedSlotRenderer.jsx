@@ -429,6 +429,14 @@ export function UnifiedSlotRenderer({
     );
   };
 
+  // Debug: Check if slots are being rendered at all
+  console.log('UnifiedSlotRenderer rendering:', {
+    context,
+    slotCount: sortedSlots.length,
+    slotIds: sortedSlots.map(s => s.id),
+    productExists: !!productContext?.product
+  });
+
   return (
     <>
       {sortedSlots.map((slot) => {
