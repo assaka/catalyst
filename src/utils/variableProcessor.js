@@ -94,10 +94,9 @@ function processSimpleVariables(content, context, pageData) {
     if (trimmedPath === 'product.compare_price_formatted' || trimmedPath === 'product.price_formatted') {
       const value = getNestedValue(trimmedPath, context, pageData);
 
-      // If formatted price doesn't exist, process it anyway
-      if (value === null) {
-        return formatValue(null, trimmedPath, context, pageData);
-      }
+      console.log('Processing formatted price:', { trimmedPath, value, hasProduct: !!(context.product || pageData.product) });
+
+      // Always call formatValue for formatted prices, even if null
       return formatValue(value, trimmedPath, context, pageData);
     }
 
@@ -158,8 +157,13 @@ function getNestedValue(path, context, pageData) {
  * Format values based on their type and path
  */
 function formatValue(value, path, context, pageData) {
+  console.log('formatValue:', { path, value, willProcess: path.includes('price_formatted') });
+
   if (value === null || value === undefined) {
-    return '';
+    // Don't return empty for formatted prices - process them
+    if (!path.includes('price_formatted')) {
+      return '';
+    }
   }
 
   // Special handling for compare_price_formatted
