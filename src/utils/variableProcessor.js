@@ -37,6 +37,11 @@ export function processVariables(content, context, pageData = {}) {
 function processConditionals(content, context, pageData) {
   const conditionalRegex = /\{\{#if\s+([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
 
+  // Debug conditional processing
+  if (content.includes('#if')) {
+    console.log('Processing conditional:', { content, hasProduct: !!(context.product || pageData.product) });
+  }
+
   let result = content;
   let hasMatches = true;
 
