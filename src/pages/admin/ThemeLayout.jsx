@@ -265,27 +265,61 @@ export default function ThemeLayout() {
     };
 
     const calculateProductsPerPage = (gridConfig) => {
-        if (!gridConfig) return { max: 12, description: 'Default: 12 products per page' };
+        if (!gridConfig) return {
+            max: 12,
+            description: 'Default: 12 products per page',
+            breakdowns: []
+        };
 
         const breakpoints = gridConfig.breakpoints || {};
         const rows = gridConfig.rows || 4;
 
         if (rows === 0) {
-            return { max: 'infinite', description: 'Infinite scroll enabled' };
+            return {
+                max: 'infinite',
+                description: 'Infinite scroll enabled',
+                breakdowns: []
+            };
         }
 
-        // Find the maximum columns across all active breakpoints
+        // Calculate products per page for each breakpoint
+        const breakdownList = [];
         let maxColumns = 1;
-        Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
-            if (columns > 0 && columns > maxColumns) {
-                maxColumns = columns;
+
+        // Standard breakpoint order (from smallest to largest)
+        const breakpointOrder = [
+            { key: 'default', label: 'Mobile' },
+            { key: 'sm', label: 'Small (640px+)' },
+            { key: 'md', label: 'Medium (768px+)' },
+            { key: 'lg', label: 'Large (1024px+)' },
+            { key: 'xl', label: 'XL (1280px+)' },
+            { key: '2xl', label: '2XL (1536px+)' }
+        ];
+
+        breakpointOrder.forEach(({ key, label }) => {
+            const columns = breakpoints[key] || 0;
+            if (columns > 0) {
+                const productsForBreakpoint = columns * rows;
+                breakdownList.push({
+                    breakpoint: key,
+                    label,
+                    columns,
+                    rows,
+                    total: productsForBreakpoint
+                });
+
+                if (columns > maxColumns) {
+                    maxColumns = columns;
+                }
             }
         });
 
-        const productsPerPage = maxColumns * rows;
+        const maxProductsPerPage = maxColumns * rows;
+
         return {
-            max: productsPerPage,
-            description: `${maxColumns} columns × ${rows} rows = ${productsPerPage} products per page`
+            max: maxProductsPerPage,
+            description: `Maximum: ${maxColumns} columns × ${rows} rows = ${maxProductsPerPage} products per page`,
+            breakdowns: breakdownList
         };
     };
 
@@ -733,19 +767,34 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Live Preview */}
-                                <div className="bg-gray-50 p-3 rounded space-y-3">
+                                <div className="bg-gray-50 p-3 rounded space-y-4">
                                     <div>
                                         <Label className="text-sm font-medium">Generated Classes Preview:</Label>
                                         <div className="mt-2 text-xs text-gray-700 font-mono break-all">
                                             {generateGridClassesPreview(store.settings.product_grid)}
                                         </div>
                                     </div>
-                                    <div>
-                                        <Label className="text-sm font-medium">Products Per Page:</Label>
-                                        <div className="mt-2 text-sm text-gray-700">
-                                            {calculateProductsPerPage(store.settings.product_grid).description}
-                                        </div>
-                                    </div>
+
+                                    {(() => {
+                                        const calculation = calculateProductsPerPage(store.settings.product_grid);
+                                        return (
+                                            <div>
+                                                <Label className="text-sm font-medium">Products Per Page by Breakpoint:</Label>
+                                                <div className="mt-2 text-sm text-gray-700">
+                                                    {calculation.description}
+                                                </div>
+                                                {calculation.breakdowns.length > 0 && (
+                                                    <div className="mt-2 space-y-1">
+                                                        {calculation.breakdowns.map((breakdown) => (
+                                                            <div key={breakdown.breakpoint} className="text-xs text-gray-600">
+                                                                <span className="font-medium">{breakdown.label}:</span> {breakdown.columns} cols × {breakdown.rows} rows = <span className="font-medium text-blue-600">{breakdown.total} products</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </CardContent>
