@@ -8,7 +8,7 @@
  * - Single source of truth for both editor and storefront
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,78 @@ import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSl
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
+import { executeScript, executeHandler } from '@/utils/scriptHandler';
+
+// Text Slot with Script Support Component
+const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productContext, variableContext }) => {
+  const { id, styles } = slot;
+  const elementRef = useRef(null);
+  const cleanupRef = useRef(null);
+
+  // Execute script after render (only in storefront)
+  useEffect(() => {
+    if (context !== 'storefront' || !slot.script) {
+      return;
+    }
+
+    const element = elementRef.current;
+    if (!element) return;
+
+    const scriptContext = {
+      element,
+      slotData: slot,
+      productContext,
+      variableContext
+    };
+
+    // Execute named handler if script is a string reference
+    if (typeof slot.script === 'string' && !slot.script.includes('(')) {
+      cleanupRef.current = executeHandler(slot.script, scriptContext);
+    } else {
+      // Execute raw JavaScript code
+      cleanupRef.current = executeScript(slot.script, scriptContext);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (typeof cleanupRef.current === 'function') {
+        cleanupRef.current();
+      }
+    };
+  }, [slot.script, context, productContext, variableContext]);
+
+  // Special handling for price-related slots
+  const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(slot.id);
+
+  // Don't show placeholder for intentionally empty content (like conditional price displays)
+  let textContent = processedContent;
+
+  if (context === 'editor' && !processedContent && isPriceSlot) {
+    // Show example price in editor for price slots
+    if (slot.id === 'product_price') {
+      textContent = '$99.99';
+    } else if (slot.id === 'original_price') {
+      textContent = '$129.99';
+    }
+  } else if (!processedContent) {
+    textContent = '[Text placeholder]';
+  }
+
+  // Don't render empty price slots in storefront
+  if (context === 'storefront' && textContent === '') {
+    return null;
+  }
+
+  return (
+    <div ref={elementRef} className={processedClassName} style={styles}>
+      {context === 'storefront' ? (
+        <span dangerouslySetInnerHTML={{ __html: textContent }} />
+      ) : (
+        <span>{textContent}</span>
+      )}
+    </div>
+  );
+};
 
 // Components will be registered when UnifiedSlotComponents is imported elsewhere
 
@@ -101,16 +173,14 @@ export function UnifiedSlotRenderer({
 
     // Text Element
     if (type === 'text') {
-      const textContent = processedContent || '[Text placeholder]';
-      return (
-        <div className={processedClassName} style={styles}>
-          {context === 'storefront' ? (
-            <span dangerouslySetInnerHTML={{ __html: textContent }} />
-          ) : (
-            <span>{textContent}</span>
-          )}
-        </div>
-      );
+      return <TextSlotWithScript
+        slot={slot}
+        processedContent={processedContent}
+        processedClassName={processedClassName}
+        context={context}
+        productContext={productContext}
+        variableContext={variableContext}
+      />;
     }
 
     // Button Element
@@ -287,25 +357,67 @@ export function UnifiedSlotRenderer({
         }}
       >
         <EditorInteractionWrapper
-          slot={slot}
           mode={mode}
-          showBorders={showBorders}
-          currentDragInfo={currentDragInfo}
-          setCurrentDragInfo={setCurrentDragInfo}
-          onElementClick={onElementClick}
-          onSlotDrop={onSlotDrop}
-          onSlotDelete={onSlotDelete}
+          draggable={mode === 'edit'}
           isSelected={isSelected}
+          className=""
+          style={{}}
+          onClick={() => onElementClick?.(slot.id)}
+          data-slot-id={slot.id}
+          data-editable={true}
+          onDragStart={(e) => {
+            if (mode !== 'edit') return;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('application/json', JSON.stringify({
+              type: 'move',
+              slotId: slot.id,
+              parentId: slot.parentId
+            }));
+            setCurrentDragInfo?.({
+              type: 'move',
+              slotId: slot.id,
+              parentId: slot.parentId
+            });
+          }}
+          onDragOver={(e) => {
+            if (mode !== 'edit') return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          }}
+          onDragEnd={(e) => {
+            if (mode !== 'edit') return;
+            setCurrentDragInfo?.(null);
+          }}
+          onDrop={(e) => {
+            if (mode !== 'edit') return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            try {
+              const data = JSON.parse(e.dataTransfer.getData('application/json'));
+              if (data && data.slotId !== slot.id) {
+                onSlotDrop?.({
+                  draggedSlotId: data.slotId,
+                  targetSlotId: slot.id,
+                  targetParentId: slot.parentId
+                });
+              }
+            } catch (error) {
+              console.error('Drop error:', error);
+            }
+            setCurrentDragInfo?.(null);
+          }}
         >
           <ResizeWrapper
-            slot={slot}
-            mode={mode}
-            onGridResize={onGridResize}
-            onSlotHeightResize={onSlotHeightResize}
-            onResizeStart={onResizeStart}
-            onResizeEnd={onResizeEnd}
-            setPageConfig={setPageConfig}
-            saveConfiguration={saveConfiguration}
+            className={slot.className}
+            disabled={mode !== 'edit'}
+            onResize={(newSize) => {
+              if (onGridResize) {
+                onGridResize(slot.id, newSize);
+              }
+            }}
+            initialWidth={slot.styles?.width}
+            initialHeight={slot.styles?.height}
           >
             {slotContent}
           </ResizeWrapper>

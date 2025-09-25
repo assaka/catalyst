@@ -10,7 +10,10 @@ const EditorInteractionWrapper = ({
   onClick,
   'data-slot-id': dataSlotId,
   'data-editable': dataEditable,
-  onDragStart
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop
 }) => {
   // Only apply editor styles in edit mode
   if (mode !== 'edit') {
@@ -20,12 +23,15 @@ const EditorInteractionWrapper = ({
   // Minimal wrapper - let GridColumn handle all visual styling
   const editorClasses = [
     // Only essential classes for functionality
-    ...(className ? [className] : [])
+    'relative',
+    ...(className ? [className] : []),
+    ...(isSelected ? ['ring-2 ring-blue-500'] : [])
   ].filter(Boolean).join(' ');
 
   const editorStyles = {
     // Only merge styles from parent, no additional visual styling
-    ...style
+    ...style,
+    cursor: draggable ? 'move' : 'pointer'
   };
 
 
@@ -38,6 +44,9 @@ const EditorInteractionWrapper = ({
       data-editable={dataEditable}
       draggable={draggable}
       onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
     >
       {children}
     </div>
