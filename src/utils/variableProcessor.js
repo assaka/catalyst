@@ -17,6 +17,11 @@ export function processVariables(content, context, pageData = {}) {
     return content;
   }
 
+  // Debug: Log what content we're processing
+  if (content.includes('product.description') || content.includes('product.labels')) {
+    console.log('processVariables input:', { content, hasProduct: !!(context.product || pageData.product) });
+  }
+
   let processedContent = content;
 
   // 1. Process conditional blocks first
