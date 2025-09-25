@@ -124,22 +124,6 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    product_labels: {
-      id: 'product_labels',
-      type: 'container',
-      content: '',
-      className: 'product-labels absolute top-2 right-2',
-      styles: {},
-      parentId: 'main_image',
-      position: { col: 1, row: 1 },
-      layout: 'block',
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
     thumbnail_gallery: {
       id: 'thumbnail_gallery',
       type: 'flex',
