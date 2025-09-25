@@ -4,6 +4,7 @@ import { Maximize2, Minimize2, ShoppingCart, Package, CreditCard, CheckCircle, G
 import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';
+import ProductSlotsEditor from '@/pages/editor/ProductSlotsEditor';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -165,6 +166,14 @@ const AIContextWindowPage = () => {
                               onSave={handleSave}
                             />
                           );
+                        case 'product':
+                          return (
+                            <ProductSlotsEditor
+                              mode="edit"
+                              viewMode="default"
+                              onSave={handleSave}
+                            />
+                          );
                         default:
                           // For other slot types, use CartSlotsEditor for now
                           return (
@@ -275,6 +284,14 @@ const AIContextWindowPage = () => {
                                 mode="edit"
                                 viewMode="emptyCart"
                                 slotType={selectedSlotEditor.pageType}
+                                onSave={handleSave}
+                              />
+                            );
+                          case 'product':
+                            return (
+                              <ProductSlotsEditor
+                                mode="edit"
+                                viewMode="default"
                                 onSave={handleSave}
                               />
                             );

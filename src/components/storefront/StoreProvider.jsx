@@ -254,6 +254,7 @@ export const StoreProvider = ({ children }) => {
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
       console.log('StoreProvider - Original store settings:', selectedStore.settings);
+      console.log('StoreProvider - Original product_grid:', selectedStore.settings?.product_grid);
 
       const mergedSettings = {
         // Spread existing store settings first to preserve saved values
@@ -329,17 +330,17 @@ export const StoreProvider = ({ children }) => {
           enabled: false
         },
 
-        // Product grid defaults (only if not already defined)
-        product_grid: selectedStore.settings?.product_grid || {
+        // Product grid - merge with defaults properly
+        product_grid: {
           breakpoints: {
-            default: 1,
-            sm: 2,
-            md: 0,
-            lg: 2,
-            xl: 0,
-            '2xl': 0
+            default: selectedStore.settings?.product_grid?.breakpoints?.default ?? 1,
+            sm: selectedStore.settings?.product_grid?.breakpoints?.sm ?? 2,
+            md: selectedStore.settings?.product_grid?.breakpoints?.md ?? 0,
+            lg: selectedStore.settings?.product_grid?.breakpoints?.lg ?? 2,
+            xl: selectedStore.settings?.product_grid?.breakpoints?.xl ?? 0,
+            '2xl': selectedStore.settings?.product_grid?.breakpoints?.['2xl'] ?? 0
           },
-          customBreakpoints: []
+          customBreakpoints: selectedStore.settings?.product_grid?.customBreakpoints || []
         },
 
         // Ensure boolean values for navigation settings are properly handled

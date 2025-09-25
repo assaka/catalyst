@@ -239,6 +239,7 @@ export default function ThemeLayout() {
             try {
                 localStorage.removeItem('storeProviderCache');
                 sessionStorage.removeItem('storeProviderCache');
+                localStorage.setItem('forceRefreshStore', 'true');
                 
                 // Clear only specific cache keys, avoiding auth tokens
                 const safeToClear = [
