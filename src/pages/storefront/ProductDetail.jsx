@@ -633,9 +633,6 @@ export default function ProductDetail() {
         pageTitle={product?.name}
       />
 
-      {/* CMS Block - Product Above */}
-      <CmsBlockRenderer position="product_above" />
-
       {/* Check if we should use slot configuration or fallback to traditional layout */}
       {(() => {
         // Determine if we should render with slots
@@ -710,9 +707,6 @@ export default function ProductDetail() {
         </div>
       ) : null
       }
-
-      {/* CMS Block - Product Below */}
-      <CmsBlockRenderer position="product_below" />
 
     </div>
   );

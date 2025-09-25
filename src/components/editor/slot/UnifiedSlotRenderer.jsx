@@ -18,6 +18,7 @@ import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapp
 import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 // Text Slot with Script Support Component
 const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productContext, variableContext }) => {
@@ -296,6 +297,17 @@ export function UnifiedSlotRenderer({
     // Component Element
     if (type === 'component') {
       const componentName = processedContent || content || slot.metadata?.component;
+
+      // Special handling for CmsBlockRenderer
+      if (componentName === 'CmsBlockRenderer') {
+        const position = slot.metadata?.props?.position || 'default';
+
+        return (
+          <div className={processedClassName} style={styles}>
+            <CmsBlockRenderer position={position} />
+          </div>
+        );
+      }
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);

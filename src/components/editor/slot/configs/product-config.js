@@ -7,6 +7,29 @@ export const productConfig = {
 
   // Slot configuration with hierarchical structure (slot_configurations format)
   slots: {
+    // CMS Block - Product Above (at the very top)
+    cms_block_product_above: {
+      id: 'cms_block_product_above',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-product-above',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 0 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        props: {
+          position: 'product_above'
+        }
+      }
+    },
+
     // Main containers with parent-child relationships
     main_layout: {
       id: 'main_layout',
@@ -586,6 +609,29 @@ export const productConfig = {
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }
+    },
+
+    // CMS Block - Product Below (at the very bottom)
+    cms_block_product_below: {
+      id: 'cms_block_product_below',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-product-below',
+      parentClassName: '',
+      styles: {},
+      parentId: null,
+      position: { col: 1, row: 5 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        props: {
+          position: 'product_below'
+        }
+      }
     }
   },
 
