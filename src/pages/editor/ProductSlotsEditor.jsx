@@ -61,7 +61,6 @@ const ProductSlotsEditor = ({
   onSave,
   viewMode: propViewMode = 'default'
 }) => {
-  console.log('🚀 ProductSlotsEditor COMPONENT LOADED');
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
@@ -94,12 +93,10 @@ const ProductSlotsEditor = ({
   const [currentViewport, setCurrentViewport] = useState('desktop');
   const [isResizing, setIsResizing] = useState(false);
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
-  const [showFilePickerModal, setShowFilePickerModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(true);
 
   // Generate mock product context for preview
   const [productContext, setProductContext] = useState(null);
@@ -124,7 +121,6 @@ const ProductSlotsEditor = ({
     handleResetLayout: resetLayoutFromHook,
     handlePublishConfiguration,
     getDraftConfiguration,
-    createSlot,
     handleSlotDrop: slotDropHandler,
     handleSlotDelete: slotDeleteHandler,
     handleGridResize: gridResizeHandler,
@@ -133,8 +129,7 @@ const ProductSlotsEditor = ({
     handleClassChange: classChangeHandler,
     // Generic handler factories
     createElementClickHandler,
-    createSaveConfigurationHandler,
-    createHandlerFactory
+    createSaveConfigurationHandler
   } = useSlotConfiguration({
     pageType: 'product',
     pageName: 'Product Detail',
@@ -210,7 +205,6 @@ const ProductSlotsEditor = ({
     }
   );
 
-
   // Handle element selection using generic factory
   const handleElementClick = createElementClickHandler(
     isResizing,
@@ -238,77 +232,7 @@ const ProductSlotsEditor = ({
     }
   }, []);
 
-  const handlePreviewModeToggle = useCallback(() => {
-    setShowPreview(!showPreview);
-  }, [showPreview]);
-
-  const handleViewportChange = useCallback((viewport) => {
-    setCurrentViewport(viewport);
-  }, []);
-
-  // Status badge functions and computed values
-  const getStatusBadgeText = useCallback(() => {
-    if (hasUnsavedChanges) {
-      return 'Unsaved Changes';
-    }
-    if (draftConfig?.status === 'published') {
-      return 'Published';
-    }
-    return 'Draft';
-  }, [hasUnsavedChanges, draftConfig?.status]);
-
-  const getResponsiveClasses = useCallback(() => {
-    const baseClasses = 'transition-all duration-300';
-    switch (currentViewport) {
-      case 'mobile':
-        return `${baseClasses} max-w-sm mx-auto`;
-      case 'tablet':
-        return `${baseClasses} max-w-2xl mx-auto`;
-      default:
-        return `${baseClasses} max-w-full`;
-    }
-  }, [currentViewport]);
-
-  // Formatted timestamps
-  const formattedLastModified = useMemo(() => {
-    return draftConfig?.updated_at ? formatTimeAgo(new Date(draftConfig.updated_at)) : 'Never';
-  }, [draftConfig?.updated_at, formatTimeAgo]);
-
-  const formattedLastPublished = useMemo(() => {
-    return latestPublished?.updated_at ? formatTimeAgo(new Date(latestPublished.updated_at)) : 'Never';
-  }, [latestPublished?.updated_at, formatTimeAgo]);
-
-  // Publish panel toggle handlers
-  const handleTogglePublishPanel = useCallback(() => {
-    setShowPublishPanel(!showPublishPanel);
-  }, [showPublishPanel]);
-
-  const handlePublishWithSave = useCallback(async () => {
-    return await handlePublishPanelPublished();
-  }, [handlePublishPanelPublished]);
-
-  const handleCancelPublish = useCallback(() => {
-    setShowPublishPanel(false);
-  }, []);
-
   const handleResetLayout = resetLayoutFromHook;
-
-  // Missing state variables and computed values
-  const slotConfigurations = useMemo(() => {
-    return productLayoutConfig?.slots || {};
-  }, [productLayoutConfig?.slots]);
-
-  const draftStatus = useMemo(() => {
-    return draftConfig?.status || 'draft';
-  }, [draftConfig?.status]);
-
-  const hasDraftConfiguration = useMemo(() => {
-    return draftConfig != null;
-  }, [draftConfig]);
-
-  const configChangeCount = useMemo(() => {
-    return hasUnsavedChanges ? 1 : 0;
-  }, [hasUnsavedChanges]);
 
   // Use generic publish handler
   const { handlePublish, publishStatus } = usePublishHandler(
@@ -504,7 +428,6 @@ const ProductSlotsEditor = ({
           slotConfig={(() => {
             const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
             const config = productLayoutConfig && productLayoutConfig.slots && slotId ? productLayoutConfig.slots[slotId] : null;
-            console.log('🏗️ ProductSlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, productLayoutConfig });
             return config;
           })()}
           allSlots={productLayoutConfig?.slots || {}}
@@ -535,7 +458,6 @@ const ProductSlotsEditor = ({
         isOpen={showAddSlotModal}
         onClose={() => setShowAddSlotModal(false)}
         onAddSlot={(slotData) => {
-          console.log('Adding slot:', slotData);
           setShowAddSlotModal(false);
         }}
         pageType="product"
@@ -556,12 +478,9 @@ const ProductSlotsEditor = ({
         configuration={productLayoutConfig}
         localSaveStatus={localSaveStatus}
         onSave={async (newConfiguration) => {
-          console.log('🎯 CodeModal onSave called with configuration:', newConfiguration);
           setProductLayoutConfig(newConfiguration);
           setHasUnsavedChanges(true);
-          console.log('🚀 Calling saveConfiguration...');
           await saveConfiguration(newConfiguration);
-          console.log('✅ Save completed, closing modal');
           setShowCodeModal(false);
         }}
       />
