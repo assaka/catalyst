@@ -387,14 +387,12 @@ export const productConfig = {
       id: 'add_to_cart_button',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-fit flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium',
+      className: 'w-fit h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium',
       parentClassName: '',
       styles: {},
       parentId: 'buttons_container',
       position: { col: 1, row: 1 },
-      colSpan: {
-        default: 'flex-1'
-      },
+      colSpan: {},
       viewMode: ['default'],
       metadata: { hierarchical: true }
     },
