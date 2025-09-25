@@ -35,6 +35,15 @@ export default function ThemeLayout() {
         }
     }, [selectedStore]);
 
+    // Debug: Log when store settings change
+    useEffect(() => {
+        if (store?.settings?.product_grid) {
+            console.log('ThemeLayout - Store settings updated:', store.settings.product_grid);
+            console.log('ThemeLayout - Current rows value:', store.settings.product_grid.rows);
+            console.log('ThemeLayout - Current lg value:', store.settings.product_grid.breakpoints?.lg);
+        }
+    }, [store?.settings?.product_grid]);
+
     const loadStore = async () => {
         try {
             const storeId = getSelectedStoreId();
@@ -53,6 +62,11 @@ export default function ThemeLayout() {
             
             // Store.findById returns an array, so we need to get the first item
             const fullStore = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
+
+            // Debug: Log what we're loading from database
+            console.log('ThemeLayout - Raw store from DB:', fullStore);
+            console.log('ThemeLayout - Raw settings from DB:', fullStore?.settings);
+            console.log('ThemeLayout - Raw product_grid from DB:', fullStore?.settings?.product_grid);
 
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
@@ -93,8 +107,9 @@ export default function ThemeLayout() {
                 settings
             };
 
-            console.log('ThemeLayout - Initial store settings:', settings);
-            console.log('ThemeLayout - Initial product_grid:', settings.product_grid);
+            console.log('ThemeLayout - Final merged settings:', settings);
+            console.log('ThemeLayout - Final product_grid config:', settings.product_grid);
+            console.log('ThemeLayout - Final store object:', finalStore);
 
             setStore(finalStore);
         } catch (error) {
@@ -569,7 +584,13 @@ export default function ThemeLayout() {
 
                                         <div>
                                             <Label htmlFor="grid_lg">Large (lg)</Label>
-                                            <Select value={String(store.settings.product_grid?.breakpoints?.lg || 2)} onValueChange={(value) => handleStandardBreakpointChange('lg', parseInt(value))}>
+                                            <Select
+                                                value={String(store.settings.product_grid?.breakpoints?.lg || 2)}
+                                                onValueChange={(value) => {
+                                                    console.log('ThemeLayout - lg dropdown changed to:', value, 'current lg value:', store.settings.product_grid?.breakpoints?.lg);
+                                                    handleStandardBreakpointChange('lg', parseInt(value));
+                                                }}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue />
                                                 </SelectTrigger>
@@ -631,7 +652,13 @@ export default function ThemeLayout() {
                                             <p className="text-sm text-gray-500">How many rows of products to show per page (0 = infinite scroll)</p>
                                         </div>
                                         <div className="w-32">
-                                            <Select value={String(store.settings.product_grid?.rows || 4)} onValueChange={(value) => handleRowsChange(parseInt(value))}>
+                                            <Select
+                                                value={String(store.settings.product_grid?.rows || 4)}
+                                                onValueChange={(value) => {
+                                                    console.log('ThemeLayout - Rows dropdown changed to:', value);
+                                                    handleRowsChange(parseInt(value));
+                                                }}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue />
                                                 </SelectTrigger>
