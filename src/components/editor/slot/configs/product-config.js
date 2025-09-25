@@ -247,7 +247,7 @@ export const productConfig = {
     stock_status: {
       id: 'stock_status',
       type: 'text',
-      content: `<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs" data-bind="stock-status">Loading stock...</span>`,
+      content: `<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800" data-bind="stock-status">In Stock</span>`,
       className: 'stock-container',
       parentClassName: '',
       styles: {},

@@ -64,11 +64,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Special handling for price-related slots
   const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(slot.id);
 
-  // Debug: Let's see what we're actually getting
-  if (isPriceSlot || slot.id === 'stock_status') {
-    console.log(`Slot ${slot.id} - processedContent:`, processedContent, 'context:', context);
-  }
-
   if (context === 'editor' && !processedContent) {
     if (isPriceSlot) {
       // Show example price in editor for price slots
@@ -173,12 +168,6 @@ export function UnifiedSlotRenderer({
     const variableContext = context === 'editor' ?
       generateDemoData('product') :
       { product: productContext.product, category: categoryData, cart: cartData };
-
-    // Debug: Let's see what product data we have
-    if (isPriceSlot || id === 'stock_status') {
-      console.log(`Slot ${id} - variableContext.product:`, variableContext.product);
-      console.log(`Slot ${id} - original content:`, content);
-    }
 
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);

@@ -164,10 +164,10 @@ function formatValue(value, path, context, pageData) {
     }
 
     // Otherwise format the raw compare_price with currency
-    const currency = context.settings?.currency_symbol || '$';
+    const currency = context.settings?.currency_symbol || '€';
     const price = typeof product.compare_price === 'number' ? product.compare_price : parseFloat(product.compare_price);
     if (!isNaN(price) && price > 0) {
-      return `${currency}${price.toFixed(2)}`;
+      return `€${price.toFixed(2)}`;
     }
 
     return '';
@@ -187,10 +187,10 @@ function formatValue(value, path, context, pageData) {
     }
 
     // Otherwise format the raw price with currency
-    const currency = context.settings?.currency_symbol || '$';
+    const currency = context.settings?.currency_symbol || '€';
     const price = typeof product.price === 'number' ? product.price : parseFloat(product.price);
     if (!isNaN(price) && price > 0) {
-      return `${currency}${price.toFixed(2)}`;
+      return `€${price.toFixed(2)}`;
     }
 
     return '';
