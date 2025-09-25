@@ -31,7 +31,6 @@ export default function Category() {
     if (typeof window === 'undefined') return 'default';
 
     const width = window.innerWidth;
-    console.log(`Category.jsx - Window width: ${width}px`);
 
     // Tailwind breakpoints: sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px
     if (width >= 1536) return '2xl';
@@ -69,10 +68,7 @@ export default function Category() {
       }
     }
 
-    const totalProducts = currentColumns * rows;
-    console.log(`Category.jsx - Current breakpoint: ${currentBreakpoint}, columns: ${currentColumns}, rows: ${rows}, total per page: ${totalProducts}`);
-
-    return totalProducts;
+    return currentColumns * rows;
   };
 
   const [itemsPerPage, setItemsPerPage] = useState(calculateItemsPerPage());

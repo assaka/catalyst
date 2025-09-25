@@ -103,7 +103,7 @@ const AIContextWindowPage = () => {
         {isFullscreen ? (
           // Fullscreen mode - single panel without ResizablePanelGroup
           <div className="h-full w-full">
-            <div className="h-[calc(100vh-160px)] flex flex-col">
+            <div className="h-[calc(100vh-120px)] flex flex-col">
               {selectedSlotEditor ? (
                 <>
                   {/* Slot Editor Header */}
@@ -202,7 +202,7 @@ const AIContextWindowPage = () => {
           // Normal mode with ResizablePanelGroup
           <ResizablePanelGroup
             direction="horizontal"
-            className="h-[calc(100vh-160px)]"
+            className="h-[calc(100vh-120px)]"
           >
             <ResizablePanel
               defaultSize={14}
@@ -212,7 +212,7 @@ const AIContextWindowPage = () => {
               <SlotEnabledFileSelector
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedSlotEditor}
-                className="h-[calc(100vh-160px)]"
+                className="h-[calc(100vh-120px)]"
                 files={slotEnabledFiles}
               />
             </ResizablePanel>
@@ -224,7 +224,7 @@ const AIContextWindowPage = () => {
               minSize={40}
               maxSize={60}
             >
-              <div className="h-[calc(100vh-160px)] flex flex-col">
+              <div className="h-[calc(100vh-120px)] flex flex-col">
                 {selectedSlotEditor ? (
                   <>
                     {/* Slot Editor Header */}
