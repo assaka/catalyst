@@ -279,7 +279,7 @@ export const productConfig = {
     product_description: {
       id: 'product_description',
       type: 'text',
-      content: '{{product.short_description}}',
+      content: '{{#if product.short_description}}{{product.short_description}}{{else}}{{product.description}}{{/if}}',
       className: 'w-fit text-gray-700 leading-relaxed',
       parentClassName: '',
       styles: {},
