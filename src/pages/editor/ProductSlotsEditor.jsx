@@ -154,6 +154,9 @@ const ProductSlotsEditor = ({
     'product', 'Product Detail', 'product_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus
   );
 
+  // Use generic editor initialization
+  useEditorInitialization(initializeConfig, setProductLayoutConfig);
+
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(
     configurationLoadedRef, productLayoutConfig, setHasUnsavedChanges
@@ -187,10 +190,6 @@ const ProductSlotsEditor = ({
     }
   );
 
-  // Initialize editor when component mounts or store changes
-  useEffect(() => {
-    initializeConfig();
-  }, [initializeConfig]);
 
   // Handle element selection for sidebar
   const handleElementClick = useCallback((event) => {

@@ -121,6 +121,9 @@ export default function Category() {
   const getGridClasses = () => {
     const gridConfig = settings?.product_grid;
 
+    // Debug: Log the grid configuration
+    console.log('Category.jsx - Grid Config:', gridConfig);
+
     if (gridConfig) {
       let classes = [];
       const breakpoints = gridConfig.breakpoints || {};

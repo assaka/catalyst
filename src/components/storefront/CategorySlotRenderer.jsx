@@ -30,6 +30,9 @@ export function CategorySlotRenderer({
     // Use store settings for grid configuration
     const gridConfig = settings?.product_grid;
 
+    // Debug: Log the grid configuration
+    console.log('CategorySlotRenderer - Grid Config:', gridConfig);
+
     if (gridConfig) {
       let classes = ['grid', 'gap-4'];
       const breakpoints = gridConfig.breakpoints || {};
