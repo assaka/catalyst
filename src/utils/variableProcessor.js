@@ -80,7 +80,11 @@ function processLoops(content, context, pageData) {
       console.log('Processing product.labels loop:', { array, arrayPath, hasProduct: !!(context.product || pageData.product) });
     }
 
-    if (!Array.isArray(array)) {
+    if (!Array.isArray(array) || array.length === 0) {
+      // For product.labels specifically, since it's null/undefined, just return empty
+      if (arrayPath === 'product.labels') {
+        return ''; // Don't show anything if no labels
+      }
       return '';
     }
 
@@ -123,7 +127,14 @@ function processSimpleVariables(content, context, pageData) {
     }
 
     const value = getNestedValue(trimmedPath, context, pageData);
-    return formatValue(value, trimmedPath, context, pageData);
+    const result = formatValue(value, trimmedPath, context, pageData);
+
+    // Debug what we got
+    if (trimmedPath === 'product.description') {
+      console.log('processSimpleVariables result for description:', { value, result, valueLength: value?.length });
+    }
+
+    return result;
   });
 }
 
