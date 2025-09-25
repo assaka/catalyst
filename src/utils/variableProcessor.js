@@ -37,10 +37,23 @@ export function processVariables(content, context, pageData = {}) {
 function processConditionals(content, context, pageData) {
   const conditionalRegex = /\{\{#if\s+([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
 
-  return content.replace(conditionalRegex, (match, condition, trueContent, falseContent = '') => {
-    const isTrue = evaluateCondition(condition, context, pageData);
-    return isTrue ? trueContent : falseContent;
-  });
+  let result = content;
+  let hasMatches = true;
+
+  // Process nested conditionals by running multiple passes
+  while (hasMatches) {
+    hasMatches = false;
+    result = result.replace(conditionalRegex, (match, condition, trueContent, falseContent = '') => {
+      hasMatches = true;
+      const isTrue = evaluateCondition(condition, context, pageData);
+      const selectedContent = isTrue ? trueContent : falseContent;
+
+      // Recursively process any nested conditionals in the selected content
+      return processConditionals(selectedContent, context, pageData);
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -136,8 +149,19 @@ function formatValue(value, path, context, pageData) {
     return '';
   }
 
-  // Handle formatted prices (already formatted strings)
-  if (path.includes('price_formatted') || path.includes('compare_price_formatted')) {
+  // Special handling for compare_price_formatted
+  if (path.includes('compare_price_formatted')) {
+    const product = pageData.product || context.product;
+    if (!product || !product.compare_price) {
+      return ''; // Don't show compare price if it doesn't exist
+    }
+    return value || (typeof product.compare_price === 'number' ?
+      `${context.settings?.currency_symbol || '$'}${product.compare_price.toFixed(2)}` :
+      product.compare_price);
+  }
+
+  // Handle other formatted prices (already formatted strings)
+  if (path.includes('price_formatted')) {
     return value; // Return as-is if already formatted
   }
 

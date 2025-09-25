@@ -224,7 +224,7 @@ export const productConfig = {
     compare_price: {
       id: 'compare_price',
       type: 'text',
-      content: '{{#if product.compare_price}}{{#if product.compare_price_formatted}}{{product.compare_price_formatted}}{{else}}{{product.compare_price}}{{/if}}{{/if}}',
+      content: '{{product.compare_price_formatted}}',
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
