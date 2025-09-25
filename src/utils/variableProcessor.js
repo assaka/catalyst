@@ -136,14 +136,19 @@ function formatValue(value, path, context, pageData) {
     return '';
   }
 
-  // Special formatting based on variable path
+  // Handle formatted prices (already formatted strings)
+  if (path.includes('price_formatted') || path.includes('compare_price_formatted')) {
+    return value; // Return as-is if already formatted
+  }
+
+  // Handle raw price numbers
   if (path.includes('price') && typeof value === 'number') {
     const currency = context.settings?.currency_symbol || '$';
     return `${currency}${value.toFixed(2)}`;
   }
 
   if (path.includes('stock_status')) {
-    return formatStockStatus(value, context, pageData);
+    return formatStockStatus(pageData.product || context.product, context, pageData);
   }
 
   if (path.includes('labels') && Array.isArray(value)) {
@@ -158,32 +163,38 @@ function formatValue(value, path, context, pageData) {
 }
 
 /**
- * Format stock status with proper logic
+ * Format stock status with proper logic respecting admin settings
  */
-function formatStockStatus(stockQuantity, context, pageData) {
-  const product = pageData.product || context.product;
-  const settings = context.settings || {};
+function formatStockStatus(product, context, pageData) {
+  if (!product) return '';
 
-  if (!settings?.stock_settings?.show_stock_label) {
+  const settings = context.settings || {};
+  const stockSettings = settings.stock_settings || {};
+  const stockQuantity = product.stock_quantity || 0;
+
+  // Check if stock labels should be shown
+  if (!stockSettings.show_stock_label) {
     return '';
   }
 
-  if (product?.infinite_stock) {
-    return settings.stock_settings.in_stock_label?.replace(/\{.*?\}/g, '') || 'In Stock';
+  // Handle infinite stock or unmanaged stock
+  if (product.infinite_stock || (product.manage_stock === false)) {
+    return stockSettings.in_stock_label?.replace(/\{.*?\}/g, '') || 'In Stock';
   }
 
+  // Out of stock
   if (stockQuantity <= 0) {
-    return settings.stock_settings.out_of_stock_label || 'Out of Stock';
+    return stockSettings.out_of_stock_label || 'Out of Stock';
   }
 
-  const lowStockThreshold = product?.low_stock_threshold || settings?.display_low_stock_threshold || 0;
-  if (lowStockThreshold > 0 && stockQuantity <= lowStockThreshold) {
-    return (settings.stock_settings.low_stock_label || 'Only {quantity} left!')
-      .replace(/\{.*?quantity.*?\}/g, stockQuantity);
+  // Low stock threshold check
+  const lowStockThreshold = product.low_stock_threshold || settings.display_low_stock_threshold || 5;
+  if (stockQuantity <= lowStockThreshold && stockSettings.low_stock_label) {
+    return stockSettings.low_stock_label.replace(/\{.*?quantity.*?\}/g, stockQuantity);
   }
 
-  return (settings.stock_settings.in_stock_label || 'In Stock')
-    .replace(/\{.*?quantity.*?\}/g, stockQuantity);
+  // In stock
+  return stockSettings.in_stock_label?.replace(/\{.*?quantity.*?\}/g, stockQuantity) || 'In Stock';
 }
 
 /**
@@ -252,6 +263,7 @@ export const generateDemoData = (pageType) => {
 
     settings: {
       currency_symbol: '$',
+      display_low_stock_threshold: 10,
       stock_settings: {
         show_stock_label: true,
         in_stock_label: 'In Stock',

@@ -208,7 +208,7 @@ export const productConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: '{{#if product.on_sale}}{{product.price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
+      content: '{{#if product.price_formatted}}{{product.price_formatted}}{{else}}{{product.price}}{{/if}}',
       className: 'w-fit text-3xl font-bold {{#if product.on_sale}}text-red-600{{else}}text-green-600{{/if}}',
       parentClassName: '',
       styles: {},
@@ -224,7 +224,7 @@ export const productConfig = {
     compare_price: {
       id: 'compare_price',
       type: 'text',
-      content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{/if}}',
+      content: '{{#if product.compare_price}}{{#if product.compare_price_formatted}}{{product.compare_price_formatted}}{{else}}{{product.compare_price}}{{/if}}{{/if}}',
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -241,7 +241,7 @@ export const productConfig = {
       id: 'stock_status',
       type: 'text',
       content: '{{product.stock_status}}',
-      className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs {{#if product.stock_quantity > 0}}bg-green-100 text-green-800{{else}}bg-red-100 text-red-800{{/if}}',
+      className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs {{#if product.stock_quantity}}{{#if product.stock_quantity > 0}}bg-green-100 text-green-800{{else}}bg-red-100 text-red-800{{/if}}{{else}}bg-green-100 text-green-800{{/if}}',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
