@@ -86,6 +86,7 @@ const ProductSlotsEditor = ({
   // Basic editor state
   const isDragOperationActiveRef = useRef(false);
   const publishPanelRef = useRef(null);
+  const lastResizeEndTime = useRef(0);
   const [viewMode, setViewMode] = useState(propViewMode);
   const [selectedElement, setSelectedElement] = useState(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
@@ -165,6 +166,26 @@ const ProductSlotsEditor = ({
   // Badge refresh
   useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'product');
 
+  // Save configuration using the generic factory
+  const baseSaveConfiguration = createSaveConfigurationHandler(
+    productLayoutConfig,
+    setProductLayoutConfig,
+    setLocalSaveStatus,
+    getSelectedStoreId,
+    'product'
+  );
+
+  // Use generic save configuration handler
+  const { saveConfiguration } = useSaveConfigurationHandler(
+    'product',
+    baseSaveConfiguration,
+    productLayoutConfig,
+    {
+      setConfigurationStatus,
+      updateLastSavedConfig
+    }
+  );
+
   // Click outside and preview mode handlers
   useClickOutsidePanel(showPublishPanel, publishPanelRef, setShowPublishPanel);
   usePreviewModeHandlers(showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel);
@@ -191,23 +212,13 @@ const ProductSlotsEditor = ({
   );
 
 
-  // Handle element selection for sidebar
-  const handleElementClick = useCallback((event) => {
-    if (isResizing || isDragOperationActiveRef.current) return;
-
-    event.stopPropagation();
-    const clickedElement = event.currentTarget;
-
-    console.log('🎯 ProductSlotsEditor: Element clicked:', {
-      tagName: clickedElement.tagName,
-      className: clickedElement.className,
-      slotId: clickedElement.getAttribute('data-slot-id'),
-      element: clickedElement
-    });
-
-    setSelectedElement(clickedElement);
-    setIsSidebarVisible(true);
-  }, [isResizing]);
+  // Handle element selection using generic factory
+  const handleElementClick = createElementClickHandler(
+    isResizing,
+    lastResizeEndTime,
+    setSelectedElement,
+    setIsSidebarVisible
+  );
 
   // Clear selection handler
   const handleClearSelection = useCallback(() => {
@@ -416,11 +427,12 @@ const ProductSlotsEditor = ({
                   onSlotDelete={slotDeleteHandler}
                   onResizeStart={() => setIsResizing(true)}
                   onResizeEnd={() => {
+                    lastResizeEndTime.current = Date.now();
                     setTimeout(() => setIsResizing(false), 100);
                   }}
                   selectedElementId={selectedElement && typeof selectedElement.getAttribute === 'function' ? selectedElement.getAttribute('data-slot-id') : null}
                   setPageConfig={setProductLayoutConfig}
-                  saveConfiguration={createSaveConfigurationHandler(setProductLayoutConfig, updateLastSavedConfig)}
+                  saveConfiguration={saveConfiguration}
                   context={productContext}
                   slotComponents={{
                     ProductGallerySlot,
