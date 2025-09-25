@@ -182,7 +182,7 @@ export function UnifiedSlotRenderer({
     const processedClassName = processVariables(className, variableContext);
 
     // Debug: Check problematic slots - show what template we're actually getting
-    if (['product_description', 'product_labels', 'quantity_selector'].includes(id)) {
+    if (['product_description', 'product_labels', 'quantity_selector', 'stock_status'].includes(id)) {
       console.log(`SLOT CONFIG ${id}:`, {
         actualTemplate: content,
         templateLength: content?.length,
