@@ -137,6 +137,19 @@ function evaluateCondition(condition, context, pageData) {
 function getNestedValue(path, context, pageData) {
   const fullData = { ...pageData, ...context };
 
+  // Special handling for formatted price paths that don't exist in data
+  if (path === 'product.compare_price_formatted' || path === 'product.price_formatted') {
+    const result = path.split('.').reduce((obj, key) => {
+      return obj && obj[key] !== undefined ? obj[key] : null;
+    }, fullData);
+
+    // If formatted price doesn't exist, return a marker so formatValue gets called
+    if (result === null) {
+      return '[FORMAT_NEEDED]';
+    }
+    return result;
+  }
+
   return path.split('.').reduce((obj, key) => {
     return obj && obj[key] !== undefined ? obj[key] : null;
   }, fullData);
@@ -153,6 +166,12 @@ function formatValue(value, path, context, pageData) {
 
   if (value === null || value === undefined) {
     return '';
+  }
+
+  // Handle special marker for formatted prices that need processing
+  if (value === '[FORMAT_NEEDED]' && (path.includes('price_formatted') || path.includes('compare_price_formatted'))) {
+    // Force processing through the price formatting logic below
+    value = null;
   }
 
   // Special handling for compare_price_formatted
