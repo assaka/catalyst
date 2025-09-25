@@ -109,10 +109,12 @@ function processSimpleVariables(content, context, pageData) {
   return content.replace(variableRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
 
-    // Debug specific paths
-    if (trimmedPath === 'product.description') {
-      console.log('Processing product.description:', {
+    // Debug specific paths and fix short_description fallback
+    if (trimmedPath === 'product.description' || trimmedPath === 'product.short_description') {
+      console.log('Processing product description/short_description:', {
+        path: trimmedPath,
         hasProduct: !!(context.product || pageData.product),
+        shortDescExists: !!(context.product?.short_description || pageData.product?.short_description),
         descriptionExists: !!(context.product?.description || pageData.product?.description),
         descriptionLength: (context.product?.description || pageData.product?.description)?.length
       });
@@ -124,6 +126,24 @@ function processSimpleVariables(content, context, pageData) {
 
       // Always call formatValue for formatted prices, even if null
       return formatValue(value, trimmedPath, context, pageData);
+    }
+
+    // Handle short_description fallback to description
+    if (trimmedPath === 'product.short_description') {
+      const product = context.product || pageData.product;
+      if (product) {
+        const shortDesc = product.short_description;
+        if (shortDesc && shortDesc.trim()) {
+          return formatValue(shortDesc, trimmedPath, context, pageData);
+        } else {
+          // Fallback to full description if short_description is null/empty
+          const fullDesc = product.description;
+          if (fullDesc && fullDesc.trim()) {
+            return formatValue(fullDesc, trimmedPath, context, pageData);
+          }
+        }
+      }
+      return '';
     }
 
     const value = getNestedValue(trimmedPath, context, pageData);
