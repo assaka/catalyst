@@ -146,6 +146,11 @@ function getNestedValue(path, context, pageData) {
  * Format values based on their type and path
  */
 function formatValue(value, path, context, pageData) {
+  // Debug: Log what's being processed
+  if (path.includes('price')) {
+    console.log('formatValue called with:', { path, value, hasProduct: !!(pageData.product || context.product) });
+  }
+
   if (value === null || value === undefined) {
     return '';
   }
