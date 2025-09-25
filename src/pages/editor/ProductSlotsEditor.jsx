@@ -257,20 +257,6 @@ const ProductSlotsEditor = ({
     return 'Draft';
   }, [hasUnsavedChanges, draftConfig?.status]);
 
-  const getStatusBadgeVariant = useCallback(() => {
-    if (hasUnsavedChanges) {
-      return 'destructive';
-    }
-    if (draftConfig?.status === 'published') {
-      return 'default';
-    }
-    return 'secondary';
-  }, [hasUnsavedChanges, draftConfig?.status]);
-
-  const shouldShowChangeIndicator = useCallback(() => {
-    return hasUnsavedChanges;
-  }, [hasUnsavedChanges]);
-
   const getResponsiveClasses = useCallback(() => {
     const baseClasses = 'transition-all duration-300';
     switch (currentViewport) {
@@ -303,10 +289,6 @@ const ProductSlotsEditor = ({
 
   const handleCancelPublish = useCallback(() => {
     setShowPublishPanel(false);
-  }, []);
-
-  const handleResetLayoutWithModal = useCallback(() => {
-    setShowResetModal(true);
   }, []);
 
   const handleResetLayout = resetLayoutFromHook;
