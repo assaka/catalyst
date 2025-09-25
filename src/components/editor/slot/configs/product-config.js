@@ -12,7 +12,7 @@ export const productConfig = {
       id: 'main_layout',
       type: 'grid',
       content: '',
-      className: 'main-layout max-w-6xl mx-auto px-4 py-8',
+      className: 'main-layout max-w-6xl mx-auto px-4 py-8 overflow-auto max-h-screen',
       styles: {},
       parentId: null,
       layout: 'grid',

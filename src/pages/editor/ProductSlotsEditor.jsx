@@ -377,11 +377,11 @@ const ProductSlotsEditor = ({
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${
+    <div className={`h-screen bg-gray-50 overflow-hidden ${
       isSidebarVisible ? 'pr-80' : ''
     }`} onClick={handleClickOutside}>
       {/* Main Editor Area */}
-      <div className="flex flex-col">
+      <div className="flex flex-col h-full">
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
@@ -441,7 +441,7 @@ const ProductSlotsEditor = ({
 
         {/* Product Layout - Hierarchical Structure */}
         <div
-          className="bg-gray-50 product-page"
+          className="bg-gray-50 product-page flex-1 overflow-auto"
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
