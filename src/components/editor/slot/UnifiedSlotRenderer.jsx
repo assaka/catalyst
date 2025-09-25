@@ -179,6 +179,17 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
+    // Debug: Check if prices are being processed correctly
+    if (isPriceSlot) {
+      console.log(`AFTER FIX - Slot ${id}:`, {
+        originalContent: content,
+        processedContent: processedContent,
+        productPrice: variableContext.product?.price,
+        productComparePrice: variableContext.product?.compare_price,
+        currency: variableContext.settings?.currency_symbol
+      });
+    }
+
     // Text Element
     if (type === 'text') {
       return <TextSlotWithScript
