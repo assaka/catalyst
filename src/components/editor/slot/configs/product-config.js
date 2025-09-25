@@ -279,7 +279,7 @@ export const productConfig = {
     product_description: {
       id: 'product_description',
       type: 'text',
-      content: '{{#if product.short_description}}{{product.short_description}}{{else}}{{product.description}}{{/if}}',
+      content: '{{product.description}}',
       className: 'w-fit text-gray-700 leading-relaxed',
       parentClassName: '',
       styles: {},
@@ -295,7 +295,7 @@ export const productConfig = {
     product_labels: {
       id: 'product_labels',
       type: 'text',
-      content: '{{#each product.labels}}<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">{{this}}</span>{{/each}}',
+      content: '{{#if product.labels}}{{#each product.labels}}<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">{{this}}</span>{{/each}}{{/if}}',
       className: 'product-labels absolute top-2 right-2',
       parentClassName: '',
       styles: {},
