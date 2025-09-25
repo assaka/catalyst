@@ -608,7 +608,7 @@ export function GridColumn({
           ? `${
               isSelected
                 ? 'border-2 border-blue-500 bg-blue-50/10 rounded-lg overflow-hidden transition-all duration-200 p-2'
-                : `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
+                : `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : ''} rounded-lg overflow-hidden transition-all duration-200 ${
                     isDragOver
                       ? 'border-blue-500 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
                     isDragging
