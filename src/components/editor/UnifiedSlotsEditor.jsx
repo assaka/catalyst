@@ -49,6 +49,7 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
+import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 /**
@@ -543,11 +544,13 @@ const UnifiedSlotsEditor = ({
               {/* Main Grid Layout */}
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 {layoutConfig && layoutConfig.slots && Object.keys(layoutConfig.slots).length > 0 ? (
-                  <HierarchicalSlotRenderer
+                  <UnifiedSlotRenderer
                     slots={layoutConfig.slots}
                     parentId={null}
-                    mode={showPreview ? 'view' : mode}
                     viewMode={viewMode}
+                    context="editor"
+                    productContext={pageContext}
+                    mode={showPreview ? 'view' : mode}
                     showBorders={showPreview ? false : showSlotBorders}
                     currentDragInfo={currentDragInfo}
                     setCurrentDragInfo={setCurrentDragInfo}
@@ -564,9 +567,6 @@ const UnifiedSlotsEditor = ({
                     selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
                     setPageConfig={setLayoutConfig}
                     saveConfiguration={saveConfiguration}
-                    context={pageContext}
-                    slotComponents={slotComponents}
-                    customSlotRenderer={customSlotRenderer}
                   />
                 ) : (
                   <div className="col-span-12 text-center py-12 text-gray-500">

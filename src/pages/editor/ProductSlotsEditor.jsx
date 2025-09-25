@@ -9,15 +9,7 @@ import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockProductContext } from '@/utils/mockProductData';
 import aiEnhancementService from '@/services/aiEnhancementService';
-import {
-  ProductGallerySlot,
-  ProductInfoSlot,
-  ProductOptionsSlot,
-  ProductTabsSlot,
-  ProductRecommendationsSlot,
-  ProductBreadcrumbsSlot,
-  QuantitySelector
-} from '@/components/editor/slot/slotComponentsProduct';
+// Unified components are now handled by UnifiedSlotRenderer automatically
 
 // Product Editor Configuration
 const productEditorConfig = {
@@ -32,27 +24,7 @@ const productEditorConfig = {
       icon: Package
     }
   ],
-  slotComponents: {
-    ProductGallerySlot,
-    ProductInfoSlot,
-    ProductOptionsSlot,
-    ProductTabsSlot,
-    ProductRecommendationsSlot,
-    ProductBreadcrumbsSlot,
-    QuantitySelector,
-    // Render function fallback for unknown slots
-    defaultSlotRenderer: (slot, context) => {
-      // For container slots, render children if they exist
-      if (slot.type === 'container') {
-        return (
-          <div className={slot.className || "w-full"}>
-            {/* Container content would be rendered by HierarchicalSlotRenderer */}
-          </div>
-        );
-      }
-      return null;
-    }
-  },
+  // slotComponents are now handled by UnifiedSlotRenderer's component registry
   generateContext: () => generateMockProductContext(),
   cmsBlockPositions: ['product_above', 'product_below']
 };

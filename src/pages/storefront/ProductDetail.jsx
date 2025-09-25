@@ -30,7 +30,7 @@ import BreadcrumbRenderer from "@/components/storefront/BreadcrumbRenderer";
 
 // Slot system imports
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { ProductSlotRenderer } from '@/components/storefront/ProductSlotRenderer';
+import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import { productConfig } from '@/components/editor/slot/configs/product-config';
 
 // Product Label Component
@@ -617,10 +617,11 @@ export default function ProductDetail() {
         return shouldRender;
       })() ? (
         <div className="grid grid-cols-12 gap-2 auto-rows-min">
-          <ProductSlotRenderer
+          <UnifiedSlotRenderer
             slots={productLayoutConfig.slots}
             parentId={null}
             viewMode="default"
+            context="storefront"
             productContext={{
               product,
               productTabs,
@@ -644,11 +645,13 @@ export default function ProductDetail() {
               activeTab,
               isInWishlist,
               currencySymbol: store?.currency_symbol || '$',
+              canAddToCart: isInStock && quantity > 0,
               setQuantity,
               setActiveImageIndex: setActiveImage,
               setActiveTab,
               setIsInWishlist,
               handleAddToCart: handleAddToCart,
+              handleWishlistToggle: handleWishlistToggle,
               handleOptionChange: (optionId, selectedValue) => {
                 // Update selected options
                 const newSelectedOptions = selectedOptions.filter(opt => opt.option_id !== optionId);
