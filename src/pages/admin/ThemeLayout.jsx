@@ -61,10 +61,14 @@ export default function ThemeLayout() {
             const fullStoreResponse = await Store.findById(actualStoreId);
             
             // Store.findById returns an array, so we need to get the first item
-            const fullStore = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
+            const fullStoreResponse_normalized = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
+
+            // Handle nested data structure - settings are in data.settings, not settings
+            const fullStore = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
 
             // Debug: Log what we're loading from database
-            console.log('ThemeLayout - Raw store from DB:', fullStore);
+            console.log('ThemeLayout - Raw store response from DB:', fullStoreResponse_normalized);
+            console.log('ThemeLayout - Normalized store from DB:', fullStore);
             console.log('ThemeLayout - Raw settings from DB:', fullStore?.settings);
             console.log('ThemeLayout - Raw product_grid from DB:', fullStore?.settings?.product_grid);
 
