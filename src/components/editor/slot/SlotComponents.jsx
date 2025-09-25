@@ -616,11 +616,7 @@ export function GridColumn({
                 : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
             } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot ${colSpanClass} ${
-        ['container', 'grid', 'flex'].includes(slot?.type)
-          ? `w-full h-full grid grid-cols-12 gap-2 ${slot.className}`
-          : ''
-      }`}
+      } relative responsive-slot ${colSpanClass}`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       data-slot-id={slotId}

@@ -245,11 +245,20 @@ export function UnifiedSlotRenderer({
 
     // Container, Grid, Flex Elements
     if (type === 'container' || type === 'grid' || type === 'flex') {
-      const containerClass = type === 'grid' ? 'grid grid-cols-12 gap-2' :
-                            type === 'flex' ? 'flex' : '';
+      // Use custom className from config if provided, otherwise use default
+      let containerClass = '';
+
+      if (processedClassName) {
+        // If className is provided in config, use it as-is
+        containerClass = processedClassName;
+      } else {
+        // Fallback to default classes if no className provided
+        containerClass = type === 'grid' ? 'grid grid-cols-12 gap-2' :
+                        type === 'flex' ? 'flex' : '';
+      }
 
       return (
-        <div className={`${containerClass} ${processedClassName || ''}`} style={styles}>
+        <div className={containerClass} style={styles}>
           <UnifiedSlotRenderer
             slots={slots}
             parentId={id}
