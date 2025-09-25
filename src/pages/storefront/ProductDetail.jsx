@@ -877,69 +877,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Quantity, Add to Cart, and Wishlist */}
-          <div className="border-t pt-6">
-            <div className="flex items-center space-x-4">
-              {!settings?.hide_quantity_selector && (
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="quantity-input" className="font-medium text-sm">Qty:</label>
-                  <div className="flex items-center border rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="p-2 hover:bg-gray-100 transition-colors"
-                      disabled={quantity <= 1}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <input
-                      id="quantity-input"
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val) && val >= 1) setQuantity(val);
-                        else if (e.target.value === '') setQuantity('');
-                      }}
-                      min="1"
-                      className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent"
-                    />
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="p-2 hover:bg-gray-100 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={handleAddToCart}
-                disabled={!canAddToCart} // Use the new canAddToCart state based on stock settings
-                className="flex-1 h-12 text-lg"
-                style={{
-                  backgroundColor: settings?.theme?.add_to_cart_button_color || '#28a745',
-                  color: '#FFFFFF',
-                }}
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                {isInStock ? (loading ? 'Adding...' : 'Add to Cart') : 'Out of Stock'}
-              </Button>
-
-              <Button
-                onClick={handleWishlistToggle}
-                variant="outline"
-                size="icon"
-                className="h-12 w-12"
-              >
-                {isInWishlist ? (
-                  <Heart className="w-6 h-6 fill-red-500 text-red-500" />
-                ) : (
-                  <Heart className="w-6 h-6 text-gray-500" />
-                )}
-              </Button>
-            </div>
-          </div>
+          {/* Quantity, Add to Cart, and Wishlist now handled by slot system */}
 
           {/* CMS Block Renderer for "below add to cart" position */}
           <CmsBlockRenderer position="product_below_cart_button" />

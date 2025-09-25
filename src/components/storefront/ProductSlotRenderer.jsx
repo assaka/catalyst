@@ -515,36 +515,42 @@ export function ProductSlotRenderer({
 
       // QuantitySelector Component
       if (componentName === 'QuantitySelector') {
+        // Preserve settings check - hide if setting is enabled
+        if (settings?.hide_quantity_selector) {
+          return null;
+        }
+
         // Get editable label from metadata or use default
         const labelText = slot.metadata?.editable?.label?.default || 'Qty:';
 
         return (
           <div className={className} style={styles}>
             <div className="flex items-center space-x-2">
-              <label htmlFor="quantity" className="font-medium text-sm">
+              <label htmlFor="quantity-input" className="font-medium text-sm">
                 {labelText}
               </label>
               <div className="flex items-center border rounded-lg overflow-hidden">
                 <button
-                  onClick={() => setQuantity && setQuantity(Math.max(1, (quantity || 1) - 1))}
+                  onClick={() => setQuantity && setQuantity(Math.max(1, quantity - 1))}
                   className="p-2 hover:bg-gray-100 transition-colors"
-                  disabled={(quantity || 1) <= 1}
+                  disabled={quantity <= 1}
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <input
-                  id="quantity"
+                  id="quantity-input"
                   type="number"
-                  value={quantity || 1}
+                  value={quantity}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val) && val >= 1) setQuantity && setQuantity(val);
+                    else if (e.target.value === '') setQuantity && setQuantity(''); // Preserve empty handling
                   }}
                   min="1"
                   className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent"
                 />
                 <button
-                  onClick={() => setQuantity && setQuantity((quantity || 1) + 1)}
+                  onClick={() => setQuantity && setQuantity(quantity + 1)}
                   className="p-2 hover:bg-gray-100 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
