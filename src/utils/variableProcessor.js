@@ -152,16 +152,34 @@ function formatValue(value, path, context, pageData) {
   // Special handling for compare_price_formatted
   if (path.includes('compare_price_formatted')) {
     const product = pageData.product || context.product;
-    if (!product || !product.compare_price) {
+    if (!product || (!product.compare_price && product.compare_price !== 0)) {
       return ''; // Don't show compare price if it doesn't exist
     }
-    return value || (typeof product.compare_price === 'number' ?
-      `${context.settings?.currency_symbol || '$'}${product.compare_price.toFixed(2)}` :
-      product.compare_price);
+
+    // If we have a formatted version, use it
+    if (value && value !== '[Text placeholder]') {
+      return value;
+    }
+
+    // Otherwise format the raw compare_price
+    if (typeof product.compare_price === 'number') {
+      const currency = context.settings?.currency_symbol || '$';
+      return `${currency}${product.compare_price.toFixed(2)}`;
+    }
+
+    return String(product.compare_price);
   }
 
   // Handle other formatted prices (already formatted strings)
   if (path.includes('price_formatted')) {
+    // If we get a placeholder, try to format the raw price
+    if (!value || value === '[Text placeholder]') {
+      const product = pageData.product || context.product;
+      if (product && typeof product.price === 'number') {
+        const currency = context.settings?.currency_symbol || '$';
+        return `${currency}${product.price.toFixed(2)}`;
+      }
+    }
     return value; // Return as-is if already formatted
   }
 
