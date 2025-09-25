@@ -26,7 +26,23 @@ export default function Category() {
   const [currentCategory, setCurrentCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
-  // Calculate dynamic items per page based on grid configuration
+  // Detect current breakpoint based on window width
+  const getCurrentBreakpoint = () => {
+    if (typeof window === 'undefined') return 'default';
+
+    const width = window.innerWidth;
+    console.log(`Category.jsx - Window width: ${width}px`);
+
+    // Tailwind breakpoints: sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px
+    if (width >= 1536) return '2xl';
+    if (width >= 1280) return 'xl';
+    if (width >= 1024) return 'lg';
+    if (width >= 768) return 'md';
+    if (width >= 640) return 'sm';
+    return 'default';
+  };
+
+  // Calculate dynamic items per page based on current breakpoint and grid configuration
   const calculateItemsPerPage = () => {
     const gridConfig = settings?.product_grid;
     if (!gridConfig) return 12;
@@ -35,19 +51,31 @@ export default function Category() {
     if (rows === 0) return -1; // Infinite scroll
 
     const breakpoints = gridConfig.breakpoints || {};
+    const currentBreakpoint = getCurrentBreakpoint();
 
-    // Find the maximum columns across all active breakpoints
-    let maxColumns = 1;
-    Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
-      if (columns > 0 && columns > maxColumns) {
-        maxColumns = columns;
+    // Get the columns for the current breakpoint, with fallback logic
+    let currentColumns = 1;
+
+    // Tailwind CSS cascade: start from current breakpoint and fall back to smaller ones
+    const breakpointOrder = ['2xl', 'xl', 'lg', 'md', 'sm', 'default'];
+    const currentIndex = breakpointOrder.indexOf(currentBreakpoint);
+
+    // Look for the first defined breakpoint starting from current and going down
+    for (let i = currentIndex; i < breakpointOrder.length; i++) {
+      const bp = breakpointOrder[i];
+      if (breakpoints[bp] && breakpoints[bp] > 0) {
+        currentColumns = breakpoints[bp];
+        break;
       }
-    });
+    }
 
-    return maxColumns * rows;
+    const totalProducts = currentColumns * rows;
+    console.log(`Category.jsx - Current breakpoint: ${currentBreakpoint}, columns: ${currentColumns}, rows: ${rows}, total per page: ${totalProducts}`);
+
+    return totalProducts;
   };
 
-  const itemsPerPage = calculateItemsPerPage();
+  const [itemsPerPage, setItemsPerPage] = useState(calculateItemsPerPage());
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
 
@@ -60,6 +88,32 @@ export default function Category() {
 
   const { currentPage, setPage } = usePagination();
   const { currentSort, setSort } = useSorting();
+
+  // Update items per page when window resizes (breakpoint changes) or settings change
+  useEffect(() => {
+    const handleResize = () => {
+      const newItemsPerPage = calculateItemsPerPage();
+      if (newItemsPerPage !== itemsPerPage) {
+        console.log(`Category.jsx - Breakpoint changed, updating itemsPerPage from ${itemsPerPage} to ${newItemsPerPage}`);
+        setItemsPerPage(newItemsPerPage);
+        // Reset to page 1 when items per page changes
+        setPage(1);
+      }
+    };
+
+    // Recalculate when settings change
+    if (settings?.product_grid) {
+      const newItemsPerPage = calculateItemsPerPage();
+      if (newItemsPerPage !== itemsPerPage) {
+        console.log(`Category.jsx - Settings changed, updating itemsPerPage from ${itemsPerPage} to ${newItemsPerPage}`);
+        setItemsPerPage(newItemsPerPage);
+        setPage(1);
+      }
+    }
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [settings?.product_grid, itemsPerPage, setPage]);
 
   // Load category layout configuration directly
   useEffect(() => {

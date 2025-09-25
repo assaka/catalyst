@@ -400,7 +400,7 @@ const CartSlotsEditor = ({
         </div>
         {/* Cart Layout - Hierarchical Structure */}
         <div
-          className="bg-gray-50 cart-page"
+          className="bg-gray-50 cart-page overflow-y-auto max-h-[calc(100vh-80px)]"
           style={{ backgroundColor: '#f9fafb' }}
         >
           {/* Timestamps Row */}
