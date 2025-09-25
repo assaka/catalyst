@@ -341,7 +341,8 @@ export const StoreProvider = ({ children }) => {
             xl: selectedStore.settings?.product_grid?.breakpoints?.xl ?? 0,
             '2xl': selectedStore.settings?.product_grid?.breakpoints?.['2xl'] ?? 0
           },
-          customBreakpoints: selectedStore.settings?.product_grid?.customBreakpoints || []
+          customBreakpoints: selectedStore.settings?.product_grid?.customBreakpoints || [],
+          rows: selectedStore.settings?.product_grid?.rows ?? 4
         },
 
         // Ensure boolean values for navigation settings are properly handled
