@@ -259,10 +259,10 @@ export const generateDemoData = (pageType) => {
   const demoData = {
     product: {
       name: 'Sample Product Name',
-      price: 129.99,  // Original price (shown with strikethrough)
-      price_formatted: '$129.99',
-      compare_price: 99.99,  // Special/sale price (shown as main price)
-      compare_price_formatted: '$99.99',
+      price: 1349.00,  // Original price (shown with strikethrough)
+      price_formatted: '$1349.00',
+      compare_price: 1049.00,  // Special/sale price (shown as main price)
+      compare_price_formatted: '$1049.00',
       on_sale: true,
       stock_quantity: 15,
       stock_status: 'In Stock',
