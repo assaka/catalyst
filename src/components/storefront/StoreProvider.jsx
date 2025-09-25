@@ -253,6 +253,8 @@ export const StoreProvider = ({ children }) => {
       
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
+      console.log('StoreProvider - Original store settings:', selectedStore.settings);
+
       const mergedSettings = {
         // Spread existing store settings first to preserve saved values
         ...(selectedStore.settings || {}),
@@ -326,7 +328,20 @@ export const StoreProvider = ({ children }) => {
         cookie_consent: selectedStore.settings?.cookie_consent || {
           enabled: false
         },
-        
+
+        // Product grid defaults (only if not already defined)
+        product_grid: selectedStore.settings?.product_grid || {
+          breakpoints: {
+            default: 1,
+            sm: 2,
+            md: 0,
+            lg: 2,
+            xl: 0,
+            '2xl': 0
+          },
+          customBreakpoints: []
+        },
+
         // Ensure boolean values for navigation settings are properly handled
         excludeRootFromMenu: selectedStore.settings?.excludeRootFromMenu === true,
         expandAllMenuItems: selectedStore.settings?.expandAllMenuItems === true,
@@ -338,7 +353,11 @@ export const StoreProvider = ({ children }) => {
       };
       
       setStore({ ...selectedStore, settings: mergedSettings });
-      
+
+      // Debug: Log the final merged settings
+      console.log('StoreProvider - Final merged settings:', mergedSettings);
+      console.log('StoreProvider - Product grid config:', mergedSettings.product_grid);
+
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries
       const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';
       const allowedCountries = mergedSettings.allowed_countries || ['US'];

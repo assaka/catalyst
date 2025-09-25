@@ -225,6 +225,10 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
+            // Debug: Log what we're about to save
+            console.log('ThemeLayout - Saving settings:', store.settings);
+            console.log('ThemeLayout - Product grid config:', store.settings.product_grid);
+
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
