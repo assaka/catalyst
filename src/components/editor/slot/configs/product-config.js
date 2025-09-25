@@ -192,7 +192,7 @@ export const productConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
+      content: `<span data-main-price class="main-price">{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}</span>`,
       className: 'w-fit text-3xl font-bold {{#if product.compare_price}}text-red-600{{else}}text-green-600{{/if}}',
       parentClassName: '',
       styles: {},
@@ -202,13 +202,53 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: { hierarchical: true },
+      script: `
+        // Dynamic price formatting with animation
+        const priceElement = element.querySelector('[data-main-price]');
+        if (priceElement) {
+          const product = productContext?.product;
+
+          if (product) {
+            let price, isOnSale;
+
+            if (product.compare_price) {
+              price = product.compare_price_formatted || utils.formatPrice(product.compare_price);
+              isOnSale = true;
+            } else {
+              price = product.price_formatted || utils.formatPrice(product.price);
+              isOnSale = false;
+            }
+
+            // Update price with animation
+            priceElement.innerHTML = price;
+            priceElement.style.opacity = '0';
+
+            // Animate in
+            const animation = utils.animate([
+              { opacity: 0, transform: 'scale(0.9)' },
+              { opacity: 1, transform: 'scale(1)' }
+            ], {
+              duration: 300,
+              easing: 'ease-out'
+            });
+
+            // Add sale indicator
+            if (isOnSale && !element.querySelector('.sale-indicator')) {
+              const saleIndicator = document.createElement('span');
+              saleIndicator.className = 'sale-indicator text-xs bg-red-500 text-white px-1 rounded ml-2';
+              saleIndicator.textContent = 'SALE';
+              element.appendChild(saleIndicator);
+            }
+          }
+        }
+      `
     },
 
     original_price: {
       id: 'original_price',
       type: 'text',
-      content: '{{#if product.compare_price}}{{product.price_formatted}}{{/if}}',
+      content: `<span data-original-price class="original-price">{{#if product.compare_price}}{{product.price_formatted}}{{/if}}</span>`,
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -218,7 +258,54 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: { hierarchical: true },
+      script: `
+        // Only show original price when product is on sale
+        const originalPriceElement = element.querySelector('[data-original-price]');
+        if (originalPriceElement) {
+          const product = productContext?.product;
+
+          if (product && product.compare_price) {
+            // Product is on sale, show original price with strikethrough animation
+            const originalPrice = product.price_formatted || utils.formatPrice(product.price);
+            originalPriceElement.innerHTML = originalPrice;
+
+            // Animate the strikethrough effect
+            originalPriceElement.style.textDecoration = 'none';
+            originalPriceElement.style.position = 'relative';
+
+            // Create animated strikethrough line
+            const strikethrough = document.createElement('span');
+            strikethrough.style.position = 'absolute';
+            strikethrough.style.left = '0';
+            strikethrough.style.top = '50%';
+            strikethrough.style.width = '0%';
+            strikethrough.style.height = '1px';
+            strikethrough.style.backgroundColor = 'currentColor';
+            strikethrough.style.transition = 'width 0.5s ease-in-out';
+            originalPriceElement.appendChild(strikethrough);
+
+            // Animate after a delay
+            setTimeout(() => {
+              strikethrough.style.width = '100%';
+            }, 200);
+
+            // Add savings calculation
+            if (!element.querySelector('.savings-amount')) {
+              const savings = product.price - product.compare_price;
+              if (savings > 0) {
+                const savingsElement = document.createElement('span');
+                savingsElement.className = 'savings-amount text-xs text-green-600 ml-2';
+                savingsElement.textContent = \`Save \${utils.formatPrice(savings)}\`;
+                element.appendChild(savingsElement);
+              }
+            }
+          } else {
+            // Not on sale, hide the element
+            element.style.display = 'none';
+          }
+        }
+      `
     },
 
     stock_status: {
