@@ -615,7 +615,7 @@ export default function ProductDetail() {
         const hasSlots = hasConfig && productLayoutConfig.slots && Object.keys(productLayoutConfig.slots).length > 0;
         const slotCount = hasSlots ? Object.keys(productLayoutConfig.slots).length : 0;
 
-        const shouldRender = hasConfig && hasSlots && slotCount > 0;
+        const shouldRender = true; // Force slot system usage
 
         // Debug logging
         console.log('🎯 Slot System Check:', {
@@ -632,7 +632,7 @@ export default function ProductDetail() {
       })() ? (
         <div className="grid grid-cols-12 gap-2 auto-rows-min">
           <UnifiedSlotRenderer
-            slots={productLayoutConfig.slots}
+            slots={productLayoutConfig?.slots || productConfig}
             parentId={null}
             viewMode="default"
             context="storefront"
