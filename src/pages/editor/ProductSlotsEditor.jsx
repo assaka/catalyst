@@ -329,6 +329,20 @@ const ProductSlotsEditor = ({
     return hasUnsavedChanges ? 1 : 0;
   }, [hasUnsavedChanges]);
 
+  // Use generic publish handler
+  const { handlePublish, publishStatus } = usePublishHandler(
+    'product',
+    productLayoutConfig,
+    handlePublishConfiguration,
+    {
+      setIsSidebarVisible,
+      setSelectedElement,
+      setHasUnsavedChanges,
+      setConfigurationStatus,
+      updateLastSavedConfig
+    }
+  );
+
   // Component validation function
   const validateSlotConfiguration = useCallback((config) => {
     const errors = [];
@@ -363,41 +377,67 @@ const ProductSlotsEditor = ({
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50" onClick={handleClickOutside}>
-      {/* Editor Toolbar */}
-      <EditorToolbar
-        mode={mode}
-        viewMode={viewMode}
-        currentViewport={currentViewport}
-        showSlotBorders={showSlotBorders}
-        localSaveStatus={localSaveStatus}
-        onPreviewModeToggle={handlePreviewModeToggle}
-        onViewportChange={handleViewportChange}
-        onToggleSlotBorders={() => setShowSlotBorders(!showSlotBorders)}
-        onAddSlot={() => setShowAddSlotModal(true)}
-        onFilePicker={() => setShowFilePickerModal(true)}
-        onShowCode={() => setShowCodeModal(true)}
-        pageType="product"
-        availableViews={[
-          { id: 'default', label: 'Default View', icon: Package }
-        ]}
-        onViewModeChange={setViewMode}
-      />
+    <div className={`min-h-screen bg-gray-50 ${
+      isSidebarVisible ? 'pr-80' : ''
+    }`} onClick={handleClickOutside}>
+      {/* Main Editor Area */}
+      <div className="flex flex-col">
+        {/* Editor Header */}
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
+              {/* View Mode Tabs */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('default')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'default'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <Package className="w-4 h-4 inline mr-1.5" />
+                  Default View
+                </button>
+              </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Editor Content */}
-        <div className="flex-1 flex flex-col overflow-auto">
-          {/* Edit Mode Controls */}
-          {mode === 'edit' && (
-            <EditModeControls
-              isUnlocked={isUnlocked}
-              onToggleUnlock={() => setIsUnlocked(!isUnlocked)}
-              statusBadgeText={getStatusBadgeText()}
-              statusBadgeVariant={getStatusBadgeVariant()}
-              shouldShowChangeIndicator={shouldShowChangeIndicator()}
-            />
-          )}
+              {/* Edit mode controls */}
+              {mode === 'edit' && (
+                <EditModeControls
+                  localSaveStatus={localSaveStatus}
+                  publishStatus={publishStatus}
+                  saveConfiguration={saveConfiguration}
+                  onPublish={handlePublish}
+                  hasChanges={hasUnsavedChanges}
+                />
+              )}
+            </div>
+
+            {/* Preview and Publish Buttons - Far Right */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowPreview(!showPreview)}
+                variant={showPreview ? "default" : "outline"}
+                size="sm"
+                className="flex items-center gap-1.5"
+                title={showPreview ? "Exit Preview" : "Preview without editing tools"}
+              >
+                <Eye className="w-4 h-4" />
+                {showPreview ? "Exit Preview" : "Preview"}
+              </Button>
+
+              <PublishPanelToggle
+                hasUnsavedChanges={hasUnsavedChanges}
+                showPublishPanel={showPublishPanel}
+                onTogglePublishPanel={setShowPublishPanel}
+                onClosePublishPanel={() => {
+                  setIsSidebarVisible(false);
+                  setSelectedElement(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
 
           {/* Product Detail Preview */}
           <ResponsiveContainer currentViewport={currentViewport}>
