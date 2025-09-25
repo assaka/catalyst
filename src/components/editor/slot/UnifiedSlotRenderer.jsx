@@ -167,7 +167,12 @@ export function UnifiedSlotRenderer({
     // Prepare context for variable processing
     const variableContext = context === 'editor' ?
       generateDemoData('product') :
-      { product: productContext.product, category: categoryData, cart: cartData };
+      {
+        product: productContext.product,
+        category: categoryData,
+        cart: cartData,
+        settings: productContext.settings
+      };
 
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
