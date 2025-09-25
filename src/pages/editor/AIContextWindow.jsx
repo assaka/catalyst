@@ -103,7 +103,7 @@ const AIContextWindowPage = () => {
         {isFullscreen ? (
           // Fullscreen mode - single panel without ResizablePanelGroup
           <div className="h-full w-full">
-            <div className="h-[calc(100vh-200px)] flex flex-col">
+            <div className="h-[calc(100vh-160px)] flex flex-col">
               {selectedSlotEditor ? (
                 <>
                   {/* Slot Editor Header */}
@@ -202,7 +202,7 @@ const AIContextWindowPage = () => {
           // Normal mode with ResizablePanelGroup
           <ResizablePanelGroup
             direction="horizontal"
-            className="h-[calc(100vh-200px)]"
+            className="h-[calc(100vh-160px)]"
           >
             <ResizablePanel
               defaultSize={14}
@@ -212,7 +212,7 @@ const AIContextWindowPage = () => {
               <SlotEnabledFileSelector
                 onFileSelect={handleFileSelect}
                 selectedFile={selectedSlotEditor}
-                className="h-[calc(100vh-200px)]"
+                className="h-[calc(100vh-160px)]"
                 files={slotEnabledFiles}
               />
             </ResizablePanel>
@@ -224,7 +224,7 @@ const AIContextWindowPage = () => {
               minSize={40}
               maxSize={60}
             >
-              <div className="h-[calc(100vh-200px)] flex flex-col">
+              <div className="h-[calc(100vh-160px)] flex flex-col">
                 {selectedSlotEditor ? (
                   <>
                     {/* Slot Editor Header */}
@@ -321,13 +321,6 @@ const AIContextWindowPage = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         )}
-      </div>
-
-      {/* Footer Status */}
-      <div className="px-4 py-2 border-t bg-white dark:bg-gray-800">
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <span>Ready</span>
-        </div>
       </div>
 
       {/* Version history functionality available in UnifiedSlotEditor */}
