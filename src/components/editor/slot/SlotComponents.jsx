@@ -623,6 +623,7 @@ export function GridColumn({
       }`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
+      data-slot-id={slotId}
       draggable={mode === 'edit' && !isOverResizeHandle}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -635,6 +636,9 @@ export function GridColumn({
       onClick={(e) => {
         if (mode === 'edit' && onElementClick && !isOverResizeHandle) {
           e.stopPropagation();
+          console.log('🎯 GridColumn clicked:', slotId, 'element:', e.currentTarget);
+          // Ensure the element has the data-slot-id attribute
+          e.currentTarget.setAttribute('data-slot-id', slotId);
           onElementClick(slotId, e.currentTarget);
         }
       }}
