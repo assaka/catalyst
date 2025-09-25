@@ -225,52 +225,13 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true },
-      script: `
-        // Dynamic price formatting with animation
-        const priceElement = element.querySelector('[data-main-price]');
-        if (priceElement) {
-          const product = productContext?.product;
-
-          if (product) {
-            let price, isOnSale;
-
-            if (product.compare_price) {
-              price = product.compare_price_formatted || utils.formatPrice(product.compare_price);
-              isOnSale = true;
-            } else {
-              price = product.price_formatted || utils.formatPrice(product.price);
-              isOnSale = false;
-            }
-
-            // Update price content
-            priceElement.innerHTML = price;
-
-            // Add sale indicator and savings
-            if (isOnSale && !element.querySelector('.sale-indicator')) {
-              const saleIndicator = document.createElement('span');
-              saleIndicator.className = 'sale-indicator text-xs bg-red-500 text-white px-1 rounded ml-2';
-              saleIndicator.textContent = 'SALE';
-              element.appendChild(saleIndicator);
-
-              // Add savings calculation
-              const savings = product.price - product.compare_price;
-              if (savings > 0) {
-                const savingsElement = document.createElement('span');
-                savingsElement.className = 'savings-amount text-xs text-green-600 ml-2';
-                savingsElement.textContent = \`Save \${utils.formatPrice(savings)}\`;
-                element.appendChild(savingsElement);
-              }
-            }
-          }
-        }
-      `
+      metadata: { hierarchical: true }
     },
 
     original_price: {
       id: 'original_price',
       type: 'text',
-      content: `<span data-original-price class="original-price">{{product.price_formatted}}</span>`,
+      content: `{{#if product.compare_price}}<span data-original-price class="original-price">{{product.price_formatted}}</span>{{/if}}`,
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -280,31 +241,7 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true },
-      script: `
-        // Only show original price when product is on sale
-        const originalPriceElement = element.querySelector('[data-original-price]');
-        if (originalPriceElement) {
-          const product = productContext?.product;
-
-          if (product && product.compare_price) {
-            // Product is on sale, show original price with strikethrough
-            const originalPrice = product.price_formatted || utils.formatPrice(product.price);
-            originalPriceElement.innerHTML = originalPrice;
-
-            // Ensure element is visible
-            element.style.display = 'block';
-
-            // Simple strikethrough style (no animation to avoid conflicts)
-            originalPriceElement.style.textDecoration = 'line-through';
-            originalPriceElement.style.color = '#6b7280'; // gray-500
-
-          } else {
-            // Not on sale, hide the element
-            element.style.display = 'none';
-          }
-        }
-      `
+      metadata: { hierarchical: true }
     },
 
     stock_status: {

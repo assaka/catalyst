@@ -306,6 +306,7 @@ export function GridColumn({
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
+  const isSelected = selectedElementId === slotId;
 
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
