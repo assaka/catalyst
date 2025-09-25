@@ -322,7 +322,7 @@ export const productConfig = {
     quantity_selector: {
       id: 'quantity_selector',
       type: 'component',
-      content: 'QuantitySelector',
+      content: '',
       className: 'quantity-selector mb-4',
       parentClassName: '',
       styles: {},
@@ -333,7 +333,9 @@ export const productConfig = {
       },
       viewMode: ['default'],
       metadata: {
-        hierarchical: true,
+        hierarchical: false,
+        component: 'QuantitySelector',
+        displayName: 'Quantity Selector',
         editable: {
           label: {
             type: 'text',
@@ -353,9 +355,7 @@ export const productConfig = {
       parentId: 'actions_container',
       position: { col: 1, row: 2 },
       layout: 'flex',
-      colSpan: {
-        default: 12
-      },
+      colSpan: {},
       viewMode: ['default'],
       metadata: { hierarchical: true }
     },

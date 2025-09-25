@@ -510,8 +510,11 @@ export function ProductSlotRenderer({
 
     // Handle component types
     if (type === 'component') {
+      // Get component name from either content field or metadata.component
+      const componentName = content || slot.metadata?.component;
+
       // QuantitySelector Component
-      if (content === 'QuantitySelector') {
+      if (componentName === 'QuantitySelector') {
         // Get editable label from metadata or use default
         const labelText = slot.metadata?.editable?.label?.default || 'Qty:';
 
@@ -555,7 +558,7 @@ export function ProductSlotRenderer({
       // Add other component types here as needed
       return (
         <div className={className} style={styles}>
-          {content || `[${content} component]`}
+          {componentName ? `[${componentName} component]` : '[Unknown component]'}
         </div>
       );
     }
