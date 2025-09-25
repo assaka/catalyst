@@ -439,7 +439,32 @@ const ProductSlotsEditor = ({
           </div>
         </div>
 
-          {/* Product Detail Preview */}
+        {/* Product Layout - Hierarchical Structure */}
+        <div
+          className="bg-gray-50 product-page"
+          style={{ backgroundColor: '#f9fafb' }}
+        >
+          {/* Timestamps Row */}
+          <TimestampsRow
+            draftConfig={draftConfig}
+            latestPublished={latestPublished}
+            formatTimeAgo={formatTimeAgo}
+            currentViewport={currentViewport}
+            onViewportChange={setCurrentViewport}
+          />
+
+          {!showPreview && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <EditorToolbar
+                showSlotBorders={showSlotBorders}
+                onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+                onResetLayout={() => setShowResetModal(true)}
+                onShowCode={() => setShowCodeModal(true)}
+                onAddSlot={() => setShowAddSlotModal(true)}
+              />
+            </div>
+          )}
+
           <ResponsiveContainer currentViewport={currentViewport}>
             <div className={`min-h-screen bg-white ${getResponsiveClasses()}`}>
               {/* Flash Messages Area */}
@@ -448,114 +473,103 @@ const ProductSlotsEditor = ({
               {/* CMS Block - Product Above */}
               <CmsBlockRenderer position="product_above" />
 
-              {/* Check if configuration is loaded */}
-              {(() => {
-                return productLayoutConfig && productLayoutConfig.slots && Object.keys(productLayoutConfig.slots).length > 0;
-              })() ? (
-                <HierarchicalSlotRenderer
-                  slots={productLayoutConfig.slots}
-                  parentId={null}
-                  mode={mode}
-                  viewMode={viewMode}
-                  showBorders={showSlotBorders}
-                  currentDragInfo={currentDragInfo}
-                  setCurrentDragInfo={setCurrentDragInfo}
-                  onElementClick={handleElementClick}
-                  onGridResize={gridResizeHandler}
-                  onSlotHeightResize={slotHeightResizeHandler}
-                  onSlotDrop={slotDropHandler}
-                  onSlotDelete={slotDeleteHandler}
-                  onResizeStart={() => setIsResizing(true)}
-                  onResizeEnd={() => {
-                    lastResizeEndTime.current = Date.now();
-                    setTimeout(() => setIsResizing(false), 100);
-                  }}
-                  selectedElementId={selectedElement && typeof selectedElement.getAttribute === 'function' ? selectedElement.getAttribute('data-slot-id') : null}
-                  setPageConfig={setProductLayoutConfig}
-                  saveConfiguration={saveConfiguration}
-                  context={productContext}
-                  slotComponents={{
-                    ProductGallerySlot,
-                    ProductInfoSlot,
-                    ProductOptionsSlot,
-                    ProductActionsSlot,
-                    ProductTabsSlot,
-                    ProductRecommendationsSlot,
-                    ProductBreadcrumbsSlot,
-                    // Render function fallback for unknown slots
-                    defaultSlotRenderer: (slot, context) => {
-                      // For container slots, render children if they exist
-                      if (slot.type === 'container') {
-                        return (
-                          <div className={slot.className || "w-full"}>
-                            {/* Container content would be rendered by HierarchicalSlotRenderer */}
-                          </div>
-                        );
-                      }
+              {/* Product Grid Layout */}
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                {productLayoutConfig && productLayoutConfig.slots && Object.keys(productLayoutConfig.slots).length > 0 ? (
+                  <HierarchicalSlotRenderer
+                    slots={productLayoutConfig.slots}
+                    parentId={null}
+                    mode={showPreview ? 'view' : mode}
+                    viewMode={viewMode}
+                    showBorders={showPreview ? false : showSlotBorders}
+                    currentDragInfo={currentDragInfo}
+                    setCurrentDragInfo={setCurrentDragInfo}
+                    onElementClick={showPreview ? null : handleElementClick}
+                    onGridResize={showPreview ? null : gridResizeHandler}
+                    onSlotHeightResize={showPreview ? null : slotHeightResizeHandler}
+                    onSlotDrop={showPreview ? null : slotDropHandler}
+                    onSlotDelete={showPreview ? null : slotDeleteHandler}
+                    onResizeStart={showPreview ? null : () => setIsResizing(true)}
+                    onResizeEnd={showPreview ? null : () => {
+                      lastResizeEndTime.current = Date.now();
+                      setTimeout(() => setIsResizing(false), 100);
+                    }}
+                    selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
+                    setPageConfig={setProductLayoutConfig}
+                    saveConfiguration={saveConfiguration}
+                    context={productContext}
+                    slotComponents={{
+                      ProductGallerySlot,
+                      ProductInfoSlot,
+                      ProductOptionsSlot,
+                      ProductActionsSlot,
+                      ProductTabsSlot,
+                      ProductRecommendationsSlot,
+                      ProductBreadcrumbsSlot,
+                      // Render function fallback for unknown slots
+                      defaultSlotRenderer: (slot, context) => {
+                        // For container slots, render children if they exist
+                        if (slot.type === 'container') {
+                          return (
+                            <div className={slot.className || "w-full"}>
+                              {/* Container content would be rendered by HierarchicalSlotRenderer */}
+                            </div>
+                          );
+                        }
 
-                      return null;
-                    }
-                  }}
-                />
-              ) : (
-                <div className="col-span-12 text-center py-12 text-gray-500">
-                  {productLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
-                </div>
-              )}
+                        return null;
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="col-span-12 text-center py-12 text-gray-500">
+                    {productLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
+                  </div>
+                )}
+              </div>
 
               {/* CMS Block - Product Below */}
               <CmsBlockRenderer position="product_below" />
             </div>
           </ResponsiveContainer>
-
-          {/* Timestamps Row */}
-          <TimestampsRow
-            formattedLastModified={formattedLastModified}
-            formattedLastPublished={formattedLastPublished}
-          />
         </div>
-
-        {/* Publish Panel Toggle */}
-        <PublishPanelToggle
-          showPublishPanel={showPublishPanel}
-          onTogglePublishPanel={handleTogglePublishPanel}
-          draftStatus={draftStatus}
-          hasDraftConfiguration={hasDraftConfiguration}
-        />
-
-        {/* Publish Panel */}
-        {showPublishPanel && (
-          <div ref={publishPanelRef}>
-            <PublishPanel
-              onPublish={handlePublishWithSave}
-              onCancel={handleCancelPublish}
-              onResetLayout={handleResetLayoutWithModal}
-              draftStatus={draftStatus}
-              lastModified={formattedLastModified}
-              lastPublished={formattedLastPublished}
-              pageType="product"
-              configChangeCount={configChangeCount}
-            />
-          </div>
-        )}
-
-        {/* Editor Sidebar */}
-        {mode === 'edit' && (
-          <EditorSidebar
-            selectedElement={selectedElement}
-            onClearSelection={handleClearSelection}
-            onClassChange={handleClassChange}
-            onInlineClassChange={handleInlineClassChange}
-            onTextChange={handleTextChange}
-            slotId={selectedElement?.getAttribute?.('data-slot-id')}
-            slotConfig={selectedElement ? slotConfigurations[selectedElement.getAttribute('data-slot-id')] : null}
-            allSlots={slotConfigurations}
-            isVisible={isSidebarVisible}
-          />
-        )}
       </div>
 
-      {/* Modals */}
+      {/* EditorSidebar - only show in edit mode and not in preview */}
+      {mode === 'edit' && !showPreview && isSidebarVisible && selectedElement && (
+        <EditorSidebar
+          selectedElement={selectedElement}
+          slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
+          slotConfig={(() => {
+            const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
+            const config = productLayoutConfig && productLayoutConfig.slots && slotId ? productLayoutConfig.slots[slotId] : null;
+            console.log('🏗️ ProductSlotsEditor: Passing slotConfig to EditorSidebar:', { slotId, config, productLayoutConfig });
+            return config;
+          })()}
+          allSlots={productLayoutConfig?.slots || {}}
+          onClearSelection={handleClearSelection}
+          onClassChange={handleClassChange}
+          onInlineClassChange={handleInlineClassChange}
+          onTextChange={handleTextChange}
+          isVisible={isSidebarVisible}
+        />
+      )}
+
+      {/* Floating Publish Panel */}
+      {showPublishPanel && (
+        <div ref={publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
+          <PublishPanel
+            draftConfig={draftConfig}
+            storeId={getSelectedStoreId()}
+            pageType="product"
+            onPublished={handlePublishPanelPublished}
+            onReverted={handlePublishPanelReverted}
+            hasUnsavedChanges={hasUnsavedChanges}
+          />
+        </div>
+      )}
+
+      {/* Add Slot Modal */}
       <AddSlotModal
         isOpen={showAddSlotModal}
         onClose={() => setShowAddSlotModal(false)}
@@ -566,24 +580,29 @@ const ProductSlotsEditor = ({
         pageType="product"
       />
 
-      <FilePickerModalWrapper
-        isOpen={showFilePickerModal}
-        onClose={() => setShowFilePickerModal(false)}
-        pageType="product"
-      />
-
+      {/* Reset Layout Confirmation Modal */}
       <ResetLayoutModal
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}
         onConfirm={handleResetLayout}
-        pageType="product"
+        isResetting={localSaveStatus === 'saving'}
       />
 
+      {/* Code Modal */}
       <CodeModal
         isOpen={showCodeModal}
         onClose={() => setShowCodeModal(false)}
-        slotConfigurations={slotConfigurations}
-        pageType="product"
+        configuration={productLayoutConfig}
+        localSaveStatus={localSaveStatus}
+        onSave={async (newConfiguration) => {
+          console.log('🎯 CodeModal onSave called with configuration:', newConfiguration);
+          setProductLayoutConfig(newConfiguration);
+          setHasUnsavedChanges(true);
+          console.log('🚀 Calling saveConfiguration...');
+          await saveConfiguration(newConfiguration);
+          console.log('✅ Save completed, closing modal');
+          setShowCodeModal(false);
+        }}
       />
     </div>
   );
