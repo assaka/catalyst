@@ -508,6 +508,58 @@ export function ProductSlotRenderer({
       );
     }
 
+    // Handle component types
+    if (type === 'component') {
+      // QuantitySelector Component
+      if (content === 'QuantitySelector') {
+        // Get editable label from metadata or use default
+        const labelText = slot.metadata?.editable?.label?.default || 'Qty:';
+
+        return (
+          <div className={className} style={styles}>
+            <div className="flex items-center space-x-2">
+              <label htmlFor="quantity" className="font-medium text-sm">
+                {labelText}
+              </label>
+              <div className="flex items-center border rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setQuantity && setQuantity(Math.max(1, (quantity || 1) - 1))}
+                  className="p-2 hover:bg-gray-100 transition-colors"
+                  disabled={(quantity || 1) <= 1}
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <input
+                  id="quantity"
+                  type="number"
+                  value={quantity || 1}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val >= 1) setQuantity && setQuantity(val);
+                  }}
+                  min="1"
+                  className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent"
+                />
+                <button
+                  onClick={() => setQuantity && setQuantity((quantity || 1) + 1)}
+                  className="p-2 hover:bg-gray-100 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Add other component types here as needed
+      return (
+        <div className={className} style={styles}>
+          {content || `[${content} component]`}
+        </div>
+      );
+    }
+
     // Handle container types (grid, flex, container)
     if (type === 'container' || type === 'grid' || type === 'flex') {
       const containerClass = type === 'grid' ? 'grid grid-cols-12 gap-2' :

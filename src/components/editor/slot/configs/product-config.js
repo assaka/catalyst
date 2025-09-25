@@ -321,50 +321,27 @@ export const productConfig = {
 
     quantity_selector: {
       id: 'quantity_selector',
-      type: 'flex',
-      content: '',
-      className: 'quantity-selector flex items-center space-x-2 mb-4',
+      type: 'component',
+      content: 'QuantitySelector',
+      className: 'quantity-selector mb-4',
+      parentClassName: '',
       styles: {},
       parentId: 'actions_container',
       position: { col: 1, row: 1 },
-      layout: 'flex',
       colSpan: {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    quantity_label: {
-      id: 'quantity_label',
-      type: 'text',
-      content: 'Qty:',
-      className: 'w-fit font-medium text-sm',
-      parentClassName: '',
-      styles: {},
-      parentId: 'quantity_selector',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        default: 'col-span-2'
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    quantity_input: {
-      id: 'quantity_input',
-      type: 'input',
-      content: '1',
-      className: 'px-2 py-2 w-16 text-center border rounded-lg',
-      parentClassName: '',
-      styles: {},
-      parentId: 'quantity_selector',
-      position: { col: 2, row: 1 },
-      colSpan: {
-        default: 'col-span-3'
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        editable: {
+          label: {
+            type: 'text',
+            default: 'Qty:',
+            placeholder: 'Enter quantity label'
+          }
+        }
+      }
     },
 
     buttons_container: {
