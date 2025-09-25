@@ -233,12 +233,21 @@ export const productConfig = {
               easing: 'ease-out'
             });
 
-            // Add sale indicator
+            // Add sale indicator and savings
             if (isOnSale && !element.querySelector('.sale-indicator')) {
               const saleIndicator = document.createElement('span');
               saleIndicator.className = 'sale-indicator text-xs bg-red-500 text-white px-1 rounded ml-2';
               saleIndicator.textContent = 'SALE';
               element.appendChild(saleIndicator);
+
+              // Add savings calculation
+              const savings = product.price - product.compare_price;
+              if (savings > 0) {
+                const savingsElement = document.createElement('span');
+                savingsElement.className = 'savings-amount text-xs text-green-600 ml-2';
+                savingsElement.textContent = \`Save \${utils.formatPrice(savings)}\`;
+                element.appendChild(savingsElement);
+              }
             }
           }
         }
@@ -248,7 +257,7 @@ export const productConfig = {
     original_price: {
       id: 'original_price',
       type: 'text',
-      content: `<span data-original-price class="original-price">{{#if product.compare_price}}{{product.price_formatted}}{{/if}}</span>`,
+      content: `<span data-original-price class="original-price">{{product.price_formatted}}</span>`,
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -266,40 +275,17 @@ export const productConfig = {
           const product = productContext?.product;
 
           if (product && product.compare_price) {
-            // Product is on sale, show original price with strikethrough animation
+            // Product is on sale, show original price with strikethrough
             const originalPrice = product.price_formatted || utils.formatPrice(product.price);
             originalPriceElement.innerHTML = originalPrice;
 
-            // Animate the strikethrough effect
-            originalPriceElement.style.textDecoration = 'none';
-            originalPriceElement.style.position = 'relative';
+            // Ensure element is visible
+            element.style.display = 'block';
 
-            // Create animated strikethrough line
-            const strikethrough = document.createElement('span');
-            strikethrough.style.position = 'absolute';
-            strikethrough.style.left = '0';
-            strikethrough.style.top = '50%';
-            strikethrough.style.width = '0%';
-            strikethrough.style.height = '1px';
-            strikethrough.style.backgroundColor = 'currentColor';
-            strikethrough.style.transition = 'width 0.5s ease-in-out';
-            originalPriceElement.appendChild(strikethrough);
+            // Simple strikethrough style (no animation to avoid conflicts)
+            originalPriceElement.style.textDecoration = 'line-through';
+            originalPriceElement.style.color = '#6b7280'; // gray-500
 
-            // Animate after a delay
-            setTimeout(() => {
-              strikethrough.style.width = '100%';
-            }, 200);
-
-            // Add savings calculation
-            if (!element.querySelector('.savings-amount')) {
-              const savings = product.price - product.compare_price;
-              if (savings > 0) {
-                const savingsElement = document.createElement('span');
-                savingsElement.className = 'savings-amount text-xs text-green-600 ml-2';
-                savingsElement.textContent = \`Save \${utils.formatPrice(savings)}\`;
-                element.appendChild(savingsElement);
-              }
-            }
           } else {
             // Not on sale, hide the element
             element.style.display = 'none';

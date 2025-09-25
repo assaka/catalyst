@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
-import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
+import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 
@@ -344,85 +344,38 @@ export function UnifiedSlotRenderer({
       );
     }
 
-    // Editor: Full editor wrapper with drag/drop, resize, etc.
-    const isSelected = selectedElementId === slot.id;
+    // Editor: Use GridColumn for full functionality
+    const colSpanValue = typeof slot.colSpan === 'number' ? slot.colSpan :
+      (typeof slot.colSpan === 'object' && slot.colSpan !== null) ?
+        (slot.colSpan[viewMode] || 12) : 12;
 
     return (
-      <div
+      <GridColumn
         key={slot.id}
-        className={colSpanClass}
-        style={{
-          ...(gridColumn ? { gridColumn } : {}),
-          ...slot.containerStyles
-        }}
+        colSpan={colSpanValue}
+        colSpanClass={colSpanClass}
+        rowSpan={1}
+        height={slot.styles?.height}
+        slotId={slot.id}
+        slot={slot}
+        onGridResize={onGridResize}
+        onSlotHeightResize={onSlotHeightResize}
+        onResizeStart={onResizeStart}
+        onResizeEnd={onResizeEnd}
+        onSlotDrop={onSlotDrop}
+        onSlotDelete={onSlotDelete}
+        onElementClick={onElementClick}
+        mode={mode}
+        viewMode={viewMode}
+        showBorders={showBorders}
+        currentDragInfo={currentDragInfo}
+        setCurrentDragInfo={setCurrentDragInfo}
+        selectedElementId={selectedElementId}
+        slots={slots}
+        isNested={parentId !== null}
       >
-        <EditorInteractionWrapper
-          mode={mode}
-          draggable={mode === 'edit'}
-          isSelected={isSelected}
-          className=""
-          style={{}}
-          onClick={() => onElementClick?.(slot.id)}
-          data-slot-id={slot.id}
-          data-editable={true}
-          onDragStart={(e) => {
-            if (mode !== 'edit') return;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('application/json', JSON.stringify({
-              type: 'move',
-              slotId: slot.id,
-              parentId: slot.parentId
-            }));
-            setCurrentDragInfo?.({
-              type: 'move',
-              slotId: slot.id,
-              parentId: slot.parentId
-            });
-          }}
-          onDragOver={(e) => {
-            if (mode !== 'edit') return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-          }}
-          onDragEnd={(e) => {
-            if (mode !== 'edit') return;
-            setCurrentDragInfo?.(null);
-          }}
-          onDrop={(e) => {
-            if (mode !== 'edit') return;
-            e.preventDefault();
-            e.stopPropagation();
-
-            try {
-              const data = JSON.parse(e.dataTransfer.getData('application/json'));
-              if (data && data.slotId !== slot.id) {
-                onSlotDrop?.({
-                  draggedSlotId: data.slotId,
-                  targetSlotId: slot.id,
-                  targetParentId: slot.parentId
-                });
-              }
-            } catch (error) {
-              console.error('Drop error:', error);
-            }
-            setCurrentDragInfo?.(null);
-          }}
-        >
-          <ResizeWrapper
-            className={slot.className}
-            disabled={mode !== 'edit'}
-            onResize={(newSize) => {
-              if (onGridResize) {
-                onGridResize(slot.id, newSize);
-              }
-            }}
-            initialWidth={slot.styles?.width}
-            initialHeight={slot.styles?.height}
-          >
-            {slotContent}
-          </ResizeWrapper>
-        </EditorInteractionWrapper>
-      </div>
+        {slotContent}
+      </GridColumn>
     );
   };
 

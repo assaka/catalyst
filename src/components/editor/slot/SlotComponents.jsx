@@ -231,6 +231,7 @@ export function GridColumn({
   onResizeEnd,
   onSlotDrop,
   onSlotDelete, // Add delete handler prop
+  onElementClick, // Add element click handler
   mode = 'edit',
   viewMode = 'emptyCart', // Add viewMode parameter
   showBorders = true,
@@ -630,6 +631,12 @@ export function GridColumn({
       onDrop={handleDrop}
       onDragEnter={(e) => {
         e.preventDefault();
+      }}
+      onClick={(e) => {
+        if (mode === 'edit' && onElementClick && !isOverResizeHandle) {
+          e.stopPropagation();
+          onElementClick(slotId, e.currentTarget);
+        }
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
