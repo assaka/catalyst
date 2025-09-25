@@ -1,50 +1,14 @@
 /**
- * Clean ProductSlotsEditor - Based on CategorySlotsEditor structure
- * - Resizing and dragging with minimal complexity
- * - Click to open EditorSidebar
- * - Maintainable structure matching CategorySlotsEditor
+ * ProductSlotsEditor - Refactored to use UnifiedSlotsEditor
+ * - Consistent with other slot editors
+ * - AI enhancement ready
+ * - Maintainable structure
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Package,
-  Eye
-} from "lucide-react";
-import EditorSidebar from "@/components/editor/slot/EditorSidebar";
-import PublishPanel from "@/components/editor/slot/PublishPanel";
-import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { Package } from "lucide-react";
+import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockProductContext } from '@/utils/mockProductData';
-import {
-  useSlotConfiguration,
-  useTimestampFormatting,
-  useDraftStatusManagement,
-  useConfigurationChangeDetection,
-  useBadgeRefresh,
-  useClickOutsidePanel,
-  usePreviewModeHandlers,
-  usePublishPanelHandlers,
-  useConfigurationInitialization,
-  usePublishHandler,
-  useResetLayoutHandler,
-  useSaveConfigurationHandler,
-  usePublishPanelHandlerWrappers,
-  useEditorInitialization,
-  useViewModeAdjustments
-} from '@/hooks/useSlotConfiguration';
-import {
-  HierarchicalSlotRenderer,
-  EditorToolbar,
-  AddSlotModal,
-  ResetLayoutModal,
-  FilePickerModalWrapper,
-  EditModeControls,
-  CodeModal,
-  PublishPanelToggle,
-  TimestampsRow,
-  ResponsiveContainer
-} from '@/components/editor/slot/SlotComponents';
+import aiEnhancementService from '@/services/aiEnhancementService';
 import {
   ProductGallerySlot,
   ProductInfoSlot,
@@ -54,437 +18,108 @@ import {
   ProductBreadcrumbsSlot,
   QuantitySelector
 } from '@/components/editor/slot/slotComponentsProduct';
-import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Main ProductSlotsEditor component - mirrors CategorySlotsEditor structure exactly
+// Product Editor Configuration
+const productEditorConfig = {
+  pageType: 'product',
+  pageName: 'Product Detail',
+  slotType: 'product_layout',
+  defaultViewMode: 'default',
+  viewModes: [
+    {
+      key: 'default',
+      label: 'Default View',
+      icon: Package
+    }
+  ],
+  slotComponents: {
+    ProductGallerySlot,
+    ProductInfoSlot,
+    ProductOptionsSlot,
+    ProductTabsSlot,
+    ProductRecommendationsSlot,
+    ProductBreadcrumbsSlot,
+    QuantitySelector,
+    // Render function fallback for unknown slots
+    defaultSlotRenderer: (slot, context) => {
+      // For container slots, render children if they exist
+      if (slot.type === 'container') {
+        return (
+          <div className={slot.className || "w-full"}>
+            {/* Container content would be rendered by HierarchicalSlotRenderer */}
+          </div>
+        );
+      }
+      return null;
+    }
+  },
+  generateContext: () => generateMockProductContext(),
+  cmsBlockPositions: ['product_above', 'product_below']
+};
+
+// AI Enhancement Configuration
+const productAiConfig = {
+  enabled: true,
+  onScreenshotAnalysis: async (file, layoutConfig, context) => {
+    try {
+      return await aiEnhancementService.analyzeScreenshot(file, layoutConfig, 'product', context);
+    } catch (error) {
+      console.error('AI analysis failed, using fallback:', error);
+      // Fallback response if AI service fails
+      return {
+        summary: "AI analysis temporarily unavailable. Using fallback analysis for product page layout.",
+        suggestions: [
+          "Update product gallery layout to match reference design",
+          "Adjust product information positioning and typography",
+          "Modify add-to-cart button styling and placement"
+        ],
+        confidence: 0.6
+      };
+    }
+  },
+  onStyleGeneration: async (analysis, layoutConfig) => {
+    try {
+      return await aiEnhancementService.generateStyles(analysis, layoutConfig, 'product');
+    } catch (error) {
+      console.error('AI style generation failed, using fallback:', error);
+      // Fallback style generation
+      const updatedSlots = { ...layoutConfig.slots };
+
+      // Apply basic style improvements
+      if (updatedSlots.product_gallery) {
+        updatedSlots.product_gallery.className = "rounded-lg shadow-lg bg-white p-4";
+      }
+
+      if (updatedSlots.product_info) {
+        updatedSlots.product_info.className = "space-y-4 p-6";
+      }
+
+      return {
+        slots: updatedSlots,
+        metadata: {
+          aiGenerated: false,
+          fallback: true,
+          analysisId: Date.now(),
+          confidence: analysis.confidence || 0.5
+        }
+      };
+    }
+  }
+};
+
 const ProductSlotsEditor = ({
   mode = 'edit',
   onSave,
-  viewMode: propViewMode = 'default'
+  viewMode = 'default'
 }) => {
-  // Store context for database operations
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
-  const [currentDragInfo, setCurrentDragInfo] = useState(null);
-
-  // State management - Initialize with empty config to avoid React error
-  const [productLayoutConfig, setProductLayoutConfig] = useState({
-    page_name: 'Product Detail',
-    slot_type: 'product_layout',
-    slots: {},
-    metadata: {
-      created: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      version: '1.0',
-      pageType: 'product'
-    },
-    cmsBlocks: []
-  });
-
-  // Basic editor state
-  const isDragOperationActiveRef = useRef(false);
-  const publishPanelRef = useRef(null);
-  const lastResizeEndTime = useRef(0);
-  const [viewMode, setViewMode] = useState(propViewMode);
-  const [selectedElement, setSelectedElement] = useState(null);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [showSlotBorders, setShowSlotBorders] = useState(true);
-  const [localSaveStatus, setLocalSaveStatus] = useState('');
-  const [currentViewport, setCurrentViewport] = useState('desktop');
-  const [isResizing, setIsResizing] = useState(false);
-  const [showAddSlotModal, setShowAddSlotModal] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const [showPublishPanel, setShowPublishPanel] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-
-  // Generate mock product context for preview
-  const [productContext, setProductContext] = useState(null);
-
-  useEffect(() => {
-    const mockContext = generateMockProductContext();
-    setProductContext(mockContext);
-  }, []);
-
-  // Use extracted hooks
-  const { formatTimeAgo } = useTimestampFormatting();
-  const {
-    draftConfig, setDraftConfig,
-    latestPublished, setLatestPublished,
-    setConfigurationStatus,
-    hasUnsavedChanges, setHasUnsavedChanges,
-    loadDraftStatus
-  } = useDraftStatusManagement(getSelectedStoreId(), 'product');
-
-  // Database configuration hook with generic functions and handler factories
-  const {
-    handleResetLayout: resetLayoutFromHook,
-    handlePublishConfiguration,
-    getDraftConfiguration,
-    handleSlotDrop: slotDropHandler,
-    handleSlotDelete: slotDeleteHandler,
-    handleGridResize: gridResizeHandler,
-    handleSlotHeightResize: slotHeightResizeHandler,
-    handleTextChange: textChangeHandler,
-    handleClassChange: classChangeHandler,
-    // Generic handler factories
-    createElementClickHandler,
-    createSaveConfigurationHandler
-  } = useSlotConfiguration({
-    pageType: 'product',
-    pageName: 'Product Detail',
-    slotType: 'product_layout',
-    selectedStore,
-    updateConfiguration: async (config) => {
-      const storeId = getSelectedStoreId();
-      if (storeId) {
-        await slotConfigurationService.saveConfiguration(storeId, config, 'product_layout');
-      }
-    },
-    onSave
-  });
-
-  // Configuration initialization hook
-  const { initializeConfig, configurationLoadedRef } = useConfigurationInitialization(
-    'product', 'Product Detail', 'product_layout', getSelectedStoreId, getDraftConfiguration, loadDraftStatus
-  );
-
-  // Use generic editor initialization
-  useEditorInitialization(initializeConfig, setProductLayoutConfig);
-
-  // Configuration change detection
-  const { updateLastSavedConfig } = useConfigurationChangeDetection(
-    configurationLoadedRef, productLayoutConfig, setHasUnsavedChanges
-  );
-
-  // Badge refresh
-  useBadgeRefresh(configurationLoadedRef, hasUnsavedChanges, 'product');
-
-  // Save configuration using the generic factory
-  const baseSaveConfiguration = createSaveConfigurationHandler(
-    productLayoutConfig,
-    setProductLayoutConfig,
-    setLocalSaveStatus,
-    getSelectedStoreId,
-    'product'
-  );
-
-  // Use generic save configuration handler
-  const { saveConfiguration } = useSaveConfigurationHandler(
-    'product',
-    baseSaveConfiguration,
-    productLayoutConfig,
-    {
-      setConfigurationStatus,
-      updateLastSavedConfig
-    }
-  );
-
-  // Click outside and preview mode handlers
-  useClickOutsidePanel(showPublishPanel, publishPanelRef, setShowPublishPanel);
-  usePreviewModeHandlers(showPreview, setIsSidebarVisible, setSelectedElement, setShowPublishPanel);
-
-  // Publish panel handlers
-  const basePublishPanelHandlers = usePublishPanelHandlers(
-    'product', getSelectedStoreId, getDraftConfiguration, setProductLayoutConfig, slotConfigurationService
-  );
-
-  // Use generic publish panel handler wrappers
-  const { handlePublishPanelPublished, handlePublishPanelReverted } = usePublishPanelHandlerWrappers(
-    'product',
-    basePublishPanelHandlers,
-    {
-      setIsSidebarVisible,
-      setSelectedElement,
-      setDraftConfig,
-      setConfigurationStatus,
-      setHasUnsavedChanges,
-      setLatestPublished,
-      setPageConfig: setProductLayoutConfig,
-      updateLastSavedConfig
-    }
-  );
-
-  // Handle element selection using generic factory
-  const handleElementClick = createElementClickHandler(
-    isResizing,
-    lastResizeEndTime,
-    setSelectedElement,
-    setIsSidebarVisible
-  );
-
-  // Clear selection handler
-  const handleClearSelection = useCallback(() => {
-    setSelectedElement(null);
-    setIsSidebarVisible(false);
-  }, []);
-
-  // Use the handlers from the main hook
-  const handleClassChange = classChangeHandler;
-  const handleInlineClassChange = classChangeHandler; // Same handler
-  const handleTextChange = textChangeHandler;
-
-  // Simple handler functions
-  const handleClickOutside = useCallback((event) => {
-    // Prevent closing when clicking on toolbar or panels
-    if (event.target.closest('.editor-toolbar') || event.target.closest('.publish-panel')) {
-      return;
-    }
-  }, []);
-
-  const handleResetLayout = resetLayoutFromHook;
-
-  // Use generic publish handler
-  const { handlePublish, publishStatus } = usePublishHandler(
-    'product',
-    productLayoutConfig,
-    handlePublishConfiguration,
-    {
-      setIsSidebarVisible,
-      setSelectedElement,
-      setHasUnsavedChanges,
-      setConfigurationStatus,
-      updateLastSavedConfig
-    }
-  );
-
-  if (!productContext) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">Loading product editor...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`min-h-screen bg-gray-50 ${
-      isSidebarVisible ? 'pr-80' : ''
-    }`} onClick={handleClickOutside}>
-      {/* Main Editor Area */}
-      <div className="flex flex-col">
-        {/* Editor Header */}
-        <div className="bg-white border-b px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center justify-between gap-4">
-              {/* View Mode Tabs */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('default')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'default'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  <Package className="w-4 h-4 inline mr-1.5" />
-                  Default View
-                </button>
-              </div>
-
-              {/* Edit mode controls */}
-              {mode === 'edit' && (
-                <EditModeControls
-                  localSaveStatus={localSaveStatus}
-                  publishStatus={publishStatus}
-                  saveConfiguration={saveConfiguration}
-                  onPublish={handlePublish}
-                  hasChanges={hasUnsavedChanges}
-                />
-              )}
-            </div>
-
-            {/* Preview and Publish Buttons - Far Right */}
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowPreview(!showPreview)}
-                variant={showPreview ? "default" : "outline"}
-                size="sm"
-                className="flex items-center gap-1.5"
-                title={showPreview ? "Exit Preview" : "Preview without editing tools"}
-              >
-                <Eye className="w-4 h-4" />
-                {showPreview ? "Exit Preview" : "Preview"}
-              </Button>
-
-              <PublishPanelToggle
-                hasUnsavedChanges={hasUnsavedChanges}
-                showPublishPanel={showPublishPanel}
-                onTogglePublishPanel={setShowPublishPanel}
-                onClosePublishPanel={() => {
-                  setIsSidebarVisible(false);
-                  setSelectedElement(null);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Product Layout - Hierarchical Structure */}
-        <div
-          className="bg-gray-50 product-page overflow-y-auto max-h-[calc(100vh-80px)]"
-          style={{ backgroundColor: '#f9fafb' }}
-        >
-          {/* Timestamps Row */}
-          <TimestampsRow
-            draftConfig={draftConfig}
-            latestPublished={latestPublished}
-            formatTimeAgo={formatTimeAgo}
-            currentViewport={currentViewport}
-            onViewportChange={setCurrentViewport}
-          />
-
-          {!showPreview && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <EditorToolbar
-                showSlotBorders={showSlotBorders}
-                onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
-                onResetLayout={() => setShowResetModal(true)}
-                onShowCode={() => setShowCodeModal(true)}
-                onAddSlot={() => setShowAddSlotModal(true)}
-              />
-            </div>
-          )}
-
-          <ResponsiveContainer
-            viewport={currentViewport}
-            className="bg-white"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-              {/* Flash Messages Area */}
-              <div id="flash-messages-area"></div>
-
-              {/* CMS Block - Product Above */}
-              <CmsBlockRenderer position="product_above" />
-
-              {/* Product Grid Layout */}
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {productLayoutConfig && productLayoutConfig.slots && Object.keys(productLayoutConfig.slots).length > 0 ? (
-                  <HierarchicalSlotRenderer
-                    slots={productLayoutConfig.slots}
-                    parentId={null}
-                    mode={showPreview ? 'view' : mode}
-                    viewMode={viewMode}
-                    showBorders={showPreview ? false : showSlotBorders}
-                    currentDragInfo={currentDragInfo}
-                    setCurrentDragInfo={setCurrentDragInfo}
-                    onElementClick={showPreview ? null : handleElementClick}
-                    onGridResize={showPreview ? null : gridResizeHandler}
-                    onSlotHeightResize={showPreview ? null : slotHeightResizeHandler}
-                    onSlotDrop={showPreview ? null : slotDropHandler}
-                    onSlotDelete={showPreview ? null : slotDeleteHandler}
-                    onResizeStart={showPreview ? null : () => setIsResizing(true)}
-                    onResizeEnd={showPreview ? null : () => {
-                      lastResizeEndTime.current = Date.now();
-                      setTimeout(() => setIsResizing(false), 100);
-                    }}
-                    selectedElementId={showPreview ? null : (selectedElement ? selectedElement.getAttribute('data-slot-id') : null)}
-                    setPageConfig={setProductLayoutConfig}
-                    saveConfiguration={saveConfiguration}
-                    context={productContext}
-                    slotComponents={{
-                      ProductGallerySlot,
-                      ProductInfoSlot,
-                      ProductOptionsSlot,
-                      ProductTabsSlot,
-                      ProductRecommendationsSlot,
-                      ProductBreadcrumbsSlot,
-                      QuantitySelector,
-                      // Render function fallback for unknown slots
-                      defaultSlotRenderer: (slot, context) => {
-                        // For container slots, render children if they exist
-                        if (slot.type === 'container') {
-                          return (
-                            <div className={slot.className || "w-full"}>
-                              {/* Container content would be rendered by HierarchicalSlotRenderer */}
-                            </div>
-                          );
-                        }
-
-                        return null;
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="col-span-12 text-center py-12 text-gray-500">
-                    {productLayoutConfig ? 'No slots configured' : 'Loading configuration...'}
-                  </div>
-                )}
-              </div>
-
-              {/* CMS Block - Product Below */}
-              <CmsBlockRenderer position="product_below" />
-            </div>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* EditorSidebar - only show in edit mode and not in preview */}
-      {mode === 'edit' && !showPreview && isSidebarVisible && selectedElement && (
-        <EditorSidebar
-          selectedElement={selectedElement}
-          slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
-          slotConfig={(() => {
-            const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
-            const config = productLayoutConfig && productLayoutConfig.slots && slotId ? productLayoutConfig.slots[slotId] : null;
-            return config;
-          })()}
-          allSlots={productLayoutConfig?.slots || {}}
-          onClearSelection={handleClearSelection}
-          onClassChange={handleClassChange}
-          onInlineClassChange={handleInlineClassChange}
-          onTextChange={handleTextChange}
-          isVisible={isSidebarVisible}
-        />
-      )}
-
-      {/* Floating Publish Panel */}
-      {showPublishPanel && (
-        <div ref={publishPanelRef} className="fixed top-20 right-6 z-50 w-80">
-          <PublishPanel
-            draftConfig={draftConfig}
-            storeId={getSelectedStoreId()}
-            pageType="product"
-            onPublished={handlePublishPanelPublished}
-            onReverted={handlePublishPanelReverted}
-            hasUnsavedChanges={hasUnsavedChanges}
-          />
-        </div>
-      )}
-
-      {/* Add Slot Modal */}
-      <AddSlotModal
-        isOpen={showAddSlotModal}
-        onClose={() => setShowAddSlotModal(false)}
-        onAddSlot={(slotData) => {
-          setShowAddSlotModal(false);
-        }}
-        pageType="product"
-      />
-
-      {/* Reset Layout Confirmation Modal */}
-      <ResetLayoutModal
-        isOpen={showResetModal}
-        onClose={() => setShowResetModal(false)}
-        onConfirm={handleResetLayout}
-        isResetting={localSaveStatus === 'saving'}
-      />
-
-      {/* Code Modal */}
-      <CodeModal
-        isOpen={showCodeModal}
-        onClose={() => setShowCodeModal(false)}
-        configuration={productLayoutConfig}
-        localSaveStatus={localSaveStatus}
-        onSave={async (newConfiguration) => {
-          setProductLayoutConfig(newConfiguration);
-          setHasUnsavedChanges(true);
-          await saveConfiguration(newConfiguration);
-          setShowCodeModal(false);
-        }}
-      />
-    </div>
+    <UnifiedSlotsEditor
+      config={productEditorConfig}
+      aiConfig={productAiConfig}
+      mode={mode}
+      onSave={onSave}
+      viewMode={viewMode}
+    />
   );
 };
 
