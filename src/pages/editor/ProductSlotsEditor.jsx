@@ -342,28 +342,6 @@ const ProductSlotsEditor = ({
     }
   );
 
-  // Component validation function
-  const validateSlotConfiguration = useCallback((config) => {
-    const errors = [];
-
-    if (!config.slots || Object.keys(config.slots).length === 0) {
-      errors.push('No slots defined');
-    }
-
-    // Check for required product page slots
-    const requiredSlots = ['product_title', 'product_price', 'add_to_cart_button'];
-    for (const slot of requiredSlots) {
-      if (!config.slots[slot]) {
-        errors.push(`Missing required slot: ${slot}`);
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }, []);
-
   if (!productContext) {
     return (
       <div className="flex items-center justify-center h-screen">
