@@ -220,18 +220,8 @@ export const productConfig = {
               isOnSale = false;
             }
 
-            // Update price with animation
+            // Update price content
             priceElement.innerHTML = price;
-            priceElement.style.opacity = '0';
-
-            // Animate in
-            const animation = utils.animate([
-              { opacity: 0, transform: 'scale(0.9)' },
-              { opacity: 1, transform: 'scale(1)' }
-            ], {
-              duration: 300,
-              easing: 'ease-out'
-            });
 
             // Add sale indicator and savings
             if (isOnSale && !element.querySelector('.sale-indicator')) {

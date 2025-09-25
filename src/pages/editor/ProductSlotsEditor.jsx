@@ -11,6 +11,27 @@ import { generateMockProductContext } from '@/utils/mockProductData';
 import aiEnhancementService from '@/services/aiEnhancementService';
 // Unified components are now handled by UnifiedSlotRenderer automatically
 
+// Create default slots function for product layout
+const createDefaultSlots = async () => {
+  try {
+    console.log('🔧 LOADING PRODUCT CONFIG FROM createDefaultSlots...');
+    const configModule = await import('@/components/editor/slot/configs/product-config');
+
+    const productConfig = configModule.productConfig || configModule.default;
+
+    if (!productConfig || !productConfig.slots) {
+      console.error('❌ Invalid product config - no slots found');
+      return null;
+    }
+
+    console.log('✅ Successfully loaded product config with slots:', Object.keys(productConfig.slots));
+    return productConfig.slots;
+  } catch (error) {
+    console.error('❌ Failed to load product config:', error);
+    return null;
+  }
+};
+
 // Product Editor Configuration
 const productEditorConfig = {
   pageType: 'product',
@@ -26,6 +47,7 @@ const productEditorConfig = {
   ],
   // slotComponents are now handled by UnifiedSlotRenderer's component registry
   generateContext: () => generateMockProductContext(),
+  createDefaultSlots,
   cmsBlockPositions: ['product_above', 'product_below']
 };
 
