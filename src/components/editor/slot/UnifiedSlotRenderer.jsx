@@ -58,11 +58,11 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     };
   }, [slot.script, context, productContext, variableContext]);
 
-  // Special handling for price-related slots
-  const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(slot.id);
-
   // Don't show placeholder for intentionally empty content (like conditional price displays)
   let textContent = processedContent;
+
+  // Special handling for price-related slots
+  const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(slot.id);
 
   // Debug: Let's see what we're actually getting
   if (isPriceSlot || slot.id === 'stock_status') {
@@ -166,10 +166,19 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles } = slot;
 
+    // Check if this is a price-related slot
+    const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(id);
+
     // Prepare context for variable processing
     const variableContext = context === 'editor' ?
       generateDemoData('product') :
       { product: productContext.product, category: categoryData, cart: cartData };
+
+    // Debug: Let's see what product data we have
+    if (isPriceSlot || id === 'stock_status') {
+      console.log(`Slot ${id} - variableContext.product:`, variableContext.product);
+      console.log(`Slot ${id} - original content:`, content);
+    }
 
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
