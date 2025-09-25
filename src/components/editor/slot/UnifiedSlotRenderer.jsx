@@ -64,19 +64,22 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Don't show placeholder for intentionally empty content (like conditional price displays)
   let textContent = processedContent;
 
-  if (context === 'editor' && !processedContent && isPriceSlot) {
-    // Show example price in editor for price slots
-    if (slot.id === 'product_price') {
-      textContent = '$99.99';
-    } else if (slot.id === 'original_price') {
-      textContent = '$129.99';
+  if (context === 'editor' && (!processedContent || processedContent === '')) {
+    if (isPriceSlot) {
+      // Show example price in editor for price slots
+      if (slot.id === 'product_price') {
+        textContent = '<span data-main-price class="main-price">$99.99</span>';
+      } else if (slot.id === 'original_price') {
+        textContent = '<span data-original-price class="original-price">$129.99</span>';
+      }
+    } else if (slot.id === 'stock_status') {
+      // Show example stock status in editor
+      textContent = '<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800" data-bind="stock-status">In Stock</span>';
+    } else {
+      textContent = '[Text placeholder]';
     }
-  } else if (!processedContent) {
-    textContent = '[Text placeholder]';
-  }
-
-  // Don't render empty price slots in storefront
-  if (context === 'storefront' && textContent === '') {
+  } else if (context === 'storefront' && (!processedContent || processedContent === '')) {
+    // Don't render empty slots in storefront - return null instead of showing placeholder
     return null;
   }
 

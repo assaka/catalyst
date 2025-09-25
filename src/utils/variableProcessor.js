@@ -159,14 +159,14 @@ function formatValue(value, path, context, pageData) {
 
     // Check if we already have a formatted version
     if (product.compare_price_formatted && typeof product.compare_price_formatted === 'string' &&
-        product.compare_price_formatted !== '[Text placeholder]') {
+        product.compare_price_formatted !== '[Text placeholder]' && product.compare_price_formatted !== '') {
       return product.compare_price_formatted;
     }
 
     // Otherwise format the raw compare_price with currency
     const currency = context.settings?.currency_symbol || '$';
     const price = typeof product.compare_price === 'number' ? product.compare_price : parseFloat(product.compare_price);
-    if (!isNaN(price)) {
+    if (!isNaN(price) && price > 0) {
       return `${currency}${price.toFixed(2)}`;
     }
 
@@ -182,14 +182,14 @@ function formatValue(value, path, context, pageData) {
 
     // Check if we already have a formatted version
     if (product.price_formatted && typeof product.price_formatted === 'string' &&
-        product.price_formatted !== '[Text placeholder]') {
+        product.price_formatted !== '[Text placeholder]' && product.price_formatted !== '') {
       return product.price_formatted;
     }
 
     // Otherwise format the raw price with currency
     const currency = context.settings?.currency_symbol || '$';
     const price = typeof product.price === 'number' ? product.price : parseFloat(product.price);
-    if (!isNaN(price)) {
+    if (!isNaN(price) && price > 0) {
       return `${currency}${price.toFixed(2)}`;
     }
 
