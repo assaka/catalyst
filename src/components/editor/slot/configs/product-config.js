@@ -364,7 +364,7 @@ export const productConfig = {
       id: 'add_to_cart_button',
       type: 'button',
       content: 'Add to Cart',
-      className: 'w-full h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium',
+      className: 'flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium',
       parentClassName: '',
       styles: {},
       parentId: 'buttons_container',

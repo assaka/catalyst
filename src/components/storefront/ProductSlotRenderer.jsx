@@ -658,6 +658,15 @@ export function ProductSlotRenderer({
   return (
     <>
       {sortedSlots.map((slot) => {
+        // Check if colSpan is empty object - if so, skip wrapper div
+        const isEmptyColSpan = typeof slot.colSpan === 'object' &&
+                               slot.colSpan !== null &&
+                               Object.keys(slot.colSpan).length === 0;
+
+        if (isEmptyColSpan) {
+          return <React.Fragment key={slot.id}>{renderSlotContent(slot)}</React.Fragment>;
+        }
+
         // Handle number, object with viewMode, and Tailwind responsive classes
         let colSpanClass = 'col-span-12'; // default Tailwind class
         let gridColumn = 'span 12 / span 12'; // default grid style
