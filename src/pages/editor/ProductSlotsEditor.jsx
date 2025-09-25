@@ -49,7 +49,6 @@ import {
   ProductGallerySlot,
   ProductInfoSlot,
   ProductOptionsSlot,
-  ProductActionsSlot,
   ProductTabsSlot,
   ProductRecommendationsSlot,
   ProductBreadcrumbsSlot
@@ -505,7 +504,6 @@ const ProductSlotsEditor = ({
                       ProductGallerySlot,
                       ProductInfoSlot,
                       ProductOptionsSlot,
-                      ProductActionsSlot,
                       ProductTabsSlot,
                       ProductRecommendationsSlot,
                       ProductBreadcrumbsSlot,
