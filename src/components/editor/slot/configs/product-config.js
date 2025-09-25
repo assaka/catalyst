@@ -247,7 +247,7 @@ export const productConfig = {
     stock_status: {
       id: 'stock_status',
       type: 'text',
-      content: '{{product.stock_status}}',
+      content: `<span class="stock-badge">{{#if product.stock_status}}{{product.stock_status}}{{else}}{{#if product.stock_quantity}}{{#if product.stock_quantity > 0}}In Stock{{else}}Out of Stock{{/if}}{{else}}In Stock{{/if}}{{/if}}</span>`,
       className: 'w-fit inline-flex items-center px-2 py-1 rounded-full text-xs {{#if product.stock_quantity}}{{#if product.stock_quantity > 0}}bg-green-100 text-green-800{{else}}bg-red-100 text-red-800{{/if}}{{else}}bg-green-100 text-green-800{{/if}}',
       parentClassName: '',
       styles: {},
@@ -263,7 +263,7 @@ export const productConfig = {
     product_sku: {
       id: 'product_sku',
       type: 'text',
-      content: 'SKU: {{product.sku}}',
+      content: '{{#if product.sku}}<span class="product-sku">SKU: {{product.sku}}</span>{{/if}}',
       className: 'w-fit text-sm text-gray-600',
       parentClassName: '',
       styles: {},

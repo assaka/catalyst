@@ -605,17 +605,21 @@ export function GridColumn({
     <div
       className={`${
         mode === 'edit'
-          ? `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
-              isDragOver
-                ? 'border-blue-500 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
-              isDragging
-                ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
-              isHovered
-                ? `border-blue-500 ${isNested ? 'border' : 'border-2'} border-dashed shadow-md shadow-blue-200/40`
-                : showBorders
-                ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
-                : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
-            } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
+          ? `${
+              isSelected
+                ? 'border-2 border-blue-500 bg-blue-50/10 rounded-lg overflow-hidden transition-all duration-200 p-2'
+                : `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : 'border border-transparent'} rounded-lg overflow-hidden transition-all duration-200 ${
+                    isDragOver
+                      ? 'border-blue-500 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
+                    isDragging
+                      ? 'border-blue-600 bg-blue-50/60 shadow-xl shadow-blue-200/60 ring-2 ring-blue-200 opacity-80' :
+                    isHovered
+                      ? `border-blue-500 ${isNested ? 'border' : 'border-2'} border-dashed shadow-md shadow-blue-200/40`
+                      : showBorders
+                      ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
+                      : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
+                  } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
+            }`
           : 'overflow-hidden'
       } relative responsive-slot ${colSpanClass}`}
       data-col-span={colSpan}
@@ -639,9 +643,15 @@ export function GridColumn({
           onElementClick(slotId, e.currentTarget);
         }
       }}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={() => {
+        if (!isSelected) {
+          setIsHovered(true);
+        }
+      }}
       onMouseLeave={() => {
-        setIsHovered(false);
+        if (!isSelected) {
+          setIsHovered(false);
+        }
         if (!isDragging) {
           setIsDragOver(false);
           setIsDragActive(false);
