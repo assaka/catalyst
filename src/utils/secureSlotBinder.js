@@ -441,7 +441,9 @@ export class ProductDetailController {
     console.log('ProductDetailController updating stock display:', {
       stockLabel,
       stockVariant,
-      foundElements: document.querySelectorAll('[data-bind="stock-status"]').length
+      foundElements: document.querySelectorAll('[data-bind="stock-status"]').length,
+      productStockQuantity: product.stock_quantity,
+      lowStockThreshold: product.low_stock_threshold || settings?.display_low_stock_threshold
     });
 
     // Update all stock status displays
