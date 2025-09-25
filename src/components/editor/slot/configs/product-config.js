@@ -1,4 +1,4 @@
-import { Package, Image, ShoppingCart, Info, FileText, Star } from 'lucide-react';
+import { Package } from 'lucide-react';
 
 // Product Page Configuration with hierarchical support
 export const productConfig = {

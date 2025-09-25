@@ -81,11 +81,7 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
 
   return (
     <div ref={elementRef} className={processedClassName} style={styles}>
-      {context === 'storefront' ? (
-        <span dangerouslySetInnerHTML={{ __html: textContent }} />
-      ) : (
-        <span>{textContent}</span>
-      )}
+      <span dangerouslySetInnerHTML={{ __html: textContent }} />
     </div>
   );
 };
@@ -187,6 +183,9 @@ export function UnifiedSlotRenderer({
     if (type === 'button') {
       const buttonContent = processedContent || 'Button';
 
+      // Check if button content contains HTML
+      const isHtmlContent = buttonContent.includes('<') && buttonContent.includes('>');
+
       if (context === 'storefront') {
         // Storefront: Full functionality
         return (
@@ -204,14 +203,22 @@ export function UnifiedSlotRenderer({
             }}
             disabled={id === 'add_to_cart_button' && !productContext.canAddToCart}
           >
-            {buttonContent}
+            {isHtmlContent ? (
+              <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
+            ) : (
+              buttonContent
+            )}
           </Button>
         );
       } else {
         // Editor: Visual preview only
         return (
           <button className={processedClassName} style={styles}>
-            {buttonContent}
+            {isHtmlContent ? (
+              <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
+            ) : (
+              buttonContent
+            )}
           </button>
         );
       }

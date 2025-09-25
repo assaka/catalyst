@@ -42,7 +42,7 @@ const sanitizerConfig = {
   ALLOWED_TAGS,
   ALLOWED_ATTR: ALLOWED_ATTRIBUTES,
   ALLOW_DATA_ATTR: true,
-  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
   ADD_TAGS: [],
   ADD_ATTR: [],
   FORBID_TAGS: ['script', 'object', 'embed', 'iframe', 'frame', 'frameset'],
@@ -123,7 +123,7 @@ function isAllowedAction(action) {
  */
 function isAllowedSelector(selector) {
   // Only allow simple selectors with data attributes, IDs, and classes
-  const safePattern = /^[a-zA-Z0-9\[\]="'\-_\s.#:]+$/;
+  const safePattern = /^[a-zA-Z0-9[\]="'-_\s.#:]+$/;
 
   // Block potentially dangerous selectors
   const dangerousPatterns = [

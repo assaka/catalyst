@@ -33,6 +33,7 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { productConfig } from '@/components/editor/slot/configs/product-config';
+import { initializeProductSlotBinding } from '@/utils/secureSlotBinder';
 
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
@@ -203,6 +204,33 @@ export default function ProductDetail() {
       loadProductLayoutConfig();
     }
   }, [store?.id, storeLoading]);
+
+  // Initialize secure slot binding after product and configuration are loaded
+  useEffect(() => {
+    if (product && store && settings && configLoaded) {
+      const productContext = {
+        product,
+        store,
+        settings,
+        handleAddToCart: (cartData) => {
+          console.log('Add to cart:', cartData);
+          // TODO: Implement actual add to cart logic
+        },
+        handleWishlistToggle: (productToToggle) => {
+          console.log('Wishlist toggle:', productToToggle);
+          // TODO: Implement actual wishlist logic
+        }
+      };
+
+      const controller = initializeProductSlotBinding(productContext);
+
+      return () => {
+        if (controller && controller.destroy) {
+          controller.destroy();
+        }
+      };
+    }
+  }, [product, store, settings, configLoaded]);
 
   const loadProductData = async () => {
     try {
@@ -681,328 +709,7 @@ export default function ProductDetail() {
           />
         </div>
       ) : null
-      )}
-
-      {/* CMS Block - Product Below */}
-      <CmsBlockRenderer position="product_below" />
-
-    </div>
-  );
-}
-            />
-            {/* Product labels positioned on top of image (labels now from useStore) */}
-            {(() => {
-              // Filter labels that match the product conditions
-              const matchingLabels = productLabels?.filter((label) => {
-                let shouldShow = true; // Assume true, prove false (AND logic)
-
-                if (label.conditions && Object.keys(label.conditions).length > 0) {
-                  // Check product_ids condition
-                  if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
-                    if (!label.conditions.product_ids.includes(product.id)) {
-                      shouldShow = false;
-                    }
-                  }
-
-                  // Check category_ids condition
-                  if (shouldShow && label.conditions.category_ids && Array.isArray(label.conditions.category_ids) && label.conditions.category_ids.length > 0) {
-                    if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
-                      shouldShow = false;
-                    }
-                  }
-
-                  // Check price conditions
-                  if (shouldShow && label.conditions.price_conditions) {
-                    const conditions = label.conditions.price_conditions;
-                    if (conditions.has_sale_price) {
-                      const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0;
-                      const pricesAreDifferent = hasComparePrice && parseFloat(product.compare_price) !== parseFloat(product.price);
-                      if (!pricesAreDifferent) {
-                        shouldShow = false;
-                      }
-                    }
-                    if (shouldShow && conditions.is_new && conditions.days_since_created) {
-                      const productCreatedDate = new Date(product.created_date);
-                      const now = new Date();
-                      const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
-                      if (daysSince > conditions.days_since_created) {
-                        shouldShow = false;
-                      }
-                    }
-                  }
-
-                  // Check attribute conditions
-                  if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
-                    const attributeMatch = label.conditions.attribute_conditions.every(cond => {
-                      if (product.attributes && product.attributes[cond.attribute_code]) {
-                        const productAttributeValue = String(product.attributes[cond.attribute_code]).toLowerCase();
-                        const conditionValue = String(cond.attribute_value).toLowerCase();
-                        return productAttributeValue === conditionValue;
-                      }
-                      return false;
-                    });
-                    if (!attributeMatch) {
-                      shouldShow = false;
-                    }
-                  }
-                }
-
-                return shouldShow;
-              }) || [];
-
-              // Group labels by position and show one label per position
-              const labelsByPosition = matchingLabels.reduce((acc, label) => {
-                const position = label.position || 'top-right';
-                if (!acc[position]) {
-                  acc[position] = [];
-                }
-                acc[position].push(label);
-                return acc;
-              }, {});
-
-              // For each position, sort by sort_order (ASC) then by priority (DESC) and take the first one
-              const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
-                const sortedLabels = positionLabels.sort((a, b) => {
-                  const sortOrderA = a.sort_order || 0;
-                  const sortOrderB = b.sort_order || 0;
-                  if (sortOrderA !== sortOrderB) {
-                    return sortOrderA - sortOrderB; // ASC
-                  }
-                  const priorityA = a.priority || 0;
-                  const priorityB = b.priority || 0;
-                  return priorityB - priorityA; // DESC
-                });
-                return sortedLabels[0]; // Return highest priority label for this position
-              }).filter(Boolean);
-
-              // Show all labels (one per position)
-              return labelsToShow.map(label => (
-                <ProductLabelComponent
-                  key={label.id}
-                  label={label}
-                />
-              ));
-            })()}
-          </div>
-          {product.images && product.images.length > 1 && (
-            <div className="flex space-x-2 overflow-x-auto">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveImage(index)}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                    activeImage === index ? 'border-blue-500' : 'border-gray-300'
-                  }`}
-                >
-                  <img 
-                    src={getImageUrlByIndex(product.images, index)} 
-                    alt={`${product.name} ${index + 1}`} 
-                    className="w-full h-full object-cover" 
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Product Info */}
-        <div className="space-y-6">
-          <div>
-            <CmsBlockRenderer position="product_above_title" />
-            <h1 className="text-3xl font-bold mb-2">{product?.name}</h1>
-            <CmsBlockRenderer position="product_below_title" />
-            <CmsBlockRenderer position="product_above_price" />
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="flex items-baseline space-x-2">
-                {/* Inverted price logic to always show lowest price first */}
-                {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
-                  <>
-                    <span className="text-3xl font-bold text-red-600">
-                      {formatDisplayPrice(
-                        Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                        settings?.hide_currency_product ? '' : currencySymbol,
-                        store,
-                        taxes,
-                        selectedCountry
-                      )}
-                    </span>
-                    <span className="text-xl text-gray-500 line-through">
-                      {formatDisplayPrice(
-                        Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                        settings?.hide_currency_product ? '' : currencySymbol,
-                        store,
-                        taxes,
-                        selectedCountry
-                      )}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-3xl font-bold text-green-600">
-                    {formatDisplayPrice(
-                      parseFloat(product.price || 0),
-                      settings?.hide_currency_product ? '' : currencySymbol,
-                      store,
-                      taxes,
-                      selectedCountry
-                    )}
-                  </span>
-                )}
-              </div>
-            </div>
-            <CmsBlockRenderer position="product_below_price" />
-            {/* Stock status badge, updated to reflect track_stock setting */}
-            {getStockLabel(product) && (
-              <Badge variant={getStockVariant(product)} className="mb-2">
-                {getStockLabel(product)}
-              </Badge>
-            )}
-            {product?.sku && (
-              <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-            )}
-          </div>
-
-
-          {/* Custom Options Display - Now handled by the CustomOptions component */}
-          <CustomOptions
-            product={product}
-            onSelectionChange={handleOptionChange}
-            selectedOptions={selectedOptions} // Pass selected options to the component for UI
-            store={store} // Pass store for rule evaluation within CustomOptions
-            settings={settings} // Pass settings for currency symbol or other display logic
-          />
-
-          {/* CMS Block Renderer for "above add to cart" position */}
-          <CmsBlockRenderer position="product_above_cart_button" />
-
-          {/* Total Price - positioned above Add to Cart button */}
-          {(getTotalPrice() > parseFloat(product.price) * quantity || selectedOptions.length > 0) && (
-            <div className="text-lg font-semibold text-gray-800 mb-4">
-              Total Price: {currencySymbol}{getTotalPrice().toFixed(2)}
-              {selectedOptions.length > 0 && (
-                <span className="text-sm text-gray-500 block">(includes selected options)</span>
-              )}
-            </div>
-          )}
-
-          {/* Quantity, Add to Cart, and Wishlist now handled by slot system */}
-
-          {/* CMS Block Renderer for "below add to cart" position */}
-          <CmsBlockRenderer position="product_below_cart_button" />
-        </div>
-      </div>
-
-      {/* Product Tabs */}
-      {productTabs.length > 0 && (
-        <div className="mt-12 border-t pt-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {productTabs.map((tab, index) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(index)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === index
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {tab.name}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          <div className="mt-6">
-            {productTabs[activeTab] && (
-              <div className="prose max-w-none">
-                {/* Text content tab */}
-                {productTabs[activeTab].tab_type === 'text' && productTabs[activeTab].content && (
-                  <div dangerouslySetInnerHTML={{ __html: productTabs[activeTab].content }} />
-                )}
-                
-                {/* Description tab */}
-                {productTabs[activeTab].tab_type === 'description' && product?.description && (
-                  <>
-                    <CmsBlockRenderer position="product_above_description" />
-                    <div dangerouslySetInnerHTML={{ __html: product.description }} />
-                    <CmsBlockRenderer position="product_below_description" />
-                  </>
-                )}
-                
-                {/* Attributes tab */}
-                {productTabs[activeTab].tab_type === 'attributes' && (
-                  product?.attributes && Object.keys(product.attributes).length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(product.attributes).map(([key, value]) => (
-                        <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                          <span>
-                            {value && typeof value === 'object' && (value.url || value.name) ? (
-                              <div className="flex space-x-2">
-                                {value.url && (
-                                  <>
-                                    <a
-                                      href={value.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline flex items-center"
-                                    >
-                                      <Eye className="w-4 h-4 mr-1" />
-                                      View
-                                    </a>
-                                    <a
-                                      href={value.url}
-                                      download={value.name || 'file'}
-                                      className="text-green-600 hover:underline flex items-center"
-                                    >
-                                      <Download className="w-4 h-4 mr-1" />
-                                      Download
-                                    </a>
-                                  </>
-                                )}
-                              </div>
-                            ) : (
-                              String(value ?? '')
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No additional attributes available for this product.</p>
-                  )
-                )}
-                
-                {/* Attribute sets tab */}
-                {productTabs[activeTab].tab_type === 'attribute_sets' && (
-                  <div className="text-gray-500">
-                    Attribute sets functionality will be implemented to show attributes from the selected attribute sets.
-                  </div>
-                )}
-                
-                {/* Fallback for empty content */}
-                {!productTabs[activeTab].content && 
-                 productTabs[activeTab].tab_type === 'text' && (
-                  <p className="text-gray-500">No content available for this tab.</p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-          <div className="mt-16">
-            {/* CMS Block Renderer for "above product tabs" position */}
-            <CmsBlockRenderer position="above_product_tabs" page="storefront_product" storeId={store?.id} />
-            {/* Recommended Products component */}
-            <RecommendedProducts
-              product={product}
-              storeId={store?.id}
-              selectedOptions={selectedOptions}
-            />
-          </div>
-        </div>
-      )}
+      }
 
       {/* CMS Block - Product Below */}
       <CmsBlockRenderer position="product_below" />
