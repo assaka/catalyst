@@ -75,6 +75,11 @@ function processLoops(content, context, pageData) {
   return content.replace(loopRegex, (match, arrayPath, template) => {
     const array = getNestedValue(arrayPath, context, pageData);
 
+    // Debug loop processing
+    if (arrayPath === 'product.labels') {
+      console.log('Processing product.labels loop:', { array, arrayPath, hasProduct: !!(context.product || pageData.product) });
+    }
+
     if (!Array.isArray(array)) {
       return '';
     }
