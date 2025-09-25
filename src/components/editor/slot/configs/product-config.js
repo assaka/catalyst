@@ -160,8 +160,8 @@ export const productConfig = {
     product_title: {
       id: 'product_title',
       type: 'text',
-      content: '{{product.name}}',
-      className: 'w-fit text-3xl font-bold text-gray-900 mb-2',
+      content: '<h1 data-product-title class="text-3xl font-bold mb-2">{{product.name}}</h1>',
+      className: 'w-fit text-gray-900',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
