@@ -35,13 +35,9 @@ export default function ThemeLayout() {
         }
     }, [selectedStore]);
 
-    // Debug: Log when store settings change
+    // Update UI when store settings change
     useEffect(() => {
-        if (store?.settings?.product_grid) {
-            console.log('ThemeLayout - Store settings updated:', store.settings.product_grid);
-            console.log('ThemeLayout - Current rows value:', store.settings.product_grid.rows);
-            console.log('ThemeLayout - Current lg value:', store.settings.product_grid.breakpoints?.lg);
-        }
+        // Trigger re-render when product_grid settings change
     }, [store?.settings?.product_grid]);
 
     const loadStore = async () => {
@@ -52,7 +48,6 @@ export default function ThemeLayout() {
             const actualStoreId = (storeId && storeId !== 'undefined') ? storeId : selectedStore?.id;
             
             if (!actualStoreId || actualStoreId === 'undefined') {
-                console.warn("No valid store selected");
                 setLoading(false);
                 return;
             }
@@ -66,11 +61,7 @@ export default function ThemeLayout() {
             // Handle nested data structure - settings are in data.settings, not settings
             const fullStore = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
 
-            // Debug: Log what we're loading from database
-            console.log('ThemeLayout - Raw store response from DB:', fullStoreResponse_normalized);
-            console.log('ThemeLayout - Normalized store from DB:', fullStore);
-            console.log('ThemeLayout - Raw settings from DB:', fullStore?.settings);
-            console.log('ThemeLayout - Raw product_grid from DB:', fullStore?.settings?.product_grid);
+            // Handle database response structure
 
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
@@ -111,10 +102,6 @@ export default function ThemeLayout() {
                 settings
             };
 
-            console.log('ThemeLayout - Final merged settings:', settings);
-            console.log('ThemeLayout - Final product_grid config:', settings.product_grid);
-            console.log('ThemeLayout - Final store object:', finalStore);
-
             setStore(finalStore);
         } catch (error) {
             console.error("Failed to load store:", error);
@@ -139,8 +126,6 @@ export default function ThemeLayout() {
     };
 
     const handleStandardBreakpointChange = (breakpoint, columns) => {
-        console.log(`ThemeLayout - Changing ${breakpoint} to ${columns} columns`);
-
         setStore(prev => {
             const newStore = {
                 ...prev,
@@ -158,14 +143,11 @@ export default function ThemeLayout() {
                 }
             };
 
-            console.log('ThemeLayout - New store state:', newStore.settings.product_grid);
             return newStore;
         });
     };
 
     const handleRowsChange = (rows) => {
-        console.log(`ThemeLayout - Changing rows to ${rows}`);
-
         setStore(prev => ({
             ...prev,
             settings: {
@@ -337,10 +319,6 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
-            // Debug: Log what we're about to save
-            console.log('ThemeLayout - Saving settings:', store.settings);
-            console.log('ThemeLayout - Product grid config:', store.settings.product_grid);
-
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
@@ -366,14 +344,12 @@ export default function ThemeLayout() {
                 });
                 
             } catch (e) {
-                console.warn('Failed to clear cache from storage:', e);
+                // Cache clearing failed, but continue
             }
             
             setFlashMessage({ type: 'success', message: 'Settings saved successfully! Visit a category page to see changes.' });
             
         } catch (error) {
-            console.error("Failed to save settings:", error);
-            console.error("Error details:", error.response?.data || error.message);
             setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.response?.data?.message || error.message}` });
         } finally {
             setSaving(false);
@@ -624,10 +600,7 @@ export default function ThemeLayout() {
                                             <Label htmlFor="grid_lg">Large (lg)</Label>
                                             <Select
                                                 value={String(store.settings.product_grid?.breakpoints?.lg || 2)}
-                                                onValueChange={(value) => {
-                                                    console.log('ThemeLayout - lg dropdown changed to:', value, 'current lg value:', store.settings.product_grid?.breakpoints?.lg);
-                                                    handleStandardBreakpointChange('lg', parseInt(value));
-                                                }}
+                                                onValueChange={(value) => handleStandardBreakpointChange('lg', parseInt(value))}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
@@ -692,10 +665,7 @@ export default function ThemeLayout() {
                                         <div className="w-32">
                                             <Select
                                                 value={String(store.settings.product_grid?.rows || 4)}
-                                                onValueChange={(value) => {
-                                                    console.log('ThemeLayout - Rows dropdown changed to:', value);
-                                                    handleRowsChange(parseInt(value));
-                                                }}
+                                                onValueChange={(value) => handleRowsChange(parseInt(value))}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />

@@ -84,7 +84,7 @@ const AIContextWindowPage = () => {
       <div className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-800">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            AI Context Window
+            Editable Pages
           </h1>
         </div>
 

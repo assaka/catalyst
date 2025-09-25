@@ -30,9 +30,6 @@ export function CategorySlotRenderer({
     // Use store settings for grid configuration
     const gridConfig = settings?.product_grid;
 
-    // Debug: Log the grid configuration
-    console.log('CategorySlotRenderer - Grid Config:', gridConfig);
-
     if (gridConfig) {
       let classes = ['grid', 'gap-4'];
       const breakpoints = gridConfig.breakpoints || {};
@@ -119,10 +116,7 @@ export function CategorySlotRenderer({
   // Sort slots using grid coordinates for precise positioning
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
-  // Only log final render order for products_container
-  if (parentId === 'products_container') {
-    console.log('🎬 Rendering order:', sortedSlots.map(s => `${s.id}(row${s.position?.row})`).join(' -> '));
-  }
+  // Sort completed
 
   // Helper function to get child slots of a parent
   const renderChildSlots = (allSlots, parentId) => {
@@ -349,15 +343,6 @@ export function CategorySlotRenderer({
       const startIndex = (currentPageNum - 1) * itemsPerPage + 1;
       const endIndex = Math.min(startIndex + (products?.length || 0) - 1, totalProducts);
 
-      console.log(`CategorySlotRenderer - Product count calculation:`, {
-        currentPage: currentPageNum,
-        itemsPerPage,
-        totalProducts,
-        productsOnPage: products?.length,
-        startIndex,
-        endIndex
-      });
-
       return wrapWithParentClass(
         <div className={className} style={styles}>
           {totalProducts > 0 ? (
@@ -447,10 +432,6 @@ export function CategorySlotRenderer({
       const dynamicGridClass = getDynamicGridClasses(slot);
       const finalClassName = className || dynamicGridClass;
 
-      console.log('🎯 Product Items Slot - className:', className);
-      console.log('🎯 Product Items Slot - dynamicGridClass:', dynamicGridClass);
-      console.log('🎯 Product Items Slot - finalClassName:', finalClassName);
-
       // Create slot configuration object for ProductItemCard
       const slotConfig = {
         productTemplate: slots?.product_template || {},
@@ -475,7 +456,7 @@ export function CategorySlotRenderer({
               viewMode={viewMode}
               slotConfig={slotConfig}
               onAddToCartStateChange={(isAdding) => {
-                console.log('🛒 Product items - Add to cart state:', isAdding);
+                // Handle add to cart state change
               }}
             />
           ))}
@@ -517,7 +498,7 @@ export function CategorySlotRenderer({
               viewMode={viewMode}
               slotConfig={slotConfig}
               onAddToCartStateChange={(isAdding) => {
-                console.log('🛒 Product item card - Add to cart state:', isAdding);
+                // Handle add to cart state change
               }}
             />
           ))}

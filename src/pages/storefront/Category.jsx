@@ -90,7 +90,6 @@ export default function Category() {
     const handleResize = () => {
       const newItemsPerPage = calculateItemsPerPage();
       if (newItemsPerPage !== itemsPerPage) {
-        console.log(`Category.jsx - Breakpoint changed, updating itemsPerPage from ${itemsPerPage} to ${newItemsPerPage}`);
         setItemsPerPage(newItemsPerPage);
         // Reset to page 1 when items per page changes
         setPage(1);
@@ -101,7 +100,6 @@ export default function Category() {
     if (settings?.product_grid) {
       const newItemsPerPage = calculateItemsPerPage();
       if (newItemsPerPage !== itemsPerPage) {
-        console.log(`Category.jsx - Settings changed, updating itemsPerPage from ${itemsPerPage} to ${newItemsPerPage}`);
         setItemsPerPage(newItemsPerPage);
         setPage(1);
       }
@@ -191,10 +189,6 @@ export default function Category() {
   // Generate grid classes from store settings
   const getGridClasses = () => {
     const gridConfig = settings?.product_grid;
-
-    // Debug: Log the grid configuration
-    console.log('Category.jsx - Grid Config:', gridConfig);
-    console.log('Category.jsx - Items per page:', itemsPerPage);
 
     if (gridConfig) {
       let classes = [];

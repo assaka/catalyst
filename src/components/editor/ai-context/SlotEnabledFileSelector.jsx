@@ -269,7 +269,7 @@ const SlotEnabledFileSelector = ({
 
       <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 px-4 py-1 h-10">
         <h3 className="text-md font-semibold text-gray-900 dark:text-gray-100">
-          Editable Pages
+          Select to customize
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
@@ -277,10 +277,6 @@ const SlotEnabledFileSelector = ({
           </Button>
         </div>
       </div>
-      <div className="text-sm px-4 py-2">
-        Select to customize
-      </div>
-
       {/* File List */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-2">
