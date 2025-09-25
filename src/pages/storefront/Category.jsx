@@ -626,6 +626,7 @@ export default function Category() {
     sortOption: currentSort,
     currentPage,
     totalPages,
+    itemsPerPage, // Add dynamic items per page
     subcategories: [],
     breadcrumbs: [],
     selectedFilters: activeFilters,

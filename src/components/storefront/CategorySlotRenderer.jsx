@@ -84,6 +84,7 @@ export function CategorySlotRenderer({
     searchQuery,
     currentPage,
     totalPages,
+    itemsPerPage = 12, // Dynamic items per page
     subcategories = [],
     breadcrumbs = [],
     selectedFilters = {},
@@ -329,8 +330,33 @@ export function CategorySlotRenderer({
     // Product count info
     if (id === 'product_count_info') {
       const totalProducts = allProducts?.length || 0;
-      const startIndex = ((currentPage || 1) - 1) * 12 + 1;
+
+      // Handle infinite scroll case
+      if (itemsPerPage === -1) {
+        return wrapWithParentClass(
+          <div className={className} style={styles}>
+            {totalProducts > 0 ? (
+              `Showing all ${totalProducts} products`
+            ) : (
+              'No products found'
+            )}
+          </div>
+        );
+      }
+
+      // Calculate pagination ranges correctly
+      const currentPageNum = currentPage || 1;
+      const startIndex = (currentPageNum - 1) * itemsPerPage + 1;
       const endIndex = Math.min(startIndex + (products?.length || 0) - 1, totalProducts);
+
+      console.log(`CategorySlotRenderer - Product count calculation:`, {
+        currentPage: currentPageNum,
+        itemsPerPage,
+        totalProducts,
+        productsOnPage: products?.length,
+        startIndex,
+        endIndex
+      });
 
       return wrapWithParentClass(
         <div className={className} style={styles}>
