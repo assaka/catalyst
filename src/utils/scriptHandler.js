@@ -22,6 +22,7 @@ export function executeScript(scriptCode, context) {
       'slotData',
       'productContext',
       'utils',
+      'stateManager',
       scriptCode
     );
 
@@ -69,7 +70,8 @@ export function executeScript(scriptCode, context) {
       context.element,
       context.slotData,
       context.productContext,
-      utils
+      utils,
+      context.stateManager
     );
   } catch (error) {
     console.error('Error executing slot script:', error);

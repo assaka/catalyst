@@ -400,9 +400,18 @@ export const productConfig = {
 
     quantity_selector: {
       id: 'quantity_selector',
-      type: 'component',
-      content: '',
-      className: 'quantity-selector mb-4',
+      type: 'text',
+      content: `
+        <div class="quantity-selector mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+          <div class="flex items-center space-x-3">
+            <button data-action="decrement" data-target="[data-bind='quantity']" class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">-</button>
+            <input data-bind="quantity" data-action="change-quantity" type="number" min="1" value="1" class="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button data-action="increment" data-target="[data-bind='quantity']" class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">+</button>
+          </div>
+        </div>
+      `,
+      className: 'quantity-container',
       parentClassName: '',
       styles: {},
       parentId: 'actions_container',
@@ -411,18 +420,29 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: {
-        hierarchical: false,
-        component: 'QuantitySelector',
-        displayName: 'Quantity Selector',
-        editable: {
-          label: {
-            type: 'text',
-            default: 'Qty:',
-            placeholder: 'Enter quantity label'
-          }
-        }
-      }
+      metadata: { hierarchical: true }
+    },
+
+    // Total Price Display
+    total_price_display: {
+      id: 'total_price_display',
+      type: 'text',
+      content: `
+        <div data-bind="has-options" class="hidden text-lg font-semibold text-gray-800 mb-4">
+          <div>Total Price: <span data-bind="total-price" class="text-green-600">{{product.price_formatted}}</span></div>
+          <small class="text-sm text-gray-500">Includes selected options</small>
+        </div>
+      `,
+      className: 'total-price-container',
+      parentClassName: '',
+      styles: {},
+      parentId: 'actions_container',
+      position: { col: 1, row: 2 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: { hierarchical: true }
     },
 
     buttons_container: {
@@ -441,9 +461,9 @@ export const productConfig = {
 
     add_to_cart_button: {
       id: 'add_to_cart_button',
-      type: 'button',
-      content: 'Add to Cart',
-      className: 'flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium',
+      type: 'text',
+      content: '<button data-action="add-to-cart" class="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">Add to Cart</button>',
+      className: 'add-to-cart-container',
       parentClassName: '',
       styles: {},
       parentId: 'buttons_container',

@@ -680,25 +680,15 @@ export default function ProductDetail() {
             }}
           />
         </div>
-      ) : (
-        // Fallback to traditional layout
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <BreadcrumbRenderer
-            pageType="product"
-            pageData={product}
-            storeCode={store?.slug || store?.code}
-            categories={categories}
-            settings={settings}
-          />
+      ) : null
+      )}
 
-          <div className="grid md:grid-cols-2 gap-8">
-        {/* Product Images */}
-        <div className="space-y-4">
-          <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-            <img
-              src={getImageUrlByIndex(product.images, activeImage) || getPrimaryImageUrl(product.images) || 'https://placehold.co/600x600?text=No+Image'}
-              alt={product.name}
-              className="w-full h-full object-cover"
+      {/* CMS Block - Product Below */}
+      <CmsBlockRenderer position="product_below" />
+
+    </div>
+  );
+}
             />
             {/* Product labels positioned on top of image (labels now from useStore) */}
             {(() => {
