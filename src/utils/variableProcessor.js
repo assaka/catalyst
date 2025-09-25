@@ -146,6 +146,12 @@ function processSimpleVariables(content, context, pageData) {
       return '';
     }
 
+    // Handle stock_status to return proper HTML with JavaScript binding
+    if (trimmedPath === 'product.stock_status') {
+      // Return HTML template with data-bind for JavaScript controller to update
+      return '<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600" data-bind="stock-status">Loading...</span>';
+    }
+
     const value = getNestedValue(trimmedPath, context, pageData);
     const result = formatValue(value, trimmedPath, context, pageData);
 
