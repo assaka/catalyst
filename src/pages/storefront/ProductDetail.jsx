@@ -240,15 +240,23 @@ export default function ProductDetail() {
   }, [store?.id, storeLoading]);
 
   // Initialize secure slot binding after product and configuration are loaded
+  // Keep a ref to track if we've already initialized
+  const slotBindingInitialized = React.useRef(false);
+
   console.log('📋 About to set up slot binding useEffect...');
   useEffect(() => {
     console.log('🎯 useEffect for slot binding triggered:', {
       hasProduct: !!product,
       hasStore: !!store,
       hasSettings: !!settings,
-      configLoaded
+      configLoaded,
+      alreadyInitialized: slotBindingInitialized.current
     });
-    if (product && store && settings && configLoaded) {
+
+    // Only initialize once when all conditions are met
+    if (product && store && settings && configLoaded && !slotBindingInitialized.current) {
+      slotBindingInitialized.current = true;
+
       // Use MutationObserver to detect when slot elements are rendered
       console.log('🔄 Setting up MutationObserver to detect slot elements...');
 
@@ -264,9 +272,9 @@ export default function ProductDetail() {
             product,
             store,
             settings,
-            selectedOptions,
-            quantity,
-            totalPrice: getTotalPrice(),
+            get selectedOptions() { return selectedOptions; },
+            get quantity() { return quantity; },
+            getTotalPrice,
             setQuantity,
             setSelectedOptions,
             handleAddToCart: (cartData) => {
@@ -301,13 +309,14 @@ export default function ProductDetail() {
       return () => {
         observer.disconnect();
         clearTimeout(fallbackTimeout);
+        slotBindingInitialized.current = false; // Reset on cleanup
         if (window._productController && window._productController.destroy) {
           window._productController.destroy();
           window._productController = null;
         }
       };
     }
-  }, [product, store, settings, configLoaded, selectedOptions, quantity, setQuantity, setSelectedOptions]);
+  }, [product, store, settings, configLoaded]);
 
   /**
    * Evaluate which labels apply to the product based on their conditions
