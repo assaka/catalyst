@@ -67,7 +67,8 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
     categoriesCount: categories?.length,
     storeCode,
     showCategoryInBreadcrumb: settings?.show_category_in_breadcrumb,
-    settingsKeys: settings ? Object.keys(settings) : 'no settings'
+    settingsKeys: settings ? Object.keys(settings) : 'no settings',
+    fullSettings: settings
   });
 
   if (!product) return [];
