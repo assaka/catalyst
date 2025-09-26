@@ -20,6 +20,9 @@ import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
+// Import component registry to ensure all components are registered
+import '@/components/editor/slot/UnifiedSlotComponents';
+
 // Text Slot with Script Support Component
 const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productContext, variableContext }) => {
   const { id, styles } = slot;

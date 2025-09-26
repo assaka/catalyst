@@ -98,15 +98,11 @@ export class ProductDetailController {
 
     element.addEventListener('click', () => {
       console.log('➕ SecureSlotBinder: Increment button clicked!');
-      const targetElement = document.querySelector(target);
-      if (targetElement) {
-        const currentValue = parseInt(targetElement.value || targetElement.textContent) || 0;
-        const newValue = currentValue + 1;
-        console.log('➕ SecureSlotBinder: Incrementing from', currentValue, 'to', newValue);
-        this.updateQuantity(newValue);
-      } else {
-        console.error('➕ SecureSlotBinder: Target element not found:', target);
-      }
+      // Use React state as source of truth instead of DOM
+      const currentValue = this.productContext.quantity || 1;
+      const newValue = currentValue + 1;
+      console.log('➕ SecureSlotBinder: Incrementing from', currentValue, 'to', newValue);
+      this.updateQuantity(newValue);
     });
   }
 
@@ -119,15 +115,11 @@ export class ProductDetailController {
 
     element.addEventListener('click', () => {
       console.log('➖ SecureSlotBinder: Decrement button clicked!');
-      const targetElement = document.querySelector(target);
-      if (targetElement) {
-        const currentValue = parseInt(targetElement.value || targetElement.textContent) || 0;
-        const newValue = Math.max(1, currentValue - 1);
-        console.log('➖ SecureSlotBinder: Decrementing from', currentValue, 'to', newValue);
-        this.updateQuantity(newValue);
-      } else {
-        console.error('➖ SecureSlotBinder: Target element not found:', target);
-      }
+      // Use React state as source of truth instead of DOM
+      const currentValue = this.productContext.quantity || 1;
+      const newValue = Math.max(1, currentValue - 1);
+      console.log('➖ SecureSlotBinder: Decrementing from', currentValue, 'to', newValue);
+      this.updateQuantity(newValue);
     });
   }
 
