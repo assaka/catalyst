@@ -9,7 +9,7 @@ import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import aiEnhancementService from '@/services/aiEnhancementService';
 import { cartConfig } from '@/components/editor/slot/configs/cart-config';
-import { UnifiedSlotComponents } from '@/components/editor/slot/UnifiedSlotComponents';
+import { getSlotComponent } from '@/components/editor/slot/SlotComponentRegistry';
 
 // Generate cart context based on view mode
 const generateCartContext = (viewMode) => ({
@@ -60,7 +60,7 @@ const cartEditorConfig = {
     label: view.label,
     icon: view.icon
   })),
-  slotComponents: UnifiedSlotComponents,
+  slotComponents: {},
   generateContext: generateCartContext,
   viewModeAdjustments: {
     content_area: {
