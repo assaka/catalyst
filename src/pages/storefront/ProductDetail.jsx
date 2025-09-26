@@ -738,7 +738,9 @@ export default function ProductDetail() {
           hasSlots,
           slotCount,
           shouldRender,
-          slots: productLayoutConfig?.slots ? Object.keys(productLayoutConfig.slots) : 'none'
+          slots: productLayoutConfig?.slots ? Object.keys(productLayoutConfig.slots) : 'none',
+          productTabs: productTabs,
+          productTabsCount: productTabs?.length || 0
         });
 
         return shouldRender;
