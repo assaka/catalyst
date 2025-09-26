@@ -845,23 +845,31 @@ const StockStatus = createSlotComponent({
         const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
 
         if (hideStockQuantity) {
-          // Remove quantity-related phrases when hiding stock quantities
+          // Advanced flexible removal: detect and remove content within {items...} blocks
           return label
-            // Remove "just {quantity} left" pattern
+            // Remove entire {items...} blocks that contain quantity references
+            .replace(/\{items\s+[^}]*\{quantity\}[^}]*\}/gi, '')
+            // Remove standalone quantity patterns for backward compatibility
             .replace(/,?\s*just\s+\{quantity\}\s+left/gi, '')
-            // Remove "{quantity} left" pattern
             .replace(/,?\s*\{quantity\}\s+left/gi, '')
-            // Remove "({quantity})" pattern
             .replace(/\s*\(\{quantity\}\)/gi, '')
-            // Remove standalone "{quantity}" pattern
             .replace(/\s*\{quantity\}/gi, '')
-            // Clean up any double spaces or trailing commas
+            // Clean up spacing and punctuation
             .replace(/\s+/g, ' ')
             .replace(/,\s*$/, '')
             .trim();
         }
 
-        return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
+        // Advanced flexible replacement system
+        return label.replace(/\{items\s+([^}]*)\}/gi, (match, content) => {
+          // Replace placeholders within {items...} blocks
+          return content
+            .replace(/\{quantity\}/gi, product.stock_quantity)
+            .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
+            .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
+            .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
+        }).replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
+          // Backward compatibility for simple {quantity} patterns
           if (match === '{({quantity})}') {
             return `(${product.stock_quantity})`;
           }
@@ -875,22 +883,31 @@ const StockStatus = createSlotComponent({
       // Handle regular in stock
       const label = stockSettings.in_stock_label || "In Stock";
       if (hideStockQuantity) {
-        // Remove quantity-related phrases when hiding stock quantities
+        // Advanced flexible removal: detect and remove content within {items...} blocks
         return label
-          // Remove "just {quantity} left" pattern
+          // Remove entire {items...} blocks that contain quantity references
+          .replace(/\{items\s+[^}]*\{quantity\}[^}]*\}/gi, '')
+          // Remove standalone quantity patterns for backward compatibility
           .replace(/,?\s*just\s+\{quantity\}\s+left/gi, '')
-          // Remove "{quantity} left" pattern
           .replace(/,?\s*\{quantity\}\s+left/gi, '')
-          // Remove "({quantity})" pattern
           .replace(/\s*\(\{quantity\}\)/gi, '')
-          // Remove standalone "{quantity}" pattern
           .replace(/\s*\{quantity\}/gi, '')
-          // Clean up any double spaces or trailing commas
+          // Clean up spacing and punctuation
           .replace(/\s+/g, ' ')
           .replace(/,\s*$/, '')
           .trim();
       }
-      return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
+
+      // Advanced flexible replacement system
+      return label.replace(/\{items\s+([^}]*)\}/gi, (match, content) => {
+        // Replace placeholders within {items...} blocks
+        return content
+          .replace(/\{quantity\}/gi, product.stock_quantity)
+          .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
+          .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
+          .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
+      }).replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
+        // Backward compatibility for simple {quantity} patterns
         if (match === '{({quantity})}') {
           return `(${product.stock_quantity})`;
         }
