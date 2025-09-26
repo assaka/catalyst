@@ -156,6 +156,12 @@ export function UnifiedSlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug logging for slots
+  if (parentId === null) {
+    console.log('🔍 Root level slots available:', Object.keys(slots || {}));
+    console.log('🔍 Looking for product_tabs slot:', slots?.product_tabs ? 'FOUND' : 'NOT FOUND');
+  }
+
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
@@ -330,6 +336,8 @@ export function UnifiedSlotRenderer({
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);
+
+        console.log('🎯 Rendering component:', componentName, 'for slot:', slot.id);
 
         // Choose appropriate render method based on context
         const renderMethod = context === 'editor' ? component.renderEditor : component.renderStorefront;

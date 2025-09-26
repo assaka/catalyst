@@ -443,7 +443,17 @@ const ProductTabs = createSlotComponent({
   renderStorefront: ({ slot, productContext, className, styles }) => {
     const { productTabs, product, activeTab, setActiveTab } = productContext;
 
-    if (!productTabs || productTabs.length === 0) return null;
+    console.log('🔍 ProductTabsSlot rendering:', {
+      productTabs,
+      productTabsLength: productTabs?.length,
+      product: product?.name,
+      activeTab
+    });
+
+    if (!productTabs || productTabs.length === 0) {
+      console.log('⚠️ No product tabs to render');
+      return null;
+    }
 
     return (
       <div className={className} style={styles}>
