@@ -276,10 +276,10 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    product_description: {
-      id: 'product_description',
+    product_short_description: {
+      id: 'product_short_description',
       type: 'text',
-      content: '{{product.description}}',
+      content: '{{product.short_description}}',
       className: 'w-fit text-gray-700 leading-relaxed',
       parentClassName: '',
       styles: {},

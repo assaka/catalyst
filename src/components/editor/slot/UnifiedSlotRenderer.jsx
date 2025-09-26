@@ -80,9 +80,7 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
       textContent = '[Text placeholder]';
     }
   } else if (!processedContent) {
-    // Debug: Show what slot this is when content is empty
-    console.log('Empty slot content:', slot.id, 'returning placeholder');
-    textContent = `[Empty: ${slot.id}]`;
+    textContent = '[Text placeholder]';
   }
 
   return (
@@ -181,15 +179,6 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
-    // Debug: Check problematic slots - show what template we're actually getting
-    if (['product_description', 'product_labels', 'quantity_selector', 'stock_status'].includes(id)) {
-      console.log(`SLOT CONFIG ${id}:`, {
-        actualTemplate: content,
-        templateLength: content?.length,
-        hasProduct: !!variableContext.product,
-        productDescLength: variableContext.product?.description?.length
-      });
-    }
 
 
     // Text Element

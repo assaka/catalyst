@@ -438,13 +438,6 @@ export class ProductDetailController {
     const stockLabel = this.getStockLabel(product, settings);
     const stockVariant = this.getStockVariant(product, settings);
 
-    console.log('ProductDetailController updating stock display:', {
-      stockLabel,
-      stockVariant,
-      foundElements: document.querySelectorAll('[data-bind="stock-status"]').length,
-      productStockQuantity: product.stock_quantity,
-      lowStockThreshold: product.low_stock_threshold || settings?.display_low_stock_threshold
-    });
 
     // Update all stock status displays
     document.querySelectorAll('[data-bind="stock-status"]').forEach(el => {

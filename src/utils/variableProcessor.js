@@ -67,10 +67,6 @@ function processLoops(content, context, pageData) {
   return content.replace(loopRegex, (match, arrayPath, template) => {
     const array = getNestedValue(arrayPath, context, pageData);
 
-    // Debug loop processing
-    if (arrayPath === 'product.labels') {
-      console.log('Processing product.labels loop:', { array, arrayPath, hasProduct: !!(context.product || pageData.product) });
-    }
 
     if (!Array.isArray(array) || array.length === 0) {
       // For product.labels specifically, since it's null/undefined, just return empty
@@ -82,8 +78,9 @@ function processLoops(content, context, pageData) {
 
     return array.map((item, index) => {
       let itemContent = template;
-      // Replace {{this}} with current item
-      itemContent = itemContent.replace(/\{\{this\}\}/g, JSON.stringify(item));
+      // Replace {{this}} with current item (as string, not JSON)
+      const itemValue = typeof item === 'string' ? item : String(item);
+      itemContent = itemContent.replace(/\{\{this\}\}/g, itemValue);
       // Replace {{@index}} with current index
       itemContent = itemContent.replace(/\{\{@index\}\}/g, index);
       // Process nested variables within the item context
@@ -101,16 +98,6 @@ function processSimpleVariables(content, context, pageData) {
   return content.replace(variableRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
 
-    // Debug specific paths and fix short_description fallback
-    if (trimmedPath === 'product.description' || trimmedPath === 'product.short_description') {
-      console.log('Processing product description/short_description:', {
-        path: trimmedPath,
-        hasProduct: !!(context.product || pageData.product),
-        shortDescExists: !!(context.product?.short_description || pageData.product?.short_description),
-        descriptionExists: !!(context.product?.description || pageData.product?.description),
-        descriptionLength: (context.product?.description || pageData.product?.description)?.length
-      });
-    }
 
     // Handle formatted price paths directly when they don't exist in data
     if (trimmedPath === 'product.compare_price_formatted' || trimmedPath === 'product.price_formatted') {
@@ -146,11 +133,6 @@ function processSimpleVariables(content, context, pageData) {
 
     const value = getNestedValue(trimmedPath, context, pageData);
     const result = formatValue(value, trimmedPath, context, pageData);
-
-    // Debug what we got
-    if (trimmedPath === 'product.description') {
-      console.log('processSimpleVariables result for description:', { value, result, valueLength: value?.length });
-    }
 
     return result;
   });
