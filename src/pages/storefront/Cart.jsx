@@ -116,7 +116,12 @@ export default function Cart() {
 
             try {
                 // Load published configuration using the new versioning API
+                console.log('🔍 CART: Requesting config for store ID:', store.id);
+                console.log('🔍 CART: Expected store ID from DB:', '157d4590-49bf-4b0b-bd77-abe131909528');
+                console.log('🔍 CART: Store ID match:', store.id === '157d4590-49bf-4b0b-bd77-abe131909528');
+                console.log('🔍 CART: API URL will be:', `/api/slot-configurations/published/${store.id}/cart`);
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
+                console.log('🔍 CART: API Response:', response);
 
                 // Check for various "no published config" scenarios
                 if (response.success && response.data &&
