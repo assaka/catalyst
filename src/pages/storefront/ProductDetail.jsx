@@ -100,6 +100,7 @@ const generateProductName = (product, basePrefix = '') => {
 
 export default function ProductDetail() {
   console.log('🚀 ProductDetail component rendering...');
+  alert('ProductDetail component is loading!');
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;

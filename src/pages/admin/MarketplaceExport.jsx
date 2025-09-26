@@ -100,6 +100,15 @@ export default function MarketplaceExport() {
       };
       
       await Store.update(store.id, { settings: updatedSettings });
+
+      // Clear any potential cache
+      try {
+        localStorage.removeItem('storeProviderCache');
+        sessionStorage.removeItem('storeProviderCache');
+      } catch (e) {
+        console.warn('Failed to clear cache:', e);
+      }
+
       showSuccess('Amazon configuration saved successfully!');
     } catch (error) {
       console.error('Error saving config:', error);

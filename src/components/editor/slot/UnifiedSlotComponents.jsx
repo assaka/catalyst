@@ -854,13 +854,33 @@ const StockStatus = createSlotComponent({
         }
 
         // Process any {...} blocks and replace placeholders inside them
-        return label.replace(/\{([^}]*)\}/gi, (match, content) => {
-          return content
-            .replace(/\{quantity\}/gi, product.stock_quantity)
-            .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
-            .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
-            .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
-        });
+        // Handle nested braces by processing outer {...} blocks first
+        let processedLabel = label;
+        let depth = 0;
+        let start = -1;
+
+        for (let i = 0; i < processedLabel.length; i++) {
+          if (processedLabel[i] === '{') {
+            if (depth === 0) start = i;
+            depth++;
+          } else if (processedLabel[i] === '}') {
+            depth--;
+            if (depth === 0 && start !== -1) {
+              const content = processedLabel.substring(start + 1, i);
+              const processed = content
+                .replace(/\{quantity\}/gi, product.stock_quantity)
+                .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
+                .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
+                .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
+
+              processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
+              i = start + processed.length - 1; // Adjust index after replacement
+              start = -1;
+            }
+          }
+        }
+
+        return processedLabel;
       }
 
       // Handle regular in stock
@@ -875,13 +895,33 @@ const StockStatus = createSlotComponent({
       }
 
       // Process any {...} blocks and replace placeholders inside them
-      return label.replace(/\{([^}]*)\}/gi, (match, content) => {
-        return content
-          .replace(/\{quantity\}/gi, product.stock_quantity)
-          .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
-          .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
-          .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
-      });
+      // Handle nested braces by processing outer {...} blocks first
+      let processedLabel = label;
+      let depth = 0;
+      let start = -1;
+
+      for (let i = 0; i < processedLabel.length; i++) {
+        if (processedLabel[i] === '{') {
+          if (depth === 0) start = i;
+          depth++;
+        } else if (processedLabel[i] === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) {
+            const content = processedLabel.substring(start + 1, i);
+            const processed = content
+              .replace(/\{quantity\}/gi, product.stock_quantity)
+              .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
+              .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
+              .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
+
+            processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
+            i = start + processed.length - 1; // Adjust index after replacement
+            start = -1;
+          }
+        }
+      }
+
+      return processedLabel;
     };
 
     // Helper function to get stock variant (for styling)

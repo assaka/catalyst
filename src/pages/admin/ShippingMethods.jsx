@@ -111,6 +111,15 @@ export default function ShippingMethodsPage() {
         try {
             const { Store } = await import("@/api/entities");
             await Store.update(selectedStore.id, { settings: newSettings });
+
+            // Clear any potential cache
+            try {
+                localStorage.removeItem('storeProviderCache');
+                sessionStorage.removeItem('storeProviderCache');
+            } catch (e) {
+                console.warn('Failed to clear cache:', e);
+            }
+
             setFlashMessage({ type: 'success', message: 'Setting updated successfully!' });
             // The store context will handle the state update
         } catch (error) {
