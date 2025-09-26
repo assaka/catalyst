@@ -241,25 +241,24 @@ export const StoreProvider = ({ children }) => {
         storeIdentifier = oldStoreSlug;
       }
       
-      const stores = await cachedApiCall(storeCacheKey, async () => {
-        if (storeIdentifier) {
-          try {
-            const result = await StorefrontStore.filter({ slug: storeIdentifier });
-            return Array.isArray(result) ? result : [];
-          } catch (error) {
-            console.error(`StoreProvider: StorefrontStore.filter failed for slug:`, error);
-            return [];
-          }
-        } else {
-          try {
-            const result = await StorefrontStore.findAll({ limit: 1 });
-            return Array.isArray(result) ? result : [];
-          } catch (error) {
-            console.error(`StoreProvider: StorefrontStore.findAll failed:`, error);
-            return [];
-          }
+      let stores;
+      if (storeIdentifier) {
+        try {
+          const result = await StorefrontStore.filter({ slug: storeIdentifier });
+          stores = Array.isArray(result) ? result : [];
+        } catch (error) {
+          console.error(`StoreProvider: StorefrontStore.filter failed for slug:`, error);
+          stores = [];
         }
-      });
+      } else {
+        try {
+          const result = await StorefrontStore.findAll({ limit: 1 });
+          stores = Array.isArray(result) ? result : [];
+        } catch (error) {
+          console.error(`StoreProvider: StorefrontStore.findAll failed:`, error);
+          stores = [];
+        }
+      }
 
 
       const selectedStore = stores?.[0];
