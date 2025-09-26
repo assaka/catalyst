@@ -353,18 +353,13 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
-      
-      // First try to find by slug
-      let products = await cachedApiCall(cacheKey, () =>
-        StorefrontProduct.filter({ store_id: store.id, slug: slug, status: 'active' })
-      );
+
+      // First try to find by slug (skip cache for debugging stock)
+      let products = await StorefrontProduct.filter({ store_id: store.id, slug: slug, status: 'active' });
       
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
-        const skuCacheKey = `product-detail-sku-${slug}-${store.id}`;
-        products = await cachedApiCall(skuCacheKey, () =>
-          StorefrontProduct.filter({ store_id: store.id, sku: slug, status: 'active' })
-        );
+        products = await StorefrontProduct.filter({ store_id: store.id, sku: slug, status: 'active' });
       }
 
       if (products && products.length > 0) {
