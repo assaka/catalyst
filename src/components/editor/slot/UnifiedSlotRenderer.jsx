@@ -355,7 +355,6 @@ export function UnifiedSlotRenderer({
       }
 
       // Fallback for unregistered components
-      console.error('❌ Component not found:', componentName, 'Available components:', Array.from(ComponentRegistry.keys()));
       return (
         <div className={processedClassName} style={styles}>
           {componentName ? `[${componentName} component]` : '[Unknown component]'}
