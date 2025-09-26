@@ -148,14 +148,7 @@ export default function ProductDetail() {
   // Re-evaluate labels when productLabels are loaded
   useEffect(() => {
     if (product && productLabels && productLabels.length > 0) {
-      console.log('Re-evaluating labels after productLabels loaded');
       const applicableLabels = evaluateProductLabels(product, productLabels);
-      console.log('Re-evaluated labels:', {
-        productLabels: productLabels,
-        product: product.name,
-        applicableLabels: applicableLabels,
-        labelTexts: applicableLabels.map(label => label.text)
-      });
 
       // Update product with new labels
       setProduct(prevProduct => ({
@@ -257,17 +250,13 @@ export default function ProductDetail() {
    */
   const evaluateProductLabels = (product, labels) => {
     if (!labels || !Array.isArray(labels) || !product) {
-      console.log('No labels or product:', { labels, product });
       return [];
     }
-
-    console.log('Evaluating labels for product:', product.name, 'with labels:', labels.length);
 
     const applicableLabels = [];
 
     for (const label of labels) {
       if (!label.is_active) {
-        console.log('Label inactive:', label.name);
         continue;
       }
 
@@ -281,7 +270,6 @@ export default function ProductDetail() {
         continue;
       }
 
-      console.log(`Checking label "${label.name}":`, conditions);
       let shouldApply = true;
 
       // Check attribute conditions
@@ -298,11 +286,9 @@ export default function ProductDetail() {
       // Check price conditions
       if (conditions?.price_conditions && Object.keys(conditions.price_conditions).length > 0) {
         const priceConditions = conditions.price_conditions;
-        console.log(`Label "${label.name}" price conditions:`, priceConditions);
 
         // Check if product has sale price
         if (priceConditions.has_sale_price === true && !product.compare_price) {
-          console.log(`Label "${label.name}" failed: requires sale price but product has none`);
           shouldApply = false;
         }
 
@@ -310,15 +296,12 @@ export default function ProductDetail() {
         if (priceConditions.is_new === true && priceConditions.days_since_created) {
           const productDate = new Date(product.created_at);
           const daysSinceCreated = Math.floor((Date.now() - productDate) / (1000 * 60 * 60 * 24));
-          console.log(`Label "${label.name}" new product check: ${daysSinceCreated} days old, requires <= ${priceConditions.days_since_created}`);
           if (daysSinceCreated > priceConditions.days_since_created) {
-            console.log(`Label "${label.name}" failed: product too old`);
             shouldApply = false;
           }
         }
       }
 
-      console.log(`Label "${label.name}" final result: ${shouldApply ? 'APPLIED' : 'REJECTED'}`);
       if (shouldApply) {
         applicableLabels.push(label);
       }
@@ -327,7 +310,6 @@ export default function ProductDetail() {
     // Sort by priority if specified
     applicableLabels.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
-    console.log('Final applicable labels:', applicableLabels.map(l => l.name));
     return applicableLabels;
   };
 
@@ -374,12 +356,6 @@ export default function ProductDetail() {
         
         // Evaluate and apply product labels based on conditions
         const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
-        console.log('Product labels evaluation:', {
-          productLabels: productLabels,
-          product: foundProduct.name,
-          applicableLabels: applicableLabels,
-          labelTexts: applicableLabels.map(label => label.text)
-        });
         const productWithLabels = {
           ...foundProduct,
           labels: applicableLabels.map(label => label.text)
