@@ -928,6 +928,7 @@ export default function ProductDetail() {
               currencySymbol: store?.currency_symbol || '$',
               canAddToCart: isInStock && quantity > 0,
               setQuantity,
+              setSelectedOptions,
               setActiveImageIndex: setActiveImage,
               setActiveTab,
               setIsInWishlist,

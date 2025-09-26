@@ -11,9 +11,9 @@ export class ProductDetailController {
   constructor(productContext) {
     this.productContext = productContext;
     this.state = {
-      selectedOptions: [],
-      quantity: 1,
-      activeTab: 0,
+      selectedOptions: productContext.selectedOptions || [],
+      quantity: productContext.quantity || 1,
+      activeTab: productContext.activeTab || 0,
       totalPrice: 0
     };
     this.listeners = [];
