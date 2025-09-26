@@ -222,9 +222,15 @@ class ApiClient {
 
     // Check for auth routes
     const isAuthRoute = endpoint.startsWith('auth/');
-    
-    // Prevent authenticated requests if user has been logged out, except for auth routes
-    if (!isAuthRoute && (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true')) {
+
+    // Check for public endpoints that should work even when logged out
+    const isPublicEndpoint = endpoint.startsWith('public/') ||
+                            endpoint.includes('/published/') || // Published slot configurations
+                            endpoint.includes('/health') ||
+                            endpoint.includes('/version');
+
+    // Prevent authenticated requests if user has been logged out, except for auth routes and public endpoints
+    if (!isAuthRoute && !isPublicEndpoint && (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true')) {
       throw new Error('Session has been terminated. Please log in again.');
     }
     
