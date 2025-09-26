@@ -369,7 +369,7 @@ export default function ProductDetail() {
         }
 
         // Load additional data in parallel (Custom options and product labels are now handled by separate components/context)
-        Promise.all([
+        await Promise.all([
           loadProductTabs(),
           checkWishlistStatus(foundProduct.id)
         ]);
