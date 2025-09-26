@@ -24,12 +24,10 @@ export class ProductDetailController {
    * Initialize controller and bind to DOM elements
    */
   initialize() {
-    console.log('🚀 ProductDetailController initialize called', { product: this.productContext?.product?.name, hasSettings: !!this.productContext?.settings });
     this.calculateInitialPrice();
     this.calculateTotalPrice();
     this.updatePriceDisplays();
     this.bindAllElements();
-    console.log('✅ ProductDetailController initialization complete');
   }
 
   /**
@@ -38,17 +36,14 @@ export class ProductDetailController {
   bindAllElements() {
     // Find all elements with data-action attributes
     const actionElements = document.querySelectorAll('[data-action]');
-    console.log('🔗 SecureSlotBinder: Found elements with data-action:', actionElements.length);
 
     // Log quantity-specific elements
     const quantityElements = document.querySelectorAll('[data-action*="quantity"], [data-action="increment"], [data-action="decrement"]');
-    console.log('🔗 SecureSlotBinder: Found quantity-related elements:', quantityElements.length);
 
     actionElements.forEach(element => {
       if (this.boundElements.has(element)) return; // Already bound
 
       const action = element.getAttribute('data-action');
-      console.log('🔗 SecureSlotBinder: Binding action:', action, 'to element:', element.tagName);
       this.bindElementAction(element, action);
       this.boundElements.add(element);
     });
@@ -93,14 +88,11 @@ export class ProductDetailController {
    */
   bindIncrement(element) {
     const target = element.getAttribute('data-target') || '[data-bind="quantity"]';
-    console.log('🔗 SecureSlotBinder: Binding increment button, target:', target);
 
     element.addEventListener('click', () => {
-      console.log('➕ SecureSlotBinder: Increment button clicked!');
       // Use React state as source of truth instead of DOM
       const currentValue = this.productContext.quantity || 1;
       const newValue = currentValue + 1;
-      console.log('➕ SecureSlotBinder: Incrementing from', currentValue, 'to', newValue);
       this.updateQuantity(newValue);
     });
   }
@@ -110,14 +102,11 @@ export class ProductDetailController {
    */
   bindDecrement(element) {
     const target = element.getAttribute('data-target') || '[data-bind="quantity"]';
-    console.log('🔗 SecureSlotBinder: Binding decrement button, target:', target);
 
     element.addEventListener('click', () => {
-      console.log('➖ SecureSlotBinder: Decrement button clicked!');
       // Use React state as source of truth instead of DOM
       const currentValue = this.productContext.quantity || 1;
       const newValue = Math.max(1, currentValue - 1);
-      console.log('➖ SecureSlotBinder: Decrementing from', currentValue, 'to', newValue);
       this.updateQuantity(newValue);
     });
   }
@@ -204,7 +193,6 @@ export class ProductDetailController {
 
     // Update React state if available
     if (this.productContext.setQuantity) {
-      console.log('🔄 SecureSlotBinder: Calling setQuantity with:', newQuantity);
       this.productContext.setQuantity(newQuantity);
     } else {
       console.warn('⚠️ SecureSlotBinder: setQuantity not available in productContext');
@@ -377,7 +365,6 @@ export class ProductDetailController {
  * Initialize secure slot binding for a product page
  */
 export function initializeProductSlotBinding(productContext) {
-  console.log('🔧 initializeProductSlotBinding called with context:', {
     timestamp: new Date().toISOString(),
     hasProduct: !!productContext.product,
     hasSetQuantity: !!productContext.setQuantity,

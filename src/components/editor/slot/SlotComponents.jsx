@@ -637,7 +637,6 @@ export function GridColumn({
       onClick={(e) => {
         if (mode === 'edit' && onElementClick && !isOverResizeHandle) {
           e.stopPropagation();
-          console.log('🎯 GridColumn clicked:', slotId, 'element:', e.currentTarget);
           // Ensure the element has the data-slot-id attribute
           e.currentTarget.setAttribute('data-slot-id', slotId);
           onElementClick(slotId, e.currentTarget);
@@ -845,8 +844,6 @@ export function HierarchicalSlotRenderer({
 
   // Debug: Log when HierarchicalSlotRenderer is called
   if (parentId === 'products_container' || parentId === null) {
-    console.log(`🏗️ HIERARCHICAL RENDERER CALLED with parentId: ${parentId || 'ROOT'}`);
-    console.log(`🏗️ Found ${childSlots.length} child slots:`, childSlots.map(s => s.id));
   }
 
   const filteredSlots = childSlots.filter(slot => {
@@ -854,7 +851,6 @@ export function HierarchicalSlotRenderer({
 
     // Debug logging for product_items
     if (slot.id === 'product_items' || slot.id === 'products_container') {
-      console.log(`🔍 FILTERING ${slot.id}:`, {
         slotId: slot.id,
         parentId: slot.parentId,
         parentIdBeingRendered: parentId,
@@ -905,8 +901,6 @@ export function HierarchicalSlotRenderer({
   return sortedSlots.map(slot => {
     // Debug: Log every slot being processed in map
     if (slot.id === 'product_items' || slot.id === 'products_container' || parentId === 'products_container') {
-      console.log(`🗺️ PROCESSING SLOT IN MAP: ${slot.id} (parentId: ${slot.parentId}, parentIdBeingRendered: ${parentId})`);
-      console.log(`🗺️ SLOT TYPE: ${slot.type}, HAS CHILDREN: ${slot.children?.length > 0}`);
     }
     // Handle number, object with viewMode, and Tailwind responsive classes
     let colSpan = 12; // default value for non-Tailwind calculations
@@ -1521,9 +1515,6 @@ export function HierarchicalSlotRenderer({
                 >
                   {/* DEBUG: Force check for product_items */}
                   {slot.id === 'product_items' && (() => {
-                    console.log('🚨🚨🚨 PRODUCT_ITEMS FOUND IN RENDERING! 🚨🚨🚨');
-                    console.log('🚨 Slot type:', slot.type);
-                    console.log('🚨 customSlotRenderer available:', !!customSlotRenderer);
                     return null; // Continue normal rendering
                   })()}
 
@@ -1531,20 +1522,16 @@ export function HierarchicalSlotRenderer({
                   {(() => {
                     // Debug: Check if we reach this point for product_items
                     if (slot.id === 'product_items' || slot.id === 'products_container') {
-                      console.log(`🏁 REACHED CUSTOM RENDERER SECTION for: ${slot.id}`);
-                      console.log(`🏁 customSlotRenderer exists:`, !!customSlotRenderer);
                     }
 
                     if (customSlotRenderer) {
                       // Debug: Log when customSlotRenderer is about to be called
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
-                        console.log(`🎨 ABOUT TO CALL customSlotRenderer for: ${slot.id}`);
                       }
 
                       const customContent = customSlotRenderer(slot);
 
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
-                        console.log(`🎨 customSlotRenderer RESULT for ${slot.id}:`, !!customContent);
                       }
 
                       if (customContent) {
@@ -1552,7 +1539,6 @@ export function HierarchicalSlotRenderer({
                       }
                     } else {
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
-                        console.log(`❌ NO customSlotRenderer for: ${slot.id}`);
                       }
                     }
                     return null;
@@ -1570,8 +1556,6 @@ export function HierarchicalSlotRenderer({
 
                   {/* DIRECT OVERRIDE FOR PRODUCT_ITEMS */}
                   {slot.id === 'product_items' && (() => {
-                    console.log('🎯 DIRECT PRODUCT_ITEMS OVERRIDE IN SLOTCOMPONENTS!');
-                    console.log('🎯 This should show up if product_items reaches here');
 
                     // Just return a simple test div to see if this works
                     return (
@@ -2135,7 +2119,6 @@ export function CodeModal({
             className="h-full"
             onManualEdit={(newCode, oldCode, context) => {
               // Handle manual edits - this enables diff detection
-              console.log('Manual edit detected in CodeModal:', {
                 hasChanges: newCode !== oldCode,
                 diffDetectionEnabled: context?.enableDiffDetection
               });

@@ -182,12 +182,6 @@ const ProductBreadcrumbs = createSlotComponent({
   renderStorefront: ({ slot, productContext, className, styles }) => {
     const { breadcrumbs } = productContext;
 
-    console.log('🍞 ProductBreadcrumbs rendering:', {
-      breadcrumbs,
-      breadcrumbsLength: breadcrumbs?.length,
-      breadcrumbsType: typeof breadcrumbs,
-      productContextKeys: Object.keys(productContext || {})
-    });
 
     return (
       <div className={className} style={styles}>
@@ -506,15 +500,7 @@ const ProductTabs = createSlotComponent({
   renderStorefront: ({ slot, productContext, className, styles }) => {
     const { productTabs, product, activeTab, setActiveTab } = productContext;
 
-    console.log('🔍 ProductTabsSlot rendering:', {
-      productTabs,
-      productTabsLength: productTabs?.length,
-      product: product?.name,
-      activeTab
-    });
-
     if (!productTabs || productTabs.length === 0) {
-      console.log('⚠️ No product tabs to render');
       return null;
     }
 
@@ -1080,7 +1066,6 @@ const StockStatus = createSlotComponent({
 
         // Process any {...} blocks and replace placeholders inside them
         // Handle nested braces by processing outer {...} blocks first
-        console.log('🏷️ Processing low stock label:', label, 'quantity:', product.stock_quantity);
         let processedLabel = label;
         let depth = 0;
         let start = -1;
@@ -1093,13 +1078,11 @@ const StockStatus = createSlotComponent({
             depth--;
             if (depth === 0 && start !== -1) {
               const content = processedLabel.substring(start + 1, i);
-              console.log('🏷️ Found block content:', content);
               const processed = content
                 .replace(/\{quantity\}/gi, product.stock_quantity)
                 .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
                 .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
                 .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
-              console.log('🏷️ Processed block:', processed);
 
               processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
               i = start + processed.length - 1; // Adjust index after replacement
@@ -1108,7 +1091,6 @@ const StockStatus = createSlotComponent({
           }
         }
 
-        console.log('🏷️ Final processed label:', processedLabel);
         return processedLabel;
       }
 
