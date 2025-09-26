@@ -164,12 +164,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
         return; // Fresh data received - no need for additional API calls
       }
 
-      // Only refresh if the event is not from our own operations and we don't have fresh data
-      // Since CartService now always provides fresh data, we rarely need to refresh
-      if (event.detail?.source !== 'cartService.updateCart' &&
-          event.detail?.source !== 'cartService.addItem') {
-        debouncedRefresh(true);
-      }
+      // Don't refresh at all since CartService should always provide fresh data
+      // Only allow explicit refresh events via 'refreshMiniCart' event
     };
 
     const handleDirectRefresh = (event) => {

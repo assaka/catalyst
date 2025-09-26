@@ -148,6 +148,12 @@ export default function Cart() {
                 }
             } catch (error) {
                 console.error('❌ Error loading published slot configuration:', error);
+                console.log('🎯 CART DEBUG: API Error Details:', {
+                    message: error.message,
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    url: error.config?.url
+                });
 
                 // Fallback to cart-config.js
                 console.log('🎯 CART DEBUG: Using error fallback configuration');
