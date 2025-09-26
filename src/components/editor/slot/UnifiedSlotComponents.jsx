@@ -935,7 +935,8 @@ const CartItemsSlot = createSlotComponent({
                     <div className="mt-2 space-y-1">
                       {item.selected_options.map((option, index) => (
                         <div key={index} className="text-sm text-gray-600">
-                          + {option.name}: {currencySymbol}{safeToFixed(option.price)} × {item.quantity}
+                          <div>+ {option.name}</div>
+                          <div className="ml-2 text-xs">{currencySymbol}{safeToFixed(option.price)} × {item.quantity}</div>
                         </div>
                       ))}
                     </div>
@@ -965,22 +966,22 @@ const CartItemsSlot = createSlotComponent({
                   </div>
                 </div>
 
-                {/* Price and Remove Button */}
+                {/* Remove Button and Price */}
                 <div className="col-span-12 sm:col-span-4 flex flex-col items-end justify-between">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeItem(item.id)}
-                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-
-                  <div className="text-right mt-auto">
+                  <div className="text-right">
                     <span className="text-lg font-bold text-gray-900">
                       {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
                     </span>
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeItem(item.id)}
+                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0 mt-auto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -1009,7 +1010,7 @@ const CartCouponSlot = createSlotComponent({
             className="flex-1 border rounded px-3 py-2"
             readOnly
           />
-          <button className="bg-blue-600 text-white px-4 py-2 rounded">Apply</button>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply Coupon</button>
         </div>
       </div>
     </div>
@@ -1061,9 +1062,9 @@ const CartCouponSlot = createSlotComponent({
               />
               <button
                 onClick={handleApplyCoupon}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
               >
-                Apply
+                Apply Coupon
               </button>
             </div>
           )}
