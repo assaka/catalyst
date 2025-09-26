@@ -782,7 +782,7 @@ const TotalPriceDisplay = createSlotComponent({
   renderEditor: ({ slot, className, styles }) => (
     <div className={className} style={styles}>
       <div className="border-t pt-4 mb-4">
-        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+        <div className="bg-gray-50 rounded-lg py-4 space-y-2">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
             Price Breakdown
           </h3>

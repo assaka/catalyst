@@ -44,7 +44,7 @@ const TotalPriceDisplay = ({
 
   const innerClass = compact
     ? "space-y-1"
-    : "bg-gray-50 rounded-lg p-4 space-y-2";
+    : "bg-gray-50 rounded-lg py-4 space-y-2";
 
   return (
     <div className={containerClass}>
