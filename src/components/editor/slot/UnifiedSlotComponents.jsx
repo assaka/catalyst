@@ -17,6 +17,8 @@ import {
   Plus,
   Minus,
   Star,
+  Home,
+  Trash2,
 } from 'lucide-react';
 import { registerSlotComponent, createSlotComponent } from './SlotComponentRegistry';
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
@@ -167,8 +169,9 @@ const ProductBreadcrumbs = createSlotComponent({
   renderEditor: ({ slot, className, styles }) => {
     return (
       <div className={className} style={styles}>
-        <nav className="text-sm text-gray-600">
-          Home &gt; Category &gt; Product
+        <nav className="flex items-center text-sm text-gray-600">
+          <Home className="w-4 h-4 mr-2" />
+          <span>Home &gt; Category &gt; Product</span>
         </nav>
       </div>
     );
@@ -187,19 +190,32 @@ const ProductBreadcrumbs = createSlotComponent({
 
     return (
       <div className={className} style={styles}>
-        <nav className="text-sm text-gray-600">
-          {breadcrumbs?.map((crumb, index) => (
-            <span key={index}>
-              {crumb.url ? (
-                <Link to={crumb.url} className="hover:text-gray-900 whitespace-nowrap">
-                  {crumb.name}
-                </Link>
-              ) : (
-                <span className="text-gray-900 whitespace-nowrap">{crumb.name}</span>
-              )}
-              {index < breadcrumbs.length - 1 && <span className="mx-2">&gt;</span>}
-            </span>
-          )) || 'Home > Category > Product'}
+        <nav className="flex items-center text-sm text-gray-600">
+          {/* Home Icon */}
+          <Link to="/" className="flex items-center hover:text-gray-900 mr-2">
+            <Home className="w-4 h-4" />
+          </Link>
+
+          {/* Breadcrumb Items */}
+          {breadcrumbs && breadcrumbs.length > 0 ? (
+            breadcrumbs.map((crumb, index) => (
+              <span key={index} className="flex items-center">
+                <span className="mx-2 text-gray-400">&gt;</span>
+                {crumb.url ? (
+                  <Link to={crumb.url} className="hover:text-gray-900 whitespace-nowrap">
+                    {crumb.name}
+                  </Link>
+                ) : (
+                  <span className="text-gray-900 whitespace-nowrap">{crumb.name}</span>
+                )}
+              </span>
+            ))
+          ) : (
+            <>
+              <span className="mx-2 text-gray-400">&gt;</span>
+              <span>Product</span>
+            </>
+          )}
         </nav>
       </div>
     );
