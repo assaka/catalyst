@@ -921,6 +921,7 @@ export default function ProductDetail() {
               productLabels,
               selectedOptions,
               quantity,
+              totalPrice: getTotalPrice(), // Pass calculated total price
               activeImageIndex: activeImage,
               activeTab,
               isInWishlist,

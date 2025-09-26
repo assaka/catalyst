@@ -21,6 +21,7 @@ import {
 import { registerSlotComponent, createSlotComponent } from './UnifiedSlotRenderer';
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
+import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
 
 /**
  * QuantitySelector - Unified quantity selector component
@@ -724,6 +725,50 @@ const ProductTabsStandalone = createSlotComponent({
   }
 });
 
+/**
+ * TotalPriceDisplay - Shows price breakdown with custom options
+ */
+const TotalPriceDisplay = createSlotComponent({
+  name: 'TotalPriceDisplay',
+
+  // Editor version - shows example breakdown
+  renderEditor: ({ slot, className, styles }) => (
+    <div className={className} style={styles}>
+      <div className="border-t pt-4 mb-4">
+        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+            Price Breakdown
+          </h3>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Product × 1</span>
+            <span className="font-medium">$99.99</span>
+          </div>
+          <div className="border-t pt-2 mt-2">
+            <div className="text-sm font-medium text-gray-700 mb-1">Selected Options:</div>
+            <div className="flex justify-between items-center text-sm pl-4">
+              <span className="text-gray-600">Extra Feature × 1</span>
+              <span className="font-medium">+$19.99</span>
+            </div>
+          </div>
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-bold text-gray-900">Total Price:</span>
+              <span className="text-lg font-bold text-green-600">$119.98</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ),
+
+  // Storefront version - uses actual product data
+  renderStorefront: ({ slot, className, styles, productContext }) => (
+    <div className={className} style={styles}>
+      <TotalPriceDisplayComponent productContext={productContext} />
+    </div>
+  )
+});
+
 // Register all components
 registerSlotComponent('QuantitySelector', QuantitySelector);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
@@ -734,6 +779,7 @@ registerSlotComponent('CustomOptions', CustomOptions);
 registerSlotComponent('ProductTabsSlot', ProductTabs);
 registerSlotComponent('ProductTabs', ProductTabsStandalone);
 registerSlotComponent('ProductRecommendationsSlot', ProductRecommendations);
+registerSlotComponent('TotalPriceDisplay', TotalPriceDisplay);
 
 export {
   QuantitySelector,

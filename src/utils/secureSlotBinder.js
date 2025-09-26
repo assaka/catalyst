@@ -289,58 +289,22 @@ export class ProductDetailController {
   }
 
   /**
-   * Update all price displays
+   * Update all price displays (simplified - React components handle most of this now)
    */
   updatePriceDisplays() {
-    const currency = this.productContext.settings?.currency_symbol || '$';
-    console.log('💰 updatePriceDisplays called', {
-      totalPrice: this.state.totalPrice,
-      currency,
-      selectedOptionsCount: this.state.selectedOptions.length,
-      quantity: this.state.quantity
-    });
+    // Most price display logic is now handled by React components
+    // This method kept for legacy DOM-based price displays if any exist
 
-    // Update total price displays
-    const totalPriceElements = document.querySelectorAll('[data-bind="total-price"]');
-    console.log('💰 Found total price elements:', totalPriceElements.length);
-    totalPriceElements.forEach(el => {
+    const currency = this.productContext.settings?.currency_symbol || '$';
+
+    // Update any legacy total price displays that might still exist
+    document.querySelectorAll('[data-bind="total-price"]').forEach(el => {
       el.textContent = `${currency}${this.state.totalPrice.toFixed(2)}`;
     });
 
-    // Show total price container when options are selected or price is different
+    // Legacy support for has-options binding (kept for backward compatibility)
     const product = this.productContext.product;
     const basePrice = parseFloat(product?.price || 0);
-    const shouldShowTotalPrice = this.state.totalPrice > (basePrice * this.state.quantity) || this.state.selectedOptions.length > 0;
-
-    console.log('💰 Should show total price:', shouldShowTotalPrice, {
-      totalPrice: this.state.totalPrice,
-      basePriceXQuantity: basePrice * this.state.quantity,
-      basePrice,
-      hasOptions: this.state.selectedOptions.length > 0
-    });
-
-    // Update total price container visibility
-    const containerElements = document.querySelectorAll('[data-bind="total-price-container"]');
-    console.log('💰 Found total price container elements:', containerElements.length);
-    containerElements.forEach(el => {
-      console.log('💰 Updating container visibility:', shouldShowTotalPrice ? 'show' : 'hide');
-      if (shouldShowTotalPrice) {
-        el.style.display = 'block';
-      } else {
-        el.style.display = 'none';
-      }
-    });
-
-    // Show/hide options note based on selected options
-    document.querySelectorAll('[data-bind="options-note"]').forEach(el => {
-      if (this.state.selectedOptions.length > 0) {
-        el.style.display = 'block';
-      } else {
-        el.style.display = 'none';
-      }
-    });
-
-    // Legacy support for has-options binding
     if (this.state.totalPrice !== basePrice * this.state.quantity) {
       document.querySelectorAll('[data-bind="has-options"]').forEach(el => {
         el.classList.remove('hidden');

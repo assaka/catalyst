@@ -386,13 +386,9 @@ export const productConfig = {
     // Total Price Display - positioned above Add to Cart button
     total_price_display: {
       id: 'total_price_display',
-      type: 'text',
-      content: `
-        <div data-bind="total-price-container" class="text-lg font-semibold text-gray-800 mb-4" style="display: none;">
-          Total Price: <span data-bind="total-price" class="text-green-600">{{product.price_formatted}}</span>
-          <span data-bind="options-note" class="text-sm text-gray-500 block">(includes selected options)</span>
-        </div>
-      `,
+      type: 'component',
+      component: 'TotalPriceDisplay',
+      content: '',
       className: 'total-price-container',
       parentClassName: '',
       styles: {},
