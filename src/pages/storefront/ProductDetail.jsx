@@ -223,25 +223,33 @@ export default function ProductDetail() {
   // Initialize secure slot binding after product and configuration are loaded
   useEffect(() => {
     if (product && store && settings && configLoaded) {
-      const productContext = {
-        product,
-        store,
-        settings,
-        handleAddToCart: (cartData) => {
-          console.log('Add to cart:', cartData);
-          // TODO: Implement actual add to cart logic
-        },
-        handleWishlistToggle: (productToToggle) => {
-          console.log('Wishlist toggle:', productToToggle);
-          // TODO: Implement actual wishlist logic
-        }
-      };
+      // Delay initialization to ensure DOM elements from UnifiedSlotRenderer are rendered
+      const timeoutId = setTimeout(() => {
+        const productContext = {
+          product,
+          store,
+          settings,
+          handleAddToCart: (cartData) => {
+            console.log('Add to cart:', cartData);
+            // TODO: Implement actual add to cart logic
+          },
+          handleWishlistToggle: (productToToggle) => {
+            console.log('Wishlist toggle:', productToToggle);
+            // TODO: Implement actual wishlist logic
+          }
+        };
 
-      const controller = initializeProductSlotBinding(productContext);
+        const controller = initializeProductSlotBinding(productContext);
+
+        // Store controller in a ref or state for cleanup
+        window._productController = controller;
+      }, 0); // Use 0 to run after the current render cycle
 
       return () => {
-        if (controller && controller.destroy) {
-          controller.destroy();
+        clearTimeout(timeoutId);
+        if (window._productController && window._productController.destroy) {
+          window._productController.destroy();
+          window._productController = null;
         }
       };
     }

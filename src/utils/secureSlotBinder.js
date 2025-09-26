@@ -18,7 +18,6 @@ export class ProductDetailController {
     };
     this.listeners = [];
     this.boundElements = new WeakSet();
-    this.observer = null;
   }
 
   /**
@@ -28,35 +27,8 @@ export class ProductDetailController {
     console.log('🚀 ProductDetailController initialize called', { product: this.productContext?.product?.name, hasSettings: !!this.productContext?.settings });
     this.calculateInitialPrice();
     this.calculateTotalPrice();
-
-    // Retry stock display update multiple times to ensure DOM elements are rendered
-    const tryUpdateStock = (attempts = 0) => {
-      const stockElements = document.querySelectorAll('[data-bind="stock-status"]');
-      console.log(`🔄 Stock update attempt ${attempts + 1}, found ${stockElements.length} elements`);
-
-      if (stockElements.length > 0) {
-        this.updateStockDisplay();
-      } else if (attempts < 10) {
-        // Retry up to 10 times with exponential backoff
-        setTimeout(() => tryUpdateStock(attempts + 1), 100 * (attempts + 1));
-      } else {
-        console.error('❌ Failed to find stock elements after 10 attempts');
-        // Try one more time anyway
-        this.updateStockDisplay();
-      }
-    };
-
-    // Start trying after initial delay
-    setTimeout(() => tryUpdateStock(), 100);
-
-    // Delay price display update to ensure DOM elements are rendered
-    setTimeout(() => {
-      this.updatePriceDisplays();
-    }, 150);
-
-    // Also run price update immediately to see if elements exist
+    this.updateStockDisplay();
     this.updatePriceDisplays();
-
     this.bindAllElements();
     console.log('✅ ProductDetailController initialization complete');
   }
