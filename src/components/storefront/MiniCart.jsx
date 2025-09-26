@@ -29,7 +29,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loadCartTimeout, setLoadCartTimeout] = useState(null);
   const [lastRefreshId, setLastRefreshId] = useState(null);
-  const [lastOptimisticUpdate, setLastOptimisticUpdate] = useState(null);
   const loadCartRef = useRef(null);
 
   // Helper function to load product details for cart items
@@ -124,7 +123,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
     let refreshTimeout = null;
     let pendingRefresh = false;
 
-    const debouncedRefresh = (immediate = false, retryCount = 0) => {
+    const debouncedRefresh = (immediate = false) => {
       if (pendingRefresh && !immediate) {
         return;
       }
@@ -136,31 +135,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const executeRefresh = async () => {
         pendingRefresh = true;
         try {
-          const previousItemCount = cartItems.length;
           await loadCart();
-
-          // For add operations, verify the cart actually updated
-          if (immediate && retryCount < 5 && lastOptimisticUpdate) {
-            // Progressive delay to let backend process the change
-            const delay = 300 + (retryCount * 200); // 300ms, 500ms, 700ms, 900ms, 1100ms
-            await new Promise(resolve => setTimeout(resolve, delay));
-            const newResult = await cartService.getCart();
-
-            if (newResult.success && newResult.items) {
-              const newItemCount = newResult.items.length;
-              const expectedCount = cartItems.length; // Current count including optimistic
-
-              // If backend count is still less than expected, retry
-              if (newItemCount < expectedCount) {
-                setTimeout(() => debouncedRefresh(true, retryCount + 1), delay + 200);
-                return;
-              }
-
-              // Backend caught up, update with fresh data
-              setCartItems(newResult.items);
-              setLastOptimisticUpdate(null); // Clear optimistic tracking
-            }
-          }
         } finally {
           pendingRefresh = false;
         }
@@ -183,16 +158,18 @@ export default function MiniCart({ cartUpdateTrigger }) {
         // We have fresh data from backend - use it directly
         setCartItems(event.detail.freshCartData.items);
         saveCartToLocalStorage(event.detail.freshCartData.items);
-        setLastOptimisticUpdate(null); // Clear any optimistic tracking
 
         // Product details will be loaded by the cartItems useEffect
 
         return; // Fresh data received - no need for additional API calls
       }
 
-      // For events without fresh data, just refresh from backend
-      // This handles cases like quantity updates, removals, etc.
-      debouncedRefresh(true);
+      // Only refresh if the event is not from our own operations and we don't have fresh data
+      // Since CartService now always provides fresh data, we rarely need to refresh
+      if (event.detail?.source !== 'cartService.updateCart' &&
+          event.detail?.source !== 'cartService.addItem') {
+        debouncedRefresh(true);
+      }
     };
 
     const handleDirectRefresh = (event) => {
@@ -248,9 +225,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
           // Save valid cart state to localStorage
           saveCartToLocalStorage(backendItems);
-
-          // Clear any optimistic update tracking
-          setLastOptimisticUpdate(null);
 
           // Product details will be loaded by the cartItems useEffect
         } else {
