@@ -1395,8 +1395,71 @@ const BreadcrumbRenderer = createSlotComponent({
   }
 });
 
+/**
+ * ProductThumbnails - Image gallery thumbnails component
+ */
+const ProductThumbnails = createSlotComponent({
+  name: 'ProductThumbnails',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div className={className} style={styles}>
+        <div className="flex space-x-2 overflow-x-auto">
+          {[1, 2, 3, 4].map((index) => (
+            <div
+              key={index}
+              className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300"
+            >
+              <img
+                src={`https://placehold.co/100x100?text=Thumb+${index}`}
+                alt={`Thumbnail ${index}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+
+  // Storefront version
+  renderStorefront: ({ slot, productContext, className, styles }) => {
+    const { product, activeImageIndex, setActiveImageIndex } = productContext;
+
+    if (!product || !product.images || product.images.length <= 1) {
+      return null;
+    }
+
+    const images = product.images || [];
+
+    return (
+      <div className={className} style={styles}>
+        <div className="flex space-x-2 overflow-x-auto">
+          {images.map((image, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                activeImageIndex === index ? 'border-blue-500' : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <img
+                src={image}
+                alt={`${product.name} ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+});
+
 registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('StockStatus', StockStatus);
+registerSlotComponent('ProductThumbnails', ProductThumbnails);
 
 export {
   QuantitySelector,
@@ -1408,5 +1471,6 @@ export {
   ProductTabs,
   ProductRecommendations,
   TotalPriceDisplay,
-  StockStatus
+  StockStatus,
+  ProductThumbnails
 };

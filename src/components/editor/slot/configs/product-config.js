@@ -150,7 +150,8 @@ export const productConfig = {
 
     thumbnail_gallery: {
       id: 'thumbnail_gallery',
-      type: 'flex',
+      type: 'component',
+      component: 'ProductThumbnails',
       content: '',
       className: 'thumbnail-gallery flex space-x-2 overflow-x-auto',
       styles: {},
