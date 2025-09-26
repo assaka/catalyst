@@ -236,12 +236,20 @@ export default function ProductDetail() {
    * Evaluate which labels apply to the product based on their conditions
    */
   const evaluateProductLabels = (product, labels) => {
-    if (!labels || !Array.isArray(labels) || !product) return [];
+    if (!labels || !Array.isArray(labels) || !product) {
+      console.log('No labels or product:', { labels, product });
+      return [];
+    }
+
+    console.log('Evaluating labels for product:', product.name, 'with labels:', labels.length);
 
     const applicableLabels = [];
 
     for (const label of labels) {
-      if (!label.is_active) continue;
+      if (!label.is_active) {
+        console.log('Label inactive:', label.name);
+        continue;
+      }
 
       let conditions;
       try {
@@ -253,6 +261,7 @@ export default function ProductDetail() {
         continue;
       }
 
+      console.log(`Checking label "${label.name}":`, conditions);
       let shouldApply = true;
 
       // Check attribute conditions
@@ -339,6 +348,12 @@ export default function ProductDetail() {
         
         // Evaluate and apply product labels based on conditions
         const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
+        console.log('Product labels evaluation:', {
+          productLabels: productLabels,
+          product: foundProduct.name,
+          applicableLabels: applicableLabels,
+          labelTexts: applicableLabels.map(label => label.text)
+        });
         const productWithLabels = {
           ...foundProduct,
           labels: applicableLabels.map(label => label.text)
@@ -392,10 +407,12 @@ export default function ProductDetail() {
   const loadProductTabs = async () => {
     if (!store?.id) return;
     try {
+      console.log('📋 Loading product tabs for store:', store.id);
       const tabs = await cachedApiCall(
         `product-tabs-${store.id}`,
         () => StorefrontProductTab.filter({ store_id: store.id, is_active: true })
       );
+      console.log('📋 Product tabs loaded:', tabs);
       setProductTabs(tabs || []);
     } catch (error) {
       console.error('❌ ProductDetail: Error loading product tabs:', error);
