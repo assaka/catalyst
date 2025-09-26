@@ -8,13 +8,8 @@
 import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import aiEnhancementService from '@/services/aiEnhancementService';
-import {
-  CartHeaderSlot,
-  CartItemsSlot,
-  CartSummarySlot,
-  CartCouponSlot,
-  CartEmptyStateSlot
-} from '@/components/editor/slot/slotComponentsCart';
+import { cartConfig } from '@/components/editor/slot/configs/cart-config';
+import { UnifiedSlotComponents } from '@/components/editor/slot/UnifiedSlotComponents';
 
 // Generate cart context based on view mode
 const generateCartContext = (viewMode) => ({
@@ -55,29 +50,17 @@ const generateCartContext = (viewMode) => ({
 
 // Cart Editor Configuration
 const cartEditorConfig = {
+  ...cartConfig,
   pageType: 'cart',
   pageName: 'Cart',
   slotType: 'cart_layout',
   defaultViewMode: 'emptyCart',
-  viewModes: [
-    {
-      key: 'emptyCart',
-      label: 'Empty Cart',
-      icon: ShoppingCart
-    },
-    {
-      key: 'withProducts',
-      label: 'With Products',
-      icon: Package
-    }
-  ],
-  slotComponents: {
-    CartHeaderSlot,
-    CartItemsSlot,
-    CartSummarySlot,
-    CartCouponSlot,
-    CartEmptyStateSlot
-  },
+  viewModes: cartConfig.views.map(view => ({
+    key: view.id,
+    label: view.label,
+    icon: view.icon
+  })),
+  slotComponents: UnifiedSlotComponents,
   generateContext: generateCartContext,
   viewModeAdjustments: {
     content_area: {
@@ -90,27 +73,7 @@ const cartEditorConfig = {
       }
     }
   },
-  customSlotRenderer: (slot, context) => {
-    const componentMap = {
-      'header_title': CartHeaderSlot,
-      'empty_cart_container': CartEmptyStateSlot,
-      'cart_items_container': CartItemsSlot,
-      'coupon_container': CartCouponSlot,
-      'order_summary_container': CartSummarySlot
-    };
-    const SlotComponent = componentMap[slot.id];
-    if (SlotComponent) {
-      return (
-        <SlotComponent
-          cartContext={context}
-          content={slot.content}
-          config={{ viewMode: context?.viewMode }}
-        />
-      );
-    }
-    return null;
-  },
-  cmsBlockPositions: ['cart_above_items', 'cart_below_items']
+  cmsBlockPositions: cartConfig.cmsBlocks
 };
 
 // AI Enhancement Configuration for Cart
@@ -141,8 +104,8 @@ const cartAiConfig = {
       const updatedSlots = { ...layoutConfig.slots };
 
       // Apply basic style improvements
-      if (updatedSlots.cart_items_container) {
-        updatedSlots.cart_items_container.className = "bg-white rounded-lg shadow-sm border p-4 space-y-4";
+      if (updatedSlots.cart_items) {
+        updatedSlots.cart_items.className = "bg-white rounded-lg shadow-sm border p-4 space-y-4";
       }
 
       if (updatedSlots.order_summary_container) {

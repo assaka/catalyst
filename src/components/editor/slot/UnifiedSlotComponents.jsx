@@ -816,6 +816,166 @@ const TotalPriceDisplay = createSlotComponent({
 // Register all components
 registerSlotComponent('QuantitySelector', QuantitySelector);
 registerSlotComponent('AddToCartButton', AddToCartButton);
+
+/**
+ * CartItemsSlot - Cart items listing with selected options breakdown
+ */
+const CartItemsSlot = createSlotComponent({
+  name: 'CartItemsSlot',
+
+  // Editor version - visual preview
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div className={className} style={styles}>
+        <Card className="p-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex-shrink-0 w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center">
+              <span className="text-gray-400 text-xs">Product</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-gray-900">Sample Product</h3>
+              <div className="mt-1 text-sm text-gray-600">
+                + Option 1 (+$5.00)
+              </div>
+              <div className="mt-1">
+                <span className="text-lg font-medium text-gray-900">$25.00</span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="w-12 text-center font-medium">1</span>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  },
+
+  // Storefront version - full functionality
+  renderStorefront: ({ slot, cartContext, className, styles }) => {
+    const {
+      cartItems,
+      calculateItemTotal,
+      updateQuantity,
+      removeItem,
+      currencySymbol,
+      safeToFixed
+    } = cartContext;
+
+    if (cartItems.length === 0) {
+      return (
+        <div className={`${className} text-center py-12`} style={styles}>
+          <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+          <p className="text-gray-600 mb-6">Start shopping to add items to your cart</p>
+          <Link
+            to="/"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div className={className} style={styles}>
+        <div className="space-y-4">
+          {cartItems.map(item => (
+            <Card key={item.id} className="p-4">
+              <div className="flex items-center space-x-4">
+                {/* Product Image */}
+                <div className="flex-shrink-0 w-20 h-20">
+                  {item.product?.image_url ? (
+                    <img
+                      src={item.product.image_url}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">No Image</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Details */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-medium text-gray-900 truncate">
+                    {item.product?.name || 'Product'}
+                  </h3>
+
+                  {/* Selected Options - Breakdown like MiniCart */}
+                  {item.selected_options && item.selected_options.length > 0 && (
+                    <div className="mt-1">
+                      {item.selected_options.map((option, index) => (
+                        <div key={index} className="text-sm text-gray-600">
+                          + {option.name} (+{currencySymbol}{safeToFixed(option.price)})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Price */}
+                  <div className="mt-1">
+                    <span className="text-lg font-medium text-gray-900">
+                      {currencySymbol}{safeToFixed(calculateItemTotal(item, item.product))}
+                    </span>
+                    {item.quantity > 1 && (
+                      <span className="text-sm text-gray-600 ml-2">
+                        ({currencySymbol}{safeToFixed(item.price)} each)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quantity Controls */}
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+
+                  <span className="w-12 text-center font-medium">{item.quantity}</span>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Remove Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeItem(item.id)}
+                  className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+});
+
+registerSlotComponent('CartItemsSlot', CartItemsSlot);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 registerSlotComponent('ProductGallerySlot', ProductGallery);
 registerSlotComponent('ProductInfoSlot', ProductInfo);

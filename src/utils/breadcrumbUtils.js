@@ -65,14 +65,16 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
     productName: product?.name,
     categoryIds: product?.category_ids,
     categoriesCount: categories?.length,
-    storeCode
+    storeCode,
+    showCategoryInBreadcrumb: settings?.show_category_in_breadcrumb,
+    settingsKeys: settings ? Object.keys(settings) : 'no settings'
   });
 
   if (!product) return [];
 
   const breadcrumbs = [];
 
-  if (product.category_ids && product.category_ids.length > 0 && categories && categories.length > 0) {
+  if (settings?.show_category_in_breadcrumb !== false && product.category_ids && product.category_ids.length > 0 && categories && categories.length > 0) {
     // Find the deepest category (the one that has no children in the product's category list)
     let deepestCategory = null;
     let maxDepth = -1;

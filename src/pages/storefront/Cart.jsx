@@ -29,8 +29,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-element-wrapper';
 import slotConfigurationService from '@/services/slotConfigurationService';
-import { SlotManager } from '@/utils/slotUtils';
-import { CartSlotRenderer } from '@/components/storefront/CartSlotRenderer';
+import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
+import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { cartConfig } from '@/components/editor/slot/configs/cart-config';
 
 
@@ -1037,10 +1037,11 @@ export default function Cart() {
                     return shouldRender;
                 })() ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                        <CartSlotRenderer
+                        <UnifiedSlotRenderer
                             slots={cartLayoutConfig.slots}
                             parentId={null}
                             viewMode={cartItems.length === 0 ? 'emptyCart' : 'withProducts'}
+                            context="storefront"
                             cartContext={{
                                 cartItems,
                                 appliedCoupon,
