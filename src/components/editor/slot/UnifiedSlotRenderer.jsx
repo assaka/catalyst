@@ -20,7 +20,32 @@ import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
+/**
+ * Component Registry Interface
+ * All slot components must implement this interface
+ */
+export const createSlotComponent = (config) => ({
+  name: config.name,
+  renderEditor: config.renderEditor || config.render,
+  renderStorefront: config.renderStorefront || config.render,
+  metadata: config.metadata || {}
+});
+
+/**
+ * Default Component Registry
+ * Components register themselves here for use in both contexts
+ */
+export const ComponentRegistry = new Map();
+
+/**
+ * Register a unified slot component
+ */
+export const registerSlotComponent = (name, component) => {
+  ComponentRegistry.set(name, component);
+};
+
 // Import component registry to ensure all components are registered
+// This must come AFTER the exports above to avoid circular dependency errors
 import '@/components/editor/slot/UnifiedSlotComponents';
 
 // Text Slot with Script Support Component
@@ -78,10 +103,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
       } else if (slot.id === 'original_price') {
         textContent = '<span data-original-price class="original-price">$129.99</span>';
       }
-    } else if (slot.id === 'stock_status') {
-      // Show example stock status in editor - using admin settings if available
-      const stockLabel = variableContext?.settings?.stock_settings?.in_stock_label || 'In Stock';
-      textContent = `<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800" data-bind="stock-status">${stockLabel}</span>`;
     } else if (slot.id === 'product_labels') {
       // Show example labels in editor
       textContent = '<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">Sale</span><span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">New</span>';
@@ -99,31 +120,8 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   );
 };
 
-// Components will be registered when UnifiedSlotComponents is imported elsewhere
-
-/**
- * Component Registry Interface
- * All slot components must implement this interface
- */
-export const createSlotComponent = (config) => ({
-  name: config.name,
-  renderEditor: config.renderEditor || config.render,
-  renderStorefront: config.renderStorefront || config.render,
-  metadata: config.metadata || {}
-});
-
-/**
- * Default Component Registry
- * Components register themselves here for use in both contexts
- */
-export const ComponentRegistry = new Map();
-
-/**
- * Register a unified slot component
- */
-export const registerSlotComponent = (name, component) => {
-  ComponentRegistry.set(name, component);
-};
+// Components are registered via the import above
+// createSlotComponent, ComponentRegistry, and registerSlotComponent are exported at the top of the file
 
 /**
  * UnifiedSlotRenderer - Handles both editor and storefront rendering
