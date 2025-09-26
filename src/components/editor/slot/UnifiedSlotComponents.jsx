@@ -842,20 +842,19 @@ const StockStatus = createSlotComponent({
       // Handle low stock
       const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
       if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-        const label = stockSettings.low_stock_label || "Low stock, {items just {quantity} left}";
+        const label = stockSettings.low_stock_label || "Low stock, {just {quantity} left}";
 
         if (hideStockQuantity) {
-          // Remove entire {items...} blocks that contain quantity references
-          return label
-            .replace(/\{items\s+[^}]*\}/gi, '')
+          // Remove any {...} blocks that contain {quantity}
+          return label.replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '')
             // Clean up spacing and punctuation
             .replace(/\s+/g, ' ')
             .replace(/,\s*$/, '')
             .trim();
         }
 
-        // Process {items...} blocks with flexible placeholders
-        return label.replace(/\{items\s+([^}]*)\}/gi, (match, content) => {
+        // Process any {...} blocks and replace placeholders inside them
+        return label.replace(/\{([^}]*)\}/gi, (match, content) => {
           return content
             .replace(/\{quantity\}/gi, product.stock_quantity)
             .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
@@ -867,17 +866,16 @@ const StockStatus = createSlotComponent({
       // Handle regular in stock
       const label = stockSettings.in_stock_label || "In Stock";
       if (hideStockQuantity) {
-        // Remove entire {items...} blocks that contain quantity references
-        return label
-          .replace(/\{items\s+[^}]*\}/gi, '')
+        // Remove any {...} blocks that contain {quantity}
+        return label.replace(/\{[^}]*\{quantity\}[^}]*\}/gi, '')
           // Clean up spacing and punctuation
           .replace(/\s+/g, ' ')
           .replace(/,\s*$/, '')
           .trim();
       }
 
-      // Process {items...} blocks with flexible placeholders
-      return label.replace(/\{items\s+([^}]*)\}/gi, (match, content) => {
+      // Process any {...} blocks and replace placeholders inside them
+      return label.replace(/\{([^}]*)\}/gi, (match, content) => {
         return content
           .replace(/\{quantity\}/gi, product.stock_quantity)
           .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
