@@ -402,7 +402,9 @@ export const productConfig = {
       colSpan: {
         default: 12
       },
+      viewMode: ['default'],
       metadata: {
+        hierarchical: true,
         component: 'QuantitySelector',
         editable: {
           label: {
@@ -411,9 +413,7 @@ export const productConfig = {
             placeholder: 'Enter quantity label'
           }
         }
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
+      }
     },
 
     // Total Price Display - positioned above Add to Cart button
@@ -456,21 +456,18 @@ export const productConfig = {
       className: 'add-to-cart-container',
       parentClassName: '',
       styles: {},
-      metadata: {
-        component: 'AddToCartButton'
-      },
       parentId: 'buttons_container',
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: { hierarchical: true, component: 'AddToCartButton' }
     },
 
     wishlist_button: {
       id: 'wishlist_button',
       type: 'button',
       content: '♥',
-      className: 'w-fit h-12 w-12 border border-gray-300 rounded text-gray-500 hover:text-red-500',
+      className: 'w-fit h-12 w-12 border border-gray-300 rounded text-gray-500 hover:text-red-500 bg-white hover:bg-white',
       parentClassName: '',
       styles: {},
       parentId: 'buttons_container',
