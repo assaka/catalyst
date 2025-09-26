@@ -3,8 +3,18 @@ const router = express.Router();
 const { supabase } = require('../database/connection');
 const { authMiddleware } = require('../middleware/auth');
 
-// Apply authentication middleware to all routes
-router.use(authMiddleware);
+// Apply authentication middleware only if not accessed via public API
+// Public API requests (like from storefront) don't need auth for reading
+const conditionalAuthMiddleware = (req, res, next) => {
+  // If this is a public API call (GET requests for storefront), skip auth
+  if (req.method === 'GET' && req.baseUrl.includes('/public/')) {
+    return next();
+  }
+  // For all other operations (POST, PUT, DELETE), require authentication
+  return authMiddleware(req, res, next);
+};
+
+router.use(conditionalAuthMiddleware);
 
 // Health check route for debugging
 router.get('/health', async (req, res) => {

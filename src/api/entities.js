@@ -843,7 +843,39 @@ class AdminProductTabEntity extends BaseEntity {
 export const ProductTab = new AdminProductTabEntity();
 export const TaxType = new BaseEntity('tax-types');
 export const Service = new BaseEntity('services');
-export const CustomOptionRule = new BaseEntity('custom-option-rules');
+
+// CustomOptionRule entity that uses public API for storefront access
+class CustomOptionRuleEntity extends BaseEntity {
+  constructor() {
+    super('custom-option-rules');
+  }
+
+  // Override filter to use public API for storefront access
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `custom-option-rules?${queryString}` : 'custom-option-rules';
+
+      // Use public request for custom option rule filtering (no authentication required for storefront)
+      const response = await apiClient.publicRequest('GET', url);
+
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+
+      return result;
+    } catch (error) {
+      console.error(`CustomOptionRuleEntity.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Override findAll to use public API
+  async findAll(params = {}) {
+    return this.filter(params);
+  }
+}
+
+export const CustomOptionRule = new CustomOptionRuleEntity();
 export const Plugin = new BaseEntity('plugins');
 class StorePluginEntity extends BaseEntity {
   constructor() {
