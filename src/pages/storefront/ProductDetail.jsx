@@ -435,23 +435,42 @@ export default function ProductDetail() {
     if (!product || !store?.id) return;
     try {
       console.log('Loading custom options for product:', product.sku, 'store:', store.id);
+
+      // Import the CustomOptionRule entity
       const { CustomOptionRule } = await import('@/api/entities');
 
-      // First try to fetch all custom option rules without filters to see if any exist
-      const allRules = await CustomOptionRule.filter({});
-      console.log('All custom option rules in database:', allRules);
+      // Check if we're authenticated
+      const apiClient = (await import('@/api/client')).default;
+      const hasToken = apiClient.getToken();
+      console.log('Has auth token:', !!hasToken);
 
-      // Then fetch rules for this specific store
-      const rules = await CustomOptionRule.filter({
-        store_id: store.id,
-        is_active: true
-      });
+      // Try different API calls to debug the issue
+      try {
+        // First try to fetch all custom option rules without filters
+        console.log('Testing: Fetching all custom option rules...');
+        const allRules = await CustomOptionRule.filter({});
+        console.log('All custom option rules result:', allRules);
 
-      console.log('Found custom option rules for store:', rules);
+        // Try fetching with store filter
+        console.log('Testing: Fetching rules for store:', store.id);
+        const storeRules = await CustomOptionRule.filter({ store_id: store.id });
+        console.log('Store rules result:', storeRules);
 
-      // Find applicable rules for this product
-      const applicableRules = rules.filter(rule => {
-        let conditions;
+        // Try fetching with active filter
+        console.log('Testing: Fetching active rules for store...');
+        const activeRules = await CustomOptionRule.filter({
+          store_id: store.id,
+          is_active: true
+        });
+        console.log('Active rules result:', activeRules);
+
+        // Use the active rules as our main result
+        const rules = activeRules;
+        console.log('Final rules to process:', rules);
+
+        // Find applicable rules for this product
+        const applicableRules = rules.filter(rule => {
+          let conditions;
         try {
           conditions = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions;
         } catch (e) {
@@ -528,6 +547,10 @@ export default function ProductDetail() {
           console.log('Loaded custom option products:', optionProducts);
           setCustomOptions(optionProducts);
         }
+      }
+      } catch (apiError) {
+        console.error('Error with CustomOptionRule API calls:', apiError);
+        setCustomOptions([]);
       }
     } catch (error) {
       console.error('Error loading custom options:', error);

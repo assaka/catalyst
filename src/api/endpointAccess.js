@@ -35,7 +35,7 @@ export const endpointAccessConfig = {
     'coupons',
     'cms',
   ],
-  
+
   // Endpoints that require store owner/admin authentication
   admin: [
     'users',
@@ -82,6 +82,7 @@ export function shouldUsePublicAPI(endpoint, hasToken, userRole = 'guest') {
       
     case 'storefront':
       // Use public API for storefront endpoints when no token or when user is a guest/customer
+      // But use authenticated API when user is admin/store_owner for management purposes
       return !hasToken || userRole === 'guest' || userRole === 'customer';
       
     case 'customer':
