@@ -64,7 +64,7 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
 
   const breadcrumbs = [];
 
-  if (settings?.show_category_in_breadcrumb && product.category_ids && product.category_ids.length > 0 && categories) {
+  if (product.category_ids && product.category_ids.length > 0 && categories && categories.length > 0) {
     const primaryCategoryId = product.category_ids[0];
     const primaryCategory = categories.find(c => c.id === primaryCategoryId);
 
