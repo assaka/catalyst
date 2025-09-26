@@ -304,10 +304,17 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                     
                                     {option.images && option.images.length > 0 && (
                                         <div className="mt-3">
-                                            <img 
-                                                src={option.images[0]} 
+                                            <img
+                                                src={
+                                                    typeof option.images[0] === 'string'
+                                                        ? option.images[0]
+                                                        : option.images[0]?.url || option.images[0]?.src || 'https://placehold.co/64x64?text=No+Image'
+                                                }
                                                 alt={option.name}
                                                 className="w-16 h-16 object-cover rounded-md"
+                                                onError={(e) => {
+                                                    e.target.src = 'https://placehold.co/64x64?text=No+Image';
+                                                }}
                                             />
                                         </div>
                                     )}
