@@ -272,6 +272,14 @@ export default function ProductDetail() {
 
       let shouldApply = true;
 
+      // Debug: Log the label being checked
+      if (label.name === "Test") {
+        console.log('🔍 DEBUG: Checking Test label for product:', product.name);
+        console.log('🔍 DEBUG: Product object keys:', Object.keys(product));
+        console.log('🔍 DEBUG: Looking for manufacturer in product:', product.manufacturer);
+        console.log('🔍 DEBUG: All product data:', product);
+      }
+
       // Check attribute conditions
       if (conditions?.attribute_conditions?.length > 0) {
         for (const condition of conditions.attribute_conditions) {
