@@ -24,6 +24,7 @@ import { registerSlotComponent, createSlotComponent } from './SlotComponentRegis
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
+import BreadcrumbRendererComponent from '@/components/storefront/BreadcrumbRenderer';
 // import StockStatusComponent from '@/components/storefront/StockStatus'; // Temporarily commented out
 
 /**
@@ -944,11 +945,11 @@ const CartItemsSlot = createSlotComponent({
                   {/* Price */}
                   <div className="mt-1">
                     <span className="text-lg font-medium text-gray-900">
-                      {currencySymbol}{safeToFixed(calculateItemTotal(item, item.product))}
+                      {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
                     </span>
                     {item.quantity > 1 && (
                       <span className="text-sm text-gray-600 ml-2">
-                        ({currencySymbol}{safeToFixed(item.price)} each)
+                        ({currencySymbol}{safeToFixed(item.price || 0)} each)
                       </span>
                     )}
                   </div>
@@ -1193,6 +1194,61 @@ const StockStatus = createSlotComponent({
   }
 });
 
+/**
+ * BreadcrumbRenderer - Unified breadcrumb component for all page types
+ */
+const BreadcrumbRenderer = createSlotComponent({
+  name: 'BreadcrumbRenderer',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div className={className} style={styles}>
+        <nav className="flex items-center text-sm text-gray-600">
+          <Home className="w-4 h-4 mr-2" />
+          <span>Home &gt; Category &gt; Product</span>
+        </nav>
+      </div>
+    );
+  },
+
+  // Storefront version
+  renderStorefront: ({ slot, productContext, categoryContext, className, styles }) => {
+    // Determine context and page type
+    let pageType, pageData, storeCode, categories, settings;
+
+    if (productContext) {
+      pageType = 'product';
+      pageData = productContext.product;
+      storeCode = productContext.store?.slug || productContext.store?.code;
+      categories = productContext.categories;
+      settings = productContext.settings;
+    } else if (categoryContext) {
+      pageType = 'category';
+      pageData = categoryContext.category;
+      storeCode = categoryContext.store?.slug || categoryContext.store?.code;
+      categories = categoryContext.categories;
+      settings = categoryContext.settings;
+    } else {
+      return null;
+    }
+
+    return (
+      <div className={className} style={styles}>
+        <BreadcrumbRendererComponent
+          pageType={pageType}
+          pageData={pageData}
+          storeCode={storeCode}
+          categories={categories}
+          settings={settings}
+          className="text-sm text-gray-600"
+        />
+      </div>
+    );
+  }
+});
+
+registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('StockStatus', StockStatus);
 
 export {

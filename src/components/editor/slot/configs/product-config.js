@@ -67,7 +67,7 @@ export const productConfig = {
     breadcrumbs: {
       id: 'breadcrumbs',
       type: 'component',
-      component: 'ProductBreadcrumbsSlot',
+      component: 'BreadcrumbRenderer',
       content: '',
       className: 'w-fit text-sm text-gray-600',
       parentClassName: '',
