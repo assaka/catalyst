@@ -304,6 +304,7 @@ class SlotConfigurationService {
         cleanSlots[key] = {
           id: slot.id || key,
           type: slot.type || 'container',
+          component: slot.component || null, // ← MISSING: Component name for component slots
           content: slot.content || '',
           className: slot.className || '',
           parentClassName: slot.parentClassName || '',
