@@ -122,6 +122,42 @@ const QuantitySelector = createSlotComponent({
 });
 
 /**
+ * AddToCartButton - Unified add to cart button component
+ */
+const AddToCartButton = createSlotComponent({
+  name: 'AddToCartButton',
+
+  // Editor version - visual preview only
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div className={className} style={styles}>
+        <button className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium">
+          Add to Cart
+        </button>
+      </div>
+    );
+  },
+
+  // Storefront version - full functionality
+  renderStorefront: ({ slot, productContext, className, styles }) => {
+    const { handleAddToCart, canAddToCart, product } = productContext;
+
+    return (
+      <div className={className} style={styles}>
+        <Button
+          onClick={handleAddToCart}
+          disabled={!canAddToCart}
+          className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ShoppingCart className="w-5 h-5 mr-2" />
+          Add to Cart
+        </Button>
+      </div>
+    );
+  }
+});
+
+/**
  * ProductBreadcrumbs - Unified breadcrumb component
  */
 const ProductBreadcrumbs = createSlotComponent({
@@ -772,6 +808,7 @@ const TotalPriceDisplay = createSlotComponent({
 
 // Register all components
 registerSlotComponent('QuantitySelector', QuantitySelector);
+registerSlotComponent('AddToCartButton', AddToCartButton);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 registerSlotComponent('ProductGallerySlot', ProductGallery);
 registerSlotComponent('ProductInfoSlot', ProductInfo);

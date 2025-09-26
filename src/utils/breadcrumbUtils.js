@@ -60,6 +60,14 @@ export function buildCategoryBreadcrumbs(currentCategory, storeCode, categories 
  * Builds breadcrumbs for a product page
  */
 export function buildProductBreadcrumbs(product, storeCode, categories = [], settings = {}) {
+  console.log('🍞 buildProductBreadcrumbs called:', {
+    hasProduct: !!product,
+    productName: product?.name,
+    categoryIds: product?.category_ids,
+    categoriesCount: categories?.length,
+    storeCode
+  });
+
   if (!product) return [];
 
   const breadcrumbs = [];
@@ -67,6 +75,12 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
   if (product.category_ids && product.category_ids.length > 0 && categories && categories.length > 0) {
     const primaryCategoryId = product.category_ids[0];
     const primaryCategory = categories.find(c => c.id === primaryCategoryId);
+
+    console.log('🏷️ Primary category search:', {
+      primaryCategoryId,
+      foundCategory: primaryCategory?.name,
+      allCategories: categories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id }))
+    });
 
     if (primaryCategory) {
       let category = primaryCategory;
@@ -81,6 +95,8 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
           break;
         }
       }
+
+      console.log('🔗 Category chain:', categoryChain.map(c => c.name));
 
       const filteredChain = categoryChain.filter(cat => cat.parent_id !== null);
       filteredChain.forEach((cat, index) => {
@@ -102,6 +118,8 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
     url: null,
     isCurrent: true
   });
+
+  console.log('🍞 Final breadcrumbs:', breadcrumbs);
 
   return breadcrumbs;
 }

@@ -447,11 +447,15 @@ export const productConfig = {
 
     add_to_cart_button: {
       id: 'add_to_cart_button',
-      type: 'text',
-      content: '<button data-action="add-to-cart" class="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">Add to Cart</button>',
+      type: 'component',
+      component: 'AddToCartButton',
+      content: 'AddToCartButton',
       className: 'add-to-cart-container',
       parentClassName: '',
       styles: {},
+      metadata: {
+        component: 'AddToCartButton'
+      },
       parentId: 'buttons_container',
       position: { col: 1, row: 1 },
       colSpan: {},
