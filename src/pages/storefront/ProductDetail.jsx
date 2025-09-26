@@ -33,6 +33,7 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { productConfig } from '@/components/editor/slot/configs/product-config';
+import { initializeProductSlotBinding } from '@/utils/secureSlotBinder';
 
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
