@@ -944,18 +944,6 @@ export default function ProductDetail() {
               customOptionsLabel: customOptionsLabel
             }}
           />
-          {/* Render CustomOptions directly as a fallback */}
-          {product && (
-            <div className="col-span-12 px-4 mt-6">
-              <CustomOptions
-                product={product}
-                store={store}
-                settings={settings}
-                selectedOptions={selectedOptions}
-                onSelectionChange={handleOptionChange}
-              />
-            </div>
-          )}
         </div>
       ) : null
       }

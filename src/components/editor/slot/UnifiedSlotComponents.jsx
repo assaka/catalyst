@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { registerSlotComponent, createSlotComponent } from './UnifiedSlotRenderer';
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
+import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 
 /**
  * QuantitySelector - Unified quantity selector component
@@ -631,6 +632,61 @@ const ProductRecommendations = createSlotComponent({
 });
 
 /**
+ * CustomOptions - Unified custom options component
+ */
+const CustomOptions = createSlotComponent({
+  name: 'CustomOptions',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div className={className} style={styles}>
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Custom Options</h3>
+          <div className="space-y-3">
+            <div className="border rounded-lg p-4 cursor-pointer">
+              <div className="flex items-start space-x-3">
+                <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5"></div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">Sample Custom Option</h4>
+                      <p className="text-sm text-gray-600 mt-1">Optional product description</p>
+                    </div>
+                    <div className="ml-4 flex-shrink-0">
+                      <Badge variant="outline" className="font-semibold">+$10.00</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+
+  // Storefront version
+  renderStorefront: ({ slot, productContext, className, styles }) => {
+    const { product, store, settings, selectedOptions, handleOptionChange } = productContext;
+
+    if (!product || !store) return null;
+
+    return (
+      <div className={className} style={styles}>
+        <CustomOptionsComponent
+          product={product}
+          store={store}
+          settings={settings}
+          selectedOptions={selectedOptions}
+          onSelectionChange={handleOptionChange}
+        />
+      </div>
+    );
+  }
+});
+
+/**
  * Standalone ProductTabs wrapper for slot system
  */
 const ProductTabsStandalone = createSlotComponent({
@@ -674,6 +730,7 @@ registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 registerSlotComponent('ProductGallerySlot', ProductGallery);
 registerSlotComponent('ProductInfoSlot', ProductInfo);
 registerSlotComponent('ProductOptionsSlot', ProductOptions);
+registerSlotComponent('CustomOptions', CustomOptions);
 registerSlotComponent('ProductTabsSlot', ProductTabs);
 registerSlotComponent('ProductTabs', ProductTabsStandalone);
 registerSlotComponent('ProductRecommendationsSlot', ProductRecommendations);
@@ -684,6 +741,7 @@ export {
   ProductGallery,
   ProductInfo,
   ProductOptions,
+  CustomOptions,
   ProductTabs,
   ProductRecommendations
 };
