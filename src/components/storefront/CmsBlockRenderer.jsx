@@ -128,12 +128,18 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
         const allBlocks = await loadCmsBlocksWithCache(storeIdToUse);
         
         
+        console.log('🔍 CmsBlockRenderer Debug:', {
+          position,
+          allBlocksCount: allBlocks.length,
+          allBlocks: allBlocks.map(b => ({ id: b.id, title: b.title, placement: b.placement, is_active: b.is_active }))
+        });
+
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
-          
+
           // Handle new array-based placement format
           let placements = [];
-          
+
           if (Array.isArray(block.placement)) {
             // New array format: ["header", "product_above_title", ...]
             placements = block.placement;
@@ -149,7 +155,24 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
           }
 
           // Check if the requested position is in the block's placements
-          return placements.includes(position);
+          const matches = placements.includes(position);
+
+          if (matches) {
+            console.log('✅ CMS block matches position:', {
+              title: block.title,
+              position,
+              placements,
+              blockId: block.id
+            });
+          }
+
+          return matches;
+        });
+
+        console.log('📋 Filtered CMS blocks:', {
+          position,
+          filteredCount: filteredBlocks.length,
+          filteredBlocks: filteredBlocks.map(b => b.title)
         });
 
         // Sort by sort_order field from the block model

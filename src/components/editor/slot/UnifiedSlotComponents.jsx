@@ -841,6 +841,14 @@ const StockStatus = createSlotComponent({
 
       // Handle low stock
       const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
+      console.log('🔍 Low stock check:', {
+        productStockQuantity: product.stock_quantity,
+        productLowStockThreshold: product.low_stock_threshold,
+        settingsDisplayLowStockThreshold: settings?.display_low_stock_threshold,
+        finalLowStockThreshold: lowStockThreshold,
+        isLowStock: lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold,
+        stockSettings: stockSettings
+      });
       if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
         const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
         if (hideStockQuantity) {

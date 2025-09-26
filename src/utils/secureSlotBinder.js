@@ -195,6 +195,11 @@ export class ProductDetailController {
   updateQuantity(newQuantity) {
     this.state.quantity = newQuantity;
 
+    // Update React state if available
+    if (this.productContext.setQuantity) {
+      this.productContext.setQuantity(newQuantity);
+    }
+
     // Update all quantity displays
     document.querySelectorAll('[data-bind="quantity"]').forEach(el => {
       if (el.tagName === 'INPUT') {
@@ -230,6 +235,11 @@ export class ProductDetailController {
         option_value: value,
         price_modifier: priceModifier
       });
+    }
+
+    // Update React state if available (this will trigger a re-render)
+    if (this.productContext.setSelectedOptions) {
+      this.productContext.setSelectedOptions([...this.state.selectedOptions]);
     }
 
     this.calculateTotalPrice();

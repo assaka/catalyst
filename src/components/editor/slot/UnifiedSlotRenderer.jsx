@@ -327,6 +327,14 @@ export function UnifiedSlotRenderer({
       if (componentName === 'CmsBlockRenderer') {
         const position = slot.metadata?.props?.position || 'default';
 
+        console.log('🎯 UnifiedSlotRenderer: Rendering CmsBlockRenderer', {
+          slotId: slot.id,
+          componentName,
+          position,
+          context,
+          metadata: slot.metadata
+        });
+
         return (
           <div className={processedClassName} style={styles}>
             <CmsBlockRenderer position={position} />
