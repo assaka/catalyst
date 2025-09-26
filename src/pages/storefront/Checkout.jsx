@@ -290,23 +290,50 @@ export default function Checkout() {
   const calculateSubtotal = () => {
     const subtotal = cartItems.reduce((total, item) => {
       const product = cartProducts[item.product_id];
-      const itemPrice = calculateItemPrice(item, product);
-      const lineTotal = itemPrice * item.quantity;
-      
-      
+      const basePrice = calculateItemBasePrice(item, product);
+      const lineTotal = basePrice * item.quantity;
+
       return total + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
-    
+
     return isNaN(subtotal) ? 0 : subtotal;
+  };
+
+  const calculateOptionsTotal = () => {
+    const optionsTotal = cartItems.reduce((total, item) => {
+      const optionsPrice = (item.selected_options || []).reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
+      const lineTotal = optionsPrice * item.quantity;
+
+      return total + (isNaN(lineTotal) ? 0 : lineTotal);
+    }, 0);
+
+    return isNaN(optionsTotal) ? 0 : optionsTotal;
+  };
+
+  const calculateItemBasePrice = (item, product) => {
+    if (!product) return 0;
+
+    let basePrice = parseFloat(item.price || 0);
+    if (!item.price || isNaN(basePrice)) {
+      basePrice = parseFloat(product.price || 0);
+      if (isNaN(basePrice)) basePrice = 0;
+      if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
+        basePrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+        if (isNaN(basePrice)) basePrice = 0;
+      }
+    }
+
+    return basePrice;
   };
 
   const getTotalAmount = () => {
     const subtotal = calculateSubtotal();
+    const optionsTotal = calculateOptionsTotal();
     const discount = calculateDiscount();
     const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
     const paymentMethodFee = isNaN(parseFloat(paymentFee)) ? 0 : parseFloat(paymentFee);
     const tax = calculateTax(); // Use calculated tax instead of state
-    const total = subtotal - discount + shipping + paymentMethodFee + tax;
+    const total = subtotal + optionsTotal - discount + shipping + paymentMethodFee + tax;
     
     
     return isNaN(total) ? 0 : total;
@@ -1028,7 +1055,14 @@ export default function Checkout() {
                   <span>Subtotal</span>
                   <span>{currencySymbol}{formatPrice(calculateSubtotal())}</span>
                 </div>
-                
+
+                {calculateOptionsTotal() > 0 && (
+                  <div className="flex justify-between">
+                    <span>Custom Options</span>
+                    <span>{currencySymbol}{formatPrice(calculateOptionsTotal())}</span>
+                  </div>
+                )}
+
                 {appliedCoupon && calculateDiscount() > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({appliedCoupon.name})</span>
