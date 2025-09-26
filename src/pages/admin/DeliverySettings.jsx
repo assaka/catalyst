@@ -101,6 +101,14 @@ export default function DeliverySettings() { // Renamed the function component f
         result = await DeliverySettingsEntity.create(settingsToSave);
       }
       
+      // Clear any potential cache
+      try {
+        localStorage.removeItem('storeProviderCache');
+        sessionStorage.removeItem('storeProviderCache');
+      } catch (e) {
+        console.warn('Failed to clear cache:', e);
+      }
+
       // Verify the result
       if (result && result.id) {
         setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)

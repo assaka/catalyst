@@ -99,6 +99,7 @@ const generateProductName = (product, basePrefix = '') => {
 };
 
 export default function ProductDetail() {
+  console.log('🚀 ProductDetail component rendering...');
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
@@ -227,9 +228,17 @@ export default function ProductDetail() {
 
   // Initialize secure slot binding after product and configuration are loaded
   useEffect(() => {
+    console.log('🎯 useEffect for slot binding triggered:', {
+      hasProduct: !!product,
+      hasStore: !!store,
+      hasSettings: !!settings,
+      configLoaded
+    });
     if (product && store && settings && configLoaded) {
       // Delay initialization to ensure DOM elements from UnifiedSlotRenderer are rendered
+      console.log('🔄 About to initialize slot binding after timeout...');
       const timeoutId = setTimeout(() => {
+        console.log('⏰ Timeout executed, initializing slot binding now...');
         const productContext = {
           product,
           store,
@@ -253,7 +262,7 @@ export default function ProductDetail() {
 
         // Store controller in a ref or state for cleanup
         window._productController = controller;
-      }, 0); // Use 0 to run after the current render cycle
+      }, 1000); // Increase timeout to 1 second to ensure DOM is ready
 
       return () => {
         clearTimeout(timeoutId);

@@ -178,8 +178,14 @@ export default function AnalyticsSettings() {
                 loadGTMScript();
             }
             
-            // Clear storefront cache for instant updates
+            // Clear all cache for instant updates
             clearStorefrontCache(storeId, ['stores']);
+            try {
+                localStorage.removeItem('storeProviderCache');
+                sessionStorage.removeItem('storeProviderCache');
+            } catch (e) {
+                console.warn('Failed to clear cache:', e);
+            }
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
         } catch (error) {
             console.error("Failed to save settings:", error);
