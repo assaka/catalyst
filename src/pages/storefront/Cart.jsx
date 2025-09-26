@@ -125,11 +125,16 @@ export default function Cart() {
                     Object.keys(response.data.configuration.slots).length > 0) {
 
                     const publishedConfig = response.data;
+                    console.log('✅ CART: Published config loaded successfully');
+                    console.log('✅ CART: header_title content:', publishedConfig.configuration.slots.header_title?.content);
+                    console.log('✅ CART: header_title styles:', publishedConfig.configuration.slots.header_title?.styles);
                     setCartLayoutConfig(publishedConfig.configuration);
                     setConfigLoaded(true);
 
                 } else {
                     // Fallback to cart-config.js
+                    console.log('⚠️ CART: Using fallback config - no published config found');
+                    console.log('⚠️ CART: Response:', response);
                     const fallbackConfig = {
                         slots: { ...cartConfig.slots },
                         metadata: {
@@ -143,7 +148,8 @@ export default function Cart() {
                     setConfigLoaded(true);
                 }
             } catch (error) {
-                console.error('❌ Error loading published slot configuration:', error);
+                console.error('❌ CART: Error loading published slot configuration:', error);
+                console.log('❌ CART: Using error fallback configuration');
 
                 // Fallback to cart-config.js
                 const fallbackConfig = {
@@ -1040,6 +1046,8 @@ export default function Cart() {
                     return shouldRender;
                 })() ? (
                     <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                        {console.log('🎨 CART: Rendering with slots:', Object.keys(cartLayoutConfig.slots))}
+                        {console.log('🎨 CART: header_title slot:', cartLayoutConfig.slots.header_title)}
                         <UnifiedSlotRenderer
                             slots={cartLayoutConfig.slots}
                             parentId={null}
