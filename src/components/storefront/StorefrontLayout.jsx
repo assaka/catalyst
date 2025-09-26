@@ -66,8 +66,6 @@ export default function StorefrontLayout({ children }) {
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [gtmScript, setGtmScript] = useState(null);
     const [expandedMobileCategories, setExpandedMobileCategories] = useState(new Set());
-    // State to trigger MiniCart re-render
-    const [cartUpdateTrigger, setCartUpdateTrigger] = useState(0);
 
     // Flash message state
     const [flashMessage, setFlashMessage] = useState(null);
@@ -161,16 +159,6 @@ export default function StorefrontLayout({ children }) {
         fetchData();
     }, [loading, store]);
 
-    // Add cart update listener
-    useEffect(() => {
-      const handleCartUpdate = () => {
-        // Force re-render of MiniCart component
-        setCartUpdateTrigger(prev => prev + 1);
-      };
-
-      window.addEventListener('cartUpdated', handleCartUpdate);
-      return () => window.removeEventListener('cartUpdated', handleCartUpdate);
-    }, []);
 
     // Flash message event listener
     useEffect(() => {
@@ -500,7 +488,7 @@ export default function StorefrontLayout({ children }) {
 
                                      {/* Single responsive MiniCart for both mobile and desktop */}
                                      {!settings?.hide_header_cart && (
-                                         <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
+                                         <MiniCart />
                                      )}
 
                                      <Button

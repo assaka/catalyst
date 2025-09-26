@@ -17,7 +17,7 @@ import {
 import { formatPrice, safeToFixed, calculateDisplayPrice, formatDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
-export default function MiniCart({ cartUpdateTrigger }) {
+export default function MiniCart() {
   const { store, settings, taxes, selectedCountry } = useStore();
   
   
@@ -98,7 +98,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
     return null;
   };
 
-  // Load cart on mount and when triggered
+  // Load cart on mount
   useEffect(() => {
     // Initialize from localStorage first for instant display
     const localCart = getCartFromLocalStorage();
@@ -107,7 +107,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       // Product details will be loaded by the cartItems useEffect
     }
     loadCart();
-  }, [cartUpdateTrigger]);
+  }, []);
 
   // Load product details when cartItems change
   useEffect(() => {
