@@ -73,17 +73,38 @@ export function buildProductBreadcrumbs(product, storeCode, categories = [], set
   const breadcrumbs = [];
 
   if (product.category_ids && product.category_ids.length > 0 && categories && categories.length > 0) {
-    const primaryCategoryId = product.category_ids[0];
-    const primaryCategory = categories.find(c => c.id === primaryCategoryId);
+    // Find the deepest category (the one that has no children in the product's category list)
+    let deepestCategory = null;
+    let maxDepth = -1;
 
-    console.log('🏷️ Primary category search:', {
-      primaryCategoryId,
-      foundCategory: primaryCategory?.name,
+    for (const categoryId of product.category_ids) {
+      const category = categories.find(c => c.id === categoryId);
+      if (category) {
+        // Calculate depth by walking up the parent chain
+        let depth = 0;
+        let current = category;
+        while (current?.parent_id) {
+          depth++;
+          current = categories.find(c => c.id === current.parent_id);
+          if (!current) break;
+        }
+
+        if (depth > maxDepth) {
+          maxDepth = depth;
+          deepestCategory = category;
+        }
+      }
+    }
+
+    console.log('🏷️ Category search:', {
+      allCategoryIds: product.category_ids,
+      deepestCategory: deepestCategory?.name,
+      maxDepth,
       allCategories: categories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id }))
     });
 
-    if (primaryCategory) {
-      let category = primaryCategory;
+    if (deepestCategory) {
+      let category = deepestCategory;
       const categoryChain = [category];
 
       while (category?.parent_id) {
