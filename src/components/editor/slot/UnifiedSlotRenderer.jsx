@@ -160,21 +160,6 @@ export function UnifiedSlotRenderer({
   if (parentId === null) {
     console.log('🔍 Root level slots available:', Object.keys(slots || {}));
     console.log('🔍 Looking for product_tabs slot:', slots?.product_tabs ? 'FOUND' : 'NOT FOUND');
-
-    // Check for CMS block slots
-    const cmsBlockSlots = Object.keys(slots || {}).filter(key => key.includes('cms_block'));
-    console.log('🎯 CMS block slots found:', cmsBlockSlots);
-
-    cmsBlockSlots.forEach(slotKey => {
-      const slot = slots[slotKey];
-      console.log(`📋 CMS Slot ${slotKey}:`, {
-        id: slot.id,
-        type: slot.type,
-        component: slot.component,
-        position: slot.metadata?.props?.position,
-        parentId: slot.parentId
-      });
-    });
   }
 
   // Filter slots by view mode
@@ -338,28 +323,11 @@ export function UnifiedSlotRenderer({
     if (type === 'component') {
       const componentName = processedContent || content || slot.component || slot.metadata?.component;
 
-      console.log('🔍 Component slot processing:', {
-        slotId: slot.id,
-        type,
-        componentName,
-        processedContent,
-        content: slot.content,
-        component: slot.component,
-        metadataComponent: slot.metadata?.component,
-        context
-      });
 
       // Special handling for CmsBlockRenderer
       if (componentName === 'CmsBlockRenderer') {
         const position = slot.metadata?.props?.position || 'default';
 
-        console.log('🎯 UnifiedSlotRenderer: Rendering CmsBlockRenderer', {
-          slotId: slot.id,
-          componentName,
-          position,
-          context,
-          metadata: slot.metadata
-        });
 
         return (
           <div className={processedClassName} style={styles}>
@@ -469,13 +437,10 @@ export function UnifiedSlotRenderer({
   };
 
 
-  // Debug which slots are about to be rendered
-  console.log('🔄 UnifiedSlotRenderer rendering slots:', {
-    parentId,
-    context,
-    slotsCount: sortedSlots.length,
-    slots: sortedSlots.map(s => ({ id: s.id, type: s.type, component: s.component }))
-  });
+  // Debug which slots are about to be rendered (minimal logging)
+  if (parentId === null && context === 'storefront') {
+    console.log('🔄 Rendering root slots:', sortedSlots.length);
+  }
 
   return (
     <>

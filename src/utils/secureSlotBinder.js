@@ -39,11 +39,17 @@ export class ProductDetailController {
   bindAllElements() {
     // Find all elements with data-action attributes
     const actionElements = document.querySelectorAll('[data-action]');
+    console.log('🔗 SecureSlotBinder: Found elements with data-action:', actionElements.length);
+
+    // Log quantity-specific elements
+    const quantityElements = document.querySelectorAll('[data-action*="quantity"], [data-action="increment"], [data-action="decrement"]');
+    console.log('🔗 SecureSlotBinder: Found quantity-related elements:', quantityElements.length);
 
     actionElements.forEach(element => {
       if (this.boundElements.has(element)) return; // Already bound
 
       const action = element.getAttribute('data-action');
+      console.log('🔗 SecureSlotBinder: Binding action:', action, 'to element:', element.tagName);
       this.bindElementAction(element, action);
       this.boundElements.add(element);
     });
@@ -88,13 +94,18 @@ export class ProductDetailController {
    */
   bindIncrement(element) {
     const target = element.getAttribute('data-target') || '[data-bind="quantity"]';
+    console.log('🔗 SecureSlotBinder: Binding increment button, target:', target);
 
     element.addEventListener('click', () => {
+      console.log('➕ SecureSlotBinder: Increment button clicked!');
       const targetElement = document.querySelector(target);
       if (targetElement) {
         const currentValue = parseInt(targetElement.value || targetElement.textContent) || 0;
         const newValue = currentValue + 1;
+        console.log('➕ SecureSlotBinder: Incrementing from', currentValue, 'to', newValue);
         this.updateQuantity(newValue);
+      } else {
+        console.error('➕ SecureSlotBinder: Target element not found:', target);
       }
     });
   }
@@ -104,13 +115,18 @@ export class ProductDetailController {
    */
   bindDecrement(element) {
     const target = element.getAttribute('data-target') || '[data-bind="quantity"]';
+    console.log('🔗 SecureSlotBinder: Binding decrement button, target:', target);
 
     element.addEventListener('click', () => {
+      console.log('➖ SecureSlotBinder: Decrement button clicked!');
       const targetElement = document.querySelector(target);
       if (targetElement) {
         const currentValue = parseInt(targetElement.value || targetElement.textContent) || 0;
         const newValue = Math.max(1, currentValue - 1);
+        console.log('➖ SecureSlotBinder: Decrementing from', currentValue, 'to', newValue);
         this.updateQuantity(newValue);
+      } else {
+        console.error('➖ SecureSlotBinder: Target element not found:', target);
       }
     });
   }
