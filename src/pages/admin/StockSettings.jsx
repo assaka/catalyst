@@ -75,7 +75,7 @@ export default function StockSettings() {
         display_low_stock_threshold: storeSettings.hasOwnProperty('display_low_stock_threshold') ? storeSettings.display_low_stock_threshold : 0,
         in_stock_label: storeSettings.stock_settings?.in_stock_label || 'In Stock',
         out_of_stock_label: storeSettings.stock_settings?.out_of_stock_label || 'Out of Stock',
-        low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, just {quantity} left',
+        low_stock_label: storeSettings.stock_settings?.low_stock_label || 'Low stock, {just {quantity} left}',
         show_stock_label: storeSettings.stock_settings?.show_stock_label !== undefined ? storeSettings.stock_settings.show_stock_label : true
       });
 
@@ -113,7 +113,7 @@ export default function StockSettings() {
           stock_settings: {
             in_stock_label: settings.in_stock_label || 'In Stock',
             out_of_stock_label: settings.out_of_stock_label || 'Out of Stock',
-            low_stock_label: settings.low_stock_label || 'Low stock, just {quantity} left',
+            low_stock_label: settings.low_stock_label || 'Low stock, {just {quantity} left}',
             show_stock_label: settings.show_stock_label !== undefined ? settings.show_stock_label : true
           }
         }
@@ -261,7 +261,10 @@ export default function StockSettings() {
                       onChange={(e) => handleSettingsChange('in_stock_label', e.target.value)}
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      Text to display when a product is in stock. Use <code>{'{quantity}'}</code> to show the stock amount or conditional <code>{'{({quantity})}'}</code>
+                      Text to display when a product is in stock. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Examples: <code>In Stock {'{({quantity} available)}'}</code> → "In Stock (5 available)" | <code>Available {'{({quantity} {item})}'}</code> → "Available (1 item)"
                     </p>
                   </div>
                   <div>
@@ -283,9 +286,41 @@ export default function StockSettings() {
                       onChange={(e) => handleSettingsChange('low_stock_label', e.target.value)}
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      Text for low stock warning. Use <code>{'{quantity}'}</code> to show the remaining stock.
+                      Text for low stock warning. Use <code>{'{quantity}'}</code> blocks for flexible formatting.
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Examples: <code>Low stock, {'{just {quantity} left}'}</code> → "Low stock, just 2 left" | <code>Hurry! {'{Only {quantity} {piece} remaining}'}</code> → "Hurry! Only 1 piece remaining"
                     </p>
                   </div>
+              </div>
+
+              {/* Placeholder Help Section */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <h4 className="font-semibold text-blue-900 mb-3">Available Placeholders & Formatting</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <h5 className="font-medium text-blue-800 mb-2">Block Format</h5>
+                    <p className="text-blue-700 mb-2">Use <code className="bg-blue-100 px-1 rounded">{'{...}'}</code> blocks to create flexible text that can be hidden when stock quantities are hidden.</p>
+                    <div className="space-y-1 text-blue-600">
+                      <div><code className="bg-blue-100 px-1 rounded">{'{just {quantity} left}'}</code> → "just 5 left"</div>
+                      <div><code className="bg-blue-100 px-1 rounded">{'{({quantity} available)}'}</code> → "(3 available)"</div>
+                    </div>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-blue-800 mb-2">Available Placeholders</h5>
+                    <div className="space-y-1 text-blue-600">
+                      <div><code className="bg-blue-100 px-1 rounded">{'{quantity}'}</code> - Stock number (1, 2, 5, etc.)</div>
+                      <div><code className="bg-blue-100 px-1 rounded">{'{item}'}</code> - "item" or "items" (auto-plural)</div>
+                      <div><code className="bg-blue-100 px-1 rounded">{'{unit}'}</code> - "unit" or "units" (auto-plural)</div>
+                      <div><code className="bg-blue-100 px-1 rounded">{'{piece}'}</code> - "piece" or "pieces" (auto-plural)</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-100 rounded border-l-4 border-blue-400">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Smart Privacy:</strong> When "Hide Stock Quantity" is enabled, entire blocks containing <code>{'{quantity}'}</code> are automatically removed, leaving clean text.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
