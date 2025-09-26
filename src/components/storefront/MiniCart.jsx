@@ -153,11 +153,8 @@ export default function MiniCart() {
     };
 
     const handleCartUpdate = (event) => {
-      console.log('🛒 MiniCart: Received cartUpdated event:', event.detail);
-
       // Simplified: only handle fresh cart data from backend
       if (event.detail?.freshCartData && event.detail.freshCartData.items) {
-        console.log('🛒 MiniCart: Using fresh cart data:', event.detail.freshCartData.items.length, 'items');
         // We have fresh data from backend - use it directly
         setCartItems(event.detail.freshCartData.items);
         saveCartToLocalStorage(event.detail.freshCartData.items);
@@ -167,29 +164,20 @@ export default function MiniCart() {
         return; // Fresh data received - no need for additional API calls
       }
 
-      console.log('🛒 MiniCart: No fresh data in event, ignoring');
       // Don't refresh at all since CartService should always provide fresh data
       // Only allow explicit refresh events via 'refreshMiniCart' event
     };
 
     const handleDirectRefresh = (event) => {
-      console.log('🛒 MiniCart: Received refreshMiniCart event, triggering reload');
       debouncedRefresh(true); // Always immediate for direct refresh
-    };
-
-    const handleStorageChange = () => {
-      console.log('🛒 MiniCart: Storage changed, triggering reload');
-      debouncedRefresh(false); // Debounced for storage changes
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
     window.addEventListener('refreshMiniCart', handleDirectRefresh);
-    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('refreshMiniCart', handleDirectRefresh);
-      window.removeEventListener('storage', handleStorageChange);
       if (refreshTimeout) {
         clearTimeout(refreshTimeout);
       }
@@ -203,11 +191,8 @@ export default function MiniCart() {
   // All cart updates now trigger immediate refresh
 
   const loadCart = async () => {
-    console.log('🛒 MiniCart: loadCart() called');
-
     // Prevent concurrent loadCart calls
     if (loadCartRef.current) {
-      console.log('🛒 MiniCart: loadCart already in progress, returning existing promise');
       return loadCartRef.current;
     }
 
