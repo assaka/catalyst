@@ -64,6 +64,9 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Special handling for price-related slots
   const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(slot.id);
 
+  // Slots that should remain empty when there's no content (conditional slots)
+  const conditionalSlots = ['product_labels'];
+
   if (context === 'editor' && !processedContent) {
     if (isPriceSlot) {
       // Show example price in editor for price slots
@@ -76,10 +79,13 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
       // Show example stock status in editor - using admin settings if available
       const stockLabel = variableContext?.settings?.stock_settings?.in_stock_label || 'In Stock';
       textContent = `<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800" data-bind="stock-status">${stockLabel}</span>`;
+    } else if (slot.id === 'product_labels') {
+      // Show example labels in editor
+      textContent = '<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">Sale</span><span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">New</span>';
     } else {
       textContent = '[Text placeholder]';
     }
-  } else if (!processedContent) {
+  } else if (!processedContent && !conditionalSlots.includes(slot.id)) {
     textContent = '[Text placeholder]';
   }
 
