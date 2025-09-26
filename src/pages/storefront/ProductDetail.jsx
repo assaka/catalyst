@@ -276,6 +276,14 @@ export default function ProductDetail() {
       if (conditions?.attribute_conditions?.length > 0) {
         for (const condition of conditions.attribute_conditions) {
           const productValue = product[condition.attribute_code];
+          console.log(`Checking attribute condition for label "${label.name}":`, {
+            attributeCode: condition.attribute_code,
+            expectedValue: condition.attribute_value,
+            actualProductValue: productValue,
+            productName: product.name,
+            productSku: product.sku,
+            allProductAttributes: Object.keys(product).filter(key => !['id', 'name', 'slug', 'sku', 'price', 'compare_price', 'description', 'short_description', 'stock_quantity', 'created_at', 'updated_at'].includes(key))
+          });
           if (productValue !== condition.attribute_value) {
             shouldApply = false;
             break;
