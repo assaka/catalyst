@@ -274,14 +274,6 @@ export default function ProductDetail() {
 
       let shouldApply = true;
 
-      // Debug: Log the label being checked
-      if (label.name === "Test") {
-        console.error('🔍 TEST LABEL DEBUG for product:', product.name);
-        console.error('🔍 Product.attributes object:', product.attributes);
-        console.error('🔍 Product.attributes.manufacturer:', product.attributes?.manufacturer);
-        console.error('🔍 Product direct manufacturer:', product.manufacturer);
-        console.error('🔍 All attributes keys:', product.attributes ? Object.keys(product.attributes) : 'No attributes object');
-      }
 
       // Check attribute conditions
       if (conditions?.attribute_conditions?.length > 0) {
@@ -299,14 +291,6 @@ export default function ProductDetail() {
             }
           }
 
-          console.log(`Checking attribute condition for label "${label.name}":`, {
-            attributeCode: condition.attribute_code,
-            expectedValue: condition.attribute_value,
-            actualProductValue: productValue,
-            productName: product.name,
-            productSku: product.sku,
-            productAttributes: product.attributes
-          });
 
           if (productValue !== condition.attribute_value) {
             shouldApply = false;
