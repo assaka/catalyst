@@ -274,10 +274,11 @@ export default function ProductDetail() {
 
       // Debug: Log the label being checked
       if (label.name === "Test") {
-        console.log('🔍 DEBUG: Checking Test label for product:', product.name);
-        console.log('🔍 DEBUG: Product object keys:', Object.keys(product));
-        console.log('🔍 DEBUG: Looking for manufacturer in product:', product.manufacturer);
-        console.log('🔍 DEBUG: All product data:', product);
+        console.error('🔍 TEST LABEL DEBUG for product:', product.name);
+        console.error('🔍 Product has manufacturer field:', !!product.manufacturer);
+        console.error('🔍 Product manufacturer value:', product.manufacturer);
+        console.error('🔍 Product brand value:', product.brand);
+        console.error('🔍 All product keys:', Object.keys(product).join(', '));
       }
 
       // Check attribute conditions
