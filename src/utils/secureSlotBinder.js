@@ -27,7 +27,12 @@ export class ProductDetailController {
     console.log('🚀 ProductDetailController initialize called', { product: this.productContext?.product?.name, hasSettings: !!this.productContext?.settings });
     this.calculateInitialPrice();
     this.calculateTotalPrice();
-    this.updateStockDisplay();
+
+    // Delay stock display update to ensure DOM elements are rendered
+    setTimeout(() => {
+      this.updateStockDisplay();
+    }, 100);
+
     this.updatePriceDisplays();
     this.bindAllElements();
     console.log('✅ ProductDetailController initialization complete');
@@ -468,7 +473,11 @@ export class ProductDetailController {
 
 
     // Update all stock status displays
-    document.querySelectorAll('[data-bind="stock-status"]').forEach(el => {
+    const stockElements = document.querySelectorAll('[data-bind="stock-status"]');
+    console.log('🔍 Found stock elements:', stockElements.length, stockElements);
+
+    stockElements.forEach((el, index) => {
+      console.log(`📍 Updating stock element ${index}:`, el, 'with label:', stockLabel);
       if (stockLabel) {
         el.textContent = stockLabel;
         el.classList.remove('hidden');
