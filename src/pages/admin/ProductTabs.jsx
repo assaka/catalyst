@@ -52,6 +52,7 @@ export default function ProductTabs() {
       setLoading(true);
 
       const storeId = getSelectedStoreId();
+      console.log('🏪 Admin ProductTabs: Loading data for store:', storeId);
       if (!storeId) {
         console.warn("No store selected");
         setLoading(false);
@@ -67,6 +68,9 @@ export default function ProductTabs() {
         Attribute.filter({ store_id: storeId }),
         AttributeSet.filter({ store_id: storeId })
       ]);
+
+      console.log('📋 Admin ProductTabs: Loaded tabs data:', tabsData);
+      console.log('📋 Admin ProductTabs: Tabs count:', tabsData?.length || 0);
 
       setTabs(tabsData || []);
       setAttributes(attributesData || []);
@@ -152,6 +156,15 @@ export default function ProductTabs() {
   const filteredTabs = tabs.filter(tab =>
     (tab.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Debug logging for filtering
+  console.log('🔍 Admin ProductTabs: Current state:', {
+    tabs: tabs,
+    tabsLength: tabs?.length || 0,
+    searchQuery,
+    filteredTabs: filteredTabs,
+    filteredTabsLength: filteredTabs?.length || 0
+  });
 
   if (loading) {
     return (
