@@ -841,25 +841,12 @@ const StockStatus = createSlotComponent({
 
       // Handle low stock
       const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
-      console.log('🔍 Low stock check:', {
-        productStockQuantity: product.stock_quantity,
-        productLowStockThreshold: product.low_stock_threshold,
-        settingsDisplayLowStockThreshold: settings?.display_low_stock_threshold,
-        finalLowStockThreshold: lowStockThreshold,
-        isLowStock: lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold,
-        stockSettings: stockSettings
-      });
       if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
         const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
-        console.log('🏷️ Low stock label processing:', {
-          originalLabel: label,
-          stockQuantity: product.stock_quantity,
-          hideStockQuantity
-        });
 
         if (hideStockQuantity) {
           // Remove quantity-related phrases when hiding stock quantities
-          const hiddenResult = label
+          return label
             // Remove "just {quantity} left" pattern
             .replace(/,?\s*just\s+\{quantity\}\s+left/gi, '')
             // Remove "{quantity} left" pattern
@@ -872,12 +859,9 @@ const StockStatus = createSlotComponent({
             .replace(/\s+/g, ' ')
             .replace(/,\s*$/, '')
             .trim();
-          console.log('🏷️ Hidden quantity result:', hiddenResult);
-          return hiddenResult;
         }
 
-        const result = label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
-          console.log('🏷️ Replacing match:', match, 'with:', product.stock_quantity);
+        return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
           if (match === '{({quantity})}') {
             return `(${product.stock_quantity})`;
           }
@@ -886,8 +870,6 @@ const StockStatus = createSlotComponent({
           }
           return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
         });
-        console.log('🏷️ Final low stock label:', result);
-        return result;
       }
 
       // Handle regular in stock
