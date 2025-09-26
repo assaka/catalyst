@@ -19,6 +19,7 @@ import {
   Star,
 } from 'lucide-react';
 import { registerSlotComponent, createSlotComponent } from './UnifiedSlotRenderer';
+import ProductTabsComponent from '@/components/storefront/ProductTabs';
 
 /**
  * QuantitySelector - Unified quantity selector component
@@ -619,6 +620,44 @@ const ProductRecommendations = createSlotComponent({
   }
 });
 
+/**
+ * Standalone ProductTabs wrapper for slot system
+ */
+const ProductTabsStandalone = createSlotComponent({
+  name: 'ProductTabs',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div className={className} style={styles}>
+        <ProductTabsComponent
+          productTabs={[
+            { id: 1, title: 'Description', content: 'Sample product description content' },
+            { id: 2, title: 'Specifications', content: 'Sample specifications content' }
+          ]}
+          product={{ description: 'Sample description' }}
+          className=""
+        />
+      </div>
+    );
+  },
+
+  // Storefront version
+  renderStorefront: ({ slot, productContext, className, styles }) => {
+    const { productTabs, product } = productContext;
+
+    return (
+      <div className={className} style={styles}>
+        <ProductTabsComponent
+          productTabs={productTabs || []}
+          product={product}
+          className=""
+        />
+      </div>
+    );
+  }
+});
+
 // Register all components
 registerSlotComponent('QuantitySelector', QuantitySelector);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
@@ -626,6 +665,7 @@ registerSlotComponent('ProductGallerySlot', ProductGallery);
 registerSlotComponent('ProductInfoSlot', ProductInfo);
 registerSlotComponent('ProductOptionsSlot', ProductOptions);
 registerSlotComponent('ProductTabsSlot', ProductTabs);
+registerSlotComponent('ProductTabs', ProductTabsStandalone);
 registerSlotComponent('ProductRecommendationsSlot', ProductRecommendations);
 
 export {

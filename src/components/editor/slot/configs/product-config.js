@@ -450,52 +450,22 @@ export const productConfig = {
     },
 
     // Product Tabs Section
-    tabs_container: {
-      id: 'tabs_container',
-      type: 'container',
-      content: '',
-      className: 'tabs-container mt-12 border-t pt-8',
+    product_tabs: {
+      id: 'product_tabs',
+      type: 'component',
+      content: 'ProductTabsSlot',
+      className: 'product-tabs-container mt-12 border-t pt-8',
       styles: { gridRow: '3' },
       parentId: 'main_layout',
       position: { col: 1, row: 3 },
-      layout: 'block',
       colSpan: {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    tab_navigation: {
-      id: 'tab_navigation',
-      type: 'flex',
-      content: '',
-      className: 'tab-navigation border-b border-gray-200',
-      styles: {},
-      parentId: 'tabs_container',
-      position: { col: 1, row: 1 },
-      layout: 'flex',
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    tab_content: {
-      id: 'tab_content',
-      type: 'container',
-      content: '',
-      className: 'tab-content mt-6 prose max-w-none',
-      styles: {},
-      parentId: 'tabs_container',
-      position: { col: 1, row: 2 },
-      layout: 'block',
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        component: 'ProductTabsSlot'
+      }
     },
 
     // Related Products Section
