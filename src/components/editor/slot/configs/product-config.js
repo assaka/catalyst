@@ -329,7 +329,8 @@ export const productConfig = {
     custom_options: {
       id: 'custom_options',
       type: 'component',
-      content: 'CustomOptions',
+      component: 'CustomOptions',
+      content: '',
       className: 'custom-options',
       parentClassName: '',
       styles: {},
@@ -339,7 +340,10 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        component: 'CustomOptions'
+      }
     },
 
     // Add to Cart Section
@@ -450,7 +454,8 @@ export const productConfig = {
     product_tabs: {
       id: 'product_tabs',
       type: 'component',
-      content: 'ProductTabsSlot',
+      component: 'ProductTabsSlot',
+      content: '',
       className: 'product-tabs-container mt-12 border-t pt-8',
       styles: { gridRow: '3' },
       parentId: 'main_layout',
