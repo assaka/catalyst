@@ -173,6 +173,15 @@ export default function ProductDetail() {
         // Load published configuration using the new versioning API
         const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'product');
 
+        console.log('[ProductDetail] Published config response:', {
+          success: response.success,
+          hasData: !!response.data,
+          hasConfig: !!response.data?.configuration,
+          hasSlots: !!response.data?.configuration?.slots,
+          slotKeys: response.data?.configuration?.slots ? Object.keys(response.data.configuration.slots) : [],
+          breadcrumbSlot: response.data?.configuration?.slots?.breadcrumbs
+        });
+
         // Check for various "no published config" scenarios
         if (response.success && response.data &&
             response.data.configuration &&
@@ -180,11 +189,14 @@ export default function ProductDetail() {
             Object.keys(response.data.configuration.slots).length > 0) {
 
           const publishedConfig = response.data;
+          console.log('[ProductDetail] Using published config, total slots:', Object.keys(publishedConfig.configuration.slots).length);
+          console.log('[ProductDetail] Breadcrumb slot config:', publishedConfig.configuration.slots.breadcrumbs);
           setProductLayoutConfig(publishedConfig.configuration);
           setConfigLoaded(true);
 
         } else {
           // Fallback to product-config.js
+          console.log('[ProductDetail] No published config found, using fallback product-config.js');
           const fallbackConfig = {
             slots: { ...productConfig.slots },
             metadata: {
@@ -194,6 +206,7 @@ export default function ProductDetail() {
             }
           };
 
+          console.log('[ProductDetail] Fallback breadcrumb slot:', fallbackConfig.slots.breadcrumbs);
           setProductLayoutConfig(fallbackConfig);
           setConfigLoaded(true);
         }
@@ -835,7 +848,7 @@ export default function ProductDetail() {
             parentId={null}
             viewMode="default"
             context="storefront"
-            productContext={{
+            productData={{
               product,
               productTabs,
               customOptions: customOptions,

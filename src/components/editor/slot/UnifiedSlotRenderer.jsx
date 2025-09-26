@@ -28,7 +28,7 @@ import '@/components/editor/slot/UnifiedSlotComponents';
 export { createSlotComponent, ComponentRegistry, registerSlotComponent } from './SlotComponentRegistry';
 
 // Text Slot with Script Support Component
-const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productContext, variableContext }) => {
+const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productData, variableContext }) => {
   const { id, styles } = slot;
   const elementRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -45,7 +45,7 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     const scriptContext = {
       element,
       slotData: slot,
-      productContext,
+      productData,
       variableContext
     };
 
@@ -63,7 +63,7 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
         cleanupRef.current();
       }
     };
-  }, [slot.script, context, productContext, variableContext]);
+  }, [slot.script, context, productData, variableContext]);
 
   // Don't show placeholder for intentionally empty content (like conditional price displays)
   let textContent = processedContent;
@@ -107,7 +107,7 @@ export function UnifiedSlotRenderer({
   parentId = null,
   viewMode = 'default',
   context = 'storefront', // 'editor' | 'storefront'
-  productContext = {},
+  productData = {},
 
   // Editor-specific props
   mode = 'view',
@@ -152,10 +152,10 @@ export function UnifiedSlotRenderer({
     const variableContext = context === 'editor' ?
       generateDemoData('product') :
       {
-        product: productContext.product,
+        product: productData.product,
         category: categoryData,
         cart: cartData,
-        settings: productContext.settings
+        settings: productData.settings
       };
 
     // Process variables in content and className
@@ -171,7 +171,7 @@ export function UnifiedSlotRenderer({
         processedContent={processedContent}
         processedClassName={processedClassName}
         context={context}
-        productContext={productContext}
+        productData={productData}
         variableContext={variableContext}
       />;
     }
@@ -192,13 +192,13 @@ export function UnifiedSlotRenderer({
             onClick={() => {
               // Handle different button actions based on slot id or configuration
               if (id === 'add_to_cart_button') {
-                productContext.handleAddToCart?.();
+                productData.handleAddToCart?.();
               } else if (id === 'wishlist_button') {
-                productContext.handleWishlistToggle?.();
+                productData.handleWishlistToggle?.();
               }
               // Add more button handlers as needed
             }}
-            disabled={id === 'add_to_cart_button' && !productContext.canAddToCart}
+            disabled={id === 'add_to_cart_button' && !productData.canAddToCart}
           >
             {isHtmlContent ? (
               <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
@@ -226,14 +226,14 @@ export function UnifiedSlotRenderer({
       let imageSrc = processedContent || content;
 
       // Handle product-specific images
-      if (id === 'product_image' && productContext.product) {
-        imageSrc = getProductImageUrl(productContext.product, productContext.activeImageIndex || 0);
+      if (id === 'product_image' && productData.product) {
+        imageSrc = getProductImageUrl(productData.product, productData.activeImageIndex || 0);
       }
 
       // Fallback image
       if (!imageSrc || imageSrc === 'product-main-image') {
         imageSrc = context === 'storefront' ?
-          getProductImageUrl(productContext.product) :
+          getProductImageUrl(productData.product) :
           'https://placehold.co/400x400?text=Product+Image';
       }
 
@@ -268,7 +268,7 @@ export function UnifiedSlotRenderer({
             parentId={id}
             viewMode={viewMode}
             context={context}
-            productContext={productContext}
+            productData={productData}
             mode={mode}
             showBorders={showBorders}
             currentDragInfo={currentDragInfo}
@@ -315,9 +315,9 @@ export function UnifiedSlotRenderer({
 
         return renderMethod({
           slot,
-          productContext,
-          categoryData,
-          cartData,
+          productContext: productData,
+          categoryContext: categoryData,
+          cartContext: cartData,
           context,
           className: processedClassName,
           styles,

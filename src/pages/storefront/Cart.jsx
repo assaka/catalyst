@@ -1042,7 +1042,7 @@ export default function Cart() {
                             parentId={null}
                             viewMode={cartItems.length === 0 ? 'emptyCart' : 'withProducts'}
                             context="storefront"
-                            cartContext={{
+                            cartData={{
                                 cartItems,
                                 appliedCoupon,
                                 couponCode,
