@@ -928,26 +928,22 @@ const CartItemsSlot = createSlotComponent({
                     {currencySymbol}{safeToFixed(item.price || 0)} × {item.quantity}
                   </div>
 
-                  {/* Selected Options - Breakdown like MiniCart */}
+                  {/* Selected Options as Additional Products */}
                   {item.selected_options && item.selected_options.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {item.selected_options.map((option, index) => (
-                        <div key={index} className="text-sm text-gray-600 flex justify-between">
-                          <span>+ {option.name}</span>
-                          <span>+{currencySymbol}{safeToFixed(option.price * item.quantity)}</span>
+                        <div key={index} className="text-sm text-gray-600">
+                          + {option.name}: {currencySymbol}{safeToFixed(option.price)} × {item.quantity}
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Row Total */}
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">Row Total:</span>
-                      <span className="text-lg font-bold text-gray-900">
-                        {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
-                      </span>
-                    </div>
+                  {/* Price */}
+                  <div className="mt-2">
+                    <span className="text-lg font-medium text-gray-900">
+                      {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
+                    </span>
                   </div>
                 </div>
 
@@ -1113,6 +1109,7 @@ const CartOrderSummarySlot = createSlotComponent({
       discount = 0,
       tax = 0,
       total = 0,
+      customOptionsTotal = 0,
       currencySymbol = '$',
       safeToFixed = (val) => parseFloat(val || 0).toFixed(2),
       handleCheckout = () => {},
@@ -1128,6 +1125,12 @@ const CartOrderSummarySlot = createSlotComponent({
               <span>Subtotal</span>
               <span>{currencySymbol}{safeToFixed(subtotal)}</span>
             </div>
+            {customOptionsTotal > 0 && (
+              <div className="flex justify-between">
+                <span>Additional Products</span>
+                <span>+{currencySymbol}{safeToFixed(customOptionsTotal)}</span>
+              </div>
+            )}
             {appliedCoupon && discount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount ({appliedCoupon.name})</span>
@@ -1406,6 +1409,83 @@ const BreadcrumbRenderer = createSlotComponent({
 });
 
 /**
+ * ProductImage - Main product image component
+ */
+const ProductImage = createSlotComponent({
+  name: 'ProductImage',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <img
+        src="https://placehold.co/600x600?text=Product+Image"
+        alt="Product"
+        className={className}
+        style={styles}
+      />
+    );
+  },
+
+  // Storefront version
+  renderStorefront: ({ slot, productContext, className, styles }) => {
+    const { product, activeImageIndex } = productContext;
+
+    if (!product) {
+      return (
+        <img
+          src="https://placehold.co/600x600?text=No+Product"
+          alt="No product"
+          className={className}
+          style={styles}
+        />
+      );
+    }
+
+    const getImageUrl = () => {
+      if (!product.images || product.images.length === 0) {
+        return 'https://placehold.co/600x600?text=No+Image';
+      }
+
+      const index = activeImageIndex || 0;
+      const image = product.images[index];
+
+      if (typeof image === 'string') {
+        return image;
+      }
+
+      if (typeof image === 'object' && image !== null) {
+        const url = image.url || image.src || image.path || image.image_url ||
+                    image.file_url || image.uri || image.file_path;
+
+        if (typeof url === 'string') {
+          return url;
+        }
+
+        console.log('Image object structure:', image);
+        return 'https://placehold.co/600x600?text=Invalid+Image';
+      }
+
+      return 'https://placehold.co/600x600?text=No+Image';
+    };
+
+    const imageUrl = getImageUrl();
+
+    return (
+      <img
+        src={imageUrl}
+        alt={product.name || 'Product image'}
+        className={className}
+        style={styles}
+        onError={(e) => {
+          console.error('Image load error:', imageUrl);
+          e.target.src = 'https://placehold.co/600x600?text=Image+Error';
+        }}
+      />
+    );
+  }
+});
+
+/**
  * ProductThumbnails - Image gallery thumbnails component
  */
 const ProductThumbnails = createSlotComponent({
@@ -1443,6 +1523,16 @@ const ProductThumbnails = createSlotComponent({
 
     const images = product.images || [];
 
+    const getImageUrl = (image) => {
+      if (typeof image === 'string') {
+        return image;
+      }
+      if (typeof image === 'object' && image !== null) {
+        return image.url || image.src || image.path || 'https://placehold.co/100x100?text=Thumb';
+      }
+      return 'https://placehold.co/100x100?text=Thumb';
+    };
+
     return (
       <div className={className} style={styles}>
         <div className="flex space-x-2 overflow-x-auto">
@@ -1455,7 +1545,7 @@ const ProductThumbnails = createSlotComponent({
               }`}
             >
               <img
-                src={image}
+                src={getImageUrl(image)}
                 alt={`${product.name} ${index + 1}`}
                 className="w-full h-full object-cover"
               />
@@ -1469,6 +1559,7 @@ const ProductThumbnails = createSlotComponent({
 
 registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('StockStatus', StockStatus);
+registerSlotComponent('ProductImage', ProductImage);
 registerSlotComponent('ProductThumbnails', ProductThumbnails);
 
 export {
@@ -1482,5 +1573,6 @@ export {
   ProductRecommendations,
   TotalPriceDisplay,
   StockStatus,
+  ProductImage,
   ProductThumbnails
 };

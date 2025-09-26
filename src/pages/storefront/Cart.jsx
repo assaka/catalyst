@@ -852,13 +852,22 @@ export default function Cart() {
         }, 0);
     }, [cartItems]);
 
-    const { subtotal, discount, tax, total } = useMemo(() => {
+    const { subtotal, discount, tax, total, customOptionsTotal } = useMemo(() => {
         const calculatedSubtotal = calculateSubtotal();
 
-        // Calculate total with custom options included
-        const calculatedTotalWithOptions = cartItems.reduce((total, item) => {
-            return total + calculateItemTotal(item, item.product);
+        // Calculate custom options total separately
+        const calculatedCustomOptionsTotal = cartItems.reduce((total, item) => {
+            if (item.selected_options && Array.isArray(item.selected_options)) {
+                const optionsPrice = item.selected_options.reduce((sum, option) =>
+                    sum + formatPrice(option.price), 0
+                );
+                return total + (optionsPrice * (formatPrice(item.quantity) || 1));
+            }
+            return total;
         }, 0);
+
+        // Calculate total with custom options included
+        const calculatedTotalWithOptions = calculatedSubtotal + calculatedCustomOptionsTotal;
 
         let disc = 0;
         if (appliedCoupon) {
@@ -916,8 +925,14 @@ export default function Cart() {
         
         const totalAmount = subAfterDiscount + taxAmount;
 
-        return { subtotal: calculatedSubtotal, discount: disc, tax: taxAmount, total: totalAmount };
-    }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal, calculateItemTotal]);
+        return {
+            subtotal: calculatedSubtotal,
+            customOptionsTotal: calculatedCustomOptionsTotal,
+            discount: disc,
+            tax: taxAmount,
+            total: totalAmount
+        };
+    }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal]);
 
     // Enhanced checkout navigation with hooks
     const handleCheckout = useCallback(() => {
@@ -1053,6 +1068,7 @@ export default function Cart() {
                                 appliedCoupon,
                                 couponCode,
                                 subtotal,
+                                customOptionsTotal,
                                 discount,
                                 tax,
                                 total,

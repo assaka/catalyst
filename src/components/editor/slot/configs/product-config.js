@@ -134,8 +134,9 @@ export const productConfig = {
 
     product_image: {
       id: 'product_image',
-      type: 'image',
-      content: 'product-main-image',
+      type: 'component',
+      component: 'ProductImage',
+      content: '',
       className: 'w-full h-full object-cover',
       parentClassName: '',
       styles: {},
