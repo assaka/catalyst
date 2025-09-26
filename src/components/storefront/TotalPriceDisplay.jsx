@@ -23,15 +23,6 @@ const TotalPriceDisplay = ({
   const actualCurrency = currencySymbol !== '$' ? currencySymbol : (productContext?.currencySymbol || '$');
   const actualTotalPrice = totalPrice !== null ? totalPrice : (productContext?.totalPrice || 0);
 
-  // Debug logging
-  console.log('💰 TotalPriceDisplay render:', {
-    actualQuantity,
-    actualTotalPrice,
-    actualOptionsCount: actualOptions.length,
-    productContextQuantity: productContext?.quantity,
-    productContextTotalPrice: productContext?.totalPrice
-  });
-
   if (!actualProduct) {
     return null;
   }

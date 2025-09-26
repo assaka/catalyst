@@ -40,7 +40,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                     is_active: true 
                 });
             } catch (apiError) {
-                console.error('CustomOptions: API call failed:', apiError);
                 setCustomOptions([]);
                 setLoading(false);
                 return;
@@ -112,7 +111,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     };
 
     const isRuleApplicable = (rule, product) => {
-        console.log('🔍 CustomOptions: Checking rule:', rule.name, 'for product:', product.sku);
 
         // Parse conditions if they're a string
         let conditions;
@@ -125,11 +123,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             return false;
         }
 
-        console.log('🔍 CustomOptions: Parsed conditions:', conditions);
-
         // Check if rule has valid conditions
         if (!conditions || Object.keys(conditions).length === 0) {
-            console.log('❌ No valid conditions');
             return false;
         }
 
@@ -141,7 +136,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         const hasValidAttributeConditions = attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0;
 
         if (!hasValidCategories && !hasValidAttributeSets && !hasValidSkus && !hasValidAttributeConditions) {
-            console.log('❌ No valid condition arrays');
             return false;
         }
 
@@ -151,10 +145,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         if (categories && Array.isArray(categories) && categories.length > 0) {
             hasAnyCondition = true;
             const productCategories = product.category_ids || [];
-            console.log('🔍 Checking categories:', categories, 'against product categories:', productCategories);
             const hasMatchingCategory = categories.some(catId => productCategories.includes(catId));
             if (hasMatchingCategory) {
-                console.log('✅ Rule matches by category');
                 return true;
             }
         }
@@ -162,10 +154,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         // Check attribute set conditions
         if (attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0) {
             hasAnyCondition = true;
-            console.log('🔍 Checking attribute sets:', attribute_sets, 'against product attribute_set_id:', product.attribute_set_id);
             const match = attribute_sets.includes(product.attribute_set_id);
             if (match) {
-                console.log('✅ Rule matches by attribute set');
                 return true;
             }
         }
@@ -173,10 +163,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         // Check SKU conditions
         if (skus && Array.isArray(skus) && skus.length > 0) {
             hasAnyCondition = true;
-            console.log('🔍 Checking SKUs:', skus, 'against product SKU:', product.sku);
             const match = skus.includes(product.sku);
             if (match) {
-                console.log('✅ Rule matches by SKU');
                 return true;
             }
         }

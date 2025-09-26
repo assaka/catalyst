@@ -365,14 +365,6 @@ export class ProductDetailController {
  * Initialize secure slot binding for a product page
  */
 export function initializeProductSlotBinding(productContext) {
-    timestamp: new Date().toISOString(),
-    hasProduct: !!productContext.product,
-    hasSetQuantity: !!productContext.setQuantity,
-    hasSetSelectedOptions: !!productContext.setSelectedOptions,
-    currentQuantity: productContext.quantity,
-    selectedOptionsCount: productContext.selectedOptions?.length || 0
-  });
-
   const controller = new ProductDetailController(productContext);
   controller.initialize();
 
