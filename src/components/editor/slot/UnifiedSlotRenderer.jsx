@@ -19,34 +19,13 @@ import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-
-/**
- * Component Registry Interface
- * All slot components must implement this interface
- */
-export const createSlotComponent = (config) => ({
-  name: config.name,
-  renderEditor: config.renderEditor || config.render,
-  renderStorefront: config.renderStorefront || config.render,
-  metadata: config.metadata || {}
-});
-
-/**
- * Default Component Registry
- * Components register themselves here for use in both contexts
- */
-export const ComponentRegistry = new Map();
-
-/**
- * Register a unified slot component
- */
-export const registerSlotComponent = (name, component) => {
-  ComponentRegistry.set(name, component);
-};
+import { ComponentRegistry } from './SlotComponentRegistry';
 
 // Import component registry to ensure all components are registered
-// This must come AFTER the exports above to avoid circular dependency errors
 import '@/components/editor/slot/UnifiedSlotComponents';
+
+// Re-export registry functions for backward compatibility
+export { createSlotComponent, ComponentRegistry, registerSlotComponent } from './SlotComponentRegistry';
 
 // Text Slot with Script Support Component
 const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productContext, variableContext }) => {
@@ -119,9 +98,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     </div>
   );
 };
-
-// Components are registered via the import above
-// createSlotComponent, ComponentRegistry, and registerSlotComponent are exported at the top of the file
 
 /**
  * UnifiedSlotRenderer - Handles both editor and storefront rendering

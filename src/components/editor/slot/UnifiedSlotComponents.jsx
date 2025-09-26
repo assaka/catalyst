@@ -18,7 +18,7 @@ import {
   Minus,
   Star,
 } from 'lucide-react';
-import { registerSlotComponent, createSlotComponent } from './UnifiedSlotRenderer';
+import { registerSlotComponent, createSlotComponent } from './SlotComponentRegistry';
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
