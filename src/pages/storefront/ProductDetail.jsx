@@ -318,6 +318,7 @@ export default function ProductDetail() {
         }
       }
 
+      console.log(`Label "${label.name}" final result: ${shouldApply ? 'APPLIED' : 'REJECTED'}`);
       if (shouldApply) {
         applicableLabels.push(label);
       }
@@ -326,6 +327,7 @@ export default function ProductDetail() {
     // Sort by priority if specified
     applicableLabels.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
+    console.log('Final applicable labels:', applicableLabels.map(l => l.name));
     return applicableLabels;
   };
 
