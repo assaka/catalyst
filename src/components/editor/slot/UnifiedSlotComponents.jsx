@@ -786,16 +786,22 @@ console.log('✅ TotalPriceDisplay component registered', TotalPriceDisplay);
 // StockStatus - Dynamic stock status display
 const StockStatus = createSlotComponent({
   name: 'StockStatus',
-  renderStorefront: ({ productContext }) => {
-    return <StockStatusComponent productContext={productContext} />;
-  },
-  renderEditor: () => {
-    return (
+
+  // Editor version - shows static example
+  renderEditor: ({ slot, className, styles }) => (
+    <div className={className} style={styles}>
       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
         In Stock
       </span>
-    );
-  }
+    </div>
+  ),
+
+  // Storefront version - uses actual product data
+  renderStorefront: ({ slot, className, styles, productContext }) => (
+    <div className={className} style={styles}>
+      <StockStatusComponent productContext={productContext} />
+    </div>
+  )
 });
 
 registerSlotComponent('StockStatus', StockStatus);
