@@ -116,6 +116,23 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
+    thumbnail_gallery: {
+      id: 'thumbnail_gallery',
+      type: 'component',
+      component: 'ProductThumbnails',
+      content: '',
+      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 order-first{{else}}flex space-x-2 overflow-x-auto{{/if}}',
+      styles: {},
+      parentId: 'gallery_container',
+      position: { col: 1, row: 1 },
+      layout: 'flex',
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: { hierarchical: true }
+    },
+
     main_image: {
       id: 'main_image',
       type: 'container',
@@ -123,7 +140,7 @@ export const productConfig = {
       className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{/if}}',
       styles: {},
       parentId: 'gallery_container',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
         default: 12
@@ -142,23 +159,6 @@ export const productConfig = {
       styles: {},
       parentId: 'main_image',
       position: { col: 1, row: 1 },
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    thumbnail_gallery: {
-      id: 'thumbnail_gallery',
-      type: 'component',
-      component: 'ProductThumbnails',
-      content: '',
-      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20{{else}}flex space-x-2 overflow-x-auto{{/if}}',
-      styles: {},
-      parentId: 'gallery_container',
-      position: { col: 1, row: 2 },
-      layout: 'flex',
       colSpan: {
         default: 12
       },

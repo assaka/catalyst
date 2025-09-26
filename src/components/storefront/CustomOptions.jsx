@@ -318,15 +318,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                     );
                 })}
             </div>
-            
-            {selectedOptions.length > 0 && (
-                <div className="border-t pt-4 mt-4">
-                    <div className="flex justify-between items-center font-medium text-gray-700">
-                        <span>Total Additional Options:</span>
-                        <span className="text-lg">{formatDisplayPrice(getTotalOptionsPrice(), currencySymbol, store, taxes, selectedCountry)}</span>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
