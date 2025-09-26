@@ -982,7 +982,172 @@ const CartItemsSlot = createSlotComponent({
   }
 });
 
+/**
+ * CartCouponSlot - Functional coupon component
+ */
+const CartCouponSlot = createSlotComponent({
+  name: 'CartCouponSlot',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => (
+    <div className={className} style={styles}>
+      <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            placeholder="Enter coupon code"
+            className="flex-1 border rounded px-3 py-2"
+            readOnly
+          />
+          <button className="bg-blue-600 text-white px-4 py-2 rounded">Apply</button>
+        </div>
+      </div>
+    </div>
+  ),
+
+  // Storefront version
+  renderStorefront: ({ slot, cartContext, className, styles }) => {
+    const {
+      couponCode = '',
+      setCouponCode = () => {},
+      handleApplyCoupon = () => {},
+      handleRemoveCoupon = () => {},
+      appliedCoupon = null,
+      handleCouponKeyPress = () => {}
+    } = cartContext || {};
+
+    return (
+      <div className={className} style={styles}>
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+          {appliedCoupon ? (
+            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded p-3">
+              <div>
+                <span className="font-medium text-green-800">
+                  {appliedCoupon.name} applied
+                </span>
+                <p className="text-sm text-green-600">
+                  {appliedCoupon.discount_type === 'percentage'
+                    ? `${appliedCoupon.discount_value}% off`
+                    : `$${appliedCoupon.discount_value} off`}
+                </p>
+              </div>
+              <button
+                onClick={handleRemoveCoupon}
+                className="text-red-600 hover:text-red-800 text-sm"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                onKeyPress={handleCouponKeyPress}
+                placeholder="Enter coupon code"
+                className="flex-1 border rounded px-3 py-2"
+              />
+              <button
+                onClick={handleApplyCoupon}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * CartOrderSummarySlot - Functional order summary component
+ */
+const CartOrderSummarySlot = createSlotComponent({
+  name: 'CartOrderSummarySlot',
+
+  // Editor version
+  renderEditor: ({ slot, className, styles }) => (
+    <div className={className} style={styles}>
+      <div className="bg-white rounded-lg shadow p-4 mt-4">
+        <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span>$99.99</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Tax</span>
+            <span>$8.00</span>
+          </div>
+          <div className="border-t pt-2 flex justify-between text-lg font-semibold">
+            <span>Total</span>
+            <span>$107.99</span>
+          </div>
+        </div>
+        <button className="w-full bg-blue-600 text-white py-3 rounded mt-4">
+          Proceed to Checkout
+        </button>
+      </div>
+    </div>
+  ),
+
+  // Storefront version
+  renderStorefront: ({ slot, cartContext, className, styles }) => {
+    const {
+      subtotal = 0,
+      discount = 0,
+      tax = 0,
+      total = 0,
+      currencySymbol = '$',
+      safeToFixed = (val) => parseFloat(val || 0).toFixed(2),
+      handleCheckout = () => {},
+      appliedCoupon = null
+    } = cartContext || {};
+
+    return (
+      <div className={className} style={styles}>
+        <div className="bg-white rounded-lg shadow p-4 mt-4">
+          <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>{currencySymbol}{safeToFixed(subtotal)}</span>
+            </div>
+            {appliedCoupon && discount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Discount ({appliedCoupon.name})</span>
+                <span>-{currencySymbol}{safeToFixed(discount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span>Tax</span>
+              <span>{currencySymbol}{safeToFixed(tax)}</span>
+            </div>
+            <div className="border-t pt-2 flex justify-between text-lg font-semibold">
+              <span>Total</span>
+              <span>{currencySymbol}{safeToFixed(total)}</span>
+            </div>
+          </div>
+          <button
+            onClick={handleCheckout}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded mt-4 transition-colors"
+          >
+            Proceed to Checkout
+          </button>
+        </div>
+      </div>
+    );
+  }
+});
+
 registerSlotComponent('CartItemsSlot', CartItemsSlot);
+registerSlotComponent('CartCouponSlot', CartCouponSlot);
+registerSlotComponent('CartOrderSummarySlot', CartOrderSummarySlot);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 registerSlotComponent('ProductGallerySlot', ProductGallery);
 registerSlotComponent('ProductInfoSlot', ProductInfo);

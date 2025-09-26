@@ -191,80 +191,16 @@ export const cartConfig = {
       metadata: { hierarchical: true }
     },
     
-    // Sidebar hierarchical structure
-    coupon_container: {
-      id: 'coupon_container',
-      type: 'grid',
+    // Coupon section using functional component
+    coupon_section: {
+      id: 'coupon_section',
+      type: 'component',
+      component: 'CartCouponSlot',
       content: '',
-      className: 'coupon-container bg-white rounded-lg shadow',
+      className: '',
       styles: {},
       parentId: 'sidebar_area',
       position: { col: 1, row: 1 },
-      layout: 'grid',
-      gridCols: 12,
-      colSpan: {
-        withProducts: 12
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    coupon_title: {
-      id: 'coupon_title',
-      type: 'text',
-      content: 'Apply Coupon',
-      className: 'w-fit text-lg font-semibold mb-4',
-      parentClassName: '',
-      styles: {},
-      parentId: 'coupon_container',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        withProducts: 12
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    coupon_input: {
-      id: 'coupon_input',
-      type: 'input',
-      content: 'Enter coupon code',
-      className: 'border rounded px-3 py-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'coupon_container',
-      position: { col: 1, row: 2 },
-      colSpan: {
-        withProducts: 'col-span-8'
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    coupon_button: {
-      id: 'coupon_button',
-      type: 'button',
-      content: 'Apply',
-      className: 'w-fit bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded',
-      parentClassName: '',
-      styles: {},
-      parentId: 'coupon_container',
-      position: { col: 9, row: 2 },
-      colSpan: {
-        withProducts: 'col-span-4'
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    order_summary_container: {
-      id: 'order_summary_container',
-      type: 'container',
-      content: '',
-      className: 'order-summary-container bg-white rounded-lg shadow mt-4',
-      styles: {},
-      parentId: 'sidebar_area',
-      position: { col: 1, row: 2 },
       layout: 'block',
       colSpan: {
         withProducts: 12
@@ -272,80 +208,18 @@ export const cartConfig = {
       viewMode: ['withProducts'],
       metadata: { hierarchical: true }
     },
-    
-    order_summary_title: {
-      id: 'order_summary_title',
-      type: 'text',
-      content: 'Order Summary',
-      className: 'w-fit text-lg font-semibold mb-4',
-      parentClassName: '',
+
+    // Order summary using functional component
+    order_summary: {
+      id: 'order_summary',
+      type: 'component',
+      component: 'CartOrderSummarySlot',
+      content: '',
+      className: '',
       styles: {},
-      parentId: 'order_summary_container',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        withProducts: 12
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    order_summary_subtotal: {
-      id: 'order_summary_subtotal',
-      type: 'text',
-      content: '<span>Subtotal</span><span>$79.97</span>',
-      className: 'w-full flex justify-between mb-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'order_summary_container',
+      parentId: 'sidebar_area',
       position: { col: 1, row: 2 },
-      colSpan: {
-        withProducts: 12
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    order_summary_tax: {
-      id: 'order_summary_tax',
-      type: 'text',
-      content: '<span>Tax</span><span>$6.40</span>',
-      className: 'w-full flex justify-between mb-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'order_summary_container',
-      position: { col: 1, row: 3 },
-      colSpan: {
-        withProducts: 12
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    order_summary_total: {
-      id: 'order_summary_total',
-      type: 'text',
-      content: '<span>Total</span><span>$81.37</span>',
-      className: 'w-full flex justify-between text-lg font-semibold border-t pt-4 mb-4',
-      parentClassName: '',
-      styles: {},
-      parentId: 'order_summary_container',
-      position: { col: 1, row: 4 },
-      colSpan: {
-        withProducts: 12
-      },
-      viewMode: ['withProducts'],
-      metadata: { hierarchical: true }
-    },
-    
-    checkout_button: {
-      id: 'checkout_button',
-      type: 'button',
-      content: 'Proceed to Checkout',
-      className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded text-lg',
-      parentClassName: '',
-      styles: {},
-      parentId: 'order_summary_container',
-      position: { col: 1, row: 5 },
+      layout: 'block',
       colSpan: {
         withProducts: 12
       },
