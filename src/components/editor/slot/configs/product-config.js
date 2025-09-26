@@ -196,6 +196,29 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
+    // CMS Block - Product Above Price
+    cms_block_product_above_price: {
+      id: 'cms_block_product_above_price',
+      type: 'component',
+      component: 'CmsBlockRenderer',
+      content: '',
+      className: 'cms-block-product-above-price',
+      parentClassName: '',
+      styles: {},
+      parentId: 'info_container',
+      position: { col: 1, row: 2 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        props: {
+          position: 'product_above_price'
+        }
+      }
+    },
+
     price_container: {
       id: 'price_container',
       type: 'flex',
@@ -203,7 +226,7 @@ export const productConfig = {
       className: 'price-container flex items-center space-x-4 mb-4',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 3 },
       layout: 'flex',
       colSpan: {
         default: 12
@@ -253,7 +276,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: {
         default: 12
       },
@@ -269,7 +292,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 5 },
       colSpan: {
         default: 12
       },
@@ -285,7 +308,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 6 },
       colSpan: {
         default: 12
       },
@@ -317,7 +340,7 @@ export const productConfig = {
       className: 'options-container space-y-4',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 7 },
       layout: 'block',
       colSpan: {
         default: 12
@@ -354,7 +377,7 @@ export const productConfig = {
       className: 'actions-container border-t pt-6',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 6 },
+      position: { col: 1, row: 8 },
       layout: 'block',
       colSpan: {
         default: 12

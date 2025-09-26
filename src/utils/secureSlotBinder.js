@@ -197,7 +197,10 @@ export class ProductDetailController {
 
     // Update React state if available
     if (this.productContext.setQuantity) {
+      console.log('🔄 SecureSlotBinder: Calling setQuantity with:', newQuantity);
       this.productContext.setQuantity(newQuantity);
+    } else {
+      console.warn('⚠️ SecureSlotBinder: setQuantity not available in productContext');
     }
 
     // Update all quantity displays

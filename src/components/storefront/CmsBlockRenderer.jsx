@@ -38,9 +38,14 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
 
 const loadCmsBlocksWithCache = async (storeId) => {
   const cacheKey = `store_${storeId}`;
-  
+
+  // Clear cache for debugging - remove this later
+  console.log('🧹 Clearing CMS block cache for debugging');
+  cmsBlockCache.clear();
+
   // Check cache first
   if (cmsBlockCache.has(cacheKey)) {
+    console.log('📦 Using cached CMS blocks');
     return cmsBlockCache.get(cacheKey);
   }
 

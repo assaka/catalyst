@@ -111,6 +111,11 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+
+  // Debug quantity changes
+  useEffect(() => {
+    console.log('🔄 ProductDetail: Quantity changed to:', quantity);
+  }, [quantity]);
   const [activeImage, setActiveImage] = useState(0);
   const [user, setUser] = useState(null);
   // customOptions and customOptionsLabel states are removed as their logic is moved to the CustomOptions component.
@@ -590,6 +595,8 @@ export default function ProductDetail() {
 
   const getTotalPrice = () => {
     if (!product) return 0;
+
+    console.log('💰 getTotalPrice called with:', { quantity, selectedOptionsCount: selectedOptions.length });
 
     // Use the lower price (sale price) if compare_price exists and is different
     let basePrice = parseFloat(product.price);
