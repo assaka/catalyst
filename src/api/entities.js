@@ -799,7 +799,48 @@ export const Wishlist = new BaseEntity('wishlist');
 export const Address = new BaseEntity('addresses');
 export const CmsBlock = new BaseEntity('cms-blocks');
 export const ProductLabel = new BaseEntity('product-labels');
-export const ProductTab = new BaseEntity('product-tabs');
+// Admin ProductTab entity - forces authenticated API usage for admin operations
+class AdminProductTabEntity extends BaseEntity {
+  constructor() {
+    super('product-tabs');
+  }
+
+  // Override to force authenticated API usage for admin operations
+  async findAll(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+
+      console.log('🔧 AdminProductTab: Making authenticated request to:', url);
+
+      // Always use authenticated API for admin operations
+      const response = await apiClient.get(url);
+
+      console.log('🔧 AdminProductTab: Response received:', response);
+
+      if (response && response.data) {
+        // Backend returns {success: true, data: [...]}
+        const result = Array.isArray(response.data) ? response.data : [];
+        console.log('🔧 AdminProductTab: Extracted data array:', result);
+        return result;
+      } else {
+        // Direct array response
+        const result = Array.isArray(response) ? response : [];
+        console.log('🔧 AdminProductTab: Direct array response:', result);
+        return result;
+      }
+    } catch (error) {
+      console.error(`AdminProductTab.findAll() error:`, error.message);
+      return [];
+    }
+  }
+
+  async filter(params = {}) {
+    return this.findAll(params);
+  }
+}
+
+export const ProductTab = new AdminProductTabEntity();
 export const TaxType = new BaseEntity('tax-types');
 export const Service = new BaseEntity('services');
 export const CustomOptionRule = new BaseEntity('custom-option-rules');
