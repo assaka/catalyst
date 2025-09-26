@@ -1007,10 +1007,10 @@ const CartCouponSlot = createSlotComponent({
           <input
             type="text"
             placeholder="Enter coupon code"
-            className="flex-1 border rounded px-3 py-2"
+            className="w-1/2 border rounded px-3 py-2"
             readOnly
           />
-          <button className="bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply Coupon</button>
+          <button className="w-1/2 bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply</button>
         </div>
       </div>
     </div>
@@ -1058,13 +1058,13 @@ const CartCouponSlot = createSlotComponent({
                 onChange={(e) => setCouponCode(e.target.value)}
                 onKeyPress={handleCouponKeyPress}
                 placeholder="Enter coupon code"
-                className="flex-1 border rounded px-3 py-2"
+                className="w-1/2 border rounded px-3 py-2"
               />
               <button
                 onClick={handleApplyCoupon}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
+                className="w-1/2bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
               >
-                Apply Coupon
+                Apply
               </button>
             </div>
           )}
