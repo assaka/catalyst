@@ -141,6 +141,15 @@ export default function StockSettings() {
       
       setFlashMessage({ type: 'success', message: 'Stock settings saved successfully! Reloading page...' });
 
+      // Broadcast to all storefront tabs to clear their cache
+      try {
+        const channel = new BroadcastChannel('store_settings_update');
+        channel.postMessage({ type: 'clear_cache', timestamp: Date.now() });
+        channel.close();
+      } catch (e) {
+        console.warn('BroadcastChannel not supported:', e);
+      }
+
       await delay(1000);
 
       // Force page reload to ensure all caches are cleared

@@ -169,6 +169,27 @@ export const StoreProvider = ({ children }) => {
     fetchStoreData();
   }, [location.pathname]);
 
+  // Listen for cache clear broadcasts from admin
+  useEffect(() => {
+    try {
+      const channel = new BroadcastChannel('store_settings_update');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'clear_cache') {
+          console.log('📢 Received cache clear broadcast from admin, reloading...');
+          // Clear all caches
+          apiCache.clear();
+          localStorage.removeItem('storeProviderCache');
+          sessionStorage.removeItem('storeProviderCache');
+          // Force reload the page
+          window.location.reload();
+        }
+      };
+      return () => channel.close();
+    } catch (e) {
+      console.warn('BroadcastChannel not supported:', e);
+    }
+  }, []);
+
   const fetchStoreData = async () => {
     try {
       setLoading(true);
