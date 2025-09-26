@@ -119,6 +119,8 @@ export default function ProductDetail() {
   const [productTabs, setProductTabs] = useState([]);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [customOptions, setCustomOptions] = useState([]);
+  const [customOptionsLabel, setCustomOptionsLabel] = useState('Custom Options');
   // productLabels state is removed as it's now managed by the useStore context.
 
   // State for product layout configuration
@@ -402,9 +404,10 @@ export default function ProductDetail() {
           });
         }
 
-        // Load additional data in parallel (Custom options and product labels are now handled by separate components/context)
+        // Load additional data in parallel
         await Promise.all([
           loadProductTabs(),
+          loadCustomOptions(foundProduct),
           checkWishlistStatus(foundProduct.id)
         ]);
       } else {
@@ -420,8 +423,105 @@ export default function ProductDetail() {
     }
   };
 
-  // The loadCustomOptions and loadProductLabels functions are removed
-  // as their responsibilities are now handled by the CustomOptions component and the useStore context, respectively.
+  const loadCustomOptions = async (product) => {
+    if (!product || !store?.id) return;
+    try {
+      console.log('Loading custom options for product:', product.sku);
+      const { CustomOptionRule } = await import('@/api/entities');
+
+      // Fetch all active custom option rules for the store
+      const rules = await CustomOptionRule.filter({
+        store_id: store.id,
+        is_active: true
+      });
+
+      console.log('Found custom option rules:', rules);
+
+      // Find applicable rules for this product
+      const applicableRules = rules.filter(rule => {
+        let conditions;
+        try {
+          conditions = typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions;
+        } catch (e) {
+          console.error('Failed to parse conditions:', e);
+          return false;
+        }
+
+        // Check SKU conditions
+        if (conditions?.skus?.includes(product.sku)) {
+          console.log('Rule matches by SKU:', rule.name);
+          return true;
+        }
+
+        // Check category conditions
+        if (conditions?.categories?.length > 0 && product.category_ids?.length > 0) {
+          const hasMatch = conditions.categories.some(catId => product.category_ids.includes(catId));
+          if (hasMatch) {
+            console.log('Rule matches by category:', rule.name);
+            return true;
+          }
+        }
+
+        // Check attribute conditions
+        if (conditions?.attribute_conditions?.length > 0) {
+          for (const condition of conditions.attribute_conditions) {
+            if (product[condition.attribute_code] === condition.attribute_value) {
+              console.log('Rule matches by attribute:', rule.name);
+              return true;
+            }
+          }
+        }
+
+        return false;
+      });
+
+      console.log('Applicable rules:', applicableRules);
+
+      if (applicableRules.length > 0) {
+        const rule = applicableRules[0];
+        setCustomOptionsLabel(rule.display_label || 'Custom Options');
+
+        // Parse optional_product_ids
+        let productIds = [];
+        try {
+          productIds = typeof rule.optional_product_ids === 'string'
+            ? JSON.parse(rule.optional_product_ids)
+            : rule.optional_product_ids;
+        } catch (e) {
+          console.error('Failed to parse optional_product_ids:', e);
+          productIds = [];
+        }
+
+        console.log('Loading custom option products:', productIds);
+
+        if (productIds && productIds.length > 0) {
+          const optionProducts = [];
+          for (const productId of productIds) {
+            try {
+              const products = await StorefrontProduct.filter({
+                id: productId,
+                status: 'active'
+              });
+              if (products && products.length > 0) {
+                const customOptionProduct = products[0];
+                // Only include if it's marked as a custom option
+                if (customOptionProduct.is_custom_option) {
+                  optionProducts.push(customOptionProduct);
+                }
+              }
+            } catch (err) {
+              console.error(`Failed to load option product ${productId}:`, err);
+            }
+          }
+          console.log('Loaded custom option products:', optionProducts);
+          setCustomOptions(optionProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading custom options:', error);
+      setCustomOptions([]);
+    }
+  };
 
   const loadProductTabs = async () => {
     if (!store?.id) return;
@@ -773,7 +873,7 @@ export default function ProductDetail() {
             productContext={{
               product,
               productTabs,
-              customOptions: [], // TODO: Load custom options
+              customOptions: customOptions,
               relatedProducts: [], // TODO: Load related products
               store,
               settings,
@@ -800,19 +900,22 @@ export default function ProductDetail() {
               setIsInWishlist,
               handleAddToCart: handleAddToCart,
               handleWishlistToggle: handleWishlistToggle,
-              handleOptionChange: (optionId, selectedValue) => {
-                // Update selected options
-                const newSelectedOptions = selectedOptions.filter(opt => opt.option_id !== optionId);
-                if (selectedValue) {
-                  newSelectedOptions.push({
-                    option_id: optionId,
-                    option_value: selectedValue
-                  });
-                }
-                setSelectedOptions(newSelectedOptions);
-              }
+              handleOptionChange: handleOptionChange,
+              customOptionsLabel: customOptionsLabel
             }}
           />
+          {/* Render CustomOptions directly as a fallback */}
+          {product && (
+            <div className="col-span-12 px-4 mt-6">
+              <CustomOptions
+                product={product}
+                store={store}
+                settings={settings}
+                selectedOptions={selectedOptions}
+                onSelectionChange={handleOptionChange}
+              />
+            </div>
+          )}
         </div>
       ) : null
       }
