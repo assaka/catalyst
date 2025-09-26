@@ -24,9 +24,13 @@ export class ProductDetailController {
    * Initialize controller and bind to DOM elements
    */
   initialize() {
+    console.log('🚀 ProductDetailController initialize called', { product: this.productContext?.product?.name, hasSettings: !!this.productContext?.settings });
     this.calculateInitialPrice();
+    this.calculateTotalPrice();
     this.updateStockDisplay();
+    this.updatePriceDisplays();
     this.bindAllElements();
+    console.log('✅ ProductDetailController initialization complete');
   }
 
   /**
@@ -293,12 +297,30 @@ export class ProductDetailController {
       el.textContent = `${currency}${this.state.totalPrice.toFixed(2)}`;
     });
 
-    // Update options price if different from base price
+    // Show total price container when options are selected or price is different
     const product = this.productContext.product;
-    const basePrice = product?.compare_price ?
-      parseFloat(product.compare_price) :
-      parseFloat(product?.price || 0);
+    const basePrice = parseFloat(product?.price || 0);
+    const shouldShowTotalPrice = this.state.totalPrice > (basePrice * this.state.quantity) || this.state.selectedOptions.length > 0;
 
+    // Update total price container visibility
+    document.querySelectorAll('[data-bind="total-price-container"]').forEach(el => {
+      if (shouldShowTotalPrice) {
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+
+    // Show/hide options note based on selected options
+    document.querySelectorAll('[data-bind="options-note"]').forEach(el => {
+      if (this.state.selectedOptions.length > 0) {
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+
+    // Legacy support for has-options binding
     if (this.state.totalPrice !== basePrice * this.state.quantity) {
       document.querySelectorAll('[data-bind="has-options"]').forEach(el => {
         el.classList.remove('hidden');
@@ -433,10 +455,16 @@ export class ProductDetailController {
    */
   updateStockDisplay() {
     const { product, settings } = this.productContext;
-    if (!product) return;
+    console.log('🏷️ updateStockDisplay called', { product: product?.name, stockQuantity: product?.stock_quantity, infiniteStock: product?.infinite_stock, trackStock: settings?.track_stock, showStockLabel: settings?.stock_settings?.show_stock_label });
+
+    if (!product) {
+      console.log('⚠️ updateStockDisplay: No product data available');
+      return;
+    }
 
     const stockLabel = this.getStockLabel(product, settings);
     const stockVariant = this.getStockVariant(product, settings);
+    console.log('🏷️ Stock label calculated:', stockLabel, 'variant:', stockVariant);
 
 
     // Update all stock status displays

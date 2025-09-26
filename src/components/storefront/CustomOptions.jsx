@@ -274,36 +274,12 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                         <Check className="w-3 h-3 text-white" strokeWidth={3} />
                                     )}
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h4 className="font-medium text-gray-900">{option.name}</h4>
-                                            {option.short_description && (
-                                                <p className="text-sm text-gray-600 mt-1">{option.short_description}</p>
-                                            )}
-                                        </div>
-                                        <div className="ml-4 flex-shrink-0">
-                                            {hasSpecialPrice ? (
-                                                <div className="text-right">
-                                                    <div className="flex items-center space-x-2">
-                                                        <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
-                                                            +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 line-through mt-1">
-                                                        +{formatDisplayPrice(originalPrice, currencySymbol, store, taxes, selectedCountry)}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <Badge variant={isSelected ? "default" : "outline"} className="font-semibold">
-                                                    +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                    
+
+                                {/* Image and Content Container */}
+                                <div className="flex-1 flex items-start space-x-3">
+                                    {/* Product Image */}
                                     {option.images && option.images.length > 0 && (
-                                        <div className="mt-3">
+                                        <div className="flex-shrink-0">
                                             <img
                                                 src={
                                                     typeof option.images[0] === 'string'
@@ -318,6 +294,36 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                             />
                                         </div>
                                     )}
+
+                                    {/* Product Info */}
+                                    <div className="flex-1">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <h4 className="font-medium text-gray-900">{option.name}</h4>
+                                                {option.short_description && (
+                                                    <p className="text-sm text-gray-600 mt-1">{option.short_description}</p>
+                                                )}
+                                            </div>
+                                            <div className="ml-4 flex-shrink-0">
+                                                {hasSpecialPrice ? (
+                                                    <div className="text-right">
+                                                        <div className="flex items-center space-x-2">
+                                                            <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
+                                                                +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 line-through mt-1">
+                                                            +{formatDisplayPrice(originalPrice, currencySymbol, store, taxes, selectedCountry)}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant={isSelected ? "default" : "outline"} className="font-semibold">
+                                                        +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

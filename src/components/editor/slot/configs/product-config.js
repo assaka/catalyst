@@ -383,14 +383,14 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Total Price Display
+    // Total Price Display - positioned above Add to Cart button
     total_price_display: {
       id: 'total_price_display',
       type: 'text',
       content: `
-        <div data-bind="has-options" class="hidden text-lg font-semibold text-gray-800 mb-4">
-          <div>Total Price: <span data-bind="total-price" class="text-green-600">{{product.price_formatted}}</span></div>
-          <small class="text-sm text-gray-500">Includes selected options</small>
+        <div data-bind="total-price-container" class="text-lg font-semibold text-gray-800 mb-4" style="display: none;">
+          Total Price: <span data-bind="total-price" class="text-green-600">{{product.price_formatted}}</span>
+          <span data-bind="options-note" class="text-sm text-gray-500 block">(includes selected options)</span>
         </div>
       `,
       className: 'total-price-container',
@@ -412,7 +412,7 @@ export const productConfig = {
       className: 'buttons-container w-full flex items-center space-x-4',
       styles: {},
       parentId: 'actions_container',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 3 },
       layout: 'flex',
       colSpan: {},
       viewMode: ['default'],
