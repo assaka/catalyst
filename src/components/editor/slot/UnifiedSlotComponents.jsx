@@ -1062,7 +1062,7 @@ const CartCouponSlot = createSlotComponent({
               />
               <button
                 onClick={handleApplyCoupon}
-                className="w-1/2bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
+                className="w-1/2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
               >
                 Apply
               </button>
