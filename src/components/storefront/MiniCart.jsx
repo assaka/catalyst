@@ -298,24 +298,18 @@ export default function MiniCart({ cartUpdateTrigger }) {
         return;
       }
 
-      // Update local state immediately for instant UI response
-      const updatedItems = cartItems.map(item => 
+      // Server-first approach: update server then UI
+      const updatedItems = cartItems.map(item =>
         item.id === cartItemId ? { ...item, quantity: newQuantity } : item
       );
-      setCartItems(updatedItems);
-
-      // Dispatch immediate update for other components
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
 
       const result = await cartService.updateCart(updatedItems, store.id);
-      
+
       if (result.success) {
-        // Reload in background to sync with server
-        await loadCart();
+        // CartService will dispatch event with fresh data, which our listener will handle
+        // No need to manually update state or dispatch events
       } else {
         console.error('Failed to update quantity:', result.error);
-        // Revert local state on error
-        await loadCart();
       }
     } catch (error) {
       console.error('Failed to update quantity:', error);
@@ -329,29 +323,19 @@ export default function MiniCart({ cartUpdateTrigger }) {
         return;
       }
 
-      // Store original items in case we need to revert
-      const originalItems = [...cartItems];
-
-      // Update local state immediately for instant UI response
+      // Server-first approach: update server then UI
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
-      setCartItems(updatedItems);
 
-      // Use simplified cart service - it will handle event dispatching
       const result = await cartService.updateCart(updatedItems, store.id);
 
       if (result.success) {
-        // Success - cartService dispatched event with fresh data
-        // MiniCart will receive fresh data via cartUpdated event automatically
-        saveCartToLocalStorage(updatedItems);
+        // CartService will dispatch event with fresh data, which our listener will handle
+        // No need to manually update state or dispatch events
       } else {
         console.error('Failed to remove item:', result.error);
-        // Revert optimistic change on failure
-        setCartItems(originalItems);
       }
     } catch (error) {
       console.error('Failed to remove item:', error);
-      // Revert optimistic change on error
-      setCartItems(originalItems);
     }
   };
 

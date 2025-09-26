@@ -221,7 +221,6 @@ export default function Cart() {
     const [flashMessage, setFlashMessage] = useState(null);
     const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
     
-    const [quantityUpdates, setQuantityUpdates] = useState({});
     const [externalCartUpdateTrigger, setExternalCartUpdateTrigger] = useState(0);
 
 
@@ -267,12 +266,27 @@ export default function Cart() {
         let debounceTimer;
 
         const handleCartUpdate = (event) => {
-            // Only reload if we're not currently processing our own updates
-            // and the event is not from our own quantity/remove updates
-            if (!loading && hasLoadedInitialData &&
-                event.type !== 'cartQuantityUpdated' &&
-                event.type !== 'cartItemRemoved') {
+            // Check if we have fresh cart data from the service
+            if (event.detail?.freshCartData && event.detail.freshCartData.items) {
+                // Use fresh data directly instead of API call
+                const freshItems = event.detail.freshCartData.items;
 
+                // Find products for the fresh items (simplified)
+                const populatedCart = freshItems.map(item => {
+                    const existingItem = cartItems.find(existing => existing.id === item.id);
+                    return {
+                        ...item,
+                        product: existingItem?.product, // Keep existing product data
+                        selected_options: item.selected_options || []
+                    };
+                }).filter(item => item.product); // Only keep items with product data
+
+                setCartItems(populatedCart);
+                return; // Fresh data received - no need for additional API calls
+            }
+
+            // Only reload if we don't have fresh data and we're not currently loading
+            if (!loading && hasLoadedInitialData) {
                 // Clear existing timer
                 clearTimeout(debounceTimer);
 
@@ -290,43 +304,8 @@ export default function Cart() {
             clearTimeout(debounceTimer);
             window.removeEventListener('cartUpdated', handleCartUpdate);
         };
-    }, [loading, hasLoadedInitialData]);
+    }, [loading, hasLoadedInitialData, cartItems]);
 
-    useDebouncedEffect(() => {
-        const updateCartQuantities = async () => {
-            if (Object.keys(quantityUpdates).length === 0) return;
-
-            try {
-                if (!store?.id) {
-                    console.error('🛒 Cart: No store context available for update');
-                    setFlashMessage({ type: 'error', message: "Store context not available." });
-                    return;
-                }
-
-                // Create updated items array with new quantities
-                const updatedItems = cartItems.map(item => {
-                    const newQuantity = quantityUpdates[item.id];
-                    return newQuantity ? { ...item, quantity: newQuantity } : item;
-                });
-
-                // Use simplified cart service
-                const result = await cartService.updateCart(updatedItems, store.id);
-                setQuantityUpdates({});
-
-                // Update local state immediately instead of reloading
-                setCartItems(updatedItems);
-
-                // Dispatch update event for other components (MiniCart, etc.)
-                // Use custom event type to avoid triggering our own listener
-                window.dispatchEvent(new CustomEvent('cartQuantityUpdated'));
-            } catch (error) {
-                console.error("Error updating cart quantities:", error);
-                setFlashMessage({ type: 'error', message: "Failed to update cart quantities." });
-            }
-        };
-        
-        updateCartQuantities();
-    }, [quantityUpdates], 1500);
 
     const loadCartData = useCallback(async (showLoader = true) => {
         if (showLoader) setLoading(true);
@@ -515,62 +494,72 @@ export default function Cart() {
         }
     }, [externalCartUpdateTrigger, loading, hasLoadedInitialData, loadCartData]);
 
-    // Enhanced updateQuantity with hooks
-    const updateQuantity = useCallback((itemId, newQuantity) => {
+    // Enhanced updateQuantity with hooks - server-first approach
+    const updateQuantity = useCallback(async (itemId, newQuantity) => {
         const currentItem = cartItems.find(item => item.id === itemId);
-        if (!currentItem) return;
+        if (!currentItem || newQuantity <= 0) return;
 
-        // Apply before update hooks
-        const shouldUpdate = hookSystem.apply('cart.beforeUpdateQuantity', true, {
-            itemId,
-            currentQuantity: currentItem.quantity,
-            newQuantity,
-            item: currentItem,
-            ...cartContext
-        });
+        try {
+            if (!store?.id) {
+                console.error('🛒 Cart: No store context available for update');
+                setFlashMessage({ type: 'error', message: "Store context not available." });
+                return;
+            }
 
-        if (!shouldUpdate) return;
+            // Apply before update hooks
+            const shouldUpdate = hookSystem.apply('cart.beforeUpdateQuantity', true, {
+                itemId,
+                currentQuantity: currentItem.quantity,
+                newQuantity,
+                item: currentItem,
+                ...cartContext
+            });
 
-        // Apply quantity validation hooks
-        const validatedQuantity = hookSystem.apply('cart.validateQuantity', Math.max(1, newQuantity), {
-            item: currentItem,
-            maxStock: currentItem.product?.stock_quantity,
-            ...cartContext
-        });
+            if (!shouldUpdate) return;
 
-        // Update local state immediately for instant UI response
-        setCartItems(currentItems =>
-            currentItems.map(item =>
+            // Apply quantity validation hooks
+            const validatedQuantity = hookSystem.apply('cart.validateQuantity', Math.max(1, newQuantity), {
+                item: currentItem,
+                maxStock: currentItem.product?.stock_quantity,
+                ...cartContext
+            });
+
+            // Server-first approach: update server then UI
+            const updatedItems = cartItems.map(item =>
                 item.id === itemId ? { ...item, quantity: validatedQuantity } : item
-            )
-        );
+            );
 
-        // Apply after update hooks
-        hookSystem.do('cart.afterUpdateQuantity', {
-            itemId,
-            oldQuantity: currentItem.quantity,
-            newQuantity: validatedQuantity,
-            item: currentItem,
-            ...cartContext
-        });
+            const result = await cartService.updateCart(updatedItems, store.id);
 
-        // Emit update event
-        eventSystem.emit('cart.quantityUpdated', {
-            itemId,
-            oldQuantity: currentItem.quantity,
-            newQuantity: validatedQuantity,
-            item: currentItem,
-            ...cartContext
-        });
+            if (result.success) {
+                // Apply after update hooks
+                hookSystem.do('cart.afterUpdateQuantity', {
+                    itemId,
+                    oldQuantity: currentItem.quantity,
+                    newQuantity: validatedQuantity,
+                    item: currentItem,
+                    ...cartContext
+                });
 
-        // Dispatch immediate update for other components
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
+                // Emit update event
+                eventSystem.emit('cart.quantityUpdated', {
+                    itemId,
+                    oldQuantity: currentItem.quantity,
+                    newQuantity: validatedQuantity,
+                    item: currentItem,
+                    ...cartContext
+                });
 
-        setQuantityUpdates(currentUpdates => ({
-            ...currentUpdates,
-            [itemId]: validatedQuantity,
-        }));
-    }, [cartItems, cartContext]);
+                // CartService will dispatch event with fresh data, which our listener will handle
+            } else {
+                console.error('Failed to update quantity:', result.error);
+                setFlashMessage({ type: 'error', message: "Failed to update quantity." });
+            }
+        } catch (error) {
+            console.error("Error updating cart quantity:", error);
+            setFlashMessage({ type: 'error', message: "Failed to update cart quantity." });
+        }
+    }, [cartItems, cartContext, store?.id]);
 
     // Enhanced removeItem with hooks
     const removeItem = useCallback(async (itemId) => {
@@ -604,37 +593,30 @@ export default function Cart() {
 
             if (!shouldRemove) return;
 
-            // Update local state immediately for instant UI response
+            // Server-first approach: update server then UI
             const updatedItems = cartItems.filter(item => item.id !== itemId);
-            setCartItems(updatedItems);
 
-            // Apply after remove hooks
-            hookSystem.do('cart.afterRemoveItem', {
-                itemId,
-                removedItem: itemToRemove,
-                ...cartContext
-            });
-
-            // Emit remove event
-            eventSystem.emit('cart.itemRemoved', {
-                itemId,
-                removedItem: itemToRemove,
-                ...cartContext
-            });
-            
-            // Use simplified cart service - it will handle event dispatching
             const result = await cartService.updateCart(updatedItems, store.id);
 
             if (result.success) {
-                // Success - cartService already dispatched update event
+                // Apply after remove hooks
+                hookSystem.do('cart.afterRemoveItem', {
+                    itemId,
+                    removedItem: itemToRemove,
+                    ...cartContext
+                });
+
+                // Emit remove event
+                eventSystem.emit('cart.itemRemoved', {
+                    itemId,
+                    removedItem: itemToRemove,
+                    ...cartContext
+                });
+
+                // CartService will dispatch event with fresh data, which our listener will handle
                 setFlashMessage({ type: 'success', message: "Item removed from cart." });
             } else {
                 console.error('Failed to remove item:', result.error);
-                // Only revert on actual API failure - restore the removed item
-                setCartItems(prevItems => {
-                    const alreadyExists = prevItems.find(item => item.id === itemToRemove.id);
-                    return alreadyExists ? prevItems : [...prevItems, itemToRemove];
-                });
                 setFlashMessage({ type: 'error', message: "Failed to remove item." });
             }
         } catch (error) {
