@@ -125,15 +125,11 @@ export default function Cart() {
                     Object.keys(response.data.configuration.slots).length > 0) {
 
                     const publishedConfig = response.data;
-                    console.log('🎯 CART DEBUG: Using published configuration');
-                    console.log('🎯 CART DEBUG: Header title slot:', publishedConfig.configuration.slots.header_title);
                     setCartLayoutConfig(publishedConfig.configuration);
                     setConfigLoaded(true);
 
                 } else {
                     // Fallback to cart-config.js
-                    console.log('🎯 CART DEBUG: Using fallback configuration (cart-config.js)');
-                    console.log('🎯 CART DEBUG: Fallback header title:', cartConfig.slots.header_title);
                     const fallbackConfig = {
                         slots: { ...cartConfig.slots },
                         metadata: {
@@ -148,16 +144,8 @@ export default function Cart() {
                 }
             } catch (error) {
                 console.error('❌ Error loading published slot configuration:', error);
-                console.log('🎯 CART DEBUG: API Error Details:', {
-                    message: error.message,
-                    status: error.response?.status,
-                    statusText: error.response?.statusText,
-                    url: error.config?.url
-                });
 
                 // Fallback to cart-config.js
-                console.log('🎯 CART DEBUG: Using error fallback configuration');
-                console.log('🎯 CART DEBUG: Error fallback header title:', cartConfig.slots.header_title);
                 const fallbackConfig = {
                     slots: { ...cartConfig.slots },
                     metadata: {
@@ -1048,10 +1036,6 @@ export default function Cart() {
                     const slotCount = Object.keys(slotsObject).length;
 
                     const shouldRender = hasConfig && hasSlots && slotCount > 0;
-
-                    console.log('🎯 CART DEBUG: Final render check');
-                    console.log('🎯 CART DEBUG: Has config:', hasConfig);
-                    console.log('🎯 CART DEBUG: Final header title in render:', cartLayoutConfig?.slots?.header_title);
 
                     return shouldRender;
                 })() ? (
