@@ -22,6 +22,7 @@ import { registerSlotComponent, createSlotComponent } from './UnifiedSlotRendere
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
+import StockStatusComponent from '@/components/storefront/StockStatus';
 
 /**
  * QuantitySelector - Unified quantity selector component
@@ -781,6 +782,23 @@ registerSlotComponent('ProductTabs', ProductTabsStandalone);
 registerSlotComponent('ProductRecommendationsSlot', ProductRecommendations);
 registerSlotComponent('TotalPriceDisplay', TotalPriceDisplay);
 
+// StockStatus - Dynamic stock status display
+const StockStatus = createSlotComponent({
+  name: 'StockStatus',
+  renderStorefront: ({ productContext }) => {
+    return <StockStatusComponent productContext={productContext} />;
+  },
+  renderEditor: () => {
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+        In Stock
+      </span>
+    );
+  }
+});
+
+registerSlotComponent('StockStatus', StockStatus);
+
 export {
   QuantitySelector,
   ProductBreadcrumbs,
@@ -789,5 +807,6 @@ export {
   ProductOptions,
   CustomOptions,
   ProductTabs,
-  ProductRecommendations
+  ProductRecommendations,
+  TotalPriceDisplay
 };

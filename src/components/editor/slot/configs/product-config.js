@@ -246,8 +246,9 @@ export const productConfig = {
 
     stock_status: {
       id: 'stock_status',
-      type: 'text',
-      content: `<span class="stock-badge w-fit inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600" data-bind="stock-status">Loading...</span>`,
+      type: 'component',
+      component: 'StockStatus',
+      content: '',
       className: 'stock-container',
       parentClassName: '',
       styles: {},
