@@ -100,7 +100,7 @@ const generateProductName = (product, basePrefix = '') => {
 
 export default function ProductDetail() {
   console.log('🚀 ProductDetail component rendering...');
-  alert('ProductDetail component is loading!');
+  console.log('📍 Component start - about to set up hooks...');
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
@@ -118,6 +118,17 @@ export default function ProductDetail() {
   useEffect(() => {
     console.log('🔄 ProductDetail: Quantity changed to:', quantity);
   }, [quantity]);
+
+  // Debug state values on every render
+  console.log('🔍 Current state values:', {
+    hasProduct: !!product,
+    productName: product?.name,
+    hasStore: !!store,
+    storeName: store?.name,
+    hasSettings: !!settings,
+    configLoaded,
+    storeLoading
+  });
   const [activeImage, setActiveImage] = useState(0);
   const [user, setUser] = useState(null);
   // customOptions and customOptionsLabel states are removed as their logic is moved to the CustomOptions component.
@@ -228,6 +239,7 @@ export default function ProductDetail() {
   }, [store?.id, storeLoading]);
 
   // Initialize secure slot binding after product and configuration are loaded
+  console.log('📋 About to set up slot binding useEffect...');
   useEffect(() => {
     console.log('🎯 useEffect for slot binding triggered:', {
       hasProduct: !!product,
