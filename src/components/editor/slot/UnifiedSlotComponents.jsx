@@ -874,13 +874,17 @@ const CartItemsSlot = createSlotComponent({
 
   // Storefront version - full functionality
   renderStorefront: ({ slot, cartContext, className, styles }) => {
+    if (!cartContext) {
+      return <div className={className} style={styles}>Cart context not available</div>;
+    }
+
     const {
-      cartItems,
-      calculateItemTotal,
-      updateQuantity,
-      removeItem,
-      currencySymbol,
-      safeToFixed
+      cartItems = [],
+      calculateItemTotal = () => 0,
+      updateQuantity = () => {},
+      removeItem = () => {},
+      currencySymbol = '$',
+      safeToFixed = (value) => parseFloat(value || 0).toFixed(2)
     } = cartContext;
 
     if (cartItems.length === 0) {
