@@ -858,7 +858,20 @@ const StockStatus = createSlotComponent({
         });
 
         if (hideStockQuantity) {
-          const hiddenResult = label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
+          // Remove quantity-related phrases when hiding stock quantities
+          const hiddenResult = label
+            // Remove "just {quantity} left" pattern
+            .replace(/,?\s*just\s+\{quantity\}\s+left/gi, '')
+            // Remove "{quantity} left" pattern
+            .replace(/,?\s*\{quantity\}\s+left/gi, '')
+            // Remove "({quantity})" pattern
+            .replace(/\s*\(\{quantity\}\)/gi, '')
+            // Remove standalone "{quantity}" pattern
+            .replace(/\s*\{quantity\}/gi, '')
+            // Clean up any double spaces or trailing commas
+            .replace(/\s+/g, ' ')
+            .replace(/,\s*$/, '')
+            .trim();
           console.log('🏷️ Hidden quantity result:', hiddenResult);
           return hiddenResult;
         }
@@ -880,7 +893,20 @@ const StockStatus = createSlotComponent({
       // Handle regular in stock
       const label = stockSettings.in_stock_label || "In Stock";
       if (hideStockQuantity) {
-        return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
+        // Remove quantity-related phrases when hiding stock quantities
+        return label
+          // Remove "just {quantity} left" pattern
+          .replace(/,?\s*just\s+\{quantity\}\s+left/gi, '')
+          // Remove "{quantity} left" pattern
+          .replace(/,?\s*\{quantity\}\s+left/gi, '')
+          // Remove "({quantity})" pattern
+          .replace(/\s*\(\{quantity\}\)/gi, '')
+          // Remove standalone "{quantity}" pattern
+          .replace(/\s*\{quantity\}/gi, '')
+          // Clean up any double spaces or trailing commas
+          .replace(/\s+/g, ' ')
+          .replace(/,\s*$/, '')
+          .trim();
       }
       return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
         if (match === '{({quantity})}') {

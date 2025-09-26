@@ -234,6 +234,11 @@ export default function ProductDetail() {
           product,
           store,
           settings,
+          selectedOptions,
+          quantity,
+          totalPrice: getTotalPrice(),
+          setQuantity,
+          setSelectedOptions,
           handleAddToCart: (cartData) => {
             console.log('Add to cart:', cartData);
             // TODO: Implement actual add to cart logic
@@ -258,7 +263,7 @@ export default function ProductDetail() {
         }
       };
     }
-  }, [product, store, settings, configLoaded]);
+  }, [product, store, settings, configLoaded, selectedOptions, quantity, setQuantity, setSelectedOptions]);
 
   /**
    * Evaluate which labels apply to the product based on their conditions
