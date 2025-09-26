@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { clearStorefrontCache } from '@/utils/cacheUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -120,11 +121,20 @@ export default function StockSettings() {
       };
 
       const result = await retryApiCall(() => Store.update(storeId, payload));
-      
-      // Clear any potential cache
+
+      // Clear all cache for instant updates
+      clearStorefrontCache(storeId, ['stores', 'products']);
       try {
         localStorage.removeItem('storeProviderCache');
         sessionStorage.removeItem('storeProviderCache');
+        localStorage.removeItem('productCache');
+        sessionStorage.removeItem('productCache');
+        localStorage.setItem('forceRefreshStore', 'true');
+
+        // Clear any manual cache clearing flags
+        if (typeof window !== 'undefined' && window.clearCache) {
+          window.clearCache();
+        }
       } catch (e) {
         console.warn('Failed to clear cache:', e);
       }

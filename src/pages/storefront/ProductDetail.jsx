@@ -119,16 +119,6 @@ export default function ProductDetail() {
     console.log('🔄 ProductDetail: Quantity changed to:', quantity);
   }, [quantity]);
 
-  // Debug state values on every render
-  console.log('🔍 Current state values:', {
-    hasProduct: !!product,
-    productName: product?.name,
-    hasStore: !!store,
-    storeName: store?.name,
-    hasSettings: !!settings,
-    configLoaded,
-    storeLoading
-  });
   const [activeImage, setActiveImage] = useState(0);
   const [user, setUser] = useState(null);
   // customOptions and customOptionsLabel states are removed as their logic is moved to the CustomOptions component.
@@ -144,6 +134,17 @@ export default function ProductDetail() {
   // State for product layout configuration
   const [productLayoutConfig, setProductLayoutConfig] = useState(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Debug state values on every render
+  console.log('🔍 Current state values:', {
+    hasProduct: !!product,
+    productName: product?.name,
+    hasStore: !!store,
+    storeName: store?.name,
+    hasSettings: !!settings,
+    configLoaded,
+    storeLoading
+  });
 
   // Load user once
   useEffect(() => {
