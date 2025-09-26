@@ -855,6 +855,7 @@ const StockStatus = createSlotComponent({
 
         // Process any {...} blocks and replace placeholders inside them
         // Handle nested braces by processing outer {...} blocks first
+        console.log('🏷️ Processing low stock label:', label, 'quantity:', product.stock_quantity);
         let processedLabel = label;
         let depth = 0;
         let start = -1;
@@ -867,11 +868,13 @@ const StockStatus = createSlotComponent({
             depth--;
             if (depth === 0 && start !== -1) {
               const content = processedLabel.substring(start + 1, i);
+              console.log('🏷️ Found block content:', content);
               const processed = content
                 .replace(/\{quantity\}/gi, product.stock_quantity)
                 .replace(/\{item\}/gi, product.stock_quantity === 1 ? 'item' : 'items')
                 .replace(/\{unit\}/gi, product.stock_quantity === 1 ? 'unit' : 'units')
                 .replace(/\{piece\}/gi, product.stock_quantity === 1 ? 'piece' : 'pieces');
+              console.log('🏷️ Processed block:', processed);
 
               processedLabel = processedLabel.substring(0, start) + processed + processedLabel.substring(i + 1);
               i = start + processed.length - 1; // Adjust index after replacement
@@ -880,6 +883,7 @@ const StockStatus = createSlotComponent({
           }
         }
 
+        console.log('🏷️ Final processed label:', processedLabel);
         return processedLabel;
       }
 

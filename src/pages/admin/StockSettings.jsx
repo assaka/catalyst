@@ -139,13 +139,12 @@ export default function StockSettings() {
         console.warn('Failed to clear cache:', e);
       }
       
-      setFlashMessage({ type: 'success', message: 'Stock settings saved successfully!' });
-      
-      await delay(2000); // Increased delay to ensure backend processing
-      
-      // Refresh the store context to get updated settings
-      await refreshStores();
-      await loadStore();
+      setFlashMessage({ type: 'success', message: 'Stock settings saved successfully! Reloading page...' });
+
+      await delay(1000);
+
+      // Force page reload to ensure all caches are cleared
+      window.location.reload();
       
     } catch (error) {
       console.error('Failed to save settings:', error);
