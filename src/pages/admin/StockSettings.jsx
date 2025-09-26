@@ -124,6 +124,16 @@ export default function StockSettings() {
 
       // Clear all cache for instant updates
       clearStorefrontCache(storeId, ['stores', 'products']);
+
+      // Also clear the specific store cache keys
+      try {
+        const cacheKeys = [`first-store`, `store-slug-${store.slug}`];
+        if (window.clearCacheKeys) {
+          window.clearCacheKeys(cacheKeys);
+        }
+      } catch (e) {
+        console.warn('Failed to clear specific store cache:', e);
+      }
       try {
         localStorage.removeItem('storeProviderCache');
         sessionStorage.removeItem('storeProviderCache');

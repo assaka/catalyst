@@ -388,24 +388,26 @@ export const productConfig = {
 
     quantity_selector: {
       id: 'quantity_selector',
-      type: 'text',
-      content: `
-        <div class="quantity-selector mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-          <div class="flex items-center space-x-3">
-            <button data-action="decrement" data-target="[data-bind='quantity']" class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">-</button>
-            <input data-bind="quantity" data-action="change-quantity" type="number" min="1" value="1" class="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button data-action="increment" data-target="[data-bind='quantity']" class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">+</button>
-          </div>
-        </div>
-      `,
-      className: 'quantity-container',
+      type: 'component',
+      component: 'QuantitySelector',
+      content: 'QuantitySelector',
+      className: 'quantity-selector mb-4',
       parentClassName: '',
       styles: {},
       parentId: 'actions_container',
       position: { col: 1, row: 1 },
       colSpan: {
         default: 12
+      },
+      metadata: {
+        component: 'QuantitySelector',
+        editable: {
+          label: {
+            type: 'text',
+            default: 'Quantity',
+            placeholder: 'Enter quantity label'
+          }
+        }
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }

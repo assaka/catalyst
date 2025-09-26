@@ -33,7 +33,6 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { productConfig } from '@/components/editor/slot/configs/product-config';
-import { initializeProductSlotBinding } from '@/utils/secureSlotBinder';
 
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
@@ -239,84 +238,6 @@ export default function ProductDetail() {
     }
   }, [store?.id, storeLoading]);
 
-  // Initialize secure slot binding after product and configuration are loaded
-  // Keep a ref to track if we've already initialized
-  const slotBindingInitialized = React.useRef(false);
-
-  console.log('📋 About to set up slot binding useEffect...');
-  useEffect(() => {
-    console.log('🎯 useEffect for slot binding triggered:', {
-      hasProduct: !!product,
-      hasStore: !!store,
-      hasSettings: !!settings,
-      configLoaded,
-      alreadyInitialized: slotBindingInitialized.current
-    });
-
-    // Only initialize once when all conditions are met
-    if (product && store && settings && configLoaded && !slotBindingInitialized.current) {
-      slotBindingInitialized.current = true;
-
-      // Use MutationObserver to detect when slot elements are rendered
-      console.log('🔄 Setting up MutationObserver to detect slot elements...');
-
-      const observer = new MutationObserver((mutations) => {
-        // Check if quantity selector elements exist
-        const quantityElements = document.querySelectorAll('[data-action="increment"], [data-action="decrement"]');
-
-        if (quantityElements.length > 0) {
-          console.log('✅ Quantity elements detected:', quantityElements.length, 'initializing binding...');
-          observer.disconnect(); // Stop observing once we find the elements
-
-          const productContext = {
-            product,
-            store,
-            settings,
-            get selectedOptions() { return selectedOptions; },
-            get quantity() { return quantity; },
-            getTotalPrice,
-            setQuantity,
-            setSelectedOptions,
-            handleAddToCart: (cartData) => {
-              console.log('Add to cart:', cartData);
-              // TODO: Implement actual add to cart logic
-            },
-            handleWishlistToggle: (productToToggle) => {
-              console.log('Wishlist toggle:', productToToggle);
-              // TODO: Implement actual wishlist logic
-            }
-          };
-
-          const controller = initializeProductSlotBinding(productContext);
-
-          // Store controller in a ref or state for cleanup
-          window._productController = controller;
-        }
-      });
-
-      // Start observing the document body for changes
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-
-      // Fallback timeout in case elements are never found
-      const fallbackTimeout = setTimeout(() => {
-        console.warn('⚠️ Fallback timeout reached - elements may not have rendered');
-        observer.disconnect();
-      }, 5000);
-
-      return () => {
-        observer.disconnect();
-        clearTimeout(fallbackTimeout);
-        slotBindingInitialized.current = false; // Reset on cleanup
-        if (window._productController && window._productController.destroy) {
-          window._productController.destroy();
-          window._productController = null;
-        }
-      };
-    }
-  }, [product, store, settings, configLoaded]);
 
   /**
    * Evaluate which labels apply to the product based on their conditions
