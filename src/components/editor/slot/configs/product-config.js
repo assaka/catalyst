@@ -66,8 +66,9 @@ export const productConfig = {
 
     breadcrumbs: {
       id: 'breadcrumbs',
-      type: 'text',
-      content: '<nav>Home > {{#if category.name}}{{category.name}}{{else}}Category{{/if}} > {{product.name}}</nav>',
+      type: 'component',
+      component: 'ProductBreadcrumbsSlot',
+      content: '',
       className: 'w-fit text-sm text-gray-600',
       parentClassName: '',
       styles: {},
