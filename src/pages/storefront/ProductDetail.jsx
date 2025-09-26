@@ -249,37 +249,58 @@ export default function ProductDetail() {
       configLoaded
     });
     if (product && store && settings && configLoaded) {
-      // Delay initialization to ensure DOM elements from UnifiedSlotRenderer are rendered
-      console.log('🔄 About to initialize slot binding after timeout...');
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ Timeout executed, initializing slot binding now...');
-        const productContext = {
-          product,
-          store,
-          settings,
-          selectedOptions,
-          quantity,
-          totalPrice: getTotalPrice(),
-          setQuantity,
-          setSelectedOptions,
-          handleAddToCart: (cartData) => {
-            console.log('Add to cart:', cartData);
-            // TODO: Implement actual add to cart logic
-          },
-          handleWishlistToggle: (productToToggle) => {
-            console.log('Wishlist toggle:', productToToggle);
-            // TODO: Implement actual wishlist logic
-          }
-        };
+      // Use MutationObserver to detect when slot elements are rendered
+      console.log('🔄 Setting up MutationObserver to detect slot elements...');
 
-        const controller = initializeProductSlotBinding(productContext);
+      const observer = new MutationObserver((mutations) => {
+        // Check if quantity selector elements exist
+        const quantityElements = document.querySelectorAll('[data-action="increment"], [data-action="decrement"]');
 
-        // Store controller in a ref or state for cleanup
-        window._productController = controller;
-      }, 1000); // Increase timeout to 1 second to ensure DOM is ready
+        if (quantityElements.length > 0) {
+          console.log('✅ Quantity elements detected:', quantityElements.length, 'initializing binding...');
+          observer.disconnect(); // Stop observing once we find the elements
+
+          const productContext = {
+            product,
+            store,
+            settings,
+            selectedOptions,
+            quantity,
+            totalPrice: getTotalPrice(),
+            setQuantity,
+            setSelectedOptions,
+            handleAddToCart: (cartData) => {
+              console.log('Add to cart:', cartData);
+              // TODO: Implement actual add to cart logic
+            },
+            handleWishlistToggle: (productToToggle) => {
+              console.log('Wishlist toggle:', productToToggle);
+              // TODO: Implement actual wishlist logic
+            }
+          };
+
+          const controller = initializeProductSlotBinding(productContext);
+
+          // Store controller in a ref or state for cleanup
+          window._productController = controller;
+        }
+      });
+
+      // Start observing the document body for changes
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+
+      // Fallback timeout in case elements are never found
+      const fallbackTimeout = setTimeout(() => {
+        console.warn('⚠️ Fallback timeout reached - elements may not have rendered');
+        observer.disconnect();
+      }, 5000);
 
       return () => {
-        clearTimeout(timeoutId);
+        observer.disconnect();
+        clearTimeout(fallbackTimeout);
         if (window._productController && window._productController.destroy) {
           window._productController.destroy();
           window._productController = null;
