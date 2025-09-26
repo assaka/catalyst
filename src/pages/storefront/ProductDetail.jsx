@@ -232,6 +232,70 @@ export default function ProductDetail() {
     }
   }, [product, store, settings, configLoaded]);
 
+  /**
+   * Evaluate which labels apply to the product based on their conditions
+   */
+  const evaluateProductLabels = (product, labels) => {
+    if (!labels || !Array.isArray(labels) || !product) return [];
+
+    const applicableLabels = [];
+
+    for (const label of labels) {
+      if (!label.is_active) continue;
+
+      let conditions;
+      try {
+        conditions = typeof label.conditions === 'string'
+          ? JSON.parse(label.conditions)
+          : label.conditions;
+      } catch (e) {
+        console.error('Failed to parse label conditions:', e);
+        continue;
+      }
+
+      let shouldApply = true;
+
+      // Check attribute conditions
+      if (conditions?.attribute_conditions?.length > 0) {
+        for (const condition of conditions.attribute_conditions) {
+          const productValue = product[condition.attribute_code];
+          if (productValue !== condition.attribute_value) {
+            shouldApply = false;
+            break;
+          }
+        }
+      }
+
+      // Check price conditions
+      if (conditions?.price_conditions) {
+        const priceConditions = conditions.price_conditions;
+
+        // Check if product has sale price
+        if (priceConditions.has_sale_price === true && !product.compare_price) {
+          shouldApply = false;
+        }
+
+        // Check if product is new
+        if (priceConditions.is_new === true && priceConditions.days_since_created) {
+          const productDate = new Date(product.created_at);
+          const daysSinceCreated = Math.floor((Date.now() - productDate) / (1000 * 60 * 60 * 24));
+          if (daysSinceCreated > priceConditions.days_since_created) {
+            shouldApply = false;
+          }
+        }
+      }
+
+      if (shouldApply) {
+        applicableLabels.push(label);
+      }
+    }
+
+    // Sort by priority if specified
+    applicableLabels.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    return applicableLabels;
+  };
+
   const loadProductData = async () => {
     try {
       setLoading(true);
@@ -273,7 +337,14 @@ export default function ProductDetail() {
         }
         
         
-        setProduct(foundProduct);
+        // Evaluate and apply product labels based on conditions
+        const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
+        const productWithLabels = {
+          ...foundProduct,
+          labels: applicableLabels.map(label => label.text)
+        };
+
+        setProduct(productWithLabels);
 
         // Track product view with enhanced analytics
         if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
