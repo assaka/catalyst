@@ -178,6 +178,13 @@ const ProductBreadcrumbs = createSlotComponent({
   renderStorefront: ({ slot, productContext, className, styles }) => {
     const { breadcrumbs } = productContext;
 
+    console.log('🍞 ProductBreadcrumbs rendering:', {
+      breadcrumbs,
+      breadcrumbsLength: breadcrumbs?.length,
+      breadcrumbsType: typeof breadcrumbs,
+      productContextKeys: Object.keys(productContext || {})
+    });
+
     return (
       <div className={className} style={styles}>
         <nav className="text-sm text-gray-600">
