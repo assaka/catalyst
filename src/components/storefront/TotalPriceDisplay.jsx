@@ -35,12 +35,8 @@ const TotalPriceDisplay = ({
 
   // Calculate if we should show the total price breakdown
   const basePriceTotal = basePrice * actualQuantity;
-  const shouldShowTotal = actualTotalPrice > basePriceTotal || actualOptions.length > 0;
-
-  // Don't render if conditions aren't met
-  if (!shouldShowTotal) {
-    return null;
-  }
+  // Always show the total price (removed conditional display)
+  const shouldShowTotal = true;
 
   const containerClass = compact
     ? "bg-gray-50 rounded p-3 space-y-1"
@@ -55,7 +51,7 @@ const TotalPriceDisplay = ({
       <div className={innerClass}>
         {showTitle && !compact && (
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-            Price Breakdown
+            {actualOptions.length > 0 ? 'Price Breakdown' : 'Total Price'}
           </h3>
         )}
 
@@ -95,17 +91,19 @@ const TotalPriceDisplay = ({
           </>
         )}
 
-        {/* Total */}
-        <div className={compact ? "pt-1 border-t" : "border-t pt-2 mt-2"}>
-          <div className="flex justify-between items-center">
-            <span className={compact ? "font-bold text-gray-900" : "text-lg font-bold text-gray-900"}>
-              Total Price:
-            </span>
-            <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
-              {actualCurrency}{actualTotalPrice.toFixed(2)}
-            </span>
+        {/* Total - Only show if different from base price or has options */}
+        {(actualTotalPrice !== basePriceTotal || actualOptions.length > 0) && (
+          <div className={compact ? "pt-1 border-t" : "border-t pt-2 mt-2"}>
+            <div className="flex justify-between items-center">
+              <span className={compact ? "font-bold text-gray-900" : "text-lg font-bold text-gray-900"}>
+                Total Price:
+              </span>
+              <span className={compact ? "font-bold text-green-600" : "text-lg font-bold text-green-600"}>
+                {actualCurrency}{actualTotalPrice.toFixed(2)}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
