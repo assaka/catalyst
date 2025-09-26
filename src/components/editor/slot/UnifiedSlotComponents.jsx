@@ -781,6 +781,7 @@ registerSlotComponent('ProductTabsSlot', ProductTabs);
 registerSlotComponent('ProductTabs', ProductTabsStandalone);
 registerSlotComponent('ProductRecommendationsSlot', ProductRecommendations);
 registerSlotComponent('TotalPriceDisplay', TotalPriceDisplay);
+console.log('✅ TotalPriceDisplay component registered', TotalPriceDisplay);
 
 // StockStatus - Dynamic stock status display
 const StockStatus = createSlotComponent({
@@ -798,6 +799,7 @@ const StockStatus = createSlotComponent({
 });
 
 registerSlotComponent('StockStatus', StockStatus);
+console.log('✅ StockStatus component registered', StockStatus);
 
 export {
   QuantitySelector,
@@ -808,5 +810,6 @@ export {
   CustomOptions,
   ProductTabs,
   ProductRecommendations,
-  TotalPriceDisplay
+  TotalPriceDisplay,
+  StockStatus
 };
