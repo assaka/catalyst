@@ -232,7 +232,11 @@ export default function ProductTabs() {
 
         {/* Tabs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTabs.map((tab) => (
+          {(() => {
+            console.log('🎨 Rendering tabs grid. filteredTabs:', filteredTabs);
+            return filteredTabs.map((tab) => {
+              console.log('🎨 Rendering individual tab:', tab);
+              return (
             <Card key={tab.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -364,7 +368,9 @@ export default function ProductTabs() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+              );
+            });
+          })()}
         </div>
 
         {filteredTabs.length === 0 && (
