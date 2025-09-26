@@ -22,7 +22,7 @@ import { registerSlotComponent, createSlotComponent } from './UnifiedSlotRendere
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
-import StockStatusComponent from '@/components/storefront/StockStatus';
+// import StockStatusComponent from '@/components/storefront/StockStatus'; // Temporarily commented out
 
 /**
  * QuantitySelector - Unified quantity selector component
@@ -791,15 +791,17 @@ const StockStatus = createSlotComponent({
   renderEditor: ({ slot, className, styles }) => (
     <div className={className} style={styles}>
       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-        In Stock
+        In Stock (Editor)
       </span>
     </div>
   ),
 
-  // Storefront version - uses actual product data
+  // Storefront version - temporary simple version to test registration
   renderStorefront: ({ slot, className, styles, productContext }) => (
     <div className={className} style={styles}>
-      <StockStatusComponent productContext={productContext} />
+      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+        Stock: {productContext?.product?.stock_quantity || 'Loading...'}
+      </span>
     </div>
   )
 });
