@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { createCategoryUrl, createProductUrl } from "@/utils/urlUtils";
+import { buildCategoryBreadcrumbs } from "@/utils/breadcrumbUtils";
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
@@ -618,7 +619,7 @@ export default function Category() {
     totalPages,
     itemsPerPage, // Add dynamic items per page
     subcategories: [],
-    breadcrumbs: [],
+    breadcrumbs: buildCategoryBreadcrumbs(currentCategory, storeCode, categories, settings),
     selectedFilters: activeFilters,
     priceRange: {},
     currencySymbol: settings?.currency_symbol || '$',

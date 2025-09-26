@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, Fragment } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { createCategoryUrl } from "@/utils/urlUtils";
+import { buildProductBreadcrumbs } from "@/utils/breadcrumbUtils";
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -890,15 +890,7 @@ export default function ProductDetail() {
               relatedProducts: [], // TODO: Load related products
               store,
               settings,
-              breadcrumbs: [
-                { name: 'Home', url: '/' },
-                // Add dynamic breadcrumbs based on categories
-                ...(product?.category_ids?.map(catId => {
-                  const cat = categories?.find(c => c.id === catId);
-                  return cat ? { name: cat.name, url: `/category/${cat.slug}` } : null;
-                }).filter(Boolean) || []),
-                { name: product?.name, url: null }
-              ],
+              breadcrumbs: buildProductBreadcrumbs(product, storeCode, categories, settings),
               productLabels,
               selectedOptions,
               quantity,
