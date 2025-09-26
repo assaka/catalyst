@@ -292,6 +292,11 @@ export default function ProductDetail() {
           // If not found directly, check in product.attributes
           if (productValue === undefined && product.attributes) {
             productValue = product.attributes[condition.attribute_code];
+
+            // Handle attributes that are objects with value/label structure
+            if (productValue && typeof productValue === 'object' && productValue.value) {
+              productValue = productValue.value;
+            }
           }
 
           console.log(`Checking attribute condition for label "${label.name}":`, {
