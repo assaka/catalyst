@@ -24,8 +24,7 @@ class SlotConfigurationService {
   async getPublishedConfiguration(storeId, pageType = 'cart') {
     try {
       const url = `${API_BASE}/published/${storeId}/${pageType}?status=published&latest=true`;
-      // Use public API for storefront access (no authentication required)
-      const response = await apiClient.publicRequest('GET', url);
+      const response = await apiClient.get(url);
 
       // Additional verification: ensure we got a published record
       if (response.data && response.data.status !== 'published') {

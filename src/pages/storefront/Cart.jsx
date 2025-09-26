@@ -120,6 +120,11 @@ export default function Cart() {
                 console.log('🔍 CART: Expected store ID from DB:', '157d4590-49bf-4b0b-bd77-abe131909528');
                 console.log('🔍 CART: Store ID match:', store.id === '157d4590-49bf-4b0b-bd77-abe131909528');
                 console.log('🔍 CART: API URL will be:', `/api/slot-configurations/published/${store.id}/cart`);
+                console.log('🔍 CART: Auth state check:', {
+                    userLoggedOut: localStorage.getItem('user_logged_out'),
+                    storeOwnerToken: !!localStorage.getItem('store_owner_auth_token'),
+                    customerToken: !!localStorage.getItem('customer_auth_token')
+                });
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
                 console.log('🔍 CART: API Response:', response);
 
