@@ -846,21 +846,27 @@ export default function Cart() {
 
     const calculateSubtotal = useCallback(() => {
         return cartItems.reduce((total, item) => {
-            // item.product is already available from loadCartData
-            return total + calculateItemTotal(item, item.product);
+            // Subtotal is base product price only (without custom options)
+            const basePrice = formatPrice(item.price) || formatPrice(item.product?.sale_price || item.product?.price || 0);
+            return total + (basePrice * (formatPrice(item.quantity) || 1));
         }, 0);
-    }, [cartItems, calculateItemTotal]);
+    }, [cartItems]);
 
     const { subtotal, discount, tax, total } = useMemo(() => {
         const calculatedSubtotal = calculateSubtotal();
+
+        // Calculate total with custom options included
+        const calculatedTotalWithOptions = cartItems.reduce((total, item) => {
+            return total + calculateItemTotal(item, item.product);
+        }, 0);
 
         let disc = 0;
         if (appliedCoupon) {
             if (appliedCoupon.discount_type === 'fixed') {
                 disc = formatPrice(appliedCoupon.discount_value);
             } else if (appliedCoupon.discount_type === 'percentage') {
-                disc = calculatedSubtotal * (formatPrice(appliedCoupon.discount_value) / 100);
-                
+                disc = calculatedTotalWithOptions * (formatPrice(appliedCoupon.discount_value) / 100);
+
                 // Apply max discount limit if specified
                 if (appliedCoupon.max_discount_amount && disc > formatPrice(appliedCoupon.max_discount_amount)) {
                     disc = formatPrice(appliedCoupon.max_discount_amount);
@@ -869,14 +875,14 @@ export default function Cart() {
                 // For free shipping, the discount is 0 here but would be applied to shipping cost
                 disc = 0;
             }
-            
-            // Ensure discount doesn't exceed subtotal
-            if (disc > calculatedSubtotal) {
-                disc = calculatedSubtotal;
+
+            // Ensure discount doesn't exceed total
+            if (disc > calculatedTotalWithOptions) {
+                disc = calculatedTotalWithOptions;
             }
         }
 
-        const subAfterDiscount = calculatedSubtotal - disc;
+        const subAfterDiscount = calculatedTotalWithOptions - disc;
         
         // Use new tax service for calculation
         const taxAmount = (() => {
@@ -901,7 +907,7 @@ export default function Cart() {
                 store,
                 taxRules,
                 shippingAddress,
-                calculatedSubtotal,
+                calculatedTotalWithOptions,
                 disc
             );
 
@@ -911,7 +917,7 @@ export default function Cart() {
         const totalAmount = subAfterDiscount + taxAmount;
 
         return { subtotal: calculatedSubtotal, discount: disc, tax: taxAmount, total: totalAmount };
-    }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal]);
+    }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal, calculateItemTotal]);
 
     // Enhanced checkout navigation with hooks
     const handleCheckout = useCallback(() => {

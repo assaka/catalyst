@@ -895,49 +895,59 @@ const CartItemsSlot = createSlotComponent({
         <div className="space-y-4">
           {cartItems.map(item => (
             <Card key={item.id} className="p-4">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-start space-x-4">
                 {/* Product Image */}
-                <div className="flex-shrink-0 w-20 h-20">
-                  {item.product?.image_url ? (
-                    <img
-                      src={item.product.image_url}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                      <span className="text-gray-400 text-xs">No Image</span>
-                    </div>
-                  )}
+                <div className="flex-shrink-0 w-24 h-24">
+                  {(() => {
+                    const imageUrl = item.product?.image_url ||
+                                   (item.product?.images && item.product.images.length > 0 ?
+                                     (typeof item.product.images[0] === 'string' ? item.product.images[0] : item.product.images[0]?.url || item.product.images[0]?.src)
+                                   : null);
+                    return imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">No Image</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Product Details */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-medium text-gray-900 truncate">
+                  <h3 className="text-lg font-medium text-gray-900">
                     {item.product?.name || 'Product'}
                   </h3>
 
+                  {/* Base Price */}
+                  <div className="mt-1 text-sm text-gray-600">
+                    {currencySymbol}{safeToFixed(item.price || 0)} × {item.quantity}
+                  </div>
+
                   {/* Selected Options - Breakdown like MiniCart */}
                   {item.selected_options && item.selected_options.length > 0 && (
-                    <div className="mt-1">
+                    <div className="mt-2 space-y-1">
                       {item.selected_options.map((option, index) => (
-                        <div key={index} className="text-sm text-gray-600">
-                          + {option.name} (+{currencySymbol}{safeToFixed(option.price)})
+                        <div key={index} className="text-sm text-gray-600 flex justify-between">
+                          <span>+ {option.name}</span>
+                          <span>+{currencySymbol}{safeToFixed(option.price * item.quantity)}</span>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Price */}
-                  <div className="mt-1">
-                    <span className="text-lg font-medium text-gray-900">
-                      {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
-                    </span>
-                    {item.quantity > 1 && (
-                      <span className="text-sm text-gray-600 ml-2">
-                        ({currencySymbol}{safeToFixed(item.price || 0)} each)
+                  {/* Row Total */}
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Row Total:</span>
+                      <span className="text-lg font-bold text-gray-900">
+                        {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
                       </span>
-                    )}
+                    </div>
                   </div>
                 </div>
 
