@@ -277,24 +277,32 @@ export default function ProductDetail() {
       // Debug: Log the label being checked
       if (label.name === "Test") {
         console.error('🔍 TEST LABEL DEBUG for product:', product.name);
-        console.error('🔍 Product has manufacturer field:', !!product.manufacturer);
-        console.error('🔍 Product manufacturer value:', product.manufacturer);
-        console.error('🔍 Product brand value:', product.brand);
-        console.error('🔍 All product keys:', Object.keys(product).join(', '));
+        console.error('🔍 Product.attributes object:', product.attributes);
+        console.error('🔍 Product.attributes.manufacturer:', product.attributes?.manufacturer);
+        console.error('🔍 Product direct manufacturer:', product.manufacturer);
+        console.error('🔍 All attributes keys:', product.attributes ? Object.keys(product.attributes) : 'No attributes object');
       }
 
       // Check attribute conditions
       if (conditions?.attribute_conditions?.length > 0) {
         for (const condition of conditions.attribute_conditions) {
-          const productValue = product[condition.attribute_code];
+          // Check both direct product properties and nested attributes
+          let productValue = product[condition.attribute_code];
+
+          // If not found directly, check in product.attributes
+          if (productValue === undefined && product.attributes) {
+            productValue = product.attributes[condition.attribute_code];
+          }
+
           console.log(`Checking attribute condition for label "${label.name}":`, {
             attributeCode: condition.attribute_code,
             expectedValue: condition.attribute_value,
             actualProductValue: productValue,
             productName: product.name,
             productSku: product.sku,
-            allProductAttributes: Object.keys(product).filter(key => !['id', 'name', 'slug', 'sku', 'price', 'compare_price', 'description', 'short_description', 'stock_quantity', 'created_at', 'updated_at'].includes(key))
+            productAttributes: product.attributes
           });
+
           if (productValue !== condition.attribute_value) {
             shouldApply = false;
             break;
@@ -426,16 +434,20 @@ export default function ProductDetail() {
   const loadCustomOptions = async (product) => {
     if (!product || !store?.id) return;
     try {
-      console.log('Loading custom options for product:', product.sku);
+      console.log('Loading custom options for product:', product.sku, 'store:', store.id);
       const { CustomOptionRule } = await import('@/api/entities');
 
-      // Fetch all active custom option rules for the store
+      // First try to fetch all custom option rules without filters to see if any exist
+      const allRules = await CustomOptionRule.filter({});
+      console.log('All custom option rules in database:', allRules);
+
+      // Then fetch rules for this specific store
       const rules = await CustomOptionRule.filter({
         store_id: store.id,
         is_active: true
       });
 
-      console.log('Found custom option rules:', rules);
+      console.log('Found custom option rules for store:', rules);
 
       // Find applicable rules for this product
       const applicableRules = rules.filter(rule => {
