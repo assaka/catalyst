@@ -18,6 +18,7 @@ export class ProductDetailController {
     };
     this.listeners = [];
     this.boundElements = new WeakSet();
+    this.observer = null;
   }
 
   /**
@@ -28,12 +29,34 @@ export class ProductDetailController {
     this.calculateInitialPrice();
     this.calculateTotalPrice();
 
-    // Delay stock display update to ensure DOM elements are rendered
-    setTimeout(() => {
-      this.updateStockDisplay();
-    }, 100);
+    // Retry stock display update multiple times to ensure DOM elements are rendered
+    const tryUpdateStock = (attempts = 0) => {
+      const stockElements = document.querySelectorAll('[data-bind="stock-status"]');
+      console.log(`🔄 Stock update attempt ${attempts + 1}, found ${stockElements.length} elements`);
 
+      if (stockElements.length > 0) {
+        this.updateStockDisplay();
+      } else if (attempts < 10) {
+        // Retry up to 10 times with exponential backoff
+        setTimeout(() => tryUpdateStock(attempts + 1), 100 * (attempts + 1));
+      } else {
+        console.error('❌ Failed to find stock elements after 10 attempts');
+        // Try one more time anyway
+        this.updateStockDisplay();
+      }
+    };
+
+    // Start trying after initial delay
+    setTimeout(() => tryUpdateStock(), 100);
+
+    // Delay price display update to ensure DOM elements are rendered
+    setTimeout(() => {
+      this.updatePriceDisplays();
+    }, 150);
+
+    // Also run price update immediately to see if elements exist
     this.updatePriceDisplays();
+
     this.bindAllElements();
     console.log('✅ ProductDetailController initialization complete');
   }
@@ -279,9 +302,11 @@ export class ProductDetailController {
     const product = this.productContext.product;
     if (!product) return;
 
-    const basePrice = product.compare_price ?
-      parseFloat(product.compare_price) :
-      parseFloat(product.price || 0);
+    // Use the lower price (sale price) if compare_price exists and is different
+    let basePrice = parseFloat(product.price);
+    if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
+      basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+    }
 
     let optionsPrice = 0;
     this.state.selectedOptions.forEach(option => {
@@ -296,9 +321,17 @@ export class ProductDetailController {
    */
   updatePriceDisplays() {
     const currency = this.productContext.settings?.currency_symbol || '$';
+    console.log('💰 updatePriceDisplays called', {
+      totalPrice: this.state.totalPrice,
+      currency,
+      selectedOptionsCount: this.state.selectedOptions.length,
+      quantity: this.state.quantity
+    });
 
     // Update total price displays
-    document.querySelectorAll('[data-bind="total-price"]').forEach(el => {
+    const totalPriceElements = document.querySelectorAll('[data-bind="total-price"]');
+    console.log('💰 Found total price elements:', totalPriceElements.length);
+    totalPriceElements.forEach(el => {
       el.textContent = `${currency}${this.state.totalPrice.toFixed(2)}`;
     });
 
@@ -307,8 +340,18 @@ export class ProductDetailController {
     const basePrice = parseFloat(product?.price || 0);
     const shouldShowTotalPrice = this.state.totalPrice > (basePrice * this.state.quantity) || this.state.selectedOptions.length > 0;
 
+    console.log('💰 Should show total price:', shouldShowTotalPrice, {
+      totalPrice: this.state.totalPrice,
+      basePriceXQuantity: basePrice * this.state.quantity,
+      basePrice,
+      hasOptions: this.state.selectedOptions.length > 0
+    });
+
     // Update total price container visibility
-    document.querySelectorAll('[data-bind="total-price-container"]').forEach(el => {
+    const containerElements = document.querySelectorAll('[data-bind="total-price-container"]');
+    console.log('💰 Found total price container elements:', containerElements.length);
+    containerElements.forEach(el => {
+      console.log('💰 Updating container visibility:', shouldShowTotalPrice ? 'show' : 'hide');
       if (shouldShowTotalPrice) {
         el.style.display = 'block';
       } else {
