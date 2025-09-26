@@ -895,30 +895,32 @@ const CartItemsSlot = createSlotComponent({
         <div className="space-y-4">
           {cartItems.map(item => (
             <Card key={item.id} className="p-4">
-              <div className="flex items-start space-x-4">
+              <div className="grid grid-cols-12 gap-4">
                 {/* Product Image */}
-                <div className="flex-shrink-0 w-24 h-24">
-                  {(() => {
-                    const imageUrl = item.product?.image_url ||
-                                   (item.product?.images && item.product.images.length > 0 ?
-                                     (typeof item.product.images[0] === 'string' ? item.product.images[0] : item.product.images[0]?.url || item.product.images[0]?.src)
-                                   : null);
-                    return imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={item.product.name}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">No Image</span>
-                      </div>
-                    );
-                  })()}
+                <div className="col-span-12 sm:col-span-2">
+                  <div className="w-24 h-24">
+                    {(() => {
+                      const imageUrl = item.product?.image_url ||
+                                     (item.product?.images && item.product.images.length > 0 ?
+                                       (typeof item.product.images[0] === 'string' ? item.product.images[0] : item.product.images[0]?.url || item.product.images[0]?.src)
+                                     : null);
+                      return imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 {/* Product Details */}
-                <div className="flex-1 min-w-0">
+                <div className="col-span-12 sm:col-span-6">
                   <h3 className="text-lg font-medium text-gray-900">
                     {item.product?.name || 'Product'}
                   </h3>
@@ -939,46 +941,47 @@ const CartItemsSlot = createSlotComponent({
                     </div>
                   )}
 
-                  {/* Price */}
-                  <div className="mt-2">
-                    <span className="text-lg font-medium text-gray-900">
+                  {/* Quantity Controls */}
+                  <div className="flex items-center space-x-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+
+                    <span className="w-12 text-center font-medium">{item.quantity}</span>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Price and Remove Button */}
+                <div className="col-span-12 sm:col-span-4 flex flex-col items-end justify-between">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeItem(item.id)}
+                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+
+                  <div className="text-right mt-auto">
+                    <span className="text-lg font-bold text-gray-900">
                       {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
                     </span>
                   </div>
                 </div>
-
-                {/* Quantity Controls */}
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-
-                  <span className="w-12 text-center font-medium">{item.quantity}</span>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Remove Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeItem(item.id)}
-                  className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             </Card>
           ))}
@@ -1515,13 +1518,14 @@ const ProductThumbnails = createSlotComponent({
 
   // Storefront version
   renderStorefront: ({ slot, productContext, className, styles }) => {
-    const { product, activeImageIndex, setActiveImageIndex } = productContext;
+    const { product, activeImageIndex, setActiveImageIndex, settings } = productContext;
 
     if (!product || !product.images || product.images.length <= 1) {
       return null;
     }
 
     const images = product.images || [];
+    const isVertical = settings?.product_gallery_layout === 'vertical';
 
     const getImageUrl = (image) => {
       if (typeof image === 'string') {
@@ -1535,12 +1539,12 @@ const ProductThumbnails = createSlotComponent({
 
     return (
       <div className={className} style={styles}>
-        <div className="flex space-x-2 overflow-x-auto">
+        <div className={isVertical ? "flex flex-col space-y-2" : "flex space-x-2 overflow-x-auto"}>
           {images.map((image, index) => (
             <button
               key={index}
               onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-              className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+              className={`flex-shrink-0 ${isVertical ? 'w-16 h-16' : 'w-16 h-16'} rounded-lg overflow-hidden border-2 transition-colors ${
                 activeImageIndex === index ? 'border-blue-500' : 'border-gray-300 hover:border-gray-400'
               }`}
             >

@@ -15,7 +15,7 @@ export const cartConfig = {
       id: 'main_layout',
       type: 'grid',
       content: '',
-      className: 'main-layout',
+      className: 'grid grid-cols-1 lg:grid-cols-12 gap-4',
       styles: {},
       parentId: null,
       layout: 'grid',

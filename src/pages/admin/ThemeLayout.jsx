@@ -783,6 +783,27 @@ export default function ThemeLayout() {
                                 </div>
                                 <Switch id="hide_quantity_selector" checked={!!store.settings.hide_quantity_selector} onCheckedChange={(c) => handleSettingsChange('hide_quantity_selector', c)} />
                             </div>
+
+                            <div className="p-3 border rounded-lg">
+                                <div className="space-y-3">
+                                    <div>
+                                        <Label htmlFor="product_gallery_layout">Product Gallery Layout</Label>
+                                        <p className="text-sm text-gray-500">Choose how the product images are arranged on the product page.</p>
+                                    </div>
+                                    <Select
+                                        value={store.settings.product_gallery_layout || 'horizontal'}
+                                        onValueChange={(value) => handleSettingsChange('product_gallery_layout', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="horizontal">Horizontal (Main image with thumbnails below)</SelectItem>
+                                            <SelectItem value="vertical">Vertical (Main image with thumbnails on side)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
