@@ -104,7 +104,7 @@ export const productConfig = {
       id: 'gallery_container',
       type: 'container',
       content: '',
-      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex flex space-x-4{{else}}space-y-4{{/if}}',
+      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}space-y-4{{/if}}',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
