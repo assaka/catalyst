@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import { Home } from 'lucide-react';
 import { buildBreadcrumbs } from '@/utils/breadcrumbUtils';
 
 /**
@@ -34,10 +35,16 @@ export default function BreadcrumbRenderer({
   }
 
   return (
-    <nav className={className} aria-label={ariaLabel}>
+    <nav className={`${className} flex items-center`} aria-label={ariaLabel}>
+      {/* Home Icon */}
+      <a href="/" className="flex items-center hover:text-gray-700 mr-2">
+        <Home className="w-4 h-4" />
+      </a>
+
+      {/* Breadcrumb Items */}
       {breadcrumbItems.map((item, index) => (
         <Fragment key={index}>
-          {index > 0 && <span className="text-gray-400 mx-1">/</span>}
+          <span className="text-gray-400 mx-2">&gt;</span>
           {item.url ? (
             <a
               href={item.url}
