@@ -47,6 +47,36 @@ export default function ProductTabs() {
     }
   }, [selectedStore]);
 
+  // Cache clearing utility function
+  const clearProductTabsCache = () => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      // Clear the specific cache entry for product tabs
+      const cacheKey = `product-tabs-${storeId}`;
+
+      // Get existing cache
+      const cached = localStorage.getItem('storeProviderCache');
+      if (cached) {
+        try {
+          const cacheObj = JSON.parse(cached);
+          // Remove the product tabs cache entry
+          delete cacheObj[cacheKey];
+          // Save back to localStorage
+          localStorage.setItem('storeProviderCache', JSON.stringify(cacheObj));
+          console.log('🧹 Cleared product tabs cache for store:', storeId);
+        } catch (parseError) {
+          // If parsing fails, clear entire cache as fallback
+          localStorage.removeItem('storeProviderCache');
+          console.log('🧹 Cleared entire storefront cache due to parse error');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to clear product tabs cache:', error);
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -107,6 +137,7 @@ export default function ProductTabs() {
       }
 
       await loadData(); // Reload data to reflect changes
+      clearProductTabsCache(); // Clear frontend cache so storefront shows changes immediately
       setShowForm(false);
       setEditingTab(null);
     } catch (error) {
@@ -120,6 +151,7 @@ export default function ProductTabs() {
       try {
         await ProductTab.delete(tabId);
         await loadData(); // Reload data after deletion
+        clearProductTabsCache(); // Clear frontend cache so storefront shows changes immediately
         setFlashMessage({ type: 'success', message: 'Product tab deleted successfully!' });
       } catch (error) {
         console.error("Error deleting tab:", error);
@@ -142,6 +174,7 @@ export default function ProductTabs() {
         store_id: storeId // Explicitly include store_id in the update payload
       });
       await loadData(); // Reload data after status change
+      clearProductTabsCache(); // Clear frontend cache so storefront shows changes immediately
       setFlashMessage({
         type: 'success',
         message: `Product tab ${tab.is_active ? 'deactivated' : 'activated'} successfully!`
