@@ -98,8 +98,6 @@ const generateProductName = (product, basePrefix = '') => {
 };
 
 export default function ProductDetail() {
-  console.log('🚀 ProductDetail component rendering...');
-  console.log('📍 Component start - about to set up hooks...');
   const { slug: paramSlug, productSlug: routeProductSlug, storeCode } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
@@ -113,10 +111,6 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
 
-  // Debug quantity changes
-  useEffect(() => {
-    console.log('🔄 ProductDetail: Quantity changed to:', quantity);
-  }, [quantity]);
 
   const [activeImage, setActiveImage] = useState(0);
   const [user, setUser] = useState(null);
@@ -134,16 +128,6 @@ export default function ProductDetail() {
   const [productLayoutConfig, setProductLayoutConfig] = useState(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
-  // Debug state values on every render
-  console.log('🔍 Current state values:', {
-    hasProduct: !!product,
-    productName: product?.name,
-    hasStore: !!store,
-    storeName: store?.name,
-    hasSettings: !!settings,
-    configLoaded,
-    storeLoading
-  });
 
   // Load user once
   useEffect(() => {
@@ -201,7 +185,6 @@ export default function ProductDetail() {
 
         } else {
           // Fallback to product-config.js
-          console.log('📋 No published config found, using default product-config.js');
           const fallbackConfig = {
             slots: { ...productConfig.slots },
             metadata: {
@@ -213,7 +196,6 @@ export default function ProductDetail() {
 
           setProductLayoutConfig(fallbackConfig);
           setConfigLoaded(true);
-          console.log('📋 Fallback config loaded:', fallbackConfig);
         }
       } catch (error) {
         console.error('Failed to load product layout config:', error);
@@ -410,7 +392,6 @@ export default function ProductDetail() {
   const loadCustomOptions = async (product) => {
     if (!product || !store?.id) return;
     try {
-      console.log('Loading custom options for product:', product.sku, 'store:', store.id);
 
       // Import the CustomOptionRule entity
       const { CustomOptionRule } = await import('@/api/entities');
@@ -418,31 +399,23 @@ export default function ProductDetail() {
       // Check if we're authenticated
       const apiClient = (await import('@/api/client')).default;
       const hasToken = apiClient.getToken();
-      console.log('Has auth token:', !!hasToken);
 
       // Try different API calls to debug the issue
       try {
         // First try to fetch all custom option rules without filters
-        console.log('Testing: Fetching all custom option rules...');
         const allRules = await CustomOptionRule.filter({});
-        console.log('All custom option rules result:', allRules);
 
         // Try fetching with store filter
-        console.log('Testing: Fetching rules for store:', store.id);
         const storeRules = await CustomOptionRule.filter({ store_id: store.id });
-        console.log('Store rules result:', storeRules);
 
         // Try fetching with active filter
-        console.log('Testing: Fetching active rules for store...');
         const activeRules = await CustomOptionRule.filter({
           store_id: store.id,
           is_active: true
         });
-        console.log('Active rules result:', activeRules);
 
         // Use the active rules as our main result
         const rules = activeRules;
-        console.log('Final rules to process:', rules);
 
         // Find applicable rules for this product
         const applicableRules = rules.filter(rule => {
@@ -456,7 +429,6 @@ export default function ProductDetail() {
 
         // Check SKU conditions
         if (conditions?.skus?.includes(product.sku)) {
-          console.log('Rule matches by SKU:', rule.name);
           return true;
         }
 
@@ -464,7 +436,6 @@ export default function ProductDetail() {
         if (conditions?.categories?.length > 0 && product.category_ids?.length > 0) {
           const hasMatch = conditions.categories.some(catId => product.category_ids.includes(catId));
           if (hasMatch) {
-            console.log('Rule matches by category:', rule.name);
             return true;
           }
         }
@@ -473,7 +444,6 @@ export default function ProductDetail() {
         if (conditions?.attribute_conditions?.length > 0) {
           for (const condition of conditions.attribute_conditions) {
             if (product[condition.attribute_code] === condition.attribute_value) {
-              console.log('Rule matches by attribute:', rule.name);
               return true;
             }
           }
@@ -482,7 +452,6 @@ export default function ProductDetail() {
         return false;
       });
 
-      console.log('Applicable rules:', applicableRules);
 
       if (applicableRules.length > 0) {
         const rule = applicableRules[0];
@@ -499,7 +468,6 @@ export default function ProductDetail() {
           productIds = [];
         }
 
-        console.log('Loading custom option products:', productIds);
 
         if (productIds && productIds.length > 0) {
           const optionProducts = [];
@@ -520,7 +488,6 @@ export default function ProductDetail() {
               console.error(`Failed to load option product ${productId}:`, err);
             }
           }
-          console.log('Loaded custom option products:', optionProducts);
           setCustomOptions(optionProducts);
         }
       }
@@ -537,12 +504,10 @@ export default function ProductDetail() {
   const loadProductTabs = async () => {
     if (!store?.id) return;
     try {
-      console.log('📋 Loading product tabs for store:', store.id);
       const tabs = await cachedApiCall(
         `product-tabs-${store.id}`,
         () => StorefrontProductTab.filter({ store_id: store.id, is_active: true })
       );
-      console.log('📋 Product tabs loaded:', tabs);
       setProductTabs(tabs || []);
     } catch (error) {
       console.error('❌ ProductDetail: Error loading product tabs:', error);
@@ -570,7 +535,6 @@ export default function ProductDetail() {
   const getTotalPrice = () => {
     if (!product) return 0;
 
-    console.log('💰 getTotalPrice called with:', { quantity, selectedOptionsCount: selectedOptions.length });
 
     // Use the lower price (sale price) if compare_price exists and is different
     let basePrice = parseFloat(product.price);
@@ -862,18 +826,6 @@ export default function ProductDetail() {
 
         const shouldRender = true; // Force slot system usage
 
-        // Debug logging
-        console.log('🎯 Slot System Check:', {
-          productLayoutConfig: !!productLayoutConfig,
-          configLoaded,
-          hasConfig,
-          hasSlots,
-          slotCount,
-          shouldRender,
-          slots: productLayoutConfig?.slots ? Object.keys(productLayoutConfig.slots) : 'none',
-          productTabs: productTabs,
-          productTabsCount: productTabs?.length || 0
-        });
 
         return shouldRender;
       })() ? (
