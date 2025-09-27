@@ -140,7 +140,7 @@ export const productConfig = {
       className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 order-first pt-4 pr-4{{else}}flex space-x-2 overflow-x-auto order-2 mt-4{{/if}}',
       styles: {},
       parentId: 'gallery_container',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 1 },
       layout: 'flex',
       colSpan: {
         default: 12

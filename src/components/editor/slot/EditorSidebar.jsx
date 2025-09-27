@@ -400,17 +400,40 @@ const EditorSidebar = ({
       // Clear initialization flag after a short delay
       setTimeout(() => setIsInitializing(false), 100);
 
-      // CRITICAL: For text slots, both className and style are on the wrapper div (selectedElement)
-      // See UnifiedSlotRenderer.jsx line 96: <div className={...} style={...}><span /></div>
-      const styledElement = selectedElement;
+      // CRITICAL: Find the actual content element that has the styling classes
+      // Structure: GridColumn wrapper (selectedElement) → UnifiedSlotRenderer wrapper → inner content
+      // The styling classes are on the UnifiedSlotRenderer wrapper, not the GridColumn wrapper
+      const findContentElement = (element) => {
+        // If element has data-slot-id, it's the GridColumn wrapper, look inside for content
+        if (element.hasAttribute('data-slot-id')) {
+          // Look for the first child that has styling classes or is the UnifiedSlotRenderer wrapper
+          for (const child of element.children) {
+            if (child.className && (
+              child.className.includes('font-') ||
+              child.className.includes('text-') ||
+              child.className.includes('italic') ||
+              child.style.length > 0
+            )) {
+              return child;
+            }
+          }
+          // If no styled child found, return the first child (UnifiedSlotRenderer wrapper)
+          return element.children[0] || element;
+        }
+        return element;
+      };
+
+      const styledElement = findContentElement(selectedElement);
 
       console.log('🔧 EDITOR SIDEBAR - Initializing properties from:', {
         selectedElement: selectedElement.tagName,
+        styledElement: styledElement.tagName,
         slotId,
         storedClassName,
         storedStyles,
-        elementClassName: selectedElement.className,
-        elementStyleLength: selectedElement.style?.length || 0
+        selectedElementClassName: selectedElement.className,
+        styledElementClassName: styledElement.className,
+        styledElementStyleLength: styledElement.style?.length || 0
       });
 
       // Function to extract hex color from Tailwind class name
@@ -460,14 +483,14 @@ const EditorSidebar = ({
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        className: storedClassName || selectedElement.className || '',
+        className: storedClassName || styledElement.className || '',
         styles: (() => {
           try {
             // Safely merge stored styles with element styles
             const elementStyles = {};
 
-            // Get computed styles for color properties from selectedElement (wrapper)
-            const computedStyle = window.getComputedStyle(selectedElement);
+            // Get computed styles for color properties from styledElement (content with classes)
+            const computedStyle = window.getComputedStyle(styledElement);
             const colorProperties = ['color', 'backgroundColor', 'borderColor'];
 
             colorProperties.forEach(prop => {
@@ -497,11 +520,11 @@ const EditorSidebar = ({
               }
             });
 
-            // Copy element inline styles safely from selectedElement (wrapper)
-            if (selectedElement.style) {
-              for (const property in selectedElement.style) {
-                if (selectedElement.style.hasOwnProperty(property)) {
-                  const value = selectedElement.style[property];
+            // Copy element inline styles safely from styledElement (content with classes)
+            if (styledElement.style) {
+              for (const property in styledElement.style) {
+                if (styledElement.style.hasOwnProperty(property)) {
+                  const value = styledElement.style[property];
                   if (value && !property.startsWith('webkit') && !property.startsWith('moz')) {
                     try {
                       elementStyles[property] = value;
@@ -515,7 +538,7 @@ const EditorSidebar = ({
             }
 
             // Extract color from Tailwind classes if no inline color is set
-            const currentClassName = storedClassName || selectedElement.className || '';
+            const currentClassName = storedClassName || styledElement.className || '';
             if (!elementStyles.color && !storedStyles?.color) {
               const tailwindColor = getTailwindColorHex(currentClassName);
               if (tailwindColor) {
@@ -736,23 +759,44 @@ const EditorSidebar = ({
     }
 
     console.log('🟠 Passed initial checks, proceeding with alignment change');
-    // Preserve existing inline styles and Tailwind color classes on the selected element before alignment change
+
+    // Find the content element that has the styling classes (same logic as initialization)
+    const findContentElement = (element) => {
+      if (element.hasAttribute('data-slot-id')) {
+        for (const child of element.children) {
+          if (child.className && (
+            child.className.includes('font-') ||
+            child.className.includes('text-') ||
+            child.className.includes('italic') ||
+            child.style.length > 0
+          )) {
+            return child;
+          }
+        }
+        return element.children[0] || element;
+      }
+      return element;
+    };
+
+    const styledElement = findContentElement(selectedElement);
+
+    // Preserve existing inline styles and Tailwind color classes on the styled element before alignment change
     const currentInlineStyles = {};
     const currentColorClasses = [];
-    
+
     // Preserve inline styles
-    if (selectedElement.style) {
-      for (let i = 0; i < selectedElement.style.length; i++) {
-        const styleProp = selectedElement.style[i];
-        const styleValue = selectedElement.style.getPropertyValue(styleProp);
+    if (styledElement.style) {
+      for (let i = 0; i < styledElement.style.length; i++) {
+        const styleProp = styledElement.style[i];
+        const styleValue = styledElement.style.getPropertyValue(styleProp);
         if (styleValue && styleValue.trim() !== '') {
           currentInlineStyles[styleProp] = styleValue;
         }
       }
     }
-    
+
     // Preserve Tailwind color classes (text-white, text-black, text-blue-200, etc.)
-    const currentClasses = selectedElement.className.split(' ').filter(Boolean);
+    const currentClasses = styledElement.className.split(' ').filter(Boolean);
     currentClasses.forEach(cls => {
       if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
         // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
@@ -809,38 +853,27 @@ const EditorSidebar = ({
       newClasses.push(`text-${value}`);
       targetElement.className = newClasses.join(' ');
       
-      // Restore preserved inline styles on the correct target element
-      let styleTarget = selectedElement;
-      if (selectedElement.hasAttribute('data-slot-id')) {
-        const button = selectedElement.querySelector('button');
-        const textElement = selectedElement.querySelector('span[data-editable="true"]');
-        const inputElement = selectedElement.querySelector('input');
-
-        if (button) styleTarget = button;
-        else if (textElement) styleTarget = textElement;
-        else if (inputElement) styleTarget = inputElement;
-      }
-
+      // Restore preserved inline styles on the styled element
       Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
-        styleTarget.style.setProperty(styleProp, styleValue);
+        styledElement.style.setProperty(styleProp, styleValue);
       });
-      
-      // Restore preserved Tailwind color classes on the selected element
+
+      // Restore preserved Tailwind color classes on the styled element
       if (currentColorClasses.length > 0) {
-        const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+        const elementClasses = styledElement.className.split(' ').filter(Boolean);
         // Remove any existing color classes to avoid conflicts
         const cleanClasses = elementClasses.filter(cls => {
           const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
           return !isColorClass;
         });
         // Add back the preserved color classes
-        selectedElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+        styledElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
       }
-      
+
       // Update local state with preserved styles
       setElementProperties(prev => ({
         ...prev,
-        className: selectedElement.className,
+        className: styledElement.className,
         styles: {
           ...prev.styles,
           ...currentInlineStyles
