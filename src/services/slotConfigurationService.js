@@ -191,15 +191,6 @@ class SlotConfigurationService {
   // Helper method to save configuration with auto-draft creation
   async saveConfiguration(storeId, configuration, pageType = 'cart', isReset = false) {
     try {
-      console.log('💾 SAVING CONFIGURATION:', {
-        storeId,
-        pageType,
-        slotsCount: configuration?.slots ? Object.keys(configuration.slots).length : 0,
-        productItemsSlot: configuration?.slots?.product_items,
-        productItemsMetadata: configuration?.slots?.product_items?.metadata,
-        productItemsGridConfig: configuration?.slots?.product_items?.metadata?.gridConfig
-      });
-
       // First get or create a draft
       const draftResponse = await this.getDraftConfiguration(storeId, pageType);
       const draftConfig = draftResponse.data;
@@ -207,16 +198,8 @@ class SlotConfigurationService {
       // Transform CartSlotsEditor format to SlotConfiguration API format
       const apiConfiguration = this.transformToSlotConfigFormat(configuration);
 
-      console.log('💾 TRANSFORMED API CONFIG:', {
-        slotsCount: apiConfiguration?.slots ? Object.keys(apiConfiguration.slots).length : 0,
-        productItemsSlot: apiConfiguration?.slots?.product_items,
-        productItemsMetadata: apiConfiguration?.slots?.product_items?.metadata,
-        productItemsGridConfig: apiConfiguration?.slots?.product_items?.metadata?.gridConfig
-      });
-
       // Update the draft with new configuration
       const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration, isReset);
-      console.log('✅ Configuration saved successfully');
       return updateResponse;
     } catch (error) {
       console.error('❌ Error saving configuration:', error);
@@ -286,7 +269,6 @@ class SlotConfigurationService {
 
   // Get initial configuration from appropriate config file based on pageType
   async getInitialConfiguration(pageType = 'cart', fileName = null) {
-    console.log('🏗️ getInitialConfiguration called for:', pageType);
     // Dynamic import to get the appropriate config based on pageType
     let config;
     if (pageType === 'category') {

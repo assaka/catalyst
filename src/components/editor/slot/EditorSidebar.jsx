@@ -64,10 +64,8 @@ const EditorSidebar = ({
   allSlots = {}, // All slots configuration to check for product_items
   isVisible = true
 }) => {
-  console.log('🔵 EditorSidebar rendered with:', { selectedElement, slotId, slotConfig, isVisible });
   // Set up database save callback for SimpleStyleManager
   useEffect(() => {
-    console.log('🔧 EDITOR SIDEBAR - Disabling SimpleStyleManager database callback to prevent conflicts');
     // CRITICAL: Disable SimpleStyleManager database callback to prevent race conditions
     // EditorSidebar handles all database saves directly, SimpleStyleManager should only handle DOM
     styleManager.setDatabaseSaveCallback(null);
@@ -124,7 +122,6 @@ const EditorSidebar = ({
     if (slotConfig && slotConfig.parentClassName) {
       const alignment = getCurrentAlign(slotConfig.parentClassName, true);
       if (alignment !== 'left') { // Only use config if it has explicit alignment
-        console.log('🎯 Using alignment from slotConfig:', alignment, slotConfig.parentClassName);
         return alignment;
       }
     }
@@ -175,13 +172,6 @@ const EditorSidebar = ({
     const tagName = selectedElement.tagName?.toLowerCase();
     const htmlSupportedTags = ['button', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'section', 'article'];
     const isSupported = htmlSupportedTags.includes(tagName);
-    
-    console.log('🔍 EditorSidebar isHtmlElement check:', {
-      tagName,
-      isSupported,
-      selectedElement: selectedElement?.outerHTML?.substring(0, 100) + '...'
-    });
-    
     return isSupported;
   }, [selectedElement]);
 
@@ -324,17 +314,6 @@ const EditorSidebar = ({
       const storedClassName = slotConfig.className || '';
       const storedStyles = slotConfig.styles || {};
       
-      // Debug logging to help diagnose configuration loading issues
-      console.log('🔧 EDITOR SIDEBAR - Loading configuration for slot:', {
-        slotId,
-        slotConfigKeys: slotConfig ? Object.keys(slotConfig) : 'no slotConfig',
-        storedClassName,
-        storedStyles,
-        fullSlotConfig: slotConfig,
-        hasStyles: storedStyles && Object.keys(storedStyles).length > 0,
-        selectedElementTagName: selectedElement?.tagName
-      });
-      
       // Initialize local text content with slot content
       const textContent = slotConfig.content || '';
       setLocalTextContent(textContent);
@@ -355,14 +334,6 @@ const EditorSidebar = ({
           const currentValue = htmlContentRef.current.value;
           const shouldUpdate = currentValue === localHtmlContent || !currentValue;
 
-          console.log('🔄 HTML textarea update check:', {
-            previousValue: currentValue,
-            newValue: htmlContent,
-            localHtmlContent,
-            shouldUpdate,
-            slotId
-          });
-
           if (shouldUpdate) {
             htmlContentRef.current.value = htmlContent;
           } else {
@@ -370,14 +341,6 @@ const EditorSidebar = ({
           }
         }
 
-        console.log('🎨 EditorSidebar: Loaded clean HTML from database:', {
-          slotId,
-          htmlLength: htmlContent.length,
-          htmlPreview: htmlContent.substring(0, 200) + '...',
-          hasContent: !!slotConfig.content,
-          hasClasses: !!slotConfig.className,
-          hasStyles: Object.keys(slotConfig.styles || {}).length > 0
-        });
       }
       
       // Clear initialization flag after a short delay
@@ -398,11 +361,6 @@ const EditorSidebar = ({
                 // Check if child has any of the stored classes (like text-4xl, font-bold, italic)
                 const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
                 if (hasStoredClasses) {
-                  console.log('🎯 FOUND CORRECT CONTENT ELEMENT:', {
-                    childClassName: child.className,
-                    matchedClasses: storedClasses.filter(cls => childClasses.includes(cls)),
-                    allStoredClasses: storedClasses
-                  });
                   return child;
                 }
               }
@@ -412,40 +370,17 @@ const EditorSidebar = ({
           // Fallback: Look for element with inline styles (color, etc.)
           for (const child of element.children) {
             if (child.style && child.style.length > 0) {
-              console.log('🎯 FOUND CONTENT ELEMENT BY INLINE STYLES:', {
-                childClassName: child.className,
-                inlineStyles: child.style.cssText
-              });
               return child;
             }
           }
 
           // Last resort: return first child
-          console.log('🎯 FALLBACK TO FIRST CHILD');
           return element.children[0] || element;
         }
         return element;
       };
 
       const styledElement = findContentElement(selectedElement);
-
-      console.log('🔧 EDITOR SIDEBAR - Initializing properties from:', {
-        selectedElement: selectedElement.tagName,
-        styledElement: styledElement.tagName,
-        slotId,
-        storedClassName,
-        storedStyles,
-        selectedElementClassName: selectedElement.className,
-        styledElementClassName: styledElement.className,
-        styledElementStyleLength: styledElement.style?.length || 0,
-        styledElementInlineStyle: styledElement.style.cssText,
-        // Check for wrapper contamination
-        hasWrapperClasses: styledElement.className.includes('border') || styledElement.className.includes('rounded-lg') || styledElement.className.includes('col-span'),
-        wrapperClassesFound: styledElement.className.split(' ').filter(cls =>
-          ['border', 'rounded-lg', 'overflow-hidden', 'p-2', 'responsive-slot', 'relative'].includes(cls) ||
-          cls.match(/^col-span-\d+$/)
-        )
-      });
 
       // Function to detect Tailwind color classes (only explicit mappings for key colors)
       const getTailwindColorHex = (className) => {
@@ -456,24 +391,12 @@ const EditorSidebar = ({
         };
 
         const classes = className.split(' ');
-        console.log('🎨 TAILWIND COLOR DETECTION - Checking classes:', classes);
 
         for (const cls of classes) {
           if (explicitColors[cls]) {
-            console.log('🎨 TAILWIND COLOR DETECTION - Explicit color found:', cls, '=', explicitColors[cls]);
             return explicitColors[cls];
           }
         }
-
-        // For other Tailwind color classes, we detect them but don't convert to hex
-        // Let the browser's computed styles handle the color value
-        const colorClasses = classes.filter(cls => cls.match(/^text-\w+-\d+$/) || cls === 'text-white' || cls === 'text-black');
-        if (colorClasses.length > 0) {
-          console.log('🎨 TAILWIND COLOR DETECTION - Non-explicit color classes found, using computed styles:', colorClasses);
-        } else {
-          console.log('🎨 TAILWIND COLOR DETECTION - No Tailwind color classes found in:', classes);
-        }
-
         return null; // Let computed styles handle non-explicit colors
       };
 
@@ -497,7 +420,6 @@ const EditorSidebar = ({
                 if (storedClassName) {
                   const tailwindColorHex = getTailwindColorHex(storedClassName);
                   if (tailwindColorHex) {
-                    console.log('🎨 Found Tailwind color:', { storedClassName, tailwindColorHex });
                     elementStyles[prop] = tailwindColorHex;
                     return;
                   }
@@ -505,17 +427,6 @@ const EditorSidebar = ({
 
                 // Fall back to computed styles from the element
                 const computedValue = computedStyle[prop];
-                console.log('🎨 COLOR PICKER INIT - Computed color detection:', {
-                  computedValue,
-                  hasValue: !!computedValue,
-                  isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent',
-                  storedClassName: storedClassName,
-                  elementId: selectedElement.getAttribute('data-slot-id'),
-                  elementTagName: styledElement.tagName,
-                  elementClassList: Array.from(styledElement.classList),
-                  isBlueColor: computedValue === 'rgb(59, 130, 246)' || computedValue === '#3b82f6',
-                  rgbTo3b82f6: 'rgb(59, 130, 246) converts to #3b82f6'
-                });
 
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
 
@@ -526,29 +437,17 @@ const EditorSidebar = ({
                       const hex = '#' + rgbMatch.slice(0, 3)
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
-                      console.log('🎨 COLOR PICKER INIT - Computed RGB to hex:', {
-                        computedValue,
-                        rgbMatch,
-                        hex,
-                        willSetInElementStyles: true
-                      });
                       elementStyles[prop] = hex;
-                    } else {
-                      console.log('🎨 COLOR PICKER INIT - RGB match failed:', { computedValue, rgbMatch });
                     }
                   } else if (computedValue.startsWith('#')) {
-                    console.log('🎨 COLOR PICKER INIT - Already hex color:', computedValue);
                     elementStyles[prop] = computedValue;
                   } else {
-                    console.log('🎨 COLOR PICKER INIT - Unknown color format:', computedValue);
                   }
                 } else {
                   // No color detected - check if element actually has black text that we should capture
                   if (computedValue === 'rgb(0, 0, 0)' || computedValue === 'rgba(0, 0, 0, 1)') {
-                    console.log('🎨 COLOR PICKER INIT - Detected black color, setting #000000');
                     elementStyles[prop] = '#000000';
                   } else {
-                    console.log('🎨 COLOR PICKER INIT - No valid color detected, using default black');
                     elementStyles[prop] = '#000000';
                   }
                 }
@@ -640,31 +539,6 @@ const EditorSidebar = ({
             }
 
             const finalStyles = { ...storedStyles, ...elementStyles };
-
-            console.log('🔧 EDITOR SIDEBAR - Merged styles:', {
-              storedStyles,
-              elementStyles,
-              contentClassName,
-              storedClassNames,
-              colorSource,
-              detectedTailwindColor: getTailwindColorHex(colorSource),
-              contentComputedColor: window.getComputedStyle(styledElement).color,
-              final: finalStyles,
-              colorSourceAnalysis: {
-                fromStoredStyles: storedStyles.color,
-                fromElementStyles: elementStyles.color,
-                finalColorChosen: finalStyles.color,
-                isBlueColor: finalStyles.color === '#3b82f6',
-                colorPriority: storedStyles.color ? 'database-stored' : elementStyles.color ? 'computed' : 'none'
-              }
-            });
-
-            console.log('🎨 COLOR PICKER DEBUG - Final color value for picker:', {
-              finalColorValue: finalStyles.color,
-              isValidHex: finalStyles.color && finalStyles.color.startsWith('#'),
-              pickerWillShow: finalStyles.color && finalStyles.color.startsWith('#') ? finalStyles.color : '#000000'
-            });
-
             return finalStyles;
           } catch (error) {
             console.warn('Error merging styles:', error);
@@ -893,34 +767,19 @@ const EditorSidebar = ({
 
     const result = filteredClasses.join(' ');
 
-    console.log('🔧 replaceSpecificClass DEBUG:', {
-      input: classString,
-      pattern: removePattern.source,
-      matchingClasses,
-      filteredClasses,
-      newClass,
-      result
-    });
-
     return result;
   }, []);
 
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
-    console.log('🟠 handleAlignmentChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
     if (!selectedElement || property !== 'textAlign') {
-      console.log('🟠 Early return: selectedElement or property check failed');
       return;
     }
 
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
-    console.log('🟠 handleAlignmentChange elementSlotId:', elementSlotId);
     if (!elementSlotId) {
-      console.log('🟠 Early return: no elementSlotId');
       return;
     }
-
-    console.log('🟠 Passed initial checks, proceeding with alignment change');
 
     // Find the content element that has the styling classes (same logic as initialization)
     const findContentElement = (element) => {
@@ -975,13 +834,6 @@ const EditorSidebar = ({
     const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
     const databaseClassName = elementSlotConfig?.className || '';
 
-    console.log('💾 Reading color classes from DATABASE for alignment:', {
-      elementSlotId,
-      databaseClassName,
-      domClassName: styledElement.className,
-      isDomContaminated: styledElement.className.includes('border') || styledElement.className.includes('col-span')
-    });
-
     const currentClasses = databaseClassName.split(' ').filter(Boolean);
     currentClasses.forEach(cls => {
       if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
@@ -995,16 +847,13 @@ const EditorSidebar = ({
     });
     
     // Find the correct target element for alignment classes
-    console.log('🟠 Finding target element for:', elementSlotId);
     let targetElement;
     if (elementSlotId.includes('.button')) {
       // Find the button-slot-container (the outer div with col-span-12)
       targetElement = selectedElement.closest('.button-slot-container');
-      console.log('🟠 Button slot - target element:', targetElement);
     } else {
       // For text slots, traverse up to find grid cell with gridColumn style or data-slot-id
       targetElement = selectedElement.parentElement;
-      console.log('🟠 Text slot - starting from parent:', targetElement);
       while (targetElement &&
              !targetElement.className.includes('col-span') &&
              !targetElement.style.gridColumn &&
@@ -1015,36 +864,16 @@ const EditorSidebar = ({
           break;
         }
       }
-      console.log('🟠 Text slot - final target element:', targetElement);
-      if (targetElement) {
-        console.log('🟠 Target element details:', {
-          hasColSpan: targetElement.className.includes('col-span'),
-          hasGridColumn: !!targetElement.style.gridColumn,
-          hasDataSlotId: !!targetElement.getAttribute('data-slot-id'),
-          className: targetElement.className,
-          gridColumn: targetElement.style.gridColumn
-        });
-      }
     }
-    
-    console.log('🟠 Processing alignment with styled element - building from DATABASE');
 
     // Use surgical replacement for alignment - only remove/add alignment classes
     const finalClassName = replaceSpecificClass(databaseClassName, `text-${value}`, /^text-(left|center|right|justify)$/);
     styledElement.className = finalClassName;
 
-    console.log('🔄 Built alignment className from DATABASE:', {
-      databaseClassName,
-      newAlignment: `text-${value}`,
-      finalClassName: finalClassName
-    });
-
     // Restore preserved inline styles on the styled element
     Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
       styledElement.style.setProperty(styleProp, styleValue);
     });
-
-    // No need to restore color classes separately - they're already in the className we built from database!
 
     // Update local state with preserved styles
     setElementProperties(prev => ({
@@ -1062,12 +891,6 @@ const EditorSidebar = ({
       .filter(cls => cls && !isWrapperOrEditorClass(cls))
       .join(' ');
 
-    console.log('🧹 Filtered alignment classes before save:', {
-      original: styledElement.className,
-      filtered: alignmentClassNameForSave,
-      hasWrapperClasses: styledElement.className.includes('border') || styledElement.className.includes('col-span')
-    });
-
     // Save the styled element classes directly (alignment is now included)
     if (onInlineClassChange) {
       onInlineClassChange(elementSlotId, alignmentClassNameForSave, currentInlineStyles, true);
@@ -1081,7 +904,6 @@ const EditorSidebar = ({
 
   // Simple property change handler - direct DOM updates and immediate saves
   const handlePropertyChange = useCallback((property, value) => {
-    console.log('🟡 handlePropertyChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
     if (!selectedElement) return;
 
     const elementSlotId = selectedElement.getAttribute('data-slot-id');
@@ -1149,19 +971,6 @@ const EditorSidebar = ({
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       const databaseClassName = elementSlotConfig?.className || '';
 
-      console.log('💾 DEBUG FONT PROPERTY - Before change:', {
-        elementSlotId,
-        property,
-        value,
-        databaseClassName,
-        domClassName: styledElement.className,
-        splitDatabaseClasses: databaseClassName.split(' '),
-        currentFontSize: databaseClassName.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)/)?.[0],
-        currentFontWeight: databaseClassName.match(/font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)/)?.[0],
-        currentItalic: databaseClassName.includes('italic'),
-        isDomContaminated: styledElement.className.includes('border') || styledElement.className.includes('col-span')
-      });
-
       // Handle class-based properties (Tailwind) - apply immediately
       const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
@@ -1194,19 +1003,6 @@ const EditorSidebar = ({
 
         styledElement.className = finalClassName;
 
-        console.log('🔄 DEBUG FONT PROPERTY - After change:', {
-          property,
-          databaseClassName,
-          newClass: newClassFromStyleManager,
-          finalClassName: finalClassName,
-          splitFinalClasses: finalClassName.split(' '),
-          preservedFontSize: finalClassName.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)/)?.[0],
-          preservedFontWeight: finalClassName.match(/font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)/)?.[0],
-          preservedItalic: finalClassName.includes('italic'),
-          removedClasses: databaseClassName.split(' ').filter(cls => !finalClassName.includes(cls)),
-          addedClasses: finalClassName.split(' ').filter(cls => !databaseClassName.includes(cls))
-        });
-
         // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {
           // Re-read current color to prevent yellow color picker issue
@@ -1221,11 +1017,6 @@ const EditorSidebar = ({
                 const hex = '#' + rgbMatch.slice(0, 3)
                   .map(x => parseInt(x).toString(16).padStart(2, '0'))
                   .join('');
-                console.log('🎨 COLOR REDETECT - After font change:', {
-                  computedColor: currentComputedStyle.color,
-                  convertedHex: hex,
-                  previousColor: currentColor
-                });
                 currentColor = hex;
               }
             } else if (currentComputedStyle.color.startsWith('#')) {
@@ -1249,12 +1040,6 @@ const EditorSidebar = ({
           .split(' ')
           .filter(cls => cls && !isWrapperOrEditorClass(cls))
           .join(' ');
-
-        console.log('🧹 Filtered class-based properties before save:', {
-          original: styledElement.className,
-          filtered: classBasedClassNameForSave,
-          hasWrapperClasses: styledElement.className.includes('border') || styledElement.className.includes('col-span')
-        });
 
         // Save immediately using parent callback with preserved styles
         if (onInlineClassChange) {
@@ -1289,13 +1074,6 @@ const EditorSidebar = ({
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       const databaseClassName = elementSlotConfig?.className || '';
 
-      console.log('💾 Reading classes from DATABASE for preservation:', {
-        elementSlotId,
-        databaseClassName,
-        domClassName: targetElement.className,
-        isDomContaminated: targetElement.className.includes('border') || targetElement.className.includes('col-span')
-      });
-
       const currentClasses = databaseClassName.split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         // Preserve font-weight classes (bold, semibold, etc.)
@@ -1314,23 +1092,7 @@ const EditorSidebar = ({
 
       const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
 
-      console.log(`🎨 STYLE CHANGE - Applying ${property}: ${formattedValue} to element:`, {
-        elementSlotId,
-        targetElement: targetElement.tagName,
-        property,
-        formattedValue,
-        oldValue: targetElement.style[property],
-        preservedTailwindClasses: currentTailwindClasses,
-        preservedInlineStyles: Object.keys(currentInlineStyles),
-        currentClassName: targetElement.className
-      });
-
       targetElement.style[property] = formattedValue;
-
-      console.log(`✅ STYLE CHANGE - Applied ${property}:`, {
-        newValue: targetElement.style[property],
-        cssText: targetElement.style.cssText
-      });
 
       // Special handling for border properties to ensure visibility
       if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
@@ -1356,26 +1118,12 @@ const EditorSidebar = ({
       const finalClassName = currentTailwindClasses.join(' ');
       targetElement.className = finalClassName;
 
-      console.log('🔄 Built final className from DATABASE classes:', {
-        preservedFromDatabase: currentTailwindClasses,
-        finalClassName: finalClassName,
-        domClassNameIgnored: targetElement.className !== finalClassName ? 'YES (was contaminated)' : 'NO'
-      });
-
       // CRITICAL: Filter out ALL wrapper and editor classes before saving!
       // Using the isWrapperOrEditorClass function defined above
       const classNameForSave = targetElement.className
         .split(' ')
         .filter(cls => cls && !isWrapperOrEditorClass(cls))
         .join(' ');
-
-      console.log('🧹 Filtered editor classes before save:', {
-        original: targetElement.className,
-        filtered: classNameForSave,
-        removedClasses: targetElement.className.split(' ').filter(cls => cls && isWrapperOrEditorClass(cls)),
-        hasWrapperClassesBeforeFilter: targetElement.className.includes('border') || targetElement.className.includes('rounded-lg') || targetElement.className.includes('col-span'),
-        hasWrapperClassesAfterFilter: classNameForSave.includes('border') || classNameForSave.includes('rounded-lg') || classNameForSave.includes('col-span')
-      });
 
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
@@ -1432,17 +1180,6 @@ const EditorSidebar = ({
           saveStyles.borderColor = targetElement.style.borderColor;
         }
 
-        console.log('🧹 Filtered styles before save:', {
-          originalStyles: { ...currentInlineStyles, [property]: formattedValue },
-          filteredStyles: saveStyles,
-          removedStyles: Object.keys({...currentInlineStyles, [property]: formattedValue}).filter(prop => isWrapperStyle(prop))
-        });
-
-        console.log(`💾 STYLE CHANGE - Calling onInlineClassChange with:`, {
-          elementSlotId,
-          className: classNameForSave, // Use filtered className, not original
-          saveStyles
-        });
         onInlineClassChange(elementSlotId, classNameForSave, saveStyles); // Use filtered className
       } else {
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
@@ -1609,11 +1346,6 @@ const EditorSidebar = ({
             <GridLayoutControl
               currentConfig={allSlots['product_items']?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }}
               onConfigChange={(newGridConfig) => {
-                console.log('🔧 Product grid config changed:', newGridConfig);
-                console.log('🎯 Updating slot: product_items');
-                console.log('🎯 Current product_items slot:', allSlots['product_items']);
-                console.log('🎯 Current metadata:', allSlots['product_items']?.metadata);
-
                 // Update product_items slot configuration with new grid config
                 if (onClassChange) {
                   const productItemsSlot = allSlots['product_items'];
@@ -1621,10 +1353,6 @@ const EditorSidebar = ({
                     ...productItemsSlot?.metadata,
                     gridConfig: newGridConfig
                   };
-
-                  console.log('🎯 New metadata being saved:', newMetadata);
-                  console.log('🎯 Calling onClassChange with slotId: product_items');
-
                   onClassChange('product_items', productItemsSlot?.className || '', productItemsSlot?.styles || {}, newMetadata);
                 } else {
                   console.error('❌ No onClassChange handler available!');
