@@ -182,7 +182,8 @@ const ResizeWrapper = ({
 
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
-    
+
+    console.log('🟧 ResizeWrapper: MouseDown', { isButton });
     e.preventDefault();
     e.stopPropagation();
     

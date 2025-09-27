@@ -71,11 +71,11 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
 export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0); // Track how far the handle has moved
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const startValueRef = useRef(currentValue);
+  const lastValueRef = useRef(currentValue);
   const onResizeRef = useRef(onResize);
   const onResizeStartRef = useRef(onResizeStart);
   const onResizeEndRef = useRef(onResizeEnd);
@@ -96,6 +96,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
     startValueRef.current = currentValue;
+    lastValueRef.current = currentValue;
 
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
@@ -114,30 +115,31 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
       if (direction === 'horizontal') {
         const deltaX = e.clientX - startX;
-        const sensitivity = 3; // Further reduced from 5 to 3 for more responsive resizing
+        const sensitivity = 8; // Use a more moderate sensitivity
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
-        // Update drag offset to show visual feedback (cap it to prevent extreme movement)
-        setDragOffset(Math.max(-100, Math.min(100, deltaX)));
-
-        onResizeRef.current(newColSpan);
+        // Only call onResize if the value actually changed
+        if (newColSpan !== lastValueRef.current) {
+          lastValueRef.current = newColSpan;
+          onResizeRef.current(newColSpan);
+        }
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
-        const heightDelta = Math.round(deltaY / 1);
+        const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
         const newHeight = Math.max(20, startValue + heightDelta);
 
-        // Update drag offset for vertical direction (cap it to prevent extreme movement)
-        setDragOffset(Math.max(-100, Math.min(100, deltaY)));
-
-        onResizeRef.current(newHeight);
+        // Only call onResize if the value actually changed
+        if (newHeight !== lastValueRef.current) {
+          lastValueRef.current = newHeight;
+          onResizeRef.current(newHeight);
+        }
       }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
       isDraggingRef.current = false;
-      setDragOffset(0); // Reset drag offset
 
       // Reset body styles
       document.body.style.userSelect = '';
@@ -193,12 +195,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         setIsHovered(false);
         onHoverChange?.(false);
       }}
-      style={{
-        zIndex: 9999,
-        // Apply drag offset to follow mouse during drag
-        ...(isDragging && isHorizontal ? { transform: `translate(${dragOffset}px, -50%)` } : {}),
-        ...(isDragging && !isHorizontal ? { transform: `translate(-50%, ${dragOffset}px)` } : {}),
-      }}
+      style={{ zIndex: 9999 }}
       title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
       <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
