@@ -885,7 +885,7 @@ const EditorSidebar = ({
       const targetAlignmentClasses = targetElement.className.split(' ').filter(cls => 
         cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right')
       );
-      const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+      const elementClasses = styledElement.className.split(' ').filter(Boolean);
       const combinedClasses = [...elementClasses, ...targetAlignmentClasses].join(' ');
       
       // Save immediately using parent callback with preserved styles
@@ -916,6 +916,26 @@ const EditorSidebar = ({
       return;
     }
 
+    // Find the content element that has the styling classes (same logic as initialization)
+    const findContentElement = (element) => {
+      if (element.hasAttribute('data-slot-id')) {
+        for (const child of element.children) {
+          if (child.className && (
+            child.className.includes('font-') ||
+            child.className.includes('text-') ||
+            child.className.includes('italic') ||
+            child.style.length > 0
+          )) {
+            return child;
+          }
+        }
+        return element.children[0] || element;
+      }
+      return element;
+    };
+
+    const styledElement = findContentElement(selectedElement);
+
     const classBasedProperties = ['fontSize', 'fontWeight', 'fontStyle'];
     
     if (classBasedProperties.includes(property)) {
@@ -924,18 +944,18 @@ const EditorSidebar = ({
       const currentColorClasses = [];
       
       // Preserve inline styles
-      if (selectedElement.style) {
-        for (let i = 0; i < selectedElement.style.length; i++) {
-          const styleProp = selectedElement.style[i];
-          const styleValue = selectedElement.style.getPropertyValue(styleProp);
+      if (styledElement.style) {
+        for (let i = 0; i < styledElement.style.length; i++) {
+          const styleProp = styledElement.style[i];
+          const styleValue = styledElement.style.getPropertyValue(styleProp);
           if (styleValue && styleValue.trim() !== '') {
             currentInlineStyles[styleProp] = styleValue;
           }
         }
       }
-      
+
       // Preserve Tailwind color classes (text-white, text-black, text-blue-200, etc.)
-      const currentClasses = selectedElement.className.split(' ').filter(Boolean);
+      const currentClasses = styledElement.className.split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
           // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
@@ -949,49 +969,38 @@ const EditorSidebar = ({
       // Handle class-based properties (Tailwind) - apply immediately
       const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
-        // Restore preserved inline styles after class change
-        let styleTargetElem = selectedElement;
-        if (selectedElement.hasAttribute('data-slot-id')) {
-          const button = selectedElement.querySelector('button');
-          const textElement = selectedElement.querySelector('span[data-editable="true"]');
-          const inputElement = selectedElement.querySelector('input');
-
-          if (button) styleTargetElem = button;
-          else if (textElement) styleTargetElem = textElement;
-          else if (inputElement) styleTargetElem = inputElement;
-        }
-
+        // Restore preserved inline styles after class change on styled element
         Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
-          styleTargetElem.style.setProperty(styleProp, styleValue);
+          styledElement.style.setProperty(styleProp, styleValue);
         });
-        
+
         // Restore preserved Tailwind color classes after class change
         if (currentColorClasses.length > 0) {
-          const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+          const elementClasses = styledElement.className.split(' ').filter(Boolean);
           // Remove any existing color classes to avoid conflicts
           const cleanClasses = elementClasses.filter(cls => {
             const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
             return !isColorClass;
           });
           // Add back the preserved color classes
-          selectedElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+          styledElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
         }
-        
+
         // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {
           setElementProperties(prev => ({
             ...prev,
-            className: selectedElement.className,
+            className: styledElement.className,
             styles: {
               ...prev.styles,
               ...currentInlineStyles
             }
           }));
         }, 10);
-        
+
         // Save immediately using parent callback with preserved styles
         if (onInlineClassChange) {
-          onInlineClassChange(elementSlotId, selectedElement.className, currentInlineStyles);
+          onInlineClassChange(elementSlotId, styledElement.className, currentInlineStyles);
         }
       }
     } else {
@@ -999,14 +1008,14 @@ const EditorSidebar = ({
       // PRESERVE TAILWIND CLASSES (bold, italic, font-size, etc.) when changing inline styles
 
       // CRITICAL: For text slots in UnifiedSlotRenderer (line 96), BOTH className AND style
-      // are on the wrapper div with data-slot-id. The inner span has nothing!
-      // So we should read/write EVERYTHING to selectedElement (the wrapper).
-      const targetElement = selectedElement;
+      // are on the content wrapper, NOT the GridColumn wrapper with data-slot-id.
+      // So we should read/write EVERYTHING to styledElement (the content wrapper).
+      const targetElement = styledElement;
 
       const currentInlineStyles = {};
       const currentTailwindClasses = [];
 
-      // Preserve all inline styles from targetElement (wrapper with data-slot-id)
+      // Preserve all inline styles from targetElement (content wrapper with classes/styles)
       if (targetElement.style) {
         for (let i = 0; i < targetElement.style.length; i++) {
           const styleProp = targetElement.style[i];
@@ -1017,7 +1026,7 @@ const EditorSidebar = ({
         }
       }
 
-      // Preserve ALL Tailwind classes from targetElement (wrapper with data-slot-id)
+      // Preserve ALL Tailwind classes from targetElement (content wrapper with classes/styles)
       const currentClasses = (targetElement.className || '').split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         // Preserve font-weight classes (bold, semibold, etc.)
