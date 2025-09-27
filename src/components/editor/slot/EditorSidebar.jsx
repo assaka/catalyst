@@ -427,7 +427,8 @@ const EditorSidebar = ({
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        className: storedClassName || styledElement.className || '',
+        // CRITICAL: className is stored on wrapper (selectedElement), not inner element
+        className: storedClassName || selectedElement.className || '',
         styles: (() => {
           try {
             // Safely merge stored styles with element styles
@@ -922,7 +923,7 @@ const EditorSidebar = ({
       // Handle inline style properties - apply immediately
       // PRESERVE TAILWIND CLASSES (bold, italic, font-size, etc.) when changing inline styles
 
-      // For button/input/text slots, find the actual element first
+      // For button/input/text slots, find the actual element first for STYLES
       let targetElement = selectedElement;
       if (selectedElement.hasAttribute('data-slot-id')) {
         const button = selectedElement.querySelector('button');
@@ -938,10 +939,14 @@ const EditorSidebar = ({
         }
       }
 
+      // CRITICAL: For text slots, className is on the wrapper div, not the inner span!
+      // So we need to read classes from selectedElement (wrapper), not targetElement (span)
+      const classSourceElement = selectedElement;
+
       const currentInlineStyles = {};
       const currentTailwindClasses = [];
 
-      // Preserve all inline styles from targetElement (the actual styled element)
+      // Preserve all inline styles from targetElement (where styles are applied)
       if (targetElement.style) {
         for (let i = 0; i < targetElement.style.length; i++) {
           const styleProp = targetElement.style[i];
@@ -952,8 +957,8 @@ const EditorSidebar = ({
         }
       }
 
-      // Preserve ALL Tailwind classes from targetElement (the actual styled element)
-      const currentClasses = (targetElement.className || '').split(' ').filter(Boolean);
+      // Preserve ALL Tailwind classes from classSourceElement (wrapper where classes are stored)
+      const currentClasses = (classSourceElement.className || '').split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         // Preserve font-weight classes (bold, semibold, etc.)
         if (cls.startsWith('font-')) {
@@ -1001,27 +1006,28 @@ const EditorSidebar = ({
         }
       }
 
-      // Restore ALL preserved inline styles
+      // Restore ALL preserved inline styles to targetElement (where styles are rendered)
       Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
         if (styleProp !== property) { // Don't overwrite the property we just changed
           targetElement.style.setProperty(styleProp, styleValue);
         }
       });
 
-      // Restore ALL preserved Tailwind classes on the targetElement (the actual styled element)
+      // Restore ALL preserved Tailwind classes to classSourceElement (wrapper where classes are stored)
       if (currentTailwindClasses.length > 0) {
-        const elementClasses = (targetElement.className || '').split(' ').filter(Boolean);
+        const elementClasses = (classSourceElement.className || '').split(' ').filter(Boolean);
         // Remove any Tailwind classes that might have been added/modified
         const cleanClasses = elementClasses.filter(cls => {
           return !cls.startsWith('font-') && cls !== 'italic' &&
                  (!cls.startsWith('text-') || cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right'));
         });
         // Add back ALL the preserved Tailwind classes
-        targetElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
+        classSourceElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
 
         console.log('🔄 Restored Tailwind classes:', {
           preserved: currentTailwindClasses,
-          finalClassName: targetElement.className,
+          finalClassName: classSourceElement.className,
+          classSourceElementTag: classSourceElement.tagName,
           targetElementTag: targetElement.tagName
         });
       }
@@ -1029,7 +1035,7 @@ const EditorSidebar = ({
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
         ...prev,
-        className: targetElement.className,
+        className: classSourceElement.className,
         styles: {
           ...prev.styles,
           ...currentInlineStyles,
@@ -1048,7 +1054,8 @@ const EditorSidebar = ({
         property,
         formattedValue,
         hasCallback: !!onInlineClassChange,
-        preservedClassName: targetElement.className,
+        preservedClassName: classSourceElement.className,
+        classSourceElementTag: classSourceElement.tagName,
         targetElementTag: targetElement.tagName
       });
 
@@ -1061,10 +1068,10 @@ const EditorSidebar = ({
         }
         console.log(`💾 STYLE CHANGE - Calling onInlineClassChange:`, {
           elementSlotId,
-          className: targetElement.className,
+          className: classSourceElement.className,
           saveStyles
         });
-        onInlineClassChange(elementSlotId, targetElement.className, saveStyles);
+        onInlineClassChange(elementSlotId, classSourceElement.className, saveStyles);
       } else {
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
