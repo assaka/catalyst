@@ -354,14 +354,61 @@ class SlotConfigurationService {
 
   // Transform CartSlotsEditor configuration to SlotConfiguration API format
   transformToSlotConfigFormat(cartConfig) {
+    // Helper function to remove editor-only temporary classes
+    const removeEditorClasses = (className) => {
+      if (!className) return '';
+
+      // List of editor-only class patterns to remove
+      const editorClassPatterns = [
+        'border-2 border-blue-500',
+        'bg-blue-50/10',
+        'shadow-lg shadow-blue-200/60',
+        'ring-2 ring-blue-300',
+        'border-blue-600',
+        'bg-blue-50/60',
+        'shadow-xl shadow-blue-200/60',
+        'ring-2 ring-blue-200',
+        'border-dashed',
+        'shadow-md shadow-blue-200/40',
+        'hover:border-blue-400',
+        'hover:bg-blue-50/20',
+        'hover:border-2',
+        'hover:bg-blue-50/10'
+      ];
+
+      let cleanClassName = className;
+      editorClassPatterns.forEach(pattern => {
+        cleanClassName = cleanClassName.replace(pattern, '');
+      });
+
+      // Clean up extra spaces
+      return cleanClassName.replace(/\s+/g, ' ').trim();
+    };
+
+    // Clean editor classes from slots
+    const cleanSlots = (slots) => {
+      if (!slots) return {};
+      const cleaned = {};
+      Object.entries(slots).forEach(([key, slot]) => {
+        cleaned[key] = {
+          ...slot,
+          className: removeEditorClasses(slot.className || '')
+        };
+      });
+      return cleaned;
+    };
+
     // Check if it's already in the correct format
     if (cartConfig.slots && cartConfig.metadata) {
-      return cartConfig;
+      return {
+        ...cartConfig,
+        slots: cleanSlots(cartConfig.slots)
+      };
     }
 
     // Transform from hierarchical CartSlotsEditor format to API format
     const transformed = {
-      slots: cartConfig.slots || {},
+      slots: cleanSlots(cartConfig.slots || {}),
       metadata: {
         created: cartConfig.timestamp || new Date().toISOString(),
         lastModified: new Date().toISOString(),
