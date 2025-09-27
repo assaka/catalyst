@@ -80,6 +80,8 @@ const UnifiedSlotsEditor = ({
   onSave,
   viewMode: propViewMode
 }) => {
+  console.log('🚀 UNIFIED SLOTS EDITOR CALLED!', { pageType: config?.pageType, mode, propViewMode });
+
   // Extract configuration
   const {
     pageType,

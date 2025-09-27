@@ -129,6 +129,7 @@ export function UnifiedSlotRenderer({
   categoryData = null,
   cartData = null
 }) {
+  console.log('🚀 UNIFIED SLOT RENDERER CALLED!', { parentId, viewMode, context, totalSlots: Object.keys(slots || {}).length });
 
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);

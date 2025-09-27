@@ -27,6 +27,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Create default slots function for category layout
 const createDefaultSlots = async () => {
   try {
+    console.log('🚀 CREATE DEFAULT SLOTS CALLED!');
     console.log('🔧 LOADING CATEGORY CONFIG FROM createDefaultSlots...');
     const configModule = await import('@/components/editor/slot/configs/category-config');
 
@@ -38,6 +39,15 @@ const createDefaultSlots = async () => {
     }
 
     console.log('✅ Successfully loaded category config with slots:', Object.keys(categoryConfig.slots));
+    console.log('🚀 MISSING SLOTS CHECK:', {
+      breadcrumbs_content: !!categoryConfig.slots.breadcrumbs_content,
+      active_filters: !!categoryConfig.slots.active_filters,
+      pagination_container: !!categoryConfig.slots.pagination_container,
+      sort_selector: !!categoryConfig.slots.sort_selector,
+      layered_navigation: !!categoryConfig.slots.layered_navigation,
+      products_above_cms: !!categoryConfig.slots.products_above_cms,
+      filters_above_cms: !!categoryConfig.slots.filters_above_cms
+    });
     console.log('🔧 product_items slot config:', categoryConfig.slots.product_items);
     console.log('🔧 FORCE RELOAD - CategorySlotsEditor');
 
@@ -450,6 +460,7 @@ const CategorySlotsEditor = ({
   onSave,
   viewMode = 'grid'
 }) => {
+  console.log('🚀 CATEGORY SLOTS EDITOR RENDERED!', { mode, viewMode });
   return (
     <UnifiedSlotsEditor
       config={categoryEditorConfig}

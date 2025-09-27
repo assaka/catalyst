@@ -669,6 +669,7 @@ export const useViewModeAdjustments = (pageConfig, setPageConfig, viewMode, adju
 };
 
 export const filterSlotsByViewMode = (childSlots, viewMode) => {
+  console.log('🚀 FILTER SLOTS BY VIEW MODE CALLED!', { childSlotsCount: childSlots.length, viewMode });
   return childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
 
