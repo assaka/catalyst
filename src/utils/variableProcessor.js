@@ -338,7 +338,7 @@ function formatStockStatus(product, context, pageData) {
 /**
  * Generate demo data for editor context
  */
-export const generateDemoData = (pageType) => {
+export const generateDemoData = (pageType, settings = {}) => {
   const demoData = {
     product: {
       name: 'Sample Product Name',
@@ -402,12 +402,15 @@ export const generateDemoData = (pageType) => {
     settings: {
       currency_symbol: '$',
       display_low_stock_threshold: 10,
+      product_gallery_layout: 'horizontal',
+      vertical_gallery_position: 'left',
       stock_settings: {
         show_stock_label: true,
         in_stock_label: 'In Stock',
         out_of_stock_label: 'Out of Stock',
         low_stock_label: 'Only {quantity} left!'
-      }
+      },
+      ...settings // Merge any passed-in settings to override defaults
     }
   };
 
