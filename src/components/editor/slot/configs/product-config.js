@@ -142,7 +142,7 @@ export const productConfig = {
       type: 'component',
       component: 'ProductThumbnails',
       content: '',
-      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 {{#if (eq settings.vertical_gallery_position "right")}}pl-4{{else}}pr-4{{/if}}{{else}}flex space-x-2 overflow-x-auto mt-4{{/if}}',
+      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 {{#if (eq settings.vertical_gallery_position "right")}}pl-4{{else}}pr-4{{/if}}{{else}}flex overflow-x-auto mt-4{{/if}}',
       parentClassName: '{{#if (eq settings.vertical_gallery_position "right")}}order-last{{/if}}{{#if (eq settings.vertical_gallery_position "left")}}order-first{{/if}}{{#if (eq settings.product_gallery_layout "horizontal")}}order-2{{/if}}',
       styles: {},
       parentId: 'gallery_container',
