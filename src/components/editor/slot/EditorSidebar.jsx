@@ -1059,8 +1059,8 @@ const EditorSidebar = ({
         else if (cls === 'italic') {
           currentTailwindClasses.push(cls);
         }
-        // Preserve font-size classes (text-xs, text-sm, etc.)
-        else if (cls.startsWith('text-') && !cls.startsWith('text-left') && !cls.startsWith('text-center') && !cls.startsWith('text-right')) {
+        // Preserve ALL text-related classes including alignment (text-left, text-center, text-right)
+        else if (cls.startsWith('text-')) {
           currentTailwindClasses.push(cls);
         }
       });
@@ -1108,11 +1108,11 @@ const EditorSidebar = ({
       if (currentTailwindClasses.length > 0) {
         const elementClasses = (targetElement.className || '').split(' ').filter(Boolean);
         // Remove any Tailwind classes that might have been added/modified
+        // Since we now preserve ALL text- classes, we need to remove ALL of them before restoring
         const cleanClasses = elementClasses.filter(cls => {
-          return !cls.startsWith('font-') && cls !== 'italic' &&
-                 (!cls.startsWith('text-') || cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right'));
+          return !cls.startsWith('font-') && cls !== 'italic' && !cls.startsWith('text-');
         });
-        // Add back ALL the preserved Tailwind classes
+        // Add back ALL the preserved Tailwind classes (including alignment)
         targetElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
 
         console.log('🔄 Restored Tailwind classes:', {
