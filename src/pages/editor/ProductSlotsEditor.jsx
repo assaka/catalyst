@@ -46,7 +46,17 @@ const productEditorConfig = {
     }
   ],
   // slotComponents are now handled by UnifiedSlotRenderer's component registry
-  generateContext: () => generateMockProductContext(),
+  generateContext: (viewMode, selectedStore) => {
+    const mockContext = generateMockProductContext();
+    // Merge real store settings with mock data if available
+    if (selectedStore?.settings) {
+      mockContext.settings = {
+        ...mockContext.settings,
+        ...selectedStore.settings
+      };
+    }
+    return mockContext;
+  },
   createDefaultSlots,
   cmsBlockPositions: ['product_above', 'product_below']
 };

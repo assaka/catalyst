@@ -138,6 +138,7 @@ export const generateMockProductContext = () => {
       hide_currency_product: false,
       track_stock: true,
       hide_quantity_selector: false,
+      product_gallery_layout: 'horizontal', // Default to horizontal layout
       stock_settings: {
         show_stock_label: true,
         in_stock_label: 'In Stock ({quantity} available)',

@@ -141,10 +141,10 @@ const UnifiedSlotsEditor = ({
   // Generate page context
   useEffect(() => {
     if (generateContext) {
-      const context = generateContext(viewMode);
+      const context = generateContext(viewMode, selectedStore);
       setPageContext(context);
     }
-  }, [generateContext, viewMode]);
+  }, [generateContext, viewMode, selectedStore]);
 
   // Use extracted hooks
   const { formatTimeAgo } = useTimestampFormatting();

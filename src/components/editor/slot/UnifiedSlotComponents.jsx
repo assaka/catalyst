@@ -1496,14 +1496,17 @@ const ProductThumbnails = createSlotComponent({
   name: 'ProductThumbnails',
 
   // Editor version
-  renderEditor: ({ slot, className, styles }) => {
+  renderEditor: ({ slot, className, styles, productContext, variableContext }) => {
+    const settings = productContext?.settings || variableContext?.settings;
+    const isVertical = settings?.product_gallery_layout === 'vertical';
+
     return (
       <div className={className} style={styles}>
-        <div className="flex space-x-2 overflow-x-auto">
+        <div className={isVertical ? "flex flex-col space-y-2" : "flex space-x-2 overflow-x-auto"}>
           {[1, 2, 3, 4].map((index) => (
             <div
               key={index}
-              className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300"
+              className={`flex-shrink-0 ${isVertical ? 'w-16 h-16' : 'w-16 h-16'} rounded-lg overflow-hidden border-2 border-gray-300`}
             >
               <img
                 src={`https://placehold.co/100x100?text=Thumb+${index}`}
