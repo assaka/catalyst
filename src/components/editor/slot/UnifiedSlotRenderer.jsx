@@ -491,12 +491,14 @@ export function UnifiedSlotRenderer({
         if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
+          console.log('🟦 Slot colSpan update:', { slotId: slot.id, colSpan: slot.colSpan, colSpanClass, gridColumn });
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           const viewModeValue = slot.colSpan[viewMode];
 
           if (typeof viewModeValue === 'number') {
             colSpanClass = `col-span-${viewModeValue}`;
             gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
+            console.log('🟦 Slot colSpan update (object):', { slotId: slot.id, viewModeValue, colSpanClass, gridColumn });
           } else if (typeof viewModeValue === 'string') {
             colSpanClass = viewModeValue;
             gridColumn = null;
