@@ -210,6 +210,7 @@ export function UnifiedSlotRenderer({
     // Text Element
     if (type === 'text') {
       if (context === 'editor' && mode === 'edit') {
+        const hasWFit = className?.includes('w-fit');
         const textElement = (
           <span
             className={processedClassName}
@@ -217,7 +218,7 @@ export function UnifiedSlotRenderer({
               ...styles,
               cursor: 'pointer',
               display: 'inline-block',
-              width: className?.includes('w-fit') ? 'fit-content' : '100%'
+              width: hasWFit ? 'fit-content' : (styles?.width || '100%')
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -232,7 +233,13 @@ export function UnifiedSlotRenderer({
             }}
           />
         );
-        return wrapWithResize(textElement, slot, 20, 16);
+
+        const wrappedElement = (
+          <div style={{ display: 'inline-block', position: 'relative' }}>
+            {wrapWithResize(textElement, slot, 20, 16)}
+          </div>
+        );
+        return wrappedElement;
       } else {
         return (
           <TextSlotWithScript

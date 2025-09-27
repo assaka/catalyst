@@ -112,7 +112,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       const newHeight = Math.max(20, startValue + heightDelta);
       onResize(newHeight);
     }
-  }, [currentValue, maxValue, minValue, onResize, direction]);
+  }, [maxValue, minValue, onResize, direction]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
