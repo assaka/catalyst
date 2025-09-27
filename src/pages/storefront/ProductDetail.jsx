@@ -843,6 +843,12 @@ export default function ProductDetail() {
         return shouldRender;
       })() ? (
         <div className="grid grid-cols-12 gap-2 auto-rows-min">
+          {console.log('🏪 STOREFRONT PRODUCT DATA:', {
+            hasSettings: !!settings,
+            product_gallery_layout: settings?.product_gallery_layout,
+            vertical_gallery_position: settings?.vertical_gallery_position,
+            allSettings: settings
+          })}
           <UnifiedSlotRenderer
             slots={productLayoutConfig?.slots || productConfig}
             parentId={null}

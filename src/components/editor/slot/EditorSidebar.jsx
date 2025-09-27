@@ -806,6 +806,28 @@ const EditorSidebar = ({
     }
   }, [slotId, onTextChange, onClassChange, isInitializing]);
 
+  // Function to detect wrapper/editor classes that should not be saved
+  // MUST be defined before handleAlignmentChange and handlePropertyChange use it
+  const isWrapperOrEditorClass = useCallback((cls) => {
+    // Editor selection indicators
+    if (['border-2', 'border-blue-500', 'border-dashed', 'shadow-md', 'shadow-blue-200/40'].includes(cls)) return true;
+
+    // GridColumn wrapper classes that should not be on content
+    if (['border', 'rounded-lg', 'overflow-hidden', 'responsive-slot', 'relative'].includes(cls)) return true;
+    if (['cursor-grab', 'cursor-grabbing', 'transition-all', 'duration-200'].includes(cls)) return true;
+
+    // Padding classes from wrapper
+    if (cls.match(/^p-\d+$/)) return true;
+
+    // Grid layout classes
+    if (cls.match(/^col-span-\d+$/)) return true;
+
+    // Any other wrapper-specific classes
+    if (['hover:border-blue-400', 'hover:border-2', 'hover:border-dashed', 'hover:bg-blue-50/10'].includes(cls)) return true;
+
+    return false;
+  }, []);
+
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
     console.log('🟠 handleAlignmentChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
