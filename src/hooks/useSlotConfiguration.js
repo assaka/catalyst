@@ -1454,8 +1454,11 @@ export function useSlotConfiguration({
 
       createGridResizeHandler: (gridResizeHandler, saveTimeoutRef) =>
         useCallback((slotId, newColSpan) => {
+          console.log('🟡 handleGridResize called', { slotId, newColSpan });
           setPageConfig(prevConfig => {
+            console.log('🟡 handleGridResize setPageConfig', { slotId, newColSpan, prevConfig });
             const updatedSlots = gridResizeHandler(slotId, newColSpan, prevConfig?.slots || {});
+            console.log('🟡 handleGridResize updatedSlots', updatedSlots);
             const updatedConfig = {
               ...prevConfig,
               slots: updatedSlots

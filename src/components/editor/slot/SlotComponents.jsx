@@ -93,11 +93,13 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       const sensitivity = 25;
       const colSpanDelta = Math.round(deltaX / sensitivity);
       const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
+      console.log('🟢 GridResizeHandle: MouseMove horizontal', { deltaX, colSpanDelta, startValue, newColSpan });
       onResizeRef.current(newColSpan);
     } else if (direction === 'vertical') {
       const deltaY = e.clientY - startY;
       const heightDelta = Math.round(deltaY / 1);
       const newHeight = Math.max(20, startValue + heightDelta);
+      console.log('🟢 GridResizeHandle: MouseMove vertical', { deltaY, heightDelta, startValue, newHeight });
       onResizeRef.current(newHeight);
     }
   }, [maxValue, minValue, direction]);
@@ -114,6 +116,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [handleMouseMove, onResizeEnd]);
 
   const handleMouseDown = useCallback((e) => {
+    console.log('🔵 GridResizeHandle: MouseDown', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -128,6 +131,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    console.log('🔵 GridResizeHandle: Listeners added');
   }, [currentValue, onResizeStart, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
