@@ -79,28 +79,36 @@ class SimpleStyleManager {
       case 'fontWeight':
         // Remove existing font-weight classes to avoid conflicts
         const fontWeightClasses = ['font-thin', 'font-extralight', 'font-light', 'font-normal', 'font-medium', 'font-semibold', 'font-bold', 'font-extrabold', 'font-black'];
-        newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
-        
+
         if (value === 'bold') {
-          // Check if bold was already present (simple toggle check)
+          // Check if bold was already present before filtering (proper toggle check)
           const wasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
+          newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
+
           if (wasBold) {
-              newClasses.push('font-normal'); // Explicitly set normal weight
+            console.log('🔄 Toggling OFF bold (removing font-bold)');
+            // Don't add any weight class (remove bold)
           } else {
+            console.log('🔄 Toggling ON bold (adding font-bold)');
             newClasses.push('font-bold');
           }
         } else {
+          newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
           newClasses.push('font-normal');
         }
         break;
       case 'fontStyle':
         if (value === 'italic') {
-          // Toggle behavior: if already italic, remove it; if not italic, add it
-          if (newClasses.includes('italic')) {
-            newClasses = newClasses.filter(cls => cls !== 'italic');
+          // Toggle behavior: check current state before filtering
+          const wasItalic = currentClasses.includes('italic');
+          newClasses = newClasses.filter(cls => cls !== 'italic');
+
+          if (wasItalic) {
+            console.log('🔄 Toggling OFF italic (removing italic)');
+            // Don't add italic class (remove it)
           } else {
+            console.log('🔄 Toggling ON italic (adding italic)');
             newClasses.push('italic');
-            console.log('🔄 Toggled ON italic');
           }
         } else {
           newClasses = newClasses.filter(cls => cls !== 'italic');

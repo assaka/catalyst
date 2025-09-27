@@ -1127,12 +1127,37 @@ const EditorSidebar = ({
 
         // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {
+          // Re-read current color to prevent yellow color picker issue
+          const currentComputedStyle = window.getComputedStyle(styledElement);
+          let currentColor = prev.styles.color; // Keep existing color by default
+
+          // Only update color if we can detect a valid one
+          if (currentComputedStyle.color && currentComputedStyle.color !== 'rgba(0, 0, 0, 0)' && currentComputedStyle.color !== 'transparent') {
+            if (currentComputedStyle.color.startsWith('rgb')) {
+              const rgbMatch = currentComputedStyle.color.match(/\d+/g);
+              if (rgbMatch && rgbMatch.length >= 3) {
+                const hex = '#' + rgbMatch.slice(0, 3)
+                  .map(x => parseInt(x).toString(16).padStart(2, '0'))
+                  .join('');
+                console.log('🎨 COLOR REDETECT - After font change:', {
+                  computedColor: currentComputedStyle.color,
+                  convertedHex: hex,
+                  previousColor: currentColor
+                });
+                currentColor = hex;
+              }
+            } else if (currentComputedStyle.color.startsWith('#')) {
+              currentColor = currentComputedStyle.color;
+            }
+          }
+
           setElementProperties(prev => ({
             ...prev,
             className: finalClassName, // Use clean finalClassName, not contaminated DOM className
             styles: {
               ...prev.styles,
-              ...currentInlineStyles
+              ...currentInlineStyles,
+              color: currentColor // Use re-detected color
             }
           }));
         }, 10);
