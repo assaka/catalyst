@@ -829,6 +829,9 @@ const EditorSidebar = ({
 
     const classes = classString.split(' ').filter(Boolean);
 
+    // Find classes that match the pattern (will be removed)
+    const matchingClasses = classes.filter(cls => removePattern.test(cls));
+
     // Remove only classes matching the specific pattern
     const filteredClasses = classes.filter(cls => !removePattern.test(cls));
 
@@ -837,7 +840,18 @@ const EditorSidebar = ({
       filteredClasses.push(newClass);
     }
 
-    return filteredClasses.join(' ');
+    const result = filteredClasses.join(' ');
+
+    console.log('🔧 replaceSpecificClass DEBUG:', {
+      input: classString,
+      pattern: removePattern.source,
+      matchingClasses,
+      filteredClasses,
+      newClass,
+      result
+    });
+
+    return result;
   }, []);
 
   // Simple alignment change handler - direct DOM updates
@@ -1056,12 +1070,16 @@ const EditorSidebar = ({
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       const databaseClassName = elementSlotConfig?.className || '';
 
-      console.log('💾 Using surgical class replacement from DATABASE:', {
+      console.log('💾 DEBUG FONT PROPERTY - Before change:', {
         elementSlotId,
         property,
         value,
         databaseClassName,
         domClassName: styledElement.className,
+        splitDatabaseClasses: databaseClassName.split(' '),
+        currentFontSize: databaseClassName.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)/)?.[0],
+        currentFontWeight: databaseClassName.match(/font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)/)?.[0],
+        currentItalic: databaseClassName.includes('italic'),
         isDomContaminated: styledElement.className.includes('border') || styledElement.className.includes('col-span')
       });
 
@@ -1097,11 +1115,17 @@ const EditorSidebar = ({
 
         styledElement.className = finalClassName;
 
-        console.log('🔄 Built final className for class-based property from DATABASE:', {
+        console.log('🔄 DEBUG FONT PROPERTY - After change:', {
+          property,
           databaseClassName,
           newClass: newClassFromStyleManager,
           finalClassName: finalClassName,
-          property: property
+          splitFinalClasses: finalClassName.split(' '),
+          preservedFontSize: finalClassName.match(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)/)?.[0],
+          preservedFontWeight: finalClassName.match(/font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)/)?.[0],
+          preservedItalic: finalClassName.includes('italic'),
+          removedClasses: databaseClassName.split(' ').filter(cls => !finalClassName.includes(cls)),
+          addedClasses: finalClassName.split(' ').filter(cls => !databaseClassName.includes(cls))
         });
 
         // Update local state for UI responsiveness with preserved styles
