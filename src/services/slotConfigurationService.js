@@ -358,31 +358,45 @@ class SlotConfigurationService {
     const removeEditorClasses = (className) => {
       if (!className) return '';
 
-      // List of editor-only class patterns to remove
-      const editorClassPatterns = [
-        'border-2 border-blue-500',
-        'bg-blue-50/10',
-        'shadow-lg shadow-blue-200/60',
-        'ring-2 ring-blue-300',
+      // Split into individual classes
+      const classes = className.split(/\s+/).filter(Boolean);
+
+      // List of editor-only classes and patterns to remove
+      const editorClasses = [
+        'border-2',
+        'border-blue-500',
         'border-blue-600',
-        'bg-blue-50/60',
-        'shadow-xl shadow-blue-200/60',
-        'ring-2 ring-blue-200',
+        'border-blue-400',
         'border-dashed',
-        'shadow-md shadow-blue-200/40',
-        'hover:border-blue-400',
-        'hover:bg-blue-50/20',
-        'hover:border-2',
-        'hover:bg-blue-50/10'
+        'bg-blue-50/10',
+        'bg-blue-50/20',
+        'bg-blue-50/60',
+        'shadow-lg',
+        'shadow-xl',
+        'shadow-md',
+        'ring-2',
+        'ring-blue-200',
+        'ring-blue-300'
       ];
 
-      let cleanClassName = className;
-      editorClassPatterns.forEach(pattern => {
-        cleanClassName = cleanClassName.replace(pattern, '');
+      // Filter out editor classes and hover variants
+      const cleanClasses = classes.filter(cls => {
+        // Remove if it's an editor class
+        if (editorClasses.includes(cls)) return false;
+
+        // Remove if it starts with hover: and is editor-related
+        if (cls.startsWith('hover:')) {
+          const baseClass = cls.replace('hover:', '');
+          if (editorClasses.includes(baseClass)) return false;
+        }
+
+        // Remove shadow classes with blue color
+        if (cls.startsWith('shadow-') && cls.includes('blue')) return false;
+
+        return true;
       });
 
-      // Clean up extra spaces
-      return cleanClassName.replace(/\s+/g, ' ').trim();
+      return cleanClasses.join(' ');
     };
 
     // Clean editor classes from slots

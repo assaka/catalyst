@@ -643,13 +643,12 @@ export function GridColumn({
         }
       }}
       onMouseEnter={() => {
-        if (!isSelected) {
-          setIsHovered(true);
-        }
+        setIsHovered(true);
       }}
       onMouseLeave={() => {
-        if (!isSelected) {
-          setIsHovered(false);
+        setIsHovered(false);
+        if (isSelected && onElementClick && mode === 'edit') {
+          onElementClick(null, null);
         }
         if (!isDragging) {
           setIsDragOver(false);
