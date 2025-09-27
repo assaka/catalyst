@@ -150,7 +150,7 @@ export function UnifiedSlotRenderer({
 
     // Prepare context for variable processing
     const variableContext = context === 'editor' ?
-      generateDemoData('product') :
+      generateDemoData('product', productData.settings || {}) :
       {
         product: productData.product,
         category: categoryData,
