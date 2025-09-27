@@ -914,7 +914,9 @@ export function useSlotConfiguration({
         hasData: !!savedConfig?.data,
         configId: savedConfig?.data?.id,
         status: savedConfig?.data?.status,
-        hasSlots: !!(savedConfig?.data?.configuration?.slots && Object.keys(savedConfig.data.configuration.slots).length > 0)
+        hasSlots: !!(savedConfig?.data?.configuration?.slots && Object.keys(savedConfig.data.configuration.slots).length > 0),
+        headerTitle: savedConfig?.data?.configuration?.slots?.header_title?.content,
+        cartItemsComponent: savedConfig?.data?.configuration?.slots?.cart_items?.component
       });
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
@@ -924,6 +926,7 @@ export function useSlotConfiguration({
         // Check if draft needs initialization (status = 'init')
         if (draftStatus === 'init') {
           console.log('🏗️ EDITOR - Draft status is "init", populating with static config');
+          console.log('⚠️ EDITOR - This should only happen ONCE on first load!');
 
           // Load static config to populate init draft
           const staticConfig = await loadStaticConfiguration();
@@ -958,6 +961,8 @@ export function useSlotConfiguration({
           return populatedConfig;
         } else if (draftStatus === 'draft') {
           console.log('✅ EDITOR - Using existing draft configuration from database');
+          console.log('✅ EDITOR - Draft header_title:', draftConfig?.slots?.header_title?.content);
+          console.log('✅ EDITOR - Draft cart_items component:', draftConfig?.slots?.cart_items?.component);
           return draftConfig;
         } else {
           console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
