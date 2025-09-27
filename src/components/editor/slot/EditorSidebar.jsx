@@ -399,20 +399,44 @@ const EditorSidebar = ({
       
       // Clear initialization flag after a short delay
       setTimeout(() => setIsInitializing(false), 100);
-      
+
+      // Find the actual styled element (button, span, input) if it exists
+      let styledElement = selectedElement;
+      if (selectedElement.hasAttribute('data-slot-id')) {
+        const button = selectedElement.querySelector('button');
+        const textElement = selectedElement.querySelector('span[data-editable="true"]');
+        const inputElement = selectedElement.querySelector('input');
+
+        if (button) {
+          styledElement = button;
+        } else if (textElement) {
+          styledElement = textElement;
+        } else if (inputElement) {
+          styledElement = inputElement;
+        }
+      }
+
+      console.log('🔧 EDITOR SIDEBAR - Initializing properties from:', {
+        selectedElement: selectedElement.tagName,
+        styledElement: styledElement.tagName,
+        storedClassName,
+        storedStyles,
+        styledElementClassName: styledElement.className
+      });
+
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        className: storedClassName || selectedElement.className || '',
+        className: storedClassName || styledElement.className || '',
         styles: (() => {
           try {
             // Safely merge stored styles with element styles
             const elementStyles = {};
-            
-            // Get computed styles for color properties
-            const computedStyle = window.getComputedStyle(selectedElement);
+
+            // Get computed styles for color properties from the actual styled element
+            const computedStyle = window.getComputedStyle(styledElement);
             const colorProperties = ['color', 'backgroundColor', 'borderColor'];
-            
+
             colorProperties.forEach(prop => {
               const computedValue = computedStyle[prop];
               if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
@@ -439,12 +463,12 @@ const EditorSidebar = ({
                 }
               }
             });
-            
-            // Copy element inline styles safely
-            if (selectedElement.style) {
-              for (const property in selectedElement.style) {
-                if (selectedElement.style.hasOwnProperty(property)) {
-                  const value = selectedElement.style[property];
+
+            // Copy element inline styles safely from the actual styled element
+            if (styledElement.style) {
+              for (const property in styledElement.style) {
+                if (styledElement.style.hasOwnProperty(property)) {
+                  const value = styledElement.style[property];
                   if (value && !property.startsWith('webkit') && !property.startsWith('moz')) {
                     try {
                       elementStyles[property] = value;
@@ -456,7 +480,13 @@ const EditorSidebar = ({
                 }
               }
             }
-            
+
+            console.log('🔧 EDITOR SIDEBAR - Merged styles:', {
+              storedStyles,
+              elementStyles,
+              final: { ...storedStyles, ...elementStyles }
+            });
+
             return {
               ...storedStyles,
               ...elementStyles
@@ -891,22 +921,39 @@ const EditorSidebar = ({
     } else {
       // Handle inline style properties - apply immediately
       // PRESERVE TAILWIND CLASSES (bold, italic, font-size, etc.) when changing inline styles
+
+      // For button/input/text slots, find the actual element first
+      let targetElement = selectedElement;
+      if (selectedElement.hasAttribute('data-slot-id')) {
+        const button = selectedElement.querySelector('button');
+        const textElement = selectedElement.querySelector('span[data-editable="true"]');
+        const inputElement = selectedElement.querySelector('input');
+
+        if (button) {
+          targetElement = button;
+        } else if (textElement) {
+          targetElement = textElement;
+        } else if (inputElement) {
+          targetElement = inputElement;
+        }
+      }
+
       const currentInlineStyles = {};
       const currentTailwindClasses = [];
 
-      // Preserve all inline styles
-      if (selectedElement.style) {
-        for (let i = 0; i < selectedElement.style.length; i++) {
-          const styleProp = selectedElement.style[i];
-          const styleValue = selectedElement.style.getPropertyValue(styleProp);
+      // Preserve all inline styles from targetElement (the actual styled element)
+      if (targetElement.style) {
+        for (let i = 0; i < targetElement.style.length; i++) {
+          const styleProp = targetElement.style[i];
+          const styleValue = targetElement.style.getPropertyValue(styleProp);
           if (styleValue && styleValue.trim() !== '') {
             currentInlineStyles[styleProp] = styleValue;
           }
         }
       }
 
-      // Preserve ALL Tailwind classes (not just color classes)
-      const currentClasses = selectedElement.className.split(' ').filter(Boolean);
+      // Preserve ALL Tailwind classes from targetElement (the actual styled element)
+      const currentClasses = (targetElement.className || '').split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         // Preserve font-weight classes (bold, semibold, etc.)
         if (cls.startsWith('font-')) {
@@ -924,29 +971,15 @@ const EditorSidebar = ({
 
       const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
 
-      // For button/input/text slots, apply styles to the actual element, not the wrapper
-      let targetElement = selectedElement;
-      if (selectedElement.hasAttribute('data-slot-id')) {
-        const button = selectedElement.querySelector('button');
-        const textElement = selectedElement.querySelector('span[data-editable="true"]');
-        const inputElement = selectedElement.querySelector('input');
-
-        if (button) {
-          targetElement = button;
-        } else if (textElement) {
-          targetElement = textElement;
-        } else if (inputElement) {
-          targetElement = inputElement;
-        }
-      }
-
       console.log(`🎨 STYLE CHANGE - Applying ${property}: ${formattedValue} to element:`, {
         elementSlotId,
         targetElement: targetElement.tagName,
+        selectedElement: selectedElement.tagName,
         property,
         formattedValue,
         oldValue: targetElement.style[property],
-        preservedTailwindClasses: currentTailwindClasses
+        preservedTailwindClasses: currentTailwindClasses,
+        preservedInlineStyles: Object.keys(currentInlineStyles)
       });
 
       targetElement.style[property] = formattedValue;
@@ -975,27 +1008,28 @@ const EditorSidebar = ({
         }
       });
 
-      // Restore ALL preserved Tailwind classes on the selected element
+      // Restore ALL preserved Tailwind classes on the targetElement (the actual styled element)
       if (currentTailwindClasses.length > 0) {
-        const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+        const elementClasses = (targetElement.className || '').split(' ').filter(Boolean);
         // Remove any Tailwind classes that might have been added/modified
         const cleanClasses = elementClasses.filter(cls => {
           return !cls.startsWith('font-') && cls !== 'italic' &&
                  (!cls.startsWith('text-') || cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right'));
         });
         // Add back ALL the preserved Tailwind classes
-        selectedElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
+        targetElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
 
         console.log('🔄 Restored Tailwind classes:', {
           preserved: currentTailwindClasses,
-          finalClassName: selectedElement.className
+          finalClassName: targetElement.className,
+          targetElementTag: targetElement.tagName
         });
       }
 
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
         ...prev,
-        className: selectedElement.className,
+        className: targetElement.className,
         styles: {
           ...prev.styles,
           ...currentInlineStyles,
@@ -1014,7 +1048,8 @@ const EditorSidebar = ({
         property,
         formattedValue,
         hasCallback: !!onInlineClassChange,
-        preservedClassName: selectedElement.className
+        preservedClassName: targetElement.className,
+        targetElementTag: targetElement.tagName
       });
 
       if (onInlineClassChange) {
@@ -1026,10 +1061,10 @@ const EditorSidebar = ({
         }
         console.log(`💾 STYLE CHANGE - Calling onInlineClassChange:`, {
           elementSlotId,
-          className: selectedElement.className,
+          className: targetElement.className,
           saveStyles
         });
-        onInlineClassChange(elementSlotId, selectedElement.className, saveStyles);
+        onInlineClassChange(elementSlotId, targetElement.className, saveStyles);
       } else {
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
