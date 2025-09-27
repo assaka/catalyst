@@ -286,6 +286,7 @@ class SlotConfigurationService {
 
   // Get initial configuration from appropriate config file based on pageType
   async getInitialConfiguration(pageType = 'cart', fileName = null) {
+    console.log('🏗️ getInitialConfiguration called for:', pageType);
     // Dynamic import to get the appropriate config based on pageType
     let config;
     if (pageType === 'category') {
@@ -301,6 +302,11 @@ class SlotConfigurationService {
     if (config.slots) {
       Object.entries(config.slots).forEach(([key, slot]) => {
         // Copy all serializable properties, ensure no undefined values
+        console.log(`🔧 SLOT ${key}:`, {
+          type: slot.type,
+          component: slot.component,
+          hasComponent: !!slot.component
+        });
         cleanSlots[key] = {
           id: slot.id || key,
           type: slot.type || 'container',
