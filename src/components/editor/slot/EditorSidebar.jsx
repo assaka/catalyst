@@ -488,10 +488,32 @@ const EditorSidebar = ({
                   computedValue,
                   hasValue: !!computedValue,
                   isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent',
-                  storedClassName: storedClassName
+                  storedClassName: storedClassName,
+                  elementId: selectedElement.getAttribute('data-slot-id'),
+                  elementTagName: styledElement.tagName,
+                  elementClassList: Array.from(styledElement.classList),
+                  isBlueColor: computedValue === 'rgb(59, 130, 246)' || computedValue === '#3b82f6',
+                  rgbTo3b82f6: 'rgb(59, 130, 246) converts to #3b82f6'
                 });
 
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
+                  // Special handling for inherited blue color - check if element has explicit color styling
+                  if (computedValue === 'rgb(59, 130, 246)') {
+                    const hasExplicitColor = storedClassName && (
+                      storedClassName.includes('text-') ||
+                      styledElement.style.color ||
+                      styledElement.hasAttribute('style')
+                    );
+
+                    if (!hasExplicitColor) {
+                      console.log('🎨 COLOR PICKER INIT - Detected inherited blue color without explicit styling, using black instead');
+                      elementStyles[prop] = '#000000';
+                      return;
+                    } else {
+                      console.log('🎨 COLOR PICKER INIT - Element has explicit color styling, keeping blue color');
+                    }
+                  }
+
                   // Convert rgb/rgba to hex for color picker
                   if (computedValue.startsWith('rgb')) {
                     const rgbMatch = computedValue.match(/\d+/g);
