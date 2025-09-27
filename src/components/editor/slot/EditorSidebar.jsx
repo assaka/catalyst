@@ -389,18 +389,39 @@ const EditorSidebar = ({
       const findContentElement = (element) => {
         // If element has data-slot-id, it's the GridColumn wrapper, look inside for content
         if (element.hasAttribute('data-slot-id')) {
-          // Look for the first child that has styling classes or is the UnifiedSlotRenderer wrapper
+          // Look for the element that has the STORED styling classes, not just any text-* class
+          if (storedClassName) {
+            const storedClasses = storedClassName.split(' ').filter(Boolean);
+            for (const child of element.children) {
+              if (child.className) {
+                const childClasses = child.className.split(' ').filter(Boolean);
+                // Check if child has any of the stored classes (like text-4xl, font-bold, italic)
+                const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
+                if (hasStoredClasses) {
+                  console.log('🎯 FOUND CORRECT CONTENT ELEMENT:', {
+                    childClassName: child.className,
+                    matchedClasses: storedClasses.filter(cls => childClasses.includes(cls)),
+                    allStoredClasses: storedClasses
+                  });
+                  return child;
+                }
+              }
+            }
+          }
+
+          // Fallback: Look for element with inline styles (color, etc.)
           for (const child of element.children) {
-            if (child.className && (
-              child.className.includes('font-') ||
-              child.className.includes('text-') ||
-              child.className.includes('italic') ||
-              child.style.length > 0
-            )) {
+            if (child.style && child.style.length > 0) {
+              console.log('🎯 FOUND CONTENT ELEMENT BY INLINE STYLES:', {
+                childClassName: child.className,
+                inlineStyles: child.style.cssText
+              });
               return child;
             }
           }
-          // If no styled child found, return the first child (UnifiedSlotRenderer wrapper)
+
+          // Last resort: return first child
+          console.log('🎯 FALLBACK TO FIRST CHILD');
           return element.children[0] || element;
         }
         return element;
@@ -904,16 +925,30 @@ const EditorSidebar = ({
     // Find the content element that has the styling classes (same logic as initialization)
     const findContentElement = (element) => {
       if (element.hasAttribute('data-slot-id')) {
+        // Look for element with stored classes first
+        const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
+        const storedClassName = elementSlotConfig?.className || '';
+
+        if (storedClassName) {
+          const storedClasses = storedClassName.split(' ').filter(Boolean);
+          for (const child of element.children) {
+            if (child.className) {
+              const childClasses = child.className.split(' ').filter(Boolean);
+              const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
+              if (hasStoredClasses) {
+                return child;
+              }
+            }
+          }
+        }
+
+        // Fallback: Look for element with inline styles
         for (const child of element.children) {
-          if (child.className && (
-            child.className.includes('font-') ||
-            child.className.includes('text-') ||
-            child.className.includes('italic') ||
-            child.style.length > 0
-          )) {
+          if (child.style && child.style.length > 0) {
             return child;
           }
         }
+
         return element.children[0] || element;
       }
       return element;
@@ -1061,16 +1096,30 @@ const EditorSidebar = ({
     // Find the content element that has the styling classes (same logic as initialization)
     const findContentElement = (element) => {
       if (element.hasAttribute('data-slot-id')) {
+        // Look for element with stored classes first
+        const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
+        const storedClassName = elementSlotConfig?.className || '';
+
+        if (storedClassName) {
+          const storedClasses = storedClassName.split(' ').filter(Boolean);
+          for (const child of element.children) {
+            if (child.className) {
+              const childClasses = child.className.split(' ').filter(Boolean);
+              const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
+              if (hasStoredClasses) {
+                return child;
+              }
+            }
+          }
+        }
+
+        // Fallback: Look for element with inline styles
         for (const child of element.children) {
-          if (child.className && (
-            child.className.includes('font-') ||
-            child.className.includes('text-') ||
-            child.className.includes('italic') ||
-            child.style.length > 0
-          )) {
+          if (child.style && child.style.length > 0) {
             return child;
           }
         }
+
         return element.children[0] || element;
       }
       return element;
