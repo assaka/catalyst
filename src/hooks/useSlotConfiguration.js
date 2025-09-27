@@ -1360,6 +1360,15 @@ export function useSlotConfiguration({
       const alignmentClasses = ['text-left', 'text-center', 'text-right'];
       const allClasses = className.split(' ').filter(Boolean);
 
+      console.log('🔄 handleClassChange:', {
+        slotId,
+        incomingClassName: className,
+        incomingStyles: styles,
+        existingClassName: updatedSlots[slotId].className,
+        existingStyles: updatedSlots[slotId].styles,
+        isAlignmentChange
+      });
+
       if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
         // For alignment changes, only alignment goes to parent, everything else to element
         const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
@@ -1376,6 +1385,13 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
+
+        console.log('✅ handleClassChange - Alignment mode:', {
+          slotId,
+          savedClassName: elementClassList.join(' '),
+          savedParentClassName: alignmentClassList.join(' '),
+          savedStyles: mergedStyles
+        });
       } else {
         // For text styling (bold, italic, colors), keep existing parentClassName
         // and only update className for the text element
@@ -1389,6 +1405,13 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
+
+        console.log('✅ handleClassChange - Standard mode:', {
+          slotId,
+          savedClassName: className,
+          savedStyles: mergedStyles,
+          keptParentClassName: updatedSlots[slotId].parentClassName
+        });
       }
     }
 

@@ -162,7 +162,15 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
-
+    // Debug log for text slots
+    if (type === 'text' && context === 'editor') {
+      console.log('📋 RENDER TEXT SLOT:', {
+        slotId: id,
+        originalClassName: className,
+        processedClassName: processedClassName,
+        styles: styles
+      });
+    }
 
     // Text Element
     if (type === 'text') {
