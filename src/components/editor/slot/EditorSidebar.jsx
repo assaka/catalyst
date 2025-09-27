@@ -538,9 +538,14 @@ const EditorSidebar = ({
             }
 
             // Extract color from Tailwind classes if no inline color is set
-            const currentClassName = storedClassName || styledElement.className || '';
+            // Check both the wrapper (selectedElement) and content (styledElement) for color classes
+            const wrapperClassName = selectedElement.className || '';
+            const contentClassName = styledElement.className || '';
+            const storedClassNames = storedClassName || '';
+            const allClassNames = `${wrapperClassName} ${contentClassName} ${storedClassNames}`;
+
             if (!elementStyles.color && !storedStyles?.color) {
-              const tailwindColor = getTailwindColorHex(currentClassName);
+              const tailwindColor = getTailwindColorHex(allClassNames);
               if (tailwindColor) {
                 elementStyles.color = tailwindColor;
               }
@@ -549,7 +554,11 @@ const EditorSidebar = ({
             console.log('🔧 EDITOR SIDEBAR - Merged styles:', {
               storedStyles,
               elementStyles,
-              tailwindColor: getTailwindColorHex(currentClassName),
+              wrapperClassName,
+              contentClassName,
+              storedClassNames,
+              allClassNames,
+              detectedTailwindColor: getTailwindColorHex(allClassNames),
               final: { ...storedStyles, ...elementStyles }
             });
 
@@ -840,18 +849,18 @@ const EditorSidebar = ({
       }
     }
     
-    console.log('🟠 Target element check:', { targetElement, hasTargetElement: !!targetElement });
-    if (targetElement) {
-      console.log('🟠 Processing alignment with target element');
-      // Remove existing text alignment classes from target
-      const currentClasses = targetElement.className.split(' ').filter(Boolean);
-      const newClasses = currentClasses.filter(cls => 
-        !cls.startsWith('text-left') && 
-        !cls.startsWith('text-center') && 
-        !cls.startsWith('text-right')
-      );
-      newClasses.push(`text-${value}`);
-      targetElement.className = newClasses.join(' ');
+    console.log('🟠 Processing alignment with styled element (simplified approach)');
+
+    // Apply alignment directly to the styled element for consistency
+    // Remove existing text alignment classes from styled element
+    const currentClasses = styledElement.className.split(' ').filter(Boolean);
+    const newClasses = currentClasses.filter(cls =>
+      !cls.startsWith('text-left') &&
+      !cls.startsWith('text-center') &&
+      !cls.startsWith('text-right')
+    );
+    newClasses.push(`text-${value}`);
+    styledElement.className = newClasses.join(' ');
       
       // Restore preserved inline styles on the styled element
       Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
@@ -880,21 +889,10 @@ const EditorSidebar = ({
         }
       }));
       
-      // Combine alignment classes (from target) with element classes (from selected element)
-      // This ensures both are saved together so they can be properly separated on load
-      const targetAlignmentClasses = targetElement.className.split(' ').filter(cls => 
-        cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right')
-      );
-      const elementClasses = styledElement.className.split(' ').filter(Boolean);
-      const combinedClasses = [...elementClasses, ...targetAlignmentClasses].join(' ');
-      
-      // Save immediately using parent callback with preserved styles
+      // Save the styled element classes directly (alignment is now included)
       if (onInlineClassChange) {
-        onInlineClassChange(elementSlotId, combinedClasses, currentInlineStyles, true);
+        onInlineClassChange(elementSlotId, styledElement.className, currentInlineStyles, true);
       }
-    } else {
-      console.log('🟠 No target element found - alignment change aborted');
-    }
 
     // Trigger alignment update for button state - do this after a delay to avoid interrupting the callback
     setTimeout(() => {
