@@ -413,6 +413,50 @@ const EditorSidebar = ({
         elementStyleLength: selectedElement.style?.length || 0
       });
 
+      // Function to extract hex color from Tailwind class name
+      const getTailwindColorHex = (className) => {
+        const tailwindColors = {
+          // Tailwind color palette mapping to hex values
+          'text-white': '#ffffff', 'text-black': '#000000',
+          'text-gray-50': '#f9fafb', 'text-gray-100': '#f3f4f6', 'text-gray-200': '#e5e7eb',
+          'text-gray-300': '#d1d5db', 'text-gray-400': '#9ca3af', 'text-gray-500': '#6b7280',
+          'text-gray-600': '#4b5563', 'text-gray-700': '#374151', 'text-gray-800': '#1f2937',
+          'text-gray-900': '#111827',
+          'text-red-50': '#fef2f2', 'text-red-100': '#fee2e2', 'text-red-200': '#fecaca',
+          'text-red-300': '#fca5a5', 'text-red-400': '#f87171', 'text-red-500': '#ef4444',
+          'text-red-600': '#dc2626', 'text-red-700': '#b91c1c', 'text-red-800': '#991b1b',
+          'text-red-900': '#7f1d1d',
+          'text-blue-50': '#eff6ff', 'text-blue-100': '#dbeafe', 'text-blue-200': '#bfdbfe',
+          'text-blue-300': '#93c5fd', 'text-blue-400': '#60a5fa', 'text-blue-500': '#3b82f6',
+          'text-blue-600': '#2563eb', 'text-blue-700': '#1d4ed8', 'text-blue-800': '#1e40af',
+          'text-blue-900': '#1e3a8a',
+          'text-green-50': '#f0fdf4', 'text-green-100': '#dcfce7', 'text-green-200': '#bbf7d0',
+          'text-green-300': '#86efac', 'text-green-400': '#4ade80', 'text-green-500': '#22c55e',
+          'text-green-600': '#16a34a', 'text-green-700': '#15803d', 'text-green-800': '#166534',
+          'text-green-900': '#14532d',
+          'text-yellow-50': '#fefce8', 'text-yellow-100': '#fef3c7', 'text-yellow-200': '#fed7aa',
+          'text-yellow-300': '#fdba74', 'text-yellow-400': '#fb923c', 'text-yellow-500': '#f59e0b',
+          'text-yellow-600': '#d97706', 'text-yellow-700': '#b45309', 'text-yellow-800': '#92400e',
+          'text-yellow-900': '#78350f',
+          'text-purple-50': '#faf5ff', 'text-purple-100': '#f3e8ff', 'text-purple-200': '#e9d5ff',
+          'text-purple-300': '#d8b4fe', 'text-purple-400': '#c084fc', 'text-purple-500': '#a855f7',
+          'text-purple-600': '#9333ea', 'text-purple-700': '#7c3aed', 'text-purple-800': '#6b21a8',
+          'text-purple-900': '#581c87',
+          'text-pink-50': '#fdf2f8', 'text-pink-100': '#fce7f3', 'text-pink-200': '#fbcfe8',
+          'text-pink-300': '#f9a8d4', 'text-pink-400': '#f472b6', 'text-pink-500': '#ec4899',
+          'text-pink-600': '#db2777', 'text-pink-700': '#be185d', 'text-pink-800': '#9d174d',
+          'text-pink-900': '#831843'
+        };
+
+        const classes = className.split(' ');
+        for (const cls of classes) {
+          if (tailwindColors[cls]) {
+            return tailwindColors[cls];
+          }
+        }
+        return null;
+      };
+
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
@@ -470,9 +514,19 @@ const EditorSidebar = ({
               }
             }
 
+            // Extract color from Tailwind classes if no inline color is set
+            const currentClassName = storedClassName || selectedElement.className || '';
+            if (!elementStyles.color && !storedStyles?.color) {
+              const tailwindColor = getTailwindColorHex(currentClassName);
+              if (tailwindColor) {
+                elementStyles.color = tailwindColor;
+              }
+            }
+
             console.log('🔧 EDITOR SIDEBAR - Merged styles:', {
               storedStyles,
               elementStyles,
+              tailwindColor: getTailwindColorHex(currentClassName),
               final: { ...storedStyles, ...elementStyles }
             });
 

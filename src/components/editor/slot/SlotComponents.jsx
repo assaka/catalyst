@@ -601,6 +601,25 @@ export function GridColumn({
   };
 
 
+  // Filter slot.className to only include styling classes, not layout classes that would conflict with wrapper
+  const getFilteredSlotClasses = () => {
+    if (!slot?.className) return '';
+
+    // Layout classes that shouldn't be duplicated on GridColumn wrapper
+    const layoutClasses = [
+      'relative', 'responsive-slot', 'col-span-1', 'col-span-2', 'col-span-3', 'col-span-4',
+      'col-span-5', 'col-span-6', 'col-span-7', 'col-span-8', 'col-span-9', 'col-span-10',
+      'col-span-11', 'col-span-12', 'p-1', 'p-2', 'p-3', 'p-4', 'p-5', 'p-6', 'rounded-lg',
+      'overflow-hidden', 'transition-all', 'duration-200', 'border-2', 'border-blue-500',
+      'border-dashed', 'shadow-md', 'shadow-blue-200/40'
+    ];
+
+    return slot.className
+      .split(' ')
+      .filter(cls => !layoutClasses.includes(cls))
+      .join(' ');
+  };
+
   return (
     <div
       className={`${
@@ -617,7 +636,7 @@ export function GridColumn({
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot ${colSpanClass} ${slot?.className || ''}`}
+      } relative responsive-slot ${colSpanClass} ${getFilteredSlotClasses()}`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       data-slot-id={slotId}
