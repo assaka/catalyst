@@ -853,46 +853,46 @@ const EditorSidebar = ({
 
     // Apply alignment directly to the styled element for consistency
     // Remove existing text alignment classes from styled element
-    const currentClasses = styledElement.className.split(' ').filter(Boolean);
-    const newClasses = currentClasses.filter(cls =>
+    const alignmentClasses = styledElement.className.split(' ').filter(Boolean);
+    const newClasses = alignmentClasses.filter(cls =>
       !cls.startsWith('text-left') &&
       !cls.startsWith('text-center') &&
       !cls.startsWith('text-right')
     );
     newClasses.push(`text-${value}`);
     styledElement.className = newClasses.join(' ');
-      
-      // Restore preserved inline styles on the styled element
-      Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
-        styledElement.style.setProperty(styleProp, styleValue);
+
+    // Restore preserved inline styles on the styled element
+    Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
+      styledElement.style.setProperty(styleProp, styleValue);
+    });
+
+    // Restore preserved Tailwind color classes on the styled element
+    if (currentColorClasses.length > 0) {
+      const elementClasses = styledElement.className.split(' ').filter(Boolean);
+      // Remove any existing color classes to avoid conflicts
+      const cleanClasses = elementClasses.filter(cls => {
+        const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
+        return !isColorClass;
       });
+      // Add back the preserved color classes
+      styledElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+    }
 
-      // Restore preserved Tailwind color classes on the styled element
-      if (currentColorClasses.length > 0) {
-        const elementClasses = styledElement.className.split(' ').filter(Boolean);
-        // Remove any existing color classes to avoid conflicts
-        const cleanClasses = elementClasses.filter(cls => {
-          const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
-          return !isColorClass;
-        });
-        // Add back the preserved color classes
-        styledElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+    // Update local state with preserved styles
+    setElementProperties(prev => ({
+      ...prev,
+      className: styledElement.className,
+      styles: {
+        ...prev.styles,
+        ...currentInlineStyles
       }
+    }));
 
-      // Update local state with preserved styles
-      setElementProperties(prev => ({
-        ...prev,
-        className: styledElement.className,
-        styles: {
-          ...prev.styles,
-          ...currentInlineStyles
-        }
-      }));
-      
-      // Save the styled element classes directly (alignment is now included)
-      if (onInlineClassChange) {
-        onInlineClassChange(elementSlotId, styledElement.className, currentInlineStyles, true);
-      }
+    // Save the styled element classes directly (alignment is now included)
+    if (onInlineClassChange) {
+      onInlineClassChange(elementSlotId, styledElement.className, currentInlineStyles, true);
+    }
 
     // Trigger alignment update for button state - do this after a delay to avoid interrupting the callback
     setTimeout(() => {
