@@ -337,12 +337,20 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
     });
     return newDraft;
   } else {
-    console.log('🏗️ BACKEND - Creating new init record with minimal configuration');
-    // Create minimal init record - will be populated later
-    const newInit = await this.create({
-      user_id: userId,
-      store_id: storeId,
-      configuration: {
+    console.log('🏗️ BACKEND - Creating new init record');
+
+    // Try to copy from latest published configuration instead of creating empty
+    const latestPublished = await this.findLatestPublished(storeId, pageType);
+
+    let configurationToUse;
+    let statusToUse = 'init';
+    if (latestPublished && latestPublished.configuration) {
+      console.log('✅ BACKEND - Copying configuration from latest published version');
+      configurationToUse = latestPublished.configuration;
+      statusToUse = 'draft'; // Set to draft since it's already populated from published
+    } else {
+      console.log('⚠️ BACKEND - No published version found, creating minimal init configuration');
+      configurationToUse = {
         page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
         slot_type: `${pageType}_layout`,
         slots: {},
@@ -351,17 +359,24 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
           lastModified: new Date().toISOString(),
           status: 'init'
         }
-      },
+      };
+    }
+
+    // Create init/draft record (draft if copied from published, init if empty)
+    const newRecord = await this.create({
+      user_id: userId,
+      store_id: storeId,
+      configuration: configurationToUse,
       version: '1.0',
       is_active: true,
-      status: 'init', // Starts as init, will become draft when populated
+      status: statusToUse, // 'draft' if copied from published, 'init' if empty
       version_number: (maxVersion || 0) + 1,
       page_type: pageType,
       parent_version_id: null,
       has_unpublished_changes: false
     });
-    console.log('✅ BACKEND - Created init record:', newInit.id);
-    return newInit;
+    console.log('✅ BACKEND - Created new record with status:', statusToUse, 'ID:', newRecord.id);
+    return newRecord;
   }
 };
 
