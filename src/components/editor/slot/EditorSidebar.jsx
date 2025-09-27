@@ -538,27 +538,51 @@ const EditorSidebar = ({
             }
 
             // Extract color from Tailwind classes if no inline color is set
-            // Check both the wrapper (selectedElement) and content (styledElement) for color classes
-            const wrapperClassName = selectedElement.className || '';
+            // Primary source: content element (styledElement) which has actual styling classes
             const contentClassName = styledElement.className || '';
             const storedClassNames = storedClassName || '';
-            const allClassNames = `${wrapperClassName} ${contentClassName} ${storedClassNames}`;
+
+            // For color detection, prioritize content element over stored classes
+            let colorSource = contentClassName || storedClassNames;
 
             if (!elementStyles.color && !storedStyles?.color) {
-              const tailwindColor = getTailwindColorHex(allClassNames);
+              const tailwindColor = getTailwindColorHex(colorSource);
               if (tailwindColor) {
                 elementStyles.color = tailwindColor;
+              }
+            }
+
+            // Also check for actual computed color from content element
+            if (!elementStyles.color) {
+              const contentComputedStyle = window.getComputedStyle(styledElement);
+              const contentColor = contentComputedStyle.color;
+              if (contentColor && contentColor !== 'rgba(0, 0, 0, 0)' && contentColor !== 'transparent') {
+                if (contentColor.startsWith('rgb')) {
+                  try {
+                    const rgbMatch = contentColor.match(/\d+/g);
+                    if (rgbMatch && rgbMatch.length >= 3) {
+                      const hex = '#' + rgbMatch.slice(0, 3)
+                        .map(x => parseInt(x).toString(16).padStart(2, '0'))
+                        .join('');
+                      elementStyles.color = hex;
+                    }
+                  } catch (e) {
+                    elementStyles.color = contentColor;
+                  }
+                } else if (contentColor.startsWith('#')) {
+                  elementStyles.color = contentColor;
+                }
               }
             }
 
             console.log('🔧 EDITOR SIDEBAR - Merged styles:', {
               storedStyles,
               elementStyles,
-              wrapperClassName,
               contentClassName,
               storedClassNames,
-              allClassNames,
-              detectedTailwindColor: getTailwindColorHex(allClassNames),
+              colorSource,
+              detectedTailwindColor: getTailwindColorHex(colorSource),
+              contentComputedColor: window.getComputedStyle(styledElement).color,
               final: { ...storedStyles, ...elementStyles }
             });
 
@@ -1099,10 +1123,20 @@ const EditorSidebar = ({
         });
       }
 
-      // CRITICAL: Filter out editor-only classes before saving!
+      // CRITICAL: Filter out editor-only classes AND grid wrapper classes before saving!
       // Editor adds border-2, border-blue-500, border-dashed for selection indicators
-      // These should NOT be saved to the database
-      const editorOnlyClasses = ['border-2', 'border-blue-500', 'border-dashed', 'shadow-md', 'shadow-blue-200/40'];
+      // GridColumn adds border, rounded-lg, overflow-hidden, p-2, responsive-slot, col-span-*, etc.
+      // These should NOT be saved to the database or applied to content elements
+      const editorOnlyClasses = [
+        // Editor selection indicators
+        'border-2', 'border-blue-500', 'border-dashed', 'shadow-md', 'shadow-blue-200/40',
+        // GridColumn wrapper classes that should not be on content
+        'border', 'rounded-lg', 'overflow-hidden', 'p-2', 'responsive-slot', 'relative',
+        'cursor-grab', 'cursor-grabbing', 'transition-all', 'duration-200',
+        // Grid layout classes
+        'col-span-1', 'col-span-2', 'col-span-3', 'col-span-4', 'col-span-5', 'col-span-6',
+        'col-span-7', 'col-span-8', 'col-span-9', 'col-span-10', 'col-span-11', 'col-span-12'
+      ];
       const classNameForSave = targetElement.className
         .split(' ')
         .filter(cls => !editorOnlyClasses.includes(cls))
@@ -1142,17 +1176,34 @@ const EditorSidebar = ({
 
       if (onInlineClassChange) {
         // Include auto-set border properties in save data
+        // CRITICAL: Also filter out grid wrapper inline styles before saving!
+        // Grid wrapper adds z-index, grid-column, etc. that should not be on content
+        const gridWrapperStyles = ['z-index', 'zIndex', 'grid-column', 'gridColumn'];
         const saveStyles = { ...currentInlineStyles, [property]: formattedValue };
+
+        // Remove grid wrapper styles
+        gridWrapperStyles.forEach(styleProp => {
+          delete saveStyles[styleProp];
+        });
+
+        // Include auto-set border properties in save data
         if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
           saveStyles.borderStyle = targetElement.style.borderStyle;
           saveStyles.borderColor = targetElement.style.borderColor;
         }
+
+        console.log('🧹 Filtered styles before save:', {
+          originalStyles: { ...currentInlineStyles, [property]: formattedValue },
+          filteredStyles: saveStyles,
+          removedStyles: gridWrapperStyles.filter(prop => (prop in currentInlineStyles) || (prop === property))
+        });
+
         console.log(`💾 STYLE CHANGE - Calling onInlineClassChange with:`, {
           elementSlotId,
-          className: targetElement.className,
+          className: classNameForSave, // Use filtered className, not original
           saveStyles
         });
-        onInlineClassChange(elementSlotId, targetElement.className, saveStyles);
+        onInlineClassChange(elementSlotId, classNameForSave, saveStyles); // Use filtered className
       } else {
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }

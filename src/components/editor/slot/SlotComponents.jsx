@@ -601,31 +601,6 @@ export function GridColumn({
   };
 
 
-  // Add only essential styling classes that won't interfere with grid layout
-  const getEssentialStylingClasses = () => {
-    if (!slot?.className) return '';
-
-    return slot.className
-      .split(' ')
-      .filter(cls => {
-        // Only include text color classes - these are essential for color picker
-        if (cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate)-?\d*$/)) return true;
-
-        // Include font weight (for class preservation detection)
-        if (cls.match(/^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/)) return true;
-
-        // Include italic (for class preservation detection)
-        if (cls === 'italic') return true;
-
-        // Include text size (for class preservation detection)
-        if (cls.match(/^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/)) return true;
-
-        // Exclude everything else (width, display, layout, spacing, etc.)
-        return false;
-      })
-      .join(' ');
-  };
-
   return (
     <div
       className={`${
@@ -642,7 +617,7 @@ export function GridColumn({
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot ${colSpanClass} ${getEssentialStylingClasses()}`}
+      } relative responsive-slot ${colSpanClass}`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       data-slot-id={slotId}

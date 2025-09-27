@@ -17,6 +17,14 @@ export function processVariables(content, context, pageData = {}) {
     return content;
   }
 
+  // Debug gallery-related template processing
+  if (content.includes('gallery-container') || content.includes('product_gallery_layout')) {
+    console.log('🎨 PROCESS VARIABLES:', {
+      content,
+      context: context?.settings,
+      pageData: pageData?.settings
+    });
+  }
 
   let processedContent = content;
 
@@ -28,6 +36,11 @@ export function processVariables(content, context, pageData = {}) {
 
   // 3. Process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
+
+  // Debug gallery-related results
+  if (content.includes('gallery-container') || content.includes('product_gallery_layout')) {
+    console.log('🎨 PROCESSED RESULT:', processedContent);
+  }
 
   return processedContent;
 }
@@ -143,6 +156,21 @@ function processSimpleVariables(content, context, pageData) {
  */
 function evaluateCondition(condition, context, pageData) {
   try {
+    // Handle eq helper function: (eq variable "value")
+    const eqMatch = condition.match(/\(eq\s+([^"\s]+)\s+"([^"]+)"\)/);
+    if (eqMatch) {
+      const [, variablePath, expectedValue] = eqMatch;
+      const actualValue = getNestedValue(variablePath, context, pageData);
+      console.log('🔍 EVAL CONDITION:', {
+        condition,
+        variablePath,
+        expectedValue,
+        actualValue,
+        result: actualValue === expectedValue
+      });
+      return actualValue === expectedValue;
+    }
+
     // Handle simple property checks
     if (condition.includes('>') || condition.includes('<') || condition.includes('==')) {
       // Parse comparison operators
