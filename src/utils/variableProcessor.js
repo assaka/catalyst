@@ -18,11 +18,13 @@ export function processVariables(content, context, pageData = {}) {
   }
 
   // Debug gallery-related template processing
-  if (content.includes('gallery-container') || content.includes('product_gallery_layout')) {
+  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position')) {
     console.log('🎨 PROCESS VARIABLES:', {
       content,
-      context: context?.settings,
-      pageData: pageData?.settings
+      contextSettings: context?.settings,
+      pageDataSettings: pageData?.settings,
+      product_gallery_layout: context?.settings?.product_gallery_layout || pageData?.settings?.product_gallery_layout,
+      vertical_gallery_position: context?.settings?.vertical_gallery_position || pageData?.settings?.vertical_gallery_position
     });
   }
 
@@ -38,7 +40,7 @@ export function processVariables(content, context, pageData = {}) {
   processedContent = processSimpleVariables(processedContent, context, pageData);
 
   // Debug gallery-related results
-  if (content.includes('gallery-container') || content.includes('product_gallery_layout')) {
+  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position')) {
     console.log('🎨 PROCESSED RESULT:', processedContent);
   }
 
@@ -62,6 +64,12 @@ function processConditionals(content, context, pageData) {
       hasMatches = true;
       const isTrue = evaluateCondition(condition, context, pageData);
       const selectedContent = isTrue ? trueContent : falseContent;
+
+      console.log('🔄 CONDITIONAL:', {
+        condition,
+        isTrue,
+        selectedContent: selectedContent.substring(0, 100)
+      });
 
       // Recursively process any nested conditionals in the selected content
       return processConditionals(selectedContent, context, pageData);
