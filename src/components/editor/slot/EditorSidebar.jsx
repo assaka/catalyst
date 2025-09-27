@@ -881,8 +881,8 @@ const EditorSidebar = ({
     }
 
     // CRITICAL: Preserve color classes from DATABASE, NOT from contaminated DOM element!
-    const slotConfig = slotConfigs?.[elementSlotId];
-    const databaseClassName = slotConfig?.className || '';
+    const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
+    const databaseClassName = elementSlotConfig?.className || '';
 
     console.log('💾 Reading color classes from DATABASE for alignment:', {
       elementSlotId,
@@ -993,7 +993,7 @@ const EditorSidebar = ({
     setTimeout(() => {
       setAlignmentUpdate(prev => prev + 1);
     }, 0);
-  }, [selectedElement, onInlineClassChange, isWrapperOrEditorClass, slotConfigs]);
+  }, [selectedElement, onInlineClassChange, isWrapperOrEditorClass, slotId, slotConfig, allSlots]);
 
   // Simple property change handler - direct DOM updates and immediate saves
   const handlePropertyChange = useCallback((property, value) => {
@@ -1048,8 +1048,8 @@ const EditorSidebar = ({
       }
 
       // CRITICAL: Preserve color classes from DATABASE, NOT from contaminated DOM element!
-      const slotConfig = slotConfigs?.[elementSlotId];
-      const databaseClassName = slotConfig?.className || '';
+      const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
+      const databaseClassName = elementSlotConfig?.className || '';
 
       console.log('💾 Reading color classes from DATABASE for class-based properties:', {
         elementSlotId,
@@ -1161,8 +1161,8 @@ const EditorSidebar = ({
 
       // CRITICAL: Preserve classes from DATABASE (storedClassName), NOT from contaminated DOM element!
       // The DOM element might have wrapper classes, but storedClassName is the clean source of truth
-      const slotConfig = slotConfigs?.[elementSlotId];
-      const databaseClassName = slotConfig?.className || '';
+      const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
+      const databaseClassName = elementSlotConfig?.className || '';
 
       console.log('💾 Reading classes from DATABASE for preservation:', {
         elementSlotId,
@@ -1323,7 +1323,7 @@ const EditorSidebar = ({
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
     }
-  }, [selectedElement, handleAlignmentChange, onInlineClassChange, isWrapperOrEditorClass, slotConfigs]);
+  }, [selectedElement, handleAlignmentChange, onInlineClassChange, isWrapperOrEditorClass, slotId, slotConfig, allSlots]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">
