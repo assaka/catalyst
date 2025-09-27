@@ -505,12 +505,21 @@ const EditorSidebar = ({
                       const hex = '#' + rgbMatch.slice(0, 3)
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
-                      console.log('🎨 Computed color to hex:', { computedValue, hex });
+                      console.log('🎨 COLOR PICKER DEBUG - Computed RGB to hex:', {
+                        computedValue,
+                        rgbMatch,
+                        hex,
+                        willSetInElementStyles: true
+                      });
                       elementStyles[prop] = hex;
+                    } else {
+                      console.log('🎨 COLOR PICKER DEBUG - RGB match failed:', { computedValue, rgbMatch });
                     }
                   } else if (computedValue.startsWith('#')) {
-                    console.log('🎨 Already hex color:', computedValue);
+                    console.log('🎨 COLOR PICKER DEBUG - Already hex color:', computedValue);
                     elementStyles[prop] = computedValue;
+                  } else {
+                    console.log('🎨 COLOR PICKER DEBUG - Unknown color format:', computedValue);
                   }
                 }
               } else {
@@ -600,6 +609,8 @@ const EditorSidebar = ({
               }
             }
 
+            const finalStyles = { ...storedStyles, ...elementStyles };
+
             console.log('🔧 EDITOR SIDEBAR - Merged styles:', {
               storedStyles,
               elementStyles,
@@ -608,13 +619,16 @@ const EditorSidebar = ({
               colorSource,
               detectedTailwindColor: getTailwindColorHex(colorSource),
               contentComputedColor: window.getComputedStyle(styledElement).color,
-              final: { ...storedStyles, ...elementStyles }
+              final: finalStyles
             });
 
-            return {
-              ...storedStyles,
-              ...elementStyles
-            };
+            console.log('🎨 COLOR PICKER DEBUG - Final color value for picker:', {
+              finalColorValue: finalStyles.color,
+              isValidHex: finalStyles.color && finalStyles.color.startsWith('#'),
+              pickerWillShow: finalStyles.color && finalStyles.color.startsWith('#') ? finalStyles.color : '#000000'
+            });
+
+            return finalStyles;
           } catch (error) {
             console.warn('Error merging styles:', error);
             return { ...storedStyles };
