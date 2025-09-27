@@ -456,26 +456,70 @@ const EditorSidebar = ({
           'text-red-300': '#fca5a5', 'text-red-400': '#f87171', 'text-red-500': '#ef4444',
           'text-red-600': '#dc2626', 'text-red-700': '#b91c1c', 'text-red-800': '#991b1b',
           'text-red-900': '#7f1d1d',
-          'text-blue-50': '#eff6ff', 'text-blue-100': '#dbeafe', 'text-blue-200': '#bfdbfe',
-          'text-blue-300': '#93c5fd', 'text-blue-400': '#60a5fa', 'text-blue-500': '#3b82f6',
-          'text-blue-600': '#2563eb', 'text-blue-700': '#1d4ed8', 'text-blue-800': '#1e40af',
-          'text-blue-900': '#1e3a8a',
+          'text-orange-50': '#fff7ed', 'text-orange-100': '#ffedd5', 'text-orange-200': '#fed7aa',
+          'text-orange-300': '#fdba74', 'text-orange-400': '#fb923c', 'text-orange-500': '#f97316',
+          'text-orange-600': '#ea580c', 'text-orange-700': '#c2410c', 'text-orange-800': '#9a3412',
+          'text-orange-900': '#7c2d12',
+          'text-amber-50': '#fffbeb', 'text-amber-100': '#fef3c7', 'text-amber-200': '#fde68a',
+          'text-amber-300': '#fcd34d', 'text-amber-400': '#fbbf24', 'text-amber-500': '#f59e0b',
+          'text-amber-600': '#d97706', 'text-amber-700': '#b45309', 'text-amber-800': '#92400e',
+          'text-amber-900': '#78350f',
+          'text-yellow-50': '#fefce8', 'text-yellow-100': '#fef3c7', 'text-yellow-200': '#fef08a',
+          'text-yellow-300': '#fde047', 'text-yellow-400': '#facc15', 'text-yellow-500': '#eab308',
+          'text-yellow-600': '#ca8a04', 'text-yellow-700': '#a16207', 'text-yellow-800': '#854d0e',
+          'text-yellow-900': '#713f12',
+          'text-lime-50': '#f7fee7', 'text-lime-100': '#ecfccb', 'text-lime-200': '#d9f99d',
+          'text-lime-300': '#bef264', 'text-lime-400': '#a3e635', 'text-lime-500': '#84cc16',
+          'text-lime-600': '#65a30d', 'text-lime-700': '#4d7c0f', 'text-lime-800': '#365314',
+          'text-lime-900': '#1a2e05',
           'text-green-50': '#f0fdf4', 'text-green-100': '#dcfce7', 'text-green-200': '#bbf7d0',
           'text-green-300': '#86efac', 'text-green-400': '#4ade80', 'text-green-500': '#22c55e',
           'text-green-600': '#16a34a', 'text-green-700': '#15803d', 'text-green-800': '#166534',
           'text-green-900': '#14532d',
-          'text-yellow-50': '#fefce8', 'text-yellow-100': '#fef3c7', 'text-yellow-200': '#fed7aa',
-          'text-yellow-300': '#fdba74', 'text-yellow-400': '#fb923c', 'text-yellow-500': '#f59e0b',
-          'text-yellow-600': '#d97706', 'text-yellow-700': '#b45309', 'text-yellow-800': '#92400e',
-          'text-yellow-900': '#78350f',
+          'text-emerald-50': '#ecfdf5', 'text-emerald-100': '#d1fae5', 'text-emerald-200': '#a7f3d0',
+          'text-emerald-300': '#6ee7b7', 'text-emerald-400': '#34d399', 'text-emerald-500': '#10b981',
+          'text-emerald-600': '#059669', 'text-emerald-700': '#047857', 'text-emerald-800': '#065f46',
+          'text-emerald-900': '#064e3b',
+          'text-teal-50': '#f0fdfa', 'text-teal-100': '#ccfbf1', 'text-teal-200': '#99f6e4',
+          'text-teal-300': '#5eead4', 'text-teal-400': '#2dd4bf', 'text-teal-500': '#14b8a6',
+          'text-teal-600': '#0d9488', 'text-teal-700': '#0f766e', 'text-teal-800': '#115e59',
+          'text-teal-900': '#134e4a',
+          'text-cyan-50': '#ecfeff', 'text-cyan-100': '#cffafe', 'text-cyan-200': '#a5f3fc',
+          'text-cyan-300': '#67e8f9', 'text-cyan-400': '#22d3ee', 'text-cyan-500': '#06b6d4',
+          'text-cyan-600': '#0891b2', 'text-cyan-700': '#0e7490', 'text-cyan-800': '#155e75',
+          'text-cyan-900': '#164e63',
+          'text-sky-50': '#f0f9ff', 'text-sky-100': '#e0f2fe', 'text-sky-200': '#bae6fd',
+          'text-sky-300': '#7dd3fc', 'text-sky-400': '#38bdf8', 'text-sky-500': '#0ea5e9',
+          'text-sky-600': '#0284c7', 'text-sky-700': '#0369a1', 'text-sky-800': '#075985',
+          'text-sky-900': '#0c4a6e',
+          'text-blue-50': '#eff6ff', 'text-blue-100': '#dbeafe', 'text-blue-200': '#bfdbfe',
+          'text-blue-300': '#93c5fd', 'text-blue-400': '#60a5fa', 'text-blue-500': '#3b82f6',
+          'text-blue-600': '#2563eb', 'text-blue-700': '#1d4ed8', 'text-blue-800': '#1e40af',
+          'text-blue-900': '#1e3a8a',
+          'text-indigo-50': '#eef2ff', 'text-indigo-100': '#e0e7ff', 'text-indigo-200': '#c7d2fe',
+          'text-indigo-300': '#a5b4fc', 'text-indigo-400': '#818cf8', 'text-indigo-500': '#6366f1',
+          'text-indigo-600': '#4f46e5', 'text-indigo-700': '#4338ca', 'text-indigo-800': '#3730a3',
+          'text-indigo-900': '#312e81',
+          'text-violet-50': '#f5f3ff', 'text-violet-100': '#ede9fe', 'text-violet-200': '#ddd6fe',
+          'text-violet-300': '#c4b5fd', 'text-violet-400': '#a78bfa', 'text-violet-500': '#8b5cf6',
+          'text-violet-600': '#7c3aed', 'text-violet-700': '#6d28d9', 'text-violet-800': '#5b21b6',
+          'text-violet-900': '#4c1d95',
           'text-purple-50': '#faf5ff', 'text-purple-100': '#f3e8ff', 'text-purple-200': '#e9d5ff',
           'text-purple-300': '#d8b4fe', 'text-purple-400': '#c084fc', 'text-purple-500': '#a855f7',
           'text-purple-600': '#9333ea', 'text-purple-700': '#7c3aed', 'text-purple-800': '#6b21a8',
           'text-purple-900': '#581c87',
+          'text-fuchsia-50': '#fdf4ff', 'text-fuchsia-100': '#fae8ff', 'text-fuchsia-200': '#f5d0fe',
+          'text-fuchsia-300': '#f0abfc', 'text-fuchsia-400': '#e879f9', 'text-fuchsia-500': '#d946ef',
+          'text-fuchsia-600': '#c026d3', 'text-fuchsia-700': '#a21caf', 'text-fuchsia-800': '#86198f',
+          'text-fuchsia-900': '#701a75',
           'text-pink-50': '#fdf2f8', 'text-pink-100': '#fce7f3', 'text-pink-200': '#fbcfe8',
           'text-pink-300': '#f9a8d4', 'text-pink-400': '#f472b6', 'text-pink-500': '#ec4899',
           'text-pink-600': '#db2777', 'text-pink-700': '#be185d', 'text-pink-800': '#9d174d',
-          'text-pink-900': '#831843'
+          'text-pink-900': '#831843',
+          'text-rose-50': '#fff1f2', 'text-rose-100': '#ffe4e6', 'text-rose-200': '#fecdd3',
+          'text-rose-300': '#fda4af', 'text-rose-400': '#fb7185', 'text-rose-500': '#f43f5e',
+          'text-rose-600': '#e11d48', 'text-rose-700': '#be123c', 'text-rose-800': '#9f1239',
+          'text-rose-900': '#881337'
         };
 
         const classes = className.split(' ');
@@ -504,6 +548,12 @@ const EditorSidebar = ({
               // First, check for Tailwind color classes in the stored (clean) className
               if (prop === 'color' && storedClassName) {
                 const tailwindColorHex = getTailwindColorHex(storedClassName);
+                console.log('🎨 Color detection:', {
+                  prop,
+                  storedClassName,
+                  tailwindColorHex,
+                  found: !!tailwindColorHex
+                });
                 if (tailwindColorHex) {
                   elementStyles[prop] = tailwindColorHex;
                   return; // Use Tailwind color, skip computed style
@@ -856,7 +906,7 @@ const EditorSidebar = ({
           return cls !== 'italic';
         case 'color':
           // Remove existing color classes (text-red-200, text-white, etc.)
-          return !cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) && cls !== 'text-white' && cls !== 'text-black';
+          return !cls.match(/^text-(white|black|gray|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-?\d*$/) && cls !== 'text-white' && cls !== 'text-black';
         case 'alignment':
           // Remove existing alignment classes
           return !cls.match(/^text-(left|center|right|justify)$/);
@@ -940,7 +990,7 @@ const EditorSidebar = ({
     currentClasses.forEach(cls => {
       if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
         // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
-        const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
+        const isColorClass = cls.match(/^text-(white|black|gray|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
         if (isColorClass) {
           currentColorClasses.push(cls);
         }
@@ -1105,12 +1155,15 @@ const EditorSidebar = ({
           styledElement.style.setProperty(styleProp, styleValue);
         });
 
-        // Get the new class that was applied by styleManager
-        const newClassFromStyleManager = styledElement.className.split(' ').find(cls =>
-          (property === 'fontSize' && cls.match(/^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/)) ||
-          (property === 'fontWeight' && cls.match(/^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/)) ||
-          (property === 'fontStyle' && cls === 'italic')
-        );
+        // Get the new class based on the value parameter instead of searching contaminated DOM
+        let newClassFromStyleManager;
+        if (property === 'fontSize') {
+          newClassFromStyleManager = `text-${value}`;
+        } else if (property === 'fontWeight') {
+          newClassFromStyleManager = `font-${value}`;
+        } else if (property === 'fontStyle') {
+          newClassFromStyleManager = value === 'italic' ? 'italic' : null;
+        }
 
         // Use surgical replacement: keep ALL existing database classes, only replace the specific type
         const finalClassName = replaceClassType(databaseClassName, newClassFromStyleManager, property);
@@ -1128,7 +1181,7 @@ const EditorSidebar = ({
         setTimeout(() => {
           setElementProperties(prev => ({
             ...prev,
-            className: styledElement.className,
+            className: finalClassName, // Use clean finalClassName, not contaminated DOM className
             styles: {
               ...prev.styles,
               ...currentInlineStyles
@@ -1136,8 +1189,8 @@ const EditorSidebar = ({
           }));
         }, 10);
 
-        // CRITICAL: Filter out wrapper classes from class-based properties save too!
-        const classBasedClassNameForSave = styledElement.className
+        // CRITICAL: Use clean finalClassName for save, not contaminated DOM className!
+        const classBasedClassNameForSave = finalClassName
           .split(' ')
           .filter(cls => cls && !isWrapperOrEditorClass(cls))
           .join(' ');
