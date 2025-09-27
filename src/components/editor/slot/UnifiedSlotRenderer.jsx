@@ -139,6 +139,16 @@ export function UnifiedSlotRenderer({
   // Sort slots by grid coordinates for proper rendering order
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
+  // Prepare context for variable processing (shared by all rendering functions)
+  const variableContext = context === 'editor' ?
+    generateDemoData('product', productData.settings || {}) :
+    {
+      product: productData.product,
+      category: categoryData,
+      cart: cartData,
+      settings: productData.settings
+    };
+
   /**
    * Render basic slot content based on type
    */
@@ -147,16 +157,6 @@ export function UnifiedSlotRenderer({
 
     // Check if this is a price-related slot
     const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(id);
-
-    // Prepare context for variable processing
-    const variableContext = context === 'editor' ?
-      generateDemoData('product', productData.settings || {}) :
-      {
-        product: productData.product,
-        category: categoryData,
-        cart: cartData,
-        settings: productData.settings
-      };
 
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
@@ -375,10 +375,12 @@ export function UnifiedSlotRenderer({
       }
 
       // Normal wrapper for storefront
+      const processedParentClassName = processVariables(slot.parentClassName || '', variableContext);
+
       return (
         <div
           key={slot.id}
-          className={colSpanClass}
+          className={`${colSpanClass} ${processedParentClassName}`}
           style={{
             ...(gridColumn ? { gridColumn } : {}),
             ...slot.containerStyles
