@@ -209,17 +209,42 @@ export function UnifiedSlotRenderer({
 
     // Text Element
     if (type === 'text') {
-      const textElement = (
-        <TextSlotWithScript
-          slot={slot}
-          processedContent={processedContent}
-          processedClassName={processedClassName}
-          context={context}
-          productData={productData}
-          variableContext={variableContext}
-        />
-      );
-      return wrapWithResize(textElement, slot, 20, 16);
+      if (context === 'editor' && mode === 'edit') {
+        const textElement = (
+          <span
+            className={processedClassName}
+            style={{
+              ...styles,
+              cursor: 'pointer',
+              display: 'inline-block',
+              width: className?.includes('w-fit') ? 'fit-content' : '100%'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!currentDragInfo && onElementClick) {
+                onElementClick(id, e.currentTarget);
+              }
+            }}
+            data-slot-id={id}
+            data-editable="true"
+            dangerouslySetInnerHTML={{
+              __html: processedContent || '[Text placeholder]'
+            }}
+          />
+        );
+        return wrapWithResize(textElement, slot, 20, 16);
+      } else {
+        return (
+          <TextSlotWithScript
+            slot={slot}
+            processedContent={processedContent}
+            processedClassName={processedClassName}
+            context={context}
+            productData={productData}
+            variableContext={variableContext}
+          />
+        );
+      }
     }
 
     // Button Element

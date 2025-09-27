@@ -592,7 +592,9 @@ const CategorySlotsEditor = ({
   viewMode = 'grid'
 }) => {
   // Get store settings for product grid configuration
-  const { settings: storeSettings } = useStore();
+  // Handle null case when StoreProvider is not available in editor context
+  const storeContext = useStore();
+  const storeSettings = storeContext?.settings || null;
 
   // Create enhanced config with store settings
   const enhancedConfig = {
