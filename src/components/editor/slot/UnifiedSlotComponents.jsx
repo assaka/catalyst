@@ -1497,39 +1497,33 @@ const ProductThumbnails = createSlotComponent({
 
   // Editor version
   renderEditor: ({ slot, className, styles, productContext, variableContext }) => {
-    const settings = productContext?.settings || variableContext?.settings;
-    const isVertical = settings?.product_gallery_layout === 'vertical';
-
     return (
       <div className={className} style={styles}>
-        <div className={isVertical ? "flex flex-col space-y-2" : "flex space-x-2 overflow-x-auto"}>
-          {[1, 2, 3, 4].map((index) => (
-            <div
-              key={index}
-              className={`flex-shrink-0 ${isVertical ? 'w-16 h-16' : 'w-16 h-16'} rounded-lg overflow-hidden border-2 border-gray-300`}
-            >
-              <img
-                src={`https://placehold.co/100x100?text=Thumb+${index}`}
-                alt={`Thumbnail ${index}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
+        {[1, 2, 3, 4].map((index) => (
+          <div
+            key={index}
+            className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300"
+          >
+            <img
+              src={`https://placehold.co/100x100?text=Thumb+${index}`}
+              alt={`Thumbnail ${index}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ))}
       </div>
     );
   },
 
   // Storefront version
   renderStorefront: ({ slot, productContext, className, styles }) => {
-    const { product, activeImageIndex, setActiveImageIndex, settings } = productContext;
+    const { product, activeImageIndex, setActiveImageIndex } = productContext;
 
     if (!product || !product.images || product.images.length <= 1) {
       return null;
     }
 
     const images = product.images || [];
-    const isVertical = settings?.product_gallery_layout === 'vertical';
 
     const getImageUrl = (image) => {
       if (typeof image === 'string') {
@@ -1543,23 +1537,21 @@ const ProductThumbnails = createSlotComponent({
 
     return (
       <div className={className} style={styles}>
-        <div className={isVertical ? "flex flex-col space-y-2" : "flex space-x-2 overflow-x-auto"}>
-          {images.map((image, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-              className={`flex-shrink-0 ${isVertical ? 'w-16 h-16' : 'w-16 h-16'} rounded-lg overflow-hidden border-2 transition-colors ${
-                activeImageIndex === index ? 'border-blue-500' : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <img
-                src={getImageUrl(image)}
-                alt={`${product.name} ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </button>
-          ))}
-        </div>
+        {images.map((image, index) => (
+          <button
+            key={index}
+            onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+              activeImageIndex === index ? 'border-blue-500' : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            <img
+              src={getImageUrl(image)}
+              alt={`${product.name} ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+          </button>
+        ))}
       </div>
     );
   }
