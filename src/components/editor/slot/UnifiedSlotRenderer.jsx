@@ -133,6 +133,17 @@ export function UnifiedSlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug logging for important parent containers
+  if (parentId === null || parentId === 'page_header' || parentId === 'filters_container' || parentId === 'products_container' || parentId === 'sorting_controls') {
+    console.log(`🔎 UNIFIED SLOT RENDERER - parentId: ${parentId}`, {
+      totalSlots: Object.keys(slots || {}).length,
+      childSlots: childSlots.map(s => ({ id: s.id, type: s.type, viewMode: s.viewMode })),
+      parentId: parentId,
+      viewMode: viewMode,
+      context: context
+    });
+  }
+
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 

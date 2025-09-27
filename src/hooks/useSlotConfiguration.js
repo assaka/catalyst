@@ -670,6 +670,22 @@ export const useViewModeAdjustments = (pageConfig, setPageConfig, viewMode, adju
 
 export const filterSlotsByViewMode = (childSlots, viewMode) => {
   return childSlots.filter(slot => {
+    const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
+
+    // Debug logging for missing slots
+    if (slot.id && (slot.id.includes('breadcrumb') || slot.id.includes('active_filter') || slot.id.includes('pagination') || slot.id.includes('cms') || slot.id.includes('layered') || slot.id.includes('sort_selector'))) {
+      console.log(`🔍 UNIFIED SLOT FILTER DEBUG - ${slot.id}:`, {
+        slotId: slot.id,
+        parentId: slot.parentId,
+        viewMode: slot.viewMode,
+        currentViewMode: viewMode,
+        shouldShow: shouldShow,
+        hasViewMode: !!slot.viewMode,
+        isArray: Array.isArray(slot.viewMode),
+        includes: slot.viewMode ? slot.viewMode.includes(viewMode) : 'N/A'
+      });
+    }
+
     if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
       return true; // Show if no viewMode specified
     }
