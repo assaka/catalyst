@@ -28,7 +28,7 @@ import BreadcrumbRendererComponent from '@/components/storefront/BreadcrumbRende
 // import StockStatusComponent from '@/components/storefront/StockStatus'; // Temporarily commented out
 
 // Import category slot components to register them
-import './CategorySlotComponents';
+import './CategorySlotComponents.jsx';
 
 /**
  * QuantitySelector - Unified quantity selector component
