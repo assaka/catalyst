@@ -79,12 +79,34 @@ const EditorSidebar = ({
         });
         // Convert our updates to the format expected by onClassChange
         Object.entries(updates).forEach(([elementId, data]) => {
+          // CRITICAL: Filter wrapper classes before saving to database!
+          const cleanClassName = data.className
+            .split(' ')
+            .filter(cls => {
+              if (!cls) return false;
+              // Editor selection indicators
+              if (['border-2', 'border-blue-500', 'border-dashed', 'shadow-md', 'shadow-blue-200/40'].includes(cls)) return false;
+              // GridColumn wrapper classes
+              if (['border', 'rounded-lg', 'overflow-hidden', 'responsive-slot', 'relative'].includes(cls)) return false;
+              if (['cursor-grab', 'cursor-grabbing', 'active:cursor-grabbing', 'transition-all', 'duration-200'].includes(cls)) return false;
+              // Padding classes from wrapper
+              if (/^p-\d+$/.test(cls)) return false;
+              // Grid layout classes
+              if (/^col-span-\d+$/.test(cls)) return false;
+              // Hover states
+              if (['hover:border-blue-400', 'hover:border-2', 'hover:border-dashed', 'hover:bg-blue-50/10', 'hover:bg-blue-50/20'].includes(cls)) return false;
+              return true;
+            })
+            .join(' ');
+
           console.log(`🔗 EDITOR SIDEBAR - Calling onClassChange for ${elementId}:`, {
-            className: data.className,
+            originalClassName: data.className,
+            cleanClassName: cleanClassName,
+            filteredOut: data.className.split(' ').filter(cls => cls && isWrapperOrEditorClass(cls)),
             styles: data.styles,
             metadata: data.metadata
           });
-          onClassChange(elementId, data.className, data.styles || {});
+          onClassChange(elementId, cleanClassName, data.styles || {});
         });
       });
     }
