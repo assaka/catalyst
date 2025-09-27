@@ -443,31 +443,36 @@ const EditorSidebar = ({
         )
       });
 
-      // Function to detect Tailwind color classes (pattern-based, not explicit mappings)
+      // Function to detect Tailwind color classes (only explicit mappings for key colors)
       const getTailwindColorHex = (className) => {
-        // Only provide explicit hex values for specific cases
         const explicitColors = {
           'text-white': '#ffffff',
           'text-black': '#000000',
-          'text-red-200': '#fecaca' // Example with number for testing pattern detection
+          'text-red-200': '#fecaca' // Example with number for testing
         };
 
         const classes = className.split(' ');
         for (const cls of classes) {
-          // Check explicit mappings first
           if (explicitColors[cls]) {
+            console.log('🎨 Explicit color found:', cls, '=', explicitColors[cls]);
             return explicitColors[cls];
           }
-          // For other Tailwind color classes with numbers (text-blue-500, etc.),
-          // we detect them but don't convert to hex - let computed styles handle it
         }
-        return null;
+
+        // For other Tailwind color classes, we detect them but don't convert to hex
+        // Let the browser's computed styles handle the color value
+        const hasColorClass = classes.some(cls => cls.match(/^text-\w+-\d+$/) || cls === 'text-white' || cls === 'text-black');
+        if (hasColorClass) {
+          console.log('🎨 Tailwind color class detected (using computed styles):', classes.filter(cls => cls.match(/^text-\w+-\d+$/) || cls === 'text-white' || cls === 'text-black'));
+        }
+
+        return null; // Let computed styles handle non-explicit colors
       };
 
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        className: storedClassName || styledElement.className || '',
+        className: storedClassName || '', // NEVER fall back to contaminated DOM classes!
         styles: (() => {
           try {
             // Safely merge stored styles with element styles
@@ -478,43 +483,40 @@ const EditorSidebar = ({
             const colorProperties = ['color', 'backgroundColor', 'borderColor'];
 
             colorProperties.forEach(prop => {
-              // First, check for Tailwind color classes in the stored (clean) className
-              if (prop === 'color' && storedClassName) {
-                const tailwindColorHex = getTailwindColorHex(storedClassName);
-                console.log('🎨 Color detection:', {
-                  prop,
-                  storedClassName,
-                  tailwindColorHex,
-                  found: !!tailwindColorHex
-                });
-                if (tailwindColorHex) {
-                  elementStyles[prop] = tailwindColorHex;
-                  return; // Use Tailwind color, skip computed style
+              // For color property, check Tailwind classes first, then computed styles
+              if (prop === 'color') {
+                // Check for explicit Tailwind colors in stored className
+                if (storedClassName) {
+                  const tailwindColorHex = getTailwindColorHex(storedClassName);
+                  if (tailwindColorHex) {
+                    console.log('🎨 Found Tailwind color:', { storedClassName, tailwindColorHex });
+                    elementStyles[prop] = tailwindColorHex;
+                    return;
+                  }
                 }
-              }
 
-              // Fall back to computed styles if no Tailwind color class found
-              const computedValue = computedStyle[prop];
-              if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
-                // Convert rgb/rgba to hex if possible
-                if (computedValue.startsWith('rgb')) {
-                  try {
+                // Fall back to computed styles from the element
+                const computedValue = computedStyle[prop];
+                if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
+                  // Convert rgb/rgba to hex for color picker
+                  if (computedValue.startsWith('rgb')) {
                     const rgbMatch = computedValue.match(/\d+/g);
                     if (rgbMatch && rgbMatch.length >= 3) {
                       const hex = '#' + rgbMatch.slice(0, 3)
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
+                      console.log('🎨 Computed color to hex:', { computedValue, hex });
                       elementStyles[prop] = hex;
-                    } else {
-                      elementStyles[prop] = computedValue;
                     }
-                  } catch (e) {
+                  } else if (computedValue.startsWith('#')) {
+                    console.log('🎨 Already hex color:', computedValue);
                     elementStyles[prop] = computedValue;
                   }
-                } else if (computedValue.startsWith('#')) {
-                  // Already a hex value
-                  elementStyles[prop] = computedValue;
-                } else {
+                }
+              } else {
+                // For non-color properties, just use computed styles
+                const computedValue = computedStyle[prop];
+                if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
                   elementStyles[prop] = computedValue;
                 }
               }
@@ -821,33 +823,14 @@ const EditorSidebar = ({
     return false;
   }, []);
 
-  // Function to surgically replace classes of a specific type
-  const replaceClassType = useCallback((classString, newClass, classType) => {
+  // Simple function to replace ONE specific class type only
+  const replaceSpecificClass = useCallback((classString, newClass, removePattern) => {
+    if (!classString) return newClass || '';
+
     const classes = classString.split(' ').filter(Boolean);
 
-    // Remove existing classes of this type
-    const filteredClasses = classes.filter(cls => {
-      switch (classType) {
-        case 'fontSize':
-          // Remove existing font size classes
-          return !cls.match(/^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/);
-        case 'fontWeight':
-          // Remove existing font weight classes
-          return !cls.match(/^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/);
-        case 'fontStyle':
-          // Remove existing italic
-          return cls !== 'italic';
-        case 'color':
-          // Remove existing color classes using pattern detection
-          // Match text-white, text-black, or text-{anything}-{number} pattern
-          return !cls.match(/^text-\w+-\d+$/) && cls !== 'text-white' && cls !== 'text-black';
-        case 'alignment':
-          // Remove existing alignment classes
-          return !cls.match(/^text-(left|center|right|justify)$/);
-        default:
-          return true;
-      }
-    });
+    // Remove only classes matching the specific pattern
+    const filteredClasses = classes.filter(cls => !removePattern.test(cls));
 
     // Add the new class if provided
     if (newClass && newClass.trim()) {
@@ -967,8 +950,8 @@ const EditorSidebar = ({
     
     console.log('🟠 Processing alignment with styled element - building from DATABASE');
 
-    // Use surgical replacement for alignment - keep ALL other classes, only replace alignment
-    const finalClassName = replaceClassType(databaseClassName, `text-${value}`, 'alignment');
+    // Use surgical replacement for alignment - only remove/add alignment classes
+    const finalClassName = replaceSpecificClass(databaseClassName, `text-${value}`, /^text-(left|center|right|justify)$/);
     styledElement.className = finalClassName;
 
     console.log('🔄 Built alignment className from DATABASE:', {
@@ -1100,8 +1083,17 @@ const EditorSidebar = ({
           newClassFromStyleManager = value === 'italic' ? 'italic' : null;
         }
 
-        // Use surgical replacement: keep ALL existing database classes, only replace the specific type
-        const finalClassName = replaceClassType(databaseClassName, newClassFromStyleManager, property);
+        // Use surgical replacement: only remove/add the specific property type
+        let removePattern;
+        if (property === 'fontSize') {
+          removePattern = /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/;
+        } else if (property === 'fontWeight') {
+          removePattern = /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/;
+        } else if (property === 'fontStyle') {
+          removePattern = /^italic$/;
+        }
+
+        const finalClassName = replaceSpecificClass(databaseClassName, newClassFromStyleManager, removePattern);
 
         styledElement.className = finalClassName;
 
