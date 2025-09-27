@@ -539,7 +539,6 @@ const CategorySlotsEditor = ({
   onSave,
   viewMode = 'grid'
 }) => {
-  console.log('🚀 CATEGORY SLOTS EDITOR RENDERED!', { mode, viewMode });
   return (
     <UnifiedSlotsEditor
       config={categoryEditorConfig}
