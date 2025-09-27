@@ -79,39 +79,28 @@ class SimpleStyleManager {
       case 'fontWeight':
         // Remove existing font-weight classes to avoid conflicts
         const fontWeightClasses = ['font-thin', 'font-extralight', 'font-light', 'font-normal', 'font-medium', 'font-semibold', 'font-bold', 'font-extrabold', 'font-black'];
+        newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
 
         if (value === 'bold') {
-          // Check if bold was already present before filtering (proper toggle check)
-          const wasBold = currentClasses.includes('font-bold') || currentClasses.includes('font-semibold');
-          newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
-
-          if (wasBold) {
-            console.log('🔄 Toggling OFF bold (removing font-bold)');
-            // Don't add any weight class (remove bold)
-          } else {
-            console.log('🔄 Toggling ON bold (adding font-bold)');
-            newClasses.push('font-bold');
-          }
+          console.log('🔄 Setting bold (adding font-bold)');
+          newClasses.push('font-bold');
+        } else if (value === 'normal') {
+          console.log('🔄 Setting normal weight (removing bold)');
+          // Don't add any weight class (normal is default)
         } else {
-          newClasses = newClasses.filter(cls => !fontWeightClasses.includes(cls));
-          newClasses.push('font-normal');
+          // Handle other weight values
+          newClasses.push(`font-${value}`);
         }
         break;
       case 'fontStyle':
-        if (value === 'italic') {
-          // Toggle behavior: check current state before filtering
-          const wasItalic = currentClasses.includes('italic');
-          newClasses = newClasses.filter(cls => cls !== 'italic');
+        newClasses = newClasses.filter(cls => cls !== 'italic');
 
-          if (wasItalic) {
-            console.log('🔄 Toggling OFF italic (removing italic)');
-            // Don't add italic class (remove it)
-          } else {
-            console.log('🔄 Toggling ON italic (adding italic)');
-            newClasses.push('italic');
-          }
-        } else {
-          newClasses = newClasses.filter(cls => cls !== 'italic');
+        if (value === 'italic') {
+          console.log('🔄 Setting italic (adding italic)');
+          newClasses.push('italic');
+        } else if (value === 'normal') {
+          console.log('🔄 Setting normal style (removing italic)');
+          // Don't add italic class (normal is default)
         }
         break;
       // textAlign is now handled by EditorSidebar and applied to parent element

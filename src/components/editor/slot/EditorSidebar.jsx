@@ -435,18 +435,22 @@ const EditorSidebar = ({
         };
 
         const classes = className.split(' ');
+        console.log('🎨 TAILWIND COLOR DETECTION - Checking classes:', classes);
+
         for (const cls of classes) {
           if (explicitColors[cls]) {
-            console.log('🎨 Explicit color found:', cls, '=', explicitColors[cls]);
+            console.log('🎨 TAILWIND COLOR DETECTION - Explicit color found:', cls, '=', explicitColors[cls]);
             return explicitColors[cls];
           }
         }
 
         // For other Tailwind color classes, we detect them but don't convert to hex
         // Let the browser's computed styles handle the color value
-        const hasColorClass = classes.some(cls => cls.match(/^text-\w+-\d+$/) || cls === 'text-white' || cls === 'text-black');
-        if (hasColorClass) {
-          console.log('🎨 Tailwind color class detected (using computed styles):', classes.filter(cls => cls.match(/^text-\w+-\d+$/) || cls === 'text-white' || cls === 'text-black'));
+        const colorClasses = classes.filter(cls => cls.match(/^text-\w+-\d+$/) || cls === 'text-white' || cls === 'text-black');
+        if (colorClasses.length > 0) {
+          console.log('🎨 TAILWIND COLOR DETECTION - Non-explicit color classes found, using computed styles:', colorClasses);
+        } else {
+          console.log('🎨 TAILWIND COLOR DETECTION - No Tailwind color classes found in:', classes);
         }
 
         return null; // Let computed styles handle non-explicit colors
@@ -480,6 +484,13 @@ const EditorSidebar = ({
 
                 // Fall back to computed styles from the element
                 const computedValue = computedStyle[prop];
+                console.log('🎨 COLOR PICKER INIT - Computed color detection:', {
+                  computedValue,
+                  hasValue: !!computedValue,
+                  isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent',
+                  storedClassName: storedClassName
+                });
+
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
                   // Convert rgb/rgba to hex for color picker
                   if (computedValue.startsWith('rgb')) {
@@ -488,7 +499,7 @@ const EditorSidebar = ({
                       const hex = '#' + rgbMatch.slice(0, 3)
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
-                      console.log('🎨 COLOR PICKER DEBUG - Computed RGB to hex:', {
+                      console.log('🎨 COLOR PICKER INIT - Computed RGB to hex:', {
                         computedValue,
                         rgbMatch,
                         hex,
@@ -496,13 +507,22 @@ const EditorSidebar = ({
                       });
                       elementStyles[prop] = hex;
                     } else {
-                      console.log('🎨 COLOR PICKER DEBUG - RGB match failed:', { computedValue, rgbMatch });
+                      console.log('🎨 COLOR PICKER INIT - RGB match failed:', { computedValue, rgbMatch });
                     }
                   } else if (computedValue.startsWith('#')) {
-                    console.log('🎨 COLOR PICKER DEBUG - Already hex color:', computedValue);
+                    console.log('🎨 COLOR PICKER INIT - Already hex color:', computedValue);
                     elementStyles[prop] = computedValue;
                   } else {
-                    console.log('🎨 COLOR PICKER DEBUG - Unknown color format:', computedValue);
+                    console.log('🎨 COLOR PICKER INIT - Unknown color format:', computedValue);
+                  }
+                } else {
+                  // No color detected - check if element actually has black text that we should capture
+                  if (computedValue === 'rgb(0, 0, 0)' || computedValue === 'rgba(0, 0, 0, 1)') {
+                    console.log('🎨 COLOR PICKER INIT - Detected black color, setting #000000');
+                    elementStyles[prop] = '#000000';
+                  } else {
+                    console.log('🎨 COLOR PICKER INIT - No valid color detected, using default black');
+                    elementStyles[prop] = '#000000';
                   }
                 }
               } else {
@@ -1710,7 +1730,10 @@ const EditorSidebar = ({
                   <Button
                     variant={isBold(elementProperties.className) ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('fontWeight', 'bold')}
+                    onClick={() => {
+                      const currentlyBold = isBold(elementProperties.className);
+                      handlePropertyChange('fontWeight', currentlyBold ? 'normal' : 'bold');
+                    }}
                     className="h-7 px-2"
                   >
                     <Bold className="w-3 h-3" />
@@ -1718,7 +1741,10 @@ const EditorSidebar = ({
                   <Button
                     variant={isItalic(elementProperties.className) ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handlePropertyChange('fontStyle', 'italic')}
+                    onClick={() => {
+                      const currentlyItalic = isItalic(elementProperties.className);
+                      handlePropertyChange('fontStyle', currentlyItalic ? 'normal' : 'italic');
+                    }}
                     className="h-7 px-2"
                   >
                     <Italic className="w-3 h-3" />
