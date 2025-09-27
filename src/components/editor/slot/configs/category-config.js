@@ -172,7 +172,7 @@ export const categoryConfig = {
       parentId: 'filters_container',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         component: 'ActiveFilters'
@@ -378,7 +378,7 @@ export const categoryConfig = {
       parentId: null,
       position: { col: 1, row: 2 },
       colSpan: { grid: 3, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
     },
 
@@ -393,7 +393,7 @@ export const categoryConfig = {
       parentId: 'filters_container',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         cmsPosition: 'category_above_filters',
@@ -412,7 +412,7 @@ export const categoryConfig = {
       parentId: 'filters_container',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         component: 'LayeredNavigation',
@@ -433,7 +433,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -455,7 +455,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 2 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -478,7 +478,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -500,7 +500,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -522,7 +522,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 5 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -544,7 +544,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 6 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -566,7 +566,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 7 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -594,7 +594,7 @@ export const categoryConfig = {
       parentId: 'layered_navigation',
       position: { col: 1, row: 8 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -614,7 +614,7 @@ export const categoryConfig = {
       parentId: 'filters_container',
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid'],
+      viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         cmsPosition: 'category_below_filters',
