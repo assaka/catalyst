@@ -654,6 +654,11 @@ export function GridColumn({
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
       } relative responsive-slot ${colSpanClass} ${slot?.parentClassName || ''}`}
+      ref={(el) => {
+        if (el && colSpanClass) {
+          console.log('🟨 GridColumn DOM class update:', { slotId, colSpanClass, actualClasses: el.className });
+        }
+      }}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       data-slot-id={slotId}
