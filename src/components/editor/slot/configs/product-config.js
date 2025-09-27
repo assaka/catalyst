@@ -124,7 +124,7 @@ export const productConfig = {
       id: 'main_image',
       type: 'container',
       content: '',
-      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{else}}order-1{{/if}}',
+      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1 {{#if (eq settings.vertical_gallery_position "right")}}order-first{{else}}order-last{{/if}}{{else}}order-1{{/if}}',
       styles: {},
       parentId: 'gallery_container',
       position: { col: 1, row: 1 },
