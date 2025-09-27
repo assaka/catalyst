@@ -596,30 +596,6 @@ export const useEditorInitialization = (initializeConfig, setPageConfig, createD
             slots: createDefaultSlots()
           };
         }
-
-        console.log('🚀 EDITOR INITIALIZATION - Setting final configuration:');
-        console.log('📋 EDITOR INITIALIZATION - Total slots:', Object.keys(finalConfig.slots || {}).length);
-
-        // Check specifically for category_title to debug the color issue
-        if (finalConfig.slots?.category_title) {
-          console.log('🎨 EDITOR INITIALIZATION - category_title slot found:', {
-            content: finalConfig.slots.category_title.content,
-            styles: finalConfig.slots.category_title.styles,
-            hasColorStyle: !!finalConfig.slots.category_title.styles?.color,
-            colorValue: finalConfig.slots.category_title.styles?.color
-          });
-
-          console.log('🎯 EDITOR INITIALIZATION DETAILED - category_title:', {
-            fullSlot: JSON.stringify(finalConfig.slots.category_title, null, 2),
-            stylesStringified: JSON.stringify(finalConfig.slots.category_title.styles),
-            expectedGreen: '#008040',
-            actualColor: finalConfig.slots.category_title.styles?.color,
-            isCorrectColor: finalConfig.slots.category_title.styles?.color === '#008040'
-          });
-        } else {
-          console.log('❌ EDITOR INITIALIZATION - category_title slot NOT found in final config');
-        }
-
         setPageConfig(finalConfig);
       }
     };
@@ -671,21 +647,6 @@ export const useViewModeAdjustments = (pageConfig, setPageConfig, viewMode, adju
 export const filterSlotsByViewMode = (childSlots, viewMode) => {
   return childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
-
-    // Debug logging for missing slots
-    if (slot.id && (slot.id.includes('breadcrumb') || slot.id.includes('active_filter') || slot.id.includes('pagination') || slot.id.includes('cms') || slot.id.includes('layered') || slot.id.includes('sort_selector'))) {
-      console.log(`🔍 UNIFIED SLOT FILTER DEBUG - ${slot.id}:`, {
-        slotId: slot.id,
-        parentId: slot.parentId,
-        viewMode: slot.viewMode,
-        currentViewMode: viewMode,
-        shouldShow: shouldShow,
-        hasViewMode: !!slot.viewMode,
-        isArray: Array.isArray(slot.viewMode),
-        includes: slot.viewMode ? slot.viewMode.includes(viewMode) : 'N/A'
-      });
-    }
-
     if (!slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0) {
       return true; // Show if no viewMode specified
     }
@@ -920,20 +881,9 @@ export function useSlotConfiguration({
     }
 
     try {
-      console.log('🏪 EDITOR - Loading draft config for:', { storeId, pageType });
 
       // Get draft from database (may be empty on first load)
       const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
-
-      console.log('📥 EDITOR - Draft config response:', {
-        success: savedConfig?.success,
-        hasData: !!savedConfig?.data,
-        configId: savedConfig?.data?.id,
-        status: savedConfig?.data?.status,
-        hasSlots: !!(savedConfig?.data?.configuration?.slots && Object.keys(savedConfig.data.configuration.slots).length > 0),
-        headerTitle: savedConfig?.data?.configuration?.slots?.header_title?.content,
-        cartItemsComponent: savedConfig?.data?.configuration?.slots?.cart_items?.component
-      });
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
         const draftConfig = savedConfig.data.configuration;
@@ -941,8 +891,6 @@ export function useSlotConfiguration({
 
         // Check if draft needs initialization (status = 'init')
         if (draftStatus === 'init') {
-          console.log('🏗️ EDITOR - Draft status is "init", populating with static config');
-          console.log('⚠️ EDITOR - This should only happen ONCE on first load!');
 
           // Load static config to populate init draft
           const staticConfig = await loadStaticConfiguration();
@@ -968,7 +916,6 @@ export function useSlotConfiguration({
               populatedConfig,
               false // not a reset
             );
-            console.log('✅ EDITOR - Populated config saved, status should change from "init" to "draft"');
           } catch (saveError) {
             console.warn('⚠️ EDITOR - Failed to save populated config:', saveError);
             // Continue with populated config even if save fails
@@ -976,23 +923,9 @@ export function useSlotConfiguration({
 
           return populatedConfig;
         } else if (draftStatus === 'draft') {
-          console.log('✅ EDITOR - Using existing draft configuration from database');
-          console.log('✅ EDITOR - Draft header_title:', draftConfig?.slots?.header_title?.content);
-          console.log('✅ EDITOR - Draft cart_items component:', draftConfig?.slots?.cart_items?.component);
 
           // 🚀 DEBUG: Check which slots are in database vs should be there
           const draftSlotIds = Object.keys(draftConfig?.slots || {});
-          console.log('🚀 DATABASE DRAFT SLOTS:', draftSlotIds.length, 'slots');
-          console.log('🚀 MISSING SLOTS CHECK IN DATABASE:', {
-            breadcrumbs_content: draftSlotIds.includes('breadcrumbs_content'),
-            active_filters: draftSlotIds.includes('active_filters'),
-            pagination_container: draftSlotIds.includes('pagination_container'),
-            sort_selector: draftSlotIds.includes('sort_selector'),
-            layered_navigation: draftSlotIds.includes('layered_navigation'),
-            products_above_cms: draftSlotIds.includes('products_above_cms'),
-            filters_above_cms: draftSlotIds.includes('filters_above_cms')
-          });
-
           return draftConfig;
         } else {
           console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
@@ -1390,15 +1323,6 @@ export function useSlotConfiguration({
       const alignmentClasses = ['text-left', 'text-center', 'text-right'];
       const allClasses = className.split(' ').filter(Boolean);
 
-      console.log('🔄 handleClassChange:', {
-        slotId,
-        incomingClassName: className,
-        incomingStyles: styles,
-        existingClassName: updatedSlots[slotId].className,
-        existingStyles: updatedSlots[slotId].styles,
-        isAlignmentChange
-      });
-
       if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
         // For alignment changes, only alignment goes to parent, everything else to element
         const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
@@ -1416,12 +1340,6 @@ export function useSlotConfiguration({
           }
         };
 
-        console.log('✅ handleClassChange - Alignment mode:', {
-          slotId,
-          savedClassName: elementClassList.join(' '),
-          savedParentClassName: alignmentClassList.join(' '),
-          savedStyles: mergedStyles
-        });
       } else {
         // For text styling (bold, italic, colors), keep existing parentClassName
         // and only update className for the text element
@@ -1436,12 +1354,6 @@ export function useSlotConfiguration({
           }
         };
 
-        console.log('✅ handleClassChange - Standard mode:', {
-          slotId,
-          savedClassName: className,
-          savedStyles: mergedStyles,
-          keptParentClassName: updatedSlots[slotId].parentClassName
-        });
       }
     }
 
@@ -1471,13 +1383,6 @@ export function useSlotConfiguration({
       if (!slotElement) {
         slotElement = element;
       }
-
-      console.log('📍 Element Click Handler:', {
-        clickedElement: element.tagName,
-        hasDataSlotId: element.hasAttribute('data-slot-id'),
-        finalSlotElement: slotElement.tagName,
-        slotId: slotElement.getAttribute('data-slot-id')
-      });
 
       setSelectedElement(slotElement);
       setIsSidebarVisible(true);

@@ -75,6 +75,43 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const startValueRef = useRef(currentValue);
+  const onResizeRef = useRef(onResize);
+
+  useEffect(() => {
+    onResizeRef.current = onResize;
+  }, [onResize]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDraggingRef.current) return;
+
+    const startX = startXRef.current;
+    const startY = startYRef.current;
+    const startValue = startValueRef.current;
+
+    if (direction === 'horizontal') {
+      const deltaX = e.clientX - startX;
+      const sensitivity = 25;
+      const colSpanDelta = Math.round(deltaX / sensitivity);
+      const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
+      onResizeRef.current(newColSpan);
+    } else if (direction === 'vertical') {
+      const deltaY = e.clientY - startY;
+      const heightDelta = Math.round(deltaY / 1);
+      const newHeight = Math.max(20, startValue + heightDelta);
+      onResizeRef.current(newHeight);
+    }
+  }, [maxValue, minValue, direction]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    isDraggingRef.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+
+    if (onResizeEnd) {
+      onResizeEnd();
+    }
+  }, [handleMouseMove, onResizeEnd]);
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -91,39 +128,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [currentValue, direction, onResizeStart]);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isDraggingRef.current) return;
-
-    const startX = startXRef.current;
-    const startY = startYRef.current;
-    const startValue = startValueRef.current;
-
-    if (direction === 'horizontal') {
-      const deltaX = e.clientX - startX;
-      const sensitivity = 25;
-      const colSpanDelta = Math.round(deltaX / sensitivity);
-      const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
-      onResize(newColSpan);
-    } else if (direction === 'vertical') {
-      const deltaY = e.clientY - startY;
-      const heightDelta = Math.round(deltaY / 1);
-      const newHeight = Math.max(20, startValue + heightDelta);
-      onResize(newHeight);
-    }
-  }, [maxValue, minValue, onResize, direction]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-    isDraggingRef.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-
-    if (onResizeEnd) {
-      onResizeEnd();
-    }
-  }, [handleMouseMove, onResizeEnd]);
+  }, [currentValue, onResizeStart, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
     return () => {

@@ -218,7 +218,7 @@ export function UnifiedSlotRenderer({
               ...styles,
               cursor: 'pointer',
               display: 'inline-block',
-              width: hasWFit ? 'fit-content' : (styles?.width || '100%')
+              width: hasWFit ? 'fit-content' : (styles?.width || 'auto')
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -233,13 +233,7 @@ export function UnifiedSlotRenderer({
             }}
           />
         );
-
-        const wrappedElement = (
-          <div style={{ display: 'inline-block', position: 'relative' }}>
-            {wrapWithResize(textElement, slot, 20, 16)}
-          </div>
-        );
-        return wrappedElement;
+        return wrapWithResize(textElement, slot, 20, 16);
       } else {
         return (
           <TextSlotWithScript
