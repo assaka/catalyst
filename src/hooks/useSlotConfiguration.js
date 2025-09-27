@@ -1404,20 +1404,29 @@ export function useSlotConfiguration({
         return;
       }
 
-      // If element is a ResizeWrapper, find the actual content element inside
-      let actualElement = element;
+      // CRITICAL: Always pass the element with data-slot-id attribute!
+      // For text slots, className and style are BOTH on this wrapper element.
+      // See UnifiedSlotRenderer.jsx line 96: <div data-slot-id="..." className="..." style="...">
+      let slotElement = element;
 
-      if (element && element.classList && element.classList.contains('resize-none')) {
-        // This is a ResizeWrapper child, look for the actual content element
-        const button = element.querySelector('button');
-        const svg = element.querySelector('svg');
-        const input = element.querySelector('input');
-
-        // Use the most specific element found
-        actualElement = button || svg || input || element;
+      // If we don't have data-slot-id, traverse up to find it
+      if (!slotElement.hasAttribute('data-slot-id')) {
+        slotElement = slotElement.closest('[data-slot-id]');
       }
 
-      setSelectedElement(actualElement);
+      // If still not found, use the original element as fallback
+      if (!slotElement) {
+        slotElement = element;
+      }
+
+      console.log('📍 Element Click Handler:', {
+        clickedElement: element.tagName,
+        hasDataSlotId: element.hasAttribute('data-slot-id'),
+        finalSlotElement: slotElement.tagName,
+        slotId: slotElement.getAttribute('data-slot-id')
+      });
+
+      setSelectedElement(slotElement);
       setIsSidebarVisible(true);
     }, [isResizing, lastResizeEndTime, setSelectedElement, setIsSidebarVisible]);
   }, []);
