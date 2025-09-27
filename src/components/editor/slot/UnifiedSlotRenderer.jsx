@@ -12,6 +12,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
@@ -149,6 +150,50 @@ export function UnifiedSlotRenderer({
     };
 
   /**
+   * Wrap element with ResizeWrapper for editor mode
+   */
+  const wrapWithResize = (element, slot, minWidth = 20, minHeight = 16) => {
+    if (context !== 'editor' || mode !== 'edit') {
+      return element;
+    }
+
+    return (
+      <ResizeWrapper
+        minWidth={minWidth}
+        minHeight={minHeight}
+        hideBorder={selectedElementId === slot.id}
+        onResize={(newSize) => {
+          if (!setPageConfig || !saveConfiguration) return;
+
+          setPageConfig(prevConfig => {
+            const updatedSlots = { ...prevConfig?.slots };
+            if (updatedSlots[slot.id]) {
+              updatedSlots[slot.id] = {
+                ...updatedSlots[slot.id],
+                styles: {
+                  ...updatedSlots[slot.id].styles,
+                  width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                  height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                }
+              };
+            }
+
+            const updatedConfig = { ...prevConfig, slots: updatedSlots };
+
+            setTimeout(() => {
+              saveConfiguration(updatedConfig);
+            }, 500);
+
+            return updatedConfig;
+          });
+        }}
+      >
+        {element}
+      </ResizeWrapper>
+    );
+  };
+
+  /**
    * Render basic slot content based on type
    */
   const renderBasicSlot = (slot) => {
@@ -164,14 +209,17 @@ export function UnifiedSlotRenderer({
 
     // Text Element
     if (type === 'text') {
-      return <TextSlotWithScript
-        slot={slot}
-        processedContent={processedContent}
-        processedClassName={processedClassName}
-        context={context}
-        productData={productData}
-        variableContext={variableContext}
-      />;
+      const textElement = (
+        <TextSlotWithScript
+          slot={slot}
+          processedContent={processedContent}
+          processedClassName={processedClassName}
+          context={context}
+          productData={productData}
+          variableContext={variableContext}
+        />
+      );
+      return wrapWithResize(textElement, slot, 20, 16);
     }
 
     // Button Element
@@ -207,7 +255,7 @@ export function UnifiedSlotRenderer({
         );
       } else {
         // Editor: Visual preview only
-        return (
+        const buttonElement = (
           <button className={processedClassName} style={styles}>
             {isHtmlContent ? (
               <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
@@ -216,6 +264,7 @@ export function UnifiedSlotRenderer({
             )}
           </button>
         );
+        return wrapWithResize(buttonElement, slot, 50, 20);
       }
     }
 
@@ -235,7 +284,7 @@ export function UnifiedSlotRenderer({
           'https://placehold.co/400x400?text=Product+Image';
       }
 
-      return (
+      const imageElement = (
         <img
           src={imageSrc}
           alt={variableContext.product?.name || 'Image'}
@@ -243,6 +292,7 @@ export function UnifiedSlotRenderer({
           style={styles}
         />
       );
+      return wrapWithResize(imageElement, slot, 50, 50);
     }
 
     // Container, Grid, Flex Elements
