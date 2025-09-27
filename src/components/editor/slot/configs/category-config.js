@@ -24,7 +24,8 @@ export const categoryConfig = {
 
     breadcrumbs_content: {
       id: 'breadcrumbs_content',
-      type: 'breadcrumbs',
+      type: 'component',
+      component: 'BreadcrumbRenderer',
       content: '',
       className: 'flex items-center space-x-2 text-sm text-gray-600 mb-6',
       parentClassName: '',
@@ -109,7 +110,8 @@ export const categoryConfig = {
     // CMS blocks above products
     products_above_cms: {
       id: 'products_above_cms',
-      type: 'cms_block',
+      type: 'component',
+      component: 'CmsBlockRenderer',
       content: '',
       className: 'mb-6',
       parentClassName: '',
@@ -121,7 +123,10 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         cmsPosition: 'category_above_products',
-        displayName: 'CMS Block - Above Products'
+        displayName: 'CMS Block - Above Products',
+        props: {
+          position: 'category_above_products'
+        }
       }
     },
 
@@ -146,7 +151,8 @@ export const categoryConfig = {
     // Sort selector
     sort_selector: {
       id: 'sort_selector',
-      type: 'select',
+      type: 'component',
+      component: 'SortSelector',
       content: '',
       className: 'flex items-center gap-2',
       parentClassName: 'text-right',
@@ -164,7 +170,8 @@ export const categoryConfig = {
     // Active filters display (at top of sidebar below Filter By)
     active_filters: {
       id: 'active_filters',
-      type: 'active_filters',
+      type: 'component',
+      component: 'ActiveFilters',
       content: '',
       className: 'mb-4',
       parentClassName: '',
@@ -333,7 +340,8 @@ export const categoryConfig = {
     // CMS blocks below products
     products_below_cms: {
       id: 'products_below_cms',
-      type: 'cms_block',
+      type: 'component',
+      component: 'CmsBlockRenderer',
       content: '',
       className: 'mt-8',
       parentClassName: '',
@@ -345,14 +353,18 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         cmsPosition: 'category_below_products',
-        displayName: 'CMS Block - Below Products'
+        displayName: 'CMS Block - Below Products',
+        props: {
+          position: 'category_below_products'
+        }
       }
     },
 
     // Pagination
     pagination_container: {
       id: 'pagination_container',
-      type: 'pagination',
+      type: 'component',
+      component: 'PaginationComponent',
       content: '',
       className: 'flex justify-center mt-8',
       parentClassName: 'text-center',
@@ -385,7 +397,8 @@ export const categoryConfig = {
     // CMS blocks in filters
     filters_above_cms: {
       id: 'filters_above_cms',
-      type: 'cms_block',
+      type: 'component',
+      component: 'CmsBlockRenderer',
       content: '',
       className: 'mb-6',
       parentClassName: '',
@@ -397,14 +410,18 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         cmsPosition: 'category_above_filters',
-        displayName: 'CMS Block - Above Filters'
+        displayName: 'CMS Block - Above Filters',
+        props: {
+          position: 'category_above_filters'
+        }
       }
     },
 
     // Simplified Layered Navigation - Single container with editable labels
     layered_navigation: {
       id: 'layered_navigation',
-      type: 'layered_navigation',
+      type: 'component',
+      component: 'LayeredNavigation',
       content: '',
       className: 'space-y-6',
       parentClassName: '',
@@ -606,7 +623,8 @@ export const categoryConfig = {
 
     filters_below_cms: {
       id: 'filters_below_cms',
-      type: 'cms_block',
+      type: 'component',
+      component: 'CmsBlockRenderer',
       content: '',
       className: 'mt-6',
       parentClassName: '',
@@ -618,7 +636,10 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         cmsPosition: 'category_below_filters',
-        displayName: 'CMS Block - Below Filters'
+        displayName: 'CMS Block - Below Filters',
+        props: {
+          position: 'category_below_filters'
+        }
       }
     }
 

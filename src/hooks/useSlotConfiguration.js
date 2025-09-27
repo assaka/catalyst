@@ -980,6 +980,20 @@ export function useSlotConfiguration({
           console.log('✅ EDITOR - Using existing draft configuration from database');
           console.log('✅ EDITOR - Draft header_title:', draftConfig?.slots?.header_title?.content);
           console.log('✅ EDITOR - Draft cart_items component:', draftConfig?.slots?.cart_items?.component);
+
+          // 🚀 DEBUG: Check which slots are in database vs should be there
+          const draftSlotIds = Object.keys(draftConfig?.slots || {});
+          console.log('🚀 DATABASE DRAFT SLOTS:', draftSlotIds.length, 'slots');
+          console.log('🚀 MISSING SLOTS CHECK IN DATABASE:', {
+            breadcrumbs_content: draftSlotIds.includes('breadcrumbs_content'),
+            active_filters: draftSlotIds.includes('active_filters'),
+            pagination_container: draftSlotIds.includes('pagination_container'),
+            sort_selector: draftSlotIds.includes('sort_selector'),
+            layered_navigation: draftSlotIds.includes('layered_navigation'),
+            products_above_cms: draftSlotIds.includes('products_above_cms'),
+            filters_above_cms: draftSlotIds.includes('filters_above_cms')
+          });
+
           return draftConfig;
         } else {
           console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
