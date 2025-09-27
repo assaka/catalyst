@@ -88,6 +88,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
+    console.log('🔵 GridResizeHandle: MouseDown', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -101,6 +102,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
+      console.log('🟢 GridResizeHandle: MouseMove event', { isDragging: isDraggingRef.current });
       if (!isDraggingRef.current) return;
 
       const startX = startXRef.current;
@@ -112,16 +114,19 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const sensitivity = 15;
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
+        console.log('🟢 GridResizeHandle: MouseMove horizontal', { deltaX, colSpanDelta, startValue, newColSpan });
         onResizeRef.current(newColSpan);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 1);
         const newHeight = Math.max(20, startValue + heightDelta);
+        console.log('🟢 GridResizeHandle: MouseMove vertical', { deltaY, heightDelta, startValue, newHeight });
         onResizeRef.current(newHeight);
       }
     };
 
     const handleMouseUp = () => {
+      console.log('🔴 GridResizeHandle: MouseUp');
       setIsDragging(false);
       isDraggingRef.current = false;
       document.removeEventListener('mousemove', handleMouseMove);
@@ -139,6 +144,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    console.log('🔵 GridResizeHandle: Listeners added');
   };
 
   useEffect(() => {
@@ -762,7 +768,10 @@ export function GridColumn({
 
       {showHorizontalHandle && isHovered && (
         <GridResizeHandle
-          onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
+          onResize={(newColSpan) => {
+            console.log('🟡 GridColumn: calling onGridResize', { slotId, newColSpan });
+            onGridResize(slotId, newColSpan);
+          }}
           currentValue={colSpan}
           maxValue={12}
           minValue={1}
@@ -775,7 +784,10 @@ export function GridColumn({
       )}
       {showVerticalHandle && isHovered && (
         <GridResizeHandle
-          onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
+          onResize={(newHeight) => {
+            console.log('🟡 GridColumn: calling onSlotHeightResize', { slotId, newHeight });
+            onSlotHeightResize(slotId, newHeight);
+          }}
           currentValue={height || 80}
           maxValue={1000}
           minValue={40}

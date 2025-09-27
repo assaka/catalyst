@@ -453,7 +453,7 @@ export function UnifiedSlotRenderer({
 
     return (
       <GridColumn
-        key={slot.id}
+        key={`${slot.id}-${colSpanValue}-${viewMode}`}
         colSpan={colSpanValue}
         colSpanClass={colSpanClass}
         rowSpan={1}
