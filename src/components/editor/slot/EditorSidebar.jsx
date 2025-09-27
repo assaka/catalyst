@@ -1323,7 +1323,7 @@ const EditorSidebar = ({
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
     }
-  }, [selectedElement, handleAlignmentChange, onInlineClassChange, isWrapperOrEditorClass]);
+  }, [selectedElement, handleAlignmentChange, onInlineClassChange, isWrapperOrEditorClass, slotConfigs]);
 
   const SectionHeader = ({ title, section, children }) => (
     <div className="border-b border-gray-200">
