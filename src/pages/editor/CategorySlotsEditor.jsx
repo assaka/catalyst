@@ -10,6 +10,7 @@ import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import aiEnhancementService from '@/services/aiEnhancementService';
+import { useStore } from '@/contexts/StoreProvider';
 import {
   CategoryHeaderSlot,
   CategoryBreadcrumbsSlot,
@@ -57,9 +58,54 @@ const createDefaultSlots = async () => {
   }
 };
 
+// Helper function to generate grid classes from store settings
+const getGridClasses = (storeSettings) => {
+  const gridConfig = storeSettings?.product_grid;
+
+  if (!gridConfig) {
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
+  }
+
+  const breakpoints = gridConfig.breakpoints || {};
+  const customBreakpoints = gridConfig.customBreakpoints || [];
+  let classes = [];
+
+  // Standard breakpoints
+  Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+    if (columns > 0) {
+      if (breakpoint === 'default') {
+        if (columns === 1) classes.push('grid-cols-1');
+        else if (columns === 2) classes.push('grid-cols-2');
+      } else {
+        if (columns === 1) classes.push(`${breakpoint}:grid-cols-1`);
+        else if (columns === 2) classes.push(`${breakpoint}:grid-cols-2`);
+        else if (columns === 3) classes.push(`${breakpoint}:grid-cols-3`);
+        else if (columns === 4) classes.push(`${breakpoint}:grid-cols-4`);
+        else if (columns === 5) classes.push(`${breakpoint}:grid-cols-5`);
+        else if (columns === 6) classes.push(`${breakpoint}:grid-cols-6`);
+      }
+    }
+  });
+
+  // Custom breakpoints
+  customBreakpoints.forEach(({ name, columns }) => {
+    if (name && columns > 0) {
+      if (columns === 1) classes.push(`${name}:grid-cols-1`);
+      else if (columns === 2) classes.push(`${name}:grid-cols-2`);
+      else if (columns === 3) classes.push(`${name}:grid-cols-3`);
+      else if (columns === 4) classes.push(`${name}:grid-cols-4`);
+      else if (columns === 5) classes.push(`${name}:grid-cols-5`);
+      else if (columns === 6) classes.push(`${name}:grid-cols-6`);
+    }
+  });
+
+  return classes.length > 0 ? classes.join(' ') : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
+};
+
 // Custom slot renderer for category-specific components
 const categoryCustomSlotRenderer = (slot, context) => {
   const sampleCategoryContext = context || generateMockCategoryContext();
+  const storeSettings = context?.storeSettings || {};
 
   console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
 
@@ -302,16 +348,22 @@ const categoryCustomSlotRenderer = (slot, context) => {
     return null;
   }
 
-  // Handle product_items container - load 4 products
+  // Handle product_items container - load products based on grid config
   if (slot.id === 'product_items') {
-    console.log('🛍️ PRODUCT_ITEMS: Loading 4 products');
+    console.log('🛍️ PRODUCT_ITEMS: Loading products with dynamic grid');
 
-    // Load exactly 4 products
-    const products = sampleCategoryContext?.products?.slice(0, 4) || [];
-    console.log('🛍️ Rendering 4 products:', products.length);
+    // Calculate how many products to show based on grid config
+    const gridConfig = storeSettings?.product_grid;
+    const maxColumns = gridConfig?.breakpoints ? Math.max(...Object.values(gridConfig.breakpoints).filter(v => v > 0)) : 3;
+    const rows = gridConfig?.rows || 2;
+    const productsToShow = maxColumns * rows;
+
+    // Load products based on calculated amount
+    const products = sampleCategoryContext?.products?.slice(0, productsToShow) || [];
+    console.log('🛍️ Rendering products:', products.length, 'Grid classes:', getGridClasses(storeSettings));
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid ${getGridClasses(storeSettings)} gap-4`}>
         {products.map((product, index) => (
           <ProductItemCard
             key={product.id}
@@ -539,9 +591,18 @@ const CategorySlotsEditor = ({
   onSave,
   viewMode = 'grid'
 }) => {
+  // Get store settings for product grid configuration
+  const { settings: storeSettings } = useStore();
+
+  // Create enhanced config with store settings
+  const enhancedConfig = {
+    ...categoryEditorConfig,
+    storeSettings
+  };
+
   return (
     <UnifiedSlotsEditor
-      config={categoryEditorConfig}
+      config={enhancedConfig}
       aiConfig={categoryAiConfig}
       mode={mode}
       onSave={onSave}

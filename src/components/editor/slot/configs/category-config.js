@@ -186,10 +186,11 @@ export const categoryConfig = {
       }
     },
 
-    // Main products display using ProductItemCard component
+    // Main products display using ProductItemsGrid component with dynamic grid from admin settings
     product_items: {
       id: 'product_items',
-      type: 'container',
+      type: 'component',
+      component: 'ProductItemsGrid',
       content: '',
       className: '',
       parentClassName: '',
@@ -199,9 +200,9 @@ export const categoryConfig = {
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
-        hierarchical: false,
-        component: 'ProductItemCard',
-        displayName: 'Product Grid'
+        hierarchical: true,
+        displayName: 'Product Items Grid',
+        description: 'Product grid that uses admin theme & layout settings'
       }
     },
 

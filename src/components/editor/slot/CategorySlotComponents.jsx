@@ -6,6 +6,8 @@
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import { useStore } from '@/contexts/StoreProvider';
+import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 
 // Breadcrumb Navigation Component
 const BreadcrumbRenderer = createSlotComponent({
@@ -108,6 +110,74 @@ const CmsBlockComponent = createSlotComponent({
   }
 });
 
+// Helper function to generate grid classes from store settings
+const getGridClasses = (storeSettings) => {
+  const gridConfig = storeSettings?.product_grid;
+
+  if (!gridConfig) {
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
+  }
+
+  const breakpoints = gridConfig.breakpoints || {};
+  const customBreakpoints = gridConfig.customBreakpoints || [];
+  let classes = [];
+
+  // Standard breakpoints
+  Object.entries(breakpoints).forEach(([breakpoint, columns]) => {
+    if (columns > 0) {
+      if (breakpoint === 'default') {
+        if (columns === 1) classes.push('grid-cols-1');
+        else if (columns === 2) classes.push('grid-cols-2');
+      } else {
+        if (columns === 1) classes.push(`${breakpoint}:grid-cols-1`);
+        else if (columns === 2) classes.push(`${breakpoint}:grid-cols-2`);
+        else if (columns === 3) classes.push(`${breakpoint}:grid-cols-3`);
+        else if (columns === 4) classes.push(`${breakpoint}:grid-cols-4`);
+        else if (columns === 5) classes.push(`${breakpoint}:grid-cols-5`);
+        else if (columns === 6) classes.push(`${breakpoint}:grid-cols-6`);
+      }
+    }
+  });
+
+  // Custom breakpoints
+  customBreakpoints.forEach(({ name, columns }) => {
+    if (name && columns > 0) {
+      if (columns === 1) classes.push(`${name}:grid-cols-1`);
+      else if (columns === 2) classes.push(`${name}:grid-cols-2`);
+      else if (columns === 3) classes.push(`${name}:grid-cols-3`);
+      else if (columns === 4) classes.push(`${name}:grid-cols-4`);
+      else if (columns === 5) classes.push(`${name}:grid-cols-5`);
+      else if (columns === 6) classes.push(`${name}:grid-cols-6`);
+    }
+  });
+
+  return classes.length > 0 ? classes.join(' ') : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
+};
+
+// Product Items Grid - Renders with dynamic grid from admin settings
+const ProductItemsGrid = createSlotComponent({
+  name: 'ProductItemsGrid',
+  render: ({ slot, className, styles, context }) => {
+    const { settings: storeSettings } = useStore();
+    const gridClasses = getGridClasses(storeSettings);
+
+    return (
+      <div
+        className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
+        style={styles || slot.styles}
+      >
+        {/* Render child slots (product cards) */}
+        <UnifiedSlotRenderer
+          slots={context?.slots || {}}
+          parentId={slot.id}
+          viewMode={context?.viewMode || 'grid'}
+          context="editor"
+        />
+      </div>
+    );
+  }
+});
+
 // Register all components
 registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('ActiveFilters', ActiveFilters);
@@ -115,6 +185,7 @@ registerSlotComponent('LayeredNavigation', LayeredNavigation);
 registerSlotComponent('SortSelector', SortSelector);
 registerSlotComponent('PaginationComponent', PaginationComponent);
 registerSlotComponent('CmsBlockRenderer', CmsBlockComponent);
+registerSlotComponent('ProductItemsGrid', ProductItemsGrid);
 
 export {
   BreadcrumbRenderer,
@@ -122,5 +193,6 @@ export {
   LayeredNavigation,
   SortSelector,
   PaginationComponent,
-  CmsBlockComponent
+  CmsBlockComponent,
+  ProductItemsGrid
 };
