@@ -67,49 +67,10 @@ const EditorSidebar = ({
   console.log('🔵 EditorSidebar rendered with:', { selectedElement, slotId, slotConfig, isVisible });
   // Set up database save callback for SimpleStyleManager
   useEffect(() => {
-    console.log('🔧 EDITOR SIDEBAR - Setting up database callback:', {
-      hasOnClassChange: !!onClassChange
-    });
-    if (onClassChange) {
-      styleManager.setDatabaseSaveCallback((updates) => {
-        console.log('🔗 EDITOR SIDEBAR - Database callback triggered:', {
-          updateCount: Object.keys(updates).length,
-          updates,
-          onClassChangeAvailable: !!onClassChange
-        });
-        // Convert our updates to the format expected by onClassChange
-        Object.entries(updates).forEach(([elementId, data]) => {
-          // CRITICAL: Filter wrapper classes before saving to database!
-          const cleanClassName = data.className
-            .split(' ')
-            .filter(cls => {
-              if (!cls) return false;
-              // Editor selection indicators
-              if (['border-2', 'border-blue-500', 'border-dashed', 'shadow-md', 'shadow-blue-200/40'].includes(cls)) return false;
-              // GridColumn wrapper classes
-              if (['border', 'rounded-lg', 'overflow-hidden', 'responsive-slot', 'relative'].includes(cls)) return false;
-              if (['cursor-grab', 'cursor-grabbing', 'active:cursor-grabbing', 'transition-all', 'duration-200'].includes(cls)) return false;
-              // Padding classes from wrapper
-              if (/^p-\d+$/.test(cls)) return false;
-              // Grid layout classes
-              if (/^col-span-\d+$/.test(cls)) return false;
-              // Hover states
-              if (['hover:border-blue-400', 'hover:border-2', 'hover:border-dashed', 'hover:bg-blue-50/10', 'hover:bg-blue-50/20'].includes(cls)) return false;
-              return true;
-            })
-            .join(' ');
-
-          console.log(`🔗 EDITOR SIDEBAR - Calling onClassChange for ${elementId}:`, {
-            originalClassName: data.className,
-            cleanClassName: cleanClassName,
-            filteredOut: data.className.split(' ').filter(cls => cls && isWrapperOrEditorClass(cls)),
-            styles: data.styles,
-            metadata: data.metadata
-          });
-          onClassChange(elementId, cleanClassName, data.styles || {});
-        });
-      });
-    }
+    console.log('🔧 EDITOR SIDEBAR - Disabling SimpleStyleManager database callback to prevent conflicts');
+    // CRITICAL: Disable SimpleStyleManager database callback to prevent race conditions
+    // EditorSidebar handles all database saves directly, SimpleStyleManager should only handle DOM
+    styleManager.setDatabaseSaveCallback(null);
   }, [onClassChange]);
   const [expandedSections, setExpandedSections] = useState({
     content: true,
