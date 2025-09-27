@@ -447,7 +447,7 @@ const UnifiedSlotsEditor = ({
             </div>
 
             {/* Preview and Publish Buttons - Far Right */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-4">
               <Button
                 onClick={() => setShowPreview(!showPreview)}
                 variant={showPreview ? "default" : "outline"}
