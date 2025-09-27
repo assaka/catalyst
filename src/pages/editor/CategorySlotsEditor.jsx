@@ -23,6 +23,7 @@ import {
   CategoryProductItemsSlot
 } from '@/components/editor/slot/slotComponentsCategory';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Create default slots function for category layout
 const createDefaultSlots = async () => {
   try {
@@ -65,6 +66,101 @@ const categoryCustomSlotRenderer = (slot, context) => {
   const sampleCategoryContext = context || generateMockCategoryContext();
 
   console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
+
+  // Handle CMS block slots
+  if (slot.type === 'cms_block') {
+    const position = slot.metadata?.cmsPosition || slot.id || 'default';
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <CmsBlockRenderer position={position} />
+      </div>
+    );
+  }
+
+  // Handle generic slot types as fallbacks
+  if (slot.type === 'text') {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <span dangerouslySetInnerHTML={{ __html: slot.content || 'Text content' }} />
+      </div>
+    );
+  }
+
+  if (slot.type === 'select') {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
+          <option>Sort option 1</option>
+          <option>Sort option 2</option>
+        </select>
+      </div>
+    );
+  }
+
+  if (slot.type === 'pagination') {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="flex items-center justify-center space-x-2">
+          <button className="px-3 py-1 border rounded">Previous</button>
+          <span className="px-3 py-1">1 of 10</span>
+          <button className="px-3 py-1 border rounded">Next</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (slot.type === 'breadcrumbs') {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <nav className="flex items-center space-x-2 text-sm text-gray-600">
+          <span>Home</span>
+          <span>/</span>
+          <span>Category</span>
+          <span>/</span>
+          <span className="font-medium text-gray-900">Current Page</span>
+        </nav>
+      </div>
+    );
+  }
+
+  if (slot.type === 'active_filters') {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+            Brand: Apple ×
+          </span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+            Price: $100-$500 ×
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (slot.type === 'layered_navigation') {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900">Filter By</h3>
+          <div>
+            <h4 className="font-medium text-gray-700 mb-2">Price</h4>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input type="checkbox" className="mr-2" />
+                <span className="text-sm">Under $25</span>
+              </label>
+              <label className="flex items-center">
+                <input type="checkbox" className="mr-2" />
+                <span className="text-sm">$25 - $50</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // IMMEDIATELY check for product_items
   if (slot.id === 'product_items') {
