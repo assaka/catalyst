@@ -162,10 +162,21 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
-    // Debug log for text slots
+    // Debug log for text slots and gallery slots
     if (type === 'text' && context === 'editor') {
       console.log('📋 RENDER TEXT SLOT:', {
         slotId: id,
+        originalClassName: className,
+        processedClassName: processedClassName,
+        styles: styles
+      });
+    }
+
+    // Debug log for gallery-related slots
+    if ((id === 'thumbnail_gallery' || id === 'gallery_container' || id === 'main_image') && context === 'editor') {
+      console.log('🖼️ RENDER GALLERY SLOT:', {
+        slotId: id,
+        type: type,
         originalClassName: className,
         processedClassName: processedClassName,
         styles: styles
