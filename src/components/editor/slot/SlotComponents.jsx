@@ -617,7 +617,7 @@ export function GridColumn({
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot ${colSpanClass}`}
+      } relative responsive-slot ${colSpanClass} ${slot?.className || ''}`}
       data-col-span={colSpan}
       data-row-span={rowSpan}
       data-slot-id={slotId}
