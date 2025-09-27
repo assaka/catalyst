@@ -18,19 +18,6 @@ import CodeEditor from '@/components/editor/ai-context/CodeEditor';
 export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration, onPublish, hasChanges = false }) {
   return (
     <>
-      {/* Save Status */}
-      {localSaveStatus && (
-        <div className={`flex items-center gap-2 text-sm ${
-          localSaveStatus === 'saving' ? 'text-blue-600' :
-          localSaveStatus === 'saved' ? 'text-green-600' :
-          'text-red-600'
-        }`}>
-          {localSaveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-          {localSaveStatus === 'saved' && '✓ Saved'}
-          {localSaveStatus === 'error' && '✗ Save Failed'}
-        </div>
-      )}
-
       {/* Publish Status */}
       {publishStatus && (
         <div className={`flex items-center gap-2 text-sm ${
@@ -43,9 +30,38 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
           {publishStatus === 'error' && '✗ Publish Failed'}
         </div>
       )}
-      <Button onClick={() => saveConfiguration()} disabled={localSaveStatus === 'saving'} variant="outline" size="sm">
-        <Save className="w-4 h-4 mr-2" />
-        Save
+      <Button
+        onClick={() => saveConfiguration()}
+        disabled={localSaveStatus === 'saving'}
+        variant="outline"
+        size="sm"
+        className={
+          localSaveStatus === 'saved' ? 'text-green-600 border-green-300' :
+          localSaveStatus === 'error' ? 'text-red-600 border-red-300' :
+          ''
+        }
+      >
+        {localSaveStatus === 'saving' ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Saving
+          </>
+        ) : localSaveStatus === 'saved' ? (
+          <>
+            <Check className="w-4 h-4 mr-2" />
+            Saved
+          </>
+        ) : localSaveStatus === 'error' ? (
+          <>
+            <X className="w-4 h-4 mr-2" />
+            Save Failed
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4 mr-2" />
+            Save
+          </>
+        )}
       </Button>
     </>
   );

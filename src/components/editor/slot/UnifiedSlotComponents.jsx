@@ -27,6 +27,9 @@ import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDispla
 import BreadcrumbRendererComponent from '@/components/storefront/BreadcrumbRenderer';
 // import StockStatusComponent from '@/components/storefront/StockStatus'; // Temporarily commented out
 
+// Import category slot components to register them
+import './CategorySlotComponents';
+
 /**
  * QuantitySelector - Unified quantity selector component
  */

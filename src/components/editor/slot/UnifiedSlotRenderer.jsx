@@ -129,21 +129,8 @@ export function UnifiedSlotRenderer({
   categoryData = null,
   cartData = null
 }) {
-  console.log('🚀 UNIFIED SLOT RENDERER CALLED!', { parentId, viewMode, context, totalSlots: Object.keys(slots || {}).length });
-
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
-
-  // Debug logging for important parent containers
-  if (parentId === null || parentId === 'page_header' || parentId === 'filters_container' || parentId === 'products_container' || parentId === 'sorting_controls') {
-    console.log(`🔎 UNIFIED SLOT RENDERER - parentId: ${parentId}`, {
-      totalSlots: Object.keys(slots || {}).length,
-      childSlots: childSlots.map(s => ({ id: s.id, type: s.type, viewMode: s.viewMode })),
-      parentId: parentId,
-      viewMode: viewMode,
-      context: context
-    });
-  }
 
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
@@ -174,26 +161,6 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
-    // Debug log for text slots and gallery slots
-    if (type === 'text' && context === 'editor') {
-      console.log('📋 RENDER TEXT SLOT:', {
-        slotId: id,
-        originalClassName: className,
-        processedClassName: processedClassName,
-        styles: styles
-      });
-    }
-
-    // Debug log for gallery-related slots
-    if ((id === 'thumbnail_gallery' || id === 'gallery_container' || id === 'main_image') && context === 'editor') {
-      console.log('🖼️ RENDER GALLERY SLOT:', {
-        slotId: id,
-        type: type,
-        originalClassName: className,
-        processedClassName: processedClassName,
-        styles: styles
-      });
-    }
 
     // Text Element
     if (type === 'text') {

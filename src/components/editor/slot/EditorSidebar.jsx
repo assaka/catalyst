@@ -497,22 +497,6 @@ const EditorSidebar = ({
                 });
 
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
-                  // Special handling for inherited blue color - check if element has explicit color styling
-                  if (computedValue === 'rgb(59, 130, 246)') {
-                    const hasExplicitColor = storedClassName && (
-                      storedClassName.includes('text-') ||
-                      styledElement.style.color ||
-                      styledElement.hasAttribute('style')
-                    );
-
-                    if (!hasExplicitColor) {
-                      console.log('🎨 COLOR PICKER INIT - Detected inherited blue color without explicit styling, using black instead');
-                      elementStyles[prop] = '#000000';
-                      return;
-                    } else {
-                      console.log('🎨 COLOR PICKER INIT - Element has explicit color styling, keeping blue color');
-                    }
-                  }
 
                   // Convert rgb/rgba to hex for color picker
                   if (computedValue.startsWith('rgb')) {
@@ -644,7 +628,14 @@ const EditorSidebar = ({
               colorSource,
               detectedTailwindColor: getTailwindColorHex(colorSource),
               contentComputedColor: window.getComputedStyle(styledElement).color,
-              final: finalStyles
+              final: finalStyles,
+              colorSourceAnalysis: {
+                fromStoredStyles: storedStyles.color,
+                fromElementStyles: elementStyles.color,
+                finalColorChosen: finalStyles.color,
+                isBlueColor: finalStyles.color === '#3b82f6',
+                colorPriority: storedStyles.color ? 'database-stored' : elementStyles.color ? 'computed' : 'none'
+              }
             });
 
             console.log('🎨 COLOR PICKER DEBUG - Final color value for picker:', {
