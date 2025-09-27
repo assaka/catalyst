@@ -172,10 +172,29 @@ class SimpleStyleManager {
           });
           
           console.log('💾 Collected styles for', elementId, ':', styles, 'from element style length:', elementStyle.length);
-          
-          // Save both className and actual inline styles
+
+          // Filter out wrapper classes before saving
+          const cleanClassName = element.className
+            .split(' ')
+            .filter(cls => {
+              if (!cls) return false;
+              // Filter out wrapper classes
+              if (['border', 'rounded-lg', 'overflow-hidden', 'responsive-slot', 'relative'].includes(cls)) return false;
+              if (['cursor-grab', 'cursor-grabbing', 'active:cursor-grabbing', 'transition-all', 'duration-200'].includes(cls)) return false;
+              if (/^p-\d+$/.test(cls)) return false;
+              if (/^col-span-\d+$/.test(cls)) return false;
+              if (/^border-/.test(cls)) return false; // Border styles are wrapper classes
+              if (/^bg-gray-/.test(cls)) return false; // Background colors are wrapper classes
+              return true;
+            })
+            .join(' ');
+
+          console.log('💾 STYLE PERSISTENCE - Original className:', element.className);
+          console.log('💾 STYLE PERSISTENCE - Cleaned className:', cleanClassName);
+
+          // Save both cleaned className and actual inline styles
           databaseUpdates[elementId] = {
-            className: element.className,
+            className: cleanClassName,
             styles: styles,
             metadata: {
               lastModified: new Date().toISOString()
