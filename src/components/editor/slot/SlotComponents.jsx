@@ -90,7 +90,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
     if (direction === 'horizontal') {
       const deltaX = e.clientX - startX;
-      const sensitivity = 25;
+      const sensitivity = 15;
       const colSpanDelta = Math.round(deltaX / sensitivity);
       const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
       console.log('🟢 GridResizeHandle: MouseMove horizontal', { deltaX, colSpanDelta, startValue, newColSpan });
