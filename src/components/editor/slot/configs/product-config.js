@@ -104,7 +104,7 @@ export const productConfig = {
       id: 'gallery_container',
       type: 'container',
       content: '',
-      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}space-y-4{{/if}}',
+      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
@@ -116,16 +116,15 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    thumbnail_gallery: {
-      id: 'thumbnail_gallery',
-      type: 'component',
-      component: 'ProductThumbnails',
+    main_image: {
+      id: 'main_image',
+      type: 'container',
       content: '',
-      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 order-first pt-4 pr-4{{else}}flex space-x-2 overflow-x-auto{{/if}}',
+      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{else}}order-1{{/if}}',
       styles: {},
       parentId: 'gallery_container',
       position: { col: 1, row: 1 },
-      layout: 'flex',
+      layout: 'block',
       colSpan: {
         default: 12
       },
@@ -133,15 +132,16 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    main_image: {
-      id: 'main_image',
-      type: 'container',
+    thumbnail_gallery: {
+      id: 'thumbnail_gallery',
+      type: 'component',
+      component: 'ProductThumbnails',
       content: '',
-      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{/if}}',
+      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 order-first pt-4 pr-4{{else}}flex space-x-2 overflow-x-auto order-2 mt-4{{/if}}',
       styles: {},
       parentId: 'gallery_container',
       position: { col: 1, row: 2 },
-      layout: 'block',
+      layout: 'flex',
       colSpan: {
         default: 12
       },
