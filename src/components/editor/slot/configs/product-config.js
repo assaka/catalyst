@@ -104,23 +104,27 @@ export const productConfig = {
       id: 'gallery_container',
       type: 'container',
       content: '',
-      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
+      className: 'gallery-container flex flex-col space-y-4',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
-      layout: 'block',
+      layout: 'flex',
       colSpan: {
         default: 6
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        dynamicLayout: true,
+        settings: { product_gallery_layout: 'horizontal' }
+      }
     },
 
     main_image: {
       id: 'main_image',
       type: 'container',
       content: '',
-      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{else}}order-1{{/if}}',
+      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden order-1',
       styles: {},
       parentId: 'gallery_container',
       position: { col: 1, row: 1 },
@@ -137,16 +141,19 @@ export const productConfig = {
       type: 'component',
       component: 'ProductThumbnails',
       content: '',
-      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 order-first pt-4 pr-4{{else}}flex space-x-2 overflow-x-auto order-2 mt-4{{/if}}',
+      className: 'thumbnail-gallery order-2 mt-4',
       styles: {},
       parentId: 'gallery_container',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 2 },
       layout: 'flex',
       colSpan: {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        dynamicLayout: true
+      }
     },
 
     product_image: {
