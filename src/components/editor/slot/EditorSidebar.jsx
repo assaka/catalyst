@@ -501,6 +501,16 @@ const EditorSidebar = ({
             const colorProperties = ['color', 'backgroundColor', 'borderColor'];
 
             colorProperties.forEach(prop => {
+              // First, check for Tailwind color classes in the stored (clean) className
+              if (prop === 'color' && storedClassName) {
+                const tailwindColorHex = getTailwindColorHex(storedClassName);
+                if (tailwindColorHex) {
+                  elementStyles[prop] = tailwindColorHex;
+                  return; // Use Tailwind color, skip computed style
+                }
+              }
+
+              // Fall back to computed styles if no Tailwind color class found
               const computedValue = computedStyle[prop];
               if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
                 // Convert rgb/rgba to hex if possible
@@ -828,6 +838,41 @@ const EditorSidebar = ({
     return false;
   }, []);
 
+  // Function to surgically replace classes of a specific type
+  const replaceClassType = useCallback((classString, newClass, classType) => {
+    const classes = classString.split(' ').filter(Boolean);
+
+    // Remove existing classes of this type
+    const filteredClasses = classes.filter(cls => {
+      switch (classType) {
+        case 'fontSize':
+          // Remove existing font size classes
+          return !cls.match(/^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/);
+        case 'fontWeight':
+          // Remove existing font weight classes
+          return !cls.match(/^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/);
+        case 'fontStyle':
+          // Remove existing italic
+          return cls !== 'italic';
+        case 'color':
+          // Remove existing color classes (text-red-200, text-white, etc.)
+          return !cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) && cls !== 'text-white' && cls !== 'text-black';
+        case 'alignment':
+          // Remove existing alignment classes
+          return !cls.match(/^text-(left|center|right|justify)$/);
+        default:
+          return true;
+      }
+    });
+
+    // Add the new class if provided
+    if (newClass && newClass.trim()) {
+      filteredClasses.push(newClass);
+    }
+
+    return filteredClasses.join(' ');
+  }, []);
+
   // Simple alignment change handler - direct DOM updates
   const handleAlignmentChange = useCallback((property, value) => {
     console.log('🟠 handleAlignmentChange called:', { property, value, selectedElement, hasSelectedElement: !!selectedElement });
@@ -937,22 +982,14 @@ const EditorSidebar = ({
     
     console.log('🟠 Processing alignment with styled element - building from DATABASE');
 
-    // Build final className from DATABASE classes + new alignment
-    // Don't use contaminated DOM classes!
-    const newClasses = databaseClassName.split(' ').filter(cls =>
-      cls &&
-      !cls.startsWith('text-left') &&
-      !cls.startsWith('text-center') &&
-      !cls.startsWith('text-right')
-    );
-    newClasses.push(`text-${value}`);
-    styledElement.className = newClasses.join(' ');
+    // Use surgical replacement for alignment - keep ALL other classes, only replace alignment
+    const finalClassName = replaceClassType(databaseClassName, `text-${value}`, 'alignment');
+    styledElement.className = finalClassName;
 
     console.log('🔄 Built alignment className from DATABASE:', {
       databaseClassName,
-      preservedClasses: newClasses.filter(cls => cls !== `text-${value}`),
       newAlignment: `text-${value}`,
-      finalClassName: styledElement.className
+      finalClassName: finalClassName
     });
 
     // Restore preserved inline styles on the styled element
@@ -1047,28 +1084,19 @@ const EditorSidebar = ({
         }
       }
 
-      // CRITICAL: Preserve color classes from DATABASE, NOT from contaminated DOM element!
+      // CRITICAL: Use DATABASE className and surgically replace only the specific class type
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       const databaseClassName = elementSlotConfig?.className || '';
 
-      console.log('💾 Reading color classes from DATABASE for class-based properties:', {
+      console.log('💾 Using surgical class replacement from DATABASE:', {
         elementSlotId,
+        property,
+        value,
         databaseClassName,
         domClassName: styledElement.className,
         isDomContaminated: styledElement.className.includes('border') || styledElement.className.includes('col-span')
       });
 
-      const currentClasses = databaseClassName.split(' ').filter(Boolean);
-      currentClasses.forEach(cls => {
-        if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
-          // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
-          const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
-          if (isColorClass) {
-            currentColorClasses.push(cls);
-          }
-        }
-      });
-      
       // Handle class-based properties (Tailwind) - apply immediately
       const success = styleManager.applyStyle(selectedElement, `class_${property}`, value);
       if (success) {
@@ -1077,34 +1105,23 @@ const EditorSidebar = ({
           styledElement.style.setProperty(styleProp, styleValue);
         });
 
-        // Build final className from DATABASE classes (already in databaseClassName)
-        // The styleManager.applyStyle added the new class, so get updated classes from database + preserve colors
+        // Get the new class that was applied by styleManager
         const newClassFromStyleManager = styledElement.className.split(' ').find(cls =>
           (property === 'fontSize' && cls.match(/^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/)) ||
           (property === 'fontWeight' && cls.match(/^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/)) ||
           (property === 'fontStyle' && cls === 'italic')
         );
 
-        // Build from database classes + preserve colors + add new class
-        const finalClasses = [...currentColorClasses];
-        if (newClassFromStyleManager) {
-          finalClasses.push(newClassFromStyleManager);
-        }
+        // Use surgical replacement: keep ALL existing database classes, only replace the specific type
+        const finalClassName = replaceClassType(databaseClassName, newClassFromStyleManager, property);
 
-        // Add other non-color classes from database
-        databaseClassName.split(' ').forEach(cls => {
-          if (cls && !cls.startsWith('text-') && !cls.startsWith('font-') && cls !== 'italic') {
-            finalClasses.push(cls);
-          }
-        });
-
-        styledElement.className = finalClasses.join(' ');
+        styledElement.className = finalClassName;
 
         console.log('🔄 Built final className for class-based property from DATABASE:', {
           databaseClassName,
-          preservedColors: currentColorClasses,
           newClass: newClassFromStyleManager,
-          finalClassName: styledElement.className
+          finalClassName: finalClassName,
+          property: property
         });
 
         // Update local state for UI responsiveness with preserved styles
