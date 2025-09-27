@@ -890,6 +890,38 @@ const EditorSidebar = ({
       }
     } else {
       // Handle inline style properties - apply immediately
+      // PRESERVE TAILWIND CLASSES (bold, italic, font-size, etc.) when changing inline styles
+      const currentInlineStyles = {};
+      const currentTailwindClasses = [];
+
+      // Preserve all inline styles
+      if (selectedElement.style) {
+        for (let i = 0; i < selectedElement.style.length; i++) {
+          const styleProp = selectedElement.style[i];
+          const styleValue = selectedElement.style.getPropertyValue(styleProp);
+          if (styleValue && styleValue.trim() !== '') {
+            currentInlineStyles[styleProp] = styleValue;
+          }
+        }
+      }
+
+      // Preserve ALL Tailwind classes (not just color classes)
+      const currentClasses = selectedElement.className.split(' ').filter(Boolean);
+      currentClasses.forEach(cls => {
+        // Preserve font-weight classes (bold, semibold, etc.)
+        if (cls.startsWith('font-')) {
+          currentTailwindClasses.push(cls);
+        }
+        // Preserve italic
+        else if (cls === 'italic') {
+          currentTailwindClasses.push(cls);
+        }
+        // Preserve font-size classes (text-xs, text-sm, etc.)
+        else if (cls.startsWith('text-') && !cls.startsWith('text-left') && !cls.startsWith('text-center') && !cls.startsWith('text-right')) {
+          currentTailwindClasses.push(cls);
+        }
+      });
+
       const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
 
       // For button/input/text slots, apply styles to the actual element, not the wrapper
@@ -913,7 +945,8 @@ const EditorSidebar = ({
         targetElement: targetElement.tagName,
         property,
         formattedValue,
-        oldValue: targetElement.style[property]
+        oldValue: targetElement.style[property],
+        preservedTailwindClasses: currentTailwindClasses
       });
 
       targetElement.style[property] = formattedValue;
@@ -935,11 +968,37 @@ const EditorSidebar = ({
         }
       }
 
+      // Restore ALL preserved inline styles
+      Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
+        if (styleProp !== property) { // Don't overwrite the property we just changed
+          targetElement.style.setProperty(styleProp, styleValue);
+        }
+      });
+
+      // Restore ALL preserved Tailwind classes on the selected element
+      if (currentTailwindClasses.length > 0) {
+        const elementClasses = selectedElement.className.split(' ').filter(Boolean);
+        // Remove any Tailwind classes that might have been added/modified
+        const cleanClasses = elementClasses.filter(cls => {
+          return !cls.startsWith('font-') && cls !== 'italic' &&
+                 (!cls.startsWith('text-') || cls.startsWith('text-left') || cls.startsWith('text-center') || cls.startsWith('text-right'));
+        });
+        // Add back ALL the preserved Tailwind classes
+        selectedElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
+
+        console.log('🔄 Restored Tailwind classes:', {
+          preserved: currentTailwindClasses,
+          finalClassName: selectedElement.className
+        });
+      }
+
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
         ...prev,
+        className: selectedElement.className,
         styles: {
           ...prev.styles,
+          ...currentInlineStyles,
           [property]: formattedValue,
           // Include auto-set border properties in state
           ...(property === 'borderWidth' && parseInt(formattedValue) > 0 ? {
@@ -948,18 +1007,19 @@ const EditorSidebar = ({
           } : {})
         }
       }));
-      
+
       // Save immediately using parent callback (for inline styles, we update classes to persist)
       console.log(`💾 STYLE CHANGE - Saving to database:`, {
         elementSlotId,
         property,
         formattedValue,
-        hasCallback: !!onInlineClassChange
+        hasCallback: !!onInlineClassChange,
+        preservedClassName: selectedElement.className
       });
 
       if (onInlineClassChange) {
         // Include auto-set border properties in save data
-        const saveStyles = { [property]: formattedValue };
+        const saveStyles = { ...currentInlineStyles, [property]: formattedValue };
         if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
           saveStyles.borderStyle = targetElement.style.borderStyle;
           saveStyles.borderColor = targetElement.style.borderColor;
