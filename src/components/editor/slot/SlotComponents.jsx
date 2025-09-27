@@ -89,6 +89,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
+    console.log('🔵 GridResizeHandle: MouseDown', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -107,6 +108,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
+      console.log('🟢 GridResizeHandle: MouseMove', { isDragging: isDraggingRef.current });
       if (!isDraggingRef.current) return;
 
       const startX = startXRef.current;
@@ -119,8 +121,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
+        console.log('🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
+
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
+          console.log('🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
           lastValueRef.current = newColSpan;
           onResizeRef.current(newColSpan);
         }
@@ -129,8 +134,11 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
         const newHeight = Math.max(20, startValue + heightDelta);
 
+        console.log('🟢 GridResizeHandle: Vertical', { deltaY, heightDelta, startValue, newHeight, lastValue: lastValueRef.current });
+
         // Only call onResize if the value actually changed
         if (newHeight !== lastValueRef.current) {
+          console.log('🟢 GridResizeHandle: Calling onResize', { newHeight, lastValue: lastValueRef.current });
           lastValueRef.current = newHeight;
           onResizeRef.current(newHeight);
         }
@@ -364,6 +372,18 @@ export function GridColumn({
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
   const isSelected = selectedElementId === slotId;
+
+  // Debug resize handle conditions
+  console.log('🔍 GridColumn render conditions:', {
+    slotId,
+    mode,
+    onGridResize: !!onGridResize,
+    onSlotHeightResize: !!onSlotHeightResize,
+    showHorizontalHandle,
+    showVerticalHandle,
+    isHovered,
+    colSpan
+  });
 
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
