@@ -1310,7 +1310,7 @@ const EditorSidebar = ({
         console.log('🧹 Filtered styles before save:', {
           originalStyles: { ...currentInlineStyles, [property]: formattedValue },
           filteredStyles: saveStyles,
-          removedStyles: gridWrapperStyles.filter(prop => (prop in currentInlineStyles) || (prop === property))
+          removedStyles: Object.keys({...currentInlineStyles, [property]: formattedValue}).filter(prop => isWrapperStyle(prop))
         });
 
         console.log(`💾 STYLE CHANGE - Calling onInlineClassChange with:`, {
