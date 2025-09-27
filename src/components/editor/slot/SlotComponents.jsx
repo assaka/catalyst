@@ -834,12 +834,32 @@ export function HierarchicalSlotRenderer({
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
 
-  // Debug: Log when HierarchicalSlotRenderer is called
-  if (parentId === 'products_container' || parentId === null) {
+  // Debug: Log when HierarchicalSlotRenderer is called and show child slots
+  if (parentId === 'products_container' || parentId === null || parentId === 'filters_container' || parentId === 'page_header') {
+    console.log(`🔎 HIERARCHICAL SLOT RENDERER - parentId: ${parentId}`, {
+      totalSlots: Object.keys(slots || {}).length,
+      childSlots: childSlots.map(s => ({ id: s.id, type: s.type, viewMode: s.viewMode })),
+      parentId: parentId
+    });
   }
 
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
+
+    // Debug logging for missing slots
+    if (slot.id && (slot.id.includes('breadcrumb') || slot.id.includes('active_filter') || slot.id.includes('pagination') || slot.id.includes('cms') || slot.id.includes('layered') || slot.id.includes('sort_selector'))) {
+      console.log(`🔍 SLOT FILTER DEBUG - ${slot.id}:`, {
+        slotId: slot.id,
+        parentId: slot.parentId,
+        viewMode: slot.viewMode,
+        currentViewMode: viewMode,
+        shouldShow: shouldShow,
+        hasViewMode: !!slot.viewMode,
+        isArray: Array.isArray(slot.viewMode),
+        includes: slot.viewMode ? slot.viewMode.includes(viewMode) : 'N/A'
+      });
+    }
+
     return shouldShow;
   });
 
