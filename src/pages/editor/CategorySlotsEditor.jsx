@@ -10,7 +10,7 @@ import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
 import aiEnhancementService from '@/services/aiEnhancementService';
-import { useStore } from '@/contexts/StoreProvider';
+import { useStore } from '@/components/storefront/StoreProvider';
 import {
   CategoryHeaderSlot,
   CategoryBreadcrumbsSlot,

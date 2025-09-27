@@ -6,7 +6,7 @@
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
-import { useStore } from '@/contexts/StoreProvider';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 
 // Breadcrumb Navigation Component
