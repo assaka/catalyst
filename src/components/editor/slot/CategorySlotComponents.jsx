@@ -158,7 +158,9 @@ const getGridClasses = (storeSettings) => {
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
   render: ({ slot, className, styles, context }) => {
-    const { settings: storeSettings } = useStore();
+    // Handle null store context gracefully (when StoreProvider is not available in editor)
+    const storeContext = useStore();
+    const storeSettings = storeContext?.settings || null;
     const gridClasses = getGridClasses(storeSettings);
 
     return (
