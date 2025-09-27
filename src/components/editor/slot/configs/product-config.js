@@ -141,7 +141,7 @@ export const productConfig = {
       type: 'component',
       component: 'ProductThumbnails',
       content: '',
-      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 order-first{{else}}flex space-x-2 overflow-x-auto order-2 mt-4{{/if}}',
+      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-20 {{#if (eq settings.vertical_gallery_position "right")}}order-last pl-4{{else}}order-first pr-4{{/if}}{{else}}flex space-x-2 overflow-x-auto order-2 mt-4{{/if}}',
       styles: {},
       parentId: 'gallery_container',
       position: { col: 1, row: 1 },

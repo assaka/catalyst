@@ -802,6 +802,27 @@ export default function ThemeLayout() {
                                             <SelectItem value="vertical">Vertical (Main image with thumbnails on side)</SelectItem>
                                         </SelectContent>
                                     </Select>
+
+                                    {store.settings.product_gallery_layout === 'vertical' && (
+                                        <div className="mt-4 pt-4 border-t">
+                                            <div>
+                                                <Label htmlFor="vertical_gallery_position">Thumbnail Position (Vertical Layout)</Label>
+                                                <p className="text-sm text-gray-500">Choose whether thumbnails appear on the left or right side.</p>
+                                            </div>
+                                            <Select
+                                                value={store.settings.vertical_gallery_position || 'left'}
+                                                onValueChange={(value) => handleSettingsChange('vertical_gallery_position', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="left">Left (Thumbnails on left side)</SelectItem>
+                                                    <SelectItem value="right">Right (Thumbnails on right side)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
