@@ -751,6 +751,7 @@ function createCleanSlots(config) {
       cleanSlots[key] = {
         id: slot.id || key,
         type: slot.type || 'container',
+        component: slot.component || null, // ← CRITICAL: Component name for component slots
         content: slot.content || '',
         className: slot.className || '',
         parentClassName: slot.parentClassName || '',
