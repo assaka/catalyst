@@ -605,10 +605,7 @@ export function GridColumn({
     <div
       className={`${
         mode === 'edit'
-          ? `${
-              isSelected
-                ? 'border-2 border-blue-500 border-dashed rounded-lg overflow-hidden transition-all duration-200 p-2'
-                : `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : ''} rounded-lg overflow-hidden transition-all duration-200 ${
+          ? `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : ''} rounded-lg overflow-hidden transition-all duration-200 ${
                     isDragOver
                       ? 'border-blue-500 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
                     isDragging
@@ -619,7 +616,6 @@ export function GridColumn({
                       ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
-            }`
           : 'overflow-hidden'
       } relative responsive-slot ${colSpanClass}`}
       data-col-span={colSpan}
@@ -647,9 +643,6 @@ export function GridColumn({
       }}
       onMouseLeave={() => {
         setIsHovered(false);
-        if (isSelected && onElementClick && mode === 'edit') {
-          onElementClick(null, null);
-        }
         if (!isDragging) {
           setIsDragOver(false);
           setIsDragActive(false);

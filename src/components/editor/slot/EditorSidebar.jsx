@@ -1005,6 +1005,21 @@ const EditorSidebar = ({
         });
       }
 
+      // CRITICAL: Filter out editor-only classes before saving!
+      // Editor adds border-2, border-blue-500, border-dashed for selection indicators
+      // These should NOT be saved to the database
+      const editorOnlyClasses = ['border-2', 'border-blue-500', 'border-dashed', 'shadow-md', 'shadow-blue-200/40'];
+      const classNameForSave = targetElement.className
+        .split(' ')
+        .filter(cls => !editorOnlyClasses.includes(cls))
+        .join(' ');
+
+      console.log('🧹 Filtered editor classes before save:', {
+        original: targetElement.className,
+        filtered: classNameForSave,
+        removed: targetElement.className.split(' ').filter(cls => editorOnlyClasses.includes(cls))
+      });
+
       // Update local state for UI responsiveness
       setElementProperties(prev => ({
         ...prev,
