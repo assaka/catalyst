@@ -880,8 +880,18 @@ const EditorSidebar = ({
       }
     }
 
-    // Preserve Tailwind color classes (text-white, text-black, text-blue-200, etc.)
-    const currentClasses = styledElement.className.split(' ').filter(Boolean);
+    // CRITICAL: Preserve color classes from DATABASE, NOT from contaminated DOM element!
+    const slotConfig = slotConfigs?.[elementSlotId];
+    const databaseClassName = slotConfig?.className || '';
+
+    console.log('💾 Reading color classes from DATABASE for alignment:', {
+      elementSlotId,
+      databaseClassName,
+      domClassName: styledElement.className,
+      isDomContaminated: styledElement.className.includes('border') || styledElement.className.includes('col-span')
+    });
+
+    const currentClasses = databaseClassName.split(' ').filter(Boolean);
     currentClasses.forEach(cls => {
       if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
         // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
@@ -925,12 +935,12 @@ const EditorSidebar = ({
       }
     }
     
-    console.log('🟠 Processing alignment with styled element (simplified approach)');
+    console.log('🟠 Processing alignment with styled element - building from DATABASE');
 
-    // Apply alignment directly to the styled element for consistency
-    // Remove existing text alignment classes from styled element
-    const alignmentClasses = styledElement.className.split(' ').filter(Boolean);
-    const newClasses = alignmentClasses.filter(cls =>
+    // Build final className from DATABASE classes + new alignment
+    // Don't use contaminated DOM classes!
+    const newClasses = databaseClassName.split(' ').filter(cls =>
+      cls &&
       !cls.startsWith('text-left') &&
       !cls.startsWith('text-center') &&
       !cls.startsWith('text-right')
@@ -938,22 +948,19 @@ const EditorSidebar = ({
     newClasses.push(`text-${value}`);
     styledElement.className = newClasses.join(' ');
 
+    console.log('🔄 Built alignment className from DATABASE:', {
+      databaseClassName,
+      preservedClasses: newClasses.filter(cls => cls !== `text-${value}`),
+      newAlignment: `text-${value}`,
+      finalClassName: styledElement.className
+    });
+
     // Restore preserved inline styles on the styled element
     Object.entries(currentInlineStyles).forEach(([styleProp, styleValue]) => {
       styledElement.style.setProperty(styleProp, styleValue);
     });
 
-    // Restore preserved Tailwind color classes on the styled element
-    if (currentColorClasses.length > 0) {
-      const elementClasses = styledElement.className.split(' ').filter(Boolean);
-      // Remove any existing color classes to avoid conflicts
-      const cleanClasses = elementClasses.filter(cls => {
-        const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
-        return !isColorClass;
-      });
-      // Add back the preserved color classes
-      styledElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
-    }
+    // No need to restore color classes separately - they're already in the className we built from database!
 
     // Update local state with preserved styles
     setElementProperties(prev => ({
@@ -986,7 +993,7 @@ const EditorSidebar = ({
     setTimeout(() => {
       setAlignmentUpdate(prev => prev + 1);
     }, 0);
-  }, [selectedElement, onInlineClassChange, isWrapperOrEditorClass]);
+  }, [selectedElement, onInlineClassChange, isWrapperOrEditorClass, slotConfigs]);
 
   // Simple property change handler - direct DOM updates and immediate saves
   const handlePropertyChange = useCallback((property, value) => {
@@ -1040,8 +1047,18 @@ const EditorSidebar = ({
         }
       }
 
-      // Preserve Tailwind color classes (text-white, text-black, text-blue-200, etc.)
-      const currentClasses = styledElement.className.split(' ').filter(Boolean);
+      // CRITICAL: Preserve color classes from DATABASE, NOT from contaminated DOM element!
+      const slotConfig = slotConfigs?.[elementSlotId];
+      const databaseClassName = slotConfig?.className || '';
+
+      console.log('💾 Reading color classes from DATABASE for class-based properties:', {
+        elementSlotId,
+        databaseClassName,
+        domClassName: styledElement.className,
+        isDomContaminated: styledElement.className.includes('border') || styledElement.className.includes('col-span')
+      });
+
+      const currentClasses = databaseClassName.split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         if (cls.startsWith('text-') && (cls.includes('-') || cls === 'text-white' || cls === 'text-black')) {
           // Check if it's a color class (has a dash for variants like text-blue-200, or is text-white/text-black)
@@ -1060,17 +1077,35 @@ const EditorSidebar = ({
           styledElement.style.setProperty(styleProp, styleValue);
         });
 
-        // Restore preserved Tailwind color classes after class change
-        if (currentColorClasses.length > 0) {
-          const elementClasses = styledElement.className.split(' ').filter(Boolean);
-          // Remove any existing color classes to avoid conflicts
-          const cleanClasses = elementClasses.filter(cls => {
-            const isColorClass = cls.match(/^text-(white|black|gray|red|yellow|green|blue|indigo|purple|pink|orange|emerald|teal|cyan|sky|violet|fuchsia|rose|lime|amber|stone|neutral|zinc|slate|warmGray|trueGray|coolGray)-?\d*$/) || cls === 'text-white' || cls === 'text-black';
-            return !isColorClass;
-          });
-          // Add back the preserved color classes
-          styledElement.className = [...cleanClasses, ...currentColorClasses].join(' ');
+        // Build final className from DATABASE classes (already in databaseClassName)
+        // The styleManager.applyStyle added the new class, so get updated classes from database + preserve colors
+        const newClassFromStyleManager = styledElement.className.split(' ').find(cls =>
+          (property === 'fontSize' && cls.match(/^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/)) ||
+          (property === 'fontWeight' && cls.match(/^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/)) ||
+          (property === 'fontStyle' && cls === 'italic')
+        );
+
+        // Build from database classes + preserve colors + add new class
+        const finalClasses = [...currentColorClasses];
+        if (newClassFromStyleManager) {
+          finalClasses.push(newClassFromStyleManager);
         }
+
+        // Add other non-color classes from database
+        databaseClassName.split(' ').forEach(cls => {
+          if (cls && !cls.startsWith('text-') && !cls.startsWith('font-') && cls !== 'italic') {
+            finalClasses.push(cls);
+          }
+        });
+
+        styledElement.className = finalClasses.join(' ');
+
+        console.log('🔄 Built final className for class-based property from DATABASE:', {
+          databaseClassName,
+          preservedColors: currentColorClasses,
+          newClass: newClassFromStyleManager,
+          finalClassName: styledElement.className
+        });
 
         // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {
@@ -1124,8 +1159,19 @@ const EditorSidebar = ({
         }
       }
 
-      // Preserve ALL Tailwind classes from targetElement (content wrapper with classes/styles)
-      const currentClasses = (targetElement.className || '').split(' ').filter(Boolean);
+      // CRITICAL: Preserve classes from DATABASE (storedClassName), NOT from contaminated DOM element!
+      // The DOM element might have wrapper classes, but storedClassName is the clean source of truth
+      const slotConfig = slotConfigs?.[elementSlotId];
+      const databaseClassName = slotConfig?.className || '';
+
+      console.log('💾 Reading classes from DATABASE for preservation:', {
+        elementSlotId,
+        databaseClassName,
+        domClassName: targetElement.className,
+        isDomContaminated: targetElement.className.includes('border') || targetElement.className.includes('col-span')
+      });
+
+      const currentClasses = databaseClassName.split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         // Preserve font-weight classes (bold, semibold, etc.)
         if (cls.startsWith('font-')) {
@@ -1180,24 +1226,16 @@ const EditorSidebar = ({
         }
       });
 
-      // Restore ALL preserved Tailwind classes to targetElement
-      if (currentTailwindClasses.length > 0) {
-        const elementClasses = (targetElement.className || '').split(' ').filter(Boolean);
-        // Remove any Tailwind classes that might have been added/modified
-        // Since we now preserve ALL text- classes, we need to remove ALL of them before restoring
-        const cleanClasses = elementClasses.filter(cls => {
-          return !cls.startsWith('font-') && cls !== 'italic' && !cls.startsWith('text-');
-        });
-        // Add back ALL the preserved Tailwind classes (including alignment)
-        targetElement.className = [...cleanClasses, ...currentTailwindClasses].join(' ');
+      // Build final className from preserved DATABASE classes + new property
+      // Don't read from DOM - it might be contaminated!
+      const finalClassName = currentTailwindClasses.join(' ');
+      targetElement.className = finalClassName;
 
-        console.log('🔄 Restored Tailwind classes:', {
-          preserved: currentTailwindClasses,
-          finalClassName: targetElement.className,
-          beforeCleanClasses: elementClasses,
-          afterCleanClasses: cleanClasses
-        });
-      }
+      console.log('🔄 Built final className from DATABASE classes:', {
+        preservedFromDatabase: currentTailwindClasses,
+        finalClassName: finalClassName,
+        domClassNameIgnored: targetElement.className !== finalClassName ? 'YES (was contaminated)' : 'NO'
+      });
 
       // CRITICAL: Filter out ALL wrapper and editor classes before saving!
       // Using the isWrapperOrEditorClass function defined above

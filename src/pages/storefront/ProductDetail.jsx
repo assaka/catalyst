@@ -850,7 +850,7 @@ export default function ProductDetail() {
             allSettings: settings
           })}
           <UnifiedSlotRenderer
-            slots={productLayoutConfig?.slots || productConfig}
+            slots={productConfig.slots}
             parentId={null}
             viewMode="default"
             context="storefront"
