@@ -471,15 +471,16 @@ const ResizeWrapper = ({
         ),
         style: {
           ...children.props.style,
-          // Apply size directly to the child element, but respect w-fit classes
-          width: hasWFitClass ? 'fit-content' :
-                 (size.width !== 'auto' && size.widthUnit !== 'auto' ? `${size.width}${size.widthUnit || 'px'}` : children.props.style?.width || 'auto'),
+          // Only apply width if explicitly resized or has w-fit class
+          ...(hasWFitClass ? { width: 'fit-content' } :
+              (size.width !== 'auto' && size.widthUnit !== 'auto' && size.width !== children.props.style?.width) ?
+              { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
           ...(size.height !== 'auto' && size.height && {
             minHeight: `${size.height}${size.heightUnit || 'px'}`,
             height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
           }),
           boxSizing: 'border-box',
-          display: children.props.style?.display || 'block',
+          display: children.props.style?.display || 'inline-block',
           border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
           borderRadius: '4px',
           transition: 'border-color 0.2s ease-in-out',
