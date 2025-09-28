@@ -173,19 +173,18 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           });
         }
 
-        // Calculate visual offset based on ACTUAL column change, not raw colSpanDelta
+        // Handle follows the mouse cursor directly
         const actualColumnChange = newColSpan - startValue;
-        const visualOffset = actualColumnChange * columnWidth;
         console.log('RESIZE: 📐 Visual Offset Debug:', {
           colSpanDelta: colSpanDelta,
           actualColumnChange,
           startValue,
           newColSpan,
           columnWidth,
-          visualOffset,
-          mouseOffset: visualOffset
+          mouseDeltaX: deltaX,
+          mouseOffset: deltaX
         });
-        setMouseOffset(visualOffset);
+        setMouseOffset(deltaX);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
