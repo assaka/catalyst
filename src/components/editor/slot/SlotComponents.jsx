@@ -72,6 +72,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
+  const handlePositionOffsetRef = useRef(0); // Track cumulative handle position changes
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -126,37 +127,54 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
       if (direction === 'horizontal') {
         const deltaX = e.clientX - startX;
-        const sensitivity = 5; // Reduced from 8 to 5 for better responsiveness
+        const sensitivity = 40; // Increased sensitivity - requires more mouse movement per column
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
-
-        // Update visual position (follow mouse without capping)
-        setMouseOffset(deltaX);
 
         console.log('🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
 
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
           console.log('🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
+
+          // Calculate approximate pixel width per column span (assuming 12 column grid)
+          // Get parent element to calculate actual column width
+          const parentElement = e.target.closest('[data-slot-id]');
+          if (parentElement) {
+            const parentWidth = parentElement.getBoundingClientRect().width;
+            const columnWidth = parentWidth / lastValueRef.current; // Current column width in pixels
+            const spanChange = newColSpan - lastValueRef.current;
+            // Track how much the handle's base position changed due to resize
+            handlePositionOffsetRef.current += (spanChange * columnWidth);
+          }
+
           lastValueRef.current = newColSpan;
           onResizeRef.current(newColSpan);
         }
+
+        // Update visual position: mouse delta minus the handle's base position changes
+        setMouseOffset(deltaX - handlePositionOffsetRef.current);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
         const newHeight = Math.max(20, startValue + heightDelta);
-
-        // Update visual position (follow mouse without capping)
-        setMouseOffset(deltaY);
 
         console.log('🟢 GridResizeHandle: Vertical', { deltaY, heightDelta, startValue, newHeight, lastValue: lastValueRef.current });
 
         // Only call onResize if the value actually changed
         if (newHeight !== lastValueRef.current) {
           console.log('🟢 GridResizeHandle: Calling onResize', { newHeight, lastValue: lastValueRef.current });
+
+          // Track height changes for handle position offset
+          const heightChange = newHeight - lastValueRef.current;
+          handlePositionOffsetRef.current += heightChange;
+
           lastValueRef.current = newHeight;
           onResizeRef.current(newHeight);
         }
+
+        // Update visual position: mouse delta minus the handle's base position changes
+        setMouseOffset(deltaY - handlePositionOffsetRef.current);
       }
     };
 
@@ -164,6 +182,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       setIsDragging(false);
       isDraggingRef.current = false;
       setMouseOffset(0); // Reset visual position
+      handlePositionOffsetRef.current = 0; // Reset position offset tracking
 
       // Reset body styles
       document.body.style.userSelect = '';
