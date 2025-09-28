@@ -124,6 +124,10 @@ const ResizeWrapper = ({
     return cleanedClasses.replace(/\s+/g, ' ').trim();
   };
 
+  // Check element types
+  const isButton = isButtonElement(children);
+  const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
+
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
     if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
@@ -399,8 +403,6 @@ const ResizeWrapper = ({
     document.addEventListener('mouseup', handleMouseUp);
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
-  const isButton = isButtonElement(children);
-  const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
   const wrapperStyle = {
     // Wrapper should always be fit-content to not affect parent layout
     width: 'fit-content',
