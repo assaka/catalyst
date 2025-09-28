@@ -464,9 +464,22 @@ export function UnifiedSlotRenderer({
     }
 
     // Editor: Use GridColumn for full functionality
-    const colSpanValue = typeof slot.colSpan === 'number' ? slot.colSpan :
-      (typeof slot.colSpan === 'object' && slot.colSpan !== null) ?
-        (slot.colSpan[viewportMode] || 12) : 12;
+    let colSpanValue = 12;
+    if (typeof slot.colSpan === 'number') {
+      colSpanValue = slot.colSpan;
+    } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
+      // Try viewMode (for content state like 'default', 'emptyCart', 'withProducts')
+      const viewModeValue = slot.colSpan[viewMode];
+      if (typeof viewModeValue === 'number') {
+        colSpanValue = viewModeValue;
+      } else if (typeof viewModeValue === 'string') {
+        // For responsive string classes like 'col-span-12 lg:col-span-6', don't override with numeric value
+        colSpanValue = null;
+      } else {
+        // No valid viewMode key found, use default of 12
+        colSpanValue = 12;
+      }
+    }
 
 
     return (
