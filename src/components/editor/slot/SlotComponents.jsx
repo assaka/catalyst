@@ -810,16 +810,6 @@ export function GridColumn({
           : 'overflow-hidden'
       } relative responsive-slot ${colSpanClass} ${slot?.parentClassName || ''}`}
       ref={(el) => {
-        if (el && colSpanClass && slotId === 'header_title') {
-          console.log('🟨 HEADER_TITLE DOM classes:', {
-            slotId,
-            expectedClass: colSpanClass,
-            actualClasses: el.className,
-            hasColSpanClass: el.className.includes(colSpanClass),
-            parentElement: el.parentElement?.tagName,
-            parentClasses: el.parentElement?.className
-          });
-        }
       }}
       data-col-span={colSpan}
       data-row-span={rowSpan}
