@@ -380,6 +380,8 @@ export function GridColumn({
     return { row: newRow, col: newCol };
   }, [slots, viewMode]);
 
+  const [isResizingSlot, setIsResizingSlot] = useState(false);
+
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
@@ -821,7 +823,7 @@ export function GridColumn({
 
       {children}
 
-      {showHorizontalHandle && isHovered && (
+      {showHorizontalHandle && (isHovered || isResizingSlot) && (
         <GridResizeHandle
           onResize={(newColSpan) => onGridResize(slotId, newColSpan)}
           currentValue={colSpan}
@@ -829,12 +831,18 @@ export function GridColumn({
           minValue={1}
           direction="horizontal"
           parentHovered={isHovered}
-          onResizeStart={onResizeStart}
-          onResizeEnd={onResizeEnd}
+          onResizeStart={() => {
+            setIsResizingSlot(true);
+            onResizeStart?.();
+          }}
+          onResizeEnd={() => {
+            setIsResizingSlot(false);
+            onResizeEnd?.();
+          }}
           onHoverChange={setIsOverResizeHandle}
         />
       )}
-      {showVerticalHandle && isHovered && (
+      {showVerticalHandle && (isHovered || isResizingSlot) && (
         <GridResizeHandle
           onResize={(newHeight) => onSlotHeightResize(slotId, newHeight)}
           currentValue={height || 80}
@@ -842,8 +850,14 @@ export function GridColumn({
           minValue={40}
           direction="vertical"
           parentHovered={isHovered}
-          onResizeStart={onResizeStart}
-          onResizeEnd={onResizeEnd}
+          onResizeStart={() => {
+            setIsResizingSlot(true);
+            onResizeStart?.();
+          }}
+          onResizeEnd={() => {
+            setIsResizingSlot(false);
+            onResizeEnd?.();
+          }}
           onHoverChange={setIsOverResizeHandle}
         />
       )}
