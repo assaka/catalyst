@@ -1254,20 +1254,128 @@ export function useSlotConfiguration({
     return updatedSlots;
   }, []);
 
+  // Utility function to constrain child element positions within parent slot bounds
+  const constrainChildToParentBounds = useCallback((childSlot, parentSlot, slots) => {
+    if (!childSlot.styles || !parentSlot) return childSlot;
+
+    const updatedStyles = { ...childSlot.styles };
+    const parentColSpan = parentSlot.colSpan || 12;
+
+    // Calculate approximate maximum bounds based on parent column span
+    // Assuming 12-column grid system, each column is ~8.33% of total width
+    const maxWidthPercent = (parentColSpan / 12) * 100;
+    const maxWidthPx = maxWidthPercent * 10; // Rough conversion for px bounds
+
+    // Constrain left positioning
+    if (updatedStyles.left && typeof updatedStyles.left === 'string') {
+      const leftMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)px$/);
+      if (leftMatch) {
+        const leftValue = parseFloat(leftMatch[1]);
+        const maxLeft = maxWidthPx * 0.8; // Leave 20% margin
+        if (leftValue > maxLeft) {
+          updatedStyles.left = `${maxLeft}px`;
+        }
+      }
+    }
+
+    // Constrain width
+    if (updatedStyles.width && typeof updatedStyles.width === 'string') {
+      const widthMatch = updatedStyles.width.match(/^(\d+(?:\.\d+)?)px$/);
+      if (widthMatch) {
+        const widthValue = parseFloat(widthMatch[1]);
+        const maxWidth = maxWidthPx * 0.9; // Leave 10% margin
+        if (widthValue > maxWidth) {
+          updatedStyles.width = `${maxWidth}px`;
+        }
+      }
+    }
+
+    return {
+      ...childSlot,
+      styles: updatedStyles
+    };
+  }, []);
+
+  // Enhanced function to apply constraints to all child elements
+  const applyConstraintsToChildren = useCallback((slots, parentSlotId = null) => {
+    const updatedSlots = { ...slots };
+
+    Object.keys(updatedSlots).forEach(slotId => {
+      const slot = updatedSlots[slotId];
+
+      // If we're checking a specific parent, only process its children
+      if (parentSlotId && slot.parentId !== parentSlotId) return;
+
+      // If checking all slots, only process those with parents
+      if (!parentSlotId && !slot.parentId) return;
+
+      const parentSlot = updatedSlots[slot.parentId];
+      if (parentSlot) {
+        updatedSlots[slotId] = constrainChildToParentBounds(slot, parentSlot, updatedSlots);
+      }
+    });
+
+    return updatedSlots;
+  }, [constrainChildToParentBounds]);
+
   // Generic grid resize handler
   const handleGridResize = useCallback((slotId, newColSpan, slots) => {
     const updatedSlots = { ...slots };
 
     if (updatedSlots[slotId]) {
+      const oldColSpan = updatedSlots[slotId].colSpan || 12;
+
       // Update hierarchical slot colSpan
       updatedSlots[slotId] = {
         ...updatedSlots[slotId],
         colSpan: newColSpan
       };
+
+      // Calculate resize ratio to adjust child positions
+      const resizeRatio = newColSpan / oldColSpan;
+
+      // Find and adjust all child elements within this slot
+      Object.keys(updatedSlots).forEach(childSlotId => {
+        const childSlot = updatedSlots[childSlotId];
+
+        // Check if this is a child of the resized slot
+        if (childSlot.parentId === slotId && childSlot.styles) {
+          const updatedStyles = { ...childSlot.styles };
+
+          // Adjust horizontal positioning to stay within new slot boundaries
+          if (updatedStyles.left && typeof updatedStyles.left === 'string') {
+            const leftMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)px$/);
+            if (leftMatch) {
+              const leftValue = parseFloat(leftMatch[1]);
+              const newLeftValue = Math.max(0, Math.min(leftValue * resizeRatio, (newColSpan / 12) * 100 - 5)); // Keep 5% margin from edge
+              updatedStyles.left = `${newLeftValue}px`;
+            }
+          }
+
+          // Adjust width if it's in pixels to maintain proportions
+          if (updatedStyles.width && typeof updatedStyles.width === 'string') {
+            const widthMatch = updatedStyles.width.match(/^(\d+(?:\.\d+)?)px$/);
+            if (widthMatch) {
+              const widthValue = parseFloat(widthMatch[1]);
+              const newWidthValue = Math.min(widthValue * resizeRatio, (newColSpan / 12) * 100 - 10); // Keep some margin
+              updatedStyles.width = `${newWidthValue}px`;
+            }
+          }
+
+          updatedSlots[childSlotId] = {
+            ...childSlot,
+            styles: updatedStyles
+          };
+        }
+      });
+
+      // Apply general constraints to ensure all children stay within bounds
+      const constrainedSlots = applyConstraintsToChildren(updatedSlots, slotId);
+      return constrainedSlots;
     }
 
     return updatedSlots;
-  }, []);
+  }, [applyConstraintsToChildren]);
 
   // Generic slot height resize handler
   const handleSlotHeightResize = useCallback((slotId, newHeight, slots) => {
