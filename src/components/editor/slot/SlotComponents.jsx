@@ -112,9 +112,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     });
 
 
-    // Prevent text selection during drag and hide real cursor
+    // Prevent text selection during drag
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'none';
+    document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
 
     if (onResizeStartRef.current) {
       onResizeStartRef.current();
@@ -337,14 +337,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           style={{
             left: `${customCursorPos.x}px`,
             top: `${customCursorPos.y}px`,
-            transform: 'translate(-50%, -50%)',
-            width: '20px',
-            height: '20px'
+            transform: 'translate(-25%, -10%)',
+            width: '24px',
+            height: '24px'
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 2 L10 18 M2 10 L18 10" stroke="white" strokeWidth="2" />
-            <path d="M10 2 L10 18 M2 10 L18 10" stroke="black" strokeWidth="1" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 8V2.5C13 1.67 12.33 1 11.5 1C10.67 1 10 1.67 10 2.5V8M13 8V12M13 8C13 8 13.47 5.97 15 5.5C16.5 5.06 17.5 6 17.5 7.5V12M10 8V3.5C10 2.67 9.33 2 8.5 2C7.67 2 7 2.67 7 3.5V8M10 8V12M7 8V5C7 4.17 6.33 3.5 5.5 3.5C4.67 3.5 4 4.17 4 5V12C4 12 4 16 7 19C10 22 15 22 18 19C19 18 20 16 20 12V7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M13 8V2.5C13 1.67 12.33 1 11.5 1C10.67 1 10 1.67 10 2.5V8M13 8V12M13 8C13 8 13.47 5.97 15 5.5C16.5 5.06 17.5 6 17.5 7.5V12M10 8V3.5C10 2.67 9.33 2 8.5 2C7.67 2 7 2.67 7 3.5V8M10 8V12M7 8V5C7 4.17 6.33 3.5 5.5 3.5C4.67 3.5 4 4.17 4 5V12C4 12 4 16 7 19C10 22 15 22 18 19C19 18 20 16 20 12V7.5" stroke="black" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="white"/>
           </svg>
         </div>
       )}
