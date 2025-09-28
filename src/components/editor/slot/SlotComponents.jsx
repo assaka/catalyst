@@ -215,7 +215,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
   return (
     <div
-      ref={handleElementRef}
       className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
         isHovered || isDragging || parentHovered
           ? 'opacity-100'
