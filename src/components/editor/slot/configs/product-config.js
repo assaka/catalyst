@@ -183,7 +183,7 @@ export const productConfig = {
       className: 'info-container grid grid-cols-12 gap-2 space-y-6',
       styles: {},
       parentId: 'content_area',
-      position: { col: 2, row: 1 },
+      position: { col: 7, row: 1 },
       layout: 'grid',
       colSpan: {
         default: 6
