@@ -72,7 +72,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
-  const [customCursorPos, setCustomCursorPos] = useState({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -183,9 +182,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           const slotRect = slotElement.getBoundingClientRect();
           const handleRect = handleElementRef.current.getBoundingClientRect();
 
-          // Update custom cursor to follow slot's right border
-          setCustomCursorPos({ x: slotRect.right, y: e.clientY });
-
           // Throttle debug logs - only log every 10px of movement
           if (Math.abs(deltaX) % 10 < 2) {
             console.log('RESIZE: 📍 Detailed Position Debug:', {
@@ -194,7 +190,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
               slotWidth: Math.round(slotRect.width),
               handleX: Math.round(handleRect.left),
               cursorX: e.clientX,
-              customCursorX: Math.round(slotRect.right),
               handleRightDiff: Math.round(handleRect.left - slotRect.right),
               deltaX: deltaX
             });
@@ -284,71 +279,51 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     : '-bottom-1 left-1/2 h-2 w-8';
 
   return (
-    <>
-      <div
-        className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
-          isHovered || isDragging || parentHovered
-            ? 'opacity-100'
-            : 'opacity-0 hover:opacity-90'
-        }`}
-        onMouseDown={handleMouseDown}
-        onMouseEnter={() => {
-          setIsHovered(true);
-          onHoverChange?.(true);
-        }}
-        onMouseLeave={() => {
-          setIsHovered(false);
-          onHoverChange?.(false);
-        }}
-        style={{
-          zIndex: 9999,
-          transform: isDragging
-            ? (isHorizontal
-                ? `translate(${mouseOffset}px, -50%)`
-                : `translate(-50%, ${mouseOffset}px)`)
-            : undefined,
-          transition: isDragging ? 'none' : 'all 0.2s ease-out'
-        }}
-        title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
-      >
-        <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
-          isDragging
-            ? 'bg-blue-600 border-blue-700 shadow-lg'
-            : isHovered || parentHovered
-              ? 'bg-blue-500 border-blue-600 shadow-md'
-              : 'bg-blue-500 border-blue-600 hover:bg-blue-600'
-        }`}>
-          <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-          <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-          <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-        </div>
-
-        {isDragging && (
-          <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'}
-            bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
-            {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
-          </div>
-        )}
+    <div
+      className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
+        isHovered || isDragging || parentHovered
+          ? 'opacity-100'
+          : 'opacity-0 hover:opacity-90'
+      }`}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        onHoverChange?.(true);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        onHoverChange?.(false);
+      }}
+      style={{
+        zIndex: 9999,
+        transform: isDragging
+          ? (isHorizontal
+              ? `translate(${mouseOffset}px, -50%)`
+              : `translate(-50%, ${mouseOffset}px)`)
+          : undefined,
+        transition: isDragging ? 'none' : 'all 0.2s ease-out'
+      }}
+      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
+    >
+      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
+        isDragging
+          ? 'bg-blue-600 border-blue-700 shadow-lg'
+          : isHovered || parentHovered
+            ? 'bg-blue-500 border-blue-600 shadow-md'
+            : 'bg-blue-500 border-blue-600 hover:bg-blue-600'
+      }`}>
+        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
       </div>
 
       {isDragging && (
-        <div
-          className="fixed pointer-events-none z-[10000]"
-          style={{
-            left: `${customCursorPos.x}px`,
-            top: `${customCursorPos.y}px`,
-            transform: 'translate(-25%, -10%)',
-            width: '24px',
-            height: '24px'
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 8V2.5C13 1.67 12.33 1 11.5 1C10.67 1 10 1.67 10 2.5V8M13 8V12M13 8C13 8 13.47 5.97 15 5.5C16.5 5.06 17.5 6 17.5 7.5V12M10 8V3.5C10 2.67 9.33 2 8.5 2C7.67 2 7 2.67 7 3.5V8M10 8V12M7 8V5C7 4.17 6.33 3.5 5.5 3.5C4.67 3.5 4 4.17 4 5V12C4 12 4 16 7 19C10 22 15 22 18 19C19 18 20 16 20 12V7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M13 8V2.5C13 1.67 12.33 1 11.5 1C10.67 1 10 1.67 10 2.5V8M13 8V12M13 8C13 8 13.47 5.97 15 5.5C16.5 5.06 17.5 6 17.5 7.5V12M10 8V3.5C10 2.67 9.33 2 8.5 2C7.67 2 7 2.67 7 3.5V8M10 8V12M7 8V5C7 4.17 6.33 3.5 5.5 3.5C4.67 3.5 4 4.17 4 5V12C4 12 4 16 7 19C10 22 15 22 18 19C19 18 20 16 20 12V7.5" stroke="black" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="white"/>
-          </svg>
+        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'}
+          bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
+          {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
