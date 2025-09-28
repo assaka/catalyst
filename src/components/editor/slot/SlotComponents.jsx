@@ -108,8 +108,16 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
-      console.log('🟢 GridResizeHandle: MouseMove', { isDragging: isDraggingRef.current });
-      if (!isDraggingRef.current) return;
+      console.log('🟢 GridResizeHandle: MouseMove', {
+        isDragging: isDraggingRef.current,
+        eventTimestamp: Date.now(),
+        hasListeners: !!mouseMoveHandlerRef.current
+      });
+
+      if (!isDraggingRef.current) {
+        console.log('❌ MouseMove but isDragging is false!');
+        return;
+      }
 
       const startX = startXRef.current;
       const startY = startYRef.current;
@@ -171,12 +179,16 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   };
 
   useEffect(() => {
+    console.log('🟦 GridResizeHandle: Component mounted', { currentValue, direction });
     return () => {
+      console.log('🟥 GridResizeHandle: Component unmounting!', { currentValue, direction, isDragging });
       if (mouseMoveHandlerRef.current) {
         document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
+        console.log('🟥 Removed mousemove listener');
       }
       if (mouseUpHandlerRef.current) {
         document.removeEventListener('mouseup', mouseUpHandlerRef.current);
+        console.log('🟥 Removed mouseup listener');
       }
     };
   }, []);
@@ -384,6 +396,14 @@ export function GridColumn({
     isHovered,
     colSpan
   });
+
+  // Log mount/unmount
+  useEffect(() => {
+    console.log('🟦 GridColumn: Mounted', { slotId, colSpan });
+    return () => {
+      console.log('🟥 GridColumn: Unmounting!', { slotId, colSpan });
+    };
+  }, []);
 
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
