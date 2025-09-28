@@ -548,7 +548,7 @@ const UnifiedSlotsEditor = ({
                   <UnifiedSlotRenderer
                     slots={layoutConfig.slots}
                     parentId={null}
-                    viewMode={viewMode}
+                    viewMode={currentViewport}
                     context="editor"
                     productData={pageContext}
                     mode={showPreview ? 'view' : mode}

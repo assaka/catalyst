@@ -117,7 +117,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
       if (direction === 'horizontal') {
         const deltaX = e.clientX - startX;
-        const sensitivity = 8; // Use a more moderate sensitivity
+        const sensitivity = 5; // Reduced from 8 to 5 for better responsiveness
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
