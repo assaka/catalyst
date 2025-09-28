@@ -56,7 +56,7 @@ export const productConfig = {
       styles: { gridColumn: '1 / -1', gridRow: '1' },
       parentId: 'main_layout',
       position: { col: 1, row: 1 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         default: 12
       },
@@ -129,7 +129,7 @@ export const productConfig = {
       styles: {},
       parentId: 'gallery_container',
       position: { col: 1, row: 1 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         default: 12
       },
@@ -184,7 +184,7 @@ export const productConfig = {
       styles: {},
       parentId: 'content_area',
       position: { col: 2, row: 1 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         default: 6
       },
@@ -353,7 +353,7 @@ export const productConfig = {
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 7 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         default: 12
       },
@@ -390,7 +390,7 @@ export const productConfig = {
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 8 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         default: 12
       },
@@ -517,7 +517,7 @@ export const productConfig = {
       styles: { gridRow: '4' },
       parentId: 'main_layout',
       position: { col: 1, row: 4 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         default: 12
       },

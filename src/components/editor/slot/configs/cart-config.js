@@ -53,7 +53,7 @@ export const cartConfig = {
       styles: { gridRow: '2' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         emptyCart: 12,
         withProducts: 'col-span-12 lg:col-span-9'
@@ -183,7 +183,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         withProducts: 12
       },
@@ -201,7 +201,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'sidebar_area',
       position: { col: 1, row: 1 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         withProducts: 12
       },
@@ -219,7 +219,7 @@ export const cartConfig = {
       styles: {},
       parentId: 'sidebar_area',
       position: { col: 1, row: 2 },
-      layout: 'block',
+      layout: 'grid',
       colSpan: {
         withProducts: 12
       },
