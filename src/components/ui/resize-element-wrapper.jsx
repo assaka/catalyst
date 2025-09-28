@@ -180,6 +180,59 @@ const ResizeWrapper = ({
     }
   }, [naturalSize.width, size.width]);
 
+  // Monitor parent size changes and auto-shrink text elements to prevent overflow
+  useEffect(() => {
+    if (!isTextElement || !wrapperRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const parentRect = entry.contentRect;
+        const currentWidth = size.width;
+
+        // If text element is wider than parent slot, shrink it to fit
+        if (currentWidth !== 'auto' && parentRect.width > 0) {
+          const maxAllowedWidth = parentRect.width - 10; // 10px margin
+          if (currentWidth > maxAllowedWidth) {
+            console.log('TEXT RESIZE: Auto-shrinking text to prevent overflow', {
+              currentWidth,
+              maxAllowedWidth,
+              parentWidth: parentRect.width
+            });
+
+            setSize(prevSize => ({
+              ...prevSize,
+              width: maxAllowedWidth,
+              widthUnit: 'px'
+            }));
+
+            if (onResize) {
+              onResize({
+                width: maxAllowedWidth,
+                height: size.height,
+                widthUnit: 'px',
+                heightUnit: size.heightUnit
+              });
+            }
+          }
+        }
+      }
+    });
+
+    // Find the slot container to observe
+    let slotContainer = wrapperRef.current.closest('[data-grid-slot-id]');
+    if (!slotContainer) {
+      slotContainer = wrapperRef.current.parentElement;
+    }
+
+    if (slotContainer) {
+      observer.observe(slotContainer);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isTextElement, size.width, size.height, size.heightUnit, onResize]);
+
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
 
@@ -268,8 +321,16 @@ const ResizeWrapper = ({
         // For regular buttons, constrain to slot container with margin for slot borders
         maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
       } else if (isTextElement) {
-        // For text elements, allow resizing beyond parent slot - use viewport bounds only
-        maxAllowedWidth = maxWidthFromViewport;
+        // For text elements, prevent overflow when slot shrinks
+        const slotConstrainedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
+        // If text would overflow the slot, constrain it to slot width
+        // Otherwise allow growth up to viewport bounds
+        const currentTextWidth = startWidth + deltaX;
+        if (currentTextWidth > slotConstrainedWidth) {
+          maxAllowedWidth = slotConstrainedWidth;
+        } else {
+          maxAllowedWidth = maxWidthFromViewport;
+        }
       } else {
         // For non-buttons and non-text, use more restrictive bounds with margin for slot borders
         maxAllowedWidth = parentRect ? Math.min(parentRect.width - 10, maxWidthFromViewport) : maxWidthFromViewport;
