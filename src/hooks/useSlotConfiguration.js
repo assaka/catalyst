@@ -1259,34 +1259,38 @@ export function useSlotConfiguration({
     if (!childSlot.styles || !parentSlot) return childSlot;
 
     const updatedStyles = { ...childSlot.styles };
-    const parentColSpan = parentSlot.colSpan || 12;
 
-    // Calculate approximate maximum bounds based on parent column span
-    // Assuming 12-column grid system, each column is ~8.33% of total width
-    const maxWidthPercent = (parentColSpan / 12) * 100;
-    const maxWidthPx = maxWidthPercent * 10; // Rough conversion for px bounds
-
-    // Constrain left positioning
+    // Constrain left positioning using percentages (responsive)
     if (updatedStyles.left && typeof updatedStyles.left === 'string') {
-      const leftMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)px$/);
-      if (leftMatch) {
-        const leftValue = parseFloat(leftMatch[1]);
-        const maxLeft = maxWidthPx * 0.8; // Leave 20% margin
-        if (leftValue > maxLeft) {
-          updatedStyles.left = `${maxLeft}px`;
-        }
+      // Handle percentage values
+      const leftPercentMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)%$/);
+      if (leftPercentMatch) {
+        const leftPercent = parseFloat(leftPercentMatch[1]);
+        // Keep within 0-80% to leave some margin
+        const constrainedLeft = Math.max(0, Math.min(80, leftPercent));
+        updatedStyles.left = `${constrainedLeft}%`;
+      }
+
+      // Convert pixel values to percentages for responsive behavior
+      const leftPxMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)px$/);
+      if (leftPxMatch) {
+        const leftPx = parseFloat(leftPxMatch[1]);
+        // Convert to percentage: assume parent is roughly 300-800px wide depending on colSpan
+        // Use a reasonable conversion: 100px ≈ 12.5% for typical slot widths
+        const leftPercent = Math.max(0, Math.min(80, (leftPx / 8))); // Rough px to % conversion
+        updatedStyles.left = `${leftPercent}%`;
       }
     }
 
-    // Constrain width
+    // Keep width in pixels for text elements (they need fixed sizing)
+    // but constrain to reasonable bounds
     if (updatedStyles.width && typeof updatedStyles.width === 'string') {
-      const widthMatch = updatedStyles.width.match(/^(\d+(?:\.\d+)?)px$/);
-      if (widthMatch) {
-        const widthValue = parseFloat(widthMatch[1]);
-        const maxWidth = maxWidthPx * 0.9; // Leave 10% margin
-        if (widthValue > maxWidth) {
-          updatedStyles.width = `${maxWidth}px`;
-        }
+      const widthPxMatch = updatedStyles.width.match(/^(\d+(?:\.\d+)?)px$/);
+      if (widthPxMatch) {
+        const widthPx = parseFloat(widthPxMatch[1]);
+        // Constrain to reasonable bounds (20px minimum, 500px maximum)
+        const constrainedWidth = Math.max(20, Math.min(500, widthPx));
+        updatedStyles.width = `${constrainedWidth}px`;
       }
     }
 
@@ -1331,8 +1335,8 @@ export function useSlotConfiguration({
         colSpan: newColSpan
       };
 
-      // Calculate resize ratio to adjust child positions
-      const resizeRatio = newColSpan / oldColSpan;
+      // When slot resizes, child positions in percentages remain proportionally correct
+      // We just need to apply constraints to ensure they stay within bounds
 
       // Find and adjust all child elements within this slot
       Object.keys(updatedSlots).forEach(childSlotId => {
@@ -1342,23 +1346,35 @@ export function useSlotConfiguration({
         if (childSlot.parentId === slotId && childSlot.styles) {
           const updatedStyles = { ...childSlot.styles };
 
-          // Adjust horizontal positioning to stay within new slot boundaries
+          // Convert any remaining pixel positions to percentages for responsive behavior
           if (updatedStyles.left && typeof updatedStyles.left === 'string') {
-            const leftMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)px$/);
-            if (leftMatch) {
-              const leftValue = parseFloat(leftMatch[1]);
-              const newLeftValue = Math.max(0, Math.min(leftValue * resizeRatio, (newColSpan / 12) * 100 - 5)); // Keep 5% margin from edge
-              updatedStyles.left = `${newLeftValue}px`;
+            const leftPxMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)px$/);
+            if (leftPxMatch) {
+              const leftPx = parseFloat(leftPxMatch[1]);
+              // Convert px to percentage based on typical slot width
+              const leftPercent = Math.max(0, Math.min(80, (leftPx / 8)));
+              updatedStyles.left = `${leftPercent}%`;
+            }
+
+            // Ensure percentage positions stay within reasonable bounds
+            const leftPercentMatch = updatedStyles.left.match(/^(\d+(?:\.\d+)?)%$/);
+            if (leftPercentMatch) {
+              const leftPercent = parseFloat(leftPercentMatch[1]);
+              if (leftPercent > 80) { // Too far right for smaller slot
+                updatedStyles.left = '80%';
+              }
             }
           }
 
-          // Adjust width if it's in pixels to maintain proportions
+          // Keep width in pixels but ensure it's reasonable for the new slot size
           if (updatedStyles.width && typeof updatedStyles.width === 'string') {
-            const widthMatch = updatedStyles.width.match(/^(\d+(?:\.\d+)?)px$/);
-            if (widthMatch) {
-              const widthValue = parseFloat(widthMatch[1]);
-              const newWidthValue = Math.min(widthValue * resizeRatio, (newColSpan / 12) * 100 - 10); // Keep some margin
-              updatedStyles.width = `${newWidthValue}px`;
+            const widthPxMatch = updatedStyles.width.match(/^(\d+(?:\.\d+)?)px$/);
+            if (widthPxMatch) {
+              const widthPx = parseFloat(widthPxMatch[1]);
+              // Constrain width based on new slot size
+              const maxReasonableWidth = newColSpan * 60; // ~60px per column span
+              const constrainedWidth = Math.max(20, Math.min(maxReasonableWidth, widthPx));
+              updatedStyles.width = `${constrainedWidth}px`;
             }
           }
 
