@@ -157,8 +157,26 @@ const getGridClasses = (storeSettings) => {
 // Product Items Grid - Renders with dynamic grid from admin settings
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
-  render: ({ slot, className, styles, context }) => {
-    // Handle null store context gracefully (when StoreProvider is not available in editor)
+
+  // Editor version - simplified container for slot arrangement
+  renderEditor: ({ slot, className, styles }) => {
+    return (
+      <div
+        className={`${className || slot.className || ''}`}
+        style={styles || slot.styles}
+      >
+        {/* In editor, let the grid system handle layout - just show placeholder */}
+        <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+          Product Items Grid
+          <div className="text-xs mt-1">Configure grid layout in Admin → Store → Theme & Layout</div>
+        </div>
+      </div>
+    );
+  },
+
+  // Storefront version - applies dynamic grid classes
+  renderStorefront: ({ slot, className, styles }) => {
+    // Handle null store context gracefully
     const storeContext = useStore();
     const storeSettings = storeContext?.settings || null;
     const gridClasses = getGridClasses(storeSettings);
@@ -170,10 +188,10 @@ const ProductItemsGrid = createSlotComponent({
       >
         {/* Render child slots (product cards) */}
         <UnifiedSlotRenderer
-          slots={context?.slots || {}}
+          slots={{}}
           parentId={slot.id}
-          viewMode={context?.viewMode || 'grid'}
-          context="editor"
+          viewMode="grid"
+          context="storefront"
         />
       </div>
     );
