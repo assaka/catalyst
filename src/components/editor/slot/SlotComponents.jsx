@@ -100,6 +100,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     startValueRef.current = currentValue;
     lastValueRef.current = currentValue;
 
+    // Debug starting positions
+    console.log('🏁 Start Position Debug:', {
+      startX: e.clientX,
+      startY: e.clientY,
+      startValue: currentValue,
+      direction
+    });
+
 
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
@@ -133,6 +141,16 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         console.log('🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
 
+        // Debug cursor and handle positions
+        console.log('🎯 Position Debug:', {
+          mouseX: e.clientX,
+          startX: startXRef.current,
+          deltaX,
+          colSpanDelta,
+          newColSpan,
+          sensitivity
+        });
+
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
           console.log('🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
@@ -157,6 +175,12 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         // Use proportional offset based on actual column widths for accurate tracking
         const visualOffset = colSpanDelta * columnWidth;
+        console.log('📐 Visual Offset Debug:', {
+          colSpanDelta,
+          columnWidth,
+          visualOffset,
+          mouseOffset: visualOffset
+        });
         setMouseOffset(visualOffset);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
