@@ -95,9 +95,9 @@ export const cartConfig = {
     // Empty cart hierarchical structure
     empty_cart_container: {
       id: 'empty_cart_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'empty-cart-container',
+      className: 'empty-cart-container grid grid-cols-12 gap-2',
       styles: { gridRow: '2' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
