@@ -466,21 +466,8 @@ export function UnifiedSlotRenderer({
     // Editor: Use GridColumn for full functionality
     const colSpanValue = typeof slot.colSpan === 'number' ? slot.colSpan :
       (typeof slot.colSpan === 'object' && slot.colSpan !== null) ?
-        (slot.colSpan[viewportMode] || 12) : 12;
+        (slot.colSpan[viewportMode] || slot.colSpan['default'] || slot.colSpan[viewMode] || 12) : 12;
 
-    // Debug colSpan calculation for key slots
-    if (slot.id === 'gallery_container' || slot.id === 'info_container' || slot.id === 'header_title' || slot.id === 'header_container') {
-      console.log('🔷 UnifiedSlotRenderer colSpan calculation:', {
-        slotId: slot.id,
-        viewMode,
-        viewportMode,
-        rawColSpan: slot.colSpan,
-        colSpanType: typeof slot.colSpan,
-        availableKeys: slot.colSpan ? Object.keys(slot.colSpan) : 'no colSpan',
-        lookupValue: slot.colSpan ? slot.colSpan[viewportMode] : 'no colSpan',
-        calculatedColSpanValue: colSpanValue
-      });
-    }
 
     return (
       <GridColumn
