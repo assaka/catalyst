@@ -71,6 +71,7 @@ export function EditModeControls({ localSaveStatus, publishStatus, saveConfigura
 export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minValue = 1, direction = 'horizontal', parentHovered = false, onResizeStart, onResizeEnd, onHoverChange }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -129,6 +130,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
+        // Update visual position (capped for reasonable range)
+        setMouseOffset(Math.max(-200, Math.min(200, deltaX)));
+
         console.log('🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
 
         // Only call onResize if the value actually changed
@@ -141,6 +145,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
         const newHeight = Math.max(20, startValue + heightDelta);
+
+        // Update visual position (capped for reasonable range)
+        setMouseOffset(Math.max(-200, Math.min(200, deltaY)));
 
         console.log('🟢 GridResizeHandle: Vertical', { deltaY, heightDelta, startValue, newHeight, lastValue: lastValueRef.current });
 
@@ -156,6 +163,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     const handleMouseUp = () => {
       setIsDragging(false);
       isDraggingRef.current = false;
+      setMouseOffset(0); // Reset visual position
 
       // Reset body styles
       document.body.style.userSelect = '';
@@ -215,7 +223,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         setIsHovered(false);
         onHoverChange?.(false);
       }}
-      style={{ zIndex: 9999 }}
+      style={{
+        zIndex: 9999,
+        transform: isDragging
+          ? (isHorizontal
+              ? `translate(${mouseOffset}px, -50%)`
+              : `translate(-50%, ${mouseOffset}px)`)
+          : undefined,
+        transition: isDragging ? 'none' : 'all 0.2s ease-out'
+      }}
       title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
     >
       <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
