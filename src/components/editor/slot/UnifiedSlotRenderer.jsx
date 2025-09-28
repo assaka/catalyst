@@ -504,7 +504,9 @@ export function UnifiedSlotRenderer({
         if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
-          console.log('🟦 Slot colSpan update:', { slotId: slot.id, colSpan: slot.colSpan, colSpanClass, gridColumn });
+          if (slot.id === 'header_title') {
+            console.log('🔴 HEADER_TITLE colSpan update:', { slotId: slot.id, colSpan: slot.colSpan, colSpanClass, gridColumn });
+          }
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           const viewModeValue = slot.colSpan[viewMode];
 

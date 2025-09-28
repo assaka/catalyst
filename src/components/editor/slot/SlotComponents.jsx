@@ -140,10 +140,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           onResizeRef.current(newColSpan);
         }
 
-        // Use simple proportional offset that matches the sensitivity
-        // This keeps the handle visually aligned with mouse movement
-        const visualOffset = colSpanDelta * sensitivity;
-        setMouseOffset(visualOffset);
+        // Use raw mouse delta for smooth visual tracking
+        // Handle follows mouse exactly during drag
+        setMouseOffset(deltaX);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
