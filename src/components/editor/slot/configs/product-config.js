@@ -104,15 +104,13 @@ export const productConfig = {
       id: 'gallery_container',
       type: 'grid',
       content: '',
-      className: 'gallery-container col-span-6 grid grid-cols-12 gap-2 {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
+      className: 'gallery-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
       layout: 'flex',
       colSpan: {
-        desktop: 6,
-        tablet: 12,
-        mobile: 12
+        default: 'col-span-12 lg:col-span-6'
       },
       viewMode: ['default'],
       metadata: {
@@ -182,15 +180,13 @@ export const productConfig = {
       id: 'info_container',
       type: 'grid',
       content: '',
-      className: 'info-container col-span-6 grid grid-cols-12 gap-2 space-y-6',
+      className: 'info-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 space-y-6',
       styles: {},
       parentId: 'content_area',
       position: { col: 7, row: 1 },
       layout: 'grid',
       colSpan: {
-        desktop: 6,
-        tablet: 12,
-        mobile: 12
+        default: 'col-span-12 lg:col-span-6'
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }
