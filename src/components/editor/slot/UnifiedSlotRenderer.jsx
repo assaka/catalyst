@@ -436,6 +436,7 @@ export function UnifiedSlotRenderer({
    * Wrap slot content with editor functionality if needed
    */
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
+    console.log('🔧 wrapSlotForEditor:', { slotId: slot.id, context, isEditor: context === 'editor' });
     if (context !== 'editor') {
       // Storefront: Check if colSpan is empty object and skip wrapper
       const isEmptyColSpan = typeof slot.colSpan === 'object' &&
