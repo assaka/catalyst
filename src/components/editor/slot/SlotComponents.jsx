@@ -160,28 +160,33 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         }
 
         // Calculate actual handle position change using DOM measurements
-        let actualPositionChange = 0;
-        if (handleElementRef.current && initialHandlePositionRef.current) {
-          const currentHandleRect = handleElementRef.current.getBoundingClientRect();
-          const currentPosition = currentHandleRect.right; // Right edge for horizontal
-          actualPositionChange = currentPosition - initialHandlePositionRef.current.x;
+        // Use requestAnimationFrame to ensure measurements happen after DOM updates
+        requestAnimationFrame(() => {
+          let actualPositionChange = 0;
+          if (handleElementRef.current && initialHandlePositionRef.current) {
+            const currentHandleRect = handleElementRef.current.getBoundingClientRect();
+            const currentPosition = currentHandleRect.right; // Right edge for horizontal
+            actualPositionChange = currentPosition - initialHandlePositionRef.current.x;
 
-          console.log('🔍 Handle position tracking (horizontal):', {
-            initial: initialHandlePositionRef.current.x,
-            current: currentPosition,
-            change: actualPositionChange,
-            deltaX,
-            resultOffset: deltaX - actualPositionChange
-          });
-        } else {
-          console.log('⚠️ Handle tracking failed (horizontal):', {
-            hasElement: !!handleElementRef.current,
-            hasInitial: !!initialHandlePositionRef.current
-          });
-        }
+            console.log('🔍 Handle position tracking (horizontal):', {
+              initial: initialHandlePositionRef.current.x,
+              current: currentPosition,
+              change: actualPositionChange,
+              deltaX,
+              resultOffset: deltaX - actualPositionChange
+            });
 
-        // Update visual position: mouse delta minus actual handle position change
-        setMouseOffset(deltaX - actualPositionChange);
+            // Update visual position: mouse delta minus actual handle position change
+            setMouseOffset(deltaX - actualPositionChange);
+          } else {
+            console.log('⚠️ Handle tracking failed (horizontal):', {
+              hasElement: !!handleElementRef.current,
+              hasInitial: !!initialHandlePositionRef.current
+            });
+            // Fallback: just use mouse delta
+            setMouseOffset(deltaX);
+          }
+        });
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
@@ -197,15 +202,33 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         }
 
         // Calculate actual handle position change using DOM measurements
-        let actualPositionChange = 0;
-        if (handleElementRef.current && initialHandlePositionRef.current) {
-          const currentHandleRect = handleElementRef.current.getBoundingClientRect();
-          const currentPosition = currentHandleRect.bottom; // Bottom edge for vertical
-          actualPositionChange = currentPosition - initialHandlePositionRef.current.y;
-        }
+        // Use requestAnimationFrame to ensure measurements happen after DOM updates
+        requestAnimationFrame(() => {
+          let actualPositionChange = 0;
+          if (handleElementRef.current && initialHandlePositionRef.current) {
+            const currentHandleRect = handleElementRef.current.getBoundingClientRect();
+            const currentPosition = currentHandleRect.bottom; // Bottom edge for vertical
+            actualPositionChange = currentPosition - initialHandlePositionRef.current.y;
 
-        // Update visual position: mouse delta minus actual handle position change
-        setMouseOffset(deltaY - actualPositionChange);
+            console.log('🔍 Handle position tracking (vertical):', {
+              initial: initialHandlePositionRef.current.y,
+              current: currentPosition,
+              change: actualPositionChange,
+              deltaY,
+              resultOffset: deltaY - actualPositionChange
+            });
+
+            // Update visual position: mouse delta minus actual handle position change
+            setMouseOffset(deltaY - actualPositionChange);
+          } else {
+            console.log('⚠️ Handle tracking failed (vertical):', {
+              hasElement: !!handleElementRef.current,
+              hasInitial: !!initialHandlePositionRef.current
+            });
+            // Fallback: just use mouse delta
+            setMouseOffset(deltaY);
+          }
+        });
       }
     };
 
