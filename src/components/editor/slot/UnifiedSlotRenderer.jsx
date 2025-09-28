@@ -469,13 +469,15 @@ export function UnifiedSlotRenderer({
         (slot.colSpan[viewportMode] || 12) : 12;
 
     // Debug colSpan calculation for key slots
-    if (slot.id === 'header_title' || slot.id === 'header_container') {
+    if (slot.id === 'gallery_container' || slot.id === 'info_container' || slot.id === 'header_title' || slot.id === 'header_container') {
       console.log('🔷 UnifiedSlotRenderer colSpan calculation:', {
         slotId: slot.id,
         viewMode,
         viewportMode,
         rawColSpan: slot.colSpan,
         colSpanType: typeof slot.colSpan,
+        availableKeys: slot.colSpan ? Object.keys(slot.colSpan) : 'no colSpan',
+        lookupValue: slot.colSpan ? slot.colSpan[viewportMode] : 'no colSpan',
         calculatedColSpanValue: colSpanValue
       });
     }
