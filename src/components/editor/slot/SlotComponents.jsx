@@ -72,6 +72,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
+  const [customCursorPos, setCustomCursorPos] = useState({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -111,9 +112,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     });
 
 
-    // Prevent text selection during drag
+    // Prevent text selection during drag and hide real cursor
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
+    document.body.style.cursor = 'none';
 
     if (onResizeStartRef.current) {
       onResizeStartRef.current();
@@ -182,6 +183,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           const slotRect = slotElement.getBoundingClientRect();
           const handleRect = handleElementRef.current.getBoundingClientRect();
 
+          // Update custom cursor to follow slot's right border
+          setCustomCursorPos({ x: slotRect.right, y: e.clientY });
+
           // Throttle debug logs - only log every 10px of movement
           if (Math.abs(deltaX) % 10 < 2) {
             console.log('RESIZE: 📍 Detailed Position Debug:', {
@@ -190,6 +194,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
               slotWidth: Math.round(slotRect.width),
               handleX: Math.round(handleRect.left),
               cursorX: e.clientX,
+              customCursorX: Math.round(slotRect.right),
               handleRightDiff: Math.round(handleRect.left - slotRect.right),
               deltaX: deltaX
             });
@@ -279,51 +284,71 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     : '-bottom-1 left-1/2 h-2 w-8';
 
   return (
-    <div
-      className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
-        isHovered || isDragging || parentHovered
-          ? 'opacity-100'
-          : 'opacity-0 hover:opacity-90'
-      }`}
-      onMouseDown={handleMouseDown}
-      onMouseEnter={() => {
-        setIsHovered(true);
-        onHoverChange?.(true);
-      }}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        onHoverChange?.(false);
-      }}
-      style={{
-        zIndex: 9999,
-        transform: isDragging
-          ? (isHorizontal
-              ? `translate(${mouseOffset}px, -50%)`
-              : `translate(-50%, ${mouseOffset}px)`)
-          : undefined,
-        transition: isDragging ? 'none' : 'all 0.2s ease-out'
-      }}
-      title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
-    >
-      <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
-        isDragging
-          ? 'bg-blue-600 border-blue-700 shadow-lg'
-          : isHovered || parentHovered
-            ? 'bg-blue-500 border-blue-600 shadow-md'
-            : 'bg-blue-500 border-blue-600 hover:bg-blue-600'
-      }`}>
-        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
-        <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+    <>
+      <div
+        className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
+          isHovered || isDragging || parentHovered
+            ? 'opacity-100'
+            : 'opacity-0 hover:opacity-90'
+        }`}
+        onMouseDown={handleMouseDown}
+        onMouseEnter={() => {
+          setIsHovered(true);
+          onHoverChange?.(true);
+        }}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          onHoverChange?.(false);
+        }}
+        style={{
+          zIndex: 9999,
+          transform: isDragging
+            ? (isHorizontal
+                ? `translate(${mouseOffset}px, -50%)`
+                : `translate(-50%, ${mouseOffset}px)`)
+            : undefined,
+          transition: isDragging ? 'none' : 'all 0.2s ease-out'
+        }}
+        title={`Resize ${direction}ly ${isHorizontal ? `(${currentValue} / ${maxValue})` : `(${currentValue}px)`}`}
+      >
+        <div className={`w-full h-full rounded-md flex ${isHorizontal ? 'flex-col' : 'flex-row'} items-center justify-center gap-0.5 border shadow-sm transition-colors duration-150 ${
+          isDragging
+            ? 'bg-blue-600 border-blue-700 shadow-lg'
+            : isHovered || parentHovered
+              ? 'bg-blue-500 border-blue-600 shadow-md'
+              : 'bg-blue-500 border-blue-600 hover:bg-blue-600'
+        }`}>
+          <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+          <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+          <div className="w-1 h-1 bg-white rounded-full opacity-90"></div>
+        </div>
+
+        {isDragging && (
+          <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'}
+            bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
+            {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
+          </div>
+        )}
       </div>
 
       {isDragging && (
-        <div className={`absolute ${isHorizontal ? '-top-6 left-1/2 -translate-x-1/2' : '-left-10 top-1/2 -translate-y-1/2'}
-          bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap`}>
-          {isHorizontal ? `${currentValue} / ${maxValue}` : `${currentValue}px`}
+        <div
+          className="fixed pointer-events-none z-[10000]"
+          style={{
+            left: `${customCursorPos.x}px`,
+            top: `${customCursorPos.y}px`,
+            transform: 'translate(-50%, -50%)',
+            width: '20px',
+            height: '20px'
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2 L10 18 M2 10 L18 10" stroke="white" strokeWidth="2" />
+            <path d="M10 2 L10 18 M2 10 L18 10" stroke="black" strokeWidth="1" />
+          </svg>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
