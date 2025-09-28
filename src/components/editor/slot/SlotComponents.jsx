@@ -82,6 +82,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const onResizeEndRef = useRef(onResizeEnd);
   const mouseMoveHandlerRef = useRef(null);
   const mouseUpHandlerRef = useRef(null);
+  const handleElementRef = useRef(null);
 
   useEffect(() => {
     onResizeRef.current = onResize;
@@ -95,6 +96,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     e.stopPropagation();
     setIsDragging(true);
     isDraggingRef.current = true;
+    handleElementRef.current = e.currentTarget;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
     startValueRef.current = currentValue;
@@ -174,27 +176,29 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         }
 
         // Get slot element boundaries for detailed position debugging
-        const slotElement = e.target.closest('[data-slot-id], [data-grid-slot-id]');
+        const slotElement = handleElementRef.current?.closest('[data-slot-id], [data-grid-slot-id]');
         let handleOffset = deltaX;
 
-        if (slotElement) {
+        if (slotElement && handleElementRef.current) {
           const slotRect = slotElement.getBoundingClientRect();
-          const handleElement = e.target;
-          const handleRect = handleElement.getBoundingClientRect();
+          const handleRect = handleElementRef.current.getBoundingClientRect();
 
           // Handle is positioned at -right-1, so offset from slot's current right edge to cursor
           handleOffset = e.clientX - slotRect.right;
 
-          console.log('RESIZE: 📍 Detailed Position Debug:', {
-            leftBorderX: Math.round(slotRect.left),
-            rightBorderX: Math.round(slotRect.right),
-            slotWidth: Math.round(slotRect.width),
-            handleX: Math.round(handleRect.left),
-            cursorX: e.clientX,
-            startCursorX: startX,
-            deltaX: deltaX,
-            calculatedOffset: Math.round(handleOffset)
-          });
+          // Throttle debug logs - only log every 10px of movement
+          if (Math.abs(deltaX) % 10 < 2) {
+            console.log('RESIZE: 📍 Detailed Position Debug:', {
+              leftBorderX: Math.round(slotRect.left),
+              rightBorderX: Math.round(slotRect.right),
+              slotWidth: Math.round(slotRect.width),
+              handleX: Math.round(handleRect.left),
+              cursorX: e.clientX,
+              startCursorX: startX,
+              deltaX: deltaX,
+              calculatedOffset: Math.round(handleOffset)
+            });
+          }
         }
 
         // Handle positioned relative to slot's current right edge
