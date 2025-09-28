@@ -173,6 +173,24 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           });
         }
 
+        // Get slot element boundaries for detailed position debugging
+        const slotElement = e.target.closest('[data-slot-id], [data-grid-slot-id]');
+        if (slotElement) {
+          const slotRect = slotElement.getBoundingClientRect();
+          const handleElement = e.target;
+          const handleRect = handleElement.getBoundingClientRect();
+
+          console.log('RESIZE: 📍 Detailed Position Debug:', {
+            leftBorderX: Math.round(slotRect.left),
+            rightBorderX: Math.round(slotRect.right),
+            slotWidth: Math.round(slotRect.width),
+            handleX: Math.round(handleRect.left),
+            cursorX: e.clientX,
+            startCursorX: startX,
+            deltaX: deltaX
+          });
+        }
+
         // Handle follows the mouse cursor directly
         const actualColumnChange = newColSpan - startValue;
         console.log('RESIZE: 📐 Visual Offset Debug:', {
