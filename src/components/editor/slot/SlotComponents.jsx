@@ -713,14 +713,19 @@ export function GridColumn({
           'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
           'display', 'position', 'top', 'right', 'bottom', 'left',
           'zIndex', 'overflow', 'overflowX', 'overflowY',
-          'flexBasis', 'flexGrow', 'flexShrink',
-          'textAlign' // Allow textAlign - can work alongside parentClassName (text-center, etc.)
+          'flexBasis', 'flexGrow', 'flexShrink'
         ];
 
         // For content slots (button, text, image, link), exclude width/height from grid wrapper
         // These should only be applied to the actual content element
         const isContentSlot = ['button', 'text', 'image', 'link'].includes(slot?.type);
         const contentExclusionStyles = isContentSlot ? ['width', 'height'] : [];
+
+        // Exclude alignment styles from grid wrapper - these should only apply to content elements
+        // When applied to GridColumn wrapper, they align against the entire grid instead of the slot
+        const alignmentStyles = [
+          'textAlign', 'justifyContent', 'alignItems', 'alignSelf', 'justifyItems'
+        ];
 
         // Exclude color and appearance styles from grid wrapper
         const colorStyles = [
@@ -730,7 +735,7 @@ export function GridColumn({
           'fontSize', 'fontWeight', 'fontFamily', 'lineHeight',
           'boxShadow', 'textShadow', 'opacity', 'transform'
         ];
-        return layoutStyles.includes(key) && !colorStyles.includes(key) && !contentExclusionStyles.includes(key);
+        return layoutStyles.includes(key) && !colorStyles.includes(key) && !contentExclusionStyles.includes(key) && !alignmentStyles.includes(key);
       })
     )
   };
