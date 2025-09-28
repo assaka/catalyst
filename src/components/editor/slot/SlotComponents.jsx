@@ -173,10 +173,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           });
         }
 
-        // Use proportional offset based on actual column widths for accurate tracking
-        const visualOffset = colSpanDelta * columnWidth;
+        // Calculate visual offset based on ACTUAL column change, not raw colSpanDelta
+        const actualColumnChange = newColSpan - startValue;
+        const visualOffset = actualColumnChange * columnWidth;
         console.log('RESIZE: 📐 Visual Offset Debug:', {
-          colSpanDelta,
+          colSpanDelta: colSpanDelta,
+          actualColumnChange,
+          startValue,
+          newColSpan,
           columnWidth,
           visualOffset,
           mouseOffset: visualOffset
