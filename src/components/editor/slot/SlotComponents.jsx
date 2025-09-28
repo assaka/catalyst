@@ -90,7 +90,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
-    console.log('🔵 GridResizeHandle: MouseDown', { direction, currentValue });
+    console.log('RESIZE: 🔵 GridResizeHandle: MouseDown', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -101,7 +101,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     lastValueRef.current = currentValue;
 
     // Debug starting positions
-    console.log('🏁 Start Position Debug:', {
+    console.log('RESIZE: 🏁 Start Position Debug:', {
       startX: e.clientX,
       startY: e.clientY,
       startValue: currentValue,
@@ -139,10 +139,10 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
-        console.log('🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
+        console.log('RESIZE: 🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
 
         // Debug cursor and handle positions
-        console.log('🎯 Position Debug:', {
+        console.log('RESIZE: 🎯 Position Debug:', {
           mouseX: e.clientX,
           startX: startXRef.current,
           deltaX,
@@ -153,7 +153,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
-          console.log('🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
+          console.log('RESIZE: 🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
           lastValueRef.current = newColSpan;
           onResizeRef.current(newColSpan);
         }
@@ -166,7 +166,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         if (mainLayout) {
           const containerWidth = mainLayout.getBoundingClientRect().width;
           columnWidth = containerWidth / 12; // 12-column grid
-          console.log('📏 Column width calculation:', {
+          console.log('RESIZE: 📏 Column width calculation:', {
             container: mainLayout.getAttribute('data-slot-id') || 'grid-cols-12',
             containerWidth,
             columnWidth: Math.round(columnWidth)
@@ -175,7 +175,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         // Use proportional offset based on actual column widths for accurate tracking
         const visualOffset = colSpanDelta * columnWidth;
-        console.log('📐 Visual Offset Debug:', {
+        console.log('RESIZE: 📐 Visual Offset Debug:', {
           colSpanDelta,
           columnWidth,
           visualOffset,
