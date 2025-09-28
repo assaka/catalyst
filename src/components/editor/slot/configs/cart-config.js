@@ -30,13 +30,13 @@ export const cartConfig = {
 
     header_container: {
       id: 'header_container',
-      type: 'flex',
+      type: 'grid',
       content: '',
-      className: 'header-container',
+      className: 'header-container grid grid-cols-12 gap-2',
       styles: { gridColumn: '1 / -1', gridRow: '1' },
       parentId: 'main_layout',
       position: { col: 1, row: 1 },
-      layout: 'flex',
+      layout: 'grid',
       colSpan: {
         emptyCart: 12,
         withProducts: 12
