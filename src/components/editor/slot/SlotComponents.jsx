@@ -177,14 +177,10 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         // Get slot element boundaries for detailed position debugging
         const slotElement = handleElementRef.current?.closest('[data-slot-id], [data-grid-slot-id]');
-        let handleOffset = deltaX;
 
         if (slotElement && handleElementRef.current) {
           const slotRect = slotElement.getBoundingClientRect();
           const handleRect = handleElementRef.current.getBoundingClientRect();
-
-          // Handle is positioned at -right-1, so offset from slot's current right edge to cursor
-          handleOffset = e.clientX - slotRect.right;
 
           // Throttle debug logs - only log every 10px of movement
           if (Math.abs(deltaX) % 10 < 2) {
@@ -194,14 +190,14 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
               slotWidth: Math.round(slotRect.width),
               handleX: Math.round(handleRect.left),
               cursorX: e.clientX,
-              startCursorX: startX,
-              deltaX: deltaX,
-              calculatedOffset: Math.round(handleOffset)
+              handleRightDiff: Math.round(handleRect.left - slotRect.right),
+              deltaX: deltaX
             });
           }
         }
 
-        // Handle positioned relative to slot's current right edge
+        // Handle stays at slot's right edge naturally, no offset needed
+        // The slot itself resizes, so handle moves with the slot's edge
         const actualColumnChange = newColSpan - startValue;
         console.log('RESIZE: 📐 Visual Offset Debug:', {
           colSpanDelta: colSpanDelta,
@@ -210,9 +206,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           newColSpan,
           columnWidth,
           mouseDeltaX: deltaX,
-          mouseOffset: Math.round(handleOffset)
+          mouseOffset: 0
         });
-        setMouseOffset(handleOffset);
+        setMouseOffset(0);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
