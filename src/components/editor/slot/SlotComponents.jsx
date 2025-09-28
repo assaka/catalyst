@@ -140,9 +140,24 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           onResizeRef.current(newColSpan);
         }
 
-        // Use raw mouse delta for smooth visual tracking
-        // Handle follows mouse exactly during drag
-        setMouseOffset(deltaX);
+        // Find the main layout container for accurate column width calculation
+        const mainLayout = document.querySelector('[data-slot-id="main_layout"], [data-grid-slot-id="main_layout"]') ||
+                          document.querySelector('.grid-cols-12');
+        let columnWidth = 60; // fallback
+
+        if (mainLayout) {
+          const containerWidth = mainLayout.getBoundingClientRect().width;
+          columnWidth = containerWidth / 12; // 12-column grid
+          console.log('📏 Column width calculation:', {
+            container: mainLayout.getAttribute('data-slot-id') || 'grid-cols-12',
+            containerWidth,
+            columnWidth: Math.round(columnWidth)
+          });
+        }
+
+        // Use proportional offset based on actual column widths for accurate tracking
+        const visualOffset = colSpanDelta * columnWidth;
+        setMouseOffset(visualOffset);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
