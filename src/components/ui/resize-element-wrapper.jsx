@@ -285,11 +285,16 @@ const ResizeWrapper = ({
 
       // For buttons and text, use constrained pixel units with reasonable limits
       if (isButton || isTextElement || hasWFitClass) {
-        // Constrain text width to reasonable bounds (20px min, 400px max)
-        // This prevents extremely wide text elements that break layouts
+        // Constrain button width to reasonable bounds, but allow text elements to resize freely
         const minWidth = 20;
-        const maxWidth = isTextElement ? 400 : 300; // Text elements get slightly more space
-        widthValue = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        if (isTextElement) {
+          // Text elements can resize freely within viewport bounds
+          widthValue = Math.max(minWidth, newWidth);
+        } else {
+          // Buttons get constrained to 300px max
+          const maxWidth = 300;
+          widthValue = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        }
         widthUnit = 'px';
       } else if (parentRect && parentRect.width > 0) {
         // For other elements, use percentage-based sizing
