@@ -72,7 +72,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [mouseOffset, setMouseOffset] = useState(0); // Track mouse position during drag
-  const handlePositionOffsetRef = useRef(0); // Track cumulative handle position changes
+  const handleElementRef = useRef(null); // Track the handle DOM element
+  const initialHandlePositionRef = useRef(null); // Track initial handle position
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -100,6 +101,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     startYRef.current = e.clientY;
     startValueRef.current = currentValue;
     lastValueRef.current = currentValue;
+
+    // Store initial handle position for accurate tracking
+    if (handleElementRef.current) {
+      const handleRect = handleElementRef.current.getBoundingClientRect();
+      initialHandlePositionRef.current = {
+        x: handleRect.right, // Use right edge for horizontal handles
+        y: handleRect.bottom  // Use bottom edge for vertical handles
+      };
+    }
 
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
@@ -136,24 +146,20 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
           console.log('🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
-
-          // Calculate approximate pixel width per column span (assuming 12 column grid)
-          // Get parent element to calculate actual column width
-          const parentElement = e.target.closest('[data-slot-id]');
-          if (parentElement) {
-            const parentWidth = parentElement.getBoundingClientRect().width;
-            const columnWidth = parentWidth / lastValueRef.current; // Current column width in pixels
-            const spanChange = newColSpan - lastValueRef.current;
-            // Track how much the handle's base position changed due to resize
-            handlePositionOffsetRef.current += (spanChange * columnWidth);
-          }
-
           lastValueRef.current = newColSpan;
           onResizeRef.current(newColSpan);
         }
 
-        // Update visual position: mouse delta minus the handle's base position changes
-        setMouseOffset(deltaX - handlePositionOffsetRef.current);
+        // Calculate actual handle position change using DOM measurements
+        let actualPositionChange = 0;
+        if (handleElementRef.current && initialHandlePositionRef.current) {
+          const currentHandleRect = handleElementRef.current.getBoundingClientRect();
+          const currentPosition = currentHandleRect.right; // Right edge for horizontal
+          actualPositionChange = currentPosition - initialHandlePositionRef.current.x;
+        }
+
+        // Update visual position: mouse delta minus actual handle position change
+        setMouseOffset(deltaX - actualPositionChange);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
@@ -164,17 +170,20 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         // Only call onResize if the value actually changed
         if (newHeight !== lastValueRef.current) {
           console.log('🟢 GridResizeHandle: Calling onResize', { newHeight, lastValue: lastValueRef.current });
-
-          // Track height changes for handle position offset
-          const heightChange = newHeight - lastValueRef.current;
-          handlePositionOffsetRef.current += heightChange;
-
           lastValueRef.current = newHeight;
           onResizeRef.current(newHeight);
         }
 
-        // Update visual position: mouse delta minus the handle's base position changes
-        setMouseOffset(deltaY - handlePositionOffsetRef.current);
+        // Calculate actual handle position change using DOM measurements
+        let actualPositionChange = 0;
+        if (handleElementRef.current && initialHandlePositionRef.current) {
+          const currentHandleRect = handleElementRef.current.getBoundingClientRect();
+          const currentPosition = currentHandleRect.bottom; // Bottom edge for vertical
+          actualPositionChange = currentPosition - initialHandlePositionRef.current.y;
+        }
+
+        // Update visual position: mouse delta minus actual handle position change
+        setMouseOffset(deltaY - actualPositionChange);
       }
     };
 
@@ -182,7 +191,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
       setIsDragging(false);
       isDraggingRef.current = false;
       setMouseOffset(0); // Reset visual position
-      handlePositionOffsetRef.current = 0; // Reset position offset tracking
+      initialHandlePositionRef.current = null; // Reset position tracking
 
       // Reset body styles
       document.body.style.userSelect = '';
@@ -229,6 +238,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
   return (
     <div
+      ref={handleElementRef}
       className={`absolute ${positionClass} ${cursorClass} transition-opacity duration-200 ${
         isHovered || isDragging || parentHovered
           ? 'opacity-100'
