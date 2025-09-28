@@ -625,8 +625,10 @@ const UnifiedSlotsEditor = ({
       <AddSlotModal
         isOpen={showAddSlotModal}
         onClose={() => setShowAddSlotModal(false)}
-        onAddSlot={(slotData) => {
+        onCreateSlot={handleCreateSlot}
+        onShowFilePicker={() => {
           setShowAddSlotModal(false);
+          // TODO: Implement file picker modal
         }}
         pageType={pageType}
       />
