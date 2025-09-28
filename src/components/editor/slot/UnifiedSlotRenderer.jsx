@@ -166,16 +166,31 @@ export function UnifiedSlotRenderer({
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;
 
+          const isTextElement = slot.type === 'text';
+
           setPageConfig(prevConfig => {
             const updatedSlots = { ...prevConfig?.slots };
             if (updatedSlots[slot.id]) {
-              updatedSlots[slot.id] = {
-                ...updatedSlots[slot.id],
-                styles: {
+              // For text elements, don't save width - let them grow naturally
+              let newStyles;
+              if (isTextElement) {
+                // Remove width property from text elements
+                const { width, ...stylesWithoutWidth } = updatedSlots[slot.id].styles;
+                newStyles = {
+                  ...stylesWithoutWidth,
+                  height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+                };
+              } else {
+                newStyles = {
                   ...updatedSlots[slot.id].styles,
                   width: `${newSize.width}${newSize.widthUnit || 'px'}`,
                   height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                }
+                };
+              }
+
+              updatedSlots[slot.id] = {
+                ...updatedSlots[slot.id],
+                styles: newStyles
               };
             }
 

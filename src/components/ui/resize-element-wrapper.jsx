@@ -275,7 +275,9 @@ const ResizeWrapper = ({
         maxAllowedWidth = parentRect ? Math.min(parentRect.width - 10, maxWidthFromViewport) : maxWidthFromViewport;
       }
 
-      const newWidth = Math.max(minWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
+      // Use smaller minimum width for text elements to allow more flexibility
+      const effectiveMinWidth = isTextElement ? 20 : minWidth;
+      const newWidth = Math.max(effectiveMinWidth, Math.min(maxAllowedWidth, startWidth + deltaX));
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
 
 
@@ -484,27 +486,34 @@ const ResizeWrapper = ({
           "resize-none select-none",
           isResizing && "cursor-se-resize"
         ),
-        style: {
-          ...children.props.style,
-          // Only apply width if explicitly resized or has w-fit class
-          ...(hasWFitClass ? { width: 'fit-content' } :
-              (size.width !== 'auto' && size.widthUnit !== 'auto') ?
-              { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
-          ...(size.height !== 'auto' && size.height && {
-            minHeight: `${size.height}${size.heightUnit || 'px'}`,
-            height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
-          }),
-          boxSizing: 'border-box',
-          display: children.props.style?.display || 'inline-block',
-          border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
-          borderRadius: '4px',
-          transition: 'border-color 0.2s ease-in-out',
-          position: 'relative',
-          // Special handling for SVG elements
-          ...(isSvgElement(children) ? {
-            objectFit: 'contain'
-          } : {})
-        },
+        style: (() => {
+          // For text elements, remove any existing width property to avoid constraints
+          const { width: existingWidth, ...baseStyles } = children.props.style || {};
+          const stylesWithoutWidth = isTextElement ? baseStyles : children.props.style;
+
+          return {
+            ...stylesWithoutWidth,
+            // For text elements, ignore w-fit class and use calculated width
+            // For other elements, preserve w-fit behavior
+            ...(hasWFitClass && !isTextElement ? { width: 'fit-content' } :
+                (size.width !== 'auto' && size.widthUnit !== 'auto') ?
+                { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
+            ...(size.height !== 'auto' && size.height && {
+              minHeight: `${size.height}${size.heightUnit || 'px'}`,
+              height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
+            }),
+            boxSizing: 'border-box',
+            display: children.props.style?.display || 'inline-block',
+            border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
+            borderRadius: '4px',
+            transition: 'border-color 0.2s ease-in-out',
+            position: 'relative',
+            // Special handling for SVG elements
+            ...(isSvgElement(children) ? {
+              objectFit: 'contain'
+            } : {})
+          };
+        })(),
         // Add preserveAspectRatio for SVGs to maintain proper scaling
         ...(isSvgElement(children) ? {
           preserveAspectRatio: children.props?.preserveAspectRatio || "xMidYMid meet"
