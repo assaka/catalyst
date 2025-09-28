@@ -137,20 +137,6 @@ export function UnifiedSlotRenderer({
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
-  // Debug logging for text elements
-  if (context === 'editor') {
-    const textSlots = filteredSlots.filter(slot => slot.type === 'text');
-    console.log('🔍 TEXT DEBUG:', {
-      viewMode,
-      context,
-      mode,
-      textSlots: textSlots.map(slot => ({
-        id: slot.id,
-        viewMode: slot.viewMode,
-        willGetResizeWrapper: context === 'editor' && mode === 'edit'
-      }))
-    });
-  }
 
   // Sort slots by grid coordinates for proper rendering order
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
@@ -241,7 +227,6 @@ export function UnifiedSlotRenderer({
     // Text Element
     if (type === 'text') {
       if (context === 'editor' && mode === 'edit') {
-        console.log('🎯 RENDERING TEXT WITH RESIZE:', { id, context, mode });
         const hasWFit = className?.includes('w-fit');
         const textElement = (
           <span
