@@ -283,10 +283,13 @@ const ResizeWrapper = ({
       let widthValue = newWidth;
       let widthUnit = 'px';
 
-      // For buttons and text, prefer pixel units to allow unrestricted horizontal resizing
+      // For buttons and text, use constrained pixel units with reasonable limits
       if (isButton || isTextElement || hasWFitClass) {
-        // Use pixels for buttons, text, and w-fit elements to allow flexible sizing
-        widthValue = newWidth;
+        // Constrain text width to reasonable bounds (20px min, 400px max)
+        // This prevents extremely wide text elements that break layouts
+        const minWidth = 20;
+        const maxWidth = isTextElement ? 400 : 300; // Text elements get slightly more space
+        widthValue = Math.max(minWidth, Math.min(maxWidth, newWidth));
         widthUnit = 'px';
       } else if (parentRect && parentRect.width > 0) {
         // For other elements, use percentage-based sizing
