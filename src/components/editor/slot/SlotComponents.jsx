@@ -109,6 +109,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         x: handleRect.right, // Use right edge for horizontal handles
         y: handleRect.bottom  // Use bottom edge for vertical handles
       };
+
+      console.log('🎯 Initial handle position captured:', {
+        direction,
+        rect: handleRect,
+        initial: initialHandlePositionRef.current,
+        isHorizontal: direction === 'horizontal'
+      });
+    } else {
+      console.log('❌ Failed to capture initial handle position - no handle element');
     }
 
     // Prevent text selection during drag
@@ -156,6 +165,19 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           const currentHandleRect = handleElementRef.current.getBoundingClientRect();
           const currentPosition = currentHandleRect.right; // Right edge for horizontal
           actualPositionChange = currentPosition - initialHandlePositionRef.current.x;
+
+          console.log('🔍 Handle position tracking (horizontal):', {
+            initial: initialHandlePositionRef.current.x,
+            current: currentPosition,
+            change: actualPositionChange,
+            deltaX,
+            resultOffset: deltaX - actualPositionChange
+          });
+        } else {
+          console.log('⚠️ Handle tracking failed (horizontal):', {
+            hasElement: !!handleElementRef.current,
+            hasInitial: !!initialHandlePositionRef.current
+          });
         }
 
         // Update visual position: mouse delta minus actual handle position change
