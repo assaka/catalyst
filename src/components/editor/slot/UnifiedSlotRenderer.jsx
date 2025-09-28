@@ -466,7 +466,7 @@ export function UnifiedSlotRenderer({
     // Editor: Use GridColumn for full functionality
     const colSpanValue = typeof slot.colSpan === 'number' ? slot.colSpan :
       (typeof slot.colSpan === 'object' && slot.colSpan !== null) ?
-        (slot.colSpan[viewportMode] || slot.colSpan['default'] || slot.colSpan[viewMode] || 12) : 12;
+        (slot.colSpan[viewportMode] || 12) : 12;
 
 
     return (

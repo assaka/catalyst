@@ -110,7 +110,9 @@ export const productConfig = {
       position: { col: 1, row: 1 },
       layout: 'flex',
       colSpan: {
-        default: 6
+        desktop: 6,
+        tablet: 12,
+        mobile: 12
       },
       viewMode: ['default'],
       metadata: {
@@ -186,7 +188,9 @@ export const productConfig = {
       position: { col: 7, row: 1 },
       layout: 'grid',
       colSpan: {
-        default: 6
+        desktop: 6,
+        tablet: 12,
+        mobile: 12
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }
