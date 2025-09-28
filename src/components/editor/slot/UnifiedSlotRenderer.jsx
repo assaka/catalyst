@@ -451,6 +451,17 @@ export function UnifiedSlotRenderer({
       (typeof slot.colSpan === 'object' && slot.colSpan !== null) ?
         (slot.colSpan[viewMode] || 12) : 12;
 
+    // Debug colSpan calculation for key slots
+    if (slot.id === 'header_title' || slot.id === 'header_container') {
+      console.log('🔷 UnifiedSlotRenderer colSpan calculation:', {
+        slotId: slot.id,
+        viewMode,
+        rawColSpan: slot.colSpan,
+        colSpanType: typeof slot.colSpan,
+        calculatedColSpanValue: colSpanValue
+      });
+    }
+
     return (
       <GridColumn
         key={`${slot.id}-${colSpanValue}-${viewMode}`}
