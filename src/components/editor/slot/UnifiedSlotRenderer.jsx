@@ -106,7 +106,8 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
 export function UnifiedSlotRenderer({
   slots,
   parentId = null,
-  viewMode = 'default',
+  viewMode = 'default', // Page/cart state (emptyCart, withProducts, etc.) - for slot visibility
+  viewportMode = 'desktop', // Responsive viewport (desktop, tablet, mobile) - for colSpan calculation
   context = 'storefront', // 'editor' | 'storefront'
   productData = {},
 
@@ -449,13 +450,14 @@ export function UnifiedSlotRenderer({
     // Editor: Use GridColumn for full functionality
     const colSpanValue = typeof slot.colSpan === 'number' ? slot.colSpan :
       (typeof slot.colSpan === 'object' && slot.colSpan !== null) ?
-        (slot.colSpan[viewMode] || 12) : 12;
+        (slot.colSpan[viewportMode] || 12) : 12;
 
     // Debug colSpan calculation for key slots
     if (slot.id === 'header_title' || slot.id === 'header_container') {
       console.log('🔷 UnifiedSlotRenderer colSpan calculation:', {
         slotId: slot.id,
         viewMode,
+        viewportMode,
         rawColSpan: slot.colSpan,
         colSpanType: typeof slot.colSpan,
         calculatedColSpanValue: colSpanValue
@@ -464,7 +466,7 @@ export function UnifiedSlotRenderer({
 
     return (
       <GridColumn
-        key={`${slot.id}-${colSpanValue}-${viewMode}`}
+        key={`${slot.id}-${colSpanValue}-${viewportMode}`}
         colSpan={colSpanValue}
         colSpanClass={colSpanClass}
         rowSpan={1}
