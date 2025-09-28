@@ -50,9 +50,9 @@ export const productConfig = {
     // Breadcrumbs section
     breadcrumbs_container: {
       id: 'breadcrumbs_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'breadcrumbs-container mb-6',
+      className: 'breadcrumbs-container grid grid-cols-12 gap-2 mb-6',
       styles: { gridColumn: '1 / -1', gridRow: '1' },
       parentId: 'main_layout',
       position: { col: 1, row: 1 },
@@ -102,9 +102,9 @@ export const productConfig = {
     // Product Images Section
     gallery_container: {
       id: 'gallery_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
+      className: 'gallery-container grid grid-cols-12 gap-2 {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
@@ -122,9 +122,9 @@ export const productConfig = {
 
     main_image: {
       id: 'main_image',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'main-image relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{/if}}',
+      className: 'main-image grid grid-cols-12 gap-2 relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{/if}}',
       parentClassName: '{{#if (eq settings.product_gallery_layout "vertical")}}{{#if (eq settings.vertical_gallery_position "right")}}order-first{{else}}order-last{{/if}}{{else}}order-1{{/if}}',
       styles: {},
       parentId: 'gallery_container',
@@ -178,9 +178,9 @@ export const productConfig = {
     // Product Information Section
     info_container: {
       id: 'info_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'info-container space-y-6',
+      className: 'info-container grid grid-cols-12 gap-2 space-y-6',
       styles: {},
       parentId: 'content_area',
       position: { col: 2, row: 1 },
@@ -233,9 +233,9 @@ export const productConfig = {
 
     price_container: {
       id: 'price_container',
-      type: 'flex',
+      type: 'grid',
       content: '',
-      className: 'price-container flex items-center space-x-4 mb-4',
+      className: 'price-container grid grid-cols-12 gap-2 flex items-center space-x-4 mb-4',
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 3 },
@@ -347,9 +347,9 @@ export const productConfig = {
     // Custom Options Section
     options_container: {
       id: 'options_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'options-container space-y-4',
+      className: 'options-container grid grid-cols-12 gap-2 space-y-4',
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 7 },
@@ -384,9 +384,9 @@ export const productConfig = {
     // Add to Cart Section
     actions_container: {
       id: 'actions_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'actions-container border-t pt-6',
+      className: 'actions-container grid grid-cols-12 gap-2 border-t pt-6',
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 8 },
@@ -445,9 +445,9 @@ export const productConfig = {
 
     buttons_container: {
       id: 'buttons_container',
-      type: 'flex',
+      type: 'grid',
       content: '',
-      className: 'buttons-container w-full flex items-center space-x-4',
+      className: 'buttons-container grid grid-cols-12 gap-2 w-full flex items-center space-x-4',
       styles: {},
       parentId: 'actions_container',
       position: { col: 1, row: 3 },
@@ -511,9 +511,9 @@ export const productConfig = {
     // Related Products Section
     related_products_container: {
       id: 'related_products_container',
-      type: 'container',
+      type: 'grid',
       content: '',
-      className: 'related-products-container mt-16',
+      className: 'related-products-container grid grid-cols-12 gap-2 mt-16',
       styles: { gridRow: '4' },
       parentId: 'main_layout',
       position: { col: 1, row: 4 },
