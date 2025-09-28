@@ -175,10 +175,15 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         // Get slot element boundaries for detailed position debugging
         const slotElement = e.target.closest('[data-slot-id], [data-grid-slot-id]');
+        let handleOffset = deltaX;
+
         if (slotElement) {
           const slotRect = slotElement.getBoundingClientRect();
           const handleElement = e.target;
           const handleRect = handleElement.getBoundingClientRect();
+
+          // Handle is positioned at -right-1, so offset from slot's current right edge to cursor
+          handleOffset = e.clientX - slotRect.right;
 
           console.log('RESIZE: 📍 Detailed Position Debug:', {
             leftBorderX: Math.round(slotRect.left),
@@ -187,11 +192,12 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
             handleX: Math.round(handleRect.left),
             cursorX: e.clientX,
             startCursorX: startX,
-            deltaX: deltaX
+            deltaX: deltaX,
+            calculatedOffset: Math.round(handleOffset)
           });
         }
 
-        // Handle follows the mouse cursor directly
+        // Handle positioned relative to slot's current right edge
         const actualColumnChange = newColSpan - startValue;
         console.log('RESIZE: 📐 Visual Offset Debug:', {
           colSpanDelta: colSpanDelta,
@@ -200,9 +206,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           newColSpan,
           columnWidth,
           mouseDeltaX: deltaX,
-          mouseOffset: deltaX
+          mouseOffset: Math.round(handleOffset)
         });
-        setMouseOffset(deltaX);
+        setMouseOffset(handleOffset);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
