@@ -130,8 +130,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
-        // Update visual position (capped for reasonable range)
-        setMouseOffset(Math.max(-200, Math.min(200, deltaX)));
+        // Update visual position (follow mouse without capping)
+        setMouseOffset(deltaX);
 
         console.log('🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
 
@@ -146,8 +146,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
         const newHeight = Math.max(20, startValue + heightDelta);
 
-        // Update visual position (capped for reasonable range)
-        setMouseOffset(Math.max(-200, Math.min(200, deltaY)));
+        // Update visual position (follow mouse without capping)
+        setMouseOffset(deltaY);
 
         console.log('🟢 GridResizeHandle: Vertical', { deltaY, heightDelta, startValue, newHeight, lastValue: lastValueRef.current });
 
@@ -203,9 +203,10 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
   const isHorizontal = direction === 'horizontal';
   const cursorClass = isHorizontal ? 'cursor-col-resize' : 'cursor-row-resize';
+  // Position classes without transform (we'll apply transform inline to combine with mouseOffset)
   const positionClass = isHorizontal
-    ? '-right-1 top-1/2 -translate-y-1/2 w-2 h-8'
-    : '-bottom-1 left-1/2 -translate-x-1/2 h-2 w-8';
+    ? '-right-1 top-1/2 w-2 h-8'
+    : '-bottom-1 left-1/2 h-2 w-8';
 
   return (
     <div

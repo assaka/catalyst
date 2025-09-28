@@ -251,9 +251,10 @@ const ResizeWrapper = ({
       if (!hasSignificantMovement) return;
 
 
-      // For buttons, allow more generous horizontal expansion
+      // For buttons and text, allow more generous horizontal expansion
       // Check if this is a button element that should have flexible width
       const isButton = isButtonElement(children);
+      const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
       const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
       // Calculate maximum allowed width considering viewport and sidebar constraints
@@ -266,8 +267,11 @@ const ResizeWrapper = ({
       } else if (isButton) {
         // For regular buttons, constrain to slot container with margin for slot borders
         maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
+      } else if (isTextElement) {
+        // For text elements, allow resizing beyond parent slot - use viewport bounds only
+        maxAllowedWidth = maxWidthFromViewport;
       } else {
-        // For non-buttons, use more restrictive bounds with margin for slot borders
+        // For non-buttons and non-text, use more restrictive bounds with margin for slot borders
         maxAllowedWidth = parentRect ? Math.min(parentRect.width - 10, maxWidthFromViewport) : maxWidthFromViewport;
       }
 
@@ -279,13 +283,13 @@ const ResizeWrapper = ({
       let widthValue = newWidth;
       let widthUnit = 'px';
 
-      // For buttons, prefer pixel units to allow unrestricted horizontal resizing
-      if (isButton || hasWFitClass) {
-        // Use pixels for buttons and w-fit elements to allow flexible sizing
+      // For buttons and text, prefer pixel units to allow unrestricted horizontal resizing
+      if (isButton || isTextElement || hasWFitClass) {
+        // Use pixels for buttons, text, and w-fit elements to allow flexible sizing
         widthValue = newWidth;
         widthUnit = 'px';
       } else if (parentRect && parentRect.width > 0) {
-        // For non-button elements, use percentage-based sizing
+        // For other elements, use percentage-based sizing
         const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
         widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
         widthUnit = '%';
@@ -325,12 +329,14 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const isButton = isButtonElement(children);
+  const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
   const wrapperStyle = {
     // Wrapper should always be fit-content to not affect parent layout
     width: 'fit-content',
     height: 'fit-content',
-    // Only apply maxWidth constraint for non-button elements
-    ...(isButton ? {} : { maxWidth: '100%' }),
+    // Remove maxWidth constraint for text elements to allow free resizing
+    // Only apply maxWidth constraint for non-button and non-text elements
+    ...(isButton || isTextElement ? {} : { maxWidth: '100%' }),
     display: 'inline-block',
     position: 'relative'
   };
