@@ -140,17 +140,9 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
           onResizeRef.current(newColSpan);
         }
 
-        // Calculate visual offset based on actual grid column width for responsive behavior
-        // Find the parent grid container to get actual column width
-        const gridContainer = document.querySelector('[style*="grid-template-columns"], .grid-cols-12, [class*="grid-cols-"]');
-        let columnWidth = 20; // fallback
-
-        if (gridContainer) {
-          const containerWidth = gridContainer.getBoundingClientRect().width;
-          columnWidth = containerWidth / 12; // 12-column grid
-        }
-
-        const visualOffset = colSpanDelta * columnWidth;
+        // Use simple proportional offset that matches the sensitivity
+        // This keeps the handle visually aligned with mouse movement
+        const visualOffset = colSpanDelta * sensitivity;
         setMouseOffset(visualOffset);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
