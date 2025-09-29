@@ -87,6 +87,9 @@ function processConditionals(content, context, pageData) {
         console.log('🔄 CONDITIONAL DEBUG:', {
           condition,
           isTrue,
+          match: match.substring(0, 100),
+          trueContent,
+          falseContent,
           selectedContent: selectedContent.substring(0, 50),
           isHorizontalCheck: condition.includes('horizontal'),
           isPositionCheck: isPositionCheck,
