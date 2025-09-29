@@ -369,8 +369,8 @@ export const productConfig = {
     product_labels: {
       id: 'product_labels',
       type: 'text',
-      content: '{{#if productLabels}}{{#each productLabels}}<div class="absolute {{#if (eq @index 0)}}top-2 right-2{{else}}{{#if (eq @index 1)}}top-12 right-2{{else}}top-20 right-2{{/if}}{{/if}} text-xs font-semibold px-2 py-1 rounded-md z-10" style="background-color: {{this.background_color}}; color: {{this.text_color}};">{{this.text}}</div>{{/each}}{{/if}}',
-      className: 'product-labels relative',
+      content: '{{#if productLabels}}{{#each productLabels}}<div style="background-color: {{this.background_color}}; color: {{this.text_color}};" class="text-xs font-semibold px-2 py-1 rounded-md z-10">{{this.text}}</div>{{/each}}{{/if}}',
+      className: 'product-labels absolute top-2 right-2 flex space-x-1',
       parentClassName: '',
       styles: {},
       parentId: 'main_image',
