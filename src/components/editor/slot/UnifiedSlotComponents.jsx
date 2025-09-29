@@ -243,20 +243,7 @@ const ProductGallery = createSlotComponent({
               </Badge>
             </div>
           </div>
-          <div className="flex space-x-2 overflow-x-auto">
-            {[1, 2, 3, 4].map((index) => (
-              <div
-                key={index}
-                className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 border-gray-300"
-              >
-                <img
-                  src={`https://placehold.co/100x100?text=Thumb+${index}`}
-                  alt={`Thumbnail ${index}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
+          {/* Thumbnail Gallery removed - handled by separate ProductThumbnails component */}
         </div>
       </div>
     );
@@ -291,26 +278,7 @@ const ProductGallery = createSlotComponent({
             )}
           </div>
 
-          {/* Thumbnail Gallery */}
-          {images.length > 1 && (
-            <div className="flex space-x-2 overflow-x-auto">
-              {images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                    activeImageIndex === index ? 'border-blue-500' : 'border-gray-300'
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Thumbnail Gallery removed - handled by separate ProductThumbnails component */}
         </div>
       </div>
     );
