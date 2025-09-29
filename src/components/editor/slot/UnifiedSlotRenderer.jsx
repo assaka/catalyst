@@ -152,6 +152,13 @@ export function UnifiedSlotRenderer({
       productLabels: productData.productLabels
     };
 
+  // Debug logging for productLabels
+  if (context === 'editor') {
+    console.log('🏷️ EDITOR - productLabels:', variableContext.productLabels);
+  } else {
+    console.log('🏪 STOREFRONT - productLabels:', variableContext.productLabels);
+  }
+
   /**
    * Wrap element with ResizeWrapper for editor mode
    */

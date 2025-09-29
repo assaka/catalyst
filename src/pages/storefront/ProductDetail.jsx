@@ -245,7 +245,14 @@ export default function ProductDetail() {
     const applicableLabels = [];
 
     for (const label of labels) {
+      console.log(`🔍 Evaluating label "${label.text}":`, {
+        is_active: label.is_active,
+        conditions: label.conditions,
+        position: label.position
+      });
+
       if (!label.is_active) {
+        console.log(`❌ Label "${label.text}" skipped: not active`);
         continue;
       }
 
@@ -306,13 +313,17 @@ export default function ProductDetail() {
       }
 
       if (shouldApply) {
+        console.log(`✅ Label "${label.text}" accepted`);
         applicableLabels.push(label);
+      } else {
+        console.log(`❌ Label "${label.text}" rejected: conditions not met`);
       }
     }
 
     // Sort by priority if specified
     applicableLabels.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
+    console.log('🏷️ Final applicable labels:', applicableLabels.map(l => l.text));
     return applicableLabels;
   };
 
