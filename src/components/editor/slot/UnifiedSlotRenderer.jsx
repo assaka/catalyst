@@ -510,6 +510,7 @@ export function UnifiedSlotRenderer({
         selectedElementId={selectedElementId}
         slots={slots}
         isNested={parentId !== null}
+        productData={productData}
       >
         {slotContent}
       </GridColumn>

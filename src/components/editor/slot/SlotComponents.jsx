@@ -405,7 +405,8 @@ export function GridColumn({
   children,
   isNested = false,
   slots = {}, // Add slots prop for enhanced feedback
-  selectedElementId = null // Add selectedElementId prop
+  selectedElementId = null, // Add selectedElementId prop
+  productData = {} // Add productData prop for real admin settings
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -417,7 +418,7 @@ export function GridColumn({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Process parentClassName template variables for gallery positioning
-  const variableContext = generateDemoData('product', {});
+  const variableContext = generateDemoData('product', productData.settings || {});
   const processedParentClassName = slot?.parentClassName ? processVariables(slot.parentClassName, variableContext) : '';
 
   console.log('🔧 GRIDCOLUMN PROCESSING:', {
