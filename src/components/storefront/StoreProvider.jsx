@@ -372,6 +372,14 @@ export const StoreProvider = ({ children }) => {
           rows: selectedStore.settings?.product_grid?.rows ?? 4
         },
 
+        // Product gallery layout settings - preserve saved values with defaults
+        product_gallery_layout: selectedStore.settings?.product_gallery_layout !== undefined
+          ? selectedStore.settings.product_gallery_layout
+          : 'horizontal',
+        vertical_gallery_position: selectedStore.settings?.vertical_gallery_position !== undefined
+          ? selectedStore.settings.vertical_gallery_position
+          : 'left',
+
         // Ensure boolean values for navigation settings are properly handled
         excludeRootFromMenu: selectedStore.settings?.excludeRootFromMenu === true,
         expandAllMenuItems: selectedStore.settings?.expandAllMenuItems === true,
