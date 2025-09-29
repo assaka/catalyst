@@ -18,13 +18,14 @@ export function processVariables(content, context, pageData = {}) {
   }
 
   // Debug gallery-related template processing
-  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position')) {
-    console.log('🎨 PROCESS VARIABLES:', {
-      content,
+  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position') || content.includes('order-')) {
+    console.log('🎨 GALLERY TEMPLATE PROCESSING:', {
+      content: content.substring(0, 200),
       contextSettings: context?.settings,
       pageDataSettings: pageData?.settings,
       product_gallery_layout: context?.settings?.product_gallery_layout || pageData?.settings?.product_gallery_layout,
-      vertical_gallery_position: context?.settings?.vertical_gallery_position || pageData?.settings?.vertical_gallery_position
+      vertical_gallery_position: context?.settings?.vertical_gallery_position || pageData?.settings?.vertical_gallery_position,
+      fullContext: context
     });
   }
 
@@ -40,8 +41,12 @@ export function processVariables(content, context, pageData = {}) {
   processedContent = processSimpleVariables(processedContent, context, pageData);
 
   // Debug gallery-related results
-  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position')) {
-    console.log('🎨 PROCESSED RESULT:', processedContent);
+  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position') || content.includes('order-')) {
+    console.log('🎨 GALLERY PROCESSED RESULT:', {
+      original: content.substring(0, 200),
+      processed: processedContent.substring(0, 200),
+      fullProcessed: processedContent
+    });
   }
 
   return processedContent;
@@ -68,7 +73,8 @@ function processConditionals(content, context, pageData) {
       console.log('🔄 CONDITIONAL:', {
         condition,
         isTrue,
-        selectedContent: selectedContent.substring(0, 100)
+        selectedContent: selectedContent.substring(0, 100),
+        context: context?.settings
       });
 
       // Recursively process any nested conditionals in the selected content
@@ -169,12 +175,14 @@ function evaluateCondition(condition, context, pageData) {
     if (eqMatch) {
       const [, variablePath, expectedValue] = eqMatch;
       const actualValue = getNestedValue(variablePath, context, pageData);
-      console.log('🔍 EVAL CONDITION:', {
+      console.log('🔍 GALLERY EVAL CONDITION:', {
         condition,
         variablePath,
         expectedValue,
         actualValue,
-        result: actualValue === expectedValue
+        result: actualValue === expectedValue,
+        contextSettings: context?.settings,
+        pageDataSettings: pageData?.settings
       });
       return actualValue === expectedValue;
     }
