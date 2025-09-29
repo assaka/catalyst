@@ -41,6 +41,20 @@ export function processVariables(content, context, pageData = {}) {
     });
   }
 
+  // Debug parent className processing for gallery ordering
+  if (content.includes('order-') || (content.includes('vertical_gallery_position') && content.includes('order'))) {
+    console.log('📐 PARENT CLASS PROCESSING:', {
+      originalContent: content,
+      product_gallery_layout: context?.settings?.product_gallery_layout,
+      vertical_gallery_position: context?.settings?.vertical_gallery_position,
+      isVertical: context?.settings?.product_gallery_layout === 'vertical',
+      isLeft: context?.settings?.vertical_gallery_position === 'left',
+      expectedOrder: context?.settings?.product_gallery_layout === 'vertical'
+        ? (context?.settings?.vertical_gallery_position === 'left' ? 'order-first' : 'order-last')
+        : 'order-2'
+    });
+  }
+
   let processedContent = content;
 
   // 1. Process conditional blocks first
