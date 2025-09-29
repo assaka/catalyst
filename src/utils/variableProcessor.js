@@ -67,42 +67,121 @@ export function processVariables(content, context, pageData = {}) {
  * Process conditional blocks: {{#if condition}}content{{else}}alt{{/if}}
  */
 function processConditionals(content, context, pageData) {
-  const conditionalRegex = /\{\{#if\s+([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
-
-
   let result = content;
   let hasMatches = true;
 
   // Process nested conditionals by running multiple passes
   while (hasMatches) {
     hasMatches = false;
-    result = result.replace(conditionalRegex, (match, condition, trueContent, falseContent = '') => {
-      hasMatches = true;
-      const isTrue = evaluateCondition(condition, context, pageData);
-      const selectedContent = isTrue ? trueContent : falseContent;
 
-      // Log ALL gallery-related conditionals with POSITION focus
-      if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position') || condition.includes('horizontal') || condition.includes('vertical')) {
-        const isPositionCheck = condition.includes('vertical_gallery_position');
-        console.log('🔄 CONDITIONAL DEBUG:', {
-          condition,
-          isTrue,
-          match: match.substring(0, 100),
-          trueContent,
-          falseContent,
-          selectedContent: selectedContent.substring(0, 50),
-          isHorizontalCheck: condition.includes('horizontal'),
-          isPositionCheck: isPositionCheck,
-          currentLayout: context?.settings?.product_gallery_layout,
-          currentPosition: context?.settings?.vertical_gallery_position,
-          expectedForLeftThumbnails: isPositionCheck && condition.includes('left') ? 'Should be TRUE when position=left' : 'N/A',
-          expectedForRightThumbnails: isPositionCheck && condition.includes('right') ? 'Should be TRUE when position=right' : 'N/A'
-        });
+    // Find and process conditionals from inside out (deepest first)
+    result = processConditionalsStep(result, context, pageData);
+
+    // Continue until no more conditionals found
+    hasMatches = result.includes('{{#if');
+  }
+
+  return result;
+}
+
+/**
+ * Process one step of conditionals, handling proper bracket counting for nested structures
+ */
+function processConditionalsStep(content, context, pageData) {
+  let result = content;
+  let startIndex = 0;
+
+  while (true) {
+    // Find the next {{#if
+    const ifIndex = result.indexOf('{{#if', startIndex);
+    if (ifIndex === -1) break;
+
+    // Extract condition
+    const conditionStart = ifIndex + 5; // after {{#if
+    const conditionEnd = result.indexOf('}}', conditionStart);
+    if (conditionEnd === -1) break;
+
+    const condition = result.substring(conditionStart, conditionEnd).trim();
+
+    // Find matching {{/if}} by counting brackets
+    let bracketCount = 1;
+    let searchIndex = conditionEnd + 2; // after }}
+    let elseIndex = -1;
+    let endIndex = -1;
+
+    while (bracketCount > 0 && searchIndex < result.length) {
+      const nextIf = result.indexOf('{{#if', searchIndex);
+      const nextElse = result.indexOf('{{else}}', searchIndex);
+      const nextEndif = result.indexOf('{{/if}}', searchIndex);
+
+      // Find the closest tag
+      const candidates = [
+        { pos: nextIf, type: 'if' },
+        { pos: nextElse, type: 'else' },
+        { pos: nextEndif, type: 'endif' }
+      ].filter(c => c.pos !== -1).sort((a, b) => a.pos - b.pos);
+
+      if (candidates.length === 0) break;
+
+      const nextTag = candidates[0];
+
+      if (nextTag.type === 'if') {
+        bracketCount++;
+        searchIndex = nextTag.pos + 5;
+      } else if (nextTag.type === 'else' && bracketCount === 1 && elseIndex === -1) {
+        // This else belongs to our current if
+        elseIndex = nextTag.pos;
+        searchIndex = nextTag.pos + 8;
+      } else if (nextTag.type === 'endif') {
+        bracketCount--;
+        if (bracketCount === 0) {
+          endIndex = nextTag.pos;
+        }
+        searchIndex = nextTag.pos + 7;
+      } else {
+        searchIndex = nextTag.pos + 1;
       }
+    }
 
-      // Recursively process any nested conditionals in the selected content
-      return processConditionals(selectedContent, context, pageData);
-    });
+    if (endIndex === -1) {
+      startIndex = ifIndex + 1;
+      continue;
+    }
+
+    // Extract content parts
+    let trueContent, falseContent = '';
+
+    if (elseIndex !== -1) {
+      trueContent = result.substring(conditionEnd + 2, elseIndex);
+      falseContent = result.substring(elseIndex + 8, endIndex);
+    } else {
+      trueContent = result.substring(conditionEnd + 2, endIndex);
+    }
+
+    // Evaluate condition and select content
+    const isTrue = evaluateCondition(condition, context, pageData);
+    const selectedContent = isTrue ? trueContent : falseContent;
+
+    // Log gallery-related conditionals
+    if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position') || condition.includes('horizontal') || condition.includes('vertical')) {
+      const isPositionCheck = condition.includes('vertical_gallery_position');
+      console.log('🔄 CONDITIONAL DEBUG FIXED:', {
+        condition,
+        isTrue,
+        trueContent: trueContent.substring(0, 50),
+        falseContent: falseContent.substring(0, 50),
+        selectedContent: selectedContent.substring(0, 50),
+        currentLayout: context?.settings?.product_gallery_layout,
+        currentPosition: context?.settings?.vertical_gallery_position
+      });
+    }
+
+    // Replace the entire conditional block with the selected content
+    const fullMatch = result.substring(ifIndex, endIndex + 7); // include {{/if}}
+    result = result.substring(0, ifIndex) + selectedContent + result.substring(endIndex + 7);
+
+    // Continue from the beginning to handle any newly exposed conditionals
+    startIndex = 0;
   }
 
   return result;
