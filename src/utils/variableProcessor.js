@@ -17,12 +17,14 @@ export function processVariables(content, context, pageData = {}) {
     return content;
   }
 
-  // Debug gallery-related template processing - HORIZONTAL FOCUS
-  if (content.includes('order-') && content.includes('product_gallery_layout')) {
-    console.log('🎨 HORIZONTAL DEBUG - PROCESSING ORDER:', {
+  // Debug ALL order template processing
+  if (content.includes('order-')) {
+    console.log('🎨 ORDER TEMPLATE DEBUG:', {
       content: content,
       product_gallery_layout: context?.settings?.product_gallery_layout,
-      fullSettings: context?.settings
+      vertical_gallery_position: context?.settings?.vertical_gallery_position,
+      containsHorizontal: content.includes('horizontal'),
+      containsVertical: content.includes('vertical')
     });
   }
 
@@ -37,12 +39,14 @@ export function processVariables(content, context, pageData = {}) {
   // 3. Process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
 
-  // Debug gallery order results - HORIZONTAL FOCUS
-  if (content.includes('order-') && content.includes('product_gallery_layout')) {
-    console.log('🎨 HORIZONTAL DEBUG - ORDER RESULT:', {
-      original: content,
+  // Debug ALL order processing results
+  if (content.includes('order-')) {
+    console.log('🎨 ORDER RESULT DEBUG:', {
+      original: content.substring(0, 100) + '...',
       processed: processedContent,
-      expectedForHorizontal: content.includes('horizontal') ? 'Should be order-1 or order-2' : 'Not horizontal template'
+      isEmpty: !processedContent || processedContent.trim() === '',
+      containsHorizontal: content.includes('horizontal'),
+      currentLayout: context?.settings?.product_gallery_layout
     });
   }
 
@@ -67,13 +71,14 @@ function processConditionals(content, context, pageData) {
       const isTrue = evaluateCondition(condition, context, pageData);
       const selectedContent = isTrue ? trueContent : falseContent;
 
-      // Only log gallery-related conditionals - HORIZONTAL FOCUS
-      if (condition.includes('product_gallery_layout')) {
-        console.log('🔄 HORIZONTAL DEBUG - CONDITIONAL:', {
+      // Log ALL gallery-related conditionals
+      if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position') || condition.includes('horizontal') || condition.includes('vertical')) {
+        console.log('🔄 CONDITIONAL DEBUG:', {
           condition,
           isTrue,
-          selectedContent: selectedContent,
-          expectedForHorizontal: condition.includes('horizontal') ? 'Should be TRUE for horizontal layout' : 'Not horizontal condition'
+          selectedContent: selectedContent.substring(0, 50),
+          isHorizontalCheck: condition.includes('horizontal'),
+          currentLayout: context?.settings?.product_gallery_layout
         });
       }
 
