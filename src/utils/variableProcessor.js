@@ -18,14 +18,11 @@ export function processVariables(content, context, pageData = {}) {
   }
 
   // Debug gallery-related template processing
-  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position') || content.includes('order-')) {
-    console.log('🎨 GALLERY TEMPLATE PROCESSING:', {
-      content: content.substring(0, 200),
-      contextSettings: context?.settings,
-      pageDataSettings: pageData?.settings,
+  if (content.includes('order-') && (content.includes('product_gallery_layout') || content.includes('vertical_gallery_position'))) {
+    console.log('🎨 GALLERY ORDER PROCESSING:', {
+      content: content.substring(0, 100),
       product_gallery_layout: context?.settings?.product_gallery_layout || pageData?.settings?.product_gallery_layout,
-      vertical_gallery_position: context?.settings?.vertical_gallery_position || pageData?.settings?.vertical_gallery_position,
-      fullContext: context
+      vertical_gallery_position: context?.settings?.vertical_gallery_position || pageData?.settings?.vertical_gallery_position
     });
   }
 
@@ -40,12 +37,11 @@ export function processVariables(content, context, pageData = {}) {
   // 3. Process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
 
-  // Debug gallery-related results
-  if (content.includes('gallery-container') || content.includes('product_gallery_layout') || content.includes('vertical_gallery_position') || content.includes('order-')) {
-    console.log('🎨 GALLERY PROCESSED RESULT:', {
-      original: content.substring(0, 200),
-      processed: processedContent.substring(0, 200),
-      fullProcessed: processedContent
+  // Debug gallery order results
+  if (content.includes('order-') && (content.includes('product_gallery_layout') || content.includes('vertical_gallery_position'))) {
+    console.log('🎨 GALLERY ORDER RESULT:', {
+      original: content.substring(0, 100),
+      processed: processedContent
     });
   }
 
@@ -70,12 +66,14 @@ function processConditionals(content, context, pageData) {
       const isTrue = evaluateCondition(condition, context, pageData);
       const selectedContent = isTrue ? trueContent : falseContent;
 
-      console.log('🔄 CONDITIONAL:', {
-        condition,
-        isTrue,
-        selectedContent: selectedContent.substring(0, 100),
-        context: context?.settings
-      });
+      // Only log gallery-related conditionals
+      if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position')) {
+        console.log('🔄 GALLERY CONDITIONAL:', {
+          condition,
+          isTrue,
+          selectedContent: selectedContent.substring(0, 50)
+        });
+      }
 
       // Recursively process any nested conditionals in the selected content
       return processConditionals(selectedContent, context, pageData);
@@ -175,15 +173,15 @@ function evaluateCondition(condition, context, pageData) {
     if (eqMatch) {
       const [, variablePath, expectedValue] = eqMatch;
       const actualValue = getNestedValue(variablePath, context, pageData);
-      console.log('🔍 GALLERY EVAL CONDITION:', {
-        condition,
-        variablePath,
-        expectedValue,
-        actualValue,
-        result: actualValue === expectedValue,
-        contextSettings: context?.settings,
-        pageDataSettings: pageData?.settings
-      });
+      // Only log gallery-related evaluations
+      if (variablePath.includes('gallery')) {
+        console.log('🔍 GALLERY EVAL:', {
+          condition,
+          actualValue,
+          expectedValue,
+          result: actualValue === expectedValue
+        });
+      }
       return actualValue === expectedValue;
     }
 
