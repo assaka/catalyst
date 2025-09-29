@@ -148,7 +148,8 @@ export function UnifiedSlotRenderer({
       product: productData.product,
       category: categoryData,
       cart: cartData,
-      settings: productData.settings
+      settings: productData.settings,
+      productLabels: productData.productLabels
     };
 
   /**

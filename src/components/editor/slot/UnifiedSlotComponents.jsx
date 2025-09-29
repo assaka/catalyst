@@ -1456,38 +1456,40 @@ const ProductImage = createSlotComponent({
       const index = activeImageIndex || 0;
       const image = product.images[index];
 
-      if (typeof image === 'string') {
-        return image;
-      }
-
+      // Only handle new format - object with url property
       if (typeof image === 'object' && image !== null) {
-        const url = image.url || image.src || image.path || image.image_url ||
-                    image.file_url || image.uri || image.file_path;
-
-        if (typeof url === 'string') {
-          return url;
-        }
-
-        console.log('Image object structure:', image);
-        return 'https://placehold.co/600x600?text=Invalid+Image';
+        return image.url || 'https://placehold.co/600x600?text=No+Image';
       }
 
-      return 'https://placehold.co/600x600?text=No+Image';
+      return 'https://placehold.co/600x600?text=Invalid+Format';
     };
 
     const imageUrl = getImageUrl();
+    const currentImageData = product.images[activeImageIndex || 0];
 
     return (
-      <img
-        src={imageUrl}
-        alt={product.name || 'Product image'}
-        className={className}
-        style={styles}
-        onError={(e) => {
-          console.error('Image load error:', imageUrl);
-          e.target.src = 'https://placehold.co/600x600?text=Image+Error';
-        }}
-      />
+      <div className="relative w-full h-full group">
+        <img
+          src={imageUrl}
+          alt={product.name || 'Product image'}
+          className={`${className} transition-transform duration-300 group-hover:scale-105`}
+          style={styles}
+          onError={(e) => {
+            console.error('Image load error:', imageUrl);
+            e.target.src = 'https://placehold.co/600x600?text=Image+Error';
+          }}
+        />
+
+        {/* Image info overlay for hover */}
+        {typeof currentImageData === 'object' && currentImageData?.filepath && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <p className="truncate">{currentImageData.filepath}</p>
+            {currentImageData.filesize && (
+              <p>{(currentImageData.filesize / 1024).toFixed(1)} KB</p>
+            )}
+          </div>
+        )}
+      </div>
     );
   }
 });
@@ -1520,7 +1522,7 @@ const ProductThumbnails = createSlotComponent({
 
   // Storefront version
   renderStorefront: ({ slot, productContext, className, styles }) => {
-    const { product, activeImageIndex, setActiveImageIndex } = productContext;
+    const { product, activeImageIndex, setActiveImageIndex, settings } = productContext;
 
     if (!product || !product.images || product.images.length <= 1) {
       return null;
@@ -1529,32 +1531,54 @@ const ProductThumbnails = createSlotComponent({
     const images = product.images || [];
 
     const getImageUrl = (image) => {
-      if (typeof image === 'string') {
-        return image;
-      }
+      // Only handle new format - object with url property
       if (typeof image === 'object' && image !== null) {
-        return image.url || image.src || image.path || 'https://placehold.co/100x100?text=Thumb';
+        return image.url || 'https://placehold.co/100x100?text=No+Thumb';
       }
-      return 'https://placehold.co/100x100?text=Thumb';
+      return 'https://placehold.co/100x100?text=Invalid+Format';
     };
+
+    // Determine layout based on settings (from product-config.js)
+    const isVerticalLayout = settings?.product_gallery_layout === 'vertical';
+    const thumbnailPosition = settings?.vertical_gallery_position || 'left';
+
+    // Dynamic thumbnail size based on layout
+    const thumbnailSize = isVerticalLayout ? 'w-20 h-20' : 'w-16 h-16';
 
     return (
       <div className={className} style={styles}>
-        {images.map((image, index) => (
-          <button
-            key={index}
-            onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-              activeImageIndex === index ? 'border-blue-500' : 'border-gray-300 hover:border-gray-400'
-            }`}
-          >
-            <img
-              src={getImageUrl(image)}
-              alt={`${product.name} ${index + 1}`}
-              className="w-full h-full object-cover"
-            />
-          </button>
-        ))}
+        {images.map((image, index) => {
+          const imageData = image;
+          return (
+            <button
+              key={imageData?.attribute_code || index}
+              onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+              className={`relative group flex-shrink-0 ${thumbnailSize} rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                activeImageIndex === index
+                  ? 'border-blue-500 ring-2 ring-blue-200'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <img
+                src={getImageUrl(image)}
+                alt={`${product.name} ${index + 1}`}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              />
+
+              {/* Thumbnail overlay info */}
+              {typeof imageData === 'object' && imageData?.filesize && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <p className="text-center">{(imageData.filesize / 1024).toFixed(0)}KB</p>
+                </div>
+              )}
+
+              {/* Active indicator */}
+              {activeImageIndex === index && (
+                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </button>
+          );
+        })}
       </div>
     );
   }
