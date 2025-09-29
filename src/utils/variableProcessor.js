@@ -110,36 +110,47 @@ function processConditionalsStep(content, context, pageData) {
     let endIndex = -1;
 
     while (bracketCount > 0 && searchIndex < result.length) {
+      // Find all potential tags from current position
       const nextIf = result.indexOf('{{#if', searchIndex);
       const nextElse = result.indexOf('{{else}}', searchIndex);
       const nextEndif = result.indexOf('{{/if}}', searchIndex);
 
-      // Find the closest tag
-      const candidates = [
-        { pos: nextIf, type: 'if' },
-        { pos: nextElse, type: 'else' },
-        { pos: nextEndif, type: 'endif' }
-      ].filter(c => c.pos !== -1).sort((a, b) => a.pos - b.pos);
+      // Build candidates list with proper filtering
+      const candidates = [];
+      if (nextIf !== -1) candidates.push({ pos: nextIf, type: 'if', len: 5 });
+      if (nextElse !== -1) candidates.push({ pos: nextElse, type: 'else', len: 8 });
+      if (nextEndif !== -1) candidates.push({ pos: nextEndif, type: 'endif', len: 7 });
 
-      if (candidates.length === 0) break;
+      // Sort by position to process in order
+      candidates.sort((a, b) => a.pos - b.pos);
+
+      if (candidates.length === 0) {
+        console.warn('No closing {{/if}} found for conditional starting at', ifIndex);
+        break;
+      }
 
       const nextTag = candidates[0];
 
       if (nextTag.type === 'if') {
+        // Nested if - increase bracket count
         bracketCount++;
-        searchIndex = nextTag.pos + 5;
+        searchIndex = nextTag.pos + nextTag.len;
       } else if (nextTag.type === 'else' && bracketCount === 1 && elseIndex === -1) {
-        // This else belongs to our current if
+        // This else belongs to our current if (not a nested one)
         elseIndex = nextTag.pos;
-        searchIndex = nextTag.pos + 8;
+        searchIndex = nextTag.pos + nextTag.len;
       } else if (nextTag.type === 'endif') {
+        // Closing if - decrease bracket count
         bracketCount--;
         if (bracketCount === 0) {
+          // This is our matching closing tag
           endIndex = nextTag.pos;
+          break;
         }
-        searchIndex = nextTag.pos + 7;
+        searchIndex = nextTag.pos + nextTag.len;
       } else {
-        searchIndex = nextTag.pos + 1;
+        // else for a nested if - skip it
+        searchIndex = nextTag.pos + nextTag.len;
       }
     }
 
@@ -168,9 +179,13 @@ function processConditionalsStep(content, context, pageData) {
       console.log('🔄 CONDITIONAL DEBUG FIXED:', {
         condition,
         isTrue,
-        trueContent: trueContent.substring(0, 50),
-        falseContent: falseContent.substring(0, 50),
-        selectedContent: selectedContent.substring(0, 50),
+        ifIndex,
+        elseIndex,
+        endIndex,
+        fullTemplate: result.substring(ifIndex, Math.min(ifIndex + 150, result.length)),
+        trueContent: trueContent.length > 50 ? trueContent.substring(0, 50) + '...' : trueContent,
+        falseContent: falseContent.length > 50 ? falseContent.substring(0, 50) + '...' : falseContent,
+        selectedContent: selectedContent.length > 50 ? selectedContent.substring(0, 50) + '...' : selectedContent,
         currentLayout: context?.settings?.product_gallery_layout,
         currentPosition: context?.settings?.vertical_gallery_position
       });
