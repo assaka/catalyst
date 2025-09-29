@@ -858,6 +858,9 @@ export default function ProductDetail() {
             hasSettings: !!settings,
             product_gallery_layout: settings?.product_gallery_layout,
             vertical_gallery_position: settings?.vertical_gallery_position,
+            settingsSource: 'ProductDetail.jsx',
+            storeId: store?.id,
+            storeName: store?.name,
             allSettings: settings
           })}
           <UnifiedSlotRenderer

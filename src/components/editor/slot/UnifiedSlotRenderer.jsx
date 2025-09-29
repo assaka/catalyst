@@ -466,85 +466,92 @@ export function UnifiedSlotRenderer({
    * Wrap slot content with editor functionality if needed
    */
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
-    if (context !== 'editor') {
-      // Storefront: Check if colSpan is empty object and skip wrapper
-      const isEmptyColSpan = typeof slot.colSpan === 'object' &&
-                             slot.colSpan !== null &&
-                             Object.keys(slot.colSpan).length === 0;
+    // Check if colSpan is empty object and skip wrapper
+    const isEmptyColSpan = typeof slot.colSpan === 'object' &&
+                           slot.colSpan !== null &&
+                           Object.keys(slot.colSpan).length === 0;
 
-      if (isEmptyColSpan) {
-        return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
+    if (isEmptyColSpan) {
+      return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
+    }
+
+    // Use same layout structure for both editor and storefront
+    const processedParentClassName = processVariables(slot.parentClassName || '', variableContext);
+
+    const layoutWrapper = (
+      <div
+        key={slot.id}
+        className={`${colSpanClass} ${processedParentClassName}`}
+        style={{
+          ...(gridColumn ? { gridColumn } : {}),
+          ...slot.containerStyles
+        }}
+      >
+        {slotContent}
+      </div>
+    );
+
+    // In editor, add editing functionality as overlay without changing layout
+    if (context === 'editor') {
+      // For absolutely positioned elements, don't add editor wrapper that would interfere
+      const isAbsolutePositioned = slot.className?.includes('absolute');
+
+      if (isAbsolutePositioned) {
+        return layoutWrapper;
       }
 
-      // Normal wrapper for storefront
-      const processedParentClassName = processVariables(slot.parentClassName || '', variableContext);
+      // For normal elements, wrap with editor functionality
+      let colSpanValue = 12;
+      let useTailwindClass = false;
+
+      if (typeof slot.colSpan === 'number') {
+        colSpanValue = slot.colSpan;
+      } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
+        const viewModeValue = slot.colSpan[viewMode];
+        if (typeof viewModeValue === 'number') {
+          colSpanValue = viewModeValue;
+        } else if (typeof viewModeValue === 'string') {
+          useTailwindClass = true;
+          colSpanValue = 12;
+        } else {
+          colSpanValue = 12;
+        }
+      }
 
       return (
-        <div
-          key={slot.id}
-          className={`${colSpanClass} ${processedParentClassName}`}
-          style={{
-            ...(gridColumn ? { gridColumn } : {}),
-            ...slot.containerStyles
-          }}
+        <GridColumn
+          key={`${slot.id}-${viewportMode}`}
+          colSpan={colSpanValue}
+          colSpanClass={colSpanClass}
+          useTailwindClass={useTailwindClass}
+          rowSpan={1}
+          height={slot.styles?.height}
+          slotId={slot.id}
+          slot={slot}
+          onGridResize={onGridResize}
+          onSlotHeightResize={onSlotHeightResize}
+          onResizeStart={onResizeStart}
+          onResizeEnd={onResizeEnd}
+          onSlotDrop={onSlotDrop}
+          onSlotDelete={onSlotDelete}
+          onElementClick={onElementClick}
+          mode={mode}
+          viewMode={viewMode}
+          showBorders={showBorders}
+          currentDragInfo={currentDragInfo}
+          setCurrentDragInfo={setCurrentDragInfo}
+          selectedElementId={selectedElementId}
+          slots={slots}
+          isNested={parentId !== null}
+          productData={productData}
+          preserveLayout={true}
         >
-          {slotContent}
-        </div>
+          {layoutWrapper}
+        </GridColumn>
       );
     }
 
-    // Editor: Use GridColumn for full functionality
-    let colSpanValue = 12;
-    let useTailwindClass = false;
-
-    if (typeof slot.colSpan === 'number') {
-      colSpanValue = slot.colSpan;
-    } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
-      // Try viewMode (for content state like 'default', 'emptyCart', 'withProducts')
-      const viewModeValue = slot.colSpan[viewMode];
-      if (typeof viewModeValue === 'number') {
-        colSpanValue = viewModeValue;
-      } else if (typeof viewModeValue === 'string') {
-        // For responsive string classes like 'col-span-12 lg:col-span-6', use Tailwind classes only
-        useTailwindClass = true;
-        colSpanValue = 12; // fallback for calculations
-      } else {
-        // No valid viewMode key found, use default of 12
-        colSpanValue = 12;
-      }
-    }
-
-
-    return (
-      <GridColumn
-        key={`${slot.id}-${viewportMode}`}
-        colSpan={colSpanValue}
-        colSpanClass={colSpanClass}
-        useTailwindClass={useTailwindClass}
-        rowSpan={1}
-        height={slot.styles?.height}
-        slotId={slot.id}
-        slot={slot}
-        onGridResize={onGridResize}
-        onSlotHeightResize={onSlotHeightResize}
-        onResizeStart={onResizeStart}
-        onResizeEnd={onResizeEnd}
-        onSlotDrop={onSlotDrop}
-        onSlotDelete={onSlotDelete}
-        onElementClick={onElementClick}
-        mode={mode}
-        viewMode={viewMode}
-        showBorders={showBorders}
-        currentDragInfo={currentDragInfo}
-        setCurrentDragInfo={setCurrentDragInfo}
-        selectedElementId={selectedElementId}
-        slots={slots}
-        isNested={parentId !== null}
-        productData={productData}
-      >
-        {slotContent}
-      </GridColumn>
-    );
+    return layoutWrapper;
   };
 
   return (
