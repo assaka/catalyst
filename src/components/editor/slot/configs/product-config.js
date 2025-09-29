@@ -175,44 +175,6 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    thumbnail_gallery: {
-      id: 'thumbnail_gallery',
-      type: 'component',
-      component: 'ProductThumbnails',
-      content: '',
-      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24 {{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}',
-      parentClassName: '{{#if (eq settings.product_gallery_layout "horizontal")}}order-2{{else}}{{#if (eq settings.vertical_gallery_position "right")}}order-last{{else}}order-first{{/if}}{{/if}}',
-      styles: {},
-      parentId: 'gallery_container',
-      position: { col: 1, row: 1 },
-      layout: 'flex',
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: {
-        hierarchical: true,
-        dynamicLayout: true
-      }
-    },
-
-    product_image: {
-      id: 'product_image',
-      type: 'component',
-      component: 'ProductImage',
-      content: '',
-      className: 'w-full h-full object-cover',
-      parentClassName: '',
-      styles: {},
-      parentId: 'main_image',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
     // Product Information Section
     info_container: {
       id: 'info_container',
