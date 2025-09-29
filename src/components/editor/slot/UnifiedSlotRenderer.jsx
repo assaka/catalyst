@@ -142,13 +142,14 @@ export function UnifiedSlotRenderer({
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
   // Prepare context for variable processing (shared by all rendering functions)
+  // Ensure consistent structure between editor and storefront
   const variableContext = context === 'editor' ?
     generateDemoData('product', productData.settings || {}) :
     {
       product: productData.product,
       category: categoryData,
       cart: cartData,
-      settings: productData.settings,
+      settings: productData.settings || {},
       productLabels: productData.productLabels
     };
 
@@ -157,6 +158,9 @@ export function UnifiedSlotRenderer({
     context,
     productDataSettings: productData.settings,
     variableContextSettings: variableContext.settings,
+    hasGalleryLayout: !!(variableContext.settings?.product_gallery_layout),
+    hasVerticalPosition: !!(variableContext.settings?.vertical_gallery_position),
+    fullProductData: Object.keys(productData),
     product_gallery_layout: variableContext.settings?.product_gallery_layout,
     vertical_gallery_position: variableContext.settings?.vertical_gallery_position,
     settingsSource: context === 'editor' ? 'DEMO_DATA' : 'REAL_SETTINGS'
