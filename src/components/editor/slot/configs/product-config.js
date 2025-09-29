@@ -175,6 +175,44 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
+    thumbnail_gallery: {
+      id: 'thumbnail_gallery',
+      type: 'component',
+      component: 'ProductThumbnails',
+      content: '',
+      className: 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24 {{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}',
+      parentClassName: '{{#if (eq settings.product_gallery_layout "horizontal")}}order-2{{else}}{{#if (eq settings.vertical_gallery_position "right")}}order-last{{else}}order-first{{/if}}{{/if}}',
+      styles: {},
+      parentId: 'gallery_container',
+      position: { col: 1, row: 1 },
+      layout: 'flex',
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        dynamicLayout: true
+      }
+    },
+
+    product_image: {
+      id: 'product_image',
+      type: 'component',
+      component: 'ProductImage',
+      content: '',
+      className: 'w-full h-full object-cover',
+      parentClassName: '',
+      styles: {},
+      parentId: 'main_image',
+      position: { col: 1, row: 1 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: { hierarchical: true }
+    },
+
     // Product Information Section
     info_container: {
       id: 'info_container',
@@ -331,8 +369,8 @@ export const productConfig = {
     product_labels: {
       id: 'product_labels',
       type: 'text',
-      content: '{{#if productLabels}}{{#each productLabels}}<div class="absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-md z-10" style="background-color: {{this.background_color}}; color: {{this.text_color}};">{{this.text}}</div>{{/each}}{{/if}}',
-      className: 'product-labels',
+      content: '{{#if productLabels}}{{#each productLabels}}<div class="absolute {{#if (eq @index 0)}}top-2 right-2{{else}}{{#if (eq @index 1)}}top-12 right-2{{else}}top-20 right-2{{/if}}{{/if}} text-xs font-semibold px-2 py-1 rounded-md z-10" style="background-color: {{this.background_color}}; color: {{this.text_color}};">{{this.text}}</div>{{/each}}{{/if}}',
+      className: 'product-labels relative',
       parentClassName: '',
       styles: {},
       parentId: 'main_image',
