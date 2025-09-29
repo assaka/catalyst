@@ -102,9 +102,9 @@ export const productConfig = {
     // Product Images Section
     gallery_container: {
       id: 'gallery_container',
-      type: 'grid',
+      type: 'container',
       content: '',
-      className: 'gallery-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
+      className: 'gallery-container {{#if (eq settings.product_gallery_layout "vertical")}}flex space-x-4{{else}}flex flex-col space-y-4{{/if}}',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
@@ -233,9 +233,9 @@ export const productConfig = {
 
     price_container: {
       id: 'price_container',
-      type: 'grid',
+      type: 'flex',
       content: '',
-      className: 'price-container grid grid-cols-12 gap-2 flex items-center space-x-4 mb-4',
+      className: 'price-container flex items-center space-x-4 mb-4',
       styles: {},
       parentId: 'info_container',
       position: { col: 1, row: 3 },
@@ -445,9 +445,9 @@ export const productConfig = {
 
     buttons_container: {
       id: 'buttons_container',
-      type: 'grid',
+      type: 'flex',
       content: '',
-      className: 'buttons-container grid grid-cols-12 gap-2 w-full flex items-center space-x-4',
+      className: 'buttons-container w-full flex items-center space-x-4',
       styles: {},
       parentId: 'actions_container',
       position: { col: 1, row: 3 },
