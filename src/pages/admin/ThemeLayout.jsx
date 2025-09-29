@@ -328,26 +328,51 @@ export default function ThemeLayout() {
                 return await Store.update(store.id, { settings: store.settings });
             });
             
-            // Clear only specific StoreProvider cache to force reload of settings
-            try {
-                localStorage.removeItem('storeProviderCache');
-                sessionStorage.removeItem('storeProviderCache');
-                localStorage.setItem('forceRefreshStore', 'true');
-                
-                // Clear only specific cache keys, avoiding auth tokens
-                const safeToClear = [
+            // ALWAYS clear specific cache keys when admin saves settings
+            const clearSpecificCacheKeys = () => {
+                const keysToAlwaysClear = [
                     'storeProviderCache',
+                    'store_settings_cache',
                     'store_theme_cache',
-                    'store_settings_cache'
+                    'gallery_settings_cache',
+                    `store_${store.id}_settings`,
+                    `store_${store.id}_cache`,
+                    'product_layout_config',
+                    'category_layout_config'
                 ];
-                
-                safeToClear.forEach(key => {
+
+                keysToAlwaysClear.forEach(key => {
                     localStorage.removeItem(key);
                     sessionStorage.removeItem(key);
+                    console.log(`🧹 Cleared cache key: ${key}`);
                 });
-                
+
+                // Force store refresh
+                localStorage.setItem('forceRefreshStore', 'true');
+                localStorage.setItem('settings_updated_at', Date.now().toString());
+
+                console.log('🔧 ADMIN SAVE: Cleared all settings cache keys');
+            };
+
+            try {
+                clearSpecificCacheKeys();
+
+                // Broadcast cache clear to all tabs
+                try {
+                    const channel = new BroadcastChannel('store_settings_update');
+                    channel.postMessage({
+                        type: 'clear_cache',
+                        reason: 'admin_settings_save',
+                        timestamp: Date.now(),
+                        keysCleared: ['storeProviderCache', 'store_settings_cache', 'gallery_settings_cache']
+                    });
+                    channel.close();
+                } catch (broadcastError) {
+                    console.warn('BroadcastChannel not supported:', broadcastError);
+                }
+
             } catch (e) {
-                // Cache clearing failed, but continue
+                console.error('Cache clearing failed:', e);
             }
             
             setFlashMessage({ type: 'success', message: 'Settings saved successfully! Visit a category page to see changes.' });
