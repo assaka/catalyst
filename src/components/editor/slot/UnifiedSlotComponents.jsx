@@ -247,7 +247,7 @@ const ProductGallery = createSlotComponent({
             {[1, 2, 3, 4].map((index) => (
               <div
                 key={index}
-                className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300"
+                className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 border-gray-300"
               >
                 <img
                   src={`https://placehold.co/100x100?text=Thumb+${index}`}
@@ -1505,7 +1505,7 @@ const ProductThumbnails = createSlotComponent({
         {[1, 2, 3, 4].map((index) => (
           <div
             key={index}
-            className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300"
+            className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 border-gray-300"
           >
             <img
               src={`https://placehold.co/100x100?text=Thumb+${index}`}
