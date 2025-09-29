@@ -13,6 +13,7 @@ import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapp
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
+import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 // EditModeControls Component
 export function EditModeControls({ localSaveStatus, publishStatus, saveConfiguration, onPublish, hasChanges = false }) {
@@ -415,6 +416,17 @@ export function GridColumn({
   const [isOverResizeHandle, setIsOverResizeHandle] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Process parentClassName template variables for gallery positioning
+  const variableContext = generateDemoData('product', {});
+  const processedParentClassName = slot?.parentClassName ? processVariables(slot.parentClassName, variableContext) : '';
+
+  console.log('🔧 GRIDCOLUMN PROCESSING:', {
+    slotId: slot?.id,
+    originalParentClassName: slot?.parentClassName,
+    processedParentClassName: processedParentClassName,
+    isEmpty: !processedParentClassName || processedParentClassName.trim() === ''
+  });
+
   // Calculate grid position for ghost preview
   const calculateGridPosition = useCallback((dropPosition, targetSlot) => {
     if (!targetSlot || !slots) return null;
@@ -808,7 +820,7 @@ export function GridColumn({
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-hidden'
-      } relative responsive-slot ${colSpanClass} ${slot?.parentClassName || ''}`}
+      } relative responsive-slot ${colSpanClass} ${processedParentClassName}`}
       ref={(el) => {
       }}
       data-col-span={colSpan}
@@ -1203,7 +1215,7 @@ export function HierarchicalSlotRenderer({
               }}
             >
               <span
-                className={`${slot.parentClassName || ''} ${slot.className || ''}`}
+                className={`${processedParentClassName} ${slot.className || ''}`}
                 style={(() => {
                   const finalStyles = {
                     ...slot.styles,
@@ -1247,7 +1259,7 @@ export function HierarchicalSlotRenderer({
 
           {slot.type === 'text' && mode !== 'edit' && (
             <span
-              className={`${slot.parentClassName || ''} ${slot.className}`}
+              className={`${processedParentClassName} ${slot.className}`}
               style={{
                 ...slot.styles,
                 ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
@@ -1296,7 +1308,7 @@ export function HierarchicalSlotRenderer({
               }}
             >
               <button
-                className={`${slot.parentClassName || ''} ${slot.className}`}
+                className={`${processedParentClassName} ${slot.className}`}
                 style={(() => {
                   const finalStyles = {
                     ...slot.styles,
@@ -1346,7 +1358,7 @@ export function HierarchicalSlotRenderer({
 
               {slot.type === 'button' && mode !== 'edit' && (
                 <button
-                  className={`${slot.parentClassName || ''} ${slot.className}`}
+                  className={`${processedParentClassName} ${slot.className}`}
                   style={{
                     ...slot.styles,
                     minWidth: 'auto',
@@ -1412,7 +1424,7 @@ export function HierarchicalSlotRenderer({
                       <div className={slot.className?.includes('w-fit') ? 'w-fit h-full' : 'w-full h-full'}>
                         <a
                           href={slot.href || '#'}
-                          className={`${slot.parentClassName || ''} ${slot.className}`}
+                          className={`${processedParentClassName} ${slot.className}`}
                           style={{
                             ...slot.styles,
                             cursor: 'pointer',
@@ -1451,7 +1463,7 @@ export function HierarchicalSlotRenderer({
               {slot.type === 'link' && mode !== 'edit' && (
                 <a
                   href={slot.href || '#'}
-                  className={`${slot.parentClassName || ''} ${slot.className}`}
+                  className={`${processedParentClassName} ${slot.className}`}
                   style={{
                     ...slot.styles,
                     minWidth: 'auto',
@@ -1679,7 +1691,7 @@ export function HierarchicalSlotRenderer({
                   slotId={slot.id}
                   mode={mode}
                   onClick={onElementClick}
-                  className={slot.parentClassName || ''}
+                  className={processedParentClassName}
                   style={slot.styles || {}}
                   canResize={true}
                   draggable={true}
