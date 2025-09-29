@@ -465,6 +465,8 @@ export function UnifiedSlotRenderer({
 
     // Editor: Use GridColumn for full functionality
     let colSpanValue = 12;
+    let useTailwindClass = false;
+
     if (typeof slot.colSpan === 'number') {
       colSpanValue = slot.colSpan;
     } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
@@ -473,8 +475,9 @@ export function UnifiedSlotRenderer({
       if (typeof viewModeValue === 'number') {
         colSpanValue = viewModeValue;
       } else if (typeof viewModeValue === 'string') {
-        // For responsive string classes like 'col-span-12 lg:col-span-6', don't override with numeric value
-        colSpanValue = null;
+        // For responsive string classes like 'col-span-12 lg:col-span-6', use Tailwind classes only
+        useTailwindClass = true;
+        colSpanValue = 12; // fallback for calculations
       } else {
         // No valid viewMode key found, use default of 12
         colSpanValue = 12;
@@ -487,6 +490,7 @@ export function UnifiedSlotRenderer({
         key={`${slot.id}-${viewportMode}`}
         colSpan={colSpanValue}
         colSpanClass={colSpanClass}
+        useTailwindClass={useTailwindClass}
         rowSpan={1}
         height={slot.styles?.height}
         slotId={slot.id}
