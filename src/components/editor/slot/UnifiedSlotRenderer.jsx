@@ -450,8 +450,12 @@ export function UnifiedSlotRenderer({
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);
 
-        // Choose appropriate render method based on context
-        const renderMethod = context === 'editor' ? component.renderEditor : component.renderStorefront;
+        // Use unified render method - backward compatibility removed
+        const renderMethod = component.render;
+
+        if (!renderMethod) {
+          throw new Error(`Component ${componentName} must implement a unified 'render' method. Separate renderEditor/renderStorefront methods are no longer supported.`);
+        }
 
         return renderMethod({
           slot,

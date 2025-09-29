@@ -6,14 +6,20 @@
 
 /**
  * Component Registry Interface
- * All slot components must implement this interface
+ * All slot components must implement the unified render interface for WYSIWYG consistency
  */
-export const createSlotComponent = (config) => ({
-  name: config.name,
-  renderEditor: config.renderEditor || config.render,
-  renderStorefront: config.renderStorefront || config.render,
-  metadata: config.metadata || {}
-});
+export const createSlotComponent = (config) => {
+  // Require unified render method - no backward compatibility
+  if (!config.render) {
+    throw new Error(`Component ${config.name} must implement a unified 'render' method for WYSIWYG consistency. Separate renderEditor/renderStorefront methods are no longer supported.`);
+  }
+
+  return {
+    name: config.name,
+    render: config.render,
+    metadata: config.metadata || {}
+  };
+};
 
 /**
  * Default Component Registry
