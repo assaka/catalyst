@@ -364,10 +364,17 @@ const ResizeWrapper = ({
         }
         widthUnit = 'px';
       } else if (parentRect && parentRect.width > 0) {
-        // For other elements, use percentage-based sizing
-        const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
-        widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
-        widthUnit = '%';
+        // For other elements, persist percentage-based sizing during resize
+        // If element was originally using percentages, continue using percentages
+        if (size.widthUnit === '%') {
+          const widthPercentage = Math.max(1, Math.min(100, (newWidth / parentRect.width) * 100));
+          widthValue = Math.round(widthPercentage * 10) / 10; // Round to 1 decimal place
+          widthUnit = '%';
+        } else {
+          // Otherwise use pixel-based sizing
+          widthValue = newWidth;
+          widthUnit = 'px';
+        }
       }
 
       // Use min-height for more flexible vertical sizing
