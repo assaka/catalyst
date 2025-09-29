@@ -1468,101 +1468,94 @@ const ProductImage = createSlotComponent({
 const ProductThumbnails = createSlotComponent({
   name: 'ProductThumbnails',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles, productContext, variableContext }) => {
-    return (
-      <div className={className} style={styles}>
-        {[1, 2, 3, 4].map((index) => (
-          <div
-            key={index}
-            className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 border-gray-300"
-          >
-            <img
-              src={`https://placehold.co/100x100?text=Thumb+${index}`}
-              alt={`Thumbnail ${index}`}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ))}
-      </div>
-    );
-  },
-
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles, variableContext }) => {
+  // Unified render method for both editor and storefront - ensures WYSIWYG
+  render: ({ slot, productContext, className, styles, variableContext, context }) => {
     const { product, activeImageIndex, setActiveImageIndex } = productContext;
 
-    if (!product || !product.images || product.images.length <= 1) {
-      return null;
-    }
-
-    const images = product.images || [];
-    const settings = variableContext?.settings || productContext?.settings || {};
-
-    const getImageUrl = (image) => {
-      // Only handle new format - object with url property
-      if (typeof image === 'object' && image !== null) {
-        return image.url || 'https://placehold.co/100x100?text=No+Thumb';
-      }
-      return 'https://placehold.co/100x100?text=Invalid+Format';
-    };
-
-    // Always use processVariables for consistency between editor and storefront
+    // Always use processVariables for consistent template processing in both contexts
     const templateClassName = 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24 {{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}';
     const processedTemplateClassName = processVariables(templateClassName, variableContext);
 
-    // Use the processed template result if processing worked, otherwise fall back to provided className
+    // Use processed template result, fall back to provided className
     const finalClassName = processedTemplateClassName && !processedTemplateClassName.includes('{{')
       ? processedTemplateClassName
       : className || 'thumbnail-gallery flex overflow-x-auto space-x-2 mt-4';
 
-    // Log the processed className to debug layout
-    console.log('🖼️ THUMBNAILS COMPONENT:', {
-      originalClassName: className,
+    // Get images: real data in storefront, demo data in editor from variableContext
+    const images = product?.images || [];
+
+    // In editor, always show thumbnails for layout preview
+    // In storefront, only show if multiple images exist
+    const shouldShow = context === 'editor' || (images && images.length > 1);
+
+    if (!shouldShow) {
+      return null;
+    }
+
+    // Use demo images in editor (from variableContext), real images in storefront
+    const thumbnailImages = context === 'editor'
+      ? Array.from({ length: 4 }, (_, i) => ({
+          url: `https://placehold.co/100x100?text=Thumb+${i + 1}`,
+          name: `Demo Thumbnail ${i + 1}`
+        }))
+      : images;
+
+    const getImageUrl = (image, index) => {
+      if (context === 'editor') {
+        return image.url; // Already set above for demo
+      }
+
+      // Storefront: handle real image data
+      if (typeof image === 'object' && image !== null) {
+        return image.url || 'https://placehold.co/100x100?text=No+Image';
+      }
+      return 'https://placehold.co/100x100?text=Invalid';
+    };
+
+    // Debug logging
+    console.log('🖼️ UNIFIED THUMBNAILS:', {
+      context,
       finalClassName,
-      hasProcessedClasses,
-      styles,
-      slotId: slot?.id,
-      hasImages: images.length,
+      imageCount: thumbnailImages.length,
       activeIndex: activeImageIndex,
-      settings,
-      isVerticalLayout: settings.product_gallery_layout === 'vertical'
+      layout: variableContext?.settings?.product_gallery_layout,
+      position: variableContext?.settings?.vertical_gallery_position
     });
 
     return (
       <div className={finalClassName} style={styles}>
-        {images.map((image, index) => {
-          const imageData = image;
-          return (
-            <button
-              key={imageData?.attribute_code || index}
-              onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-              className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-                activeImageIndex === index
-                  ? 'border-blue-500 ring-2 ring-blue-200'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <img
-                src={getImageUrl(image)}
-                alt={`${product.name} ${index + 1}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-              />
+        {thumbnailImages.map((image, index) => (
+          <button
+            key={context === 'editor' ? index : (image?.attribute_code || index)}
+            onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+            className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+              activeImageIndex === index
+                ? 'border-blue-500 ring-2 ring-blue-200'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            <img
+              src={getImageUrl(image, index)}
+              alt={context === 'editor' ? `Demo Thumbnail ${index + 1}` : `${product?.name || 'Product'} ${index + 1}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              onError={(e) => {
+                e.target.src = 'https://placehold.co/100x100?text=Error';
+              }}
+            />
 
-              {/* Thumbnail overlay info */}
-              {typeof imageData === 'object' && imageData?.filesize && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <p className="text-center">{(imageData.filesize / 1024).toFixed(0)}KB</p>
-                </div>
-              )}
+            {/* Thumbnail overlay info - only in storefront for real images */}
+            {context === 'storefront' && typeof image === 'object' && image?.filesize && (
+              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <p className="text-center">{(image.filesize / 1024).toFixed(0)}KB</p>
+              </div>
+            )}
 
-              {/* Active indicator */}
-              {activeImageIndex === index && (
-                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-              )}
-            </button>
-          );
-        })}
+            {/* Active indicator */}
+            {activeImageIndex === index && (
+              <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+            )}
+          </button>
+        ))}
       </div>
     );
   }
