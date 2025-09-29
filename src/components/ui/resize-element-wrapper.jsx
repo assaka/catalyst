@@ -175,10 +175,18 @@ const ResizeWrapper = ({
                         ));
 
         setNaturalSize({ width: rect.width, height: rect.height });
+
+        // For w-fit elements, don't set an initial width - let them size naturally
+        // Only apply width when user manually resizes
+        if (hasWFitClass) {
+          // Keep width as 'auto' for w-fit elements
+          return;
+        }
+
         setSize(prev => ({
           ...prev,
-          width: (hasWFitClass || isButton) ? rect.width : Math.round(naturalPercentage * 10) / 10,
-          widthUnit: (hasWFitClass || isButton) ? 'px' : '%'
+          width: isButton ? rect.width : Math.round(naturalPercentage * 10) / 10,
+          widthUnit: isButton ? 'px' : '%'
         }));
       }
     }
@@ -350,12 +358,12 @@ const ResizeWrapper = ({
       let widthValue = newWidth;
       let widthUnit = 'px';
 
-      // For buttons and text, use constrained pixel units with reasonable limits
+      // For buttons, text elements, and w-fit elements, use pixel units
       if (isButton || isTextElement || hasWFitClass) {
         // Constrain button width to reasonable bounds, but allow text elements to resize freely
         const minWidth = 20;
-        if (isTextElement) {
-          // Text elements can resize freely within viewport bounds
+        if (isTextElement || hasWFitClass) {
+          // Text elements and w-fit elements can resize freely within viewport bounds
           widthValue = Math.max(minWidth, newWidth);
         } else {
           // Buttons get constrained to 300px max
@@ -563,9 +571,9 @@ const ResizeWrapper = ({
 
           return {
             ...stylesWithoutWidth,
-            // For text elements, ignore w-fit class and use calculated width
-            // For other elements, preserve w-fit behavior
-            ...(hasWFitClass && !isTextElement ? { width: 'fit-content' } :
+            // For elements with w-fit class that haven't been resized, use fit-content
+            // For other elements, apply calculated width if available
+            ...(hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
                 { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
             ...(size.height !== 'auto' && size.height && {
