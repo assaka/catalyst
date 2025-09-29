@@ -39,14 +39,24 @@ export function processVariables(content, context, pageData = {}) {
   // 3. Process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
 
-  // Debug ALL order processing results
+  // Debug ALL order processing results with POSITION focus
   if (content.includes('order-')) {
+    const isVerticalLayout = context?.settings?.product_gallery_layout === 'vertical';
+    const position = context?.settings?.vertical_gallery_position;
+    const isMainImage = content.includes('{{#if (eq settings.product_gallery_layout "vertical")}}');
+    const isThumbnail = !isMainImage && content.includes('vertical_gallery_position');
+
     console.log('🎨 ORDER RESULT DEBUG:', {
+      element: isMainImage ? 'MAIN_IMAGE' : isThumbnail ? 'THUMBNAILS' : 'UNKNOWN',
       original: content.substring(0, 100) + '...',
       processed: processedContent,
       isEmpty: !processedContent || processedContent.trim() === '',
-      containsHorizontal: content.includes('horizontal'),
-      currentLayout: context?.settings?.product_gallery_layout
+      currentLayout: context?.settings?.product_gallery_layout,
+      currentPosition: position,
+      expectedForVerticalLeft: isVerticalLayout && position === 'left' ?
+        (isMainImage ? 'Should be order-last' : isThumbnail ? 'Should be order-first' : 'N/A') : 'N/A',
+      expectedForVerticalRight: isVerticalLayout && position === 'right' ?
+        (isMainImage ? 'Should be order-first' : isThumbnail ? 'Should be order-last' : 'N/A') : 'N/A'
     });
   }
 
@@ -71,14 +81,19 @@ function processConditionals(content, context, pageData) {
       const isTrue = evaluateCondition(condition, context, pageData);
       const selectedContent = isTrue ? trueContent : falseContent;
 
-      // Log ALL gallery-related conditionals
+      // Log ALL gallery-related conditionals with POSITION focus
       if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position') || condition.includes('horizontal') || condition.includes('vertical')) {
+        const isPositionCheck = condition.includes('vertical_gallery_position');
         console.log('🔄 CONDITIONAL DEBUG:', {
           condition,
           isTrue,
           selectedContent: selectedContent.substring(0, 50),
           isHorizontalCheck: condition.includes('horizontal'),
-          currentLayout: context?.settings?.product_gallery_layout
+          isPositionCheck: isPositionCheck,
+          currentLayout: context?.settings?.product_gallery_layout,
+          currentPosition: context?.settings?.vertical_gallery_position,
+          expectedForLeftThumbnails: isPositionCheck && condition.includes('left') ? 'Should be TRUE when position=left' : 'N/A',
+          expectedForRightThumbnails: isPositionCheck && condition.includes('right') ? 'Should be TRUE when position=right' : 'N/A'
         });
       }
 
