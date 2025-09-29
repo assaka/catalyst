@@ -174,14 +174,21 @@ export const StoreProvider = ({ children }) => {
     try {
       const channel = new BroadcastChannel('store_settings_update');
       channel.onmessage = (event) => {
+        console.log('📢 BROADCAST RECEIVED:', event.data);
         if (event.data.type === 'clear_cache') {
-          console.log('📢 Received cache clear broadcast from admin, reloading...');
+          console.log('📢 Cache clear broadcast from admin - reloading page in 1 second...');
+          console.log('📢 Broadcast details:', event.data);
+
           // Clear all caches
           apiCache.clear();
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
-          // Force reload the page
-          window.location.reload();
+
+          // Force reload the page after a short delay to see the messages
+          setTimeout(() => {
+            console.log('📢 RELOADING PAGE NOW');
+            window.location.reload();
+          }, 1000);
         }
       };
       return () => channel.close();
@@ -570,6 +577,16 @@ export const StoreProvider = ({ children }) => {
     selectedCountry,
     setSelectedCountry: handleSetSelectedCountry,
   };
+
+  // Debug gallery settings loading
+  if (store?.settings?.product_gallery_layout) {
+    console.log('🏪 STORE PROVIDER - Gallery Settings Loaded:', {
+      product_gallery_layout: store.settings.product_gallery_layout,
+      vertical_gallery_position: store.settings.vertical_gallery_position,
+      storeId: store.id,
+      timestamp: new Date().toISOString()
+    });
+  }
 
   return (
     <StoreContext.Provider value={value}>

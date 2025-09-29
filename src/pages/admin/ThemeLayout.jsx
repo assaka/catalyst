@@ -321,12 +321,26 @@ export default function ThemeLayout() {
     const handleSave = async () => {
         if (!store) return;
         setSaving(true);
+
+        console.log('🔧 ADMIN SAVE START:', {
+            storeId: store.id,
+            currentSettings: store.settings,
+            galleryLayout: store.settings?.product_gallery_layout,
+            verticalPosition: store.settings?.vertical_gallery_position
+        });
+
         try {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
+                console.log('🔧 ADMIN SAVE - Sending to API:', {
+                    storeId: store.id,
+                    settingsBeingSaved: store.settings
+                });
                 return await Store.update(store.id, { settings: store.settings });
             });
+
+            console.log('🔧 ADMIN SAVE - API Response:', result);
             
             // ALWAYS clear specific cache keys when admin saves settings
             const clearSpecificCacheKeys = () => {
