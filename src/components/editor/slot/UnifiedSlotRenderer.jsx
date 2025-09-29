@@ -244,6 +244,19 @@ export function UnifiedSlotRenderer({
 
     // HTML Element (raw HTML content)
     if (type === 'html') {
+      // Debug product labels
+      if (id === 'product_labels') {
+        console.log('🏷️ PRODUCT LABELS HTML RENDERING:', {
+          id,
+          type,
+          className,
+          processedClassName,
+          styles,
+          context,
+          content: processedContent?.substring(0, 100)
+        });
+      }
+
       const htmlElement = (
         <div
           className={processedClassName}
@@ -251,7 +264,12 @@ export function UnifiedSlotRenderer({
           dangerouslySetInnerHTML={{ __html: processedContent || '[HTML placeholder]' }}
         />
       );
-      return context === 'editor' ? wrapWithResize(htmlElement, slot, 20, 16) : htmlElement;
+      // Don't wrap absolute positioned elements with ResizeWrapper as it interferes with positioning
+      const isAbsolutePositioned = processedClassName?.includes('absolute') || styles?.position === 'absolute';
+      if (context === 'editor' && !isAbsolutePositioned) {
+        return wrapWithResize(htmlElement, slot, 20, 16);
+      }
+      return htmlElement;
     }
 
     // Text Element
@@ -466,6 +484,14 @@ export function UnifiedSlotRenderer({
    * Wrap slot content with editor functionality if needed
    */
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
+    // Check if slot has absolute positioning - if so, return it directly without any wrapper
+    const isAbsolutePositioned = slot.className?.includes('absolute') || slot.styles?.position === 'absolute';
+
+    if (isAbsolutePositioned) {
+      // For absolutely positioned elements, return directly without any grid wrapper
+      return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
+    }
+
     // Check if colSpan is empty object and skip wrapper
     const isEmptyColSpan = typeof slot.colSpan === 'object' &&
                            slot.colSpan !== null &&
@@ -493,12 +519,6 @@ export function UnifiedSlotRenderer({
 
     // In editor, add editing functionality as overlay without changing layout
     if (context === 'editor') {
-      // For absolutely positioned elements, don't add editor wrapper that would interfere
-      const isAbsolutePositioned = slot.className?.includes('absolute');
-
-      if (isAbsolutePositioned) {
-        return layoutWrapper;
-      }
 
       // For normal elements, wrap with editor functionality
       let colSpanValue = 12;

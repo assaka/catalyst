@@ -332,8 +332,8 @@ export const productConfig = {
       id: 'product_labels',
       type: 'html',
       content: '{{#if productLabels}}{{#each productLabels}}<div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md">{{this.text}}</div>{{/each}}{{/if}}',
-      className: 'product-labels flex space-x-1 pointer-events-none',
-      parentClassName: 'absolute top-2 right-2',
+      className: 'product-labels absolute top-2 right-2 flex space-x-1 pointer-events-none',
+      parentClassName: '',
       styles: {
         position: 'absolute',
         top: '0.5rem',
