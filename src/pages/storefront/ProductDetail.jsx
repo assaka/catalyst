@@ -157,7 +157,8 @@ export default function ProductDetail() {
       // Update product with new labels
       setProduct(prevProduct => ({
         ...prevProduct,
-        labels: applicableLabels.map(label => label.text)
+        labels: applicableLabels.map(label => label.text),
+        applicableLabels: applicableLabels // Keep full label objects for styling
       }));
     }
   }, [productLabels]);
@@ -367,7 +368,8 @@ export default function ProductDetail() {
         const applicableLabels = evaluateProductLabels(foundProduct, productLabels);
         const productWithLabels = {
           ...foundProduct,
-          labels: applicableLabels.map(label => label.text)
+          labels: applicableLabels.map(label => label.text),
+          applicableLabels: applicableLabels // Keep full label objects for styling
         };
 
         setProduct(productWithLabels);
@@ -876,7 +878,7 @@ export default function ProductDetail() {
               store,
               settings,
               breadcrumbs: buildProductBreadcrumbs(product, storeCode, categories, settings),
-              productLabels,
+              productLabels: product?.applicableLabels || productLabels,
               selectedOptions,
               quantity,
               totalPrice: getTotalPrice(), // Pass calculated total price

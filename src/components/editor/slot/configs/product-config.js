@@ -332,22 +332,20 @@ export const productConfig = {
       id: 'product_labels',
       type: 'html',
       content: '{{#if productLabels}}{{#each productLabels}}<div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md">{{this.text}}</div>{{/each}}{{/if}}',
-      className: 'product-labels flex space-x-1 pointer-events-none justify-end items-start p-2',
+      className: 'product-labels flex space-x-1 pointer-events-none',
       parentClassName: '',
       styles: {
-        gridColumn: '1 / -1',
-        gridRow: '1 / -1',
-        zIndex: 20,
-        alignSelf: 'start',
-        justifySelf: 'end'
+        position: 'absolute',
+        top: '0.5rem',
+        right: '0.5rem',
+        zIndex: 50,
+        pointerEvents: 'none'
       },
       parentId: 'main_image',
       position: { col: 1, row: 1 },
-      colSpan: {
-        default: 12
-      },
+      colSpan: {},
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: { hierarchical: true, overlay: true }
     },
 
     // Custom Options Section
