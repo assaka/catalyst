@@ -563,6 +563,15 @@ export const generateDemoData = (pageType, settings = {}) => {
         text_color: '#ffffff',
         is_active: true,
         priority: 2
+      },
+      {
+        id: 3,
+        text: 'POPULAR',
+        position: 'bottom-right',
+        background_color: '#3b82f6',
+        text_color: '#ffffff',
+        is_active: true,
+        priority: 3
       }
     ],
 
