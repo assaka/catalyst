@@ -28,6 +28,16 @@ export function processVariables(content, context, pageData = {}) {
     });
   }
 
+  // Debug thumbnail gallery specifically
+  if (content.includes('thumbnail-gallery')) {
+    console.log('🖼️ THUMBNAIL GALLERY PROCESSING:', {
+      originalContent: content,
+      product_gallery_layout: context?.settings?.product_gallery_layout,
+      vertical_gallery_position: context?.settings?.vertical_gallery_position,
+      settingsObj: context?.settings
+    });
+  }
+
   let processedContent = content;
 
   // 1. Process conditional blocks first
@@ -57,6 +67,16 @@ export function processVariables(content, context, pageData = {}) {
         (isMainImage ? 'Should be order-last' : isThumbnail ? 'Should be order-first' : 'N/A') : 'N/A',
       expectedForVerticalRight: isVerticalLayout && position === 'right' ?
         (isMainImage ? 'Should be order-first' : isThumbnail ? 'Should be order-last' : 'N/A') : 'N/A'
+    });
+  }
+
+  // Debug thumbnail gallery result
+  if (content.includes('thumbnail-gallery')) {
+    console.log('🖼️ THUMBNAIL GALLERY RESULT:', {
+      originalContent: content,
+      processedContent: processedContent,
+      changed: content !== processedContent,
+      product_gallery_layout: context?.settings?.product_gallery_layout
     });
   }
 

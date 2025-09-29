@@ -1522,7 +1522,7 @@ const ProductThumbnails = createSlotComponent({
 
   // Storefront version
   renderStorefront: ({ slot, productContext, className, styles }) => {
-    const { product, activeImageIndex, setActiveImageIndex, settings } = productContext;
+    const { product, activeImageIndex, setActiveImageIndex } = productContext;
 
     if (!product || !product.images || product.images.length <= 1) {
       return null;
@@ -1538,12 +1538,14 @@ const ProductThumbnails = createSlotComponent({
       return 'https://placehold.co/100x100?text=Invalid+Format';
     };
 
-    // Determine layout based on settings (from product-config.js)
-    const isVerticalLayout = settings?.product_gallery_layout === 'vertical';
-    const thumbnailPosition = settings?.vertical_gallery_position || 'left';
-
-    // Dynamic thumbnail size based on layout
-    const thumbnailSize = isVerticalLayout ? 'w-20 h-20' : 'w-16 h-16';
+    // Log the processed className to debug layout
+    console.log('🖼️ THUMBNAILS COMPONENT:', {
+      className,
+      styles,
+      slotId: slot?.id,
+      hasImages: images.length,
+      activeIndex: activeImageIndex
+    });
 
     return (
       <div className={className} style={styles}>
@@ -1553,7 +1555,7 @@ const ProductThumbnails = createSlotComponent({
             <button
               key={imageData?.attribute_code || index}
               onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-              className={`relative group flex-shrink-0 ${thumbnailSize} rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+              className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
                 activeImageIndex === index
                   ? 'border-blue-500 ring-2 ring-blue-200'
                   : 'border-gray-300 hover:border-gray-400'
