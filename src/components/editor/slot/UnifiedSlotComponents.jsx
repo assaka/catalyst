@@ -1507,22 +1507,14 @@ const ProductThumbnails = createSlotComponent({
       return 'https://placehold.co/100x100?text=Invalid+Format';
     };
 
-    // Check if the className already has the layout classes processed
-    const hasProcessedClasses = className && !className.includes('{{');
+    // Always use processVariables for consistency between editor and storefront
+    const templateClassName = 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24 {{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}';
+    const processedTemplateClassName = processVariables(templateClassName, variableContext);
 
-    let finalClassName;
-    if (hasProcessedClasses) {
-      // If already processed by variableProcessor, use as-is
-      finalClassName = className;
-    } else {
-      // Fallback: manually determine classes if not processed
-      const isVerticalLayout = settings.product_gallery_layout === 'vertical';
-      const baseClasses = 'thumbnail-gallery';
-      const layoutClasses = isVerticalLayout
-        ? 'flex flex-col space-y-2 w-24'
-        : 'flex overflow-x-auto space-x-2 mt-4';
-      finalClassName = `${baseClasses} ${layoutClasses}`.trim();
-    }
+    // Use the processed template result if processing worked, otherwise fall back to provided className
+    const finalClassName = processedTemplateClassName && !processedTemplateClassName.includes('{{')
+      ? processedTemplateClassName
+      : className || 'thumbnail-gallery flex overflow-x-auto space-x-2 mt-4';
 
     // Log the processed className to debug layout
     console.log('🖼️ THUMBNAILS COMPONENT:', {
