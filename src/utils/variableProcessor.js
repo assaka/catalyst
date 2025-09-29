@@ -524,6 +524,28 @@ export const generateDemoData = (pageType, settings = {}) => {
       ]
     },
 
+    // Product Labels with admin-configurable positioning
+    productLabels: [
+      {
+        id: 1,
+        text: 'SALE',
+        position: 'top-right',
+        background_color: '#ef4444',
+        text_color: '#ffffff',
+        is_active: true,
+        priority: 1
+      },
+      {
+        id: 2,
+        text: 'NEW',
+        position: 'top-left',
+        background_color: '#22c55e',
+        text_color: '#ffffff',
+        is_active: true,
+        priority: 2
+      }
+    ],
+
     settings: {
       currency_symbol: '$',
       display_low_stock_threshold: 10,

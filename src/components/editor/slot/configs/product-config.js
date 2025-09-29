@@ -331,8 +331,8 @@ export const productConfig = {
     product_labels: {
       id: 'product_labels',
       type: 'text',
-      content: '{{#if product.labels}}{{#each product.labels}}<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">{{this}}</span>{{/each}}{{/if}}',
-      className: 'product-labels absolute top-2 right-2',
+      content: '{{#if productLabels}}{{#each productLabels}}<div class="absolute {{#if (eq position "top-left")}}top-2 left-2{{else}}{{#if (eq position "bottom-left")}}bottom-2 left-2{{else}}{{#if (eq position "bottom-right")}}bottom-2 right-2{{else}}{{#if (eq position "center")}}top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2{{else}}top-2 right-2{{/if}}{{/if}}{{/if}}{{/if}} text-xs font-semibold px-2 py-1 rounded-md z-10" style="background-color: {{background_color}}; color: {{text_color}};">{{text}}</div>{{/each}}{{/if}}',
+      className: 'product-labels',
       parentClassName: '',
       styles: {},
       parentId: 'main_image',
