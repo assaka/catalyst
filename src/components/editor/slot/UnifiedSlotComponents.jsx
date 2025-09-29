@@ -130,20 +130,19 @@ const QuantitySelector = createSlotComponent({
  */
 const AddToCartButton = createSlotComponent({
   name: 'AddToCartButton',
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <button className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium">
+            Add to Cart
+          </button>
+        </div>
+      );
+    }
 
-  // Editor version - visual preview only
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <button className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium">
-          Add to Cart
-        </button>
-      </div>
-    );
-  },
-
-  // Storefront version - full functionality
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { handleAddToCart, canAddToCart, product } = productContext;
 
     return (
@@ -167,22 +166,21 @@ const AddToCartButton = createSlotComponent({
 const ProductBreadcrumbs = createSlotComponent({
   name: 'ProductBreadcrumbsSlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <nav className="flex items-center text-sm text-gray-600">
-          <Home className="w-4 h-4 mr-2" />
-          <span>Home &gt; Category &gt; Product</span>
-        </nav>
-      </div>
-    );
-  },
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <nav className="flex items-center text-sm text-gray-600">
+            <Home className="w-4 h-4 mr-2" />
+            <span>Home &gt; Category &gt; Product</span>
+          </nav>
+        </div>
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { breadcrumbs } = productContext;
-
 
     return (
       <div className={className} style={styles}>
@@ -224,31 +222,31 @@ const ProductBreadcrumbs = createSlotComponent({
 const ProductGallery = createSlotComponent({
   name: 'ProductGallerySlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <div className="space-y-4">
-          <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-            <img
-              src="https://placehold.co/600x600?text=Product+Image"
-              alt="Product"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute top-2 right-2">
-              <Badge variant="destructive" className="bg-red-600 text-white">
-                SALE
-              </Badge>
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="space-y-4">
+            <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+              <img
+                src="https://placehold.co/600x600?text=Product+Image"
+                alt="Product"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2 right-2">
+                <Badge variant="destructive" className="bg-red-600 text-white">
+                  SALE
+                </Badge>
+              </div>
             </div>
+            {/* Thumbnail Gallery removed - handled by separate ProductThumbnails component */}
           </div>
-          {/* Thumbnail Gallery removed - handled by separate ProductThumbnails component */}
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { product, activeImageIndex, setActiveImageIndex } = productContext;
 
     if (!product) return null;
@@ -289,28 +287,28 @@ const ProductGallery = createSlotComponent({
 const ProductInfo = createSlotComponent({
   name: 'ProductInfoSlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sample Product Name</h1>
-          <div className="flex items-center space-x-4 mb-4">
-            <span className="text-3xl font-bold text-green-600">$99.99</span>
-            <span className="text-xl text-gray-500 line-through">$129.99</span>
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sample Product Name</h1>
+            <div className="flex items-center space-x-4 mb-4">
+              <span className="text-3xl font-bold text-green-600">$99.99</span>
+              <span className="text-xl text-gray-500 line-through">$129.99</span>
+            </div>
+            <Badge variant="outline" className="mb-2">In Stock</Badge>
+            <p className="text-sm text-gray-600">SKU: PROD123</p>
+            <p className="text-gray-700 leading-relaxed">
+              This is a sample product description showing how the product information will appear.
+            </p>
           </div>
-          <Badge variant="outline" className="mb-2">In Stock</Badge>
-          <p className="text-sm text-gray-600">SKU: PROD123</p>
-          <p className="text-gray-700 leading-relaxed">
-            This is a sample product description showing how the product information will appear.
-          </p>
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { product, settings, currencySymbol } = productContext;
 
     if (!product) return null;
@@ -372,27 +370,27 @@ const ProductInfo = createSlotComponent({
 const ProductOptions = createSlotComponent({
   name: 'ProductOptionsSlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block font-medium text-gray-900">Size *</label>
-            <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-              <option value="">Choose Size...</option>
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block font-medium text-gray-900">Size *</label>
+              <select className="w-full border border-gray-300 rounded-md px-3 py-2">
+                <option value="">Choose Size...</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { customOptions, handleOptionChange } = productContext;
 
     return (
@@ -437,36 +435,36 @@ const ProductOptions = createSlotComponent({
 const ProductTabs = createSlotComponent({
   name: 'ProductTabsSlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <div className="mt-12 border-t pt-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button className="py-2 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm">
-                Description
-              </button>
-              <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-sm">
-                Specifications
-              </button>
-              <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-sm">
-                Reviews
-              </button>
-            </nav>
-          </div>
-          <div className="mt-6">
-            <div className="prose max-w-none">
-              <p>This is a sample product description that will be displayed in the tabs.</p>
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="mt-12 border-t pt-8">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button className="py-2 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm">
+                  Description
+                </button>
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-sm">
+                  Specifications
+                </button>
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-sm">
+                  Reviews
+                </button>
+              </nav>
+            </div>
+            <div className="mt-6">
+              <div className="prose max-w-none">
+                <p>This is a sample product description that will be displayed in the tabs.</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { productTabs, product, activeTab, setActiveTab } = productContext;
 
     if (!productTabs || productTabs.length === 0) {
@@ -539,49 +537,49 @@ const ProductTabs = createSlotComponent({
 const ProductRecommendations = createSlotComponent({
   name: 'ProductRecommendationsSlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Recommended Products</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((index) => (
-              <Card key={index} className="group hover:shadow-lg transition-shadow duration-200">
-                <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                  <img
-                    src={`https://placehold.co/300x300?text=Product+${index}`}
-                    alt={`Product ${index}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2">Sample Product {index}</h3>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-bold text-green-600">$99.99</span>
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Recommended Products</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((index) => (
+                <Card key={index} className="group hover:shadow-lg transition-shadow duration-200">
+                  <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                    <img
+                      src={`https://placehold.co/300x300?text=Product+${index}`}
+                      alt={`Product ${index}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
                   </div>
-                  <div className="flex items-center space-x-1 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-3 h-3 ${i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                        />
-                      ))}
+                  <CardContent className="p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">Sample Product {index}</h3>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-bold text-green-600">$99.99</span>
                     </div>
-                    <span>(12)</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center space-x-1 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3 h-3 ${i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                          />
+                        ))}
+                      </div>
+                      <span>(12)</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { relatedProducts, currencySymbol } = productContext;
 
     if (!relatedProducts || relatedProducts.length === 0) return null;
@@ -654,24 +652,26 @@ const ProductRecommendations = createSlotComponent({
 const CustomOptions = createSlotComponent({
   name: 'CustomOptions',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Custom Options</h3>
-          <div className="space-y-3">
-            <div className="border rounded-lg p-4 cursor-pointer">
-              <div className="flex items-start space-x-3">
-                <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5"></div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">Sample Custom Option</h4>
-                      <p className="text-sm text-gray-600 mt-1">Optional product description</p>
-                    </div>
-                    <div className="ml-4 flex-shrink-0">
-                      <Badge variant="outline" className="font-semibold">+$10.00</Badge>
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Custom Options</h3>
+            <div className="space-y-3">
+              <div className="border rounded-lg p-4 cursor-pointer">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5"></div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">Sample Custom Option</h4>
+                        <p className="text-sm text-gray-600 mt-1">Optional product description</p>
+                      </div>
+                      <div className="ml-4 flex-shrink-0">
+                        <Badge variant="outline" className="font-semibold">+$10.00</Badge>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -679,12 +679,10 @@ const CustomOptions = createSlotComponent({
             </div>
           </div>
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { product, store, settings, selectedOptions, handleOptionChange } = productContext;
 
     if (!product || !store) return null;
@@ -709,24 +707,24 @@ const CustomOptions = createSlotComponent({
 const ProductTabsStandalone = createSlotComponent({
   name: 'ProductTabs',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <ProductTabsComponent
-          productTabs={[
-            { id: 1, title: 'Description', content: 'Sample product description content' },
-            { id: 2, title: 'Specifications', content: 'Sample specifications content' }
-          ]}
-          product={{ description: 'Sample description' }}
-          className=""
-        />
-      </div>
-    );
-  },
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <ProductTabsComponent
+            productTabs={[
+              { id: 1, title: 'Description', content: 'Sample product description content' },
+              { id: 2, title: 'Specifications', content: 'Sample specifications content' }
+            ]}
+            product={{ description: 'Sample description' }}
+            className=""
+          />
+        </div>
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { productTabs, product } = productContext;
 
     return (
@@ -747,42 +745,46 @@ const ProductTabsStandalone = createSlotComponent({
 const TotalPriceDisplay = createSlotComponent({
   name: 'TotalPriceDisplay',
 
-  // Editor version - shows example breakdown
-  renderEditor: ({ slot, className, styles }) => (
-    <div className={className} style={styles}>
-      <div className="border-t pt-4 mb-4">
-        <div className="bg-gray-50 rounded-lg py-4 space-y-2">
-          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-            Price Breakdown
-          </h3>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Product × 1</span>
-            <span className="font-medium">$99.99</span>
-          </div>
-          <div className="border-t pt-2 mt-2">
-            <div className="text-sm font-medium text-gray-700 mb-1">Selected Options:</div>
-            <div className="flex justify-between items-center text-sm pl-4">
-              <span className="text-gray-600">Extra Feature × 1</span>
-              <span className="font-medium">+$19.99</span>
-            </div>
-          </div>
-          <div className="border-t pt-2 mt-2">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-bold text-gray-900">Total Price:</span>
-              <span className="text-lg font-bold text-green-600">$119.98</span>
+  render: ({ slot, className, styles, productContext, context }) => {
+    if (context === 'editor') {
+      // Editor version - shows example breakdown
+      return (
+        <div className={className} style={styles}>
+          <div className="border-t pt-4 mb-4">
+            <div className="bg-gray-50 rounded-lg py-4 space-y-2">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                Price Breakdown
+              </h3>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Product × 1</span>
+                <span className="font-medium">$99.99</span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="text-sm font-medium text-gray-700 mb-1">Selected Options:</div>
+                <div className="flex justify-between items-center text-sm pl-4">
+                  <span className="text-gray-600">Extra Feature × 1</span>
+                  <span className="font-medium">+$19.99</span>
+                </div>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-gray-900">Total Price:</span>
+                  <span className="text-lg font-bold text-green-600">$119.98</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  ),
+      );
+    }
 
-  // Storefront version - uses actual product data
-  renderStorefront: ({ slot, className, styles, productContext }) => (
-    <div className={className} style={styles}>
-      <TotalPriceDisplayComponent productContext={productContext} />
-    </div>
-  )
+    // Storefront version - uses actual product data
+    return (
+      <div className={className} style={styles}>
+        <TotalPriceDisplayComponent productContext={productContext} />
+      </div>
+    );
+  }
 });
 
 // Register all components
@@ -795,41 +797,41 @@ registerSlotComponent('AddToCartButton', AddToCartButton);
 const CartItemsSlot = createSlotComponent({
   name: 'CartItemsSlot',
 
-  // Editor version - visual preview
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <Card className="p-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center">
-              <span className="text-gray-400 text-xs">Product</span>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-medium text-gray-900">Sample Product</h3>
-              <div className="mt-1 text-sm text-gray-600">
-                + Option 1 (+$5.00)
+  render: ({ slot, cartContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview
+      return (
+        <div className={className} style={styles}>
+          <Card className="p-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex-shrink-0 w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center">
+                <span className="text-gray-400 text-xs">Product</span>
               </div>
-              <div className="mt-1">
-                <span className="text-lg font-medium text-gray-900">$25.00</span>
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">Sample Product</h3>
+                <div className="mt-1 text-sm text-gray-600">
+                  + Option 1 (+$5.00)
+                </div>
+                <div className="mt-1">
+                  <span className="text-lg font-medium text-gray-900">$25.00</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-12 text-center font-medium">1</span>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="w-12 text-center font-medium">1</span>
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  },
+          </Card>
+        </div>
+      );
+    }
 
-  // Storefront version - full functionality
-  renderStorefront: ({ slot, cartContext, className, styles }) => {
+    // Storefront version - full functionality
     if (!cartContext) {
       return <div className={className} style={styles}>Cart context not available</div>;
     }
@@ -967,26 +969,28 @@ const CartItemsSlot = createSlotComponent({
 const CartCouponSlot = createSlotComponent({
   name: 'CartCouponSlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => (
-    <div className={className} style={styles}>
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="Enter coupon code"
-            className="w-1/2 border rounded px-3 py-2"
-            readOnly
-          />
-          <button className="w-1/2 bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply</button>
+  render: ({ slot, cartContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Enter coupon code"
+                className="w-1/2 border rounded px-3 py-2"
+                readOnly
+              />
+              <button className="w-1/2 bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  ),
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, cartContext, className, styles }) => {
+    // Storefront version - full functionality
     const {
       couponCode = '',
       setCouponCode = () => {},
@@ -1049,34 +1053,36 @@ const CartCouponSlot = createSlotComponent({
 const CartOrderSummarySlot = createSlotComponent({
   name: 'CartOrderSummarySlot',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => (
-    <div className={className} style={styles}>
-      <div className="bg-white rounded-lg shadow p-4 mt-4">
-        <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span>$99.99</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Tax</span>
-            <span>$8.00</span>
-          </div>
-          <div className="border-t pt-2 flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span>$107.99</span>
+  render: ({ slot, cartContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="bg-white rounded-lg shadow p-4 mt-4">
+            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>$99.99</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax</span>
+                <span>$8.00</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between text-lg font-semibold">
+                <span>Total</span>
+                <span>$107.99</span>
+              </div>
+            </div>
+            <button className="w-full bg-blue-600 text-white py-3 rounded mt-4">
+              Proceed to Checkout
+            </button>
           </div>
         </div>
-        <button className="w-full bg-blue-600 text-white py-3 rounded mt-4">
-          Proceed to Checkout
-        </button>
-      </div>
-    </div>
-  ),
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, cartContext, className, styles }) => {
+    // Storefront version - full functionality
     const {
       subtotal = 0,
       discount = 0,
@@ -1148,17 +1154,19 @@ registerSlotComponent('TotalPriceDisplay', TotalPriceDisplay);
 const StockStatus = createSlotComponent({
   name: 'StockStatus',
 
-  // Editor version - shows static example
-  renderEditor: ({ slot, className, styles }) => (
-    <div className={className} style={styles}>
-      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-        In Stock (Editor)
-      </span>
-    </div>
-  ),
+  render: ({ slot, className, styles, productContext, context }) => {
+    if (context === 'editor') {
+      // Editor version - shows static example
+      return (
+        <div className={className} style={styles}>
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+            In Stock (Editor)
+          </span>
+        </div>
+      );
+    }
 
-  // Storefront version - full stock status logic
-  renderStorefront: ({ slot, className, styles, productContext }) => {
+    // Storefront version - full stock status logic
     const { product, settings } = productContext || {};
 
     if (!product) {
@@ -1333,20 +1341,20 @@ const StockStatus = createSlotComponent({
 const BreadcrumbRenderer = createSlotComponent({
   name: 'BreadcrumbRenderer',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <div className={className} style={styles}>
-        <nav className="flex items-center text-sm text-gray-600">
-          <Home className="w-4 h-4 mr-2" />
-          <span>Home &gt; Category &gt; Product</span>
-        </nav>
-      </div>
-    );
-  },
+  render: ({ slot, productContext, categoryContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <nav className="flex items-center text-sm text-gray-600">
+            <Home className="w-4 h-4 mr-2" />
+            <span>Home &gt; Category &gt; Product</span>
+          </nav>
+        </div>
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, categoryContext, className, styles }) => {
+    // Storefront version - full functionality
     // Determine context and page type
     let pageType, pageData, storeCode, categories, settings;
 
@@ -1387,20 +1395,20 @@ const BreadcrumbRenderer = createSlotComponent({
 const ProductImage = createSlotComponent({
   name: 'ProductImage',
 
-  // Editor version
-  renderEditor: ({ slot, className, styles }) => {
-    return (
-      <img
-        src="https://placehold.co/600x600?text=Product+Image"
-        alt="Product"
-        className={className}
-        style={styles}
-      />
-    );
-  },
+  render: ({ slot, productContext, className, styles, context }) => {
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <img
+          src="https://placehold.co/600x600?text=Product+Image"
+          alt="Product"
+          className={className}
+          style={styles}
+        />
+      );
+    }
 
-  // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { product, activeImageIndex } = productContext;
 
     if (!product) {
