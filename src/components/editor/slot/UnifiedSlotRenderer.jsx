@@ -253,7 +253,8 @@ export function UnifiedSlotRenderer({
           processedClassName,
           styles,
           context,
-          content: processedContent?.substring(0, 100)
+          content: processedContent?.substring(0, 100),
+          isAbsolutePositioned: processedClassName?.includes('absolute') || styles?.position === 'absolute'
         });
       }
 
@@ -486,6 +487,18 @@ export function UnifiedSlotRenderer({
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
     // Check if slot has absolute positioning - if so, return it directly without any wrapper
     const isAbsolutePositioned = slot.className?.includes('absolute') || slot.styles?.position === 'absolute';
+
+    // Debug product labels wrapper
+    if (slot.id === 'product_labels') {
+      console.log('🏷️ PRODUCT LABELS WRAPPER:', {
+        slotId: slot.id,
+        className: slot.className,
+        styles: slot.styles,
+        isAbsolutePositioned,
+        context,
+        willSkipWrapper: isAbsolutePositioned
+      });
+    }
 
     if (isAbsolutePositioned) {
       // For absolutely positioned elements, return directly without any grid wrapper

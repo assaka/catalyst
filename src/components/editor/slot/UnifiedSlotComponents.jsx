@@ -1521,7 +1521,7 @@ const ProductThumbnails = createSlotComponent({
   },
 
   // Storefront version
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+  renderStorefront: ({ slot, productContext, className, styles, variableContext }) => {
     const { product, activeImageIndex, setActiveImageIndex } = productContext;
 
     if (!product || !product.images || product.images.length <= 1) {
@@ -1529,6 +1529,7 @@ const ProductThumbnails = createSlotComponent({
     }
 
     const images = product.images || [];
+    const settings = variableContext?.settings || productContext?.settings || {};
 
     const getImageUrl = (image) => {
       // Only handle new format - object with url property
@@ -1538,17 +1539,38 @@ const ProductThumbnails = createSlotComponent({
       return 'https://placehold.co/100x100?text=Invalid+Format';
     };
 
+    // Check if the className already has the layout classes processed
+    const hasProcessedClasses = className && !className.includes('{{');
+
+    let finalClassName;
+    if (hasProcessedClasses) {
+      // If already processed by variableProcessor, use as-is
+      finalClassName = className;
+    } else {
+      // Fallback: manually determine classes if not processed
+      const isVerticalLayout = settings.product_gallery_layout === 'vertical';
+      const baseClasses = 'thumbnail-gallery';
+      const layoutClasses = isVerticalLayout
+        ? 'flex flex-col space-y-2 w-24'
+        : 'flex overflow-x-auto space-x-2 mt-4';
+      finalClassName = `${baseClasses} ${layoutClasses}`.trim();
+    }
+
     // Log the processed className to debug layout
     console.log('🖼️ THUMBNAILS COMPONENT:', {
-      className,
+      originalClassName: className,
+      finalClassName,
+      hasProcessedClasses,
       styles,
       slotId: slot?.id,
       hasImages: images.length,
-      activeIndex: activeImageIndex
+      activeIndex: activeImageIndex,
+      settings,
+      isVerticalLayout: settings.product_gallery_layout === 'vertical'
     });
 
     return (
-      <div className={className} style={styles}>
+      <div className={finalClassName} style={styles}>
         {images.map((image, index) => {
           const imageData = image;
           return (

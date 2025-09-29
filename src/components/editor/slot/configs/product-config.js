@@ -332,13 +332,14 @@ export const productConfig = {
       id: 'product_labels',
       type: 'html',
       content: '{{#if productLabels}}{{#each productLabels}}<div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md">{{this.text}}</div>{{/each}}{{/if}}',
-      className: 'product-labels absolute top-2 right-2 flex space-x-1 pointer-events-none',
+      className: 'product-labels flex space-x-1 pointer-events-none justify-end items-start p-2',
       parentClassName: '',
       styles: {
-        position: 'absolute',
-        top: '0.5rem',
-        right: '0.5rem',
-        zIndex: 5
+        gridColumn: '1 / -1',
+        gridRow: '1 / -1',
+        zIndex: 20,
+        alignSelf: 'start',
+        justifySelf: 'end'
       },
       parentId: 'main_image',
       position: { col: 1, row: 1 },
