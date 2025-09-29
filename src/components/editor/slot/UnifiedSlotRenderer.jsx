@@ -152,6 +152,16 @@ export function UnifiedSlotRenderer({
       productLabels: productData.productLabels
     };
 
+  // Debug gallery settings flow in UnifiedSlotRenderer
+  console.log('🔧 UNIFIED SLOT RENDERER SETTINGS DEBUG:', {
+    context,
+    productDataSettings: productData.settings,
+    variableContextSettings: variableContext.settings,
+    product_gallery_layout: variableContext.settings?.product_gallery_layout,
+    vertical_gallery_position: variableContext.settings?.vertical_gallery_position,
+    settingsSource: context === 'editor' ? 'DEMO_DATA' : 'REAL_SETTINGS'
+  });
+
   // Debug logging for productLabels
   if (context === 'editor') {
     console.log('🏷️ EDITOR - productLabels:', variableContext.productLabels);
@@ -231,6 +241,18 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
+
+    // HTML Element (raw HTML content)
+    if (type === 'html') {
+      const htmlElement = (
+        <div
+          className={processedClassName}
+          style={styles}
+          dangerouslySetInnerHTML={{ __html: processedContent || '[HTML placeholder]' }}
+        />
+      );
+      return context === 'editor' ? wrapWithResize(htmlElement, slot, 20, 16) : htmlElement;
+    }
 
     // Text Element
     if (type === 'text') {

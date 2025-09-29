@@ -34,7 +34,10 @@ export function processVariables(content, context, pageData = {}) {
       originalContent: content,
       product_gallery_layout: context?.settings?.product_gallery_layout,
       vertical_gallery_position: context?.settings?.vertical_gallery_position,
-      settingsObj: context?.settings
+      settingsObj: context?.settings,
+      hasVerticalConditional: content.includes('(eq settings.product_gallery_layout "vertical")'),
+      hasHorizontalConditional: content.includes('(eq settings.product_gallery_layout "horizontal")'),
+      hasPositionConditional: content.includes('settings.vertical_gallery_position')
     });
   }
 
@@ -76,7 +79,11 @@ export function processVariables(content, context, pageData = {}) {
       originalContent: content,
       processedContent: processedContent,
       changed: content !== processedContent,
-      product_gallery_layout: context?.settings?.product_gallery_layout
+      product_gallery_layout: context?.settings?.product_gallery_layout,
+      isVerticalLayout: context?.settings?.product_gallery_layout === 'vertical',
+      expectedClasses: context?.settings?.product_gallery_layout === 'vertical'
+        ? 'flex flex-col space-y-2 w-24'
+        : 'flex overflow-x-auto space-x-2 mt-4'
     });
   }
 
