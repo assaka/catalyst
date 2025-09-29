@@ -15,7 +15,9 @@ import aiEnhancementService from '@/services/aiEnhancementService';
 const createDefaultSlots = async () => {
   try {
     console.log('🔧 LOADING PRODUCT CONFIG FROM createDefaultSlots...');
-    const configModule = await import('@/components/editor/slot/configs/product-config');
+    // Add cache-busting parameter to force fresh import
+    const cacheBuster = `?v=${Date.now()}`;
+    const configModule = await import(`@/components/editor/slot/configs/product-config${cacheBuster}`);
 
     const productConfig = configModule.productConfig || configModule.default;
 

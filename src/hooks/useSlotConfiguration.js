@@ -697,7 +697,9 @@ async function loadPageConfig(pageType) {
       break;
     }
     case 'product': {
-      const { productConfig } = await import('@/components/editor/slot/configs/product-config');
+      // Add cache-busting parameter to force fresh import
+      const cacheBuster = `?v=${Date.now()}`;
+      const { productConfig } = await import(`@/components/editor/slot/configs/product-config${cacheBuster}`);
       config = productConfig;
       break;
     }
