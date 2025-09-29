@@ -36,46 +36,43 @@ import './CategorySlotComponents.jsx';
  */
 const QuantitySelector = createSlotComponent({
   name: 'QuantitySelector',
-
-  // Editor version - visual preview only
-  renderEditor: ({ slot, className, styles }) => {
+  render: ({ slot, productContext, className, styles, context }) => {
     const labelText = slot?.metadata?.editable?.label?.default || 'Qty:';
 
-    return (
-      <div className={className} style={styles}>
-        <div className="flex items-center space-x-2">
-          <label className="font-medium text-sm">
-            {labelText}
-          </label>
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <button className="p-2 hover:bg-gray-100 transition-colors">
-              <Minus className="w-4 h-4" />
-            </button>
-            <input
-              type="number"
-              value="1"
-              readOnly
-              className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none"
-            />
-            <button className="p-2 hover:bg-gray-100 transition-colors">
-              <Plus className="w-4 h-4" />
-            </button>
+    if (context === 'editor') {
+      // Editor version - visual preview only
+      return (
+        <div className={className} style={styles}>
+          <div className="flex items-center space-x-2">
+            <label className="font-medium text-sm">
+              {labelText}
+            </label>
+            <div className="flex items-center border rounded-lg overflow-hidden">
+              <button className="p-2 hover:bg-gray-100 transition-colors">
+                <Minus className="w-4 h-4" />
+              </button>
+              <input
+                type="number"
+                value="1"
+                readOnly
+                className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none"
+              />
+              <button className="p-2 hover:bg-gray-100 transition-colors">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  },
+      );
+    }
 
-  // Storefront version - full functionality
-  renderStorefront: ({ slot, productContext, className, styles }) => {
+    // Storefront version - full functionality
     const { settings, quantity, setQuantity } = productContext;
 
     // Preserve settings check - hide if setting is enabled
     if (settings?.hide_quantity_selector) {
       return null;
     }
-
-    const labelText = slot?.metadata?.editable?.label?.default || 'Qty:';
 
     return (
       <div className={className} style={styles}>
