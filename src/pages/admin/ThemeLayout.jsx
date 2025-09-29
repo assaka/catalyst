@@ -70,6 +70,9 @@ export default function ThemeLayout() {
                 enable_product_filters: true,
                 collapse_filters: false,
                 max_visible_attributes: 5,
+                // Product gallery defaults
+                product_gallery_layout: fullStore?.settings?.product_gallery_layout || 'horizontal',
+                vertical_gallery_position: fullStore?.settings?.vertical_gallery_position || 'left',
                 // Product grid - merge breakpoints properly
                 product_grid: {
                     breakpoints: {
