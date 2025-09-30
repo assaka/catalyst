@@ -364,8 +364,8 @@ function evaluateCondition(condition, context, pageData) {
       });
     }
 
-    // Handle eq helper function: (eq variable "value") - FIXED to handle both single and double quotes
-    const eqMatch = condition.match(/\(eq\s+([^"'\s]+)\s+['"]([^'"]+)['"]\)/);
+    // Handle eq helper function: (eq variable "value") - Clean double quote only approach
+    const eqMatch = condition.match(/\(eq\s+([^"\s]+)\s+"([^"]+)"\)/);
 
     // 🔧 DEBUG: Log regex match results for vertical_gallery_position
     if (condition.includes('vertical_gallery_position')) {

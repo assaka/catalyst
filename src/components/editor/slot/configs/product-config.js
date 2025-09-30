@@ -106,7 +106,7 @@ export const productConfig = {
       id: 'product_gallery_container',
       type: 'html',
       content: `
-        {{#if (eq settings.product_gallery_layout 'horizontal')}}
+        {{#if (eq settings.product_gallery_layout "horizontal")}}
           <!-- HORIZONTAL LAYOUT -->
           <div class="flex flex-col gap-4 w-full items-start">
             <!-- MAIN IMAGE FIRST -->
@@ -176,7 +176,7 @@ export const productConfig = {
           </div>
         {{else}}
           <!-- VERTICAL LAYOUT -->
-          {{#if (eq settings.vertical_gallery_position 'right')}}
+          {{#if (eq settings.vertical_gallery_position "right")}}
             <!-- VERTICAL RIGHT: Main image left, thumbnails right -->
             <div class="flex flex-col sm:flex-row-reverse gap-4 w-full items-start">
               <!-- THUMBNAILS -->
