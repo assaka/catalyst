@@ -487,7 +487,7 @@ export const productConfig = {
       id: 'product_sku',
       type: 'text',
       content: '{{#if product.sku}}SKU: {{product.sku}}{{/if}}',
-      className: 'w-fit text-sm text-gray-600',
+      className: 'w-fit text-3xl text-gray-600 italic font-bold',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
