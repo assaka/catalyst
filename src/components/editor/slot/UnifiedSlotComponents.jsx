@@ -1749,7 +1749,6 @@ registerSlotComponent('ProductImage', ProductImage);
 registerSlotComponent('ProductThumbnails', ProductThumbnails);
 
 export {
-  QuantitySelector,
   ProductBreadcrumbs,
   ProductGallery,
   ProductInfo,
