@@ -36,8 +36,8 @@ const ProductLabel = sequelize.define('ProductLabel', {
     defaultValue: '#FFFFFF'
   },
   position: {
-    type: DataTypes.ENUM('top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'),
-    defaultValue: 'top-left'
+    type: DataTypes.ENUM('top-left', 'top-right', 'top-center', 'center-left', 'center-right', 'bottom-left', 'bottom-right', 'bottom-center'),
+    defaultValue: 'top-right'
   },
   is_active: {
     type: DataTypes.BOOLEAN,
