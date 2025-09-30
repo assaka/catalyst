@@ -121,7 +121,7 @@ export const productConfig = {
                 <!-- PRODUCT LABELS -->
                 {{#if productLabels}}
                   {{#each productLabels}}
-                    <div data-position="{{this.position}}" class="product-label-{{this.position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                    <div class="absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}}; {{this.position}}">
                       {{this.text}}
                     </div>
                   {{/each}}
@@ -135,14 +135,14 @@ export const productConfig = {
                   </div>
                 {{/if}}
                 <style>
-                  .product-label-top-left { top: 0.5rem; left: 0.5rem; }
-                  .product-label-top-right { top: 0.5rem; right: 0.5rem; }
-                  .product-label-top-center { top: 0.5rem; left: 50%; transform: translateX(-50%); }
-                  .product-label-center-left { top: 50%; left: 0.5rem; transform: translateY(-50%); }
-                  .product-label-center-right { top: 50%; right: 0.5rem; transform: translateY(-50%); }
-                  .product-label-bottom-left { bottom: 0.5rem; left: 0.5rem; }
-                  .product-label-bottom-right { bottom: 0.5rem; right: 0.5rem; }
-                  .product-label-bottom-center { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  [style*="top-left"] { top: 0.5rem; left: 0.5rem; }
+                  [style*="top-right"] { top: 0.5rem; right: 0.5rem; }
+                  [style*="top-center"] { top: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  [style*="center-left"] { top: 50%; left: 0.5rem; transform: translateY(-50%); }
+                  [style*="center-right"] { top: 50%; right: 0.5rem; transform: translateY(-50%); }
+                  [style*="bottom-left"] { bottom: 0.5rem; left: 0.5rem; }
+                  [style*="bottom-right"] { bottom: 0.5rem; right: 0.5rem; }
+                  [style*="bottom-center"] { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
                 </style>
               </div>
             </div>
