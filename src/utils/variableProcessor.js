@@ -283,6 +283,9 @@ function processLoops(content, context, pageData) {
         ? { ...pageData, this: item, ...item }
         : { ...pageData, this: item };
 
+      // First process conditionals with the item context so {{#if tab_type}} works
+      itemContent = processConditionals(itemContent, context, itemContext);
+
       return processSimpleVariables(itemContent, context, itemContext);
     }).join('');
   });
