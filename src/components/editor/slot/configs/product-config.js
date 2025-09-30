@@ -105,10 +105,10 @@ export const productConfig = {
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="flex flex-row gap-4 w-full">
+      content: `<div class="flex flex-row gap-4 w-full items-start">
 
         <!-- THUMBNAILS -->
-        <div class="flex flex-col space-y-2 w-20 lg:w-24">
+        <div class="flex flex-col space-y-2 w-20 lg:w-24 flex-shrink-0">
 
           {{#if product.images}}
             {{#each product.images}}
@@ -136,8 +136,8 @@ export const productConfig = {
         </div>
 
         <!-- MAIN IMAGE -->
-        <div class="flex-1 relative">
-          <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full relative">
+        <div class="flex-1 relative min-w-0">
+          <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
             {{#if product.images}}
               <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
             {{else}}
