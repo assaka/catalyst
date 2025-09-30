@@ -400,6 +400,13 @@ const EditorSidebar = ({
         return null; // Let computed styles handle non-explicit colors
       };
 
+      console.log('📝 EditorSidebar - Setting element properties from database:', {
+        slotId,
+        storedClassName,
+        storedStyles: slotConfig?.styles || {},
+        elementSlotId
+      });
+
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
