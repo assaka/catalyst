@@ -239,6 +239,17 @@ const ProductGallery = createSlotComponent({
     const verticalPosition = settings.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
 
+    // 🔍 ULTRA DEBUG: Test the actual conditional logic
+    const testIsVertical = galleryLayout === 'vertical';
+    const testVerticalLeft = verticalPosition === 'left';
+    const testVerticalRight = verticalPosition === 'right';
+    console.log('🔍 CONDITIONAL TESTS:');
+    console.log('- isVertical (galleryLayout === "vertical"):', testIsVertical);
+    console.log('- verticalLeft (verticalPosition === "left"):', testVerticalLeft);
+    console.log('- verticalRight (verticalPosition === "right"):', testVerticalRight);
+    console.log('- Will render thumbnails first?:', testIsVertical && testVerticalLeft);
+    console.log('- Will render main image first?:', !testIsVertical || testVerticalRight);
+
     // Debug logging - DETAILED
     console.log('🔍 GALLERY SYNC DEBUG:', {
       '1_CONTEXT': context,

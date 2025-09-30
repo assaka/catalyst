@@ -329,6 +329,13 @@ export default function ThemeLayout() {
             verticalPosition: store.settings?.vertical_gallery_position
         });
 
+        // 🔍 DETAILED DEBUG: Log the exact values being saved
+        console.log('🔍 ADMIN SAVE - Gallery Settings Being Saved:');
+        console.log('- product_gallery_layout:', store.settings?.product_gallery_layout);
+        console.log('- vertical_gallery_position:', store.settings?.vertical_gallery_position);
+        console.log('- Full settings object keys:', Object.keys(store.settings || {}));
+        console.log('- Full settings object:', JSON.stringify(store.settings, null, 2));
+
         try {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
@@ -337,7 +344,12 @@ export default function ThemeLayout() {
                     storeId: store.id,
                     settingsBeingSaved: store.settings
                 });
-                return await Store.update(store.id, { settings: store.settings });
+                const apiResult = await Store.update(store.id, { settings: store.settings });
+
+                // 🔍 DEBUG: Log API response
+                console.log('🔍 ADMIN SAVE - API Response:', apiResult);
+
+                return apiResult;
             });
 
             console.log('🔧 ADMIN SAVE - API Response:', result);
