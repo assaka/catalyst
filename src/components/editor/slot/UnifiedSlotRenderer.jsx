@@ -236,7 +236,7 @@ export function UnifiedSlotRenderer({
    * Render basic slot content based on type
    */
   const renderBasicSlot = (slot) => {
-    const { id, type, content, className, styles } = slot;
+    const { id, type, content, className, styles, metadata } = slot;
 
     // Check if this is a price-related slot
     const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(id);
