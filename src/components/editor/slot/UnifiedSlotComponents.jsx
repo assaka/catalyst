@@ -763,12 +763,21 @@ const ProductTabs = createSlotComponent({
 
       const currentActiveIndex = activeTab !== undefined ? activeTab : activeTabIndex;
 
-      return tabsToRender.map((tab, index) => ({
+      const mappedTabs = tabsToRender.map((tab, index) => ({
         ...tab,
         id: tab.id?.toString() || tab.title || `tab-${index}`,
         title: tab.title || tab.name || `Tab ${index + 1}`,
-        isActive: index === currentActiveIndex
+        isActive: index === currentActiveIndex,
+        content: tab.content || '',
+        tab_type: tab.tab_type || 'text'
       }));
+
+      console.log('UnifiedSlotComponents - ProductTabsSlot - Mapped tabs:', {
+        mappedTabs,
+        product: product ? { description: product.description, hasAttributes: !!product.attributes } : 'null'
+      });
+
+      return mappedTabs;
     }, [productTabs, product, activeTab, activeTabIndex]);
 
     // Attach tab click handlers
@@ -832,6 +841,12 @@ const ProductTabs = createSlotComponent({
     };
 
     const processedContent = processVariables(content, enhancedVariableContext);
+
+    console.log('UnifiedSlotComponents - ProductTabsSlot - Processed content:', {
+      contentLength: processedContent.length,
+      firstChars: processedContent.substring(0, 300),
+      tabsCount: tabsData.length
+    });
 
     return (
       <div ref={containerRef} className={className} style={styles}
