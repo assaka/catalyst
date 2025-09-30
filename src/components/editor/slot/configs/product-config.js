@@ -101,41 +101,91 @@ export const productConfig = {
 
     // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
 
-    // PRODUCT GALLERY - Responsive layout with thumbnails and main image
+    // PRODUCT GALLERY - Dynamic layout based on admin settings
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full">
+      content: `<div class="
+        {{#if (eq settings.product_gallery_layout 'horizontal')}}
+          flex flex-col gap-4
+        {{else}}
+          {{#if (eq settings.vertical_gallery_position 'right')}}
+            flex flex-row-reverse gap-4
+          {{else}}
+            flex flex-row gap-4
+          {{/if}}
+        {{/if}} w-full">
+
         <!-- THUMBNAILS -->
-        <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 sm:w-20 lg:w-24 overflow-x-auto sm:overflow-x-visible">
-          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-            <img src="https://placehold.co/100x100?text=1" alt="Thumbnail 1" class="w-full h-full object-cover" />
-          </button>
-          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-            <img src="https://placehold.co/100x100?text=2" alt="Thumbnail 2" class="w-full h-full object-cover" />
-          </button>
-          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-            <img src="https://placehold.co/100x100?text=3" alt="Thumbnail 3" class="w-full h-full object-cover" />
-          </button>
-          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-            <img src="https://placehold.co/100x100?text=4" alt="Thumbnail 4" class="w-full h-full object-cover" />
-          </button>
+        <div class="
+          {{#if (eq settings.product_gallery_layout 'horizontal')}}
+            flex flex-row space-x-2 overflow-x-auto
+          {{else}}
+            flex flex-col space-y-2 w-20 lg:w-24
+          {{/if}}">
+
+          {{#if product.images}}
+            {{#each product.images}}
+              {{#if @index < 10}}
+                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                </button>
+              {{/if}}
+            {{/each}}
+          {{else}}
+            <!-- Editor demo thumbnails (max 4) -->
+            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+              <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
+            </button>
+            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+              <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
+            </button>
+            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+              <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
+            </button>
+            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+              <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
+            </button>
+          {{/if}}
         </div>
 
         <!-- MAIN IMAGE -->
         <div class="flex-1 relative">
           <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full relative">
-            <img src="https://placehold.co/600x600?text=Product" alt="Product Image" class="w-full h-full object-cover" />
+            {{#if product.images}}
+              <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+            {{else}}
+              <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
+            {{/if}}
 
-            <!-- PRODUCT LABELS -->
-            <div class="absolute top-3 right-3 flex flex-col space-y-2 pointer-events-none z-10">
-              <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                Sale
+            <!-- PRODUCT LABELS - Dynamic based on admin settings -->
+            {{#if productLabels}}
+              {{#if productLabels.length}}
+                <div class="absolute
+                  {{#if (eq settings.product_labels_position 'top-left')}}top-3 left-3{{/if}}
+                  {{#if (eq settings.product_labels_position 'top-right')}}top-3 right-3{{/if}}
+                  {{#if (eq settings.product_labels_position 'bottom-left')}}bottom-3 left-3{{/if}}
+                  {{#if (eq settings.product_labels_position 'bottom-right')}}bottom-3 right-3{{/if}}
+                  {{#unless settings.product_labels_position}}top-3 right-3{{/unless}}
+                  flex flex-col space-y-2 pointer-events-none z-10">
+                  {{#each productLabels}}
+                    <div style="background-color: {{this.background_color}}; color: {{this.text_color}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                      {{this.text}}
+                    </div>
+                  {{/each}}
+                </div>
+              {{/if}}
+            {{else}}
+              <!-- Editor demo labels -->
+              <div class="absolute top-3 right-3 flex flex-col space-y-2 pointer-events-none z-10">
+                <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                  Sale
+                </div>
+                <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                  New
+                </div>
               </div>
-              <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                New
-              </div>
-            </div>
+            {{/if}}
           </div>
         </div>
       </div>`,
