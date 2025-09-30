@@ -382,6 +382,25 @@ const EditorSidebar = ({
 
       const styledElement = findContentElement(selectedElement);
 
+      // CRITICAL: For text slots with HTML content, the styling classes are on the INNER element (h1, p, etc.),
+      // not on the outer wrapper. We need to read from the actual styledElement's className.
+      // But we must filter out wrapper/editor classes first.
+      const actualElementClassName = styledElement?.className || '';
+      const cleanActualClasses = actualElementClassName
+        .split(' ')
+        .filter(cls =>
+          cls &&
+          !isWrapperOrEditorClass(cls) &&
+          // Also filter out grid/layout classes that might be on wrapper
+          !cls.startsWith('col-span-') &&
+          !cls.startsWith('row-span-') &&
+          !cls.includes('responsive-slot')
+        )
+        .join(' ');
+
+      // Use actual element classes if they exist, otherwise fall back to stored
+      const effectiveClassName = cleanActualClasses || storedClassName || '';
+
       // Function to detect Tailwind color classes (only explicit mappings for key colors)
       const getTailwindColorHex = (className) => {
         const explicitColors = {
@@ -403,13 +422,16 @@ const EditorSidebar = ({
       console.log('📝 EditorSidebar - Setting element properties from database:', {
         slotId,
         storedClassName,
+        actualElementClassName,
+        cleanActualClasses,
+        effectiveClassName,
         storedStyles: slotConfig?.styles || {}
       });
 
       setElementProperties({
         width: selectedElement.offsetWidth || '',
         height: selectedElement.offsetHeight || '',
-        className: storedClassName || '', // NEVER fall back to contaminated DOM classes!
+        className: effectiveClassName, // Use actual element classes, not just stored className
         styles: (() => {
           try {
             // Safely merge stored styles with element styles
