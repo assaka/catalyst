@@ -256,7 +256,15 @@ export function UnifiedSlotRenderer({
     // Text Element
     if (type === 'text') {
       if (id === 'product_sku') {
-        console.log('SKU rendering:', { context, className, processedClassName, content: content?.substring(0, 50) });
+        console.log('SKU rendering:', {
+          context,
+          className,
+          processedClassName,
+          content: content?.substring(0, 50),
+          processedContent: processedContent?.substring(0, 100),
+          metadata,
+          variableContext: variableContext?.product?.sku
+        });
       }
 
       if (context === 'editor' && mode === 'edit') {
