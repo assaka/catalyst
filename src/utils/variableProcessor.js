@@ -340,13 +340,20 @@ function evaluateCondition(condition, context, pageData) {
     if (eqMatch) {
       const [, variablePath, expectedValue] = eqMatch;
       const actualValue = getNestedValue(variablePath, context, pageData);
-      // Only log gallery-related evaluations
-      if (variablePath.includes('gallery')) {
-        console.log('🔍 GALLERY EVAL:', {
+      // Only log gallery-related evaluations - ENHANCED debugging for position issue
+      if (variablePath.includes('gallery') || variablePath.includes('position')) {
+        console.log('[THUMBNAIL-SYNC] 🔍 GALLERY EVAL:', {
           condition,
+          variablePath,
           actualValue,
+          actualValueType: typeof actualValue,
           expectedValue,
-          result: actualValue === expectedValue
+          expectedValueType: typeof expectedValue,
+          result: actualValue === expectedValue,
+          strictResult: actualValue === expectedValue,
+          looseResult: actualValue == expectedValue,
+          actualRaw: JSON.stringify(actualValue),
+          expectedRaw: JSON.stringify(expectedValue)
         });
       }
       return actualValue === expectedValue;
