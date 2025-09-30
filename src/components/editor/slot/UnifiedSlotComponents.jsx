@@ -773,8 +773,19 @@ const ProductTabs = createSlotComponent({
       }));
 
       console.log('UnifiedSlotComponents - ProductTabsSlot - Mapped tabs:', {
-        mappedTabs,
-        product: product ? { description: product.description, hasAttributes: !!product.attributes } : 'null'
+        mappedTabs: mappedTabs.map(t => ({
+          id: t.id,
+          title: t.title,
+          isActive: t.isActive,
+          tab_type: t.tab_type,
+          hasContent: !!t.content,
+          contentLength: t.content?.length || 0
+        })),
+        product: product ? {
+          hasDescription: !!product.description,
+          descriptionLength: product.description?.length || 0,
+          hasAttributes: !!product.attributes
+        } : 'null'
       });
 
       return mappedTabs;

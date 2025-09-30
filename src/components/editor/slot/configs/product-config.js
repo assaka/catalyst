@@ -787,8 +787,9 @@ export const productConfig = {
           <div class="mt-6">
             {{#each tabs}}
               <div
-                class="tab-panel {{#unless this.isActive}}hidden{{/unless}}"
-                data-tab-content="{{this.id}}">
+                class="tab-panel {{#if this.isActive}}{{else}}hidden{{/if}}"
+                data-tab-content="{{this.id}}"
+                data-tab-index="{{@index}}">
                 <div class="prose max-w-none">
                   <!-- Debug: Show tab info -->
                   <div class="bg-yellow-100 p-2 mb-4">
