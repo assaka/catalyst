@@ -551,7 +551,7 @@ export const productConfig = {
             {{#if customOptions}}
               {{#each customOptions}}
                 <div
-                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-purple-500 bg-purple-50 shadow-sm{{else}}border-gray-200 hover:border-gray-300 hover:shadow-sm{{/if}}"
+                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-purple-500 bg-purple-50 shadow-sm{{else}}border-purple-200 hover:border-purple-300 hover:shadow-sm{{/if}}"
                   data-option-id="{{this.id}}"
                   data-action="toggle-option"
                 >
@@ -729,7 +729,7 @@ export const productConfig = {
       id: 'add_to_cart_button',
       type: 'html',
       content: `
-        <button class="flex-1 h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" data-add-to-cart>
+        <button class="w-full h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" data-add-to-cart>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2 inline">
             <circle cx="8" cy="21" r="1"></circle>
             <circle cx="19" cy="21" r="1"></circle>
@@ -886,4 +886,4 @@ export const productConfig = {
   ]
 };
 
-export default productConfig;
+export default productCon
