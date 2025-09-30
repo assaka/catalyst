@@ -744,22 +744,8 @@ const ProductTabs = createSlotComponent({
         tab && tab.is_active !== false && (tab.title || tab.name)
       );
 
-      // Add default description tab if needed
-      const hasDescriptionTab = validTabs.some(tab =>
-        tab.title?.toLowerCase().includes('description') ||
-        tab.name?.toLowerCase().includes('description')
-      );
-
+      // Don't auto-generate description tab - use only database tabs
       const tabsToRender = [...validTabs];
-      if (product?.description && !hasDescriptionTab) {
-        tabsToRender.unshift({
-          id: 'description',
-          title: 'Description',
-          content: product.description,
-          is_active: true,
-          tab_type: 'description'
-        });
-      }
 
       const currentActiveIndex = activeTab !== undefined ? activeTab : activeTabIndex;
 
