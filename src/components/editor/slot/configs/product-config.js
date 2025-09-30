@@ -299,7 +299,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'price_container',
-      position: { col: 1, row: 1 },
+      position: { col: 2, row: 1 },
       colSpan: {
         default: 12
       },
