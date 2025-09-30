@@ -123,15 +123,23 @@ export const productConfig = {
     product_thumbnails: {
       id: 'product_thumbnails',
       type: 'html',
-      content: `{{#if (or (ne settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "left"))}}
-        <div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2{{/if}}">
-          {{#each product.images}}
-            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
-              <img src="{{this}}" alt="{{../product.name}} thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-            </button>
-          {{/each}}
+      content: `{{#unless (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}
+        <div class="{{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
+          {{#if product.images}}
+            {{#each product.images}}
+              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
+                <img src="{{this}}" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.src='https://placehold.co/100x100?text=Thumb'" />
+              </button>
+            {{/each}}
+          {{else}}
+            {{#each (array "1" "2" "3" "4")}}
+              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+                <img src="https://placehold.co/100x100?text=T{{this}}" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+              </button>
+            {{/each}}
+          {{/if}}
         </div>
-      {{/if}}`,
+      {{/unless}}`,
       className: '',
       parentClassName: '',
       styles: {},
@@ -146,12 +154,12 @@ export const productConfig = {
     product_main_image: {
       id: 'product_main_image',
       type: 'html',
-      content: `<div class="flex-1 relative rounded-lg overflow-hidden">
-        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+      content: `<div class="flex-1 relative">
+        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-2xl">
           {{#if product.images}}
-            <img src="{{product.images.0}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+            <img src="{{product.images.0}}" alt="{{product.name}}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600?text=No+Image'" />
           {{else}}
-            <div class="w-full h-full flex items-center justify-center text-gray-500">No Image</div>
+            <img src="https://placehold.co/600x600?text=No+Image" alt="No Image" class="w-full h-full object-cover" />
           {{/if}}
         </div>
       </div>`,
@@ -171,11 +179,19 @@ export const productConfig = {
       type: 'html',
       content: `{{#if (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}
         <div class="flex flex-col space-y-2 w-24">
-          {{#each product.images}}
-            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
-              <img src="{{this}}" alt="{{../product.name}} thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-            </button>
-          {{/each}}
+          {{#if product.images}}
+            {{#each product.images}}
+              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
+                <img src="{{this}}" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.src='https://placehold.co/100x100?text=Thumb'" />
+              </button>
+            {{/each}}
+          {{else}}
+            {{#each (array "1" "2" "3" "4")}}
+              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+                <img src="https://placehold.co/100x100?text=T{{this}}" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+              </button>
+            {{/each}}
+          {{/if}}
         </div>
       {{/if}}`,
       className: '',
