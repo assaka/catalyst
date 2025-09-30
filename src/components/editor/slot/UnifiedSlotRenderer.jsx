@@ -141,17 +141,14 @@ export function UnifiedSlotRenderer({
   // Sort slots by grid coordinates for proper rendering order
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
-  // Prepare context for variable processing (shared by all rendering functions)
-  // Ensure consistent structure between editor and storefront
-  const variableContext = context === 'editor' ?
-    generateDemoData('product', productData.settings || {}) :
-    {
-      product: productData.product,
-      category: categoryData,
-      cart: cartData,
-      settings: productData.settings || {},
-      productLabels: productData.productLabels
-    };
+  // SIMPLIFIED: Use same data structure for both editor and storefront
+  const variableContext = {
+    product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
+    category: categoryData,
+    cart: cartData,
+    settings: productData.settings || {}, // SAME settings for both contexts
+    productLabels: productData.productLabels
+  };
 
   // Debug gallery settings flow in UnifiedSlotRenderer
   console.log('🔧 UNIFIED SLOT RENDERER SETTINGS DEBUG:', {
