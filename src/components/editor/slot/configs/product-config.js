@@ -790,6 +790,13 @@ export const productConfig = {
                 class="tab-panel {{#unless this.isActive}}hidden{{/unless}}"
                 data-tab-content="{{this.id}}">
                 <div class="prose max-w-none">
+                  <!-- Debug: Show tab info -->
+                  <div class="bg-yellow-100 p-2 mb-4">
+                    <p>Tab Type: {{this.tab_type}}</p>
+                    <p>Has Content: {{#if this.content}}Yes{{else}}No{{/if}}</p>
+                    <p>Has Product Description: {{#if ../product.description}}Yes{{else}}No{{/if}}</p>
+                  </div>
+
                   {{#if (eq this.tab_type "text")}}
                     <div>{{{this.content}}}</div>
                   {{/if}}
