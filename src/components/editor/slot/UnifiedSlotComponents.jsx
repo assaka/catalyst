@@ -226,7 +226,7 @@ const ProductGallery = createSlotComponent({
     // SIMPLIFIED: Get settings from ONE place - variableContext (which now has same data for both contexts)
     const settings = variableContext?.settings || {};
 
-    console.log('⚠️ SETTINGS CHECK:', {
+    console.log('🔍 [STEP 3] COMPONENT - RECEIVED SETTINGS:', {
       raw_settings: settings,
       has_gallery_layout: 'product_gallery_layout' in settings,
       gallery_layout_value: settings.product_gallery_layout,
@@ -243,12 +243,12 @@ const ProductGallery = createSlotComponent({
     const testIsVertical = galleryLayout === 'vertical';
     const testVerticalLeft = verticalPosition === 'left';
     const testVerticalRight = verticalPosition === 'right';
-    console.log('🔍 CONDITIONAL TESTS:');
-    console.log('- isVertical (galleryLayout === "vertical"):', testIsVertical);
-    console.log('- verticalLeft (verticalPosition === "left"):', testVerticalLeft);
-    console.log('- verticalRight (verticalPosition === "right"):', testVerticalRight);
-    console.log('- Will render thumbnails first?:', testIsVertical && testVerticalLeft);
-    console.log('- Will render main image first?:', !testIsVertical || testVerticalRight);
+    console.log('🔍 [STEP 4] COMPONENT - CONDITIONAL LOGIC TESTS:');
+    console.log('🔍 [STEP 4] - isVertical (galleryLayout === "vertical"):', testIsVertical);
+    console.log('🔍 [STEP 4] - verticalLeft (verticalPosition === "left"):', testVerticalLeft);
+    console.log('🔍 [STEP 4] - verticalRight (verticalPosition === "right"):', testVerticalRight);
+    console.log('🔍 [STEP 4] - Will render thumbnails first?:', testIsVertical && testVerticalLeft);
+    console.log('🔍 [STEP 4] - Will render main image first?:', !testIsVertical || testVerticalRight);
 
     // Debug logging - DETAILED
     console.log('🔍 GALLERY SYNC DEBUG:', {

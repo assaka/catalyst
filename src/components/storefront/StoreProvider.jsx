@@ -285,11 +285,11 @@ export const StoreProvider = ({ children }) => {
       console.log('StoreProvider - Original product_grid:', selectedStore.settings?.product_grid);
 
       // 🔍 DEBUG: Gallery settings from database
-      console.log('🔍 GALLERY SETTINGS DEBUG:');
-      console.log('- product_gallery_layout from DB:', selectedStore.settings?.product_gallery_layout);
-      console.log('- vertical_gallery_position from DB:', selectedStore.settings?.vertical_gallery_position);
-      console.log('- settings object type:', typeof selectedStore.settings);
-      console.log('- settings keys:', selectedStore.settings ? Object.keys(selectedStore.settings) : 'No settings');
+      console.log('🔍 [STEP 1] STOREPROVIDER - RAW DATABASE VALUES:');
+      console.log('🔍 [STEP 1] - product_gallery_layout from DB:', selectedStore.settings?.product_gallery_layout);
+      console.log('🔍 [STEP 1] - vertical_gallery_position from DB:', selectedStore.settings?.vertical_gallery_position);
+      console.log('🔍 [STEP 1] - settings object type:', typeof selectedStore.settings);
+      console.log('🔍 [STEP 1] - settings keys:', selectedStore.settings ? Object.keys(selectedStore.settings) : 'No settings');
 
       const mergedSettings = {
         // Spread existing store settings first to preserve saved values
@@ -404,9 +404,9 @@ export const StoreProvider = ({ children }) => {
       console.log('StoreProvider - Product grid config:', mergedSettings.product_grid);
 
       // 🔍 DEBUG: Final gallery settings after merge
-      console.log('🔍 FINAL GALLERY SETTINGS:');
-      console.log('- product_gallery_layout final:', mergedSettings.product_gallery_layout);
-      console.log('- vertical_gallery_position final:', mergedSettings.vertical_gallery_position);
+      console.log('🔍 [STEP 2] STOREPROVIDER - AFTER MERGE WITH DEFAULTS:');
+      console.log('🔍 [STEP 2] - product_gallery_layout final:', mergedSettings.product_gallery_layout);
+      console.log('🔍 [STEP 2] - vertical_gallery_position final:', mergedSettings.vertical_gallery_position);
 
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries
       const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';

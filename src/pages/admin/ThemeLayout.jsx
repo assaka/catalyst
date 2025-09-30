@@ -330,11 +330,11 @@ export default function ThemeLayout() {
         });
 
         // 🔍 DETAILED DEBUG: Log the exact values being saved
-        console.log('🔍 ADMIN SAVE - Gallery Settings Being Saved:');
-        console.log('- product_gallery_layout:', store.settings?.product_gallery_layout);
-        console.log('- vertical_gallery_position:', store.settings?.vertical_gallery_position);
-        console.log('- Full settings object keys:', Object.keys(store.settings || {}));
-        console.log('- Full settings object:', JSON.stringify(store.settings, null, 2));
+        console.log('🔍 [STEP 0] ADMIN - SAVING TO DATABASE:');
+        console.log('🔍 [STEP 0] - product_gallery_layout:', store.settings?.product_gallery_layout);
+        console.log('🔍 [STEP 0] - vertical_gallery_position:', store.settings?.vertical_gallery_position);
+        console.log('🔍 [STEP 0] - Full settings object keys:', Object.keys(store.settings || {}));
+        console.log('🔍 [STEP 0] - Full settings object:', JSON.stringify(store.settings, null, 2));
 
         try {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
@@ -347,7 +347,7 @@ export default function ThemeLayout() {
                 const apiResult = await Store.update(store.id, { settings: store.settings });
 
                 // 🔍 DEBUG: Log API response
-                console.log('🔍 ADMIN SAVE - API Response:', apiResult);
+                console.log('🔍 [STEP 0] ADMIN - API RESPONSE:', apiResult);
 
                 return apiResult;
             });
