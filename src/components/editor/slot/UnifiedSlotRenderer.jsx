@@ -241,12 +241,10 @@ export function UnifiedSlotRenderer({
       );
       // Don't wrap absolute positioned elements with ResizeWrapper as it interferes with positioning
       const isAbsolutePositioned = processedClassName?.includes('absolute') || styles?.position === 'absolute';
-      if (context === 'editor' && !isAbsolutePositioned) {
-        // Use larger minimum dimensions for gallery container
-        const isGalleryContainer = id === 'product_gallery_container';
-        const minWidth = isGalleryContainer ? 600 : 20;
-        const minHeight = isGalleryContainer ? 400 : 16;
-        return wrapWithResize(htmlElement, slot, minWidth, minHeight);
+      // Don't wrap gallery container to prevent width constraints
+      const isGalleryContainer = id === 'product_gallery_container';
+      if (context === 'editor' && !isAbsolutePositioned && !isGalleryContainer) {
+        return wrapWithResize(htmlElement, slot, 20, 16);
       }
       return htmlElement;
     }
