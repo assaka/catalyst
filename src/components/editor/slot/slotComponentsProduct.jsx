@@ -284,54 +284,6 @@ export function ProductTabsSlot({ productContext, content }) {
   );
 }
 
-// QuantitySelector Component - Product quantity selector with +/- buttons
-export function QuantitySelector({ productContext, content, slot }) {
-  const [quantity, setQuantity] = React.useState(1);
-
-  // Get editable label from slot metadata or use default
-  const labelText = slot?.metadata?.editable?.label?.default || 'Qty:';
-
-  return (
-    <div className="quantity-selector">
-      {content ? (
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      ) : (
-        <div className="flex items-center space-x-2">
-          <label htmlFor="quantity" className="font-medium text-sm">
-            {labelText}
-          </label>
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="p-2 hover:bg-gray-100 transition-colors"
-              disabled={quantity <= 1}
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <input
-              id="quantity"
-              type="number"
-              value={quantity}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                if (!isNaN(val) && val >= 1) setQuantity(val);
-              }}
-              min="1"
-              className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent"
-            />
-            <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="p-2 hover:bg-gray-100 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ProductRecommendationsSlot Component - Related/recommended products
 export function ProductRecommendationsSlot({ productContext, content }) {
   const { relatedProducts, settings } = productContext;
