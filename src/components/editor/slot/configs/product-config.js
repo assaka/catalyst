@@ -581,7 +581,25 @@ export const productConfig = {
       id: 'quantity_selector',
       type: 'component',
       component: 'QuantitySelector',
-      content: 'QuantitySelector',
+      content: `
+        <div class="flex items-center space-x-2">
+          <label for="quantity-input" class="font-medium text-sm">Quantity</label>
+          <div class="flex items-center border rounded-lg overflow-hidden">
+            <button class="p-2 hover:bg-gray-100 transition-colors" data-action="decrease">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                <path d="M5 12h14"></path>
+              </svg>
+            </button>
+            <input id="quantity-input" type="number" min="1" class="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent" data-quantity-input />
+            <button class="p-2 hover:bg-gray-100 transition-colors" data-action="increase">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                <path d="M5 12h14"></path>
+                <path d="M12 5v14"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `,
       className: 'quantity-selector mb-4',
       parentClassName: '',
       styles: {},
@@ -593,14 +611,7 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        component: 'QuantitySelector',
-        editable: {
-          label: {
-            type: 'text',
-            default: 'Quantity',
-            placeholder: 'Enter quantity label'
-          }
-        }
+        component: 'QuantitySelector'
       }
     },
 

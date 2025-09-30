@@ -37,37 +37,80 @@ import './CategorySlotComponents.jsx';
 const QuantitySelector = createSlotComponent({
   name: 'QuantitySelector',
   render: ({ slot, productContext, className, styles, context }) => {
-    const labelText = slot?.metadata?.editable?.label?.default || 'Qty:';
+    const containerRef = React.useRef(null);
+    const content = slot?.content || '';
+
+    React.useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const decreaseBtn = containerRef.current.querySelector('[data-action="decrease"]');
+      const increaseBtn = containerRef.current.querySelector('[data-action="increase"]');
+      const quantityInput = containerRef.current.querySelector('[data-quantity-input]');
+
+      if (!decreaseBtn || !increaseBtn || !quantityInput) return;
+
+      const { quantity, setQuantity } = productContext;
+
+      // Set initial value
+      if (quantityInput && quantity) {
+        quantityInput.value = quantity;
+      }
+
+      const handleDecrease = (e) => {
+        e.preventDefault();
+        if (setQuantity && quantity > 1) {
+          setQuantity(Math.max(1, quantity - 1));
+        }
+      };
+
+      const handleIncrease = (e) => {
+        e.preventDefault();
+        if (setQuantity) {
+          setQuantity(quantity + 1);
+        }
+      };
+
+      const handleInputChange = (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1 && setQuantity) {
+          setQuantity(val);
+        }
+      };
+
+      decreaseBtn.addEventListener('click', handleDecrease);
+      increaseBtn.addEventListener('click', handleIncrease);
+      quantityInput.addEventListener('change', handleInputChange);
+
+      return () => {
+        decreaseBtn.removeEventListener('click', handleDecrease);
+        increaseBtn.removeEventListener('click', handleIncrease);
+        quantityInput.removeEventListener('change', handleInputChange);
+      };
+    }, [productContext, context]);
+
+    // Update input value when quantity changes
+    React.useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+      const quantityInput = containerRef.current.querySelector('[data-quantity-input]');
+      if (quantityInput && productContext?.quantity) {
+        quantityInput.value = productContext.quantity;
+      }
+    }, [productContext?.quantity, context]);
 
     if (context === 'editor') {
       // Editor version - visual preview only
       return (
-        <div className={className} style={styles}>
-          <div className="flex items-center space-x-2">
-            <label className="font-medium text-sm">
-              {labelText}
-            </label>
-            <div className="flex items-center border rounded-lg overflow-hidden">
-              <button className="p-2 hover:bg-gray-100 transition-colors">
-                <Minus className="w-4 h-4" />
-              </button>
-              <input
-                type="number"
-                value="1"
-                readOnly
-                className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none"
-              />
-              <button className="p-2 hover:bg-gray-100 transition-colors">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <div
+          ref={containerRef}
+          className={className}
+          style={styles}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
       );
     }
 
     // Storefront version - full functionality
-    const { settings, quantity, setQuantity } = productContext;
+    const { settings } = productContext;
 
     // Preserve settings check - hide if setting is enabled
     if (settings?.hide_quantity_selector) {
@@ -75,53 +118,18 @@ const QuantitySelector = createSlotComponent({
     }
 
     return (
-      <div className={className} style={styles}>
-        <div className="flex items-center space-x-2">
-          <label htmlFor="quantity-input" className="font-medium text-sm">
-            {labelText}
-          </label>
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setQuantity && setQuantity(Math.max(1, quantity - 1))}
-              className="p-2 hover:bg-gray-100 transition-colors"
-              disabled={quantity <= 1}
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <input
-              id="quantity-input"
-              type="number"
-              value={quantity}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                if (!isNaN(val) && val >= 1) setQuantity && setQuantity(val);
-                else if (e.target.value === '') setQuantity && setQuantity('');
-              }}
-              min="1"
-              className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent"
-            />
-            <button
-              onClick={() => setQuantity && setQuantity(quantity + 1)}
-              className="p-2 hover:bg-gray-100 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <div
+        ref={containerRef}
+        className={className}
+        style={styles}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
     );
   },
 
   metadata: {
     displayName: 'Quantity Selector',
-    category: 'Product',
-    editable: {
-      label: {
-        type: 'text',
-        default: 'Qty:',
-        placeholder: 'Enter quantity label'
-      }
-    }
+    category: 'Product'
   }
 });
 
