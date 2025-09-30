@@ -850,6 +850,12 @@ const ProductTabs = createSlotComponent({
       product
     };
 
+    console.log('DEBUG BEFORE processVariables:', {
+      tabsData: tabsData.map(t => ({ id: t.id, tab_type: t.tab_type, content: t.content, isActive: t.isActive })),
+      product: product ? { hasDescription: !!product.description, descLength: product.description?.length } : null,
+      templateSnippet: content.substring(790, 850)
+    });
+
     const processedContent = processVariables(content, enhancedVariableContext);
 
     console.log('UnifiedSlotComponents - ProductTabsSlot - Processed content:', {

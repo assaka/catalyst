@@ -791,15 +791,19 @@ export const productConfig = {
                 data-tab-content="{{this.id}}"
                 data-tab-index="{{@index}}">
                 <div class="prose max-w-none">
+                  <div style="background: yellow; padding: 10px; margin: 10px 0;">
+                    DEBUG: tab_type = "{{this.tab_type}}" | content = "{{this.content}}"
+                  </div>
                   {{#if (eq this.tab_type "text")}}
-                    <div>{{this.content}}</div>
+                    <div style="background: lightgreen;">TEXT TAB: {{this.content}}</div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "description")}}
-                    <div>{{../product.description}}</div>
+                    <div style="background: lightblue;">DESCRIPTION TAB: {{../product.description}}</div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "attributes")}}
+                    <div style="background: pink;">ATTRIBUTES TAB</div>
                     <div id="attributes-placeholder" data-attributes-container></div>
                   {{/if}}
 
