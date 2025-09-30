@@ -208,7 +208,7 @@ const [labels, setLabels] = useState([]);
                           className={`absolute px-2 py-1 text-xs font-bold rounded shadow-lg ${getPositionClasses(label.position)}`}
                           style={{
                             backgroundColor: label.background_color || '#FF0000',
-                            color: label.text_color || '#FFFFFF'
+                            color: label.color || '#FFFFFF'
                           }}
                         >
                           {label.text}
