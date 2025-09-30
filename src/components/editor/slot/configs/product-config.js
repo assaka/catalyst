@@ -105,23 +105,23 @@ export const productConfig = {
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="flex flex-row gap-4 w-full h-96 bg-red-100 border-2 border-red-500">
-        <!-- THUMBNAILS LEFT SIDE -->
-        <div class="flex flex-col space-y-2 w-24 bg-blue-100">
-          <button class="w-16 h-16 rounded border-2 border-gray-300 bg-white">
+      content: `<div class="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full min-h-[300px] sm:min-h-[400px] bg-red-100 border-2 border-red-500">
+        <!-- THUMBNAILS -->
+        <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 bg-blue-100 overflow-x-auto sm:overflow-x-visible">
+          <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded border-2 border-gray-300 bg-white">
             <img src="https://placehold.co/100x100?text=T1" alt="T1" class="w-full h-full object-cover" />
           </button>
-          <button class="w-16 h-16 rounded border-2 border-gray-300 bg-white">
+          <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded border-2 border-gray-300 bg-white">
             <img src="https://placehold.co/100x100?text=T2" alt="T2" class="w-full h-full object-cover" />
           </button>
-          <button class="w-16 h-16 rounded border-2 border-gray-300 bg-white">
+          <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded border-2 border-gray-300 bg-white">
             <img src="https://placehold.co/100x100?text=T3" alt="T3" class="w-full h-full object-cover" />
           </button>
         </div>
 
-        <!-- MAIN IMAGE RIGHT SIDE -->
+        <!-- MAIN IMAGE -->
         <div class="flex-1 relative bg-green-100">
-          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-lg relative">
+          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full relative">
             <img src="https://placehold.co/600x600?text=MAIN+IMAGE" alt="Main" class="w-full h-full object-cover" />
 
             <!-- LABELS -->
@@ -139,8 +139,7 @@ export const productConfig = {
       className: '',
       parentClassName: '',
       styles: {
-        width: '100%',
-        minWidth: '600px'
+        width: '100%'
       },
       parentId: 'content_area',
       position: { col: 1, row: 1 },
