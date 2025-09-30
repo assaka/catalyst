@@ -770,8 +770,7 @@ export const productConfig = {
       type: 'component',
       component: 'ProductTabsSlot',
       content: `
-        <div class="w-full border-8 border-red-500 p-8 bg-gray-50">
-          <h2 class="text-4xl font-bold text-red-600 mb-4">PRODUCT TABS ARE HERE</h2>
+        <div class="w-full">
           <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-8">
               {{#each tabs}}
@@ -792,33 +791,17 @@ export const productConfig = {
                 data-tab-content="{{this.id}}"
                 data-tab-index="{{@index}}">
                 <div class="prose max-w-none">
-                  <!-- Always show this debug box -->
-                  <div class="bg-yellow-100 p-4 mb-4 border-2 border-yellow-500">
-                    <p><strong>DEBUG INFO:</strong></p>
-                    <p>Tab ID: {{this.id}}</p>
-                    <p>Tab Type: {{this.tab_type}}</p>
-                    <p>Has Content: {{#if this.content}}Yes ({{this.content}} chars){{else}}No{{/if}}</p>
-                    <p>Has Product Description: {{#if ../product.description}}Yes{{else}}No{{/if}}</p>
-                    <p>isActive: {{#if this.isActive}}TRUE{{else}}FALSE{{/if}}</p>
-                  </div>
-
-                  <!-- Content sections - ALWAYS SHOW ALL FOR DEBUG -->
-                  <div class="bg-blue-100 p-4 mb-2">
-                    <strong>TEXT TAB CONTENT (this.content):</strong>
+                  {{#if (eq this.tab_type "text")}}
                     <div>{{this.content}}</div>
-                    <p class="text-xs mt-2">Raw with triple braces: {{{this.content}}}</p>
-                  </div>
+                  {{/if}}
 
-                  <div class="bg-green-100 p-4 mb-2">
-                    <strong>DESCRIPTION TAB CONTENT (product.description):</strong>
+                  {{#if (eq this.tab_type "description")}}
                     <div>{{../product.description}}</div>
-                    <p class="text-xs mt-2">Raw with triple braces: {{{../product.description}}}</p>
-                  </div>
+                  {{/if}}
 
-                  <div class="bg-purple-100 p-4 mb-2">
-                    <strong>ATTRIBUTES TAB:</strong>
+                  {{#if (eq this.tab_type "attributes")}}
                     <div id="attributes-placeholder" data-attributes-container></div>
-                  </div>
+                  {{/if}}
 
                   {{#if (eq this.tab_type "attribute_sets")}}
                     <div class="space-y-6">
