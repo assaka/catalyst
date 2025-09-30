@@ -749,6 +749,14 @@ const ProductTabs = createSlotComponent({
 
       const currentActiveIndex = (activeTab !== undefined && activeTab !== null) ? activeTab : activeTabIndex;
 
+      console.log('DEBUG activeTab calculation:', {
+        activeTab,
+        activeTabIndex,
+        currentActiveIndex,
+        activeTabType: typeof activeTab,
+        activeTabIndexType: typeof activeTabIndex
+      });
+
       const mappedTabs = tabsToRender.map((tab, index) => ({
         ...tab,
         id: tab.id?.toString() || tab.title || `tab-${index}`,
@@ -759,13 +767,15 @@ const ProductTabs = createSlotComponent({
       }));
 
       console.log('UnifiedSlotComponents - ProductTabsSlot - Mapped tabs:', {
-        mappedTabs: mappedTabs.map(t => ({
+        mappedTabs: mappedTabs.map((t, idx) => ({
+          index: idx,
           id: t.id,
           title: t.title,
           isActive: t.isActive,
           tab_type: t.tab_type,
           hasContent: !!t.content,
-          contentLength: t.content?.length || 0
+          contentLength: t.content?.length || 0,
+          content: t.content
         })),
         product: product ? {
           hasDescription: !!product.description,
