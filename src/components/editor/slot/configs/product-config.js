@@ -108,7 +108,12 @@ export const productConfig = {
       content: `
         {{#if (eq settings.product_gallery_layout "horizontal")}}
           <!-- HORIZONTAL LAYOUT -->
-          <div class="flex flex-col gap-4 w-full items-start">
+          <!-- Mobile: Respect mobile_gallery_layout setting -->
+          {{#if (eq settings.mobile_gallery_layout "above")}}
+            <div class="flex flex-col-reverse gap-4 w-full items-start">
+          {{else}}
+            <div class="flex flex-col gap-4 w-full items-start">
+          {{/if}}
             <!-- MAIN IMAGE FIRST - FULL WIDTH -->
             <div class="w-full relative">
               <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full relative">
@@ -178,7 +183,12 @@ export const productConfig = {
           <!-- VERTICAL LAYOUT -->
           {{#if (eq settings.vertical_gallery_position "right")}}
             <!-- VERTICAL RIGHT: Main image left, thumbnails right -->
-            <div class="flex flex-col sm:flex-row-reverse gap-4 w-full items-start">
+            <!-- Mobile: Respect mobile_gallery_layout setting -->
+            {{#if (eq settings.mobile_gallery_layout "above")}}
+              <div class="flex flex-col-reverse sm:flex-row-reverse gap-4 w-full items-start">
+            {{else}}
+              <div class="flex flex-col sm:flex-row-reverse gap-4 w-full items-start">
+            {{/if}}
               <!-- THUMBNAILS -->
               <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible">
                 {{#if product.images}}
@@ -246,7 +256,12 @@ export const productConfig = {
             </div>
           {{else}}
             <!-- VERTICAL LEFT: Thumbnails left, main image right -->
-            <div class="flex flex-col sm:flex-row gap-4 w-full items-start">
+            <!-- Mobile: Respect mobile_gallery_layout setting -->
+            {{#if (eq settings.mobile_gallery_layout "above")}}
+              <div class="flex flex-col-reverse sm:flex-row gap-4 w-full items-start">
+            {{else}}
+              <div class="flex flex-col sm:flex-row gap-4 w-full items-start">
+            {{/if}}
               <!-- THUMBNAILS -->
               <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible">
                 {{#if product.images}}
