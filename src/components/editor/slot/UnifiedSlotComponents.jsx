@@ -1398,7 +1398,7 @@ registerSlotComponent('CartItemsSlot', CartItemsSlot);
 registerSlotComponent('CartCouponSlot', CartCouponSlot);
 registerSlotComponent('CartOrderSummarySlot', CartOrderSummarySlot);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
-// ProductGallerySlot removed - now using pure handlebars approach in product-config.js
+registerSlotComponent('ProductGallerySlot', ProductGallery); // Keep for backward compatibility
 registerSlotComponent('ProductInfoSlot', ProductInfo);
 registerSlotComponent('ProductOptionsSlot', ProductOptions);
 registerSlotComponent('CustomOptions', CustomOptions);
