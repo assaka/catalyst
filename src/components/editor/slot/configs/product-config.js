@@ -109,9 +109,9 @@ export const productConfig = {
         {{#if (eq settings.product_gallery_layout "horizontal")}}
           <!-- HORIZONTAL LAYOUT -->
           <div class="flex flex-col gap-4 w-full items-start">
-            <!-- MAIN IMAGE FIRST -->
-            <div class="flex-1 relative min-w-0">
-              <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
+            <!-- MAIN IMAGE FIRST - FULL WIDTH -->
+            <div class="w-full relative">
+              <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full relative">
                 {{#if product.images}}
                   <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
                 {{else}}
