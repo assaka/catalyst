@@ -105,28 +105,191 @@ export const productConfig = {
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="
+      content: `
         {{#if (eq settings.product_gallery_layout 'horizontal')}}
-          flex flex-col gap-4
-        {{else}}
-          {{#if (eq settings.vertical_gallery_position 'right')}}
-            flex flex-col sm:flex-row-reverse gap-4
-          {{else}}
-            flex flex-col sm:flex-row gap-4
-          {{/if}}
-        {{/if}}
-        {{#if (eq settings.mobile_gallery_layout 'above')}}
-          flex-col-reverse sm:flex-col
-        {{/if}}
-        w-full items-start">
+          <!-- HORIZONTAL LAYOUT -->
+          <div class="flex flex-col gap-4 w-full items-start">
+            <!-- MAIN IMAGE FIRST -->
+            <div class="flex-1 relative min-w-0">
+              <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
+                {{#if product.images}}
+                  <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+                {{else}}
+                  <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
+                {{/if}}
 
-        <!-- THUMBNAILS -->
-        <div class="
-          {{#if (eq settings.product_gallery_layout 'horizontal')}}
-            flex flex-row space-x-2 overflow-x-auto w-full
+                <!-- PRODUCT LABELS -->
+                <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
+                  {{#if productLabels}}
+                    {{#each productLabels}}
+                      <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                        {{this.text}}
+                      </div>
+                    {{/each}}
+                  {{else}}
+                    <!-- Editor demo labels -->
+                    <div style="background-color: #dc2626; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                      Sale
+                    </div>
+                    <div style="background-color: #059669; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                      New
+                    </div>
+                  {{/if}}
+                </div>
+              </div>
+            </div>
+
+            <!-- THUMBNAILS BELOW -->
+            <div class="flex flex-row space-x-2 overflow-x-auto w-full">
+              {{#if product.images}}
+                {{#each product.images}}
+                  {{#if @index < 10}}
+                    <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                      <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                    </button>
+                  {{/if}}
+                {{/each}}
+              {{else}}
+                <!-- Editor demo thumbnails -->
+                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
+                </button>
+                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
+                </button>
+                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
+                </button>
+                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
+                </button>
+              {{/if}}
+            </div>
+          </div>
+        {{else}}
+          <!-- VERTICAL LAYOUT -->
+          {{#if (eq settings.vertical_gallery_position 'right')}}
+            <!-- VERTICAL RIGHT: Main image left, thumbnails right -->
+            <div class="flex flex-col sm:flex-row-reverse gap-4 w-full items-start">
+              <!-- THUMBNAILS -->
+              <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible">
+                {{#if product.images}}
+                  {{#each product.images}}
+                    {{#if @index < 10}}
+                      <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                        <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                      </button>
+                    {{/if}}
+                  {{/each}}
+                {{else}}
+                  <!-- Editor demo thumbnails -->
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
+                  </button>
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
+                  </button>
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
+                  </button>
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
+                  </button>
+                {{/if}}
+              </div>
+
+              <!-- MAIN IMAGE -->
+              <div class="flex-1 relative min-w-0">
+                <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
+                  {{#if product.images}}
+                    <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+                  {{else}}
+                    <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
+                  {{/if}}
+
+                  <!-- PRODUCT LABELS -->
+                  <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
+                    {{#if productLabels}}
+                      {{#each productLabels}}
+                        <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                          {{this.text}}
+                        </div>
+                      {{/each}}
+                    {{else}}
+                      <!-- Editor demo labels -->
+                      <div style="background-color: #dc2626; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                        Sale
+                      </div>
+                      <div style="background-color: #059669; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                        New
+                      </div>
+                    {{/if}}
+                  </div>
+                </div>
+              </div>
+            </div>
           {{else}}
-            flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-16 lg:sm:w-20 flex-shrink-0 overflow-x-auto sm:overflow-x-visible
-          {{/if}}">
+            <!-- VERTICAL LEFT: Thumbnails left, main image right -->
+            <div class="flex flex-col sm:flex-row gap-4 w-full items-start">
+              <!-- THUMBNAILS -->
+              <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible">
+                {{#if product.images}}
+                  {{#each product.images}}
+                    {{#if @index < 10}}
+                      <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                        <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
+                      </button>
+                    {{/if}}
+                  {{/each}}
+                {{else}}
+                  <!-- Editor demo thumbnails -->
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
+                  </button>
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
+                  </button>
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
+                  </button>
+                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
+                  </button>
+                {{/if}}
+              </div>
+
+              <!-- MAIN IMAGE -->
+              <div class="flex-1 relative min-w-0">
+                <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
+                  {{#if product.images}}
+                    <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+                  {{else}}
+                    <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
+                  {{/if}}
+
+                  <!-- PRODUCT LABELS -->
+                  <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
+                    {{#if productLabels}}
+                      {{#each productLabels}}
+                        <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                          {{this.text}}
+                        </div>
+                      {{/each}}
+                    {{else}}
+                      <!-- Editor demo labels -->
+                      <div style="background-color: #dc2626; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                        Sale
+                      </div>
+                      <div style="background-color: #059669; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
+                        New
+                      </div>
+                    {{/if}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {{/if}}
+        {{/if}}`
 
           {{#if product.images}}
             {{#each product.images}}
