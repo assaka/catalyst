@@ -106,7 +106,7 @@ export const productConfig = {
       id: 'product_gallery_container',
       type: 'flex',
       content: '',
-      className: 'flex flex-row-reverse gap-4 w-full', // Force vertical right layout
+      className: 'flex flex-row gap-4 w-full h-96', // Force vertical right layout with height
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
@@ -119,18 +119,11 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Thumbnails - force vertical layout
+    // Thumbnails - force vertical layout on right side
     product_thumbnails: {
       id: 'product_thumbnails',
       type: 'html',
       content: `<div class="flex flex-col space-y-2 w-24">
-          {{#if product.images}}
-            {{#each product.images}}
-              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
-                <img src="{{this}}" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.src='https://placehold.co/100x100?text=Thumb'" />
-              </button>
-            {{/each}}
-          {{else}}
             <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
               <img src="https://placehold.co/100x100?text=T1" alt="Demo Thumbnail" class="w-full h-full object-cover" />
             </button>
@@ -143,13 +136,12 @@ export const productConfig = {
             <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
               <img src="https://placehold.co/100x100?text=T4" alt="Demo Thumbnail" class="w-full h-full object-cover" />
             </button>
-          {{/if}}
         </div>`,
       className: '',
       parentClassName: '',
       styles: {},
       parentId: 'product_gallery_container',
-      position: { col: 1, row: 1 },
+      position: { col: 2, row: 1 },
       colSpan: {},
       viewMode: ['default'],
       metadata: { hierarchical: true }
@@ -160,14 +152,10 @@ export const productConfig = {
       id: 'product_main_image',
       type: 'html',
       content: `<div class="flex-1 relative min-w-0">
-        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full relative">
-          {{#if product.images}}
-            <img src="{{product.images.0}}" alt="{{product.name}}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600?text=No+Image'" />
-          {{else}}
-            <img src="https://placehold.co/600x600?text=Demo+Product" alt="Demo Product" class="w-full h-full object-cover" />
-          {{/if}}
+        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-lg relative">
+          <img src="https://placehold.co/600x600?text=Demo+Product" alt="Demo Product" class="w-full h-full object-cover" />
 
-          <!-- FORCE LABELS TO SHOW -->
+          <!-- FORCE LABELS TO SHOW IN TOP RIGHT -->
           <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
             <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
               DHL
