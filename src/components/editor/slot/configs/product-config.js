@@ -148,7 +148,7 @@ export const productConfig = {
             <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
               {{#if productLabels}}
                 {{#each productLabels}}
-                  <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                  <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}} !important;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
                     {{this.text}}
                   </div>
                 {{/each}}
