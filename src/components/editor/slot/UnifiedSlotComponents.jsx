@@ -926,6 +926,8 @@ const CustomOptions = createSlotComponent({
     const [customOptionsData, setCustomOptionsData] = React.useState(null);
     const [displayLabel, setDisplayLabel] = React.useState('Custom Options');
 
+    console.log('CustomOptions render:', { context, hasContent: !!content, contentLength: content.length });
+
     // Load custom options data for storefront
     React.useEffect(() => {
       if (context !== 'editor' && productContext?.product && productContext?.store) {
@@ -1050,10 +1052,11 @@ const CustomOptions = createSlotComponent({
       displayLabel
     }), [variableContext, customOptionsData, displayLabel]);
 
-    const processedContent = React.useMemo(() =>
-      processVariables(content, enhancedVariableContext),
-      [content, enhancedVariableContext]
-    );
+    const processedContent = React.useMemo(() => {
+      const result = processVariables(content, enhancedVariableContext);
+      console.log('Processed content preview:', result.substring(0, 200));
+      return result;
+    }, [content, enhancedVariableContext]);
 
     return (
       <div
