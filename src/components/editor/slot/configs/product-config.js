@@ -119,23 +119,21 @@ export const productConfig = {
                 {{/if}}
 
                 <!-- PRODUCT LABELS -->
-                <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
-                  {{#if productLabels}}
-                    {{#each productLabels}}
-                      <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                        {{this.text}}
-                      </div>
-                    {{/each}}
-                  {{else}}
-                    <!-- Editor demo labels -->
-                    <div style="background-color: #dc2626; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                      Sale
+                {{#if productLabels}}
+                  {{#each productLabels}}
+                    <div class="absolute {{#if (eq this.position 'top-left')}}top-2 left-2{{else if (eq this.position 'top-right')}}top-2 right-2{{else if (eq this.position 'top-center')}}top-2 left-1/2 transform -translate-x-1/2{{else if (eq this.position 'center-left')}}top-1/2 left-2 transform -translate-y-1/2{{else if (eq this.position 'center-right')}}top-1/2 right-2 transform -translate-y-1/2{{else if (eq this.position 'bottom-left')}}bottom-2 left-2{{else if (eq this.position 'bottom-right')}}bottom-2 right-2{{else if (eq this.position 'bottom-center')}}bottom-2 left-1/2 transform -translate-x-1/2{{else}}top-2 right-2{{/if}} z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                      {{this.text}}
                     </div>
-                    <div style="background-color: #059669; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                      New
-                    </div>
-                  {{/if}}
-                </div>
+                  {{/each}}
+                {{else}}
+                  <!-- Editor demo labels -->
+                  <div class="absolute top-2 right-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg" style="background-color: #dc2626; color: #ffffff;">
+                    Sale
+                  </div>
+                  <div class="absolute top-2 left-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg" style="background-color: #059669; color: #ffffff;">
+                    New
+                  </div>
+                {{/if}}
               </div>
             </div>
 
@@ -208,23 +206,21 @@ export const productConfig = {
                   {{/if}}
 
                   <!-- PRODUCT LABELS -->
-                  <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
-                    {{#if productLabels}}
-                      {{#each productLabels}}
-                        <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                          {{this.text}}
-                        </div>
-                      {{/each}}
-                    {{else}}
-                      <!-- Editor demo labels -->
-                      <div style="background-color: #dc2626; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                        Sale
+                  {{#if productLabels}}
+                    {{#each productLabels}}
+                      <div class="absolute {{#if (eq this.position 'top-left')}}top-2 left-2{{else if (eq this.position 'top-right')}}top-2 right-2{{else if (eq this.position 'top-center')}}top-2 left-1/2 transform -translate-x-1/2{{else if (eq this.position 'center-left')}}top-1/2 left-2 transform -translate-y-1/2{{else if (eq this.position 'center-right')}}top-1/2 right-2 transform -translate-y-1/2{{else if (eq this.position 'bottom-left')}}bottom-2 left-2{{else if (eq this.position 'bottom-right')}}bottom-2 right-2{{else if (eq this.position 'bottom-center')}}bottom-2 left-1/2 transform -translate-x-1/2{{else}}top-2 right-2{{/if}} z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                        {{this.text}}
                       </div>
-                      <div style="background-color: #059669; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                        New
-                      </div>
-                    {{/if}}
-                  </div>
+                    {{/each}}
+                  {{else}}
+                    <!-- Editor demo labels -->
+                    <div class="absolute top-2 right-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg" style="background-color: #dc2626; color: #ffffff;">
+                      Sale
+                    </div>
+                    <div class="absolute top-2 left-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg" style="background-color: #059669; color: #ffffff;">
+                      New
+                    </div>
+                  {{/if}}
                 </div>
               </div>
             </div>
@@ -268,23 +264,21 @@ export const productConfig = {
                   {{/if}}
 
                   <!-- PRODUCT LABELS -->
-                  <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
-                    {{#if productLabels}}
-                      {{#each productLabels}}
-                        <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                          {{this.text}}
-                        </div>
-                      {{/each}}
-                    {{else}}
-                      <!-- Editor demo labels -->
-                      <div style="background-color: #dc2626; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                        Sale
+                  {{#if productLabels}}
+                    {{#each productLabels}}
+                      <div class="absolute {{#if (eq this.position 'top-left')}}top-2 left-2{{else if (eq this.position 'top-right')}}top-2 right-2{{else if (eq this.position 'top-center')}}top-2 left-1/2 transform -translate-x-1/2{{else if (eq this.position 'center-left')}}top-1/2 left-2 transform -translate-y-1/2{{else if (eq this.position 'center-right')}}top-1/2 right-2 transform -translate-y-1/2{{else if (eq this.position 'bottom-left')}}bottom-2 left-2{{else if (eq this.position 'bottom-right')}}bottom-2 right-2{{else if (eq this.position 'bottom-center')}}bottom-2 left-1/2 transform -translate-x-1/2{{else}}top-2 right-2{{/if}} z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                        {{this.text}}
                       </div>
-                      <div style="background-color: #059669; color: #ffffff; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                        New
-                      </div>
-                    {{/if}}
-                  </div>
+                    {{/each}}
+                  {{else}}
+                    <!-- Editor demo labels -->
+                    <div class="absolute top-2 right-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg" style="background-color: #dc2626; color: #ffffff;">
+                      Sale
+                    </div>
+                    <div class="absolute top-2 left-2 z-10 px-2 py-1 text-xs font-bold rounded shadow-lg" style="background-color: #059669; color: #ffffff;">
+                      New
+                    </div>
+                  {{/if}}
                 </div>
               </div>
             </div>
