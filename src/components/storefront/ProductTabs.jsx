@@ -34,12 +34,17 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
       });
     }
 
-    return tabsToRender.map((tab, index) => ({
+    const mappedTabs = tabsToRender.map((tab, index) => ({
       ...tab,
       id: tab.id?.toString() || tab.title || `tab-${index}`,
       title: tab.title || tab.name || `Tab ${index + 1}`,
-      isActive: index === activeTabIndex
+      isActive: index === activeTabIndex,
+      content: tab.content || '',
+      tab_type: tab.tab_type || 'text'
     }));
+
+    console.log('Mapped tabs:', mappedTabs);
+    return mappedTabs;
   }, [productTabs, product, activeTabIndex]);
 
   // Render attributes dynamically (processVariables doesn't support {{@key}})
