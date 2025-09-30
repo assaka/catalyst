@@ -1032,14 +1032,28 @@ const CustomOptions = createSlotComponent({
       };
     }, [context, customOptionsData, productContext]);
 
+    // Update selected state when productContext changes
+    React.useEffect(() => {
+      if (context !== 'editor' && customOptionsData && productContext?.selectedOptions) {
+        const updatedOptions = customOptionsData.map(option => ({
+          ...option,
+          isSelected: productContext.selectedOptions.some(s => s.product_id === option.id)
+        }));
+        setCustomOptionsData(updatedOptions);
+      }
+    }, [productContext?.selectedOptions, context]);
+
     // Prepare variable context with custom options data
-    const enhancedVariableContext = {
+    const enhancedVariableContext = React.useMemo(() => ({
       ...variableContext,
       customOptions: customOptionsData,
       displayLabel
-    };
+    }), [variableContext, customOptionsData, displayLabel]);
 
-    const processedContent = processVariables(content, enhancedVariableContext);
+    const processedContent = React.useMemo(() =>
+      processVariables(content, enhancedVariableContext),
+      [content, enhancedVariableContext]
+    );
 
     return (
       <div
@@ -1047,6 +1061,7 @@ const CustomOptions = createSlotComponent({
         className={className}
         style={styles}
         dangerouslySetInnerHTML={{ __html: processedContent }}
+        key={processedContent} // Force re-render when HTML changes
       />
     );
   }
