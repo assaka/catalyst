@@ -225,6 +225,10 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
 
+    if (id === 'product_sku') {
+      console.log('renderBasicSlot - product_sku:', { type, className, content: content?.substring(0, 50) });
+    }
+
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
