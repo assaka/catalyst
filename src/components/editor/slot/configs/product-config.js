@@ -546,7 +546,7 @@ export const productConfig = {
       component: 'CustomOptions',
       content: `
         <div class="space-y-4">
-          <h3 class="text-lg font-semibold">{{displayLabel}}</h3>
+          <h3 class="text-lg font-semibold text-green-600">{{displayLabel}}</h3>
           <div class="space-y-3">
             {{#if customOptions}}
               {{#each customOptions}}
@@ -582,7 +582,7 @@ export const productConfig = {
                           <div class="ml-4 flex-shrink-0">
                             {{#if this.hasSpecialPrice}}
                               <div class="text-right">
-                                <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800 border-red-300">
+                                <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-300">
                                   +{{this.displayPrice}}
                                 </span>
                                 <div class="text-xs text-gray-500 line-through mt-1">
@@ -590,7 +590,7 @@ export const productConfig = {
                                 </div>
                               </div>
                             {{else}}
-                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold {{#if this.isSelected}}bg-blue-600 text-white border-blue-600{{else}}border-gray-300{{/if}}">
+                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold text-blue-800 {{#if this.isSelected}}bg-blue-600 text-white border-blue-600{{else}}bg-blue-100 border-blue-300{{/if}}">
                                 +{{this.displayPrice}}
                               </span>
                             {{/if}}
@@ -613,7 +613,7 @@ export const productConfig = {
                         <p class="text-sm text-gray-600 mt-1">Optional product description</p>
                       </div>
                       <div class="ml-4 flex-shrink-0">
-                        <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">+$10.00</span>
+                        <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 border-blue-300">+$10.00</span>
                       </div>
                     </div>
                   </div>
