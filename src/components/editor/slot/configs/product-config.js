@@ -369,14 +369,14 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 1 },
+      position: { col: 1, row: 6 },
       colSpan: {
         default: 12
       },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        htmlTag: 'h1',
+        htmlTag: 'h3',
         htmlAttributes: {
           'data-product-title': ''
         }
