@@ -414,7 +414,7 @@ export function UnifiedSlotRenderer({
 
     // Component Element
     if (type === 'component') {
-      const componentName = processedContent || content || slot.component || slot.metadata?.component;
+      const componentName = slot.component || slot.metadata?.component;
 
 
       // Special handling for CmsBlockRenderer

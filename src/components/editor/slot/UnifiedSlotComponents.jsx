@@ -36,9 +36,12 @@ import './CategorySlotComponents.jsx';
  */
 const QuantitySelector = createSlotComponent({
   name: 'QuantitySelector',
-  render: ({ slot, productContext, className, styles, context }) => {
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
     const containerRef = React.useRef(null);
     const content = slot?.content || '';
+
+    // Process variables in content
+    const processedContent = processVariables(content, variableContext);
 
     React.useEffect(() => {
       if (!containerRef.current || context === 'editor') return;
@@ -104,7 +107,7 @@ const QuantitySelector = createSlotComponent({
           ref={containerRef}
           className={className}
           style={styles}
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: processedContent }}
         />
       );
     }
@@ -122,7 +125,7 @@ const QuantitySelector = createSlotComponent({
         ref={containerRef}
         className={className}
         style={styles}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
       />
     );
   },
