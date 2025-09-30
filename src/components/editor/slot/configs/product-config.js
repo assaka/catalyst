@@ -272,7 +272,7 @@ export const productConfig = {
       id: 'product_price',
       type: 'text',
       content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
-      className: 'w-fit text-3xl font-bold {{#if product.compare_price}}text-red-600{{else}}text-green-600{{/if}}',
+      className: 'w-fit text-3xl font-bold text-green-600',
       parentClassName: '',
       styles: {},
       parentId: 'price_container',
