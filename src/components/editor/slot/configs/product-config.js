@@ -551,12 +551,12 @@ export const productConfig = {
             {{#if customOptions}}
               {{#each customOptions}}
                 <div
-                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-blue-500 bg-blue-50 shadow-sm{{else}}border-gray-200 hover:border-gray-300 hover:shadow-sm{{/if}}"
+                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-yellow-500 bg-yellow-50 shadow-sm{{else}}border-gray-200 hover:border-gray-300 hover:shadow-sm{{/if}}"
                   data-option-id="{{this.id}}"
                   data-action="toggle-option"
                 >
                   <div class="flex items-start space-x-3">
-                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 {{#if this.isSelected}}border-blue-500 bg-blue-500{{else}}border-gray-300{{/if}}">
+                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 {{#if this.isSelected}}border-yellow-500 bg-yellow-500{{else}}border-gray-300{{/if}}">
                       {{#if this.isSelected}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                           <polyline points="20 6 9 17 4 12"></polyline>
@@ -729,7 +729,7 @@ export const productConfig = {
       id: 'add_to_cart_button',
       type: 'html',
       content: `
-        <button class="flex-1 h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed" data-add-to-cart>
+        <button class="flex-1 h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" data-add-to-cart>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2 inline">
             <circle cx="8" cy="21" r="1"></circle>
             <circle cx="19" cy="21" r="1"></circle>
