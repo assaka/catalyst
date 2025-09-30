@@ -403,8 +403,7 @@ const EditorSidebar = ({
       console.log('📝 EditorSidebar - Setting element properties from database:', {
         slotId,
         storedClassName,
-        storedStyles: slotConfig?.styles || {},
-        elementSlotId
+        storedStyles: slotConfig?.styles || {}
       });
 
       setElementProperties({
