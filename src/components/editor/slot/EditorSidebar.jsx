@@ -685,7 +685,21 @@ const EditorSidebar = ({
           // Parse the sanitized HTML to extract element structure
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = parsed.sanitizedHtml;
-          const element = tempDiv.firstElementChild;
+          let element = tempDiv.firstElementChild;
+          let parentClassName = '';
+
+          // Check if there's a wrapper div (for alignment)
+          if (element && element.tagName === 'DIV' && element.children.length === 1) {
+            // This might be a parent wrapper, check if it has alignment classes
+            const possibleParentClasses = element.className || '';
+            const alignmentClasses = ['text-left', 'text-center', 'text-right'];
+            const hasAlignment = alignmentClasses.some(cls => possibleParentClasses.includes(cls));
+
+            if (hasAlignment) {
+              parentClassName = possibleParentClasses;
+              element = element.firstElementChild; // Use the inner element
+            }
+          }
 
           if (element) {
             // Extract text content for the text field
@@ -703,22 +717,36 @@ const EditorSidebar = ({
               }
             }
 
-            // Extract attributes for links, buttons, etc.
-            const attributes = {};
-            if (element.tagName === 'A') {
-              attributes.href = element.href || '#';
-              attributes.target = element.target || '_self';
-              attributes.rel = element.rel || 'noopener noreferrer';
+            // Extract tag name for metadata update
+            const tagName = element.tagName.toLowerCase();
+
+            // Extract attributes for metadata
+            const htmlAttributes = {};
+            for (let i = 0; i < element.attributes.length; i++) {
+              const attr = element.attributes[i];
+              if (attr.name !== 'class' && attr.name !== 'style') {
+                htmlAttributes[attr.name] = attr.value;
+              }
             }
+
+            // Prepare metadata update with htmlTag and htmlAttributes
+            const metadataUpdate = {
+              htmlTag: tagName,
+              htmlAttributes: htmlAttributes
+            };
 
             // Save text content separately
             if (onTextChange) {
               onTextChange(slotId, textContent);
             }
 
-            // Save classes and styles
+            // Save classes, styles, and metadata
             if (onClassChange) {
-              onClassChange(slotId, elementClasses, elementStyles);
+              // Combine element classes with parent classes if there's alignment
+              const finalClasses = parentClassName ? `${elementClasses} ${parentClassName}`.trim() : elementClasses;
+              const isAlignmentChange = !!parentClassName;
+
+              onClassChange(slotId, finalClasses, elementStyles, metadataUpdate, isAlignmentChange);
             }
 
             // Update local HTML content display
