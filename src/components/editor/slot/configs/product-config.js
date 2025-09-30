@@ -119,12 +119,11 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Thumbnails (only show when NOT vertical right)
+    // Unified Thumbnails - positioned based on settings
     product_thumbnails: {
       id: 'product_thumbnails',
       type: 'html',
-      content: `<!-- Thumbnails for horizontal layout or vertical left -->
-        <div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
+      content: `<div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
           {{#if product.images}}
             {{#each product.images}}
               <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
@@ -150,13 +149,10 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'product_gallery_container',
-      position: { col: 1, row: 1 },
+      position: { col: 2, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: {
-        hierarchical: true,
-        conditionalRender: '{{#if (ne settings.vertical_gallery_position "right")}}show{{/if}}'
-      }
+      metadata: { hierarchical: true }
     },
 
     // Main product image with integrated labels
@@ -263,8 +259,8 @@ export const productConfig = {
     product_title: {
       id: 'product_title',
       type: 'text',
-      content: '<h1 data-product-title class="text-3xl font-bold mb-2">{{product.name}}</h1>',
-      className: 'w-fit text-gray-900',
+      content: '{{product.name}}',
+      className: 'w-fit text-3xl font-bold text-gray-900 mb-2',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
@@ -273,7 +269,13 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        htmlTag: 'h1',
+        htmlAttributes: {
+          'data-product-title': ''
+        }
+      }
     },
 
     // CMS Block - Product Above Price

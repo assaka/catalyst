@@ -93,10 +93,19 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     textContent = '[Text placeholder]';
   }
 
-  return (
-    <div ref={elementRef} className={processedClassName} style={styles}>
-      <span dangerouslySetInnerHTML={{ __html: textContent }} />
-    </div>
+  // Check if metadata specifies an HTML tag
+  const HtmlTag = slot.metadata?.htmlTag || 'div';
+  const htmlAttributes = slot.metadata?.htmlAttributes || {};
+
+  return React.createElement(
+    HtmlTag,
+    {
+      ref: elementRef,
+      className: processedClassName,
+      style: styles,
+      dangerouslySetInnerHTML: { __html: textContent },
+      ...htmlAttributes
+    }
   );
 };
 
@@ -258,27 +267,33 @@ export function UnifiedSlotRenderer({
     if (type === 'text') {
       if (context === 'editor' && mode === 'edit') {
         const hasWFit = className?.includes('w-fit');
-        const textElement = (
-          <span
-            className={processedClassName}
-            style={{
+        // Check if metadata specifies an HTML tag (h1, h2, p, etc.)
+        const HtmlTag = metadata?.htmlTag || 'span';
+        const htmlAttributes = metadata?.htmlAttributes || {};
+
+        const textElement = React.createElement(
+          HtmlTag,
+          {
+            className: processedClassName,
+            style: {
               ...styles,
               cursor: 'pointer',
               display: 'inline-block',
               width: hasWFit ? 'fit-content' : (styles?.width || 'auto')
-            }}
-            onClick={(e) => {
+            },
+            onClick: (e) => {
               e.stopPropagation();
               if (!currentDragInfo && onElementClick) {
                 onElementClick(id, e.currentTarget);
               }
-            }}
-            data-slot-id={id}
-            data-editable="true"
-            dangerouslySetInnerHTML={{
+            },
+            'data-slot-id': id,
+            'data-editable': 'true',
+            dangerouslySetInnerHTML: {
               __html: processedContent || '[Text placeholder]'
-            }}
-          />
+            },
+            ...htmlAttributes
+          }
         );
         return wrapWithResize(textElement, slot, 20, 16);
       } else {
