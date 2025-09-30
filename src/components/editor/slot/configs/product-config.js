@@ -123,7 +123,8 @@ export const productConfig = {
     product_thumbnails: {
       id: 'product_thumbnails',
       type: 'html',
-      content: `<div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
+      content: `<!-- DEBUG: settings.product_gallery_layout = {{settings.product_gallery_layout}}, settings.vertical_gallery_position = {{settings.vertical_gallery_position}} -->
+        <div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
           {{#if product.images}}
             {{#each product.images}}
               <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
