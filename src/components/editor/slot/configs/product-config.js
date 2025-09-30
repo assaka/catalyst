@@ -138,7 +138,10 @@ export const productConfig = {
       </div>`,
       className: '',
       parentClassName: '',
-      styles: {},
+      styles: {
+        width: '100%',
+        minWidth: '600px'
+      },
       parentId: 'content_area',
       position: { col: 1, row: 1 },
       layout: 'flex',

@@ -241,9 +241,29 @@ export function UnifiedSlotRenderer({
     // Check if this is a price-related slot
     const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(id);
 
+    // DEBUG: Log price slot configuration
+    if (isPriceSlot) {
+      console.log(`💰 PRICE SLOT DEBUG (${id}):`, {
+        slotId: id,
+        rawClassName: className,
+        rawContent: content,
+        rawStyles: styles,
+        metadata: metadata
+      });
+    }
+
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
+
+    // DEBUG: Log processed values
+    if (isPriceSlot) {
+      console.log(`💰 PRICE SLOT PROCESSED (${id}):`, {
+        slotId: id,
+        processedClassName: processedClassName,
+        processedContent: processedContent
+      });
+    }
 
 
     // HTML Element (raw HTML content)
