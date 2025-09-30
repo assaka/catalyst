@@ -1007,7 +1007,7 @@ const EditorSidebar = ({
         setTimeout(() => {
           // Re-read current color to prevent yellow color picker issue
           const currentComputedStyle = window.getComputedStyle(styledElement);
-          let currentColor = prev.styles.color; // Keep existing color by default
+          let currentColor = elementProperties.styles.color; // Keep existing color by default
 
           // Only update color if we can detect a valid one
           if (currentComputedStyle.color && currentComputedStyle.color !== 'rgba(0, 0, 0, 0)' && currentComputedStyle.color !== 'transparent') {
