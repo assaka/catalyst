@@ -108,9 +108,9 @@ export const productConfig = {
       content: `
         {{#if (eq settings.product_gallery_layout "horizontal")}}
           <!-- HORIZONTAL LAYOUT -->
-          <!-- Mobile: Respect mobile_gallery_layout setting -->
+          <!-- Mobile: Respect mobile_gallery_layout setting, Desktop: Always flex-col -->
           {{#if (eq settings.mobile_gallery_layout "above")}}
-            <div class="flex flex-col-reverse gap-4 w-full items-start">
+            <div class="flex flex-col-reverse sm:flex-col gap-4 w-full items-start">
           {{else}}
             <div class="flex flex-col gap-4 w-full items-start">
           {{/if}}
@@ -183,7 +183,7 @@ export const productConfig = {
           <!-- VERTICAL LAYOUT -->
           {{#if (eq settings.vertical_gallery_position "right")}}
             <!-- VERTICAL RIGHT: Main image left, thumbnails right -->
-            <!-- Mobile: Respect mobile_gallery_layout setting -->
+            <!-- Mobile: Respect mobile_gallery_layout setting, Desktop: Always sm:flex-row-reverse -->
             {{#if (eq settings.mobile_gallery_layout "above")}}
               <div class="flex flex-col-reverse sm:flex-row-reverse gap-4 w-full items-start">
             {{else}}
@@ -256,7 +256,7 @@ export const productConfig = {
             </div>
           {{else}}
             <!-- VERTICAL LEFT: Thumbnails left, main image right -->
-            <!-- Mobile: Respect mobile_gallery_layout setting -->
+            <!-- Mobile: Respect mobile_gallery_layout setting, Desktop: Always sm:flex-row -->
             {{#if (eq settings.mobile_gallery_layout "above")}}
               <div class="flex flex-col-reverse sm:flex-row gap-4 w-full items-start">
             {{else}}
