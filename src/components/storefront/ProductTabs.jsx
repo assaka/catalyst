@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import Handlebars from 'handlebars';
-
-// Register Handlebars helpers
-Handlebars.registerHelper('eq', function(a, b) {
-  return a === b;
-});
+import { processVariables } from '@/utils/variableProcessor';
 
 /**
  * ProductTabs Component
@@ -161,8 +156,8 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
     </div>
   `;
 
-  const compiledTemplate = Handlebars.compile(template);
-  const html = compiledTemplate({ tabs: tabsData, product });
+  const variableContext = { tabs: tabsData, product };
+  const html = processVariables(template, variableContext);
 
   return (
     <div ref={containerRef} className={`product-tabs ${className}`}
