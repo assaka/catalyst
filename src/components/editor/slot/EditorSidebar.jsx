@@ -1003,11 +1003,23 @@ const EditorSidebar = ({
 
         styledElement.className = finalClassName;
 
+        // Re-capture ALL inline styles after the class change to ensure nothing is lost
+        const finalInlineStyles = {};
+        if (styledElement.style) {
+          for (let i = 0; i < styledElement.style.length; i++) {
+            const styleProp = styledElement.style[i];
+            const styleValue = styledElement.style.getPropertyValue(styleProp);
+            if (styleValue && styleValue.trim() !== '') {
+              finalInlineStyles[styleProp] = styleValue;
+            }
+          }
+        }
+
         // Update local state for UI responsiveness with preserved styles
         setTimeout(() => {
           // Re-read current color to prevent yellow color picker issue
           const currentComputedStyle = window.getComputedStyle(styledElement);
-          let currentColor = elementProperties.styles.color; // Keep existing color by default
+          let currentColor = finalInlineStyles.color || elementProperties.styles.color; // Keep existing color by default
 
           // Only update color if we can detect a valid one
           if (currentComputedStyle.color && currentComputedStyle.color !== 'rgba(0, 0, 0, 0)' && currentComputedStyle.color !== 'transparent') {
@@ -1029,7 +1041,7 @@ const EditorSidebar = ({
             className: finalClassName, // Use clean finalClassName, not contaminated DOM className
             styles: {
               ...prev.styles,
-              ...currentInlineStyles,
+              ...finalInlineStyles,
               color: currentColor // Use re-detected color
             }
           }));
@@ -1041,9 +1053,9 @@ const EditorSidebar = ({
           .filter(cls => cls && !isWrapperOrEditorClass(cls))
           .join(' ');
 
-        // Save immediately using parent callback with preserved styles
+        // Save immediately using parent callback with ALL inline styles (re-captured after class change)
         if (onInlineClassChange) {
-          onInlineClassChange(elementSlotId, classBasedClassNameForSave, currentInlineStyles);
+          onInlineClassChange(elementSlotId, classBasedClassNameForSave, finalInlineStyles);
         }
       }
     } else {
