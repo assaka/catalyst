@@ -121,7 +121,7 @@ export const productConfig = {
                 <!-- PRODUCT LABELS -->
                 {{#if productLabels}}
                   {{#each productLabels}}
-                    <div data-position="{{this.position}}" data-color="{{this.color}}" class="absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{background_color}}; color: {{color}}; {{position}}">
+                    <div class="label-{{position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{background_color}}; color: {{color}};">
                       {{text}}
                     </div>
                   {{/each}}
@@ -135,14 +135,14 @@ export const productConfig = {
                   </div>
                 {{/if}}
                 <style>
-                  [style*="top-left"] { top: 0.5rem; left: 0.5rem; }
-                  [style*="top-right"] { top: 0.5rem; right: 0.5rem; }
-                  [style*="top-center"] { top: 0.5rem; left: 50%; transform: translateX(-50%); }
-                  [style*="center-left"] { top: 50%; left: 0.5rem; transform: translateY(-50%); }
-                  [style*="center-right"] { top: 50%; right: 0.5rem; transform: translateY(-50%); }
-                  [style*="bottom-left"] { bottom: 0.5rem; left: 0.5rem; }
-                  [style*="bottom-right"] { bottom: 0.5rem; right: 0.5rem; }
-                  [style*="bottom-center"] { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  .label-top-left { top: 0.5rem; left: 0.5rem; }
+                  .label-top-right { top: 0.5rem; right: 0.5rem; }
+                  .label-top-center { top: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  .label-center-left { top: 50%; left: 0.5rem; transform: translateY(-50%); }
+                  .label-center-right { top: 50%; right: 0.5rem; transform: translateY(-50%); }
+                  .label-bottom-left { bottom: 0.5rem; left: 0.5rem; }
+                  .label-bottom-right { bottom: 0.5rem; right: 0.5rem; }
+                  .label-bottom-center { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
                 </style>
               </div>
             </div>
