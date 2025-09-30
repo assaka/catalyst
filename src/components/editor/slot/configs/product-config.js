@@ -802,27 +802,22 @@ export const productConfig = {
                     <p>isActive: {{#if this.isActive}}TRUE{{else}}FALSE{{/if}}</p>
                   </div>
 
-                  <!-- Content sections -->
-                  {{#if (eq this.tab_type "text")}}
-                    <div class="bg-blue-100 p-4 mb-2">
-                      <strong>TEXT TAB CONTENT:</strong>
-                      <div>{{{this.content}}}</div>
-                    </div>
-                  {{/if}}
+                  <!-- Content sections - ALWAYS SHOW ALL FOR DEBUG -->
+                  <div class="bg-blue-100 p-4 mb-2">
+                    <strong>TEXT TAB CONTENT (this.content):</strong>
+                    <div>{{{this.content}}}</div>
+                    <p class="text-xs mt-2">Raw: {{this.content}}</p>
+                  </div>
 
-                  {{#if (eq this.tab_type "description")}}
-                    <div class="bg-green-100 p-4 mb-2">
-                      <strong>DESCRIPTION TAB CONTENT:</strong>
-                      <div>{{{../product.description}}}</div>
-                    </div>
-                  {{/if}}
+                  <div class="bg-green-100 p-4 mb-2">
+                    <strong>DESCRIPTION TAB CONTENT (product.description):</strong>
+                    <div>{{{../product.description}}}</div>
+                  </div>
 
-                  {{#if (eq this.tab_type "attributes")}}
-                    <div class="bg-purple-100 p-4 mb-2">
-                      <strong>ATTRIBUTES TAB:</strong>
-                      <div id="attributes-placeholder" data-attributes-container></div>
-                    </div>
-                  {{/if}}
+                  <div class="bg-purple-100 p-4 mb-2">
+                    <strong>ATTRIBUTES TAB:</strong>
+                    <div id="attributes-placeholder" data-attributes-container></div>
+                  </div>
 
                   {{#if (eq this.tab_type "attribute_sets")}}
                     <div class="space-y-6">
