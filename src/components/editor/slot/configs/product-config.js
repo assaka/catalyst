@@ -136,11 +136,9 @@ export const productConfig = {
           </div>
         </div>
       </div>`,
-      className: '',
+      className: 'w-full',
       parentClassName: '',
-      styles: {
-        width: '100%'
-      },
+      styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
       layout: 'flex',
