@@ -275,8 +275,15 @@ function processLoops(content, context, pageData) {
       itemContent = itemContent.replace(/\{\{this\}\}/g, itemValue);
       // Replace {{@index}} with current index
       itemContent = itemContent.replace(/\{\{@index\}\}/g, index);
+
       // Process nested variables within the item context
-      return processSimpleVariables(itemContent, context, { ...pageData, this: item });
+      // If item is an object, spread its properties to make them available at root level
+      // This allows {{color}} instead of requiring {{this.color}}
+      const itemContext = typeof item === 'object' && item !== null
+        ? { ...pageData, this: item, ...item }
+        : { ...pageData, this: item };
+
+      return processSimpleVariables(itemContent, context, itemContext);
     }).join('');
   });
 }
