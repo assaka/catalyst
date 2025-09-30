@@ -225,13 +225,9 @@ const ProductGallery = createSlotComponent({
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
     // Get settings from either context
     const settings = productContext?.settings || variableContext?.settings || {};
-
-    // TEMPORARY TEST: Force vertical left to debug
-    const galleryLayout = 'vertical'; // settings.product_gallery_layout || 'horizontal';
-    const verticalPosition = 'left'; // settings.vertical_gallery_position || 'left';
+    const galleryLayout = settings.product_gallery_layout || 'horizontal';
+    const verticalPosition = settings.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
-
-    console.log('🚨 FORCED TEST SETTINGS:', { galleryLayout, verticalPosition, isVertical });
 
     // Debug logging
     console.log('🖼️ SIMPLIFIED GALLERY DEBUG:', {
@@ -243,14 +239,15 @@ const ProductGallery = createSlotComponent({
       settingsFromVariableContext: variableContext?.settings,
       finalSettings: settings,
       expectedClass: isVertical
-        ? `flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+        ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
         : 'flex flex-col space-y-4'
     });
 
     if (context === 'editor') {
       // Editor version - show both main image and thumbnails
+      // For vertical: left = thumbnails first (flex-row), right = main image first (flex-row-reverse)
       const containerClass = isVertical
-        ? `flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+        ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
         : `flex flex-col space-y-4`;
 
       const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
@@ -325,8 +322,9 @@ const ProductGallery = createSlotComponent({
     const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
 
     // Use same layout logic as editor
+    // For vertical: left = thumbnails first (flex-row), right = main image first (flex-row-reverse)
     const containerClass = isVertical
-      ? `flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+      ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
       : `flex flex-col space-y-4`;
 
     // Apply className if provided
