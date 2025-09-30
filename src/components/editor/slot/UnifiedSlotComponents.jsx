@@ -222,12 +222,33 @@ const ProductBreadcrumbs = createSlotComponent({
 const ProductGallery = createSlotComponent({
   name: 'ProductGallerySlot',
 
-  render: ({ slot, productContext, className, styles, context }) => {
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
+    // Get settings from either context
+    const settings = productContext?.settings || variableContext?.settings || {};
+    const galleryLayout = settings.product_gallery_layout || 'horizontal';
+    const verticalPosition = settings.vertical_gallery_position || 'left';
+    const isVertical = galleryLayout === 'vertical';
+
+    // Debug logging
+    console.log('🖼️ SIMPLIFIED GALLERY DEBUG:', {
+      context,
+      galleryLayout,
+      verticalPosition,
+      isVertical,
+      productContextSettings: productContext?.settings,
+      variableContextSettings: variableContext?.settings
+    });
+
     if (context === 'editor') {
-      // Editor version - visual preview only
+      // Editor version - show both main image and thumbnails
+      const containerClass = isVertical
+        ? `${className} flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+        : `${className} flex flex-col space-y-4`;
+
       return (
-        <div className={className} style={styles}>
-          <div className="space-y-4">
+        <div className={containerClass} style={styles}>
+          {/* Main Image */}
+          <div className={isVertical ? "flex-1" : ""}>
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
                 src="https://placehold.co/600x600?text=Product+Image"
@@ -240,7 +261,25 @@ const ProductGallery = createSlotComponent({
                 </Badge>
               </div>
             </div>
-            {/* Thumbnail Gallery removed - handled by separate ProductThumbnails component */}
+          </div>
+
+          {/* Thumbnails */}
+          <div className={isVertical
+            ? "flex flex-col space-y-2 w-24"
+            : "flex overflow-x-auto space-x-2"
+          }>
+            {Array.from({ length: 4 }, (_, i) => (
+              <button
+                key={i}
+                className="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400"
+              >
+                <img
+                  src={`https://placehold.co/100x100?text=Thumb+${i + 1}`}
+                  alt={`Demo Thumbnail ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
           </div>
         </div>
       );
@@ -254,10 +293,15 @@ const ProductGallery = createSlotComponent({
     const images = product.images || [];
     const currentImage = images[activeImageIndex] || images[0] || 'https://placehold.co/600x600?text=No+Image';
 
+    // Use same layout logic as editor
+    const containerClass = isVertical
+      ? `${className} flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+      : `${className} flex flex-col space-y-4`;
+
     return (
-      <div className={className} style={styles}>
-        <div className="space-y-4">
-          {/* Main Image */}
+      <div className={containerClass} style={styles}>
+        {/* Main Image */}
+        <div className={isVertical ? "flex-1" : ""}>
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             <img
               src={currentImage}
@@ -273,9 +317,40 @@ const ProductGallery = createSlotComponent({
               </div>
             )}
           </div>
-
-          {/* Thumbnail Gallery removed - handled by separate ProductThumbnails component */}
         </div>
+
+        {/* Thumbnails - only show if multiple images */}
+        {images.length > 1 && (
+          <div className={isVertical
+            ? "flex flex-col space-y-2 w-24"
+            : "flex overflow-x-auto space-x-2"
+          }>
+            {images.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+                className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                  activeImageIndex === index
+                    ? 'border-blue-500 ring-2 ring-blue-200'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <img
+                  src={image}
+                  alt={`${product.name} ${index + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  onError={(e) => {
+                    e.target.src = 'https://placehold.co/100x100?text=Error';
+                  }}
+                />
+                {/* Active indicator */}
+                {activeImageIndex === index && (
+                  <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -1476,16 +1551,16 @@ const ProductThumbnails = createSlotComponent({
 
   // Unified render method for both editor and storefront - ensures WYSIWYG
   render: ({ slot, productContext, className, styles, variableContext, context }) => {
-    const { product, activeImageIndex, setActiveImageIndex } = productContext;
+    const { product, activeImageIndex, setActiveImageIndex, settings } = productContext;
 
-    // Always use processVariables for consistent template processing in both contexts
-    const templateClassName = 'thumbnail-gallery {{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24 {{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}';
-    const processedTemplateClassName = processVariables(templateClassName, variableContext);
+    // Simple, direct approach - no complex template processing
+    const galleryLayout = settings?.product_gallery_layout || variableContext?.settings?.product_gallery_layout || 'horizontal';
+    const isVertical = galleryLayout === 'vertical';
 
-    // Use processed template result, fall back to provided className
-    const finalClassName = processedTemplateClassName && !processedTemplateClassName.includes('{{')
-      ? processedTemplateClassName
-      : className || 'thumbnail-gallery flex overflow-x-auto space-x-2 mt-4';
+    // Direct CSS classes based on layout
+    const finalClassName = isVertical
+      ? 'thumbnail-gallery flex flex-col space-y-2 w-24'
+      : 'thumbnail-gallery flex overflow-x-auto space-x-2 mt-4';
 
     // Get images: real data in storefront, demo data in editor from variableContext
     const images = product?.images || [];
