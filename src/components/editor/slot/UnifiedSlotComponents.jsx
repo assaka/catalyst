@@ -291,7 +291,24 @@ const ProductGallery = createSlotComponent({
     if (!product) return null;
 
     const images = product.images || [];
-    const currentImage = images[activeImageIndex] || images[0] || 'https://placehold.co/600x600?text=No+Image';
+
+    // Debug image structure
+    console.log('🖼️ STOREFRONT IMAGES DEBUG:', {
+      imagesCount: images.length,
+      imagesType: typeof images[0],
+      firstImage: images[0],
+      allImages: images,
+      activeImageIndex
+    });
+
+    // Handle both string URLs and object structures
+    const getImageUrl = (img) => {
+      if (typeof img === 'string') return img;
+      if (img && typeof img === 'object') return img.url || img.src || img.image;
+      return 'https://placehold.co/600x600?text=No+Image';
+    };
+
+    const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
 
     // Use same layout logic as editor
     const containerClass = isVertical
@@ -319,36 +336,39 @@ const ProductGallery = createSlotComponent({
           </div>
         </div>
 
-        {/* Thumbnails - only show if multiple images */}
-        {images.length > 1 && (
+        {/* Thumbnails - show if any images exist */}
+        {images.length > 0 && (
           <div className={isVertical
             ? "flex flex-col space-y-2 w-24"
             : "flex overflow-x-auto space-x-2"
           }>
-            {images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
-                className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-                  activeImageIndex === index
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <img
-                  src={image}
-                  alt={`${product.name} ${index + 1}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  onError={(e) => {
-                    e.target.src = 'https://placehold.co/100x100?text=Error';
-                  }}
-                />
-                {/* Active indicator */}
-                {activeImageIndex === index && (
-                  <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-                )}
-              </button>
-            ))}
+            {images.map((image, index) => {
+              const thumbUrl = getImageUrl(image);
+              return (
+                <button
+                  key={index}
+                  onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+                  className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                    activeImageIndex === index
+                      ? 'border-blue-500 ring-2 ring-blue-200'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <img
+                    src={thumbUrl}
+                    alt={`${product.name} ${index + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/100x100?text=Error';
+                    }}
+                  />
+                  {/* Active indicator */}
+                  {activeImageIndex === index && (
+                    <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
