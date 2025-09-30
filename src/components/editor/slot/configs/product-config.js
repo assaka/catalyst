@@ -121,7 +121,7 @@ export const productConfig = {
                 <!-- PRODUCT LABELS -->
                 {{#if productLabels}}
                   {{#each productLabels}}
-                    <div class="absolute {{#if (eq this.position 'top-left')}}top-2 left-2{{else if (eq this.position 'top-right')}}top-2 right-2{{else if (eq this.position 'top-center')}}top-2 left-1/2 transform -translate-x-1/2{{else if (eq this.position 'center-left')}}top-1/2 left-2 transform -translate-y-1/2{{else if (eq this.position 'center-right')}}top-1/2 right-2 transform -translate-y-1/2{{else if (eq this.position 'bottom-left')}}bottom-2 left-2{{else if (eq this.position 'bottom-right')}}bottom-2 right-2{{else if (eq this.position 'bottom-center')}}bottom-2 left-1/2 transform -translate-x-1/2{{else}}top-2 right-2{{/if}} z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                    <div data-position="{{this.position}}" class="product-label-{{this.position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
                       {{this.text}}
                     </div>
                   {{/each}}
@@ -134,6 +134,16 @@ export const productConfig = {
                     New
                   </div>
                 {{/if}}
+                <style>
+                  .product-label-top-left { top: 0.5rem; left: 0.5rem; }
+                  .product-label-top-right { top: 0.5rem; right: 0.5rem; }
+                  .product-label-top-center { top: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  .product-label-center-left { top: 50%; left: 0.5rem; transform: translateY(-50%); }
+                  .product-label-center-right { top: 50%; right: 0.5rem; transform: translateY(-50%); }
+                  .product-label-bottom-left { bottom: 0.5rem; left: 0.5rem; }
+                  .product-label-bottom-right { bottom: 0.5rem; right: 0.5rem; }
+                  .product-label-bottom-center { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
+                </style>
               </div>
             </div>
 
@@ -208,7 +218,7 @@ export const productConfig = {
                   <!-- PRODUCT LABELS -->
                   {{#if productLabels}}
                     {{#each productLabels}}
-                      <div class="absolute {{#if (eq this.position 'top-left')}}top-2 left-2{{else if (eq this.position 'top-right')}}top-2 right-2{{else if (eq this.position 'top-center')}}top-2 left-1/2 transform -translate-x-1/2{{else if (eq this.position 'center-left')}}top-1/2 left-2 transform -translate-y-1/2{{else if (eq this.position 'center-right')}}top-1/2 right-2 transform -translate-y-1/2{{else if (eq this.position 'bottom-left')}}bottom-2 left-2{{else if (eq this.position 'bottom-right')}}bottom-2 right-2{{else if (eq this.position 'bottom-center')}}bottom-2 left-1/2 transform -translate-x-1/2{{else}}top-2 right-2{{/if}} z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                      <div data-position="{{this.position}}" class="product-label-{{this.position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
                         {{this.text}}
                       </div>
                     {{/each}}
@@ -221,6 +231,16 @@ export const productConfig = {
                       New
                     </div>
                   {{/if}}
+                  <style>
+                    .product-label-top-left { top: 0.5rem; left: 0.5rem; }
+                    .product-label-top-right { top: 0.5rem; right: 0.5rem; }
+                    .product-label-top-center { top: 0.5rem; left: 50%; transform: translateX(-50%); }
+                    .product-label-center-left { top: 50%; left: 0.5rem; transform: translateY(-50%); }
+                    .product-label-center-right { top: 50%; right: 0.5rem; transform: translateY(-50%); }
+                    .product-label-bottom-left { bottom: 0.5rem; left: 0.5rem; }
+                    .product-label-bottom-right { bottom: 0.5rem; right: 0.5rem; }
+                    .product-label-bottom-center { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  </style>
                 </div>
               </div>
             </div>
@@ -266,7 +286,7 @@ export const productConfig = {
                   <!-- PRODUCT LABELS -->
                   {{#if productLabels}}
                     {{#each productLabels}}
-                      <div class="absolute {{#if (eq this.position 'top-left')}}top-2 left-2{{else if (eq this.position 'top-right')}}top-2 right-2{{else if (eq this.position 'top-center')}}top-2 left-1/2 transform -translate-x-1/2{{else if (eq this.position 'center-left')}}top-1/2 left-2 transform -translate-y-1/2{{else if (eq this.position 'center-right')}}top-1/2 right-2 transform -translate-y-1/2{{else if (eq this.position 'bottom-left')}}bottom-2 left-2{{else if (eq this.position 'bottom-right')}}bottom-2 right-2{{else if (eq this.position 'bottom-center')}}bottom-2 left-1/2 transform -translate-x-1/2{{else}}top-2 right-2{{/if}} z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
+                      <div data-position="{{this.position}}" class="product-label-{{this.position}} absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}};">
                         {{this.text}}
                       </div>
                     {{/each}}
@@ -279,6 +299,16 @@ export const productConfig = {
                       New
                     </div>
                   {{/if}}
+                  <style>
+                    .product-label-top-left { top: 0.5rem; left: 0.5rem; }
+                    .product-label-top-right { top: 0.5rem; right: 0.5rem; }
+                    .product-label-top-center { top: 0.5rem; left: 50%; transform: translateX(-50%); }
+                    .product-label-center-left { top: 50%; left: 0.5rem; transform: translateY(-50%); }
+                    .product-label-center-right { top: 50%; right: 0.5rem; transform: translateY(-50%); }
+                    .product-label-bottom-left { bottom: 0.5rem; left: 0.5rem; }
+                    .product-label-bottom-right { bottom: 0.5rem; right: 0.5rem; }
+                    .product-label-bottom-center { bottom: 0.5rem; left: 50%; transform: translateX(-50%); }
+                  </style>
                 </div>
               </div>
             </div>
