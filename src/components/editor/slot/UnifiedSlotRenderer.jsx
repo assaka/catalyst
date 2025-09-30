@@ -255,15 +255,15 @@ export function UnifiedSlotRenderer({
 
     // Text Element
     if (type === 'text') {
+      if (id === 'product_sku') {
+        console.log('SKU rendering:', { context, className, processedClassName, content: content?.substring(0, 50) });
+      }
+
       if (context === 'editor' && mode === 'edit') {
         const hasWFit = className?.includes('w-fit');
         // Check if metadata specifies an HTML tag (h1, h2, p, etc.)
         const HtmlTag = metadata?.htmlTag || 'span';
         const htmlAttributes = metadata?.htmlAttributes || {};
-
-        if (id === 'product_sku') {
-          console.log('SKU rendering:', { className, processedClassName, content, processedContent });
-        }
 
         const textElement = React.createElement(
           HtmlTag,
