@@ -246,8 +246,7 @@ export const productConfig = {
         hierarchical: true,
         htmlTag: 'span',
         htmlAttributes: {
-          'data-main-price': '',
-          'class': 'main-price'
+          'data-main-price': ''
         }
       }
     },
@@ -269,8 +268,7 @@ export const productConfig = {
         hierarchical: true,
         htmlTag: 'span',
         htmlAttributes: {
-          'data-original-price': '',
-          'class': 'original-price'
+          'data-original-price': ''
         }
       }
     },
