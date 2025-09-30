@@ -791,23 +791,36 @@ export const productConfig = {
                 data-tab-content="{{this.id}}"
                 data-tab-index="{{@index}}">
                 <div class="prose max-w-none">
-                  <!-- Debug: Show tab info -->
-                  <div class="bg-yellow-100 p-2 mb-4">
+                  <!-- Always show this debug box -->
+                  <div class="bg-yellow-100 p-4 mb-4 border-2 border-yellow-500">
+                    <p><strong>DEBUG INFO:</strong></p>
+                    <p>Tab ID: {{this.id}}</p>
                     <p>Tab Type: {{this.tab_type}}</p>
-                    <p>Has Content: {{#if this.content}}Yes{{else}}No{{/if}}</p>
+                    <p>Has Content: {{#if this.content}}Yes ({{this.content}} chars){{else}}No{{/if}}</p>
                     <p>Has Product Description: {{#if ../product.description}}Yes{{else}}No{{/if}}</p>
+                    <p>isActive: {{#if this.isActive}}TRUE{{else}}FALSE{{/if}}</p>
                   </div>
 
+                  <!-- Content sections -->
                   {{#if (eq this.tab_type "text")}}
-                    <div>{{{this.content}}}</div>
+                    <div class="bg-blue-100 p-4 mb-2">
+                      <strong>TEXT TAB CONTENT:</strong>
+                      <div>{{{this.content}}}</div>
+                    </div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "description")}}
-                    <div>{{{../product.description}}}</div>
+                    <div class="bg-green-100 p-4 mb-2">
+                      <strong>DESCRIPTION TAB CONTENT:</strong>
+                      <div>{{{../product.description}}}</div>
+                    </div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "attributes")}}
-                    <div id="attributes-placeholder" data-attributes-container></div>
+                    <div class="bg-purple-100 p-4 mb-2">
+                      <strong>ATTRIBUTES TAB:</strong>
+                      <div id="attributes-placeholder" data-attributes-container></div>
+                    </div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "attribute_sets")}}
