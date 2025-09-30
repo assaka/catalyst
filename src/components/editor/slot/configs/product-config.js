@@ -101,12 +101,12 @@ export const productConfig = {
 
     // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
 
-    // Gallery container with dynamic layout classes
+    // SIMPLIFIED GALLERY - Force vertical right layout for now
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'flex',
       content: '',
-      className: '{{#if (eq settings.product_gallery_layout "vertical")}}flex {{#if (eq settings.vertical_gallery_position "left")}}flex-row{{else}}flex-row-reverse{{/if}} gap-4{{else}}flex flex-col gap-4{{/if}} w-full',
+      className: 'flex flex-row-reverse gap-4 w-full', // Force vertical right layout
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
@@ -119,12 +119,11 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Unified Thumbnails - positioned based on settings
+    // Thumbnails - force vertical layout
     product_thumbnails: {
       id: 'product_thumbnails',
       type: 'html',
-      content: `<!-- DEBUG: settings.product_gallery_layout = {{settings.product_gallery_layout}}, settings.vertical_gallery_position = {{settings.vertical_gallery_position}} -->
-        <div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
+      content: `<div class="flex flex-col space-y-2 w-24">
           {{#if product.images}}
             {{#each product.images}}
               <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
@@ -156,38 +155,27 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Main product image with integrated labels
+    // Main product image with integrated labels - FORCE LARGE SIZE
     product_main_image: {
       id: 'product_main_image',
       type: 'html',
-      content: `<div class="flex-1 relative">
-        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-2xl relative">
+      content: `<div class="flex-1 relative min-w-0">
+        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full relative">
           {{#if product.images}}
             <img src="{{product.images.0}}" alt="{{product.name}}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600?text=No+Image'" />
           {{else}}
-            <img src="https://placehold.co/600x600?text=No+Image" alt="No Image" class="w-full h-full object-cover" />
+            <img src="https://placehold.co/600x600?text=Demo+Product" alt="Demo Product" class="w-full h-full object-cover" />
           {{/if}}
 
-          <!-- Product Labels Overlay -->
-          {{#if productLabels}}
-            <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
-              {{#each productLabels}}
-                <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                  {{this.text}}
-                </div>
-              {{/each}}
+          <!-- FORCE LABELS TO SHOW -->
+          <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
+            <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+              DHL
             </div>
-          {{else}}
-            <!-- Demo labels for editor when no productLabels data -->
-            <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
-              <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                DHL
-              </div>
-              <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                Hamid
-              </div>
+            <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+              Hamid
             </div>
-          {{/if}}
+          </div>
         </div>
       </div>`,
       className: '',
