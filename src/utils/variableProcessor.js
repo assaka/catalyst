@@ -378,9 +378,31 @@ function evaluateCondition(condition, context, pageData) {
       });
     }
 
+    // 🔧 DEBUG: Log all tab_type eq evaluations
+    if (condition.includes('tab_type')) {
+      console.log('🔍 TAB_TYPE EQ DEBUG:', {
+        condition,
+        eqMatch,
+        regexMatched: !!eqMatch,
+        variablePath: eqMatch ? eqMatch[1] : 'No match',
+        expectedValue: eqMatch ? eqMatch[2] : 'No match'
+      });
+    }
+
     if (eqMatch) {
       const [, variablePath, expectedValue] = eqMatch;
       const actualValue = getNestedValue(variablePath, context, pageData);
+
+      // 🔧 DEBUG: Log tab_type comparison
+      if (variablePath.includes('tab_type')) {
+        console.log('🔍 TAB_TYPE COMPARISON:', {
+          variablePath,
+          actualValue,
+          expectedValue,
+          result: actualValue === expectedValue,
+          context: Object.keys(context)
+        });
+      }
       // Only log gallery-related evaluations - ENHANCED debugging for position issue
       if (variablePath.includes('gallery') || variablePath.includes('position')) {
         console.log('[THUMBNAIL-SYNC] 🔍 GALLERY EVAL:', {
