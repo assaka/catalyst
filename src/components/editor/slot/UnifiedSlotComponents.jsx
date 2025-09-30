@@ -1143,6 +1143,7 @@ const ProductTabsStandalone = createSlotComponent({
           productTabs={productTabs || []}
           product={product}
           className=""
+          slotConfig={slot}
         />
       </div>
     );
