@@ -225,9 +225,13 @@ const ProductGallery = createSlotComponent({
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
     // Get settings from either context
     const settings = productContext?.settings || variableContext?.settings || {};
-    const galleryLayout = settings.product_gallery_layout || 'horizontal';
-    const verticalPosition = settings.vertical_gallery_position || 'left';
+
+    // TEMPORARY TEST: Force vertical left to debug
+    const galleryLayout = 'vertical'; // settings.product_gallery_layout || 'horizontal';
+    const verticalPosition = 'left'; // settings.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
+
+    console.log('🚨 FORCED TEST SETTINGS:', { galleryLayout, verticalPosition, isVertical });
 
     // Debug logging
     console.log('🖼️ SIMPLIFIED GALLERY DEBUG:', {
