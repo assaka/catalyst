@@ -150,16 +150,37 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Main product image
+    // Main product image with integrated labels
     product_main_image: {
       id: 'product_main_image',
       type: 'html',
       content: `<div class="flex-1 relative">
-        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-2xl">
+        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-2xl relative">
           {{#if product.images}}
             <img src="{{product.images.0}}" alt="{{product.name}}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600?text=No+Image'" />
           {{else}}
             <img src="https://placehold.co/600x600?text=No+Image" alt="No Image" class="w-full h-full object-cover" />
+          {{/if}}
+
+          <!-- Product Labels Overlay -->
+          {{#if productLabels}}
+            <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
+              {{#each productLabels}}
+                <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                  {{this.text}}
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <!-- Demo labels for editor when no productLabels data -->
+            <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
+              <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                DHL
+              </div>
+              <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                Hamid
+              </div>
+            </div>
           {{/if}}
         </div>
       </div>`,
@@ -357,25 +378,7 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    product_labels: {
-      id: 'product_labels',
-      type: 'html',
-      content: '{{#if productLabels}}{{#each productLabels}}<div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md">{{this.text}}</div>{{/each}}{{/if}}',
-      className: 'product-labels flex space-x-1 pointer-events-none',
-      parentClassName: '',
-      styles: {
-        position: 'absolute',
-        top: '0.5rem',
-        right: '0.5rem',
-        zIndex: 50,
-        pointerEvents: 'none'
-      },
-      parentId: 'product_main_image',
-      position: { col: 1, row: 1 },
-      colSpan: {},
-      viewMode: ['default'],
-      metadata: { hierarchical: true, overlay: true }
-    },
+    // Product labels now integrated directly into product_main_image above
 
     // Custom Options Section
     options_container: {
