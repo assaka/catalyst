@@ -99,9 +99,9 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Product Gallery Section - Configurable Layout with Handlebars Logic
+    // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
 
-    // Gallery container with dynamic layout classes based on settings
+    // Gallery container with dynamic layout classes
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'flex',
@@ -119,32 +119,43 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Thumbnails - positioned based on settings
+    // Thumbnails (left position in vertical, or horizontal layout)
     product_thumbnails: {
       id: 'product_thumbnails',
-      type: 'component',
-      component: 'ProductThumbnails',
-      content: '',
-      className: '{{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2{{/if}}',
+      type: 'html',
+      content: `{{#if (or (ne settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "left"))}}
+        <div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2{{/if}}">
+          {{#each product.images}}
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
+              <img src="{{this}}" alt="{{../product.name}} thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+            </button>
+          {{/each}}
+        </div>
+      {{/if}}`,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'product_gallery_container',
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: {
-        hierarchical: true,
-        conditionalRender: '{{#if (or (ne settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "left"))}}show{{/if}}'
-      }
+      metadata: { hierarchical: true }
     },
 
     // Main product image
     product_main_image: {
       id: 'product_main_image',
-      type: 'component',
-      component: 'ProductMainImage',
-      content: '',
-      className: 'flex-1 relative rounded-lg overflow-hidden',
+      type: 'html',
+      content: `<div class="flex-1 relative rounded-lg overflow-hidden">
+        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          {{#if product.images}}
+            <img src="{{product.images.0}}" alt="{{product.name}}" class="w-full h-full object-cover" />
+          {{else}}
+            <div class="w-full h-full flex items-center justify-center text-gray-500">No Image</div>
+          {{/if}}
+        </div>
+      </div>`,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'product_gallery_container',
@@ -154,23 +165,27 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Thumbnails for right position (rendered after main image)
+    // Thumbnails (right position in vertical layout only)
     product_thumbnails_right: {
       id: 'product_thumbnails_right',
-      type: 'component',
-      component: 'ProductThumbnails',
-      content: '',
-      className: 'flex flex-col space-y-2 w-24',
+      type: 'html',
+      content: `{{#if (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}
+        <div class="flex flex-col space-y-2 w-24">
+          {{#each product.images}}
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
+              <img src="{{this}}" alt="{{../product.name}} thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+            </button>
+          {{/each}}
+        </div>
+      {{/if}}`,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'product_gallery_container',
       position: { col: 3, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: {
-        hierarchical: true,
-        conditionalRender: '{{#if (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}show{{/if}}'
-      }
+      metadata: { hierarchical: true }
     },
 
     // Product Information Section
