@@ -574,7 +574,7 @@ export const productConfig = {
                       <div class="flex-1">
                         <div class="flex items-start justify-between">
                           <div class="flex-1">
-                            <h4 class="font-medium text-red-600 !text-red-600">{{this.name}}</h4>
+                            <h4 class="font-medium" style="color: #dc2626;">{{this.name}}</h4>
                             {{#if this.short_description}}
                               <p class="text-sm text-gray-600 mt-1">{{this.short_description}}</p>
                             {{/if}}

@@ -711,13 +711,13 @@ const ProductTabs = createSlotComponent({
           <div className="mt-12 border-t pt-8">
             <div className="border-b border-gray-200">
               <nav className="-mb-px flex space-x-8">
-                <button className="py-2 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm">
+                <button className="py-2 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-3xl">
                   Description
                 </button>
-                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-sm">
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-3xl">
                   Specifications
                 </button>
-                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-sm">
+                <button className="py-2 px-1 border-b-2 border-transparent text-gray-500 font-medium text-3xl">
                   Reviews
                 </button>
               </nav>

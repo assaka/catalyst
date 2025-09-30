@@ -54,7 +54,7 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
               <TabsTrigger
                 key={tabId}
                 value={tabId}
-                className="text-sm font-medium"
+                className="text-3xl font-medium"
               >
                 {tabTitle}
               </TabsTrigger>
