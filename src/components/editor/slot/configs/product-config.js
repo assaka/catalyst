@@ -574,7 +574,7 @@ export const productConfig = {
                       <div class="flex-1">
                         <div class="flex items-start justify-between">
                           <div class="flex-1">
-                            <h4 class="font-medium" style="color: #dc2626;">{{this.name}}</h4>
+                            <h4 class="text-red-600 font-medium">{{this.name}}</h4>
                             {{#if this.short_description}}
                               <p class="text-sm text-gray-600 mt-1">{{this.short_description}}</p>
                             {{/if}}
@@ -769,7 +769,68 @@ export const productConfig = {
       id: 'product_tabs',
       type: 'component',
       component: 'ProductTabsSlot',
-      content: '',
+      content: `
+        <div class="product-tabs w-full">
+          <div class="tabs-list grid w-full grid-cols-1 md:grid-cols-auto border-b border-gray-200">
+            {{#each tabs}}
+              <button
+                class="py-2 px-4 text-sm font-medium transition-colors {{#if this.isActive}}border-b-2 border-blue-500 text-blue-600{{else}}text-gray-600 hover:text-gray-900{{/if}}"
+                data-action="switch-tab"
+                data-tab-id="{{this.id}}">
+                {{this.title}}
+              </button>
+            {{/each}}
+          </div>
+
+          <div class="tabs-content mt-6">
+            {{#each tabs}}
+              <div
+                class="tab-content {{#unless this.isActive}}hidden{{/unless}}"
+                data-tab-content="{{this.id}}">
+                <div class="prose max-w-none text-gray-700 leading-relaxed">
+                  {{#if (eq this.tab_type "text")}}
+                    {{{this.content}}}
+                  {{/if}}
+
+                  {{#if (eq this.tab_type "description")}}
+                    {{{../product.description}}}
+                  {{/if}}
+
+                  {{#if (eq this.tab_type "attributes")}}
+                    {{#if ../product.attributes}}
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{#each ../product.attributes}}
+                          <div class="flex justify-between py-2 border-b border-gray-100">
+                            <span class="font-medium capitalize">{{@key}}</span>
+                            <span>{{this}}</span>
+                          </div>
+                        {{/each}}
+                      </div>
+                    {{else}}
+                      <p class="text-gray-500">No specifications available for this product.</p>
+                    {{/if}}
+                  {{/if}}
+
+                  {{#if (eq this.tab_type "attribute_sets")}}
+                    <div class="space-y-6">
+                      {{#if this.attribute_set_ids}}
+                        {{#each this.attribute_set_ids}}
+                          <div class="border-b border-gray-100 pb-4">
+                            <h4 class="font-medium text-gray-900 mb-2">Attribute Set {{@index}}</h4>
+                            <p class="text-gray-500">Attribute set content would be displayed here.</p>
+                          </div>
+                        {{/each}}
+                      {{else}}
+                        <p class="text-gray-500">No attribute sets configured for this tab.</p>
+                      {{/if}}
+                    </div>
+                  {{/if}}
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      `,
       className: 'product-tabs-container mt-12 border-t pt-8',
       styles: { gridRow: '3' },
       parentId: 'main_layout',
