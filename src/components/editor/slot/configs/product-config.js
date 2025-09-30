@@ -108,7 +108,7 @@ export const productConfig = {
       content: `<div class="flex flex-row gap-4 w-full items-start">
 
         <!-- THUMBNAILS -->
-        <div class="flex flex-col space-y-2 w-20 lg:w-24 flex-shrink-0">
+        <div class="flex flex-col space-y-2 w-16 lg:w-20 flex-shrink-0">
 
           {{#if product.images}}
             {{#each product.images}}
@@ -145,10 +145,10 @@ export const productConfig = {
             {{/if}}
 
             <!-- PRODUCT LABELS -->
-            <div class="absolute top-3 right-3 flex flex-col space-y-2 pointer-events-none z-10">
+            <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
               {{#if productLabels}}
                 {{#each productLabels}}
-                  <div style="background-color: {{this.background_color}}; color: {{this.text_color}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                  <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
                     {{this.text}}
                   </div>
                 {{/each}}
