@@ -727,9 +727,17 @@ export const productConfig = {
 
     add_to_cart_button: {
       id: 'add_to_cart_button',
-      type: 'component',
-      component: 'AddToCartButton',
-      content: 'AddToCartButton',
+      type: 'html',
+      content: `
+        <button class="flex-1 h-12 text-lg bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed" data-add-to-cart>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 mr-2 inline">
+            <circle cx="8" cy="21" r="1"></circle>
+            <circle cx="19" cy="21" r="1"></circle>
+            <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path>
+          </svg>
+          Add to Cart
+        </button>
+      `,
       className: 'add-to-cart-container',
       parentClassName: '',
       styles: {},
@@ -737,7 +745,7 @@ export const productConfig = {
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: { hierarchical: true, component: 'AddToCartButton' }
+      metadata: { hierarchical: true }
     },
 
     wishlist_button: {
