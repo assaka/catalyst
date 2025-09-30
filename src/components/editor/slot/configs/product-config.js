@@ -105,10 +105,28 @@ export const productConfig = {
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="flex flex-row gap-4 w-full items-start">
+      content: `<div class="
+        {{#if (eq settings.product_gallery_layout 'horizontal')}}
+          flex flex-col gap-4
+        {{else}}
+          {{#if (eq settings.vertical_gallery_position 'right')}}
+            flex flex-col sm:flex-row-reverse gap-4
+          {{else}}
+            flex flex-col sm:flex-row gap-4
+          {{/if}}
+        {{/if}}
+        {{#if (eq settings.mobile_gallery_layout 'above')}}
+          flex-col-reverse sm:flex-col
+        {{/if}}
+        w-full items-start">
 
         <!-- THUMBNAILS -->
-        <div class="flex flex-col space-y-2 w-16 lg:w-20 flex-shrink-0">
+        <div class="
+          {{#if (eq settings.product_gallery_layout 'horizontal')}}
+            flex flex-row space-x-2 overflow-x-auto w-full
+          {{else}}
+            flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-16 lg:sm:w-20 flex-shrink-0 overflow-x-auto sm:overflow-x-visible
+          {{/if}}">
 
           {{#if product.images}}
             {{#each product.images}}

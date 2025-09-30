@@ -601,6 +601,7 @@ export const generateDemoData = (pageType, settings = {}) => {
       display_low_stock_threshold: 10,
       product_gallery_layout: 'horizontal',
       vertical_gallery_position: 'left',
+      mobile_gallery_layout: 'below',
       stock_settings: {
         show_stock_label: true,
         in_stock_label: 'In Stock',

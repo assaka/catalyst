@@ -73,6 +73,7 @@ export default function ThemeLayout() {
                 // Product gallery defaults
                 product_gallery_layout: fullStore?.settings?.product_gallery_layout || 'horizontal',
                 vertical_gallery_position: fullStore?.settings?.vertical_gallery_position || 'left',
+                mobile_gallery_layout: fullStore?.settings?.mobile_gallery_layout || 'below',
                 // Product grid - merge breakpoints properly
                 product_grid: {
                     breakpoints: {
@@ -877,6 +878,25 @@ export default function ThemeLayout() {
                                             </Select>
                                         </div>
                                     )}
+
+                                    <div className="mt-4 pt-4 border-t">
+                                        <div>
+                                            <Label htmlFor="mobile_gallery_layout">Mobile Layout</Label>
+                                            <p className="text-sm text-gray-500">How thumbnails are positioned on mobile devices (screens smaller than 640px).</p>
+                                        </div>
+                                        <Select
+                                            value={store.settings.mobile_gallery_layout || 'below'}
+                                            onValueChange={(value) => handleSettingsChange('mobile_gallery_layout', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="above">Above (Thumbnails above main image)</SelectItem>
+                                                <SelectItem value="below">Below (Thumbnails below main image)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
