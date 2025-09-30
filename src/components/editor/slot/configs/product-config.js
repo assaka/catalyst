@@ -546,24 +546,80 @@ export const productConfig = {
       component: 'CustomOptions',
       content: `
         <div class="space-y-4">
-          <h3 class="text-lg font-semibold">Custom Options</h3>
+          <h3 class="text-lg font-semibold">{{displayLabel}}</h3>
           <div class="space-y-3">
-            <div class="border rounded-lg p-4 cursor-pointer">
-              <div class="flex items-start space-x-3">
-                <div class="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5"></div>
-                <div class="flex-1">
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <h4 class="font-medium text-gray-900">Sample Custom Option</h4>
-                      <p class="text-sm text-gray-600 mt-1">Optional product description</p>
+            {{#if customOptions}}
+              {{#each customOptions}}
+                <div
+                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-blue-500 bg-blue-50 shadow-sm{{else}}border-gray-200 hover:border-gray-300 hover:shadow-sm{{/if}}"
+                  data-option-id="{{this.id}}"
+                  data-action="toggle-option"
+                >
+                  <div class="flex items-start space-x-3">
+                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 {{#if this.isSelected}}border-blue-500 bg-blue-500{{else}}border-gray-300{{/if}}">
+                      {{#if this.isSelected}}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      {{/if}}
                     </div>
-                    <div class="ml-4 flex-shrink-0">
-                      <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">+$10.00</span>
+
+                    <div class="flex-1 flex items-start space-x-3">
+                      {{#if this.images}}
+                        <div class="flex-shrink-0">
+                          <img src="{{this.images.[0]}}" alt="{{this.name}}" class="w-16 h-16 object-cover rounded-md" />
+                        </div>
+                      {{/if}}
+
+                      <div class="flex-1">
+                        <div class="flex items-start justify-between">
+                          <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">{{this.name}}</h4>
+                            {{#if this.short_description}}
+                              <p class="text-sm text-gray-600 mt-1">{{this.short_description}}</p>
+                            {{/if}}
+                          </div>
+                          <div class="ml-4 flex-shrink-0">
+                            {{#if this.hasSpecialPrice}}
+                              <div class="text-right">
+                                <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800 border-red-300">
+                                  +{{this.displayPrice}}
+                                </span>
+                                <div class="text-xs text-gray-500 line-through mt-1">
+                                  +{{this.originalPrice}}
+                                </div>
+                              </div>
+                            {{else}}
+                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold {{#if this.isSelected}}bg-blue-600 text-white border-blue-600{{else}}border-gray-300{{/if}}">
+                                +{{this.displayPrice}}
+                              </span>
+                            {{/if}}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {{/each}}
+            {{else}}
+              <!-- Editor preview -->
+              <div class="border rounded-lg p-4 cursor-pointer">
+                <div class="flex items-start space-x-3">
+                  <div class="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5"></div>
+                  <div class="flex-1">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">Sample Custom Option</h4>
+                        <p class="text-sm text-gray-600 mt-1">Optional product description</p>
+                      </div>
+                      <div class="ml-4 flex-shrink-0">
+                        <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">+$10.00</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            {{/if}}
           </div>
         </div>
       `,

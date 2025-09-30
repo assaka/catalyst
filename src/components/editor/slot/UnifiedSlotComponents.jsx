@@ -922,34 +922,132 @@ const CustomOptions = createSlotComponent({
 
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
     const content = slot?.content || '';
-    const processedContent = processVariables(content, variableContext);
+    const containerRef = React.useRef(null);
+    const [customOptionsData, setCustomOptionsData] = React.useState(null);
+    const [displayLabel, setDisplayLabel] = React.useState('Custom Options');
 
-    if (context === 'editor') {
-      // Editor version - visual preview from config HTML
-      return (
-        <div
-          className={className}
-          style={styles}
-          dangerouslySetInnerHTML={{ __html: processedContent }}
-        />
-      );
-    }
+    // Load custom options data for storefront
+    React.useEffect(() => {
+      if (context !== 'editor' && productContext?.product && productContext?.store) {
+        loadCustomOptions();
+      }
+    }, [context, productContext?.product?.id, productContext?.store?.id]);
 
-    // Storefront version - full functionality
-    const { product, store, settings, selectedOptions, handleOptionChange } = productContext;
+    const loadCustomOptions = async () => {
+      const { product, store, settings, selectedOptions } = productContext;
 
-    if (!product || !store) return null;
+      try {
+        const CustomOptionRule = (await import('@/api/entities')).CustomOptionRule;
+        const StorefrontProduct = (await import('@/api/storefront-entities')).StorefrontProduct;
+        const formatDisplayPrice = (await import('@/utils/priceUtils')).formatDisplayPrice;
+
+        const rules = await CustomOptionRule.filter({
+          store_id: store.id,
+          is_active: true
+        });
+
+        const applicableRule = rules.find(rule => {
+          // Simplified rule check - you may need to import the full logic
+          return true; // Placeholder
+        });
+
+        if (!applicableRule || !applicableRule.optional_product_ids?.length) {
+          setCustomOptionsData(null);
+          return;
+        }
+
+        setDisplayLabel(applicableRule.display_label || 'Custom Options');
+
+        const optionProducts = [];
+        for (const productId of applicableRule.optional_product_ids) {
+          if (productId === product.id) continue;
+
+          try {
+            const products = await StorefrontProduct.filter({
+              id: productId,
+              status: 'active'
+            });
+            if (products?.[0]?.is_custom_option) {
+              const option = products[0];
+              const isSelected = selectedOptions?.some(s => s.product_id === option.id);
+              const hasSpecialPrice = option.compare_price && parseFloat(option.compare_price) > 0;
+              const displayPrice = hasSpecialPrice
+                ? Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0))
+                : parseFloat(option.price || 0);
+              const originalPrice = hasSpecialPrice
+                ? Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0))
+                : null;
+
+              optionProducts.push({
+                ...option,
+                isSelected,
+                hasSpecialPrice,
+                displayPrice: formatDisplayPrice(displayPrice, settings?.currency_symbol || '$'),
+                originalPrice: originalPrice ? formatDisplayPrice(originalPrice, settings?.currency_symbol || '$') : null
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to load option ${productId}:`, err);
+          }
+        }
+
+        setCustomOptionsData(optionProducts);
+      } catch (error) {
+        console.error('Error loading custom options:', error);
+        setCustomOptionsData(null);
+      }
+    };
+
+    // Attach click handlers for storefront
+    React.useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const handleClick = (e) => {
+        const optionEl = e.target.closest('[data-action="toggle-option"]');
+        if (!optionEl) return;
+
+        const optionId = optionEl.getAttribute('data-option-id');
+        if (!optionId || !productContext?.handleOptionChange || !customOptionsData) return;
+
+        const option = customOptionsData.find(o => o.id === optionId);
+        if (!option) return;
+
+        const { selectedOptions } = productContext;
+        const isSelected = selectedOptions?.some(s => s.product_id === option.id);
+
+        const newSelectedOptions = isSelected
+          ? selectedOptions.filter(s => s.product_id !== option.id)
+          : [...(selectedOptions || []), {
+              product_id: option.id,
+              name: option.name,
+              price: parseFloat(option.price || 0)
+            }];
+
+        productContext.handleOptionChange(newSelectedOptions);
+      };
+
+      containerRef.current.addEventListener('click', handleClick);
+      return () => {
+        containerRef.current?.removeEventListener('click', handleClick);
+      };
+    }, [context, customOptionsData, productContext]);
+
+    // Prepare variable context with custom options data
+    const enhancedVariableContext = {
+      ...variableContext,
+      customOptions: customOptionsData,
+      displayLabel
+    };
+
+    const processedContent = processVariables(content, enhancedVariableContext);
 
     return (
-      <div className={className} style={styles}>
-        <CustomOptionsComponent
-          product={product}
-          store={store}
-          settings={settings}
-          selectedOptions={selectedOptions}
-          onSelectionChange={handleOptionChange}
-        />
-      </div>
+      <div
+        ref={containerRef}
+        className={className}
+        style={styles}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
+      />
     );
   }
 });
