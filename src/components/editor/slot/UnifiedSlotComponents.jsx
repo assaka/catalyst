@@ -32,100 +32,6 @@ import BreadcrumbRendererComponent from '@/components/storefront/BreadcrumbRende
 import './CategorySlotComponents.jsx';
 
 /**
- * QuantitySelector - Unified quantity selector component
- */
-const QuantitySelector = createSlotComponent({
-  name: 'QuantitySelector',
-  render: ({ slot, productContext, className, styles, context }) => {
-    const labelText = slot?.metadata?.editable?.label?.default || 'Qty:';
-
-    if (context === 'editor') {
-      // Editor version - visual preview only
-      return (
-        <div className={className} style={styles}>
-          <div className="flex items-center space-x-2">
-            <label className="font-medium text-sm">
-              {labelText}
-            </label>
-            <div className="flex items-center border rounded-lg overflow-hidden">
-              <button className="p-2 hover:bg-gray-100 transition-colors">
-                <Minus className="w-4 h-4" />
-              </button>
-              <input
-                type="number"
-                value="1"
-                readOnly
-                className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none"
-              />
-              <button className="p-2 hover:bg-gray-100 transition-colors">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Storefront version - full functionality
-    const { settings, quantity, setQuantity } = productContext;
-
-    // Preserve settings check - hide if setting is enabled
-    if (settings?.hide_quantity_selector) {
-      return null;
-    }
-
-    return (
-      <div className={className} style={styles}>
-        <div className="flex items-center space-x-2">
-          <label htmlFor="quantity-input" className="font-medium text-sm">
-            {labelText}
-          </label>
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setQuantity && setQuantity(Math.max(1, quantity - 1))}
-              className="p-2 hover:bg-gray-100 transition-colors"
-              disabled={quantity <= 1}
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <input
-              id="quantity-input"
-              type="number"
-              value={quantity}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                if (!isNaN(val) && val >= 1) setQuantity && setQuantity(val);
-                else if (e.target.value === '') setQuantity && setQuantity('');
-              }}
-              min="1"
-              className="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent"
-            />
-            <button
-              onClick={() => setQuantity && setQuantity(quantity + 1)}
-              className="p-2 hover:bg-gray-100 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  },
-
-  metadata: {
-    displayName: 'Quantity Selector',
-    category: 'Product',
-    editable: {
-      label: {
-        type: 'text',
-        default: 'Qty:',
-        placeholder: 'Enter quantity label'
-      }
-    }
-  }
-});
-
-/**
  * AddToCartButton - Unified add to cart button component
  */
 const AddToCartButton = createSlotComponent({
@@ -1045,7 +951,6 @@ const TotalPriceDisplay = createSlotComponent({
 });
 
 // Register all components
-registerSlotComponent('QuantitySelector', QuantitySelector);
 registerSlotComponent('AddToCartButton', AddToCartButton);
 
 /**

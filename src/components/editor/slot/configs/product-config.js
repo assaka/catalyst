@@ -564,9 +564,40 @@ export const productConfig = {
 
     quantity_selector: {
       id: 'quantity_selector',
-      type: 'component',
-      component: 'QuantitySelector',
-      content: 'QuantitySelector',
+      type: 'html',
+      content: `
+        <div class="quantity-selector">
+          <div class="flex items-center space-x-2">
+            <label for="quantity" class="font-medium text-sm">
+              Quantity
+            </label>
+            <div class="flex items-center border rounded-lg overflow-hidden">
+              <button
+                class="p-2 hover:bg-gray-100 transition-colors quantity-decrease"
+                type="button"
+                data-action="decrease"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+              </button>
+              <input
+                id="quantity"
+                type="number"
+                value="1"
+                min="1"
+                class="px-2 py-2 font-medium w-16 text-center border-x-0 outline-none focus:ring-0 focus:border-transparent quantity-input"
+                data-quantity-input
+              />
+              <button
+                class="p-2 hover:bg-gray-100 transition-colors quantity-increase"
+                type="button"
+                data-action="increase"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `,
       className: 'quantity-selector mb-4',
       parentClassName: '',
       styles: {},
@@ -578,14 +609,44 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        component: 'QuantitySelector',
-        editable: {
-          label: {
-            type: 'text',
-            default: 'Quantity',
-            placeholder: 'Enter quantity label'
-          }
-        }
+        requiresScript: true,
+        script: `
+          // Initialize quantity selector when slot is loaded
+          document.addEventListener('slot-script-loaded', function(event) {
+            const { slotId, element } = event.detail;
+
+            if (slotId !== 'quantity_selector') return;
+
+            const decreaseBtn = element.querySelector('[data-action="decrease"]');
+            const increaseBtn = element.querySelector('[data-action="increase"]');
+            const quantityInput = element.querySelector('[data-quantity-input]');
+
+            if (!decreaseBtn || !increaseBtn || !quantityInput) return;
+
+            decreaseBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              const currentValue = parseInt(quantityInput.value) || 1;
+              if (currentValue > 1) {
+                quantityInput.value = currentValue - 1;
+                quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            });
+
+            increaseBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              const currentValue = parseInt(quantityInput.value) || 1;
+              quantityInput.value = currentValue + 1;
+              quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            quantityInput.addEventListener('change', function(e) {
+              const value = parseInt(e.target.value) || 1;
+              if (value < 1) {
+                e.target.value = 1;
+              }
+            });
+          });
+        `
       }
     },
 
