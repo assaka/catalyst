@@ -813,17 +813,20 @@ const ProductTabs = createSlotComponent({
           const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
           const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
 
+          console.log('Tab clicked:', { tabId, tabIndex, allTabsCount: allTabs.length, allContentsCount: allContents.length });
+
           allTabs.forEach((btn, idx) => {
             if (idx === tabIndex) {
-              btn.classList.add('border-blue-500', 'text-blue-600');
-              btn.classList.remove('text-gray-600');
+              btn.classList.add('border-red-600');
+              btn.classList.remove('border-transparent');
             } else {
-              btn.classList.remove('border-blue-500', 'text-blue-600');
-              btn.classList.add('text-gray-600');
+              btn.classList.remove('border-red-600');
+              btn.classList.add('border-transparent');
             }
           });
 
           allContents.forEach((content, idx) => {
+            console.log('Content', idx, ':', idx === tabIndex ? 'SHOW' : 'HIDE');
             if (idx === tabIndex) {
               content.classList.remove('hidden');
             } else {
