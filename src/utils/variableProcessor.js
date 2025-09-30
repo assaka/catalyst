@@ -297,6 +297,18 @@ function processSimpleVariables(content, context, pageData) {
   return content.replace(variableRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
 
+    // Debug color field specifically
+    if (trimmedPath === 'color' || trimmedPath === 'background_color') {
+      console.log('🎨 Processing color variable:', {
+        variablePath: trimmedPath,
+        pageData: pageData,
+        pageDataKeys: pageData ? Object.keys(pageData) : 'No pageData',
+        contextKeys: context ? Object.keys(context) : 'No context',
+        directPageDataValue: pageData?.[trimmedPath],
+        directContextValue: context?.[trimmedPath]
+      });
+    }
+
 
     // Handle formatted price paths directly when they don't exist in data
     if (trimmedPath === 'product.compare_price_formatted' || trimmedPath === 'product.price_formatted') {
