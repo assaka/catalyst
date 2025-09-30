@@ -174,10 +174,10 @@ export const StoreProvider = ({ children }) => {
     try {
       const channel = new BroadcastChannel('store_settings_update');
       channel.onmessage = (event) => {
-        console.log('📢 BROADCAST RECEIVED:', event.data);
+        console.log('[THUMBNAIL-SYNC] 📢 BROADCAST RECEIVED:', event.data);
         if (event.data.type === 'clear_cache') {
-          console.log('📢 Cache clear broadcast from admin - reloading page in 1 second...');
-          console.log('📢 Broadcast details:', event.data);
+          console.log('[THUMBNAIL-SYNC] 📢 Cache clear broadcast from admin - reloading page in 1 second...');
+          console.log('[THUMBNAIL-SYNC] 📢 Broadcast details:', event.data);
 
           // Clear all caches
           apiCache.clear();
@@ -186,7 +186,7 @@ export const StoreProvider = ({ children }) => {
 
           // Force reload the page after a short delay to see the messages
           setTimeout(() => {
-            console.log('📢 RELOADING PAGE NOW');
+            console.log('[THUMBNAIL-SYNC] 📢 RELOADING PAGE NOW');
             window.location.reload();
           }, 1000);
         }
@@ -285,11 +285,11 @@ export const StoreProvider = ({ children }) => {
       console.log('StoreProvider - Original product_grid:', selectedStore.settings?.product_grid);
 
       // 🔍 DEBUG: Gallery settings from database
-      console.log('🔍 [STEP 1] STOREPROVIDER - RAW DATABASE VALUES:');
-      console.log('🔍 [STEP 1] - product_gallery_layout from DB:', selectedStore.settings?.product_gallery_layout);
-      console.log('🔍 [STEP 1] - vertical_gallery_position from DB:', selectedStore.settings?.vertical_gallery_position);
-      console.log('🔍 [STEP 1] - settings object type:', typeof selectedStore.settings);
-      console.log('🔍 [STEP 1] - settings keys:', selectedStore.settings ? Object.keys(selectedStore.settings) : 'No settings');
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] STOREPROVIDER - RAW DATABASE VALUES:');
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - product_gallery_layout from DB:', selectedStore.settings?.product_gallery_layout);
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - vertical_gallery_position from DB:', selectedStore.settings?.vertical_gallery_position);
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - settings object type:', typeof selectedStore.settings);
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - settings keys:', selectedStore.settings ? Object.keys(selectedStore.settings) : 'No settings');
 
       const mergedSettings = {
         // Spread existing store settings first to preserve saved values
@@ -404,9 +404,9 @@ export const StoreProvider = ({ children }) => {
       console.log('StoreProvider - Product grid config:', mergedSettings.product_grid);
 
       // 🔍 DEBUG: Final gallery settings after merge
-      console.log('🔍 [STEP 2] STOREPROVIDER - AFTER MERGE WITH DEFAULTS:');
-      console.log('🔍 [STEP 2] - product_gallery_layout final:', mergedSettings.product_gallery_layout);
-      console.log('🔍 [STEP 2] - vertical_gallery_position final:', mergedSettings.vertical_gallery_position);
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 2] STOREPROVIDER - AFTER MERGE WITH DEFAULTS:');
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 2] - product_gallery_layout final:', mergedSettings.product_gallery_layout);
+      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 2] - vertical_gallery_position final:', mergedSettings.vertical_gallery_position);
 
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries
       const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';
@@ -600,7 +600,7 @@ export const StoreProvider = ({ children }) => {
 
   // Debug gallery settings loading
   if (store?.settings?.product_gallery_layout) {
-    console.log('🏪 STORE PROVIDER - Gallery Settings Loaded:', {
+    console.log('[THUMBNAIL-SYNC] 🏪 STORE PROVIDER - Gallery Settings Loaded:', {
       product_gallery_layout: store.settings.product_gallery_layout,
       vertical_gallery_position: store.settings.vertical_gallery_position,
       storeId: store.id,

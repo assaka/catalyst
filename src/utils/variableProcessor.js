@@ -30,7 +30,7 @@ export function processVariables(content, context, pageData = {}) {
 
   // Debug thumbnail gallery specifically - ENHANCED for admin sync debugging
   if (content.includes('thumbnail-gallery') || content.includes('product_gallery_layout')) {
-    console.log('🖼️ VARIABLE PROCESSOR - GALLERY TEMPLATE DEBUG:', {
+    console.log('[THUMBNAIL-SYNC] 🖼️ VARIABLE PROCESSOR - GALLERY TEMPLATE DEBUG:', {
       originalContent: content.substring(0, 200) + '...',
       CONTEXT_SETTINGS: {
         product_gallery_layout: context?.settings?.product_gallery_layout,
@@ -224,7 +224,7 @@ function processConditionalsStep(content, context, pageData) {
     // Log gallery-related conditionals
     if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position') || condition.includes('horizontal') || condition.includes('vertical')) {
       const isPositionCheck = condition.includes('vertical_gallery_position');
-      console.log('🔄 CONDITIONAL DEBUG FIXED:', {
+      console.log('[THUMBNAIL-SYNC] 🔄 CONDITIONAL DEBUG FIXED:', {
         condition,
         isTrue,
         ifIndex,

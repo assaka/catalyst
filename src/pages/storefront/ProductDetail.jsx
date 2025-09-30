@@ -856,7 +856,7 @@ export default function ProductDetail() {
         return shouldRender;
       })() ? (
         <div className="grid grid-cols-12 gap-2 auto-rows-min">
-          {console.log('🏪 STOREFRONT PRODUCT DATA:', {
+          {console.log('[THUMBNAIL-SYNC] 🏪 STOREFRONT PRODUCT DATA:', {
             hasSettings: !!settings,
             product_gallery_layout: settings?.product_gallery_layout,
             vertical_gallery_position: settings?.vertical_gallery_position,
@@ -901,7 +901,17 @@ export default function ProductDetail() {
               product,
               store,
               settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
-              productLabels: product?.applicableLabels || productLabels
+              productLabels: (() => {
+                const labels = product?.applicableLabels || productLabels;
+                console.log('🏷️ ProductDetail - Passing labels to template:', labels?.map(l => ({
+                  name: l.name,
+                  text: l.text,
+                  color: l.color,
+                  background_color: l.background_color,
+                  position: l.position
+                })));
+                return labels;
+              })()
             }}
           />
         </div>

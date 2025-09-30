@@ -1778,7 +1778,7 @@ const ProductThumbnails = createSlotComponent({
     };
 
     // 🔧 ENHANCED DEBUG LOGGING: Show both setting sources and final resolution
-    console.log('🖼️ UNIFIED THUMBNAILS - SETTINGS DEBUG:', {
+    console.log('[THUMBNAIL-SYNC] 🖼️ UNIFIED THUMBNAILS - SETTINGS DEBUG:', {
       context,
       finalClassName,
       imageCount: thumbnailImages.length,
