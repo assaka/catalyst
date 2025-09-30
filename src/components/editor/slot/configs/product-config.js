@@ -775,7 +775,7 @@ export const productConfig = {
             <nav class="-mb-px flex space-x-8">
               {{#each tabs}}
                 <button
-                  class="py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 {{#if this.isActive}}border-blue-500 text-blue-600{{else}}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{{/if}}"
+                  class="py-2 px-1 border-b-2 font-medium text-3xl text-red-600 transition-colors duration-200 {{#if this.isActive}}border-red-600{{else}}border-transparent hover:underline{{/if}}"
                   data-action="switch-tab"
                   data-tab-id="{{this.id}}">
                   {{this.title}}
@@ -787,15 +787,15 @@ export const productConfig = {
           <div class="mt-6">
             {{#each tabs}}
               <div
-                class="{{#unless this.isActive}}hidden{{/unless}}"
+                class="tab-panel {{#unless this.isActive}}hidden{{/unless}}"
                 data-tab-content="{{this.id}}">
                 <div class="prose max-w-none">
                   {{#if (eq this.tab_type "text")}}
-                    {{{this.content}}}
+                    <div>{{{this.content}}}</div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "description")}}
-                    {{{../product.description}}}
+                    <div>{{{../product.description}}}</div>
                   {{/if}}
 
                   {{#if (eq this.tab_type "attributes")}}
