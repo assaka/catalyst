@@ -235,18 +235,24 @@ const ProductGallery = createSlotComponent({
       galleryLayout,
       verticalPosition,
       isVertical,
-      productContextSettings: productContext?.settings,
-      variableContextSettings: variableContext?.settings
+      settingsFromProductContext: productContext?.settings,
+      settingsFromVariableContext: variableContext?.settings,
+      finalSettings: settings,
+      expectedClass: isVertical
+        ? `flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+        : 'flex flex-col space-y-4'
     });
 
     if (context === 'editor') {
       // Editor version - show both main image and thumbnails
       const containerClass = isVertical
-        ? `${className} flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
-        : `${className} flex flex-col space-y-4`;
+        ? `flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+        : `flex flex-col space-y-4`;
+
+      const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
       return (
-        <div className={containerClass} style={styles}>
+        <div className={finalContainerClass} style={styles}>
           {/* Main Image */}
           <div className={isVertical ? "flex-1" : ""}>
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
@@ -255,6 +261,10 @@ const ProductGallery = createSlotComponent({
                 alt="Product"
                 className="w-full h-full object-cover"
               />
+              {/* Demo labels for editor */}
+              <div className="absolute top-2 left-2">
+                <Badge className="bg-blue-600 text-white">NEW</Badge>
+              </div>
               <div className="absolute top-2 right-2">
                 <Badge variant="destructive" className="bg-red-600 text-white">
                   SALE
@@ -312,11 +322,14 @@ const ProductGallery = createSlotComponent({
 
     // Use same layout logic as editor
     const containerClass = isVertical
-      ? `${className} flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
-      : `${className} flex flex-col space-y-4`;
+      ? `flex ${verticalPosition === 'right' ? 'flex-row-reverse' : 'flex-row'} gap-4`
+      : `flex flex-col space-y-4`;
+
+    // Apply className if provided
+    const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
     return (
-      <div className={containerClass} style={styles}>
+      <div className={finalContainerClass} style={styles}>
         {/* Main Image */}
         <div className={isVertical ? "flex-1" : ""}>
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
@@ -326,6 +339,24 @@ const ProductGallery = createSlotComponent({
               className="w-full h-full object-cover"
             />
             {/* Product Labels */}
+            {productContext.productLabels && productContext.productLabels.length > 0 && (
+              <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
+                {productContext.productLabels.map((label, index) => (
+                  <Badge
+                    key={index}
+                    variant="default"
+                    className="bg-blue-600 text-white"
+                    style={{
+                      backgroundColor: label.background_color || '#3B82F6',
+                      color: label.text_color || '#FFFFFF'
+                    }}
+                  >
+                    {label.text || label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {/* Sale Badge */}
             {product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
               <div className="absolute top-2 right-2">
                 <Badge variant="destructive" className="bg-red-600 text-white">
