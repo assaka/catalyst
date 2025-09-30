@@ -101,12 +101,42 @@ export const productConfig = {
 
     // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
 
-    // SIMPLIFIED GALLERY - Force vertical right layout for now
+    // SIMPLIFIED GALLERY - DEBUG VERSION TO ENSURE VISIBILITY
     product_gallery_container: {
       id: 'product_gallery_container',
-      type: 'flex',
-      content: '',
-      className: 'flex flex-row gap-4 w-full h-96', // Force vertical right layout with height
+      type: 'html',
+      content: `<div class="flex flex-row gap-4 w-full h-96 bg-red-100 border-2 border-red-500">
+        <!-- THUMBNAILS LEFT SIDE -->
+        <div class="flex flex-col space-y-2 w-24 bg-blue-100">
+          <button class="w-16 h-16 rounded border-2 border-gray-300 bg-white">
+            <img src="https://placehold.co/100x100?text=T1" alt="T1" class="w-full h-full object-cover" />
+          </button>
+          <button class="w-16 h-16 rounded border-2 border-gray-300 bg-white">
+            <img src="https://placehold.co/100x100?text=T2" alt="T2" class="w-full h-full object-cover" />
+          </button>
+          <button class="w-16 h-16 rounded border-2 border-gray-300 bg-white">
+            <img src="https://placehold.co/100x100?text=T3" alt="T3" class="w-full h-full object-cover" />
+          </button>
+        </div>
+
+        <!-- MAIN IMAGE RIGHT SIDE -->
+        <div class="flex-1 relative bg-green-100">
+          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-lg relative">
+            <img src="https://placehold.co/600x600?text=MAIN+IMAGE" alt="Main" class="w-full h-full object-cover" />
+
+            <!-- LABELS -->
+            <div class="absolute top-2 right-2 flex flex-col space-y-1 z-50">
+              <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md">
+                DHL
+              </div>
+              <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md">
+                Hamid
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
@@ -119,64 +149,7 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Thumbnails - force vertical layout on right side
-    product_thumbnails: {
-      id: 'product_thumbnails',
-      type: 'html',
-      content: `<div class="flex flex-col space-y-2 w-24">
-            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
-              <img src="https://placehold.co/100x100?text=T1" alt="Demo Thumbnail" class="w-full h-full object-cover" />
-            </button>
-            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
-              <img src="https://placehold.co/100x100?text=T2" alt="Demo Thumbnail" class="w-full h-full object-cover" />
-            </button>
-            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
-              <img src="https://placehold.co/100x100?text=T3" alt="Demo Thumbnail" class="w-full h-full object-cover" />
-            </button>
-            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
-              <img src="https://placehold.co/100x100?text=T4" alt="Demo Thumbnail" class="w-full h-full object-cover" />
-            </button>
-        </div>`,
-      className: '',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_gallery_container',
-      position: { col: 2, row: 1 },
-      colSpan: {},
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    // Main product image with integrated labels - FORCE LARGE SIZE
-    product_main_image: {
-      id: 'product_main_image',
-      type: 'html',
-      content: `<div class="flex-1 relative min-w-0">
-        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full max-w-lg relative">
-          <img src="https://placehold.co/600x600?text=Demo+Product" alt="Demo Product" class="w-full h-full object-cover" />
-
-          <!-- FORCE LABELS TO SHOW IN TOP RIGHT -->
-          <div class="absolute top-2 right-2 flex flex-col space-y-1 pointer-events-none z-50">
-            <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-              DHL
-            </div>
-            <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-              Hamid
-            </div>
-          </div>
-        </div>
-      </div>`,
-      className: '',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_gallery_container',
-      position: { col: 1, row: 1 },
-      colSpan: {},
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-    // Removed product_thumbnails_right - now using unified product_thumbnails that adapts position
+    // REMOVED: Now using single combined gallery container above
 
     // Product Information Section
     info_container: {
