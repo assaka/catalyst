@@ -6,7 +6,7 @@
  * - renderStorefront(): Full functionality for storefront
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -255,6 +255,9 @@ const ProductGallery = createSlotComponent({
 
     if (context === 'editor') {
       // Editor version - show both main image and thumbnails
+      // Use state for active image in editor too
+      const [editorActiveIndex, setEditorActiveIndex] = useState(0);
+
       // For vertical: left = thumbnails first (flex-row), right = main image first (flex-row-reverse)
       const containerClass = isVertical
         ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
@@ -268,7 +271,7 @@ const ProductGallery = createSlotComponent({
           <div className={isVertical ? "flex-1" : ""}>
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src="https://placehold.co/600x600?text=Product+Image"
+                src={`https://placehold.co/600x600?text=Product+Image+${editorActiveIndex + 1}`}
                 alt="Product"
                 className="w-full h-full object-cover"
               />
@@ -292,13 +295,22 @@ const ProductGallery = createSlotComponent({
             {Array.from({ length: 4 }, (_, i) => (
               <button
                 key={i}
-                className="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400"
+                onClick={() => setEditorActiveIndex(i)}
+                className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                  editorActiveIndex === i
+                    ? 'border-blue-500 ring-2 ring-blue-200'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
               >
                 <img
                   src={`https://placehold.co/100x100?text=Thumb+${i + 1}`}
                   alt={`Demo Thumbnail ${i + 1}`}
                   className="w-full h-full object-cover"
                 />
+                {/* Active indicator */}
+                {editorActiveIndex === i && (
+                  <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+                )}
               </button>
             ))}
           </div>
@@ -342,6 +354,13 @@ const ProductGallery = createSlotComponent({
     const containerClass = isVertical
       ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
       : `flex flex-col space-y-4`;
+
+    console.log('🚨 POSITION CHECK:', {
+      verticalPosition,
+      isLeft: verticalPosition === 'left',
+      expectedClass: verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse',
+      actualClass: containerClass
+    });
 
     // Apply className if provided
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
