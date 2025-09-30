@@ -286,7 +286,7 @@ export const productConfig = {
         zIndex: 50,
         pointerEvents: 'none'
       },
-      parentId: 'main_image',
+      parentId: 'product_gallery',
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
