@@ -282,7 +282,7 @@ export const productConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: `<span data-main-price class="main-price">{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}</span>`,
+      content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
       className: 'w-fit text-3xl font-bold {{#if product.compare_price}}text-red-600{{else}}text-green-600{{/if}}',
       parentClassName: '',
       styles: {},
@@ -292,13 +292,20 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        htmlTag: 'span',
+        htmlAttributes: {
+          'data-main-price': '',
+          'class': 'main-price'
+        }
+      }
     },
 
     original_price: {
       id: 'original_price',
       type: 'text',
-      content: `{{#if product.compare_price}}<span data-original-price class="original-price">{{product.price_formatted}}</span>{{/if}}`,
+      content: '{{#if product.compare_price}}{{product.price_formatted}}{{/if}}',
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -308,7 +315,14 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        htmlTag: 'span',
+        htmlAttributes: {
+          'data-original-price': '',
+          'class': 'original-price'
+        }
+      }
     },
 
     stock_status: {
@@ -331,7 +345,7 @@ export const productConfig = {
     product_sku: {
       id: 'product_sku',
       type: 'text',
-      content: '{{#if product.sku}}<span class="product-sku">SKU: {{product.sku}}</span>{{/if}}',
+      content: '{{#if product.sku}}SKU: {{product.sku}}{{/if}}',
       className: 'w-fit text-sm text-gray-600',
       parentClassName: '',
       styles: {},
@@ -341,7 +355,13 @@ export const productConfig = {
         default: 12
       },
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        htmlTag: 'span',
+        htmlAttributes: {
+          'class': 'product-sku'
+        }
+      }
     },
 
     product_short_description: {
