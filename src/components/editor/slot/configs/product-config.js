@@ -101,28 +101,14 @@ export const productConfig = {
 
     // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
 
-    // PRODUCT GALLERY - Dynamic layout based on admin settings
+    // PRODUCT GALLERY - Simplified dynamic layout
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="
-        {{#if (eq settings.product_gallery_layout 'horizontal')}}
-          flex flex-col gap-4
-        {{else}}
-          {{#if (eq settings.vertical_gallery_position 'right')}}
-            flex flex-row-reverse gap-4
-          {{else}}
-            flex flex-row gap-4
-          {{/if}}
-        {{/if}} w-full">
+      content: `<div class="flex flex-row gap-4 w-full">
 
         <!-- THUMBNAILS -->
-        <div class="
-          {{#if (eq settings.product_gallery_layout 'horizontal')}}
-            flex flex-row space-x-2 overflow-x-auto
-          {{else}}
-            flex flex-col space-y-2 w-20 lg:w-24
-          {{/if}}">
+        <div class="flex flex-col space-y-2 w-20 lg:w-24">
 
           {{#if product.images}}
             {{#each product.images}}
@@ -158,34 +144,24 @@ export const productConfig = {
               <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
             {{/if}}
 
-            <!-- PRODUCT LABELS - Dynamic based on admin settings -->
-            {{#if productLabels}}
-              {{#if productLabels.length}}
-                <div class="absolute
-                  {{#if (eq settings.product_labels_position 'top-left')}}top-3 left-3{{/if}}
-                  {{#if (eq settings.product_labels_position 'top-right')}}top-3 right-3{{/if}}
-                  {{#if (eq settings.product_labels_position 'bottom-left')}}bottom-3 left-3{{/if}}
-                  {{#if (eq settings.product_labels_position 'bottom-right')}}bottom-3 right-3{{/if}}
-                  {{#unless settings.product_labels_position}}top-3 right-3{{/unless}}
-                  flex flex-col space-y-2 pointer-events-none z-10">
-                  {{#each productLabels}}
-                    <div style="background-color: {{this.background_color}}; color: {{this.text_color}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                      {{this.text}}
-                    </div>
-                  {{/each}}
-                </div>
-              {{/if}}
-            {{else}}
-              <!-- Editor demo labels -->
-              <div class="absolute top-3 right-3 flex flex-col space-y-2 pointer-events-none z-10">
+            <!-- PRODUCT LABELS -->
+            <div class="absolute top-3 right-3 flex flex-col space-y-2 pointer-events-none z-10">
+              {{#if productLabels}}
+                {{#each productLabels}}
+                  <div style="background-color: {{this.background_color}}; color: {{this.text_color}};" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                    {{this.text}}
+                  </div>
+                {{/each}}
+              {{else}}
+                <!-- Editor demo labels -->
                 <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
                   Sale
                 </div>
                 <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
                   New
                 </div>
-              </div>
-            {{/if}}
+              {{/if}}
+            </div>
           </div>
         </div>
       </div>`,
