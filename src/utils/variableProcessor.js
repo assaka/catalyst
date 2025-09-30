@@ -335,6 +335,16 @@ function processSimpleVariables(content, context, pageData) {
  */
 function evaluateCondition(condition, context, pageData) {
   try {
+    // 🔧 ENHANCED DEBUG: Always log vertical_gallery_position evaluations
+    if (condition.includes('vertical_gallery_position')) {
+      console.log('[THUMBNAIL-SYNC] 🚨 POSITION CONDITION FOUND:', {
+        condition,
+        context: context ? Object.keys(context) : 'No context',
+        contextSettings: context?.settings,
+        pageData: pageData ? Object.keys(pageData) : 'No pageData'
+      });
+    }
+
     // Handle eq helper function: (eq variable "value")
     const eqMatch = condition.match(/\(eq\s+([^"\s]+)\s+"([^"]+)"\)/);
     if (eqMatch) {
@@ -397,9 +407,37 @@ function evaluateCondition(condition, context, pageData) {
 function getNestedValue(path, context, pageData) {
   const fullData = { ...pageData, ...context };
 
-  return path.split('.').reduce((obj, key) => {
-    return obj && obj[key] !== undefined ? obj[key] : null;
+  // 🔧 ENHANCED DEBUG: Always log vertical_gallery_position lookups
+  if (path.includes('vertical_gallery_position')) {
+    console.log('[THUMBNAIL-SYNC] 🔍 GET NESTED VALUE DEBUG:', {
+      path,
+      fullDataKeys: Object.keys(fullData),
+      hasSettings: 'settings' in fullData,
+      settingsKeys: fullData.settings ? Object.keys(fullData.settings) : 'No settings',
+      directSettingsAccess: fullData.settings?.vertical_gallery_position,
+      contextKeys: context ? Object.keys(context) : 'No context',
+      contextSettings: context?.settings?.vertical_gallery_position,
+      pageDataKeys: pageData ? Object.keys(pageData) : 'No pageData'
+    });
+  }
+
+  const result = path.split('.').reduce((obj, key) => {
+    const value = obj && obj[key] !== undefined ? obj[key] : null;
+
+    // 🔧 DEBUG: Log each step of the path traversal for vertical_gallery_position
+    if (path.includes('vertical_gallery_position')) {
+      console.log(`[THUMBNAIL-SYNC] 🔍 PATH STEP: ${key} = ${JSON.stringify(value)} (type: ${typeof value})`);
+    }
+
+    return value;
   }, fullData);
+
+  // 🔧 DEBUG: Log final result for vertical_gallery_position
+  if (path.includes('vertical_gallery_position')) {
+    console.log(`[THUMBNAIL-SYNC] 🔍 FINAL RESULT: ${path} = ${JSON.stringify(result)} (type: ${typeof result})`);
+  }
+
+  return result;
 }
 
 /**
