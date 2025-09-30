@@ -794,15 +794,15 @@ export const productConfig = {
                   <div style="background: yellow; padding: 10px; margin: 10px 0;">
                     DEBUG: tab_type = "{{this.tab_type}}" | content = "{{this.content}}"
                   </div>
-                  {{#if (eq this.tab_type "text")}}
-                    <div style="background: lightgreen;">TEXT TAB: {{this.content}}</div>
+                  {{#if (eq tab_type "text")}}
+                    <div style="background: lightgreen;">TEXT TAB: {{content}}</div>
                   {{/if}}
 
-                  {{#if (eq this.tab_type "description")}}
+                  {{#if (eq tab_type "description")}}
                     <div style="background: lightblue;">DESCRIPTION TAB: {{../product.description}}</div>
                   {{/if}}
 
-                  {{#if (eq this.tab_type "attributes")}}
+                  {{#if (eq tab_type "attributes")}}
                     <div style="background: pink;">ATTRIBUTES TAB</div>
                     <div id="attributes-placeholder" data-attributes-container></div>
                   {{/if}}
