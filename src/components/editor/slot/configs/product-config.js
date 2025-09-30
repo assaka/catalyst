@@ -626,17 +626,18 @@ export const productConfig = {
         hierarchical: true,
         requiresScript: true,
         script: `
-          // Initialize quantity selector when slot is loaded
-          document.addEventListener('slot-script-loaded', function(event) {
-            const { slotId, element } = event.detail;
-
-            if (slotId !== 'quantity_selector') return;
+          function initQuantitySelector(element) {
+            if (!element) return;
 
             const decreaseBtn = element.querySelector('[data-action="decrease"]');
             const increaseBtn = element.querySelector('[data-action="increase"]');
             const quantityInput = element.querySelector('[data-quantity-input]');
 
             if (!decreaseBtn || !increaseBtn || !quantityInput) return;
+
+            // Check if already initialized
+            if (element.dataset.initialized === 'true') return;
+            element.dataset.initialized = 'true';
 
             decreaseBtn.addEventListener('click', function(e) {
               e.preventDefault();
@@ -660,7 +661,21 @@ export const productConfig = {
                 e.target.value = 1;
               }
             });
+          }
+
+          // Initialize when slot is loaded (from React component)
+          document.addEventListener('slot-script-loaded', function(event) {
+            const { slotId, element } = event.detail;
+            if (slotId === 'quantity_selector') {
+              initQuantitySelector(element);
+            }
           });
+
+          // Also try to initialize immediately if element already exists
+          const existingElement = document.querySelector('[data-slot-id="quantity_selector"]');
+          if (existingElement) {
+            initQuantitySelector(existingElement);
+          }
         `
       }
     },
