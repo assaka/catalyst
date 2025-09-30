@@ -101,36 +101,39 @@ export const productConfig = {
 
     // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
 
-    // SIMPLIFIED GALLERY - DEBUG VERSION TO ENSURE VISIBILITY
+    // PRODUCT GALLERY - Responsive layout with thumbnails and main image
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'html',
-      content: `<div class="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full min-h-[300px] sm:min-h-[400px] bg-red-100 border-2 border-red-500">
+      content: `<div class="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full">
         <!-- THUMBNAILS -->
-        <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 bg-blue-100 overflow-x-auto sm:overflow-x-visible">
-          <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded border-2 border-gray-300 bg-white">
-            <img src="https://placehold.co/100x100?text=T1" alt="T1" class="w-full h-full object-cover" />
+        <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 sm:w-20 lg:w-24 overflow-x-auto sm:overflow-x-visible">
+          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+            <img src="https://placehold.co/100x100?text=1" alt="Thumbnail 1" class="w-full h-full object-cover" />
           </button>
-          <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded border-2 border-gray-300 bg-white">
-            <img src="https://placehold.co/100x100?text=T2" alt="T2" class="w-full h-full object-cover" />
+          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+            <img src="https://placehold.co/100x100?text=2" alt="Thumbnail 2" class="w-full h-full object-cover" />
           </button>
-          <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded border-2 border-gray-300 bg-white">
-            <img src="https://placehold.co/100x100?text=T3" alt="T3" class="w-full h-full object-cover" />
+          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+            <img src="https://placehold.co/100x100?text=3" alt="Thumbnail 3" class="w-full h-full object-cover" />
+          </button>
+          <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+            <img src="https://placehold.co/100x100?text=4" alt="Thumbnail 4" class="w-full h-full object-cover" />
           </button>
         </div>
 
         <!-- MAIN IMAGE -->
-        <div class="flex-1 relative bg-green-100">
-          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden w-full relative">
-            <img src="https://placehold.co/600x600?text=MAIN+IMAGE" alt="Main" class="w-full h-full object-cover" />
+        <div class="flex-1 relative">
+          <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full relative">
+            <img src="https://placehold.co/600x600?text=Product" alt="Product Image" class="w-full h-full object-cover" />
 
-            <!-- LABELS -->
-            <div class="absolute top-2 right-2 flex flex-col space-y-1 z-50">
-              <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md">
-                DHL
+            <!-- PRODUCT LABELS -->
+            <div class="absolute top-3 right-3 flex flex-col space-y-2 pointer-events-none z-10">
+              <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                Sale
               </div>
-              <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md">
-                Hamid
+              <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                New
               </div>
             </div>
           </div>

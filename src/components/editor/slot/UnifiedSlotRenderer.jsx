@@ -159,19 +159,6 @@ export function UnifiedSlotRenderer({
     productLabels: productData.productLabels
   };
 
-  // Debug gallery settings flow in UnifiedSlotRenderer
-  console.log('🔧 UNIFIED SLOT RENDERER SETTINGS DEBUG:', {
-    context,
-    productDataSettings: productData.settings,
-    variableContextSettings: variableContext.settings,
-    hasGalleryLayout: !!(variableContext.settings?.product_gallery_layout),
-    hasVerticalPosition: !!(variableContext.settings?.vertical_gallery_position),
-    fullProductData: Object.keys(productData),
-    product_gallery_layout: variableContext.settings?.product_gallery_layout,
-    vertical_gallery_position: variableContext.settings?.vertical_gallery_position,
-    settingsSource: context === 'editor' ? 'DEMO_DATA' : 'REAL_SETTINGS',
-    allSettingsKeys: Object.keys(productData.settings || {})
-  });
 
   /**
    * Wrap element with ResizeWrapper for editor mode
@@ -238,32 +225,9 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
 
-    // Check if this is a price-related slot
-    const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(id);
-
-    // DEBUG: Log price slot configuration
-    if (isPriceSlot) {
-      console.log(`💰 PRICE SLOT DEBUG (${id}):`, {
-        slotId: id,
-        rawClassName: className,
-        rawContent: content,
-        rawStyles: styles,
-        metadata: metadata
-      });
-    }
-
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
-
-    // DEBUG: Log processed values
-    if (isPriceSlot) {
-      console.log(`💰 PRICE SLOT PROCESSED (${id}):`, {
-        slotId: id,
-        processedClassName: processedClassName,
-        processedContent: processedContent
-      });
-    }
 
 
     // HTML Element (raw HTML content)
