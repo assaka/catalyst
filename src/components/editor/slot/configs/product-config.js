@@ -99,57 +99,22 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Product Images Section
-    gallery_container: {
-      id: 'gallery_container',
-      type: 'container',
+    // Product Gallery Section
+
+
+
+    product_gallery: {
+      id: 'product_gallery',
+      type: 'component',
+      component: 'ProductGallerySlot',
       content: '',
-      className: 'gallery-container flex flex-col space-y-4',
+      className: 'w-full',
+      parentClassName: '',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
-      layout: 'flex',
       colSpan: {
         default: 'col-span-12 lg:col-span-6'
-      },
-      viewMode: ['default'],
-      metadata: {
-        hierarchical: true,
-        dynamicLayout: true,
-        settings: { product_gallery_layout: 'horizontal' }
-      }
-    },
-
-    main_image: {
-      id: 'main_image',
-      type: 'grid',
-      content: '',
-      className: 'main-image grid grid-cols-12 gap-2 relative aspect-square bg-gray-100 rounded-lg overflow-hidden {{#if (eq settings.product_gallery_layout "vertical")}}flex-1{{/if}}',
-      parentClassName: '{{#if (eq settings.product_gallery_layout "horizontal")}}order-1{{else}}{{#if (eq settings.vertical_gallery_position "right")}}order-first{{else}}order-last{{/if}}{{/if}}',
-      styles: { position: 'relative' },
-      parentId: 'gallery_container',
-      position: { col: 1, row: 1 },
-      layout: 'grid',
-      colSpan: {
-        default: 12
-      },
-      viewMode: ['default'],
-      metadata: { hierarchical: true }
-    },
-
-
-    product_image: {
-      id: 'product_image',
-      type: 'component',
-      component: 'ProductImage',
-      content: '',
-      className: 'w-full h-full object-cover',
-      parentClassName: '',
-      styles: {},
-      parentId: 'main_image',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        default: 12
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }

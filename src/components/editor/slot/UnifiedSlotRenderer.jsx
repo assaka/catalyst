@@ -166,13 +166,6 @@ export function UnifiedSlotRenderer({
     settingsSource: context === 'editor' ? 'DEMO_DATA' : 'REAL_SETTINGS'
   });
 
-  // Debug logging for productLabels
-  if (context === 'editor') {
-    console.log('🏷️ EDITOR - productLabels:', variableContext.productLabels);
-  } else {
-    console.log('🏪 STOREFRONT - productLabels:', variableContext.productLabels);
-  }
-
   /**
    * Wrap element with ResizeWrapper for editor mode
    */
@@ -248,20 +241,6 @@ export function UnifiedSlotRenderer({
 
     // HTML Element (raw HTML content)
     if (type === 'html') {
-      // Debug product labels
-      if (id === 'product_labels') {
-        console.log('🏷️ PRODUCT LABELS HTML RENDERING:', {
-          id,
-          type,
-          className,
-          processedClassName,
-          styles,
-          context,
-          content: processedContent?.substring(0, 100),
-          isAbsolutePositioned: processedClassName?.includes('absolute') || styles?.position === 'absolute'
-        });
-      }
-
       const htmlElement = (
         <div
           className={processedClassName}
@@ -605,16 +584,12 @@ export function UnifiedSlotRenderer({
         if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
-          if (slot.id === 'header_title') {
-            console.log('🔴 HEADER_TITLE colSpan update:', { slotId: slot.id, colSpan: slot.colSpan, colSpanClass, gridColumn });
-          }
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           const viewModeValue = slot.colSpan[viewMode];
 
           if (typeof viewModeValue === 'number') {
             colSpanClass = `col-span-${viewModeValue}`;
             gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
-            console.log('🟦 Slot colSpan update (object):', { slotId: slot.id, viewModeValue, colSpanClass, gridColumn });
           } else if (typeof viewModeValue === 'string') {
             colSpanClass = viewModeValue;
             gridColumn = null;
