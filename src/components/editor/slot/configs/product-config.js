@@ -119,12 +119,12 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Thumbnails (left position in vertical, or horizontal layout)
+    // Thumbnails (only show when NOT vertical right)
     product_thumbnails: {
       id: 'product_thumbnails',
       type: 'html',
-      content: `{{#unless (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}
-        <div class="{{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
+      content: `<!-- Thumbnails for horizontal layout or vertical left -->
+        <div class="{{#if (eq settings.product_gallery_layout 'vertical')}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2 mt-4{{/if}}">
           {{#if product.images}}
             {{#each product.images}}
               <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300 hover:border-gray-400 transition-all duration-200 hover:shadow-md">
@@ -132,14 +132,20 @@ export const productConfig = {
               </button>
             {{/each}}
           {{else}}
-            {{#each (array "1" "2" "3" "4")}}
-              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
-                <img src="https://placehold.co/100x100?text=T{{this}}" alt="Demo Thumbnail" class="w-full h-full object-cover" />
-              </button>
-            {{/each}}
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T1" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T2" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T3" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T4" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
           {{/if}}
-        </div>
-      {{/unless}}`,
+        </div>`,
       className: '',
       parentClassName: '',
       styles: {},
@@ -147,7 +153,10 @@ export const productConfig = {
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        conditionalRender: '{{#if (ne settings.vertical_gallery_position "right")}}show{{/if}}'
+      }
     },
 
     // Main product image with integrated labels
@@ -198,7 +207,7 @@ export const productConfig = {
     product_thumbnails_right: {
       id: 'product_thumbnails_right',
       type: 'html',
-      content: `{{#if (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}
+      content: `<!-- Thumbnails for vertical right layout -->
         <div class="flex flex-col space-y-2 w-24">
           {{#if product.images}}
             {{#each product.images}}
@@ -207,14 +216,20 @@ export const productConfig = {
               </button>
             {{/each}}
           {{else}}
-            {{#each (array "1" "2" "3" "4")}}
-              <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
-                <img src="https://placehold.co/100x100?text=T{{this}}" alt="Demo Thumbnail" class="w-full h-full object-cover" />
-              </button>
-            {{/each}}
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T1" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T2" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T3" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
+            <button class="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-300">
+              <img src="https://placehold.co/100x100?text=T4" alt="Demo Thumbnail" class="w-full h-full object-cover" />
+            </button>
           {{/if}}
-        </div>
-      {{/if}}`,
+        </div>`,
       className: '',
       parentClassName: '',
       styles: {},
@@ -222,7 +237,10 @@ export const productConfig = {
       position: { col: 3, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        conditionalRender: '{{#if (eq settings.vertical_gallery_position "right")}}show{{/if}}'
+      }
     },
 
     // Product Information Section
