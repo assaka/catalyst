@@ -770,7 +770,8 @@ export const productConfig = {
       type: 'component',
       component: 'ProductTabsSlot',
       content: `
-        <div class="w-full">
+        <div class="w-full border-8 border-red-500 p-8 bg-gray-50">
+          <h2 class="text-4xl font-bold text-red-600 mb-4">PRODUCT TABS ARE HERE</h2>
           <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-8">
               {{#each tabs}}
