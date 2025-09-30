@@ -121,7 +121,7 @@ export const productConfig = {
                 <!-- PRODUCT LABELS -->
                 {{#if productLabels}}
                   {{#each productLabels}}
-                    <div class="absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{#if this.color}}{{this.color}}{{else}}#FFFFFF{{/if}}; {{this.position}}">
+                    <div data-position="{{this.position}}" class="absolute z-10 px-2 py-1 text-xs font-bold rounded shadow-lg pointer-events-none" style="background-color: {{this.background_color}}; color: {{this.color}}; {{this.position}}">
                       {{this.text}}
                     </div>
                   {{/each}}

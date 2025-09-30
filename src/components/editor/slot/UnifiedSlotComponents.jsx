@@ -1735,8 +1735,10 @@ const ProductThumbnails = createSlotComponent({
   render: ({ slot, productContext, className, styles, variableContext, context }) => {
     const { product, activeImageIndex, setActiveImageIndex, settings } = productContext;
 
-    // Simple, direct approach - no complex template processing
+    // 🔧 ENHANCED SETTINGS PRIORITY: Check both contexts and force refresh from admin changes
+    // Priority: 1) productContext.settings (fresh from StoreProvider) 2) variableContext.settings (fallback) 3) default
     const galleryLayout = settings?.product_gallery_layout || variableContext?.settings?.product_gallery_layout || 'horizontal';
+    const verticalPosition = settings?.vertical_gallery_position || variableContext?.settings?.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
 
     // Direct CSS classes based on layout
@@ -1775,14 +1777,26 @@ const ProductThumbnails = createSlotComponent({
       return 'https://placehold.co/100x100?text=Invalid';
     };
 
-    // Debug logging
-    console.log('🖼️ UNIFIED THUMBNAILS:', {
+    // 🔧 ENHANCED DEBUG LOGGING: Show both setting sources and final resolution
+    console.log('🖼️ UNIFIED THUMBNAILS - SETTINGS DEBUG:', {
       context,
       finalClassName,
       imageCount: thumbnailImages.length,
       activeIndex: activeImageIndex,
-      layout: variableContext?.settings?.product_gallery_layout,
-      position: variableContext?.settings?.vertical_gallery_position
+      SETTINGS_FROM_PRODUCT_CONTEXT: {
+        product_gallery_layout: settings?.product_gallery_layout,
+        vertical_gallery_position: settings?.vertical_gallery_position
+      },
+      SETTINGS_FROM_VARIABLE_CONTEXT: {
+        product_gallery_layout: variableContext?.settings?.product_gallery_layout,
+        vertical_gallery_position: variableContext?.settings?.vertical_gallery_position
+      },
+      FINAL_RESOLVED: {
+        galleryLayout,
+        verticalPosition,
+        isVertical
+      },
+      timestamp: new Date().toISOString()
     });
 
     return (

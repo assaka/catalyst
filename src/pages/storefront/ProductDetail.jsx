@@ -897,6 +897,12 @@ export default function ProductDetail() {
               handleOptionChange: handleOptionChange,
               customOptionsLabel: customOptionsLabel
             }}
+            variableContext={{
+              product,
+              store,
+              settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
+              productLabels: product?.applicableLabels || productLabels
+            }}
           />
         </div>
       ) : null

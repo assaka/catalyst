@@ -365,7 +365,11 @@ export default function ThemeLayout() {
                     `store_${store.id}_settings`,
                     `store_${store.id}_cache`,
                     'product_layout_config',
-                    'category_layout_config'
+                    'category_layout_config',
+                    // 🔧 GALLERY SYNC FIX: Clear additional template processing caches
+                    'variableProcessor_cache',
+                    'template_processing_cache',
+                    'slot_configuration_cache'
                 ];
 
                 keysToAlwaysClear.forEach(key => {

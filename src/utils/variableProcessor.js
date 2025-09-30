@@ -28,16 +28,23 @@ export function processVariables(content, context, pageData = {}) {
     });
   }
 
-  // Debug thumbnail gallery specifically
-  if (content.includes('thumbnail-gallery')) {
-    console.log('🖼️ THUMBNAIL GALLERY PROCESSING:', {
-      originalContent: content,
-      product_gallery_layout: context?.settings?.product_gallery_layout,
-      vertical_gallery_position: context?.settings?.vertical_gallery_position,
-      settingsObj: context?.settings,
-      hasVerticalConditional: content.includes('(eq settings.product_gallery_layout "vertical")'),
-      hasHorizontalConditional: content.includes('(eq settings.product_gallery_layout "horizontal")'),
-      hasPositionConditional: content.includes('settings.vertical_gallery_position')
+  // Debug thumbnail gallery specifically - ENHANCED for admin sync debugging
+  if (content.includes('thumbnail-gallery') || content.includes('product_gallery_layout')) {
+    console.log('🖼️ VARIABLE PROCESSOR - GALLERY TEMPLATE DEBUG:', {
+      originalContent: content.substring(0, 200) + '...',
+      CONTEXT_SETTINGS: {
+        product_gallery_layout: context?.settings?.product_gallery_layout,
+        vertical_gallery_position: context?.settings?.vertical_gallery_position,
+        settingsKeys: context?.settings ? Object.keys(context.settings) : 'No settings',
+        hasSettings: !!context?.settings
+      },
+      TEMPLATE_CHECKS: {
+        hasVerticalConditional: content.includes('(eq settings.product_gallery_layout "vertical")'),
+        hasHorizontalConditional: content.includes('(eq settings.product_gallery_layout "horizontal")'),
+        hasPositionConditional: content.includes('settings.vertical_gallery_position'),
+        hasGalleryLayoutRef: content.includes('product_gallery_layout')
+      },
+      timestamp: new Date().toISOString()
     });
   }
 
