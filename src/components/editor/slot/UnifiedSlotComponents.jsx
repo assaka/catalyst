@@ -217,7 +217,130 @@ const ProductBreadcrumbs = createSlotComponent({
 });
 
 /**
- * ProductGallery - Unified product gallery component
+ * ProductThumbnails - Simplified thumbnails component (used in config-driven layout)
+ */
+const ProductThumbnails = createSlotComponent({
+  name: 'ProductThumbnails',
+
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
+    const product = variableContext?.product || productContext?.product;
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+    if (context === 'editor') {
+      // Editor version - demo thumbnails
+      return (
+        <div className={className || slot.className} style={styles || slot.styles}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveImageIndex(i)}
+              className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                activeImageIndex === i
+                  ? 'border-blue-500 ring-2 ring-blue-200'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <img
+                src={`https://placehold.co/100x100?text=T${i + 1}`}
+                alt={`Demo Thumbnail ${i + 1}`}
+                className="w-full h-full object-cover"
+              />
+              {activeImageIndex === i && (
+                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    // Storefront version - real thumbnails
+    const images = product?.images || [];
+    if (images.length === 0) return null;
+
+    return (
+      <div className={className || slot.className} style={styles || slot.styles}>
+        {images.map((image, index) => {
+          const thumbUrl = typeof image === 'string' ? image : image?.url || image?.src;
+          return (
+            <button
+              key={index}
+              onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+              className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                activeImageIndex === index
+                  ? 'border-blue-500 ring-2 ring-blue-200'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <img
+                src={thumbUrl}
+                alt={`${product.name} ${index + 1}`}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                onError={(e) => {
+                  e.target.src = 'https://placehold.co/100x100?text=Error';
+                }}
+              />
+              {activeImageIndex === index && (
+                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+});
+
+/**
+ * ProductMainImage - Simplified main image component (used in config-driven layout)
+ */
+const ProductMainImage = createSlotComponent({
+  name: 'ProductMainImage',
+
+  render: ({ slot, productContext, className, styles, context, variableContext }) => {
+    const product = variableContext?.product || productContext?.product;
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+    if (context === 'editor') {
+      // Editor version - demo main image
+      return (
+        <div className={className || slot.className} style={styles || slot.styles}>
+          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+            <img
+              src={`https://placehold.co/600x600?text=Main+Image`}
+              alt="Demo Main Product"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Storefront version - real main image
+    const images = product?.images || [];
+    const mainImageUrl = images[activeImageIndex]
+      ? (typeof images[activeImageIndex] === 'string' ? images[activeImageIndex] : images[activeImageIndex]?.url || images[activeImageIndex]?.src)
+      : 'https://placehold.co/600x600?text=No+Image';
+
+    return (
+      <div className={className || slot.className} style={styles || slot.styles}>
+        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <img
+            src={mainImageUrl}
+            alt={product?.name || 'Product'}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.src = 'https://placehold.co/600x600?text=Error';
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * ProductGallery - Legacy unified gallery component (keeping for backward compatibility)
  */
 const ProductGallery = createSlotComponent({
   name: 'ProductGallerySlot',
@@ -1398,6 +1521,8 @@ registerSlotComponent('CartCouponSlot', CartCouponSlot);
 registerSlotComponent('CartOrderSummarySlot', CartOrderSummarySlot);
 registerSlotComponent('ProductBreadcrumbsSlot', ProductBreadcrumbs);
 registerSlotComponent('ProductGallerySlot', ProductGallery);
+registerSlotComponent('ProductThumbnails', ProductThumbnails);
+registerSlotComponent('ProductMainImage', ProductMainImage);
 registerSlotComponent('ProductInfoSlot', ProductInfo);
 registerSlotComponent('ProductOptionsSlot', ProductOptions);
 registerSlotComponent('CustomOptions', CustomOptions);

@@ -99,25 +99,78 @@ export const productConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Product Gallery Section
+    // Product Gallery Section - Configurable Layout with Handlebars Logic
 
-
-
-    product_gallery: {
-      id: 'product_gallery',
-      type: 'component',
-      component: 'ProductGallerySlot',
+    // Gallery container with dynamic layout classes based on settings
+    product_gallery_container: {
+      id: 'product_gallery_container',
+      type: 'flex',
       content: '',
-      className: 'w-full',
+      className: '{{#if (eq settings.product_gallery_layout "vertical")}}flex {{#if (eq settings.vertical_gallery_position "left")}}flex-row{{else}}flex-row-reverse{{/if}} gap-4{{else}}flex flex-col gap-4{{/if}} w-full',
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
       position: { col: 1, row: 1 },
+      layout: 'flex',
       colSpan: {
         default: 'col-span-12 lg:col-span-6'
       },
       viewMode: ['default'],
       metadata: { hierarchical: true }
+    },
+
+    // Thumbnails - positioned based on settings
+    product_thumbnails: {
+      id: 'product_thumbnails',
+      type: 'component',
+      component: 'ProductThumbnails',
+      content: '',
+      className: '{{#if (eq settings.product_gallery_layout "vertical")}}flex flex-col space-y-2 w-24{{else}}flex overflow-x-auto space-x-2{{/if}}',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_gallery_container',
+      position: { col: 1, row: 1 },
+      colSpan: {},
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        conditionalRender: '{{#if (or (ne settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "left"))}}show{{/if}}'
+      }
+    },
+
+    // Main product image
+    product_main_image: {
+      id: 'product_main_image',
+      type: 'component',
+      component: 'ProductMainImage',
+      content: '',
+      className: 'flex-1 relative rounded-lg overflow-hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_gallery_container',
+      position: { col: 2, row: 1 },
+      colSpan: {},
+      viewMode: ['default'],
+      metadata: { hierarchical: true }
+    },
+
+    // Thumbnails for right position (rendered after main image)
+    product_thumbnails_right: {
+      id: 'product_thumbnails_right',
+      type: 'component',
+      component: 'ProductThumbnails',
+      content: '',
+      className: 'flex flex-col space-y-2 w-24',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_gallery_container',
+      position: { col: 3, row: 1 },
+      colSpan: {},
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        conditionalRender: '{{#if (and (eq settings.product_gallery_layout "vertical") (eq settings.vertical_gallery_position "right"))}}show{{/if}}'
+      }
     },
 
     // Product Information Section
@@ -286,7 +339,7 @@ export const productConfig = {
         zIndex: 50,
         pointerEvents: 'none'
       },
-      parentId: 'product_gallery',
+      parentId: 'product_main_image',
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
