@@ -403,7 +403,11 @@ function evaluateCondition(condition, context, pageData) {
           actualValue,
           expectedValue,
           result: actualValue === expectedValue,
-          context: Object.keys(context)
+          contextKeys: Object.keys(context),
+          pageDataKeys: Object.keys(pageData),
+          pageDataHasTabType: 'tab_type' in pageData,
+          pageDataTabType: pageData?.tab_type,
+          contextHasTabType: 'tab_type' in context
         });
       }
       // Only log gallery-related evaluations - ENHANCED debugging for position issue
