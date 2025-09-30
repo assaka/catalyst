@@ -805,13 +805,14 @@ export const productConfig = {
                   <!-- Content sections - ALWAYS SHOW ALL FOR DEBUG -->
                   <div class="bg-blue-100 p-4 mb-2">
                     <strong>TEXT TAB CONTENT (this.content):</strong>
-                    <div>{{{this.content}}}</div>
-                    <p class="text-xs mt-2">Raw: {{this.content}}</p>
+                    <div>{{this.content}}</div>
+                    <p class="text-xs mt-2">Raw with triple braces: {{{this.content}}}</p>
                   </div>
 
                   <div class="bg-green-100 p-4 mb-2">
                     <strong>DESCRIPTION TAB CONTENT (product.description):</strong>
-                    <div>{{{../product.description}}}</div>
+                    <div>{{../product.description}}</div>
+                    <p class="text-xs mt-2">Raw with triple braces: {{{../product.description}}}</p>
                   </div>
 
                   <div class="bg-purple-100 p-4 mb-2">
