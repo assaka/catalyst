@@ -747,7 +747,7 @@ const ProductTabs = createSlotComponent({
       // Don't auto-generate description tab - use only database tabs
       const tabsToRender = [...validTabs];
 
-      const currentActiveIndex = activeTab !== undefined ? activeTab : activeTabIndex;
+      const currentActiveIndex = (activeTab !== undefined && activeTab !== null) ? activeTab : activeTabIndex;
 
       const mappedTabs = tabsToRender.map((tab, index) => ({
         ...tab,
