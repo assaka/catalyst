@@ -229,18 +229,28 @@ const ProductGallery = createSlotComponent({
     const verticalPosition = settings.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
 
-    // Debug logging
-    console.log('🖼️ SIMPLIFIED GALLERY DEBUG:', {
-      context,
-      galleryLayout,
-      verticalPosition,
-      isVertical,
-      settingsFromProductContext: productContext?.settings,
-      settingsFromVariableContext: variableContext?.settings,
-      finalSettings: settings,
-      expectedClass: isVertical
+    // Debug logging - DETAILED
+    console.log('🔍 GALLERY SYNC DEBUG:', {
+      '1_CONTEXT': context,
+      '2_SETTINGS_SOURCE': {
+        productContext_exists: !!productContext,
+        productContext_settings: productContext?.settings,
+        variableContext_exists: !!variableContext,
+        variableContext_settings: variableContext?.settings,
+        final_settings_used: settings
+      },
+      '3_LAYOUT_VALUES': {
+        galleryLayout,
+        verticalPosition,
+        isVertical
+      },
+      '4_CSS_CLASS': isVertical
         ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
-        : 'flex flex-col space-y-4'
+        : 'flex flex-col space-y-4',
+      '5_FULL_CONTEXTS': {
+        productContext,
+        variableContext
+      }
     });
 
     if (context === 'editor') {
