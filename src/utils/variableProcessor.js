@@ -352,8 +352,20 @@ function evaluateCondition(condition, context, pageData) {
       });
     }
 
-    // Handle eq helper function: (eq variable "value")
-    const eqMatch = condition.match(/\(eq\s+([^"\s]+)\s+"([^"]+)"\)/);
+    // Handle eq helper function: (eq variable "value") - FIXED to handle both single and double quotes
+    const eqMatch = condition.match(/\(eq\s+([^"'\s]+)\s+['"]([^'"]+)['"]\)/);
+
+    // 🔧 DEBUG: Log regex match results for vertical_gallery_position
+    if (condition.includes('vertical_gallery_position')) {
+      console.log('[THUMBNAIL-SYNC] 🔍 REGEX MATCH DEBUG:', {
+        condition,
+        eqMatch,
+        regexMatched: !!eqMatch,
+        variablePath: eqMatch ? eqMatch[1] : 'No match',
+        expectedValue: eqMatch ? eqMatch[2] : 'No match'
+      });
+    }
+
     if (eqMatch) {
       const [, variablePath, expectedValue] = eqMatch;
       const actualValue = getNestedValue(variablePath, context, pageData);
