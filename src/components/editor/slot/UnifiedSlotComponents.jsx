@@ -845,7 +845,8 @@ const ProductTabs = createSlotComponent({
     console.log('UnifiedSlotComponents - ProductTabsSlot - Processed content:', {
       contentLength: processedContent.length,
       firstChars: processedContent.substring(0, 300),
-      tabsCount: tabsData.length
+      tabsCount: tabsData.length,
+      fullContent: processedContent
     });
 
     return (
