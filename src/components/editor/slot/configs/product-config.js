@@ -542,11 +542,10 @@ export const productConfig = {
 
     custom_options: {
       id: 'custom_options',
-      type: 'component',
-      component: 'CustomOptions',
+      type: 'html',
       content: `
         <div class="space-y-4">
-          <h3 class="text-lg font-semibold text-green-600">{{displayLabel}}</h3>
+          <h3 class="text-lg font-semibold text-yellow-600">{{displayLabel}}</h3>
           <div class="space-y-3">
             {{#if customOptions}}
               {{#each customOptions}}

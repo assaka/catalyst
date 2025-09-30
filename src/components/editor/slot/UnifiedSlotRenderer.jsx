@@ -257,6 +257,10 @@ export function UnifiedSlotRenderer({
         const HtmlTag = metadata?.htmlTag || 'span';
         const htmlAttributes = metadata?.htmlAttributes || {};
 
+        if (id === 'product_sku') {
+          console.log('SKU rendering:', { className, processedClassName, content, processedContent });
+        }
+
         const textElement = React.createElement(
           HtmlTag,
           {
