@@ -35,4 +35,21 @@ export default [
       ],
     },
   },
+  {
+    files: ['backend/**/*.js', 'scripts/**/*.js', 'testing/**/*.js', '*.config.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.node,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'commonjs',
+      },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': 'warn',
+      'no-undef': 'warn',
+      'no-unreachable': 'warn',
+    },
+  },
 ]

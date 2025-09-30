@@ -283,63 +283,7 @@ export const productConfig = {
               </div>
             </div>
           {{/if}}
-        {{/if}}`
-
-          {{#if product.images}}
-            {{#each product.images}}
-              {{#if @index < 10}}
-                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-                  <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
-                </button>
-              {{/if}}
-            {{/each}}
-          {{else}}
-            <!-- Editor demo thumbnails (max 4) -->
-            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-              <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
-            </button>
-            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-              <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
-            </button>
-            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-              <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
-            </button>
-            <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
-              <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
-            </button>
-          {{/if}}
-        </div>
-
-        <!-- MAIN IMAGE -->
-        <div class="flex-1 relative min-w-0">
-          <div class="aspect-square bg-gray-50 rounded-lg overflow-hidden w-full max-w-full relative">
-            {{#if product.images}}
-              <img src="{{product.images.[0]}}" alt="{{product.name}}" class="w-full h-full object-cover" />
-            {{else}}
-              <img src="https://placehold.co/600x600?text=Product" alt="Demo Product" class="w-full h-full object-cover" />
-            {{/if}}
-
-            <!-- PRODUCT LABELS -->
-            <div class="absolute top-3 right-3 flex space-x-2 pointer-events-none z-10">
-              {{#if productLabels}}
-                {{#each productLabels}}
-                  <div style="background-color: {{this.background_color}}; color: {{#if this.text_color}}{{this.text_color}}{{else}}#ffffff{{/if}}; font-size: 0.75rem; font-weight: 600;" class="px-2 py-1 rounded-md shadow-sm">
-                    {{this.text}}
-                  </div>
-                {{/each}}
-              {{else}}
-                <!-- Editor demo labels -->
-                <div style="background-color: #dc2626; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                  Sale
-                </div>
-                <div style="background-color: #059669; color: #ffffff;" class="text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
-                  New
-                </div>
-              {{/if}}
-            </div>
-          </div>
-        </div>
-      </div>`,
+        {{/if}}`,
       className: 'w-full',
       parentClassName: '',
       styles: {},
