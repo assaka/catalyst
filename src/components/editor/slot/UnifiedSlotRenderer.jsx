@@ -232,48 +232,10 @@ export function UnifiedSlotRenderer({
 
     // HTML Element (raw HTML content)
     if (type === 'html') {
-      const htmlRef = React.useRef(null);
-
-      React.useEffect(() => {
-        if (!htmlRef.current) return;
-
-        // Load and execute custom script if specified in metadata
-        if (metadata?.requiresScript && metadata?.script) {
-          const script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.setAttribute('data-slot-id', id);
-
-          // Create isolated execution context
-          const isolatedScript = `
-            (function() {
-              'use strict';
-              ${metadata.script}
-
-              // Dispatch custom event for script initialization
-              const event = new CustomEvent('slot-script-loaded', {
-                detail: { slotId: '${id}', element: document.querySelector('[data-slot-id="${id}"]') }
-              });
-              document.dispatchEvent(event);
-            })();
-          `;
-
-          script.textContent = isolatedScript;
-          document.body.appendChild(script);
-
-          return () => {
-            if (script.parentNode) {
-              document.body.removeChild(script);
-            }
-          };
-        }
-      }, [processedContent, metadata?.script]);
-
       const htmlElement = (
         <div
-          ref={htmlRef}
           className={processedClassName}
           style={styles}
-          data-slot-id={id}
           dangerouslySetInnerHTML={{ __html: processedContent || '[HTML placeholder]' }}
         />
       );
