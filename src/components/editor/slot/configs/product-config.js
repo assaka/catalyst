@@ -509,7 +509,7 @@ export const productConfig = {
       id: 'product_short_description',
       type: 'text',
       content: '{{product.short_description}}',
-      className: 'w-fit text-gray-700 leading-relaxed',
+      className: 'w-fit text-gray-700 leading-relaxed bg-red-100',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
@@ -590,7 +590,7 @@ export const productConfig = {
                                 </div>
                               </div>
                             {{else}}
-                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold text-blue-800 {{#if this.isSelected}}bg-blue-600 text-white border-blue-600{{else}}bg-blue-100 border-blue-300{{/if}}">
+                              <span class="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold text-purple-800 {{#if this.isSelected}}bg-purple-600 text-white border-purple-600{{else}}bg-purple-100 border-purple-300{{/if}}">
                                 +{{this.displayPrice}}
                               </span>
                             {{/if}}
