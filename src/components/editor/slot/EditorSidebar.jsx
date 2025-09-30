@@ -181,15 +181,23 @@ const EditorSidebar = ({
 
     const content = slotConfig.content || '';
     const className = slotConfig.className || '';
+    const parentClassName = slotConfig.parentClassName || '';
     const styles = slotConfig.styles || {};
     const type = slotConfig.type || 'div';
+    const metadata = slotConfig.metadata || {};
 
-    // Create the correct element type based on slot type
-    const element = document.createElement(
-      type === 'button' ? 'button' :
-      type === 'link' ? 'a' :
-      'div'
-    );
+    // Determine the HTML tag to use
+    let tagName = 'div';
+    if (metadata.htmlTag) {
+      tagName = metadata.htmlTag;
+    } else if (type === 'button') {
+      tagName = 'button';
+    } else if (type === 'link') {
+      tagName = 'a';
+    }
+
+    // Create the element
+    const element = document.createElement(tagName);
 
     // Apply classes from database (excluding editor-specific classes)
     const cleanClasses = className
@@ -231,6 +239,15 @@ const EditorSidebar = ({
       }
     });
 
+    // Apply HTML attributes from metadata
+    if (metadata.htmlAttributes) {
+      Object.entries(metadata.htmlAttributes).forEach(([attr, value]) => {
+        if (attr !== 'class') { // Skip 'class' as it's handled via className
+          element.setAttribute(attr, value);
+        }
+      });
+    }
+
     // Set content (for buttons and links, extract text only to avoid nested divs)
     if (type === 'button' || type === 'link') {
       if (content.includes('<')) {
@@ -250,6 +267,14 @@ const EditorSidebar = ({
       }
     } else {
       element.innerHTML = content;
+    }
+
+    // If there's a parentClassName (alignment), wrap in a div
+    if (parentClassName) {
+      const wrapper = document.createElement('div');
+      wrapper.className = parentClassName;
+      wrapper.appendChild(element);
+      return wrapper.outerHTML;
     }
 
     return element.outerHTML;
