@@ -487,7 +487,7 @@ export const productConfig = {
       id: 'product_sku',
       type: 'text',
       content: '{{#if product.sku}}SKU: {{product.sku}}{{/if}}',
-      className: 'w-fit text-3xl text-gray-600 italic font-bold product-sku',
+      className: 'w-fit text-3xl text-gray-600 italic font-bold',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
@@ -498,7 +498,10 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        htmlTag: 'span'
+        htmlTag: 'span',
+        htmlAttributes: {
+          'class': 'product-sku'
+        }
       }
     },
 

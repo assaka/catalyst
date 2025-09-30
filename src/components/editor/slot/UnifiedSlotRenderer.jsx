@@ -97,14 +97,20 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   const HtmlTag = slot.metadata?.htmlTag || 'div';
   const htmlAttributes = slot.metadata?.htmlAttributes || {};
 
+  // Merge className with htmlAttributes.class if both exist
+  const { class: htmlClass, ...otherHtmlAttributes } = htmlAttributes;
+  const mergedClassName = htmlClass
+    ? `${processedClassName} ${htmlClass}`.trim()
+    : processedClassName;
+
   return React.createElement(
     HtmlTag,
     {
       ref: elementRef,
-      className: processedClassName,
+      className: mergedClassName,
       style: styles,
       dangerouslySetInnerHTML: { __html: textContent },
-      ...htmlAttributes
+      ...otherHtmlAttributes
     }
   );
 };
@@ -273,10 +279,16 @@ export function UnifiedSlotRenderer({
         const HtmlTag = metadata?.htmlTag || 'span';
         const htmlAttributes = metadata?.htmlAttributes || {};
 
+        // Merge className with htmlAttributes.class if both exist
+        const { class: htmlClass, ...otherHtmlAttributes } = htmlAttributes;
+        const mergedClassName = htmlClass
+          ? `${processedClassName} ${htmlClass}`.trim()
+          : processedClassName;
+
         const textElement = React.createElement(
           HtmlTag,
           {
-            className: processedClassName,
+            className: mergedClassName,
             style: {
               ...styles,
               cursor: 'pointer',
@@ -294,7 +306,7 @@ export function UnifiedSlotRenderer({
             dangerouslySetInnerHTML: {
               __html: processedContent || '[Text placeholder]'
             },
-            ...htmlAttributes
+            ...otherHtmlAttributes
           }
         );
         return wrapWithResize(textElement, slot, 20, 16);
