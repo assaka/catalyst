@@ -160,7 +160,8 @@ export function UnifiedSlotRenderer({
     fullProductData: Object.keys(productData),
     product_gallery_layout: variableContext.settings?.product_gallery_layout,
     vertical_gallery_position: variableContext.settings?.vertical_gallery_position,
-    settingsSource: context === 'editor' ? 'DEMO_DATA' : 'REAL_SETTINGS'
+    settingsSource: context === 'editor' ? 'DEMO_DATA' : 'REAL_SETTINGS',
+    allSettingsKeys: Object.keys(productData.settings || {})
   });
 
   /**

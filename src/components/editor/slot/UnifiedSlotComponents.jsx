@@ -225,6 +225,16 @@ const ProductGallery = createSlotComponent({
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
     // SIMPLIFIED: Get settings from ONE place - variableContext (which now has same data for both contexts)
     const settings = variableContext?.settings || {};
+
+    console.log('⚠️ SETTINGS CHECK:', {
+      raw_settings: settings,
+      has_gallery_layout: 'product_gallery_layout' in settings,
+      gallery_layout_value: settings.product_gallery_layout,
+      has_vertical_position: 'vertical_gallery_position' in settings,
+      vertical_position_value: settings.vertical_gallery_position,
+      all_setting_keys: Object.keys(settings)
+    });
+
     const galleryLayout = settings.product_gallery_layout || 'horizontal';
     const verticalPosition = settings.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
