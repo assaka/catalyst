@@ -345,8 +345,8 @@ const ProductGallery = createSlotComponent({
             </div>
           </div>
 
-          {/* Thumbnails - render after main image if not vertical left */}
-          {(!isVertical || verticalPosition !== 'left') && (
+          {/* Thumbnails - render after main image for horizontal OR vertical right */}
+          {(!isVertical || (isVertical && verticalPosition === 'right')) && (
             <div className={isVertical
               ? "flex flex-col space-y-2 w-24"
               : "flex overflow-x-auto space-x-2"
@@ -497,8 +497,8 @@ const ProductGallery = createSlotComponent({
           </div>
         </div>
 
-        {/* Thumbnails - render after main image if not vertical left */}
-        {(!isVertical || verticalPosition !== 'left') && images.length > 0 && (
+        {/* Thumbnails - render after main image for horizontal OR vertical right */}
+        {(!isVertical || (isVertical && verticalPosition === 'right')) && images.length > 0 && (
           <div className={isVertical
             ? "flex flex-col space-y-2 w-24"
             : "flex overflow-x-auto space-x-2"
