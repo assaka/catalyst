@@ -12,7 +12,7 @@ const optionalAuth = (req, res, next) => {
     return next();
   }
   // For non-public requests, require authentication
-  return auth(req, res, next);
+  return authMiddleware(req, res, next);
 };
 
 // @route   GET /api/product-labels
