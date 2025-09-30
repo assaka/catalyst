@@ -307,7 +307,7 @@ const ProductGallery = createSlotComponent({
     }
 
     // Storefront version - full functionality
-    const { product, activeImageIndex, setActiveImageIndex } = productContext;
+    const { product, activeImageIndex = 0, setActiveImageIndex } = productContext;
 
     if (!product) return null;
 
@@ -319,13 +319,19 @@ const ProductGallery = createSlotComponent({
       imagesType: typeof images[0],
       firstImage: images[0],
       allImages: images,
-      activeImageIndex
+      activeImageIndex,
+      currentSettings: settings,
+      layoutBeingUsed: { galleryLayout, verticalPosition, isVertical }
     });
 
     // Handle both string URLs and object structures
     const getImageUrl = (img) => {
+      if (!img) return 'https://placehold.co/600x600?text=No+Image';
       if (typeof img === 'string') return img;
-      if (img && typeof img === 'object') return img.url || img.src || img.image;
+      if (typeof img === 'object') {
+        // Try different possible property names
+        return img.url || img.src || img.image || img.thumbnail || img.path || 'https://placehold.co/600x600?text=No+Image';
+      }
       return 'https://placehold.co/600x600?text=No+Image';
     };
 
