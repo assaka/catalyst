@@ -24,8 +24,16 @@ export default function BreadcrumbRenderer({
 
   // Styling options (backward compatibility)
   className = "flex items-center space-x-2 text-sm text-gray-600 mb-6",
-  ariaLabel = "Breadcrumb"
+  ariaLabel = "Breadcrumb",
+
+  // DIRECT PROP for passing styles
+  slots
 }) {
+  // If breadcrumbStyles is empty but slots is provided, extract from slots
+  if ((!breadcrumbStyles || Object.keys(breadcrumbStyles).length === 0) && slots?.breadcrumb_styles?.styles) {
+    breadcrumbStyles = slots.breadcrumb_styles.styles;
+    console.log('🎯 FIXED: Extracted breadcrumbStyles from slots prop:', breadcrumbStyles);
+  }
   // Extract config with defaults
   const {
     enabled = true,
