@@ -37,26 +37,25 @@ export default function BreadcrumbRenderer({
     truncateLength = null
   } = breadcrumbConfig;
 
-  // Extract styles with defaults
+  // Extract styles with defaults - FORCE YELLOW FOR TESTING
   const {
     containerBgColor = 'transparent',
     containerPadding = '0',
     containerMargin = '0 0 1.5rem 0',
-    itemTextColor = '#4B5563', // gray-600
-    itemHoverColor = '#1F2937', // gray-800
-    activeItemColor = '#1F2937', // gray-800
-    separatorColor = '#9CA3AF', // gray-400
-    fontSize = '0.875rem',
-    fontWeight = '400'
-  } = breadcrumbStyles;
+    itemTextColor = breadcrumbStyles?.itemTextColor || '#EAB308', // FORCE YELLOW!
+    itemHoverColor = breadcrumbStyles?.itemHoverColor || '#CA8A04', // FORCE YELLOW HOVER!
+    activeItemColor = breadcrumbStyles?.activeItemColor || '#1F2937',
+    separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF',
+    fontSize = breadcrumbStyles?.fontSize || '0.875rem',
+    fontWeight = breadcrumbStyles?.fontWeight || '400'
+  } = {};
 
   // Debug: Log what we're rendering
-  console.log('🎨 BreadcrumbRenderer rendering with:', {
-    breadcrumbConfig,
+  console.log('🎨 BreadcrumbRenderer FORCED YELLOW TEST:', {
     breadcrumbStyles,
     itemTextColor,
     itemHoverColor,
-    activeItemColor
+    SHOULD_BE_YELLOW: itemTextColor === '#EAB308'
   });
 
   // If disabled, return null
