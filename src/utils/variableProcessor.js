@@ -17,51 +17,6 @@ export function processVariables(content, context, pageData = {}) {
     return content;
   }
 
-  // Debug ALL order template processing
-  if (content.includes('order-')) {
-    console.log('🎨 ORDER TEMPLATE DEBUG:', {
-      content: content,
-      product_gallery_layout: context?.settings?.product_gallery_layout,
-      vertical_gallery_position: context?.settings?.vertical_gallery_position,
-      containsHorizontal: content.includes('horizontal'),
-      containsVertical: content.includes('vertical')
-    });
-  }
-
-  // Debug thumbnail gallery specifically - ENHANCED for admin sync debugging
-  if (content.includes('thumbnail-gallery') || content.includes('product_gallery_layout')) {
-    console.log('[THUMBNAIL-SYNC] 🖼️ VARIABLE PROCESSOR - GALLERY TEMPLATE DEBUG:', {
-      originalContent: content.substring(0, 200) + '...',
-      CONTEXT_SETTINGS: {
-        product_gallery_layout: context?.settings?.product_gallery_layout,
-        vertical_gallery_position: context?.settings?.vertical_gallery_position,
-        settingsKeys: context?.settings ? Object.keys(context.settings) : 'No settings',
-        hasSettings: !!context?.settings
-      },
-      TEMPLATE_CHECKS: {
-        hasVerticalConditional: content.includes('(eq settings.product_gallery_layout "vertical")'),
-        hasHorizontalConditional: content.includes('(eq settings.product_gallery_layout "horizontal")'),
-        hasPositionConditional: content.includes('settings.vertical_gallery_position'),
-        hasGalleryLayoutRef: content.includes('product_gallery_layout')
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Debug parent className processing for gallery ordering
-  if (content.includes('order-') || (content.includes('vertical_gallery_position') && content.includes('order'))) {
-    console.log('📐 PARENT CLASS PROCESSING:', {
-      originalContent: content,
-      product_gallery_layout: context?.settings?.product_gallery_layout,
-      vertical_gallery_position: context?.settings?.vertical_gallery_position,
-      isVertical: context?.settings?.product_gallery_layout === 'vertical',
-      isLeft: context?.settings?.vertical_gallery_position === 'left',
-      expectedOrder: context?.settings?.product_gallery_layout === 'vertical'
-        ? (context?.settings?.vertical_gallery_position === 'left' ? 'order-first' : 'order-last')
-        : 'order-2'
-    });
-  }
-
   let processedContent = content;
 
   // 1. Process conditional blocks first
@@ -72,41 +27,6 @@ export function processVariables(content, context, pageData = {}) {
 
   // 3. Process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
-
-  // Debug ALL order processing results with POSITION focus
-  if (content.includes('order-')) {
-    const isVerticalLayout = context?.settings?.product_gallery_layout === 'vertical';
-    const position = context?.settings?.vertical_gallery_position;
-    const isMainImage = content.includes('{{#if (eq settings.product_gallery_layout "vertical")}}');
-    const isThumbnail = !isMainImage && content.includes('vertical_gallery_position');
-
-    console.log('🎨 ORDER RESULT DEBUG:', {
-      element: isMainImage ? 'MAIN_IMAGE' : isThumbnail ? 'THUMBNAILS' : 'UNKNOWN',
-      original: content.substring(0, 100) + '...',
-      processed: processedContent,
-      isEmpty: !processedContent || processedContent.trim() === '',
-      currentLayout: context?.settings?.product_gallery_layout,
-      currentPosition: position,
-      expectedForVerticalLeft: isVerticalLayout && position === 'left' ?
-        (isMainImage ? 'Should be order-last' : isThumbnail ? 'Should be order-first' : 'N/A') : 'N/A',
-      expectedForVerticalRight: isVerticalLayout && position === 'right' ?
-        (isMainImage ? 'Should be order-first' : isThumbnail ? 'Should be order-last' : 'N/A') : 'N/A'
-    });
-  }
-
-  // Debug thumbnail gallery result
-  if (content.includes('thumbnail-gallery')) {
-    console.log('🖼️ THUMBNAIL GALLERY RESULT:', {
-      originalContent: content,
-      processedContent: processedContent,
-      changed: content !== processedContent,
-      product_gallery_layout: context?.settings?.product_gallery_layout,
-      isVerticalLayout: context?.settings?.product_gallery_layout === 'vertical',
-      expectedClasses: context?.settings?.product_gallery_layout === 'vertical'
-        ? 'flex flex-col space-y-2 w-24'
-        : 'flex overflow-x-auto space-x-2 mt-4'
-    });
-  }
 
   return processedContent;
 }
@@ -172,11 +92,6 @@ function processConditionalsStep(content, context, pageData) {
       // Sort by position to process in order
       candidates.sort((a, b) => a.pos - b.pos);
 
-      if (candidates.length === 0) {
-        console.warn('No closing {{/if}} found for conditional starting at', ifIndex);
-        break;
-      }
-
       const nextTag = candidates[0];
 
       if (nextTag.type === 'if') {
@@ -221,26 +136,7 @@ function processConditionalsStep(content, context, pageData) {
     const isTrue = evaluateCondition(condition, context, pageData);
     const selectedContent = isTrue ? trueContent : falseContent;
 
-    // Log gallery-related conditionals
-    if (condition.includes('product_gallery_layout') || condition.includes('vertical_gallery_position') || condition.includes('horizontal') || condition.includes('vertical')) {
-      const isPositionCheck = condition.includes('vertical_gallery_position');
-      console.log('[THUMBNAIL-SYNC] 🔄 CONDITIONAL DEBUG FIXED:', {
-        condition,
-        isTrue,
-        ifIndex,
-        elseIndex,
-        endIndex,
-        fullTemplate: result.substring(ifIndex, Math.min(ifIndex + 150, result.length)),
-        trueContent: trueContent.length > 50 ? trueContent.substring(0, 50) + '...' : trueContent,
-        falseContent: falseContent.length > 50 ? falseContent.substring(0, 50) + '...' : falseContent,
-        selectedContent: selectedContent.length > 50 ? selectedContent.substring(0, 50) + '...' : selectedContent,
-        currentLayout: context?.settings?.product_gallery_layout,
-        currentPosition: context?.settings?.vertical_gallery_position
-      });
-    }
-
     // Replace the entire conditional block with the selected content
-    const fullMatch = result.substring(ifIndex, endIndex + 7); // include {{/if}}
     result = result.substring(0, ifIndex) + selectedContent + result.substring(endIndex + 7);
 
     // Continue from the beginning to handle any newly exposed conditionals
@@ -300,19 +196,6 @@ function processSimpleVariables(content, context, pageData) {
   return content.replace(variableRegex, (match, variablePath) => {
     const trimmedPath = variablePath.trim();
 
-    // Debug color field specifically
-    if (trimmedPath === 'color' || trimmedPath === 'background_color') {
-      console.log('🎨 Processing color variable:', {
-        variablePath: trimmedPath,
-        pageData: pageData,
-        pageDataKeys: pageData ? Object.keys(pageData) : 'No pageData',
-        contextKeys: context ? Object.keys(context) : 'No context',
-        directPageDataValue: pageData?.[trimmedPath],
-        directContextValue: context?.[trimmedPath]
-      });
-    }
-
-
     // Handle formatted price paths directly when they don't exist in data
     if (trimmedPath === 'product.compare_price_formatted' || trimmedPath === 'product.price_formatted') {
       const value = getNestedValue(trimmedPath, context, pageData);
@@ -357,49 +240,13 @@ function processSimpleVariables(content, context, pageData) {
  */
 function evaluateCondition(condition, context, pageData) {
   try {
-    // 🔧 ENHANCED DEBUG: Always log vertical_gallery_position evaluations
-    if (condition.includes('vertical_gallery_position')) {
-      console.log('[THUMBNAIL-SYNC] 🚨 POSITION CONDITION FOUND:', {
-        condition,
-        context: context ? Object.keys(context) : 'No context',
-        contextSettings: context?.settings,
-        pageData: pageData ? Object.keys(pageData) : 'No pageData'
-      });
-    }
 
     // Handle eq helper function: (eq variable "value") - Clean double quote only approach
     const eqMatch = condition.match(/\(eq\s+([^"\s]+)\s+"([^"]+)"\)/);
 
-    // 🔧 DEBUG: Log regex match results for vertical_gallery_position
-    if (condition.includes('vertical_gallery_position')) {
-      console.log('[THUMBNAIL-SYNC] 🔍 REGEX MATCH DEBUG:', {
-        condition,
-        eqMatch,
-        regexMatched: !!eqMatch,
-        variablePath: eqMatch ? eqMatch[1] : 'No match',
-        expectedValue: eqMatch ? eqMatch[2] : 'No match'
-      });
-    }
-
     if (eqMatch) {
       const [, variablePath, expectedValue] = eqMatch;
       const actualValue = getNestedValue(variablePath, context, pageData);
-      // Only log gallery-related evaluations - ENHANCED debugging for position issue
-      if (variablePath.includes('gallery') || variablePath.includes('position')) {
-        console.log('[THUMBNAIL-SYNC] 🔍 GALLERY EVAL:', {
-          condition,
-          variablePath,
-          actualValue,
-          actualValueType: typeof actualValue,
-          expectedValue,
-          expectedValueType: typeof expectedValue,
-          result: actualValue === expectedValue,
-          strictResult: actualValue === expectedValue,
-          looseResult: actualValue == expectedValue,
-          actualRaw: JSON.stringify(actualValue),
-          expectedRaw: JSON.stringify(expectedValue)
-        });
-      }
       return actualValue === expectedValue;
     }
 
@@ -428,6 +275,18 @@ function evaluateCondition(condition, context, pageData) {
 
     // Simple property existence check
     const value = getNestedValue(condition, context, pageData);
+
+    // Debug compare_price checks
+    if (condition.includes('compare_price')) {
+      console.log('🔍 Evaluating condition:', {
+        condition,
+        value,
+        booleanResult: !!value,
+        contextKeys: Object.keys(context || {}),
+        pageDataKeys: Object.keys(pageData || {})
+      });
+    }
+
     return !!value;
   } catch (error) {
     console.warn('Error evaluating condition:', condition, error);
@@ -441,35 +300,9 @@ function evaluateCondition(condition, context, pageData) {
 function getNestedValue(path, context, pageData) {
   const fullData = { ...pageData, ...context };
 
-  // 🔧 ENHANCED DEBUG: Always log vertical_gallery_position lookups
-  if (path.includes('vertical_gallery_position')) {
-    console.log('[THUMBNAIL-SYNC] 🔍 GET NESTED VALUE DEBUG:', {
-      path,
-      fullDataKeys: Object.keys(fullData),
-      hasSettings: 'settings' in fullData,
-      settingsKeys: fullData.settings ? Object.keys(fullData.settings) : 'No settings',
-      directSettingsAccess: fullData.settings?.vertical_gallery_position,
-      contextKeys: context ? Object.keys(context) : 'No context',
-      contextSettings: context?.settings?.vertical_gallery_position,
-      pageDataKeys: pageData ? Object.keys(pageData) : 'No pageData'
-    });
-  }
-
   const result = path.split('.').reduce((obj, key) => {
-    const value = obj && obj[key] !== undefined ? obj[key] : null;
-
-    // 🔧 DEBUG: Log each step of the path traversal for vertical_gallery_position
-    if (path.includes('vertical_gallery_position')) {
-      console.log(`[THUMBNAIL-SYNC] 🔍 PATH STEP: ${key} = ${JSON.stringify(value)} (type: ${typeof value})`);
-    }
-
-    return value;
+    return obj && obj[key] !== undefined ? obj[key] : null;
   }, fullData);
-
-  // 🔧 DEBUG: Log final result for vertical_gallery_position
-  if (path.includes('vertical_gallery_position')) {
-    console.log(`[THUMBNAIL-SYNC] 🔍 FINAL RESULT: ${path} = ${JSON.stringify(result)} (type: ${typeof result})`);
-  }
 
   return result;
 }
