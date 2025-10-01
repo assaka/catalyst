@@ -24,17 +24,9 @@ export const categoryConfig = {
 
     breadcrumbs_content: {
       id: 'breadcrumbs_content',
-      type: 'template',
-      content: `
-        <nav class="flex items-center space-x-2 text-sm mb-6" style="background-color: transparent; padding: 0; margin: 0 0 1.5rem 0;">
-          <a href="/" style="color: #A855F7; font-size: 0.875rem; font-weight: 400;" class="flex items-center hover:underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            Home
-          </a>
-          <span style="color: #9CA3AF; font-size: 0.875rem; margin: 0 0.5rem;">/</span>
-          <span style="color: #DC2626; font-size: 0.875rem; font-weight: 500;" class="whitespace-nowrap">{{category.name}}</span>
-        </nav>
-      `,
+      type: 'component',
+      component: 'CategoryBreadcrumbs',
+      content: '',
       className: '',
       parentClassName: '',
       styles: {},
@@ -45,7 +37,13 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         displayName: 'Breadcrumb Navigation',
-        description: 'Edit colors directly in the HTML above: #A855F7 (purple parent), #DC2626 (red current category)'
+        // All breadcrumb styling - edit these colors!
+        itemTextColor: '#A855F7',      // purple for parent category links
+        itemHoverColor: '#9333EA',     // darker purple on hover
+        activeItemColor: '#DC2626',    // red for current category
+        separatorColor: '#9CA3AF',     // gray for separators
+        fontSize: '0.875rem',
+        fontWeight: '400'
       }
     },
 
