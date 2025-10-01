@@ -474,8 +474,8 @@ function formatValue(value, path, context, pageData) {
     return '';
   }
 
-  // Handle raw price numbers
-  if (path.includes('price') && typeof value === 'number') {
+  // Handle raw price numbers (but NOT filter min/max prices - keep those as clean numbers)
+  if (path.includes('price') && typeof value === 'number' && !path.includes('filters.price')) {
     const currency = context.settings?.currency_symbol || '$';
     return `${currency}${value.toFixed(2)}`;
   }

@@ -213,17 +213,9 @@ const LayeredNavigation = createSlotComponent({
 
         if (!minSlider || !maxSlider || !rangeTrack) return;
 
-        // Helper to strip currency symbols and parse
-        const parsePrice = (value) => {
-          if (!value) return NaN;
-          // Remove currency symbols ($, €, etc) and parse
-          const cleaned = String(value).replace(/[$€£¥,]/g, '');
-          return parseInt(cleaned);
-        };
-
-        // Get min/max from attributes, data attributes, or calculate from values
-        let min = parsePrice(minSlider.getAttribute('min')) || parsePrice(minSlider.dataset.min);
-        let max = parsePrice(minSlider.getAttribute('max')) || parsePrice(minSlider.dataset.max);
+        // Get min/max from attributes (now clean numbers without currency)
+        let min = parseInt(minSlider.getAttribute('min'));
+        let max = parseInt(minSlider.getAttribute('max'));
 
         // If still not found, use current slider values as boundaries
         if (!min || isNaN(min)) {
@@ -300,24 +292,16 @@ const LayeredNavigation = createSlotComponent({
             outerHTML: minSlider.outerHTML.substring(0, 200)
           });
 
-          // Helper to strip currency symbols and parse
-          const parsePrice = (value) => {
-            if (!value) return NaN;
-            // Remove currency symbols ($, €, etc) and parse
-            const cleaned = String(value).replace(/[$€£¥,]/g, '');
-            return parseInt(cleaned);
-          };
-
-          // Get min/max from attributes or data attributes
-          let min = parsePrice(minSlider.getAttribute('min')) || parsePrice(minSlider.dataset.min);
-          let max = parsePrice(minSlider.getAttribute('max')) || parsePrice(minSlider.dataset.max);
+          // Get min/max from attributes or data attributes (now clean numbers)
+          let min = parseInt(minSlider.getAttribute('min'));
+          let max = parseInt(minSlider.getAttribute('max'));
 
           // Fallback to value attributes if min/max not set
           if (!min || isNaN(min)) {
-            min = parsePrice(minSlider.getAttribute('value')) || 0;
+            min = parseInt(minSlider.getAttribute('value')) || 0;
           }
           if (!max || isNaN(max)) {
-            max = parsePrice(maxSlider.getAttribute('value')) || 100;
+            max = parseInt(maxSlider.getAttribute('value')) || 100;
           }
 
           console.log('🔍 Calculated min/max:', { min, max });
