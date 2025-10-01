@@ -670,6 +670,7 @@ export default function Category() {
     settings,
     store,
     categories,
+    slots: categorySlots, // Add slots to context for breadcrumb configuration access
     taxes: [],
     selectedCountry: null,
     handleFilterChange: setActiveFilters,

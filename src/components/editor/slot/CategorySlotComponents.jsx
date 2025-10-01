@@ -6,6 +6,7 @@
 import React, { useRef, useEffect } from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import BreadcrumbRendererComponent from '@/components/storefront/BreadcrumbRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
@@ -14,22 +15,34 @@ import { processVariables } from '@/utils/variableProcessor';
 const BreadcrumbRenderer = createSlotComponent({
   name: 'BreadcrumbRenderer',
   render: ({ slot, className, styles, categoryContext, variableContext }) => {
-    // Use template from slot.content or fallback
-    const template = slot?.content || `
-      <nav class="flex items-center space-x-2 text-sm text-gray-600">
-        <span>Home</span>
-        <span>/</span>
-        <span>Category</span>
-        <span>/</span>
-        <span class="font-medium text-gray-900">Current Page</span>
-      </nav>
-    `;
+    // Get configuration from slot metadata
+    const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
-    const html = processVariables(template, variableContext);
+    // Get styles from breadcrumb_styles slot (need to access from context)
+    // For now, we'll use slot.styles or pass empty object
+    const breadcrumbStyles = categoryContext?.slots?.breadcrumb_styles?.styles || {};
 
+    const {
+      category,
+      breadcrumbs = [],
+      store,
+      categories = [],
+      settings = {}
+    } = categoryContext || {};
+
+    // Use the actual BreadcrumbRenderer component with configuration
     return (
-      <div className={className || slot.className} style={styles || slot.styles}
-           dangerouslySetInnerHTML={{ __html: html }} />
+      <BreadcrumbRendererComponent
+        items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
+        pageType="category"
+        pageData={category}
+        storeCode={store?.slug || store?.code}
+        categories={categories}
+        settings={settings}
+        breadcrumbConfig={breadcrumbConfig}
+        breadcrumbStyles={breadcrumbStyles}
+        className={className || slot?.className}
+      />
     );
   }
 });
