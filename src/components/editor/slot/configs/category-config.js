@@ -271,34 +271,30 @@ export const categoryConfig = {
       type: 'component',
       component: 'ActiveFilters',
       content: `
-        {{#if activeFilters}}
-          {{#if (gt activeFilters.length 0)}}
-            <div class="mb-4">
-              <h4 class="text-sm font-semibold text-gray-700 mb-2">Active Filters:</h4>
-              <div class="flex flex-wrap gap-2">
-                {{#each activeFilters}}
-                  <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                    <span>{{this.label}}: {{this.value}}</span>
-                    <button class="ml-1 hover:text-blue-900"
-                            data-action="remove-filter"
-                            data-filter-type="{{this.type}}"
-                            data-filter-value="{{this.value}}"
-                            data-attribute-code="{{this.attributeCode}}">
-                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                {{/each}}
-                {{#if (gt activeFilters.length 1)}}
-                  <button class="text-sm text-red-600 hover:text-red-800 underline ml-2"
-                          data-action="clear-all-filters">
-                    Clear All
+        {{#if activeFilters.length}}
+          <div class="mb-4">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2">Active Filters:</h4>
+            <div class="flex flex-wrap gap-2">
+              {{#each activeFilters}}
+                <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <span>{{this.label}}: {{this.value}}</span>
+                  <button class="ml-1 hover:text-blue-900"
+                          data-action="remove-filter"
+                          data-filter-type="{{this.type}}"
+                          data-filter-value="{{this.value}}"
+                          data-attribute-code="{{this.attributeCode}}">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
                   </button>
-                {{/if}}
-              </div>
+                </div>
+              {{/each}}
+              <button class="text-sm text-red-600 hover:text-red-800 underline ml-2"
+                      data-action="clear-all-filters">
+                Clear All
+              </button>
             </div>
-          {{/if}}
+          </div>
         {{/if}}
       `,
       className: '',
