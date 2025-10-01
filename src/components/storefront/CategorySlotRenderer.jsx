@@ -227,9 +227,14 @@ export function CategorySlotRenderer({
       }
 
       // Format attribute filters
+      console.log('🔍 CategorySlotRenderer - filterableAttributes:', filterableAttributes);
+      console.log('🔍 CategorySlotRenderer - filtersData:', filtersData);
+
       const attributeFilters = filterableAttributes?.map(attr => {
         const attrCode = attr.code || attr.name;
         const options = filtersData[attrCode] || [];
+
+        console.log(`🔍 CategorySlotRenderer - Processing attr: ${attrCode}, options:`, options);
 
         const formattedOptions = Array.isArray(options)
           ? options.map(option => {
@@ -250,12 +255,17 @@ export function CategorySlotRenderer({
             })
           : [];
 
-        return {
+        const result = {
           code: attrCode,
           label: attr.name || attr.code || attrCode,
           options: formattedOptions
         };
+
+        console.log(`🔍 CategorySlotRenderer - Formatted attr ${attrCode}:`, result);
+        return result;
       }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
+
+      console.log('🔍 CategorySlotRenderer - Final attributeFilters:', attributeFilters);
 
       const formattedFilters = {
         price: priceRanges ? { ranges: priceRanges } : null,
