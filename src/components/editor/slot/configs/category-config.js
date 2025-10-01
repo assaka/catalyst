@@ -727,42 +727,6 @@ export const categoryConfig = {
     'category_footer'
   ],
 
-  // Filter configuration - Define which attributes are filterable
-  // Options will be loaded dynamically from products (only showing options with count > 0)
-  filterConfig: {
-    // Price filter configuration
-    price: {
-      enabled: true,
-      label: 'Price',
-      type: 'range'
-    },
-
-    // Attribute filters - define which attributes should be filterable
-    // Values are extracted from products dynamically
-    attributes: {
-      color: {
-        enabled: true,
-        label: 'Color',
-        type: 'checkbox'
-      },
-      brand: {
-        enabled: true,
-        label: 'Brand',
-        type: 'checkbox'
-      },
-      size: {
-        enabled: true,
-        label: 'Size',
-        type: 'checkbox'
-      },
-      material: {
-        enabled: true,
-        label: 'Material',
-        type: 'checkbox'
-      }
-    }
-  },
-
   // Microslot definitions for category and product components
   microslots: {
     breadcrumbs_content: {

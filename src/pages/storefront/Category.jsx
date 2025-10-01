@@ -479,23 +479,26 @@ export default function Category() {
   }, [activeFilters, setPage]);
 
 
-  // Build dynamic filters using filterConfig from category-config.js as the source of truth
+  // Build dynamic filters from database attributes where is_filterable = true
   // Only show options that have products (count > 0)
   const buildFilters = () => {
     const filters = {};
 
-    // Use filterConfig from category-config.js if available
-    const filterConfig = categoryLayoutConfig?.filterConfig || categoryConfig.filterConfig;
-
-    if (!filterConfig || !filterConfig.attributes) {
+    // Use filterableAttributes from database (where is_filterable = true)
+    if (!filterableAttributes || filterableAttributes.length === 0) {
       return filters;
     }
 
-    // Process each configured attribute
-    Object.entries(filterConfig.attributes).forEach(([attrCode, attrConfig]) => {
-      if (!attrConfig.enabled) {
-        return; // Skip disabled filters
+    // Process each filterable attribute from database
+    filterableAttributes.forEach(attr => {
+      // Check if attribute is filterable
+      const isFilterable = attr.is_filterable || attr.filterable || attr.use_for_filter;
+
+      if (!isFilterable) {
+        return; // Skip non-filterable attributes
       }
+
+      const attrCode = attr.code || attr.name || attr.attribute_name;
 
       // Extract values from products only (dynamic from DB)
       const valueCountMap = new Map(); // Map<value, count>
@@ -507,8 +510,16 @@ export default function Category() {
           // Try multiple possible keys for the attribute
           const possibleKeys = [
             attrCode,
-            attrCode.toLowerCase(),
-            attrCode.toLowerCase().replace(/[_-\s]/g, ''),
+            attr.code,
+            attr.name,
+            attr.attribute_name,
+            attrCode?.toLowerCase(),
+            attr.code?.toLowerCase(),
+            attr.name?.toLowerCase(),
+            attr.attribute_name?.toLowerCase(),
+            attrCode?.toLowerCase().replace(/[_-\s]/g, ''),
+            attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
+            attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
             // Common variations
             'color', 'Color', 'COLOR',
             'colour', 'Colour', 'COLOUR',
@@ -578,14 +589,7 @@ export default function Category() {
     products: paginatedProducts,
     allProducts: products, // Use unfiltered products for filter counting
     filters: buildFilters(),
-    filterableAttributes: Object.entries(categoryLayoutConfig?.filterConfig?.attributes || categoryConfig.filterConfig?.attributes || {})
-      .filter(([_, config]) => config.enabled)
-      .map(([code, config]) => ({
-        code,
-        name: config.label || code,
-        is_filterable: true,
-        options: config.options || []
-      })), // Convert filterConfig to filterableAttributes format
+    filterableAttributes, // Pass database filterable attributes directly
     sortOption: currentSort,
     currentPage,
     totalPages,
