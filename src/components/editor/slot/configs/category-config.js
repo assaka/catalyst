@@ -419,7 +419,8 @@ export const categoryConfig = {
 
               <!-- Add to Cart Button -->
               {{#if this.in_stock}}
-                <button class="w-full bg-red-600 text-white border-0 hover:bg-red-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
+                <button class="w-full text-white border-0 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
+                        style="background-color: {{settings.theme.add_to_cart_button_color}};"
                         data-action="add-to-cart"
                         data-product-id="{{this.id}}">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
