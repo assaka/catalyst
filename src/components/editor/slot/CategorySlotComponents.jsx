@@ -189,6 +189,24 @@ const LayeredNavigation = createSlotComponent({
         }
       };
 
+      const updatePriceSliderTrack = () => {
+        const minSlider = containerRef.current.querySelector('#price-slider-min');
+        const maxSlider = containerRef.current.querySelector('#price-slider-max');
+        const rangeTrack = containerRef.current.querySelector('#price-range-track');
+
+        if (!minSlider || !maxSlider || !rangeTrack) return;
+
+        const min = parseInt(minSlider.min);
+        const max = parseInt(minSlider.max);
+        const minValue = parseInt(minSlider.value);
+        const maxValue = parseInt(maxSlider.value);
+
+        const percentMin = ((minValue - min) / (max - min)) * 100;
+        const percentMax = ((maxValue - min) / (max - min)) * 100;
+        rangeTrack.style.left = percentMin + '%';
+        rangeTrack.style.width = (percentMax - percentMin) + '%';
+      };
+
       const handlePriceSlider = (e) => {
         const slider = e.target.closest('[data-action="price-slider"]');
         if (!slider || !categoryContext?.handleFilterChange) return;
@@ -200,12 +218,9 @@ const LayeredNavigation = createSlotComponent({
         const maxSlider = containerRef.current.querySelector('#price-slider-max');
         const selectedMin = containerRef.current.querySelector('#selected-min');
         const selectedMax = containerRef.current.querySelector('#selected-max');
-        const rangeTrack = containerRef.current.querySelector('#price-range-track');
 
         if (!minSlider || !maxSlider) return;
 
-        const min = parseInt(minSlider.min);
-        const max = parseInt(minSlider.max);
         let minValue = parseInt(minSlider.value);
         let maxValue = parseInt(maxSlider.value);
 
@@ -223,12 +238,7 @@ const LayeredNavigation = createSlotComponent({
         if (selectedMax) selectedMax.textContent = maxValue;
 
         // Update the colored track between thumbs
-        if (rangeTrack) {
-          const percentMin = ((minValue - min) / (max - min)) * 100;
-          const percentMax = ((maxValue - min) / (max - min)) * 100;
-          rangeTrack.style.left = percentMin + '%';
-          rangeTrack.style.width = (percentMax - percentMin) + '%';
-        }
+        updatePriceSliderTrack();
 
         // Update filters
         const currentFilters = categoryContext.selectedFilters || {};
@@ -236,6 +246,11 @@ const LayeredNavigation = createSlotComponent({
         newFilters.priceRange = [minValue, maxValue];
         categoryContext.handleFilterChange(newFilters);
       };
+
+      // Initialize slider track position on mount
+      setTimeout(() => {
+        updatePriceSliderTrack();
+      }, 0);
 
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);

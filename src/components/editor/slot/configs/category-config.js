@@ -553,9 +553,9 @@ export const categoryConfig = {
                   <span class="text-gray-400">-</span>
                   <span class="text-gray-700 font-medium">€<span id="selected-max">{{filters.price.max}}</span></span>
                 </div>
-                <div class="relative h-2">
+                <div class="relative h-2 mb-2">
                   <div class="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
-                  <div id="price-range-track" class="absolute h-2 bg-blue-500 rounded-lg"></div>
+                  <div id="price-range-track" class="absolute h-2 bg-blue-500 rounded-lg" style="left: 0%; width: 100%;"></div>
                   <input type="range"
                          id="price-slider-min"
                          min="{{filters.price.min}}"
