@@ -716,16 +716,67 @@ const ProductTabs = createSlotComponent({
         { id: 'reviews', title: 'Reviews', isActive: false, tab_type: 'text', content: '<p>Customer reviews will appear here.</p>' }
       ];
 
+      const sampleProduct = {
+        description: '<p>Sample product description</p>',
+        attributes: { color: 'Blue', size: 'Medium' }
+      };
+
       const editorVariableContext = {
         ...variableContext,
         tabs: sampleTabs,
-        product: {
-          description: '<p>Sample product description</p>',
-          attributes: { color: 'Blue', size: 'Medium' }
-        }
+        product: sampleProduct
       };
 
       const processedContent = processVariables(content, editorVariableContext);
+
+      // Render tab content for editor
+      React.useEffect(() => {
+        if (!containerRef.current) return;
+
+        const tabPanels = containerRef.current.querySelectorAll('[data-tab-type]');
+
+        tabPanels.forEach((panel) => {
+          const tabType = panel.getAttribute('data-tab-type');
+          const textContent = panel.getAttribute('data-tab-text-content');
+          const contentContainer = panel.querySelector('.prose');
+
+          if (!contentContainer) return;
+
+          let html = '';
+
+          switch (tabType) {
+            case 'text':
+              html = `<div>${textContent || ''}</div>`;
+              break;
+            case 'description':
+              html = `<div>${sampleProduct?.description || ''}</div>`;
+              break;
+            case 'attributes':
+              if (sampleProduct?.attributes && Object.keys(sampleProduct.attributes).length > 0) {
+                html = `
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${Object.entries(sampleProduct.attributes).map(([key, value]) => `
+                      <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="font-medium capitalize">${key.replace(/_/g, ' ')}</span>
+                        <span>${String(value ?? '')}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                `;
+              } else {
+                html = '<p class="text-gray-500">No specifications available for this product.</p>';
+              }
+              break;
+            case 'attribute_sets':
+              html = '<p class="text-gray-500">Attribute sets preview.</p>';
+              break;
+            default:
+              html = '<p class="text-gray-500">Unknown tab type.</p>';
+          }
+
+          contentContainer.innerHTML = html;
+        });
+      }, [processedContent]);
 
       return (
         <div ref={containerRef} className={className} style={styles}
