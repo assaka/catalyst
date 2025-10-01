@@ -407,6 +407,15 @@ function getNestedValue(path, context, pageData) {
         return obj && obj[key] !== undefined ? obj[key] : null;
       }, fullData.this);
 
+      // Debug stock checks
+      if (propertyPath === 'in_stock') {
+        console.log('🔍 Evaluating this.in_stock:', {
+          value: result,
+          fullData_this_in_stock: fullData.this.in_stock,
+          fullData_this_keys: Object.keys(fullData.this || {})
+        });
+      }
+
       if (result !== null) return result;
     }
 
