@@ -789,38 +789,11 @@ export const productConfig = {
               <div
                 class="tab-panel {{#if this.isActive}}{{else}}hidden{{/if}}"
                 data-tab-content="{{this.id}}"
-                data-tab-index="{{@index}}">
+                data-tab-index="{{@index}}"
+                data-tab-type="{{this.tab_type}}"
+                data-tab-text-content="{{this.content}}">
                 <div class="prose max-w-none">
-                  <div style="background: yellow; padding: 10px; margin: 10px 0;">
-                    DEBUG: tab_type = "{{this.tab_type}}" | content = "{{this.content}}"
-                  </div>
-                  {{#if (eq tab_type "text")}}
-                    <div style="background: lightgreen;">TEXT TAB: {{content}}</div>
-                  {{/if}}
-
-                  {{#if (eq tab_type "description")}}
-                    <div style="background: lightblue;">DESCRIPTION TAB: {{../product.description}}</div>
-                  {{/if}}
-
-                  {{#if (eq tab_type "attributes")}}
-                    <div style="background: pink;">ATTRIBUTES TAB</div>
-                    <div id="attributes-placeholder" data-attributes-container></div>
-                  {{/if}}
-
-                  {{#if (eq this.tab_type "attribute_sets")}}
-                    <div class="space-y-6">
-                      {{#if this.attribute_set_ids}}
-                        {{#each this.attribute_set_ids}}
-                          <div class="border-b border-gray-100 pb-4">
-                            <h4 class="font-medium text-gray-900 mb-2">Attribute Set {{@index}}</h4>
-                            <p class="text-gray-500">Attribute set content would be displayed here.</p>
-                          </div>
-                        {{/each}}
-                      {{else}}
-                        <p class="text-gray-500">No attribute sets configured for this tab.</p>
-                      {{/if}}
-                    </div>
-                  {{/if}}
+                  <!-- Content will be rendered by JavaScript based on data-tab-type -->
                 </div>
               </div>
             {{/each}}

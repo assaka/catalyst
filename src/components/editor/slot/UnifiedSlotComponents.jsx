@@ -749,14 +749,6 @@ const ProductTabs = createSlotComponent({
 
       const currentActiveIndex = (activeTab !== undefined && activeTab !== null) ? activeTab : activeTabIndex;
 
-      console.log('DEBUG activeTab calculation:', {
-        activeTab,
-        activeTabIndex,
-        currentActiveIndex,
-        activeTabType: typeof activeTab,
-        activeTabIndexType: typeof activeTabIndex
-      });
-
       const mappedTabs = tabsToRender.map((tab, index) => ({
         ...tab,
         id: tab.id?.toString() || tab.title || `tab-${index}`,
@@ -766,26 +758,57 @@ const ProductTabs = createSlotComponent({
         tab_type: tab.tab_type || 'text'
       }));
 
-      console.log('UnifiedSlotComponents - ProductTabsSlot - Mapped tabs:', {
-        mappedTabs: mappedTabs.map((t, idx) => ({
-          index: idx,
-          id: t.id,
-          title: t.title,
-          isActive: t.isActive,
-          tab_type: t.tab_type,
-          hasContent: !!t.content,
-          contentLength: t.content?.length || 0,
-          content: t.content
-        })),
-        product: product ? {
-          hasDescription: !!product.description,
-          descriptionLength: product.description?.length || 0,
-          hasAttributes: !!product.attributes
-        } : 'null'
-      });
-
       return mappedTabs;
     }, [productTabs, product, activeTab, activeTabIndex]);
+
+    // Render tab content based on data attributes
+    React.useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const tabPanels = containerRef.current.querySelectorAll('[data-tab-type]');
+
+      tabPanels.forEach((panel) => {
+        const tabType = panel.getAttribute('data-tab-type');
+        const textContent = panel.getAttribute('data-tab-text-content');
+        const contentContainer = panel.querySelector('.prose');
+
+        if (!contentContainer) return;
+
+        let html = '';
+
+        switch (tabType) {
+          case 'text':
+            html = `<div>${textContent || ''}</div>`;
+            break;
+          case 'description':
+            html = `<div>${product?.description || ''}</div>`;
+            break;
+          case 'attributes':
+            if (product?.attributes && Object.keys(product.attributes).length > 0) {
+              html = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  ${Object.entries(product.attributes).map(([key, value]) => `
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                      <span class="font-medium capitalize">${key.replace(/_/g, ' ')}</span>
+                      <span>${String(value ?? '')}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            } else {
+              html = '<p class="text-gray-500">No specifications available for this product.</p>';
+            }
+            break;
+          case 'attribute_sets':
+            html = '<p class="text-gray-500">Attribute sets not yet implemented.</p>';
+            break;
+          default:
+            html = '<p class="text-gray-500">Unknown tab type.</p>';
+        }
+
+        contentContainer.innerHTML = html;
+      });
+    }, [tabsData, product, context]);
 
     // Attach tab click handlers
     React.useEffect(() => {
@@ -809,8 +832,6 @@ const ProductTabs = createSlotComponent({
           const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
           const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
 
-          console.log('Tab clicked:', { tabId, tabIndex, allTabsCount: allTabs.length, allContentsCount: allContents.length });
-
           allTabs.forEach((btn, idx) => {
             if (idx === tabIndex) {
               btn.classList.add('border-red-600');
@@ -822,7 +843,6 @@ const ProductTabs = createSlotComponent({
           });
 
           allContents.forEach((content, idx) => {
-            console.log('Content', idx, ':', idx === tabIndex ? 'SHOW' : 'HIDE');
             if (idx === tabIndex) {
               content.classList.remove('hidden');
             } else {
@@ -850,20 +870,7 @@ const ProductTabs = createSlotComponent({
       product
     };
 
-    console.log('DEBUG BEFORE processVariables:', {
-      tabsData: tabsData.map(t => ({ id: t.id, tab_type: t.tab_type, content: t.content, isActive: t.isActive })),
-      product: product ? { hasDescription: !!product.description, descLength: product.description?.length } : null,
-      templateSnippet: content.substring(790, 850)
-    });
-
     const processedContent = processVariables(content, enhancedVariableContext);
-
-    console.log('UnifiedSlotComponents - ProductTabsSlot - Processed content:', {
-      contentLength: processedContent.length,
-      firstChars: processedContent.substring(0, 300),
-      tabsCount: tabsData.length,
-      fullContent: processedContent
-    });
 
     return (
       <div ref={containerRef} className={className} style={styles}
