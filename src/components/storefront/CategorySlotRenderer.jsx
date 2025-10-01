@@ -9,6 +9,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import '@/components/editor/slot/CategorySlotComponents';
+import { createProductUrl } from '@/utils/urlUtils';
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
@@ -202,7 +203,7 @@ export function CategorySlotRenderer({
           formatted_price: formattedPriceStr,
           formatted_compare_price: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
-          url: product.url || `/${store?.public_storecode || store?.slug || store?.code}/product/${product.slug || product.id}`,
+          url: product.url || createProductUrl(store?.public_storecode || store?.slug || store?.code, product.slug || product.id),
           in_stock: product.infinite_stock || product.stock_quantity > 0, // Check infinite_stock or positive stock_quantity
           labels: productLabels?.filter(label => {
             // Check if product has this label
