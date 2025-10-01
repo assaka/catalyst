@@ -200,9 +200,12 @@ const LayeredNavigation = createSlotComponent({
         const maxSlider = containerRef.current.querySelector('#price-slider-max');
         const selectedMin = containerRef.current.querySelector('#selected-min');
         const selectedMax = containerRef.current.querySelector('#selected-max');
+        const rangeTrack = containerRef.current.querySelector('#price-range-track');
 
         if (!minSlider || !maxSlider) return;
 
+        const min = parseInt(minSlider.min);
+        const max = parseInt(minSlider.max);
         let minValue = parseInt(minSlider.value);
         let maxValue = parseInt(maxSlider.value);
 
@@ -218,6 +221,14 @@ const LayeredNavigation = createSlotComponent({
         // Update display
         if (selectedMin) selectedMin.textContent = minValue;
         if (selectedMax) selectedMax.textContent = maxValue;
+
+        // Update the colored track between thumbs
+        if (rangeTrack) {
+          const percentMin = ((minValue - min) / (max - min)) * 100;
+          const percentMax = ((maxValue - min) / (max - min)) * 100;
+          rangeTrack.style.left = percentMin + '%';
+          rangeTrack.style.width = (percentMax - percentMin) + '%';
+        }
 
         // Update filters
         const currentFilters = categoryContext.selectedFilters || {};

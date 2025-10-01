@@ -548,31 +548,54 @@ export const categoryConfig = {
             <div class="border-b border-gray-200 pb-4">
               <h4 class="font-semibold text-base text-gray-900 mb-3">Price</h4>
               <div class="px-2">
-                <div class="flex justify-between text-sm text-gray-600 mb-2">
-                  <span id="price-min-label">€{{filters.price.min}}</span>
-                  <span id="price-max-label">€{{filters.price.max}}</span>
-                </div>
-                <input type="range"
-                       id="price-slider-min"
-                       min="{{filters.price.min}}"
-                       max="{{filters.price.max}}"
-                       value="{{filters.price.min}}"
-                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                       data-action="price-slider"
-                       data-slider-type="min" />
-                <input type="range"
-                       id="price-slider-max"
-                       min="{{filters.price.min}}"
-                       max="{{filters.price.max}}"
-                       value="{{filters.price.max}}"
-                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer -mt-2"
-                       data-action="price-slider"
-                       data-slider-type="max" />
-                <div class="flex justify-between items-center mt-3 text-sm">
-                  <span class="text-gray-700">€<span id="selected-min">{{filters.price.min}}</span></span>
+                <div class="flex justify-between items-center mb-4 text-sm">
+                  <span class="text-gray-700 font-medium">€<span id="selected-min">{{filters.price.min}}</span></span>
                   <span class="text-gray-400">-</span>
-                  <span class="text-gray-700">€<span id="selected-max">{{filters.price.max}}</span></span>
+                  <span class="text-gray-700 font-medium">€<span id="selected-max">{{filters.price.max}}</span></span>
                 </div>
+                <div class="relative h-2">
+                  <div class="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
+                  <div id="price-range-track" class="absolute h-2 bg-blue-500 rounded-lg"></div>
+                  <input type="range"
+                         id="price-slider-min"
+                         min="{{filters.price.min}}"
+                         max="{{filters.price.max}}"
+                         value="{{filters.price.min}}"
+                         class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
+                         style="z-index: 3;"
+                         data-action="price-slider"
+                         data-slider-type="min" />
+                  <input type="range"
+                         id="price-slider-max"
+                         min="{{filters.price.min}}"
+                         max="{{filters.price.max}}"
+                         value="{{filters.price.max}}"
+                         class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
+                         style="z-index: 4;"
+                         data-action="price-slider"
+                         data-slider-type="max" />
+                </div>
+                <style>
+                  input[type="range"]::-webkit-slider-thumb {
+                    appearance: none;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: #3b82f6;
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                  }
+                  input[type="range"]::-moz-range-thumb {
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    background: #3b82f6;
+                    cursor: pointer;
+                    border: 2px solid white;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                  }
+                </style>
               </div>
             </div>
           {{/if}}

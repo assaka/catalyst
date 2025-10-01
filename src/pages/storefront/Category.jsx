@@ -568,9 +568,17 @@ export default function Category() {
         });
       }
 
-      // Handle price attribute specially - create slider with min/max
-      if (attrCode === 'price' && valueCountMap.size > 0) {
-        const prices = Array.from(valueCountMap.keys()).map(p => parseFloat(p)).filter(p => !isNaN(p));
+      // Handle price attribute specially - create slider with min/max from actual product prices
+      if (attrCode === 'price') {
+        const prices = filteredProducts.map(p => {
+          let price = parseFloat(p.price || 0);
+          // Use the lowest price if compare_price exists and is lower
+          if (p.compare_price && parseFloat(p.compare_price) > 0) {
+            price = Math.min(price, parseFloat(p.compare_price));
+          }
+          return price;
+        }).filter(p => p > 0);
+
         if (prices.length > 0) {
           filters[attrCode] = {
             min: Math.floor(Math.min(...prices)),
