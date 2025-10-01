@@ -190,14 +190,14 @@ export const categoryConfig = {
       }
     },
 
-    // Active filters display (below Filter Now heading, inside layered navigation)
+    // Active filters display (after layered navigation, below Filter Now heading)
     active_filters: {
       id: 'active_filters',
       type: 'component',
       component: 'ActiveFilters',
       content: `
         {{#if activeFilters}}
-          <div class="mb-4">
+          <div class="mb-4 -mt-2">
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
                 <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
@@ -227,7 +227,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
-      position: { col: 1, row: 1.5 },
+      position: { col: 1, row: 2.5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
@@ -750,7 +750,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
