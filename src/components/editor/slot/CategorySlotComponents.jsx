@@ -213,10 +213,22 @@ const LayeredNavigation = createSlotComponent({
 
         if (!minSlider || !maxSlider || !rangeTrack) return;
 
-        const min = parseInt(minSlider.min);
-        const max = parseInt(minSlider.max);
+        // Get min/max from attributes, data attributes, or calculate from values
+        let min = parseInt(minSlider.getAttribute('min')) || parseInt(minSlider.dataset.min);
+        let max = parseInt(minSlider.getAttribute('max')) || parseInt(minSlider.dataset.max);
+
+        // If still not found, use current slider values as boundaries
+        if (!min || isNaN(min)) {
+          min = 0;
+        }
+        if (!max || isNaN(max)) {
+          max = 100;
+        }
+
         const minValue = parseInt(minSlider.value);
         const maxValue = parseInt(maxSlider.value);
+
+        console.log('🔍 updatePriceSliderTrack:', { min, max, minValue, maxValue });
 
         const percentMin = ((minValue - min) / (max - min)) * 100;
         const percentMax = ((maxValue - min) / (max - min)) * 100;
