@@ -139,10 +139,33 @@ const LayeredNavigation = createSlotComponent({
         const filterValue = checkbox.getAttribute('data-filter-value');
         const attributeCode = checkbox.getAttribute('data-attribute-code');
 
+        // Get current filters from categoryContext
+        const currentFilters = categoryContext.selectedFilters || {};
+
         if (filterType === 'attribute' && attributeCode) {
-          categoryContext.handleFilterChange(attributeCode, filterValue, checkbox.checked);
-        } else if (filterType) {
-          categoryContext.handleFilterChange(filterType, filterValue, checkbox.checked);
+          // Handle attribute filter (color, size, brand, etc.)
+          const currentValues = currentFilters[attributeCode] || [];
+          let newValues;
+
+          if (checkbox.checked) {
+            newValues = [...currentValues, filterValue];
+          } else {
+            newValues = currentValues.filter(v => v !== filterValue);
+          }
+
+          const newFilters = { ...currentFilters };
+          if (newValues.length > 0) {
+            newFilters[attributeCode] = newValues;
+          } else {
+            delete newFilters[attributeCode];
+          }
+
+          categoryContext.handleFilterChange(newFilters);
+        } else if (filterType === 'price') {
+          // Handle price filter
+          const newFilters = { ...currentFilters };
+          // Price filter logic here if needed
+          categoryContext.handleFilterChange(newFilters);
         }
       };
 

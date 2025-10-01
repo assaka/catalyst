@@ -262,6 +262,9 @@ export function CategorySlotRenderer({
         attributes: attributeFilters
       };
 
+      // Debug: Log the filters being passed to template
+      console.log('🔍 CategorySlotRenderer - formattedFilters:', JSON.stringify(formattedFilters, null, 2));
+
       // Prepare variable context for processVariables
       const variableContext = {
         category,
