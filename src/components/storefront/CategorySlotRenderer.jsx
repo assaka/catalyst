@@ -165,22 +165,35 @@ export function CategorySlotRenderer({
         let displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
         const comparePrice = product.compare_price || product.compare_at_price;
 
+        // Debug logging
+        console.log('Product price debug:', {
+          productName: product.name,
+          rawPrice: product.price,
+          displayPrice,
+          displayPriceType: typeof displayPrice
+        });
+
         // Handle if displayPrice is an object (extract the actual price value)
         if (typeof displayPrice === 'object' && displayPrice !== null) {
-          displayPrice = displayPrice.value || displayPrice.amount || displayPrice.price || product.price;
+          console.log('Price is object, keys:', Object.keys(displayPrice));
+          displayPrice = displayPrice.value || displayPrice.amount || displayPrice.price || displayPrice.finalPrice || displayPrice.basePrice || product.price;
         }
 
         // Format the price string
         let formattedPriceStr;
         if (typeof displayPrice === 'string') {
-          formattedPriceStr = displayPrice;
+          // Check if it already has currency symbol
+          formattedPriceStr = displayPrice.includes('$') || displayPrice.includes('€') ? displayPrice : `${currencySymbol}${displayPrice}`;
         } else if (typeof displayPrice === 'number') {
           formattedPriceStr = `${currencySymbol}${displayPrice.toFixed(2)}`;
         } else {
           // Fallback to product.price
           const fallbackPrice = parseFloat(product.price || 0);
           formattedPriceStr = `${currencySymbol}${fallbackPrice.toFixed(2)}`;
+          console.warn('Using fallback price for product:', product.name, fallbackPrice);
         }
+
+        console.log('Final formatted price:', formattedPriceStr);
 
         return {
           ...product,
