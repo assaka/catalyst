@@ -277,12 +277,12 @@ export const categoryConfig = {
               <div class="flex items-baseline gap-2 mb-4">
                 <!-- Main Price: show compare_price if available (sale price), otherwise regular price -->
                 <span class="text-lg font-bold text-blue-600" data-product-price>
-                  {{#if this.compare_price}}{{this.formatted_compare_price}}{{else}}{{this.formatted_price}}{{/if}}
+                  {{#if this.compare_price}}{{this.compare_price_formatted}}{{else}}{{this.price_formatted}}{{/if}}
                 </span>
                 <!-- Original Price: only show if compare_price exists (with strikethrough) -->
                 {{#if this.compare_price}}
                   <span class="text-sm text-gray-500 line-through" data-original-price>
-                    {{this.formatted_price}}
+                    {{this.price_formatted}}
                   </span>
                 {{/if}}
               </div>

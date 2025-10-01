@@ -180,6 +180,10 @@ export function CategorySlotRenderer({
 
         return {
           ...product,
+          // Use same naming as product-config.js: price_formatted and compare_price_formatted
+          price_formatted: formattedPriceStr,
+          compare_price_formatted: comparePrice ? `${currencySymbol}${parseFloat(comparePrice).toFixed(2)}` : null,
+          // Also keep old names for backwards compatibility
           formatted_price: formattedPriceStr,
           formatted_compare_price: comparePrice ? `${currencySymbol}${parseFloat(comparePrice).toFixed(2)}` : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
