@@ -335,14 +335,21 @@ export function CategorySlotRenderer({
           };
 
       // Use the registered component's render method
-      return registeredComponent.render({
-        slot,
-        categoryContext: contextToPass,
-        variableContext,
-        context: 'storefront',
-        className,
-        styles
-      });
+      try {
+        const result = registeredComponent.render({
+          slot,
+          categoryContext: contextToPass,
+          variableContext,
+          context: 'storefront',
+          className,
+          styles
+        });
+        console.log('🔍 registeredComponent.render returned:', !!result);
+        return result;
+      } catch (error) {
+        console.error('🔍 Error in registeredComponent.render:', error);
+        return null;
+      }
     }
 
     // Helper function to wrap content with parent class if needed
