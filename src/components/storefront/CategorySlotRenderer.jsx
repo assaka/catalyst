@@ -21,6 +21,15 @@ export function CategorySlotRenderer({
   viewMode = 'grid',
   categoryContext = {}
 }) {
+  // DEBUG: Check slots at entry point
+  if (parentId === null) {
+    console.log('🔍 CategorySlotRenderer ENTRY - slots received:', {
+      hasSlotsParam: !!slots,
+      slotsKeys: slots ? Object.keys(slots).slice(0, 10) : [],
+      hasBreadcrumbStyles: !!slots?.breadcrumb_styles,
+      breadcrumbStylesValue: slots?.breadcrumb_styles
+    });
+  }
   // Helper function to generate dynamic grid classes
   const getDynamicGridClasses = (slot) => {
     if (viewMode === 'list') {
