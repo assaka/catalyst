@@ -37,25 +37,23 @@ export default function BreadcrumbRenderer({
     truncateLength = null
   } = breadcrumbConfig;
 
-  // Extract styles with defaults - FORCE YELLOW FOR TESTING
-  const {
-    containerBgColor = 'transparent',
-    containerPadding = '0',
-    containerMargin = '0 0 1.5rem 0',
-    itemTextColor = breadcrumbStyles?.itemTextColor || '#EAB308', // FORCE YELLOW!
-    itemHoverColor = breadcrumbStyles?.itemHoverColor || '#CA8A04', // FORCE YELLOW HOVER!
-    activeItemColor = breadcrumbStyles?.activeItemColor || '#1F2937',
-    separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF',
-    fontSize = breadcrumbStyles?.fontSize || '0.875rem',
-    fontWeight = breadcrumbStyles?.fontWeight || '400'
-  } = {};
+  // Extract styles with defaults - use from config or fallback to yellow
+  const itemTextColor = breadcrumbStyles?.itemTextColor || '#EAB308'; // Yellow from category-config.js
+  const itemHoverColor = breadcrumbStyles?.itemHoverColor || '#CA8A04';
+  const activeItemColor = breadcrumbStyles?.activeItemColor || '#1F2937';
+  const separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF';
+  const fontSize = breadcrumbStyles?.fontSize || '0.875rem';
+  const fontWeight = breadcrumbStyles?.fontWeight || '400';
+  const containerBgColor = breadcrumbStyles?.containerBgColor || 'transparent';
+  const containerPadding = breadcrumbStyles?.containerPadding || '0';
+  const containerMargin = breadcrumbStyles?.containerMargin || '0 0 1.5rem 0';
 
   // Debug: Log what we're rendering
-  console.log('🎨 BreadcrumbRenderer FORCED YELLOW TEST:', {
+  console.log('✅ BreadcrumbRenderer - using yellow from config:', {
     breadcrumbStyles,
     itemTextColor,
     itemHoverColor,
-    SHOULD_BE_YELLOW: itemTextColor === '#EAB308'
+    IS_YELLOW: itemTextColor === '#EAB308'
   });
 
   // If disabled, return null
