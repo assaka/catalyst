@@ -208,23 +208,35 @@ export function CategorySlotRenderer({
       // Prepare filters data for LayeredNavigation template
       const filtersData = filters || {};
 
-      // Format price ranges
-      let priceRanges = null;
+      // Format price filter (slider or ranges)
+      let priceFilter = null;
       if (filtersData.price) {
-        if (Array.isArray(filtersData.price)) {
-          priceRanges = filtersData.price.map(item => ({
-            value: typeof item === 'object' ? (item.value || item.label) : item,
-            label: typeof item === 'object' ? (item.label || item.value) : item,
-            count: 0,
-            active: false
-          }));
+        // Check if it's a slider type (has min, max, type properties)
+        if (filtersData.price.type === 'slider' && filtersData.price.min !== undefined && filtersData.price.max !== undefined) {
+          priceFilter = {
+            min: filtersData.price.min,
+            max: filtersData.price.max,
+            type: 'slider'
+          };
+          console.log('🔍 Price slider passed to template:', priceFilter);
+        } else if (Array.isArray(filtersData.price)) {
+          priceFilter = {
+            ranges: filtersData.price.map(item => ({
+              value: typeof item === 'object' ? (item.value || item.label) : item,
+              label: typeof item === 'object' ? (item.label || item.value) : item,
+              count: 0,
+              active: false
+            }))
+          };
         } else if (typeof filtersData.price === 'object') {
-          priceRanges = Object.entries(filtersData.price).map(([value, label]) => ({
-            value: value,
-            label: typeof label === 'string' ? label : value,
-            count: 0,
-            active: false
-          }));
+          priceFilter = {
+            ranges: Object.entries(filtersData.price).map(([value, label]) => ({
+              value: value,
+              label: typeof label === 'string' ? label : value,
+              count: 0,
+              active: false
+            }))
+          };
         }
       }
 
@@ -267,7 +279,7 @@ export function CategorySlotRenderer({
       const debugFilters = attributeFilters.filter(a => a.code === 'color' || a.code === 'manufacturer');
 
       const formattedFilters = {
-        price: priceRanges ? { ranges: priceRanges } : null,
+        price: priceFilter,
         attributes: attributeFilters
       };
 
