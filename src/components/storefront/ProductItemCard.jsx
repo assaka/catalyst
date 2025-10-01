@@ -348,15 +348,21 @@ const ProductItemCard = ({
             </Button>
 
             {/* Stock status for list view */}
-            {viewMode === 'list' && product.stock_status && (
+            {viewMode === 'list' && (
               <div className="mt-2">
-                <span className={`text-xs px-2 py-1 rounded ${
-                  product.stock_status === 'in_stock'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {product.stock_status === 'in_stock' ? 'In Stock' : 'Out of Stock'}
-                </span>
+                {(() => {
+                  // Calculate stock status based on actual stock fields
+                  const isInStock = product.infinite_stock || product.stock_quantity > 0;
+                  return (
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      isInStock
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {isInStock ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </div>
