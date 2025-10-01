@@ -191,7 +191,7 @@ export const categoryConfig = {
       type: 'component',
       component: 'ProductCountInfo',
       content: `
-        <div class="text-sm text-gray-600">
+        <div class="text-sm text-blue-600 font-bold">
           Hamid {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
         </div>
       `,
@@ -214,11 +214,12 @@ export const categoryConfig = {
       id: 'product_count_text',
       type: 'text',
       content: 'Hamid {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products',
-      className: 'text-sm text-gray-600',
+      className: 'text-sm text-blue-600 font-bold',
       parentClassName: '',
       styles: {
         fontSize: '0.875rem', // text-sm
-        color: '#4B5563' // gray-600
+        color: '#2563EB', // blue-600
+        fontWeight: '700' // bold
       },
       parentId: 'product_count_info',
       position: { col: 1, row: 1 },
@@ -228,7 +229,7 @@ export const categoryConfig = {
         hierarchical: false,
         microslot: true,
         displayName: 'Product Count Text',
-        customizable: ['content', 'fontSize', 'color']
+        customizable: ['content', 'fontSize', 'color', 'fontWeight']
       }
     },
 
