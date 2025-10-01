@@ -627,9 +627,12 @@ export default function Category() {
   const buildActiveFiltersArray = () => {
     const activeFiltersArray = [];
 
+    console.log('🔍 Building active filters from:', activeFilters);
+
     Object.entries(activeFilters).forEach(([attributeCode, values]) => {
       if (attributeCode === 'priceRange') {
         // Handle price range separately if needed
+        console.log('🔍 Skipping priceRange:', values);
         return;
       }
 
@@ -650,6 +653,7 @@ export default function Category() {
       }
     });
 
+    console.log('🔍 Active filters array built:', activeFiltersArray);
     return activeFiltersArray;
   };
 
