@@ -157,15 +157,62 @@ export function CategorySlotRenderer({
     } = slot || {};
 
     // Check if this is a registered component type - use ComponentRegistry
-    // Skip LayeredNavigation for now - it uses the old React component
-    if (type === 'component' && componentName && ComponentRegistry.has(componentName) && componentName !== 'LayeredNavigation') {
+    if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
       const registeredComponent = ComponentRegistry.get(componentName);
+
+      // Format products with all necessary fields for templates
+      const formattedProducts = products.map(product => {
+        const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
+        const comparePrice = product.compare_price || product.compare_at_price;
+
+        return {
+          ...product,
+          formatted_price: typeof displayPrice === 'string' ? displayPrice : `${currencySymbol}${parseFloat(displayPrice || 0).toFixed(2)}`,
+          formatted_compare_price: comparePrice ? `${currencySymbol}${parseFloat(comparePrice).toFixed(2)}` : null,
+          image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
+          url: product.url || `/product/${product.slug || product.id}`,
+          in_stock: product.in_stock !== false && product.stock_quantity !== 0, // Default to true unless explicitly false or 0
+          labels: productLabels?.filter(label => {
+            // Check if product has this label
+            if (label.type === 'new' && product.is_new) return true;
+            if (label.type === 'sale' && product.compare_price) return true;
+            if (label.type === 'featured' && product.is_featured) return true;
+            return false;
+          }).map(label => ({
+            text: label.text,
+            className: label.background_color ? `bg-[${label.background_color}] text-white` : 'bg-red-600 text-white'
+          })) || []
+        };
+      });
+
+      // Prepare filters data for LayeredNavigation template
+      const filtersData = filters || {};
+      const formattedFilters = {
+        price: filtersData.price ? {
+          ranges: Object.entries(filtersData.price).map(([value, label]) => ({
+            value,
+            label,
+            count: 0, // Will be calculated by filtering
+            active: false // Will be set based on selectedFilters
+          }))
+        } : null,
+        attributes: filterableAttributes?.map(attr => ({
+          code: attr.code || attr.name,
+          label: attr.name || attr.code,
+          options: (filtersData[attr.code] || []).map(option => ({
+            value: option.value || option,
+            label: option.label || option,
+            count: 0,
+            active: false
+          }))
+        })).filter(attr => attr.options.length > 0) || []
+      };
 
       // Prepare variable context for processVariables
       const variableContext = {
         category,
-        products,
-        filters: {},
+        products: formattedProducts,
+        filters: formattedFilters,
         activeFilters: [],
         pagination: {
           start: (currentPage - 1) * itemsPerPage + 1,
