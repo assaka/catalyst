@@ -581,12 +581,19 @@ export default function Category() {
         }).filter(p => p > 0);
 
         if (prices.length > 0) {
+          const minPrice = Math.floor(Math.min(...prices));
+          const maxPrice = Math.ceil(Math.max(...prices));
           filters[attrCode] = {
-            min: Math.floor(Math.min(...prices)),
-            max: Math.ceil(Math.max(...prices)),
+            min: minPrice,
+            max: maxPrice,
             type: 'slider'
           };
-          console.log(`🔍 Price range:`, filters[attrCode]);
+          console.log(`🔍 Price range calculated:`, {
+            min: minPrice,
+            max: maxPrice,
+            pricesFound: prices.length,
+            samplePrices: prices.slice(0, 5)
+          });
         }
       }
       // Only include attributes that have values with count > 0

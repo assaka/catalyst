@@ -402,6 +402,11 @@ export function CategorySlotRenderer({
         );
       }
 
+      // Get breadcrumb configuration from slot metadata and breadcrumb_styles slot
+      const breadcrumbConfig = metadata?.breadcrumbConfig || {};
+      const breadcrumbStylesSlot = slots?.breadcrumb_styles;
+      const breadcrumbStyles = breadcrumbStylesSlot?.styles || {};
+
       // Use unified breadcrumb renderer with auto-generation
       return wrapWithParentClass(
         <BreadcrumbRenderer
@@ -411,6 +416,8 @@ export function CategorySlotRenderer({
           storeCode={store?.slug || store?.code}
           categories={categories}
           settings={settings}
+          breadcrumbConfig={breadcrumbConfig}
+          breadcrumbStyles={breadcrumbStyles}
           className={className}
         />
       );

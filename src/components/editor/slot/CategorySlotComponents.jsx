@@ -247,10 +247,36 @@ const LayeredNavigation = createSlotComponent({
         categoryContext.handleFilterChange(newFilters);
       };
 
-      // Initialize slider track position on mount
-      setTimeout(() => {
-        updatePriceSliderTrack();
-      }, 0);
+      // Initialize slider track position and values on mount
+      const initSlider = () => {
+        const minSlider = containerRef.current?.querySelector('#price-slider-min');
+        const maxSlider = containerRef.current?.querySelector('#price-slider-max');
+
+        if (minSlider && maxSlider) {
+          // Ensure sliders have correct initial values
+          const min = parseInt(minSlider.getAttribute('min'));
+          const max = parseInt(minSlider.getAttribute('max'));
+
+          // Set initial values if they're not set correctly
+          if (!minSlider.value || minSlider.value === '0') {
+            minSlider.value = min;
+          }
+          if (!maxSlider.value || maxSlider.value === '0') {
+            maxSlider.value = max;
+          }
+
+          console.log('🔍 Price slider initialized:', {
+            min: minSlider.value,
+            max: maxSlider.value,
+            minAttr: min,
+            maxAttr: max
+          });
+
+          updatePriceSliderTrack();
+        }
+      };
+
+      setTimeout(initSlider, 100);
 
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);
