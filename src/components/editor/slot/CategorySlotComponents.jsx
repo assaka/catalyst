@@ -268,23 +268,43 @@ const LayeredNavigation = createSlotComponent({
         const maxSlider = containerRef.current?.querySelector('#price-slider-max');
 
         if (minSlider && maxSlider) {
-          // Ensure sliders have correct initial values
-          const min = parseInt(minSlider.getAttribute('min'));
-          const max = parseInt(minSlider.getAttribute('max'));
+          // Get min/max from attributes or data attributes
+          let min = parseInt(minSlider.getAttribute('min')) || parseInt(minSlider.dataset.min);
+          let max = parseInt(minSlider.getAttribute('max')) || parseInt(minSlider.dataset.max);
 
-          // Set initial values if they're not set correctly
-          if (!minSlider.value || minSlider.value === '0') {
+          // Fallback to value attributes if min/max not set
+          if (!min || isNaN(min)) {
+            min = parseInt(minSlider.getAttribute('value')) || 0;
+          }
+          if (!max || isNaN(max)) {
+            max = parseInt(maxSlider.getAttribute('value')) || 100;
+          }
+
+          // Set attributes if they're missing
+          if (!minSlider.getAttribute('min') && min) {
+            minSlider.setAttribute('min', min);
+            maxSlider.setAttribute('min', min);
+          }
+          if (!minSlider.getAttribute('max') && max) {
+            minSlider.setAttribute('max', max);
+            maxSlider.setAttribute('max', max);
+          }
+
+          // Set initial values
+          if (!minSlider.value || minSlider.value === '0' || minSlider.value === '50') {
             minSlider.value = min;
           }
-          if (!maxSlider.value || maxSlider.value === '0') {
+          if (!maxSlider.value || maxSlider.value === '0' || maxSlider.value === '50') {
             maxSlider.value = max;
           }
 
           console.log('🔍 Price slider initialized:', {
-            min: minSlider.value,
-            max: maxSlider.value,
+            minValue: minSlider.value,
+            maxValue: maxSlider.value,
             minAttr: min,
-            maxAttr: max
+            maxAttr: max,
+            htmlMin: minSlider.getAttribute('min'),
+            htmlMax: minSlider.getAttribute('max')
           });
 
           updatePriceSliderTrack();

@@ -319,7 +319,10 @@ export function CategorySlotRenderer({
       // Use the registered component's render method
       return registeredComponent.render({
         slot,
-        categoryContext: categoryContext,
+        categoryContext: {
+          ...categoryContext,
+          slots // Ensure slots are passed to component
+        },
         variableContext,
         context: 'storefront',
         className,
