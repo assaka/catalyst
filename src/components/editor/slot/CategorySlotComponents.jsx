@@ -411,7 +411,14 @@ const ProductItemsGrid = createSlotComponent({
       hasComparePrice: !!p.compare_price
     })));
 
+    // Debug: Check if template from config is being used
+    console.log('🎨 Template source:', slot?.content ? 'FROM CONFIG' : 'FALLBACK');
+    console.log('🎨 Template preview:', template.substring(0, 300));
+
     const html = processVariables(template, variableContext);
+
+    // Debug: Check rendered HTML for compare_price
+    console.log('✨ Rendered HTML preview:', html.substring(0, 500));
 
     // Attach event listeners in storefront
     useEffect(() => {
