@@ -488,7 +488,8 @@ export default function Category() {
     console.log('📋 Filterable attributes from database:', filterableAttributes?.map(a => ({
       code: a.code,
       name: a.name,
-      is_filterable: a.is_filterable
+      is_filterable: a.is_filterable,
+      filter_input_type: a.filter_input_type
     })));
 
     // Use filterableAttributes from database (where is_filterable = true)
@@ -568,8 +569,8 @@ export default function Category() {
         });
       }
 
-      // Handle price attribute specially - create slider with min/max from actual product prices
-      if (attrCode === 'price') {
+      // Handle price attribute with slider input type
+      if (attrCode === 'price' && attr.filter_input_type === 'slider') {
         const prices = filteredProducts.map(p => {
           let price = parseFloat(p.price || 0);
           // Use the lowest price if compare_price exists and is lower
