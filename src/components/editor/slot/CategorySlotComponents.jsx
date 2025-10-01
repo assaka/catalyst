@@ -82,7 +82,25 @@ const ActiveFilters = createSlotComponent({
         if (removeBtn && categoryContext?.handleFilterChange) {
           const filterType = removeBtn.getAttribute('data-filter-type');
           const filterValue = removeBtn.getAttribute('data-filter-value');
-          categoryContext.handleFilterChange(filterType, filterValue, false);
+          const attributeCode = removeBtn.getAttribute('data-attribute-code');
+
+          // Get current filters
+          const currentFilters = categoryContext.selectedFilters || {};
+
+          if (filterType === 'attribute' && attributeCode) {
+            // Remove this specific value from the attribute's array
+            const currentValues = currentFilters[attributeCode] || [];
+            const newValues = currentValues.filter(v => v !== filterValue);
+
+            const newFilters = { ...currentFilters };
+            if (newValues.length > 0) {
+              newFilters[attributeCode] = newValues;
+            } else {
+              delete newFilters[attributeCode];
+            }
+
+            categoryContext.handleFilterChange(newFilters);
+          }
         } else if (clearAllBtn && categoryContext?.clearFilters) {
           categoryContext.clearFilters();
         }

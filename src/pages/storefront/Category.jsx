@@ -591,6 +591,36 @@ export default function Category() {
     return filters;
   };
 
+  // Build active filters array for display
+  const buildActiveFiltersArray = () => {
+    const activeFiltersArray = [];
+
+    Object.entries(activeFilters).forEach(([attributeCode, values]) => {
+      if (attributeCode === 'priceRange') {
+        // Handle price range separately if needed
+        return;
+      }
+
+      // Find the attribute name from filterableAttributes
+      const attr = filterableAttributes?.find(a => a.code === attributeCode);
+      const attributeLabel = attr?.name || attributeCode;
+
+      // Add each selected value as a separate active filter
+      if (Array.isArray(values)) {
+        values.forEach(value => {
+          activeFiltersArray.push({
+            type: 'attribute',
+            attributeCode: attributeCode,
+            label: attributeLabel,
+            value: value
+          });
+        });
+      }
+    });
+
+    return activeFiltersArray;
+  };
+
   // Create category context for CategorySlotRenderer
   const categoryContext = {
     category: currentCategory,
@@ -598,6 +628,7 @@ export default function Category() {
     allProducts: products, // Use unfiltered products for filter counting
     filters: buildFilters(),
     filterableAttributes, // Pass database filterable attributes directly
+    activeFilters: buildActiveFiltersArray(), // Array of active filter objects for display
     sortOption: currentSort,
     currentPage,
     totalPages,

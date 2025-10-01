@@ -205,7 +205,8 @@ export const categoryConfig = {
                   <button class="ml-1 hover:text-blue-900"
                           data-action="remove-filter"
                           data-filter-type="{{this.type}}"
-                          data-filter-value="{{this.value}}">
+                          data-filter-value="{{this.value}}"
+                          data-attribute-code="{{this.attributeCode}}">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -230,8 +231,63 @@ export const categoryConfig = {
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
+        hierarchical: true,
+        component: 'ActiveFilters',
+        displayName: 'Active Filters Display'
+      }
+    },
+
+    // Active filter tag styling
+    active_filter_tag_styles: {
+      id: 'active_filter_tag_styles',
+      type: 'style_config',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {
+        backgroundColor: '#DBEAFE', // Default blue-100
+        textColor: '#1E40AF', // Default blue-800
+        hoverColor: '#1E3A8A', // Default blue-900
+        borderRadius: '9999px', // Full rounded
+        fontSize: '0.875rem', // text-sm
+        padding: '0.25rem 0.75rem' // py-1 px-3
+      },
+      parentId: 'active_filters',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
         hierarchical: false,
-        component: 'ActiveFilters'
+        microslot: true,
+        displayName: 'Active Filter Tag Styling',
+        labelType: 'styling',
+        customizable: ['backgroundColor', 'textColor', 'hoverColor', 'borderRadius', 'fontSize', 'padding']
+      }
+    },
+
+    // Clear all button styling
+    clear_all_button_styles: {
+      id: 'clear_all_button_styles',
+      type: 'style_config',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {
+        textColor: '#DC2626', // Default red-600
+        hoverColor: '#991B1B', // Default red-800
+        fontSize: '0.875rem', // text-sm
+        fontWeight: 'normal'
+      },
+      parentId: 'active_filters',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Clear All Button Styling',
+        labelType: 'styling',
+        customizable: ['textColor', 'hoverColor', 'fontSize', 'fontWeight']
       }
     },
 
