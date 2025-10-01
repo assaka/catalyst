@@ -727,6 +727,56 @@ export const categoryConfig = {
     'category_footer'
   ],
 
+  // Filter configuration - Define which attributes to show and their options
+  filterConfig: {
+    // Price filter configuration
+    price: {
+      enabled: true,
+      label: 'Price',
+      type: 'range'
+    },
+
+    // Attribute filters - define all filterable attributes here
+    attributes: {
+      color: {
+        enabled: true,
+        label: 'Color',
+        type: 'checkbox',
+        options: [
+          { value: 'Red', label: 'Red' },
+          { value: 'Blue', label: 'Blue' },
+          { value: 'Green', label: 'Green' },
+          { value: 'Black', label: 'Black' },
+          { value: 'White', label: 'White' },
+          { value: 'Yellow', label: 'Yellow' },
+          { value: 'Orange', label: 'Orange' },
+          { value: 'Purple', label: 'Purple' },
+          { value: 'Pink', label: 'Pink' },
+          { value: 'Gray', label: 'Gray' },
+          { value: 'Brown', label: 'Brown' }
+        ]
+      },
+      brand: {
+        enabled: true,
+        label: 'Brand',
+        type: 'checkbox',
+        options: [] // Will be populated from products
+      },
+      size: {
+        enabled: true,
+        label: 'Size',
+        type: 'checkbox',
+        options: [] // Will be populated from products
+      },
+      material: {
+        enabled: true,
+        label: 'Material',
+        type: 'checkbox',
+        options: [] // Will be populated from products
+      }
+    }
+  },
+
   // Microslot definitions for category and product components
   microslots: {
     breadcrumbs_content: {

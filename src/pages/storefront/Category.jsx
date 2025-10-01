@@ -479,47 +479,59 @@ export default function Category() {
   }, [activeFilters, setPage]);
 
 
-  // Build dynamic filters from filterable attributes (matching LayeredNavigation logic)
+  // Build dynamic filters using filterConfig from category-config.js as the source of truth
   const buildFilters = () => {
     const filters = {};
 
-    if (!filterableAttributes) {
+    // Use filterConfig from category-config.js if available
+    const filterConfig = categoryLayoutConfig?.filterConfig || categoryConfig.filterConfig;
+
+    if (!filterConfig || !filterConfig.attributes) {
       return filters;
     }
 
-    filterableAttributes.forEach(attr => {
-      // Check if attribute is filterable (handle different possible properties)
-      const isFilterable = attr.is_filterable || attr.filterable || attr.use_for_filter;
+    // Process each configured attribute
+    Object.entries(filterConfig.attributes).forEach(([attrCode, attrConfig]) => {
+      if (!attrConfig.enabled) {
+        return; // Skip disabled filters
+      }
 
-      if (isFilterable) {
-        const filterKey = attr.code || attr.name || attr.attribute_name;
+      const values = new Set();
+      const optionObjects = [];
 
-        const values = new Set();
-
-        // Add values from products - try multiple possible attribute keys (like LayeredNavigation)
+      // 1. First, add predefined options from filterConfig (this is the source of truth)
+      if (attrConfig.options && Array.isArray(attrConfig.options) && attrConfig.options.length > 0) {
+        attrConfig.options.forEach(option => {
+          if (typeof option === 'object' && option !== null) {
+            const value = String(option.value || option.label || '');
+            const label = option.label || option.value || value;
+            if (value !== '') {
+              optionObjects.push({ value, label });
+              values.add(value);
+            }
+          } else if (option !== null && option !== undefined && option !== '') {
+            const value = String(option);
+            optionObjects.push({ value, label: value });
+            values.add(value);
+          }
+        });
+      } else {
+        // 2. If no predefined options, extract values from products
         if (products && products.length > 0) {
           products.forEach(p => {
             const productAttributes = p.attributes || p.attribute_values || {};
 
-            // Try multiple possible keys for the attribute (expanded list like LayeredNavigation)
+            // Try multiple possible keys for the attribute
             const possibleKeys = [
-              attr.code,
-              attr.name,
-              attr.attribute_name,
-              attr.code?.toLowerCase(),
-              attr.name?.toLowerCase(),
-              attr.attribute_name?.toLowerCase(),
-              // Add more variations
-              attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
-              attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
-              attr.attribute_name?.toLowerCase().replace(/[_-\s]/g, ''),
-              // Common attribute variations
-              filterKey,
-              filterKey?.toLowerCase(),
-              filterKey?.toLowerCase().replace(/[_-\s]/g, ''),
-              // Common color attribute variations (from LayeredNavigation)
+              attrCode,
+              attrCode.toLowerCase(),
+              attrCode.toLowerCase().replace(/[_-\s]/g, ''),
+              // Common variations
               'color', 'Color', 'COLOR',
-              'colour', 'Colour', 'COLOUR'
+              'colour', 'Colour', 'COLOUR',
+              'brand', 'Brand', 'BRAND',
+              'size', 'Size', 'SIZE',
+              'material', 'Material', 'MATERIAL'
             ].filter(Boolean);
 
             let attributeValue = null;
@@ -534,7 +546,6 @@ export default function Category() {
               if (Array.isArray(attributeValue)) {
                 attributeValue.forEach(val => {
                   if (val) {
-                    // Handle object values properly
                     if (typeof val === 'object' && val !== null) {
                       const extractedValue = val.value || val.label || val.name;
                       if (extractedValue) values.add(String(extractedValue));
@@ -544,7 +555,6 @@ export default function Category() {
                   }
                 });
               } else if (typeof attributeValue === 'object' && attributeValue !== null) {
-                // Handle object attribute values
                 const extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
                 if (extractedValue) values.add(String(extractedValue));
               } else {
@@ -553,54 +563,31 @@ export default function Category() {
             }
           });
         }
+      }
 
-        // IMPORTANT: Also add predefined options from attribute definition (like LayeredNavigation)
-        // Store as objects to preserve labels
-        const optionObjects = [];
-        if (attr.options && Array.isArray(attr.options)) {
-          attr.options.forEach(option => {
-            if (typeof option === 'object' && option !== null) {
-              // Preserve the original structure
-              const value = String(option.value || option.label || option.name || '');
-              const label = option.label || option.name || value;
-              if (value !== '') {
-                optionObjects.push({ value, label });
-                values.add(value);
-              }
-            } else if (option !== null && option !== undefined && option !== '') {
-              // Simple value - use it for both value and label
-              const value = String(option);
-              optionObjects.push({ value, label: value });
-              values.add(value);
-            }
-          });
-        }
+      // Only include attributes that have values
+      if (values.size > 0) {
+        // Create a map to store the best label for each value
+        const valueToLabel = {};
 
-        // Include all filterable attributes, even if they have no values yet
-        // This ensures all 'use for filter' attributes are shown
-        if (values.size > 0 || isFilterable) {
-          // Create a map to store the best label for each value
-          const valueToLabel = {};
+        // First, add labels from predefined options (from filterConfig)
+        optionObjects.forEach(opt => {
+          valueToLabel[opt.value] = opt.label;
+        });
 
-          // First, add labels from predefined options
-          optionObjects.forEach(opt => {
-            valueToLabel[opt.value] = opt.label;
-          });
+        // Then add any values found in products (these might not have labels)
+        Array.from(values).forEach(value => {
+          if (!valueToLabel[value]) {
+            valueToLabel[value] = value; // Use value as label if no label exists
+          }
+        });
 
-          // Then add any values found in products (these might not have labels)
-          Array.from(values).forEach(value => {
-            if (!valueToLabel[value]) {
-              valueToLabel[value] = value; // Use value as label if no label exists
-            }
-          });
-
-          // Create the final filter array with proper labels
-          filters[filterKey] = Object.entries(valueToLabel).sort(([a], [b]) => a.localeCompare(b)).map(([value, label]) => ({
-            value,
-            label,
-            count: 0 // Will be calculated in CategorySlotRenderer
-          }));
-        }
+        // Create the final filter array with proper labels
+        filters[attrCode] = Object.entries(valueToLabel).sort(([a], [b]) => a.localeCompare(b)).map(([value, label]) => ({
+          value,
+          label,
+          count: 0 // Will be calculated in CategorySlotRenderer
+        }));
       }
     });
 
@@ -613,7 +600,14 @@ export default function Category() {
     products: paginatedProducts,
     allProducts: products, // Use unfiltered products for filter counting
     filters: buildFilters(),
-    filterableAttributes, // Pass filterable attributes for reference
+    filterableAttributes: Object.entries(categoryLayoutConfig?.filterConfig?.attributes || categoryConfig.filterConfig?.attributes || {})
+      .filter(([_, config]) => config.enabled)
+      .map(([code, config]) => ({
+        code,
+        name: config.label || code,
+        is_filterable: true,
+        options: config.options || []
+      })), // Convert filterConfig to filterableAttributes format
     sortOption: currentSort,
     currentPage,
     totalPages,
@@ -683,7 +677,7 @@ export default function Category() {
           </div>
         ) : (
           <>
-            {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? (
+            {(settings?.enable_product_filters !== false && categoryContext.filterableAttributes?.length > 0) ? (
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 <CategorySlotRenderer
                   slots={categorySlots}
