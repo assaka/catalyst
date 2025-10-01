@@ -568,8 +568,20 @@ export default function Category() {
         });
       }
 
+      // Handle price attribute specially - create slider with min/max
+      if (attrCode === 'price' && valueCountMap.size > 0) {
+        const prices = Array.from(valueCountMap.keys()).map(p => parseFloat(p)).filter(p => !isNaN(p));
+        if (prices.length > 0) {
+          filters[attrCode] = {
+            min: Math.floor(Math.min(...prices)),
+            max: Math.ceil(Math.max(...prices)),
+            type: 'slider'
+          };
+          console.log(`🔍 Price range:`, filters[attrCode]);
+        }
+      }
       // Only include attributes that have values with count > 0
-      if (valueCountMap.size > 0) {
+      else if (valueCountMap.size > 0) {
         // Create the final filter array with counts, sorted alphabetically
         filters[attrCode] = Array.from(valueCountMap.entries())
           .sort(([a], [b]) => a.localeCompare(b))

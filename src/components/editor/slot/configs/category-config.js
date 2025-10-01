@@ -543,23 +543,36 @@ export const categoryConfig = {
       component: 'LayeredNavigation',
       content: `
         <div class="space-y-6">
-          <!-- Price Filter -->
+          <!-- Price Filter Slider -->
           {{#if filters.price}}
             <div class="border-b border-gray-200 pb-4">
               <h4 class="font-semibold text-base text-gray-900 mb-3">Price</h4>
-              <div class="space-y-2">
-                {{#each filters.price.ranges}}
-                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900">
-                    <input type="checkbox"
-                           class="rounded border-gray-300 text-blue-600"
-                           data-action="toggle-filter"
-                           data-filter-type="price"
-                           data-filter-value="{{this.value}}"
-                           {{#if this.active}}checked{{/if}} />
-                    <span class="text-gray-700">{{this.label}}</span>
-                    <span class="text-gray-400 text-sm ml-auto">({{this.count}})</span>
-                  </label>
-                {{/each}}
+              <div class="px-2">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                  <span id="price-min-label">€{{filters.price.min}}</span>
+                  <span id="price-max-label">€{{filters.price.max}}</span>
+                </div>
+                <input type="range"
+                       id="price-slider-min"
+                       min="{{filters.price.min}}"
+                       max="{{filters.price.max}}"
+                       value="{{filters.price.min}}"
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                       data-action="price-slider"
+                       data-slider-type="min" />
+                <input type="range"
+                       id="price-slider-max"
+                       min="{{filters.price.min}}"
+                       max="{{filters.price.max}}"
+                       value="{{filters.price.max}}"
+                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer -mt-2"
+                       data-action="price-slider"
+                       data-slider-type="max" />
+                <div class="flex justify-between items-center mt-3 text-sm">
+                  <span class="text-gray-700">€<span id="selected-min">{{filters.price.min}}</span></span>
+                  <span class="text-gray-400">-</span>
+                  <span class="text-gray-700">€<span id="selected-max">{{filters.price.max}}</span></span>
+                </div>
               </div>
             </div>
           {{/if}}

@@ -186,18 +186,53 @@ const LayeredNavigation = createSlotComponent({
           }
 
           categoryContext.handleFilterChange(newFilters);
-        } else if (filterType === 'price') {
-          // Handle price filter
-          const newFilters = { ...currentFilters };
-          // Price filter logic here if needed
-          categoryContext.handleFilterChange(newFilters);
         }
       };
 
+      const handlePriceSlider = (e) => {
+        const slider = e.target.closest('[data-action="price-slider"]');
+        if (!slider || !categoryContext?.handleFilterChange) return;
+
+        const sliderType = slider.getAttribute('data-slider-type');
+        const value = parseInt(slider.value);
+
+        const minSlider = containerRef.current.querySelector('#price-slider-min');
+        const maxSlider = containerRef.current.querySelector('#price-slider-max');
+        const selectedMin = containerRef.current.querySelector('#selected-min');
+        const selectedMax = containerRef.current.querySelector('#selected-max');
+
+        if (!minSlider || !maxSlider) return;
+
+        let minValue = parseInt(minSlider.value);
+        let maxValue = parseInt(maxSlider.value);
+
+        // Update values based on which slider moved
+        if (sliderType === 'min') {
+          minValue = Math.min(value, maxValue);
+          minSlider.value = minValue;
+        } else {
+          maxValue = Math.max(value, minValue);
+          maxSlider.value = maxValue;
+        }
+
+        // Update display
+        if (selectedMin) selectedMin.textContent = minValue;
+        if (selectedMax) selectedMax.textContent = maxValue;
+
+        // Update filters
+        const currentFilters = categoryContext.selectedFilters || {};
+        const newFilters = { ...currentFilters };
+        newFilters.priceRange = [minValue, maxValue];
+        categoryContext.handleFilterChange(newFilters);
+      };
+
       containerRef.current.addEventListener('change', handleChange);
+      containerRef.current.addEventListener('input', handlePriceSlider);
+
       return () => {
         if (containerRef.current) {
           containerRef.current.removeEventListener('change', handleChange);
+          containerRef.current.removeEventListener('input', handlePriceSlider);
         }
       };
     }, [categoryContext, context]);
