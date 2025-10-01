@@ -306,8 +306,8 @@ export function CategorySlotRenderer({
         activeFilters: categoryContext.activeFilters || [],
         pagination: {
           start: (currentPage - 1) * itemsPerPage + 1,
-          end: Math.min(currentPage * itemsPerPage, allProducts?.length || 0),
-          total: allProducts?.length || 0,
+          end: Math.min(currentPage * itemsPerPage, categoryContext.filteredProductsCount || 0),
+          total: categoryContext.filteredProductsCount || 0,
           currentPage,
           totalPages,
           hasPrev: currentPage > 1,
