@@ -25,7 +25,6 @@ import { registerSlotComponent, createSlotComponent } from './SlotComponentRegis
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
-import BreadcrumbRendererComponent from '@/components/storefront/BreadcrumbRenderer';
 // import StockStatusComponent from '@/components/storefront/StockStatus'; // Temporarily commented out
 
 // Import category slot components to register them

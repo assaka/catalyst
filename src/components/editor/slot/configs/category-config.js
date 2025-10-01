@@ -350,7 +350,6 @@ export const categoryConfig = {
           This ensures users can change all button colors from Admin > Store > Theme & Layout.
           ============================================
         -->
-        <div class="products-grid-container">
           {{#each products}}
             <div class="group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card"
                  data-product-id="{{this.id}}"
@@ -415,7 +414,6 @@ export const categoryConfig = {
               {{/if}}
             </div>
           {{/each}}
-        </div>
       `,
       className: '',
       parentClassName: '',

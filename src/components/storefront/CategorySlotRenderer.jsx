@@ -7,7 +7,6 @@ import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
-import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import '@/components/editor/slot/CategorySlotComponents';
 
@@ -414,46 +413,8 @@ export function CategorySlotRenderer({
       );
     }
 
-    if (id === 'breadcrumbs' || id === 'breadcrumb_container') {
-      // Use content from slot if provided, otherwise use Breadcrumb component
-      if (content && content.trim()) {
-        return wrapWithParentClass(
-          <div
-            className={className}
-            style={styles}
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
-        );
-      }
-
-      // Get breadcrumb configuration from slot metadata and breadcrumb_styles slot
-      const breadcrumbConfig = metadata?.breadcrumbConfig || {};
-      const breadcrumbStylesSlot = slots?.breadcrumb_styles;
-      const breadcrumbStyles = breadcrumbStylesSlot?.styles || {};
-
-      console.log('🎯 CategorySlotRenderer breadcrumb rendering:', {
-        hasSlotsParam: !!slots,
-        slotsKeys: slots ? Object.keys(slots).slice(0, 15) : [],
-        breadcrumbStylesSlot,
-        breadcrumbStyles
-      });
-
-      // Use unified breadcrumb renderer with auto-generation
-      return wrapWithParentClass(
-        <BreadcrumbRenderer
-          items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
-          pageType="category"
-          pageData={category}
-          storeCode={store?.slug || store?.code}
-          categories={categories}
-          settings={settings}
-          breadcrumbConfig={breadcrumbConfig}
-          breadcrumbStyles={breadcrumbStyles}
-          slots={slots}
-          className={className}
-        />
-      );
-    }
+    // Breadcrumbs are now handled by CategoryBreadcrumbs component via ComponentRegistry
+    // No direct rendering needed here
 
     // Search bar
     if (id === 'search_bar') {
@@ -743,26 +704,8 @@ export function CategorySlotRenderer({
         );
 
       case 'breadcrumbs':
-        // Fallback for backward compatibility
-        const breadcrumbConfigFallback = metadata?.breadcrumbConfig || {};
-        const breadcrumbStylesSlotFallback = categoryContext?.slots?.breadcrumb_styles || slots?.breadcrumb_styles;
-        const breadcrumbStylesFallback = breadcrumbStylesSlotFallback?.styles || {};
-
-        // Use unified breadcrumb renderer with auto-generation
-        return wrapWithParentClass(
-          <BreadcrumbRenderer
-            items={breadcrumbs.length > 0 ? breadcrumbs : undefined}
-            pageType="category"
-            pageData={category}
-            storeCode={store?.slug || store?.code}
-            categories={categories}
-            settings={settings}
-            breadcrumbConfig={breadcrumbConfigFallback}
-            breadcrumbStyles={breadcrumbStylesFallback}
-            slots={slots}
-            className={className}
-          />
-        );
+        // Breadcrumbs are now handled by CategoryBreadcrumbs/ProductBreadcrumbs components via ComponentRegistry
+        return null;
 
       default:
         // For any unknown slot type, render as text
