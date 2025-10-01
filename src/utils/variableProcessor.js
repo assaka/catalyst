@@ -418,6 +418,18 @@ function getNestedValue(path, context, pageData) {
   // Merge data: pageData should override context (pageData has loop item context)
   const fullData = { ...context, ...pageData };
 
+  // Debug for in_stock path
+  if (path === 'this.in_stock') {
+    console.log('🔍 getNestedValue for this.in_stock:', {
+      hasPageData: !!pageData,
+      pageData_this: pageData?.this,
+      pageData_this_in_stock: pageData?.this?.in_stock,
+      pageData_in_stock: pageData?.in_stock,
+      fullData_this: fullData?.this,
+      fullData_this_in_stock: fullData?.this?.in_stock
+    });
+  }
+
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
