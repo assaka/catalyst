@@ -24,6 +24,16 @@ const BreadcrumbRenderer = createSlotComponent({
       categoryContext?.slots?.breadcrumb_styles?.styles || // From slots
       {}; // Fallback
 
+    console.log('🔍 BreadcrumbRenderer Component - CategorySlotComponents.jsx:', {
+      hasCategoryContext: !!categoryContext,
+      hasCategoryContextSlots: !!categoryContext?.slots,
+      categoryContextSlotsKeys: categoryContext?.slots ? Object.keys(categoryContext.slots) : [],
+      hasBreadcrumbStylesSlot: !!categoryContext?.slots?.breadcrumb_styles,
+      breadcrumbStylesFromSlot: categoryContext?.slots?.breadcrumb_styles?.styles,
+      breadcrumbStylesDirectlyPassed: categoryContext?.breadcrumbStyles,
+      finalBreadcrumbStyles: breadcrumbStyles
+    });
+
     const {
       category,
       breadcrumbs = [],
