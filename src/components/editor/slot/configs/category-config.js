@@ -270,7 +270,7 @@ export const categoryConfig = {
 
               <!-- Price Container -->
               <div class="flex items-baseline gap-2 mb-4">
-                <span class="text-lg font-bold text-green-600" data-product-price>
+                <span class="text-lg font-bold text-blue-600" data-product-price>
                   {{this.formatted_price}}
                 </span>
                 {{#if this.compare_price}}
@@ -436,7 +436,7 @@ export const categoryConfig = {
       component: 'LayeredNavigation',
       content: `
         <div class="space-y-6">
-          <h3 class="text-lg font-semibold text-gray-900">Filter Hamid</h3>
+          <h3 class="text-lg font-semibold text-gray-900">Filter Now</h3>
 
           <!-- Price Filter -->
           {{#if filters.price}}
@@ -500,7 +500,7 @@ export const categoryConfig = {
     filter_by_label: {
       id: 'filter_by_label',
       type: 'text',
-      content: 'Filter Hamid',
+      content: 'Filter Now',
       className: 'text-lg font-semibold text-gray-900',
       parentClassName: '',
       styles: {
