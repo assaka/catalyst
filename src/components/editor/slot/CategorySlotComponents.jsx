@@ -712,27 +712,26 @@ const ProductItemsGrid = createSlotComponent({
     const gridClasses = getGridClasses(storeSettings);
 
     // Use template from slot.content or fallback
+    // NOTE: No wrapper div needed - grid classes are applied to the container element
     const template = slot?.content || `
-      <div class="products-grid-container">
-        {{#each products}}
-          <div class="group overflow-hidden rounded-lg border bg-card p-4 product-card"
-               data-product-id="{{this.id}}">
-            <div class="relative overflow-hidden mb-4">
-              <img src="{{this.image_url}}" alt="{{this.name}}"
-                   class="w-full h-48 object-cover" />
-            </div>
-            <h3 class="font-semibold text-lg mb-2">{{this.name}}</h3>
-            <div class="flex items-baseline gap-2 mb-4">
-              <span class="text-lg font-bold text-green-600">{{this.formatted_price}}</span>
-            </div>
-            <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-md"
-                    data-action="add-to-cart"
-                    data-product-id="{{this.id}}">
-              Add to Cart
-            </button>
+      {{#each products}}
+        <div class="group overflow-hidden rounded-lg border bg-card p-4 product-card"
+             data-product-id="{{this.id}}">
+          <div class="relative overflow-hidden mb-4">
+            <img src="{{this.image_url}}" alt="{{this.name}}"
+                 class="w-full h-48 object-cover" />
           </div>
-        {{/each}}
-      </div>
+          <h3 class="font-semibold text-lg mb-2">{{this.name}}</h3>
+          <div class="flex items-baseline gap-2 mb-4">
+            <span class="text-lg font-bold text-green-600">{{this.formatted_price}}</span>
+          </div>
+          <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-md"
+                  data-action="add-to-cart"
+                  data-product-id="{{this.id}}">
+            Add to Cart
+          </button>
+        </div>
+      {{/each}}
     `;
 
     const html = processVariables(template, variableContext);
