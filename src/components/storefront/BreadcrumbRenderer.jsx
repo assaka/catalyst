@@ -32,7 +32,9 @@ export default function BreadcrumbRenderer({
   console.log('🎯 BreadcrumbRenderer received:', {
     breadcrumbStylesProp: breadcrumbStyles,
     slotsProp: !!slots,
-    slotsHasBreadcrumbStyles: !!slots?.breadcrumb_styles?.styles
+    slotsKeys: slots ? Object.keys(slots).slice(0, 15) : [],
+    slotsHasBreadcrumbStyles: !!slots?.breadcrumb_styles?.styles,
+    actualSlotsData: slots?.breadcrumb_styles
   });
 
   // If breadcrumbStyles is empty but slots is provided, extract from slots
