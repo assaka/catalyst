@@ -173,6 +173,12 @@ export function CategorySlotRenderer({
           displayPriceType: typeof displayPrice
         });
 
+        // Check if formatDisplayPrice returned garbage like "$[object Object]"
+        if (typeof displayPrice === 'string' && displayPrice.includes('[object Object]')) {
+          console.warn('formatDisplayPrice returned [object Object], using raw price');
+          displayPrice = product.price;
+        }
+
         // Handle if displayPrice is an object (extract the actual price value)
         if (typeof displayPrice === 'object' && displayPrice !== null) {
           console.log('Price is object, keys:', Object.keys(displayPrice));
