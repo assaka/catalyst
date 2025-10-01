@@ -156,6 +156,17 @@ export function CategorySlotRenderer({
       component: componentName
     } = slot || {};
 
+    // Debug breadcrumbs slot
+    if (id === 'breadcrumbs_content') {
+      console.log('🔍 Rendering breadcrumbs_content slot:', {
+        id,
+        type,
+        componentName,
+        hasComponent: ComponentRegistry.has(componentName),
+        metadata
+      });
+    }
+
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
       const registeredComponent = ComponentRegistry.get(componentName);
