@@ -52,6 +52,7 @@ export default function Attributes() {
   const [attributeSets, setAttributeSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState("all");
   const [editingAttribute, setEditingAttribute] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingSet, setEditingSet] = useState(null);
@@ -223,12 +224,16 @@ export default function Attributes() {
     }
   };
 
-  // Client-side filtering for search (all data is loaded)
-  const filteredAttributes = attributes.filter(attribute =>
-    !searchQuery.trim() || 
-    attribute.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    attribute.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Client-side filtering for search and type (all data is loaded)
+  const filteredAttributes = attributes.filter(attribute => {
+    const matchesSearch = !searchQuery.trim() ||
+      attribute.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      attribute.code.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesType = selectedTypeFilter === "all" || attribute.type === selectedTypeFilter;
+
+    return matchesSearch && matchesType;
+  });
 
   const filteredAttributeSets = attributeSets.filter(attributeSet =>
     !searchQuery.trim() || 
@@ -246,11 +251,11 @@ export default function Attributes() {
   const totalAttributePages = Math.ceil(filteredAttributes.length / itemsPerPage);
   const totalSetPages = Math.ceil(filteredAttributeSets.length / itemsPerPage);
 
-  // Reset to first page when search changes
+  // Reset to first page when search or type filter changes
   useEffect(() => {
     setCurrentAttributePage(1);
     setCurrentSetPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, selectedTypeFilter]);
 
   // Handle page changes (client-side only)
   const handleAttributePageChange = (page) => {
@@ -404,17 +409,49 @@ export default function Attributes() {
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search and Filters */}
         <Card className="material-elevation-1 border-0 mb-6">
           <CardContent className="p-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search attributes and sets..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  placeholder="Search attributes and sets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select
+                value={selectedTypeFilter}
+                onValueChange={setSelectedTypeFilter}
+              >
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="select">Select</SelectItem>
+                  <SelectItem value="multiselect">Multi-select</SelectItem>
+                  <SelectItem value="boolean">Boolean</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                </SelectContent>
+              </Select>
+              {(searchQuery || selectedTypeFilter !== "all") && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedTypeFilter("all");
+                  }}
+                  className="whitespace-nowrap"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
