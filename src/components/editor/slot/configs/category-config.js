@@ -591,7 +591,7 @@ export const categoryConfig = {
       type: 'component',
       component: 'LayeredNavigation',
       content: `
-        <div class="space-y-6">
+        <div class="space-y-3">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
