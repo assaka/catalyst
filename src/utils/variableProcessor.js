@@ -149,7 +149,13 @@ function processConditionalsStep(content, context, pageData) {
 /**
  * Process loop blocks: {{#each array}}...{{/each}}
  */
-function processLoops(content, context, pageData) {
+function processLoops(content, context, pageData, depth = 0) {
+  // Prevent infinite recursion - max 10 levels of nesting
+  if (depth > 10) {
+    console.warn('processLoops: Max recursion depth reached');
+    return content;
+  }
+
   const loopRegex = /\{\{#each\s+([^}]+)\}\}([\s\S]*?)\{\{\/each\}\}/g;
 
   return content.replace(loopRegex, (match, arrayPath, template) => {
@@ -183,7 +189,8 @@ function processLoops(content, context, pageData) {
       itemContent = processConditionals(itemContent, context, itemContext);
 
       // IMPORTANT: Process nested loops recursively before simple variables
-      itemContent = processLoops(itemContent, context, itemContext);
+      // Pass depth + 1 to prevent infinite recursion
+      itemContent = processLoops(itemContent, context, itemContext, depth + 1);
 
       return processSimpleVariables(itemContent, context, itemContext);
     }).join('');
