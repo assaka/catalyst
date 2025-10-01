@@ -632,7 +632,12 @@ export default function Category() {
     handleSortChange: handleSortChange,
     handlePageChange: handlePageChange,
     clearFilters: () => setActiveFilters({}),
-    formatDisplayPrice: (price) => `${settings?.currency_symbol || '$'}${price}`,
+    formatDisplayPrice: (product) => {
+      // Handle if product is passed instead of price value
+      const priceValue = typeof product === 'object' ? product.price : product;
+      const numPrice = parseFloat(priceValue || 0);
+      return `${settings?.currency_symbol || '$'}${numPrice.toFixed(2)}`;
+    },
     getProductImageUrl: (product) => product?.images?.[0] || '/placeholder-product.jpg',
     navigate: (url) => window.location.href = url,
     onProductClick: (product) => window.location.href = createProductUrl(storeCode, product.slug)
