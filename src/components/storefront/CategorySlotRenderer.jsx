@@ -166,15 +166,6 @@ export function CategorySlotRenderer({
         const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
         const comparePrice = product.compare_price;
 
-        // Debug: Log ALL products to see their data
-        console.log('Formatting product:', {
-          name: product.name,
-          price: product.price,
-          compare_price: product.compare_price,
-          hasComparePrice: !!comparePrice,
-          allKeys: Object.keys(product)
-        });
-
         // displayPrice is already a formatted string like "$1349.00"
         const formattedPriceStr = displayPrice;
 
@@ -242,15 +233,6 @@ export function CategorySlotRenderer({
         const attrCode = attr.code || attr.name;
         const options = filtersData[attrCode] || [];
 
-        // Only log color and manufacturer for debugging
-        if (attrCode === 'color' || attrCode === 'manufacturer') {
-          console.log(`🔍 CategorySlotRenderer - Processing ${attrCode}:`, {
-            attrCode,
-            attrName: attr.name,
-            options
-          });
-        }
-
         const formattedOptions = Array.isArray(options)
           ? options.map(option => {
               if (typeof option === 'object' && option !== null) {
@@ -278,25 +260,16 @@ export function CategorySlotRenderer({
           options: formattedOptions
         };
 
-        // Only log color and manufacturer for debugging
-        if (attrCode === 'color' || attrCode === 'manufacturer') {
-          console.log(`🔍 CategorySlotRenderer - Formatted ${attrCode}:`, result);
-        }
-
         return result;
       }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
 
       // Only log color and manufacturer from final result
       const debugFilters = attributeFilters.filter(a => a.code === 'color' || a.code === 'manufacturer');
-      console.log('🔍 CategorySlotRenderer - Final color & manufacturer filters:', debugFilters);
 
       const formattedFilters = {
         price: priceRanges ? { ranges: priceRanges } : null,
         attributes: attributeFilters
       };
-
-      // Debug: Log the filters being passed to template
-      console.log('🔍 CategorySlotRenderer - formattedFilters:', JSON.stringify(formattedFilters, null, 2));
 
       // Prepare variable context for processVariables
       const variableContext = {
@@ -319,11 +292,6 @@ export function CategorySlotRenderer({
           current: sortOption
         }
       };
-
-      // Debug active filters
-      if (categoryContext.activeFilters && categoryContext.activeFilters.length > 0) {
-        console.log('🔍 CategorySlotRenderer - activeFilters:', categoryContext.activeFilters);
-      }
 
       // Use the registered component's render method
       return registeredComponent.render({
