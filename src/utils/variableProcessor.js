@@ -297,6 +297,21 @@ function evaluateCondition(condition, context, pageData) {
       });
     }
 
+    // Debug compare_price conditions
+    if (condition.includes('compare_price')) {
+      console.log('🔍 Evaluating compare_price condition:', {
+        condition,
+        value,
+        valueType: typeof value,
+        booleanResult: !!value,
+        contextKeys: Object.keys(context || {}),
+        pageDataKeys: Object.keys(pageData || {}),
+        pageData_compare_price: pageData?.compare_price,
+        pageData_this: pageData?.this,
+        pageData_this_compare_price: pageData?.this?.compare_price
+      });
+    }
+
     return !!value;
   } catch (error) {
     console.warn('Error evaluating condition:', condition, error);
