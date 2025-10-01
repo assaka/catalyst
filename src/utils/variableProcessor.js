@@ -182,6 +182,9 @@ function processLoops(content, context, pageData) {
       // First process conditionals with the item context so {{#if tab_type}} works
       itemContent = processConditionals(itemContent, context, itemContext);
 
+      // IMPORTANT: Process nested loops recursively before simple variables
+      itemContent = processLoops(itemContent, context, itemContext);
+
       return processSimpleVariables(itemContent, context, itemContext);
     }).join('');
   });
