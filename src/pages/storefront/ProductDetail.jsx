@@ -26,7 +26,6 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CustomOptions from "@/components/storefront/CustomOptions";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
-import BreadcrumbRenderer from "@/components/storefront/BreadcrumbRenderer";
 
 // Slot system imports
 import slotConfigurationService from '@/services/slotConfigurationService';
