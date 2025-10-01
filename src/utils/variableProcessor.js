@@ -301,11 +301,21 @@ function getNestedValue(path, context, pageData) {
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
+    const fullData = { ...pageData, ...context };
 
-    // If context itself is the item (not wrapped in an object), access it directly
+    // Try to find 'this' object in the data first (loop creates { this: item, ...item })
+    if (fullData.this) {
+      const result = propertyPath.split('.').reduce((obj, key) => {
+        return obj && obj[key] !== undefined ? obj[key] : null;
+      }, fullData.this);
+
+      if (result !== null) return result;
+    }
+
+    // Fallback: try direct property access (when item properties are spread at root)
     const result = propertyPath.split('.').reduce((obj, key) => {
       return obj && obj[key] !== undefined ? obj[key] : null;
-    }, context);
+    }, fullData);
 
     return result;
   }
