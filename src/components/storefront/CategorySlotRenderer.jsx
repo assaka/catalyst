@@ -166,14 +166,15 @@ export function CategorySlotRenderer({
         const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
         const comparePrice = product.compare_price || product.compare_at_price;
 
-        // Debug: Check if any products have compare_price
-        if (comparePrice) {
-          console.log('Product with compare_price:', {
-            name: product.name,
-            price: product.price,
-            compare_price: comparePrice
-          });
-        }
+        // Debug: Log ALL products to see their data
+        console.log('Formatting product:', {
+          name: product.name,
+          price: product.price,
+          compare_price: product.compare_price,
+          compare_at_price: product.compare_at_price,
+          hasComparePrice: !!comparePrice,
+          allKeys: Object.keys(product)
+        });
 
         // displayPrice is already a formatted string like "$1349.00"
         const formattedPriceStr = displayPrice;
