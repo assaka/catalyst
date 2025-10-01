@@ -44,19 +44,25 @@ export const categoryConfig = {
     category_title: {
       id: 'category_title',
       type: 'text',
-      content: 'Category Name',
-      className: 'text-4xl font-bold text-gray-900 mb-2',
+      content: '{{category.name}}',
+      className: 'w-fit text-4xl font-bold text-gray-900 mb-2',
       parentClassName: '',
-      styles: {
-        color: '#FF6B6B'  // Test color - light red/coral
-      },
+      styles: {},
       parentId: 'page_header',
       position: { col: 1, row: 2 },
-      colSpan: { grid: 12, list: 12 },
+      colSpan: {
+        default: 12,
+        grid: 12,
+        list: 12
+      },
       viewMode: ['grid', 'list'],
       metadata: {
-        hierarchical: false,
-        displayName: 'Category Title'
+        hierarchical: true,
+        displayName: 'Category Title',
+        htmlTag: 'h1',
+        htmlAttributes: {
+          'data-category-title': ''
+        }
       }
     },
 
