@@ -58,7 +58,6 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
-        displayName: 'Category Title',
         htmlTag: 'h1',
         htmlAttributes: {
           'data-category-title': ''

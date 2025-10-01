@@ -162,44 +162,12 @@ export function CategorySlotRenderer({
 
       // Format products with all necessary fields for templates
       const formattedProducts = products.map(product => {
-        let displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
+        // formatDisplayPrice now properly handles both product objects and price values
+        const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
         const comparePrice = product.compare_price || product.compare_at_price;
 
-        // Debug logging
-        console.log('Product price debug:', {
-          productName: product.name,
-          rawPrice: product.price,
-          displayPrice,
-          displayPriceType: typeof displayPrice
-        });
-
-        // Check if formatDisplayPrice returned garbage like "$[object Object]"
-        if (typeof displayPrice === 'string' && displayPrice.includes('[object Object]')) {
-          console.warn('formatDisplayPrice returned [object Object], using raw price');
-          displayPrice = product.price;
-        }
-
-        // Handle if displayPrice is an object (extract the actual price value)
-        if (typeof displayPrice === 'object' && displayPrice !== null) {
-          console.log('Price is object, keys:', Object.keys(displayPrice));
-          displayPrice = displayPrice.value || displayPrice.amount || displayPrice.price || displayPrice.finalPrice || displayPrice.basePrice || product.price;
-        }
-
-        // Format the price string
-        let formattedPriceStr;
-        if (typeof displayPrice === 'string') {
-          // Check if it already has currency symbol
-          formattedPriceStr = displayPrice.includes('$') || displayPrice.includes('€') ? displayPrice : `${currencySymbol}${displayPrice}`;
-        } else if (typeof displayPrice === 'number') {
-          formattedPriceStr = `${currencySymbol}${displayPrice.toFixed(2)}`;
-        } else {
-          // Fallback to product.price
-          const fallbackPrice = parseFloat(product.price || 0);
-          formattedPriceStr = `${currencySymbol}${fallbackPrice.toFixed(2)}`;
-          console.warn('Using fallback price for product:', product.name, fallbackPrice);
-        }
-
-        console.log('Final formatted price:', formattedPriceStr);
+        // displayPrice is already a formatted string like "$1349.00"
+        const formattedPriceStr = displayPrice;
 
         return {
           ...product,
