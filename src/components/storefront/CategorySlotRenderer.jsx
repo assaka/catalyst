@@ -199,9 +199,10 @@ export function CategorySlotRenderer({
 
         return {
           ...product,
-          // Use same naming as product-config.js: price_formatted and compare_price_formatted
-          price_formatted: formattedPriceStr,
-          compare_price_formatted: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
+          // Main price (what user pays): compare_price if exists, otherwise regular price
+          price_formatted: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : formattedPriceStr,
+          // Original/regular price (only populated when compare_price exists)
+          compare_price_formatted: comparePrice ? formattedPriceStr : '',
           // Lowest and highest price formatted (for sale display)
           lowest_price_formatted: `${currencySymbol}${lowestPrice.toFixed(2)}`,
           highest_price_formatted: `${currencySymbol}${highestPrice.toFixed(2)}`,

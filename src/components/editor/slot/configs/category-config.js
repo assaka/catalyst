@@ -275,21 +275,14 @@ export const categoryConfig = {
 
               <!-- Price Container -->
               <div class="flex items-baseline gap-2 mb-4">
-                {{#if this.compare_price}}
-                  <!-- Sale Price (lowest price in red/bold) -->
-                  <span class="text-lg font-bold text-red-600" data-product-price>
-                    {{this.lowest_price_formatted}}
-                  </span>
-                  <!-- Original Price (highest price with strikethrough) -->
-                  <span class="text-sm text-gray-500 line-through" data-original-price>
-                    {{this.highest_price_formatted}}
-                  </span>
-                {{else}}
-                  <!-- Regular Price (when no compare_price) -->
-                  <span class="text-lg font-bold text-gray-900" data-product-price>
-                    {{this.price_formatted}}
-                  </span>
-                {{/if}}
+                <!-- Main price (sale price if compare_price exists, otherwise regular) -->
+                <span class="text-lg font-bold text-red-600">
+                  {{this.price_formatted}}
+                </span>
+                <!-- Original price with strikethrough (only shown when compare_price exists) -->
+                <span class="text-sm text-gray-500 line-through">
+                  {{this.compare_price_formatted}}
+                </span>
               </div>
 
               <!-- Add to Cart Button -->
