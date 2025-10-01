@@ -1,6 +1,7 @@
 import React, { Fragment } from 'react';
 import { Home } from 'lucide-react';
 import { buildBreadcrumbs } from '@/utils/breadcrumbUtils';
+import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 
 /**
  * Unified breadcrumb renderer component
@@ -29,21 +30,10 @@ export default function BreadcrumbRenderer({
   // DIRECT PROP for passing styles
   slots
 }) {
-  console.log('🎯 BreadcrumbRenderer received:', {
-    breadcrumbStylesProp: breadcrumbStyles,
-    slotsProp: !!slots,
-    slotsKeys: slots ? Object.keys(slots).slice(0, 15) : [],
-    slotsHasBreadcrumbStyles: !!slots?.breadcrumb_styles?.styles,
-    actualSlotsData: slots?.breadcrumb_styles
-  });
-
-  // If breadcrumbStyles is empty but slots is provided, extract from slots
-  if ((!breadcrumbStyles || Object.keys(breadcrumbStyles).length === 0) && slots?.breadcrumb_styles?.styles) {
-    breadcrumbStyles = slots.breadcrumb_styles.styles;
-    console.log('🎯 FIXED: Extracted breadcrumbStyles from slots prop:', breadcrumbStyles);
+  // Load styles directly from category-config.js if not provided
+  if (!breadcrumbStyles || Object.keys(breadcrumbStyles).length === 0) {
+    breadcrumbStyles = categoryConfig.slots?.breadcrumb_styles?.styles || {};
   }
-
-  console.log('🎯 Final breadcrumbStyles to use:', breadcrumbStyles);
 
   // Extract config with defaults
   const {
@@ -56,25 +46,18 @@ export default function BreadcrumbRenderer({
     truncateLength = null
   } = breadcrumbConfig;
 
-  // Extract styles with defaults - if breadcrumbStyles is empty, try to load from category-config.js defaults
+  // Extract styles with defaults
   const {
     containerBgColor = 'transparent',
     containerPadding = '0',
     containerMargin = '0 0 1.5rem 0',
-    itemTextColor = breadcrumbStyles?.itemTextColor || (slots?.breadcrumb_styles?.styles?.itemTextColor) || '#4B5563',
-    itemHoverColor = breadcrumbStyles?.itemHoverColor || (slots?.breadcrumb_styles?.styles?.itemHoverColor) || '#1F2937',
-    activeItemColor = breadcrumbStyles?.activeItemColor || (slots?.breadcrumb_styles?.styles?.activeItemColor) || '#1F2937',
-    separatorColor = breadcrumbStyles?.separatorColor || (slots?.breadcrumb_styles?.styles?.separatorColor) || '#9CA3AF',
-    fontSize = breadcrumbStyles?.fontSize || (slots?.breadcrumb_styles?.styles?.fontSize) || '0.875rem',
-    fontWeight = breadcrumbStyles?.fontWeight || (slots?.breadcrumb_styles?.styles?.fontWeight) || '400'
-  } = {};
-
-  console.log('🔍 BreadcrumbRenderer.jsx - Final styles applied:', {
-    breadcrumbStylesProp: breadcrumbStyles,
-    itemTextColor,
-    activeItemColor,
-    itemHoverColor
-  });
+    itemTextColor = breadcrumbStyles?.itemTextColor || '#4B5563',
+    itemHoverColor = breadcrumbStyles?.itemHoverColor || '#1F2937',
+    activeItemColor = breadcrumbStyles?.activeItemColor || '#1F2937',
+    separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF',
+    fontSize = breadcrumbStyles?.fontSize || '0.875rem',
+    fontWeight = breadcrumbStyles?.fontWeight || '400'
+  } = breadcrumbStyles;
 
   // If disabled, return null
   if (!enabled) {
