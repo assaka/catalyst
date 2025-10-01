@@ -204,16 +204,7 @@ export function CategorySlotRenderer({
           formatted_compare_price: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || `/product/${product.slug || product.id}`,
-          in_stock: (() => {
-            const inStock = product.infinite_stock || product.stock_quantity > 0;
-            console.log('🔍 Product stock check:', {
-              name: product.name?.substring(0, 30),
-              stock_quantity: product.stock_quantity,
-              infinite_stock: product.infinite_stock,
-              in_stock: inStock
-            });
-            return inStock;
-          })(), // Check infinite_stock or positive stock_quantity
+          in_stock: product.infinite_stock || product.stock_quantity > 0, // Check infinite_stock or positive stock_quantity
           labels: productLabels?.filter(label => {
             // Check if product has this label
             if (label.type === 'new' && product.is_new) return true;
@@ -308,17 +299,6 @@ export function CategorySlotRenderer({
         attributes: attributeFilters,
         settings: settingsWithDefaults // Pass settings within filters object for easier template access
       };
-
-      // Debug: Check formattedProducts before passing to variableContext
-      if (formattedProducts && formattedProducts.length > 0) {
-        console.log('🔍 formattedProducts[0] before variableContext:', {
-          name: formattedProducts[0].name?.substring(0, 30),
-          in_stock: formattedProducts[0].in_stock,
-          stock_quantity: formattedProducts[0].stock_quantity,
-          infinite_stock: formattedProducts[0].infinite_stock,
-          keys: Object.keys(formattedProducts[0])
-        });
-      }
 
       const variableContext = {
         category,

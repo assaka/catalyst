@@ -142,17 +142,6 @@ function processConditionalsStep(content, context, pageData) {
     const isTrue = evaluateCondition(condition, context, pageData);
     const selectedContent = isTrue ? trueContent : falseContent;
 
-    // Debug stock-related conditions
-    if (condition.includes('in_stock')) {
-      console.log('🔍 Conditional evaluation:', {
-        condition,
-        isTrue,
-        pageData_this: pageData?.this,
-        pageData_this_in_stock: pageData?.this?.in_stock,
-        selectedBranch: isTrue ? 'TRUE' : 'FALSE'
-      });
-    }
-
     // Replace the entire conditional block with the selected content
     result = result.substring(0, ifIndex) + selectedContent + result.substring(endIndex + 7);
 
@@ -247,16 +236,6 @@ function processLoops(content, context, pageData, depth = 0) {
         const itemContext = typeof item === 'object' && item !== null
           ? { ...pageData, this: item, ...item }
           : { ...pageData, this: item };
-
-        // Debug: Check itemContext for first product
-        if (index === 0 && arrayPath === 'products') {
-          console.log('🔍 processLoops - itemContext for products[0]:', {
-            has_this: !!itemContext.this,
-            this_in_stock: itemContext.this?.in_stock,
-            in_stock: itemContext.in_stock,
-            itemContext_keys: Object.keys(itemContext)
-          });
-        }
 
         // Process conditionals with item context
         itemContent = processConditionals(itemContent, context, itemContext);
@@ -419,18 +398,6 @@ function getNestedValue(path, context, pageData) {
   // Merge data: pageData should override context (pageData has loop item context)
   const fullData = { ...context, ...pageData };
 
-  // Debug for in_stock path
-  if (path === 'this.in_stock') {
-    console.log('🔍 getNestedValue for this.in_stock:', {
-      hasPageData: !!pageData,
-      pageData_this: pageData?.this,
-      pageData_this_in_stock: pageData?.this?.in_stock,
-      pageData_in_stock: pageData?.in_stock,
-      fullData_this: fullData?.this,
-      fullData_this_in_stock: fullData?.this?.in_stock
-    });
-  }
-
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
@@ -440,15 +407,6 @@ function getNestedValue(path, context, pageData) {
       const result = propertyPath.split('.').reduce((obj, key) => {
         return obj && obj[key] !== undefined ? obj[key] : null;
       }, fullData.this);
-
-      // Debug stock checks
-      if (propertyPath === 'in_stock') {
-        console.log('🔍 Evaluating this.in_stock:', {
-          value: result,
-          fullData_this_in_stock: fullData.this.in_stock,
-          fullData_this_keys: Object.keys(fullData.this || {})
-        });
-      }
 
       if (result !== null) return result;
     }
