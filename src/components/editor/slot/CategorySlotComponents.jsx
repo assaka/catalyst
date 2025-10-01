@@ -130,8 +130,9 @@ const LayeredNavigation = createSlotComponent({
 
     const html = processVariables(template, variableContext);
 
-    // Debug: Log the processed HTML (first 500 chars)
-    console.log('🔍 LayeredNavigation - processed HTML:', html.substring(0, 500));
+    // Debug: Log the processed HTML (first 2000 chars to see attribute filters)
+    console.log('🔍 LayeredNavigation - processed HTML (full):', html);
+    console.log('🔍 LayeredNavigation - HTML length:', html.length);
 
     // Attach event listeners in storefront
     useEffect(() => {
