@@ -345,6 +345,13 @@ export function CategorySlotRenderer({
 
       // Use the registered component's render method
       try {
+        if (id === 'breadcrumbs_content') {
+          console.log('🔍 RIGHT BEFORE CALLING RENDER - contextToPass:', {
+            hasBreadcrumbStyles: !!contextToPass.breadcrumbStyles,
+            breadcrumbStylesValue: contextToPass.breadcrumbStyles
+          });
+        }
+
         const result = registeredComponent.render({
           slot,
           categoryContext: contextToPass,
