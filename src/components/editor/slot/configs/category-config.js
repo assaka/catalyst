@@ -665,14 +665,14 @@ export const categoryConfig = {
                       data-action="toggle-filter-section"
                       data-section="{{this.code}}">
                 <span>{{this.label}}</span>
-                <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless ../settings.collapse_filters}}rotate-180{{/unless}}"
+                <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless ../settings.collapse_filters}}block{{/unless}}"
-                   style="{{#if ../settings.collapse_filters}}display: none;{{/if}}"
-                   data-max-visible="{{../settings.max_visible_attributes}}"
+              <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
+                   style="{{#if settings.collapse_filters}}display: none;{{/if}}"
+                   data-max-visible="{{settings.max_visible_attributes}}"
                    data-attribute-code="{{this.code}}">
                 {{#each this.options}}
                   <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900 filter-option"

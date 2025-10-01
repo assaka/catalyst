@@ -280,7 +280,8 @@ export function CategorySlotRenderer({
 
       const formattedFilters = {
         price: priceFilter,
-        attributes: attributeFilters
+        attributes: attributeFilters,
+        settings: settingsWithDefaults // Pass settings within filters object for easier template access
       };
 
       // Prepare variable context for processVariables
