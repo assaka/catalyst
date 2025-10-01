@@ -89,6 +89,11 @@ function processConditionalsStep(content, context, pageData) {
       if (nextElse !== -1) candidates.push({ pos: nextElse, type: 'else', len: 8 });
       if (nextEndif !== -1) candidates.push({ pos: nextEndif, type: 'endif', len: 7 });
 
+      // If no candidates found, break out of the loop
+      if (candidates.length === 0) {
+        break;
+      }
+
       // Sort by position to process in order
       candidates.sort((a, b) => a.pos - b.pos);
 
