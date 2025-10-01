@@ -54,18 +54,18 @@ export default function BreadcrumbRenderer({
     truncateLength = null
   } = breadcrumbConfig;
 
-  // Extract styles with defaults
+  // Extract styles with defaults - if breadcrumbStyles is empty, try to load from category-config.js defaults
   const {
     containerBgColor = 'transparent',
     containerPadding = '0',
     containerMargin = '0 0 1.5rem 0',
-    itemTextColor = '#A855F7', // purple-500 (parent categories) - from category-config.js
-    itemHoverColor = '#9333EA', // purple-600 - from category-config.js
-    activeItemColor = '#DC2626', // red-600 (current category) - from category-config.js
-    separatorColor = '#9CA3AF', // gray-400
-    fontSize = '0.875rem',
-    fontWeight = '400'
-  } = breadcrumbStyles;
+    itemTextColor = breadcrumbStyles?.itemTextColor || (slots?.breadcrumb_styles?.styles?.itemTextColor) || '#4B5563',
+    itemHoverColor = breadcrumbStyles?.itemHoverColor || (slots?.breadcrumb_styles?.styles?.itemHoverColor) || '#1F2937',
+    activeItemColor = breadcrumbStyles?.activeItemColor || (slots?.breadcrumb_styles?.styles?.activeItemColor) || '#1F2937',
+    separatorColor = breadcrumbStyles?.separatorColor || (slots?.breadcrumb_styles?.styles?.separatorColor) || '#9CA3AF',
+    fontSize = breadcrumbStyles?.fontSize || (slots?.breadcrumb_styles?.styles?.fontSize) || '0.875rem',
+    fontWeight = breadcrumbStyles?.fontWeight || (slots?.breadcrumb_styles?.styles?.fontWeight) || '400'
+  } = {};
 
   console.log('🔍 BreadcrumbRenderer.jsx - Final styles applied:', {
     breadcrumbStylesProp: breadcrumbStyles,
