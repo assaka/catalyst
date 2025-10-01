@@ -186,17 +186,6 @@ export function CategorySlotRenderer({
         const lowestPrice = hasValidComparePrice ? Math.min(price, comparePriceNum) : price;
         const highestPrice = hasValidComparePrice ? Math.max(price, comparePriceNum) : price;
 
-        console.log('💰 Calculated price values:', {
-          name: product.name,
-          price,
-          comparePriceNum,
-          hasValidComparePrice,
-          lowestPrice,
-          highestPrice,
-          comparePrice_raw: comparePrice,
-          comparePrice_original: product.compare_price
-        });
-
         return {
           ...product,
           // Main price (what user pays): compare_price if exists, otherwise regular price
