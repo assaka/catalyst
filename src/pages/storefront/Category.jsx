@@ -578,9 +578,16 @@ export default function Category() {
             label: value, // Use value as label (can be enhanced with DB labels later)
             count
           }));
+
+        // Debug: Show filter options and counts for color and manufacturer only
+        if (attrCode === 'color' || attrCode === 'manufacturer') {
+          console.log(`🔍 Filter options for ${attrCode}:`, filters[attrCode].slice(0, 5));
+          console.log(`   Total options: ${filters[attrCode].length}`);
+        }
       }
     });
 
+    console.log('✅ Final filters object:', Object.keys(filters));
     return filters;
   };
 
