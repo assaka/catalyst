@@ -1496,80 +1496,60 @@ const CartItemsSlot = createSlotComponent({
 const CartCouponSlot = createSlotComponent({
   name: 'CartCouponSlot',
 
-  render: ({ slot, cartContext, className, styles, context }) => {
+  render: ({ slot, cartContext, className, styles, context, variableContext }) => {
+    const containerRef = React.useRef(null);
+    const content = slot?.content || '';
+
     if (context === 'editor') {
-      // Editor version - visual preview only
+      // Editor version - use template
+      const processedContent = processVariables(content, variableContext);
+
       return (
-        <div className={className} style={styles}>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                placeholder="Enter coupon code"
-                className="w-1/2 border rounded px-3 py-2"
-                readOnly
-              />
-              <button className="w-1/2 bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply</button>
-            </div>
-          </div>
-        </div>
+        <div ref={containerRef} className={className} style={styles}
+             dangerouslySetInnerHTML={{ __html: processedContent }} />
       );
     }
 
-    // Storefront version - full functionality
+    // Storefront version - use template with event handlers
     const {
       couponCode = '',
       setCouponCode = () => {},
       handleApplyCoupon = () => {},
-      handleRemoveCoupon = () => {},
-      appliedCoupon = null,
       handleCouponKeyPress = () => {}
     } = cartContext || {};
 
+    const processedContent = processVariables(content, variableContext);
+
+    React.useEffect(() => {
+      if (!containerRef.current) return;
+
+      const input = containerRef.current.querySelector('[data-coupon-input]');
+      const applyButton = containerRef.current.querySelector('[data-action="apply-coupon"]');
+
+      if (input) {
+        input.value = couponCode;
+        input.addEventListener('input', (e) => setCouponCode(e.target.value));
+        input.addEventListener('keypress', handleCouponKeyPress);
+      }
+
+      if (applyButton) {
+        applyButton.addEventListener('click', handleApplyCoupon);
+      }
+
+      return () => {
+        if (input) {
+          input.removeEventListener('input', (e) => setCouponCode(e.target.value));
+          input.removeEventListener('keypress', handleCouponKeyPress);
+        }
+        if (applyButton) {
+          applyButton.removeEventListener('click', handleApplyCoupon);
+        }
+      };
+    }, [couponCode, setCouponCode, handleApplyCoupon, handleCouponKeyPress]);
+
     return (
-      <div className={className} style={styles}>
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-semibold mb-4">Apply Coupon</h3>
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded p-3">
-              <div>
-                <span className="font-medium text-green-800">
-                  {appliedCoupon.name} applied
-                </span>
-                <p className="text-sm text-green-600">
-                  {appliedCoupon.discount_type === 'percentage'
-                    ? `${appliedCoupon.discount_value}% off`
-                    : `$${appliedCoupon.discount_value} off`}
-                </p>
-              </div>
-              <button
-                onClick={handleRemoveCoupon}
-                className="text-red-600 hover:text-red-800 text-sm"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                onKeyPress={handleCouponKeyPress}
-                placeholder="Enter coupon code"
-                className="w-1/2 border rounded px-3 py-2"
-              />
-              <button
-                onClick={handleApplyCoupon}
-                className="w-1/2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
-              >
-                Apply
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      <div ref={containerRef} className={className} style={styles}
+           dangerouslySetInnerHTML={{ __html: processedContent }} />
     );
   }
 });
@@ -1580,36 +1560,34 @@ const CartCouponSlot = createSlotComponent({
 const CartOrderSummarySlot = createSlotComponent({
   name: 'CartOrderSummarySlot',
 
-  render: ({ slot, cartContext, className, styles, context }) => {
+  render: ({ slot, cartContext, className, styles, context, variableContext }) => {
+    const containerRef = React.useRef(null);
+    const content = slot?.content || '';
+
     if (context === 'editor') {
-      // Editor version - visual preview only
+      // Editor version - use template with sample data
+      const processedContent = processVariables(content, variableContext);
+
+      React.useEffect(() => {
+        if (!containerRef.current) return;
+
+        // Set sample prices for preview
+        const subtotalEl = containerRef.current.querySelector('[data-subtotal]');
+        const taxEl = containerRef.current.querySelector('[data-tax]');
+        const totalEl = containerRef.current.querySelector('[data-total]');
+
+        if (subtotalEl) subtotalEl.textContent = '$99.99';
+        if (taxEl) taxEl.textContent = '$8.00';
+        if (totalEl) totalEl.textContent = '$107.99';
+      }, [processedContent]);
+
       return (
-        <div className={className} style={styles}>
-          <div className="bg-white rounded-lg shadow p-4 mt-4">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>$99.99</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>$8.00</span>
-              </div>
-              <div className="border-t pt-2 flex justify-between text-lg font-semibold">
-                <span>Total</span>
-                <span>$107.99</span>
-              </div>
-            </div>
-            <button className="w-full bg-blue-600 text-white py-3 rounded mt-4">
-              Proceed to Checkout
-            </button>
-          </div>
-        </div>
+        <div ref={containerRef} className={className} style={styles}
+             dangerouslySetInnerHTML={{ __html: processedContent }} />
       );
     }
 
-    // Storefront version - full functionality
+    // Storefront version - use template with dynamic data
     const {
       subtotal = 0,
       discount = 0,
@@ -1622,44 +1600,58 @@ const CartOrderSummarySlot = createSlotComponent({
       appliedCoupon = null
     } = cartContext || {};
 
+    const processedContent = processVariables(content, variableContext);
+
+    React.useEffect(() => {
+      if (!containerRef.current) return;
+
+      // Update prices
+      const subtotalEl = containerRef.current.querySelector('[data-subtotal]');
+      const customOptionsEl = containerRef.current.querySelector('[data-custom-options-total]');
+      const customOptionsRow = containerRef.current.querySelector('[data-custom-options-row]');
+      const discountEl = containerRef.current.querySelector('[data-discount]');
+      const discountLabelEl = containerRef.current.querySelector('[data-discount-label]');
+      const discountRow = containerRef.current.querySelector('[data-discount-row]');
+      const taxEl = containerRef.current.querySelector('[data-tax]');
+      const totalEl = containerRef.current.querySelector('[data-total]');
+      const checkoutBtn = containerRef.current.querySelector('[data-action="checkout"]');
+
+      if (subtotalEl) subtotalEl.textContent = `${currencySymbol}${safeToFixed(subtotal)}`;
+      if (taxEl) taxEl.textContent = `${currencySymbol}${safeToFixed(tax)}`;
+      if (totalEl) totalEl.textContent = `${currencySymbol}${safeToFixed(total)}`;
+
+      // Show/hide custom options
+      if (customOptionsTotal > 0) {
+        if (customOptionsRow) customOptionsRow.style.display = 'flex';
+        if (customOptionsEl) customOptionsEl.textContent = `+${currencySymbol}${safeToFixed(customOptionsTotal)}`;
+      } else {
+        if (customOptionsRow) customOptionsRow.style.display = 'none';
+      }
+
+      // Show/hide discount
+      if (appliedCoupon && discount > 0) {
+        if (discountRow) discountRow.style.display = 'flex';
+        if (discountLabelEl) discountLabelEl.textContent = `Discount (${appliedCoupon.name})`;
+        if (discountEl) discountEl.textContent = `-${currencySymbol}${safeToFixed(discount)}`;
+      } else {
+        if (discountRow) discountRow.style.display = 'none';
+      }
+
+      // Attach checkout handler
+      if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', handleCheckout);
+      }
+
+      return () => {
+        if (checkoutBtn) {
+          checkoutBtn.removeEventListener('click', handleCheckout);
+        }
+      };
+    }, [subtotal, discount, tax, total, customOptionsTotal, currencySymbol, safeToFixed, handleCheckout, appliedCoupon]);
+
     return (
-      <div className={className} style={styles}>
-        <div className="bg-white rounded-lg shadow p-4 mt-4">
-          <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>{currencySymbol}{safeToFixed(subtotal)}</span>
-            </div>
-            {customOptionsTotal > 0 && (
-              <div className="flex justify-between">
-                <span>Additional Products</span>
-                <span>+{currencySymbol}{safeToFixed(customOptionsTotal)}</span>
-              </div>
-            )}
-            {appliedCoupon && discount > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount ({appliedCoupon.name})</span>
-                <span>-{currencySymbol}{safeToFixed(discount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span>Tax</span>
-              <span>{currencySymbol}{safeToFixed(tax)}</span>
-            </div>
-            <div className="border-t pt-2 flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>{currencySymbol}{safeToFixed(total)}</span>
-            </div>
-          </div>
-          <button
-            onClick={handleCheckout}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded mt-4 transition-colors"
-          >
-            Proceed to Checkout
-          </button>
-        </div>
-      </div>
+      <div ref={containerRef} className={className} style={styles}
+           dangerouslySetInnerHTML={{ __html: processedContent }} />
     );
   }
 });

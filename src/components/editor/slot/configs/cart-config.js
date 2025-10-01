@@ -252,7 +252,22 @@ export const cartConfig = {
       id: 'coupon_section',
       type: 'component',
       component: 'CartCouponSlot',
-      content: '',
+      content: `
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="text-lg font-semibold mb-4">Apply Coupon</h3>
+          <div class="flex space-x-2">
+            <input
+              type="text"
+              placeholder="Enter coupon code"
+              class="w-1/2 border rounded px-3 py-2"
+              data-coupon-input
+            />
+            <button class="w-1/2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap" data-action="apply-coupon">
+              Apply
+            </button>
+          </div>
+        </div>
+      `,
       className: '',
       styles: {},
       parentId: 'sidebar_area',
@@ -270,7 +285,36 @@ export const cartConfig = {
       id: 'order_summary',
       type: 'component',
       component: 'CartOrderSummarySlot',
-      content: '',
+      content: `
+        <div class="bg-white rounded-lg shadow p-4 mt-4">
+          <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span>Subtotal</span>
+              <span class="font-bold text-green-600" data-subtotal>$0.00</span>
+            </div>
+            <div class="flex justify-between" data-custom-options-row style="display: none;">
+              <span>Additional Products</span>
+              <span class="font-bold text-green-600" data-custom-options-total>$0.00</span>
+            </div>
+            <div class="flex justify-between" data-discount-row style="display: none;">
+              <span data-discount-label>Discount</span>
+              <span class="font-bold text-green-600" data-discount>$0.00</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Tax</span>
+              <span class="font-bold text-green-600" data-tax>$0.00</span>
+            </div>
+            <div class="border-t pt-2 flex justify-between text-lg font-semibold">
+              <span>Total</span>
+              <span class="font-bold text-green-600" data-total>$0.00</span>
+            </div>
+          </div>
+          <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded mt-4 transition-colors" data-action="checkout">
+            Hamid Checkout
+          </button>
+        </div>
+      `,
       className: '',
       styles: {},
       parentId: 'sidebar_area',
