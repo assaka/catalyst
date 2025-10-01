@@ -204,7 +204,7 @@ export function CategorySlotRenderer({
           formatted_compare_price: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || `/product/${product.slug || product.id}`,
-          in_stock: product.in_stock !== false && product.stock_quantity !== 0, // Default to true unless explicitly false or 0
+          in_stock: product.infinite_stock || product.stock_quantity > 0, // Check infinite_stock or positive stock_quantity
           labels: productLabels?.filter(label => {
             // Check if product has this label
             if (label.type === 'new' && product.is_new) return true;
