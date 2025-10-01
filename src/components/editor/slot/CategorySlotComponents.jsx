@@ -121,6 +121,8 @@ const ActiveFilters = createSlotComponent({
 
     const html = processVariables(template, variableContext);
 
+    console.log('🔍 ActiveFilters processed HTML:', html.substring(0, 200));
+
     // Attach event listeners in storefront
     useEffect(() => {
       if (!containerRef.current || context === 'editor') return;
