@@ -286,18 +286,14 @@ function evaluateCondition(condition, context, pageData) {
     // Simple property existence check
     const value = getNestedValue(condition, context, pageData);
 
-    // Debug compare_price checks
-    if (condition.includes('compare_price')) {
-      console.log('🔍 Evaluating condition:', {
+    // Debug filter conditions
+    if (condition.includes('filters.price') || condition.includes('filters.attributes')) {
+      console.log('🔍 Evaluating filter condition:', {
         condition,
         value,
         valueType: typeof value,
-        booleanResult: !!value,
-        contextKeys: Object.keys(context || {}),
-        pageDataKeys: Object.keys(pageData || {}),
-        pageData_compare_price: pageData?.compare_price,
-        context_product_compare_price: context?.product?.compare_price,
-        this_compare_price: pageData?.this?.compare_price
+        isArray: Array.isArray(value),
+        booleanResult: !!value
       });
     }
 
