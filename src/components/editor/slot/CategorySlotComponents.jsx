@@ -156,14 +156,7 @@ const LayeredNavigation = createSlotComponent({
       </div>
     `;
 
-    // Debug: Log the variable context for filters
-    console.log('🔍 LayeredNavigation - variableContext.filters:', JSON.stringify(variableContext?.filters, null, 2));
-
     const html = processVariables(template, variableContext);
-
-    // Debug: Log the processed HTML (first 2000 chars to see attribute filters)
-    console.log('🔍 LayeredNavigation - processed HTML (full):', html);
-    console.log('🔍 LayeredNavigation - HTML length:', html.length);
 
     // Attach event listeners in storefront
     useEffect(() => {
@@ -549,24 +542,7 @@ const ProductItemsGrid = createSlotComponent({
       </div>
     `;
 
-    // Debug: Log products data to see compare_price
-    console.log('🛒 ProductItemsGrid variableContext.products:', variableContext?.products?.map(p => ({
-      name: p.name,
-      price: p.price,
-      price_formatted: p.price_formatted,
-      compare_price: p.compare_price,
-      compare_price_formatted: p.compare_price_formatted,
-      hasComparePrice: !!p.compare_price
-    })));
-
-    // Debug: Check if template from config is being used
-    console.log('🎨 Template source:', slot?.content ? 'FROM CONFIG' : 'FALLBACK');
-    console.log('🎨 Template preview:', template.substring(0, 300));
-
     const html = processVariables(template, variableContext);
-
-    // Debug: Check rendered HTML for compare_price
-    console.log('✨ Rendered HTML preview:', html.substring(0, 500));
 
     // Attach event listeners in storefront
     useEffect(() => {
