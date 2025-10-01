@@ -265,7 +265,7 @@ export const categoryConfig = {
 
               <!-- Product Name -->
               <a href="{{this.url}}" class="block">
-                <h3 class="font-semibold text-lg truncate mb-2">{{this.name}}</h3>
+                <h3 class="font-semibold text-lg truncate mb-2 text-red-600">{{this.name}}</h3>
               </a>
 
               <!-- Price Container -->
@@ -436,7 +436,7 @@ export const categoryConfig = {
       component: 'LayeredNavigation',
       content: `
         <div class="space-y-6">
-          <h3 class="text-lg font-semibold text-gray-900">Filter By</h3>
+          <h3 class="text-lg font-semibold text-gray-900">Filter Hamid</h3>
 
           <!-- Price Filter -->
           {{#if filters.price}}
@@ -500,7 +500,7 @@ export const categoryConfig = {
     filter_by_label: {
       id: 'filter_by_label',
       type: 'text',
-      content: 'Filter By',
+      content: 'Filter Hamid',
       className: 'text-lg font-semibold text-gray-900',
       parentClassName: '',
       styles: {
