@@ -490,49 +490,7 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Products grid - render using ProductItemCard component
-    if (id === 'products_grid') {
-      // Use the className from slot configuration if available, otherwise use dynamic grid
-      const dynamicGridClass = getDynamicGridClasses(slot);
-      const finalClassName = className || dynamicGridClass;
-
-      // State for preventing duplicate add to cart operations
-      const [addingToCartStates, setAddingToCartStates] = useState({});
-
-      // Create slot configuration object for ProductItemCard
-      const slotConfig = {
-        productTemplate: slots?.product_template || {},
-        productImage: slots?.product_image || {},
-        productName: slots?.product_name || {},
-        productPrice: slots?.product_price || {},
-        productComparePrice: slots?.product_compare_price || {},
-        productAddToCart: slots?.product_add_to_cart || {}
-      };
-
-      return (
-        <div className={`${finalClassName} mb-8`} style={styles}>
-          {products.map(product => (
-            <ProductItemCard
-              key={product.id}
-              product={product}
-              settings={settings}
-              store={store}
-              taxes={taxes}
-              selectedCountry={selectedCountry}
-              productLabels={productLabels}
-              viewMode={viewMode}
-              slotConfig={slotConfig}
-              isAddingToCart={addingToCartStates[product.id] || false}
-              onAddToCartStateChange={(isAdding) => {
-                setAddingToCartStates(prev => ({ ...prev, [product.id]: isAdding }));
-              }}
-            />
-          ))}
-        </div>
-      );
-    }
-
-    // NOTE: product_items now uses ComponentRegistry with templates from category-config.js
+    // NOTE: products_grid and product_items now use ComponentRegistry with templates from category-config.js
     // The old hardcoded ProductItemCard rendering has been removed
 
     // Handle product_item_card slot specifically
