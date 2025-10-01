@@ -37,9 +37,9 @@ export default function BreadcrumbRenderer({
     truncateLength = null
   } = breadcrumbConfig;
 
-  // Extract styles with defaults - use from config or fallback to yellow
-  const itemTextColor = breadcrumbStyles?.itemTextColor || '#EAB308'; // Yellow from category-config.js
-  const itemHoverColor = breadcrumbStyles?.itemHoverColor || '#CA8A04';
+  // Extract styles with defaults - use from config or fallback to purple
+  const itemTextColor = breadcrumbStyles?.itemTextColor || '#A855F7'; // Purple from category-config.js
+  const itemHoverColor = breadcrumbStyles?.itemHoverColor || '#9333EA';
   const activeItemColor = breadcrumbStyles?.activeItemColor || '#1F2937';
   const separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF';
   const fontSize = breadcrumbStyles?.fontSize || '0.875rem';

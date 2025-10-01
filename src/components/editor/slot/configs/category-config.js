@@ -61,8 +61,8 @@ export const categoryConfig = {
         containerBgColor: 'transparent',
         containerPadding: '0',
         containerMargin: '0 0 1.5rem 0',
-        itemTextColor: '#EAB308', // yellow-500 (parent categories)
-        itemHoverColor: '#CA8A04', // yellow-600
+        itemTextColor: '#A855F7', // purple-500 (parent categories)
+        itemHoverColor: '#9333EA', // purple-600
         activeItemColor: '#1F2937', // gray-800
         separatorColor: '#9CA3AF', // gray-400
         fontSize: '0.875rem', // text-sm
