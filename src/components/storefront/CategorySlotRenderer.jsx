@@ -248,14 +248,18 @@ export function CategorySlotRenderer({
       }
 
       // Format attribute filters
-      console.log('🔍 CategorySlotRenderer - filterableAttributes:', filterableAttributes);
-      console.log('🔍 CategorySlotRenderer - filtersData:', filtersData);
-
       const attributeFilters = filterableAttributes?.map(attr => {
         const attrCode = attr.code || attr.name;
         const options = filtersData[attrCode] || [];
 
-        console.log(`🔍 CategorySlotRenderer - Processing attr: ${attrCode}, options:`, options);
+        // Only log color and manufacturer for debugging
+        if (attrCode === 'color' || attrCode === 'manufacturer') {
+          console.log(`🔍 CategorySlotRenderer - Processing ${attrCode}:`, {
+            attrCode,
+            attrName: attr.name,
+            options
+          });
+        }
 
         const formattedOptions = Array.isArray(options)
           ? options.map(option => {
@@ -282,11 +286,17 @@ export function CategorySlotRenderer({
           options: formattedOptions
         };
 
-        console.log(`🔍 CategorySlotRenderer - Formatted attr ${attrCode}:`, result);
+        // Only log color and manufacturer for debugging
+        if (attrCode === 'color' || attrCode === 'manufacturer') {
+          console.log(`🔍 CategorySlotRenderer - Formatted ${attrCode}:`, result);
+        }
+
         return result;
       }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
 
-      console.log('🔍 CategorySlotRenderer - Final attributeFilters:', attributeFilters);
+      // Only log color and manufacturer from final result
+      const debugFilters = attributeFilters.filter(a => a.code === 'color' || a.code === 'manufacturer');
+      console.log('🔍 CategorySlotRenderer - Final color & manufacturer filters:', debugFilters);
 
       const formattedFilters = {
         price: priceRanges ? { ranges: priceRanges } : null,
