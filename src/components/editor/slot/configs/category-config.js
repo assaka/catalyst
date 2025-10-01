@@ -600,9 +600,9 @@ export const categoryConfig = {
               <h4 class="font-semibold text-base text-gray-900 mb-3">Price</h4>
               <div class="px-2">
                 <div class="flex justify-between items-center mb-4 text-sm">
-                  <span class="text-gray-700 font-medium"><span id="selected-min">{{filters.price.min}}</span></span>
+                  <span class="text-gray-700 font-medium">€<span id="selected-min">{{filters.price.min}}</span></span>
                   <span class="text-gray-400">-</span>
-                  <span class="text-gray-700 font-medium"><span id="selected-max">{{filters.price.max}}</span></span>
+                  <span class="text-gray-700 font-medium">€<span id="selected-max">{{filters.price.max}}</span></span>
                 </div>
                 <div class="relative h-2 mb-2">
                   <div class="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
@@ -615,9 +615,7 @@ export const categoryConfig = {
                          class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
                          style="z-index: 3;"
                          data-action="price-slider"
-                         data-slider-type="min"
-                         data-min="{{filters.price.min}}"
-                         data-max="{{filters.price.max}}" />
+                         data-slider-type="min" />
                   <input type="range"
                          id="price-slider-max"
                          min="{{filters.price.min}}"
@@ -626,9 +624,7 @@ export const categoryConfig = {
                          class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
                          style="z-index: 4;"
                          data-action="price-slider"
-                         data-slider-type="max"
-                         data-min="{{filters.price.min}}"
-                         data-max="{{filters.price.max}}" />
+                         data-slider-type="max" />
                 </div>
                 <style>
                   input[type="range"]::-webkit-slider-thumb {
