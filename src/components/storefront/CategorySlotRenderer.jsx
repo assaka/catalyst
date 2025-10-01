@@ -278,18 +278,17 @@ export function CategorySlotRenderer({
         return result;
       }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
 
-      const formattedFilters = {
-        price: priceFilter,
-        attributes: attributeFilters,
-        settings: settingsWithDefaults // Pass settings within filters object for easier template access
-      };
-
-      // Prepare variable context for processVariables
-      // Ensure settings have proper defaults for filter behavior
+      // Prepare settings with proper defaults for filter behavior
       const settingsWithDefaults = {
         ...(settings || {}),
         collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
         max_visible_attributes: settings?.max_visible_attributes || 5
+      };
+
+      const formattedFilters = {
+        price: priceFilter,
+        attributes: attributeFilters,
+        settings: settingsWithDefaults // Pass settings within filters object for easier template access
       };
 
       const variableContext = {
