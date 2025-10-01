@@ -65,6 +65,7 @@ export default function LayeredNavigation({
     // Extract label configurations and styles from simplified slot structure
     const {
         filter_card_header = { content: 'Filter By' },
+        filter_by_label = { content: 'Filter By' },
         filter_price_title = { content: 'Price' },
         filter_attribute_titles = {},
         filter_option_styles = { styles: {} }
@@ -338,11 +339,12 @@ export default function LayeredNavigation({
                         <CardTitle
                             className="text-lg font-semibold"
                             style={{
-                                color: filter_card_header.styles?.color || '#1F2937',
+                                color: filter_by_label.styles?.color || filter_card_header.styles?.color || '#1F2937',
+                                ...filter_by_label.styles,
                                 ...filter_card_header.styles
                             }}
                         >
-                            {filter_card_header.content || "Filter By"}
+                            {filter_by_label.content || filter_card_header.content || "Filter By"}
                         </CardTitle>
                     )}
                     {hasActiveFilters && (

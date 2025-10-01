@@ -157,7 +157,8 @@ export function CategorySlotRenderer({
     } = slot || {};
 
     // Check if this is a registered component type - use ComponentRegistry
-    if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
+    // Skip LayeredNavigation for now - it uses the old React component
+    if (type === 'component' && componentName && ComponentRegistry.has(componentName) && componentName !== 'LayeredNavigation') {
       const registeredComponent = ComponentRegistry.get(componentName);
 
       // Prepare variable context for processVariables
@@ -301,6 +302,7 @@ export function CategorySlotRenderer({
       // Create slot configuration for LayeredNavigation microslots
       const layeredNavSlotConfig = {
         filter_card_header: slots?.filter_card_header || {},
+        filter_by_label: slots?.filter_by_label || {},
         filter_clear_all_button: slots?.filter_clear_all_button || {},
         filter_active_filters: slots?.filter_active_filters || {},
         filter_active_filters_label: slots?.filter_active_filters_label || {},
