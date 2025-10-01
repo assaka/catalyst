@@ -178,7 +178,63 @@ export const cartConfig = {
       id: 'cart_items',
       type: 'component',
       component: 'CartItemsSlot',
-      content: '',
+      content: `
+        <div class="space-y-4">
+          {{#each cartItems}}
+            <div class="bg-white p-4 rounded-lg shadow cart-item"
+                 data-item-id="{{this.id}}"
+                 data-product-name="{{this.product.name}}"
+                 data-price="{{this.price}}"
+                 data-quantity="{{this.quantity}}">
+
+              <div class="grid grid-cols-12 gap-4">
+                <!-- Product Image -->
+                <div class="col-span-12 sm:col-span-2">
+                  <div class="w-24 h-24 bg-gray-200 rounded-md overflow-hidden">
+                    <img src="{{this.product.image_url}}" alt="{{this.product.name}}" class="w-full h-full object-cover" />
+                  </div>
+                </div>
+
+                <!-- Product Details -->
+                <div class="col-span-12 sm:col-span-6">
+                  <h3 class="text-lg font-medium text-gray-900">{{this.product.name}}</h3>
+
+                  <div class="mt-1 text-sm text-gray-600">
+                    ${{this.price}} × {{this.quantity}}
+                  </div>
+
+                  <!-- Selected Options -->
+                  {{#if this.selected_options}}
+                    <div class="mt-2 space-y-1 selected-options-container" data-selected-options="true">
+                      <!-- Options will be rendered by JavaScript -->
+                    </div>
+                  {{/if}}
+
+                  <!-- Quantity Controls -->
+                  <div class="flex items-center space-x-2 mt-4">
+                    <button class="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100"
+                            data-action="decrease-quantity" data-item-id="{{this.id}}">−</button>
+                    <span class="w-12 text-center font-medium">{{this.quantity}}</span>
+                    <button class="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100"
+                            data-action="increase-quantity" data-item-id="{{this.id}}">+</button>
+                  </div>
+                </div>
+
+                <!-- Price and Remove -->
+                <div class="col-span-12 sm:col-span-4 flex flex-col items-end justify-between">
+                  <span class="text-lg font-bold text-gray-900 item-total" data-item-total="true">
+                    $0.00
+                  </span>
+                  <button class="text-red-600 hover:text-red-800 flex items-center space-x-1"
+                          data-action="remove-item" data-item-id="{{this.id}}">
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      `,
       className: 'cart-items-container',
       styles: {},
       parentId: 'content_area',

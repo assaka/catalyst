@@ -1306,37 +1306,59 @@ registerSlotComponent('AddToCartButton', AddToCartButton);
 const CartItemsSlot = createSlotComponent({
   name: 'CartItemsSlot',
 
-  render: ({ slot, cartContext, className, styles, context }) => {
+  render: ({ slot, cartContext, className, styles, context, variableContext }) => {
+    const containerRef = React.useRef(null);
+    const content = slot?.content || '';
+
     if (context === 'editor') {
-      // Editor version - visual preview
+      // Editor version - use template with sample data
+      const sampleCartItems = [
+        {
+          id: '1',
+          product: { name: 'Sample Product', image_url: 'https://placehold.co/100x100?text=Product' },
+          price: 20,
+          quantity: 1,
+          selected_options: [{ name: 'Option 1', price: 5 }]
+        }
+      ];
+
+      const editorVariableContext = {
+        ...variableContext,
+        cartItems: sampleCartItems
+      };
+
+      const processedContent = processVariables(content, editorVariableContext);
+
+      // Render dynamic content
+      React.useEffect(() => {
+        if (!containerRef.current) return;
+
+        // Calculate and display item totals
+        const itemTotalElements = containerRef.current.querySelectorAll('[data-item-total]');
+        itemTotalElements.forEach((el) => {
+          const cartItem = el.closest('.cart-item');
+          if (cartItem) {
+            const price = parseFloat(cartItem.getAttribute('data-price')) || 0;
+            const quantity = parseInt(cartItem.getAttribute('data-quantity')) || 1;
+            el.textContent = `$${(price * quantity).toFixed(2)}`;
+          }
+        });
+
+        // Render selected options
+        const optionsContainers = containerRef.current.querySelectorAll('[data-selected-options]');
+        optionsContainers.forEach((container) => {
+          const sampleOptions = sampleCartItems[0].selected_options;
+          if (sampleOptions && sampleOptions.length > 0) {
+            container.innerHTML = sampleOptions.map(opt =>
+              `<div class="text-sm text-gray-600">+ ${opt.name} (+$${opt.price.toFixed(2)})</div>`
+            ).join('');
+          }
+        });
+      }, [processedContent]);
+
       return (
-        <div className={className} style={styles}>
-          <Card className="p-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0 w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center">
-                <span className="text-gray-400 text-xs">Product</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900">Sample Product</h3>
-                <div className="mt-1 text-sm text-gray-600">
-                  + Option 1 (+$5.00)
-                </div>
-                <div className="mt-1">
-                  <span className="text-lg font-medium text-gray-900">$25.00</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-12 text-center font-medium">1</span>
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <div ref={containerRef} className={className} style={styles}
+             dangerouslySetInnerHTML={{ __html: processedContent }} />
       );
     }
 
@@ -1370,104 +1392,86 @@ const CartItemsSlot = createSlotComponent({
       );
     }
 
+    const storefrontVariableContext = {
+      ...variableContext,
+      cartItems
+    };
+
+    const processedContent = processVariables(content, storefrontVariableContext);
+
+    // Render dynamic content and attach event handlers
+    React.useEffect(() => {
+      if (!containerRef.current) return;
+
+      // Calculate and display item totals
+      const itemTotalElements = containerRef.current.querySelectorAll('[data-item-total]');
+      itemTotalElements.forEach((el) => {
+        const cartItem = el.closest('.cart-item');
+        if (cartItem) {
+          const itemId = cartItem.getAttribute('data-item-id');
+          const item = cartItems.find(i => i.id === itemId);
+          if (item) {
+            const total = calculateItemTotal(item, item.product);
+            el.textContent = `${currencySymbol}${safeToFixed(total)}`;
+          }
+        }
+      });
+
+      // Render selected options
+      const optionsContainers = containerRef.current.querySelectorAll('[data-selected-options]');
+      optionsContainers.forEach((container) => {
+        const cartItem = container.closest('.cart-item');
+        if (cartItem) {
+          const itemId = cartItem.getAttribute('data-item-id');
+          const item = cartItems.find(i => i.id === itemId);
+          if (item?.selected_options && item.selected_options.length > 0) {
+            container.innerHTML = item.selected_options.map(opt =>
+              `<div class="text-sm text-gray-600">
+                <div>+ ${opt.name}</div>
+                <div class="ml-2 text-xs">${currencySymbol}${safeToFixed(opt.price)} × ${item.quantity}</div>
+              </div>`
+            ).join('');
+          }
+        }
+      });
+
+      // Attach event handlers
+      const handleClick = (e) => {
+        const decreaseBtn = e.target.closest('[data-action="decrease-quantity"]');
+        if (decreaseBtn) {
+          const itemId = decreaseBtn.getAttribute('data-item-id');
+          const item = cartItems.find(i => i.id === itemId);
+          if (item) updateQuantity(itemId, Math.max(1, item.quantity - 1));
+          return;
+        }
+
+        const increaseBtn = e.target.closest('[data-action="increase-quantity"]');
+        if (increaseBtn) {
+          const itemId = increaseBtn.getAttribute('data-item-id');
+          const item = cartItems.find(i => i.id === itemId);
+          if (item) updateQuantity(itemId, item.quantity + 1);
+          return;
+        }
+
+        const removeBtn = e.target.closest('[data-action="remove-item"]');
+        if (removeBtn) {
+          const itemId = removeBtn.getAttribute('data-item-id');
+          removeItem(itemId);
+          return;
+        }
+      };
+
+      containerRef.current.addEventListener('click', handleClick);
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleClick);
+        }
+      };
+    }, [cartItems, calculateItemTotal, updateQuantity, removeItem, currencySymbol, safeToFixed]);
+
     return (
-      <div className={className} style={styles}>
-        <div className="space-y-4">
-          {cartItems.map(item => (
-            <Card key={item.id} className="p-4">
-              <div className="grid grid-cols-12 gap-4">
-                {/* Product Image */}
-                <div className="col-span-12 sm:col-span-2">
-                  <div className="w-24 h-24">
-                    {(() => {
-                      const imageUrl = item.product?.image_url ||
-                                     (item.product?.images && item.product.images.length > 0 ?
-                                       (typeof item.product.images[0] === 'string' ? item.product.images[0] : item.product.images[0]?.url || item.product.images[0]?.src)
-                                     : null);
-                      return imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={item.product.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">No Image</span>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* Product Details */}
-                <div className="col-span-12 sm:col-span-6">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {item.product?.name || 'Product'}
-                  </h3>
-
-                  {/* Base Price */}
-                  <div className="mt-1 text-sm text-gray-600">
-                    {currencySymbol}{safeToFixed(item.price || 0)} × {item.quantity}
-                  </div>
-
-                  {/* Selected Options as Additional Products */}
-                  {item.selected_options && item.selected_options.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {item.selected_options.map((option, index) => (
-                        <div key={index} className="text-sm text-gray-600">
-                          <div>+ {option.name}</div>
-                          <div className="ml-2 text-xs">{currencySymbol}{safeToFixed(option.price)} × {item.quantity}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Quantity Controls */}
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-
-                    <span className="w-12 text-center font-medium">{item.quantity}</span>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Remove Button and Price */}
-                <div className="col-span-12 sm:col-span-4 flex flex-col items-end justify-between">
-                  <div className="text-right">
-                    <span className="text-lg font-bold text-gray-900">
-                      {currencySymbol}{safeToFixed(calculateItemTotal ? calculateItemTotal(item, item.product) : (item.price * item.quantity) || 0)}
-                    </span>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeItem(item.id)}
-                    className="text-red-600 hover:text-red-700 h-8 w-8 p-0 mt-auto"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <div ref={containerRef} className={className} style={styles}
+           dangerouslySetInnerHTML={{ __html: processedContent }} />
     );
   }
 });
