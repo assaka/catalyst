@@ -377,6 +377,13 @@ const ProductItemsGrid = createSlotComponent({
     const storeSettings = storeContext?.settings || null;
     const gridClasses = getGridClasses(storeSettings);
 
+    console.log('ProductItemsGrid render:', {
+      hasSlotContent: !!slot?.content,
+      slotContentLength: slot?.content?.length,
+      variableContextProducts: variableContext?.products?.length,
+      firstProduct: variableContext?.products?.[0]
+    });
+
     // Use template from slot.content or fallback
     const template = slot?.content || `
       <div class="products-grid-container">
