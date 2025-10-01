@@ -303,7 +303,7 @@ export function CategorySlotRenderer({
         category,
         products: formattedProducts,
         filters: formattedFilters,
-        activeFilters: [],
+        activeFilters: categoryContext.activeFilters || [],
         pagination: {
           start: (currentPage - 1) * itemsPerPage + 1,
           end: Math.min(currentPage * itemsPerPage, allProducts?.length || 0),
@@ -319,6 +319,11 @@ export function CategorySlotRenderer({
           current: sortOption
         }
       };
+
+      // Debug active filters
+      if (categoryContext.activeFilters && categoryContext.activeFilters.length > 0) {
+        console.log('🔍 CategorySlotRenderer - activeFilters:', categoryContext.activeFilters);
+      }
 
       // Use the registered component's render method
       return registeredComponent.render({
