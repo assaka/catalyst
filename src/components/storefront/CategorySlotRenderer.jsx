@@ -187,25 +187,61 @@ export function CategorySlotRenderer({
 
       // Prepare filters data for LayeredNavigation template
       const filtersData = filters || {};
-      const formattedFilters = {
-        price: filtersData.price ? {
-          ranges: Object.entries(filtersData.price).map(([value, label]) => ({
-            value,
-            label,
-            count: 0, // Will be calculated by filtering
-            active: false // Will be set based on selectedFilters
-          }))
-        } : null,
-        attributes: filterableAttributes?.map(attr => ({
-          code: attr.code || attr.name,
-          label: attr.name || attr.code,
-          options: (filtersData[attr.code] || []).map(option => ({
-            value: option.value || option,
-            label: option.label || option,
+
+      // Format price ranges
+      let priceRanges = null;
+      if (filtersData.price) {
+        if (Array.isArray(filtersData.price)) {
+          priceRanges = filtersData.price.map(item => ({
+            value: typeof item === 'object' ? (item.value || item.label) : item,
+            label: typeof item === 'object' ? (item.label || item.value) : item,
             count: 0,
             active: false
-          }))
-        })).filter(attr => attr.options.length > 0) || []
+          }));
+        } else if (typeof filtersData.price === 'object') {
+          priceRanges = Object.entries(filtersData.price).map(([value, label]) => ({
+            value: value,
+            label: typeof label === 'string' ? label : value,
+            count: 0,
+            active: false
+          }));
+        }
+      }
+
+      // Format attribute filters
+      const attributeFilters = filterableAttributes?.map(attr => {
+        const attrCode = attr.code || attr.name;
+        const options = filtersData[attrCode] || [];
+
+        const formattedOptions = Array.isArray(options)
+          ? options.map(option => {
+              if (typeof option === 'object' && option !== null) {
+                return {
+                  value: option.value || option.label || String(option),
+                  label: option.label || option.value || String(option),
+                  count: option.count || 0,
+                  active: false
+                };
+              }
+              return {
+                value: String(option),
+                label: String(option),
+                count: 0,
+                active: false
+              };
+            })
+          : [];
+
+        return {
+          code: attrCode,
+          label: attr.name || attr.code || attrCode,
+          options: formattedOptions
+        };
+      }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
+
+      const formattedFilters = {
+        price: priceRanges ? { ranges: priceRanges } : null,
+        attributes: attributeFilters
       };
 
       // Prepare variable context for processVariables
@@ -336,47 +372,8 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Handle layered_navigation slot specifically
-    if (id === 'layered_navigation') {
-      // Prepare attributes for LayeredNavigation from filterableAttributes
-      const attributes = filterableAttributes?.map(attr => ({
-        code: attr.code || attr.name,
-        name: attr.name || attr.code,
-        is_filterable: true,
-        options: attr.options || []
-      })) || [];
-
-      // Create slot configuration for LayeredNavigation microslots
-      const layeredNavSlotConfig = {
-        filter_card_header: slots?.filter_card_header || {},
-        filter_by_label: slots?.filter_by_label || {},
-        filter_clear_all_button: slots?.filter_clear_all_button || {},
-        filter_active_filters: slots?.filter_active_filters || {},
-        filter_active_filters_label: slots?.filter_active_filters_label || {},
-        filter_price_section: slots?.filter_price_section || {},
-        filter_price_title: slots?.filter_price_title || {},
-        filter_attribute_section: slots?.filter_attribute_section || {},
-        filter_attribute_title: slots?.filter_attribute_title || {},
-        filter_attribute_option: slots?.filter_attribute_option || {},
-        filter_option_checkbox: slots?.filter_option_checkbox || {},
-        filter_option_label: slots?.filter_option_label || {},
-        filter_option_count: slots?.filter_option_count || {}
-      };
-
-      return wrapWithParentClass(
-        <div className={className} style={styles}>
-          <div id="layer_2">
-            <LayeredNavigation
-              products={allProducts || products}
-              attributes={attributes}
-              onFilterChange={handleFilterChange}
-              slotConfig={layeredNavSlotConfig}
-              settings={settings}
-            />
-          </div>
-        </div>
-      );
-    }
+    // NOTE: layered_navigation now uses ComponentRegistry with templates from category-config.js
+    // The old hardcoded React component rendering has been removed
 
     // Handle active_filters slot from category-config.js
     // Note: Active filters are now handled directly within LayeredNavigation component
