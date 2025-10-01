@@ -276,7 +276,7 @@ export default function Category() {
       
       setCurrentCategory(category);
       
-      const cacheKey = `products-category-${category.id}-v3`;
+      const cacheKey = `products-category-${category.id}-v4-stock-fix`;
       let productsData = await cachedApiCall(cacheKey, async () => {
         try {
           const exact = await StorefrontProduct.getByCategory(category.id, { 
