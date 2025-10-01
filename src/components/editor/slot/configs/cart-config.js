@@ -222,7 +222,7 @@ export const cartConfig = {
 
                 <!-- Price and Remove -->
                 <div class="col-span-12 sm:col-span-4 flex flex-col items-end justify-between">
-                  <span class="text-lg font-bold text-gray-900 item-total" data-item-total="true">
+                  <span class="text-lg font-bold text-green-600 item-total" data-item-total="true">
                     $0.00
                   </span>
                   <button class="text-red-600 hover:text-red-800 flex items-center space-x-1"
@@ -291,27 +291,27 @@ export const cartConfig = {
           <div class="space-y-2">
             <div class="flex justify-between">
               <span>Subtotal</span>
-              <span class="font-bold text-green-600" data-subtotal>$0.00</span>
+              <span data-subtotal>$0.00</span>
             </div>
             <div class="flex justify-between" data-custom-options-row style="display: none;">
               <span>Additional Products</span>
-              <span class="font-bold text-green-600" data-custom-options-total>$0.00</span>
+              <span data-custom-options-total>$0.00</span>
             </div>
             <div class="flex justify-between" data-discount-row style="display: none;">
               <span data-discount-label>Discount</span>
-              <span class="font-bold text-green-600" data-discount>$0.00</span>
+              <span data-discount>$0.00</span>
             </div>
             <div class="flex justify-between">
               <span>Tax</span>
-              <span class="font-bold text-green-600" data-tax>$0.00</span>
+              <span data-tax>$0.00</span>
             </div>
             <div class="border-t pt-2 flex justify-between text-lg font-semibold">
               <span>Total</span>
-              <span class="font-bold text-green-600" data-total>$0.00</span>
+              <span data-total>$0.00</span>
             </div>
           </div>
           <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded mt-4 transition-colors" data-action="checkout">
-            Hamid Checkout
+            Proceed now
           </button>
         </div>
       `,
