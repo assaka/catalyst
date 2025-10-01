@@ -64,6 +64,13 @@ const ActiveFilters = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
 
+    console.log('🔍 ActiveFilters component rendering:', {
+      hasVariableContext: !!variableContext,
+      activeFiltersCount: variableContext?.activeFilters?.length,
+      activeFilters: variableContext?.activeFilters,
+      slotContent: slot?.content?.substring(0, 100)
+    });
+
     // Use template from slot.content or fallback
     const template = slot?.content || `
       {{#if activeFilters}}
