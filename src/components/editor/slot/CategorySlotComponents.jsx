@@ -18,20 +18,11 @@ const BreadcrumbRenderer = createSlotComponent({
     // Get configuration from slot metadata
     const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
-    // Get styles - try multiple sources
+    // Get styles from breadcrumb_styles slot
     const breadcrumbStyles =
       categoryContext?.breadcrumbStyles || // Directly passed
       categoryContext?.slots?.breadcrumb_styles?.styles || // From slots
       {}; // Fallback
-
-    // Debug logging
-    console.log('🎨 BREADCRUMB FINAL TEST:', {
-      directStyles: categoryContext?.breadcrumbStyles,
-      fromSlots: categoryContext?.slots?.breadcrumb_styles?.styles,
-      finalStyles: breadcrumbStyles,
-      itemTextColor: breadcrumbStyles.itemTextColor,
-      IS_YELLOW: breadcrumbStyles.itemTextColor === '#EAB308'
-    });
 
     const {
       category,
@@ -40,25 +31,6 @@ const BreadcrumbRenderer = createSlotComponent({
       categories = [],
       settings = {}
     } = categoryContext || {};
-
-    // FORCE: Always log and always pass yellow styles for testing
-    const FORCED_YELLOW_STYLES = {
-      containerBgColor: 'transparent',
-      containerPadding: '0',
-      containerMargin: '0 0 1.5rem 0',
-      itemTextColor: '#EAB308',
-      itemHoverColor: '#CA8A04',
-      activeItemColor: '#1F2937',
-      separatorColor: '#9CA3AF',
-      fontSize: '0.875rem',
-      fontWeight: '400'
-    };
-
-    console.log('🚨 CategorySlotComponents ALWAYS LOGS - passing styles:', {
-      breadcrumbStyles,
-      FORCED_YELLOW_STYLES,
-      willPass: FORCED_YELLOW_STYLES
-    });
 
     // Use the actual BreadcrumbRenderer component with configuration
     return (
@@ -70,7 +42,7 @@ const BreadcrumbRenderer = createSlotComponent({
         categories={categories}
         settings={settings}
         breadcrumbConfig={breadcrumbConfig}
-        breadcrumbStyles={FORCED_YELLOW_STYLES}
+        breadcrumbStyles={breadcrumbStyles}
         className={className || slot?.className}
       />
     );

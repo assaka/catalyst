@@ -37,24 +37,18 @@ export default function BreadcrumbRenderer({
     truncateLength = null
   } = breadcrumbConfig;
 
-  // Extract styles with defaults - use from config or fallback to purple
-  const itemTextColor = breadcrumbStyles?.itemTextColor || '#A855F7'; // Purple from category-config.js
-  const itemHoverColor = breadcrumbStyles?.itemHoverColor || '#9333EA';
-  const activeItemColor = breadcrumbStyles?.activeItemColor || '#DC2626'; // Red for current category
-  const separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF';
-  const fontSize = breadcrumbStyles?.fontSize || '0.875rem';
-  const fontWeight = breadcrumbStyles?.fontWeight || '400';
-  const containerBgColor = breadcrumbStyles?.containerBgColor || 'transparent';
-  const containerPadding = breadcrumbStyles?.containerPadding || '0';
-  const containerMargin = breadcrumbStyles?.containerMargin || '0 0 1.5rem 0';
-
-  // Debug: Log what we're rendering
-  console.log('✅ BreadcrumbRenderer - using yellow from config:', {
-    breadcrumbStyles,
-    itemTextColor,
-    itemHoverColor,
-    IS_YELLOW: itemTextColor === '#EAB308'
-  });
+  // Extract styles with defaults
+  const {
+    containerBgColor = 'transparent',
+    containerPadding = '0',
+    containerMargin = '0 0 1.5rem 0',
+    itemTextColor = '#4B5563', // gray-600
+    itemHoverColor = '#1F2937', // gray-800
+    activeItemColor = '#1F2937', // gray-800
+    separatorColor = '#9CA3AF', // gray-400
+    fontSize = '0.875rem',
+    fontWeight = '400'
+  } = breadcrumbStyles;
 
   // If disabled, return null
   if (!enabled) {

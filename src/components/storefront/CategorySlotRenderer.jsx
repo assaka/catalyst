@@ -703,15 +703,10 @@ export function CategorySlotRenderer({
         );
 
       case 'breadcrumbs':
-        // This shouldn't be hit for breadcrumbs_content since it uses component registry
-        // But keeping for backward compatibility
+        // Fallback for backward compatibility
         const breadcrumbConfigFallback = metadata?.breadcrumbConfig || {};
         const breadcrumbStylesSlotFallback = categoryContext?.slots?.breadcrumb_styles || slots?.breadcrumb_styles;
         const breadcrumbStylesFallback = breadcrumbStylesSlotFallback?.styles || {};
-
-        console.log('⚠️ Using breadcrumbs fallback case - this should not happen for breadcrumbs_content!', {
-          breadcrumbStylesFallback
-        });
 
         // Use unified breadcrumb renderer with auto-generation
         return wrapWithParentClass(
