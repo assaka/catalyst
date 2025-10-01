@@ -322,6 +322,15 @@ function evaluateCondition(condition, context, pageData) {
       return actualValue === expectedValue;
     }
 
+    // Handle gt helper function: (gt variable value)
+    const gtMatch = condition.match(/\(gt\s+([^"\s]+)\s+(\d+)\)/);
+
+    if (gtMatch) {
+      const [, variablePath, compareValue] = gtMatch;
+      const actualValue = getNestedValue(variablePath, context, pageData);
+      return parseFloat(actualValue) > parseFloat(compareValue);
+    }
+
     // Handle simple property checks
     if (condition.includes('>') || condition.includes('<') || condition.includes('==')) {
       // Parse comparison operators

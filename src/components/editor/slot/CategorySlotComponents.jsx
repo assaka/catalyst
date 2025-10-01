@@ -341,13 +341,68 @@ const LayeredNavigation = createSlotComponent({
 
       setTimeout(initSlider, 100);
 
+      // Handle filter section toggle (collapse/expand)
+      const handleToggleSection = (e) => {
+        const button = e.target.closest('[data-action="toggle-filter-section"]');
+        if (!button) return;
+
+        const section = button.getAttribute('data-section');
+        const filterSection = button.closest('[data-filter-section]');
+        const filterContent = filterSection?.querySelector('.filter-content');
+        const chevron = button.querySelector('.filter-chevron');
+
+        if (filterContent) {
+          const isHidden = filterContent.style.display === 'none';
+          filterContent.style.display = isHidden ? 'block' : 'none';
+
+          if (chevron) {
+            if (isHidden) {
+              chevron.classList.add('rotate-180');
+            } else {
+              chevron.classList.remove('rotate-180');
+            }
+          }
+        }
+      };
+
+      // Handle Show More / Show Less toggle
+      const handleShowMore = (e) => {
+        const button = e.target.closest('[data-action="toggle-show-more"]');
+        if (!button) return;
+
+        const attributeCode = button.getAttribute('data-attribute-code');
+        const filterContent = containerRef.current.querySelector(`[data-attribute-code="${attributeCode}"]`);
+
+        if (!filterContent) return;
+
+        const maxVisible = parseInt(filterContent.getAttribute('data-max-visible')) || 5;
+        const allOptions = filterContent.querySelectorAll('.filter-option');
+        const isShowingMore = button.textContent.trim() === 'Show More';
+
+        allOptions.forEach((option, index) => {
+          if (index >= maxVisible) {
+            if (isShowingMore) {
+              option.classList.remove('hidden');
+            } else {
+              option.classList.add('hidden');
+            }
+          }
+        });
+
+        button.textContent = isShowingMore ? 'Show Less' : 'Show More';
+      };
+
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);
+      containerRef.current.addEventListener('click', handleToggleSection);
+      containerRef.current.addEventListener('click', handleShowMore);
 
       return () => {
         if (containerRef.current) {
           containerRef.current.removeEventListener('change', handleChange);
           containerRef.current.removeEventListener('input', handlePriceSlider);
+          containerRef.current.removeEventListener('click', handleToggleSection);
+          containerRef.current.removeEventListener('click', handleShowMore);
         }
       };
     }, [categoryContext, context]);

@@ -594,9 +594,18 @@ export const categoryConfig = {
         <div class="space-y-6">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
-            <div class="border-b border-gray-200 pb-4">
-              <h4 class="font-semibold text-base text-gray-900 mb-3">Price</h4>
-              <div class="px-2">
+            <div class="border-b border-gray-200 pb-4" data-filter-section="price">
+              <button class="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3"
+                      data-action="toggle-filter-section"
+                      data-section="price">
+                <span>Price</span>
+                <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div class="filter-content px-2 {{#unless settings.collapse_filters}}block{{/unless}}"
+                   style="{{#if settings.collapse_filters}}display: none;{{/if}}">
                 <div class="flex justify-between items-center mb-4 text-sm">
                   <span class="text-gray-700 font-medium">€<span id="selected-min">{{filters.price.min}}</span></span>
                   <span class="text-gray-400">-</span>
@@ -651,11 +660,23 @@ export const categoryConfig = {
 
           <!-- Attribute Filters (Brand, Color, Size, Material, etc.) -->
           {{#each filters.attributes}}
-            <div class="border-b border-gray-200 pb-4">
-              <h4 class="font-semibold text-base text-gray-900 mb-3">{{this.label}}</h4>
-              <div class="space-y-2 max-h-48 overflow-y-auto">
+            <div class="border-b border-gray-200 pb-4" data-filter-section="{{this.code}}">
+              <button class="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3"
+                      data-action="toggle-filter-section"
+                      data-section="{{this.code}}">
+                <span>{{this.label}}</span>
+                <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless ../settings.collapse_filters}}rotate-180{{/unless}}"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless ../settings.collapse_filters}}block{{/unless}}"
+                   style="{{#if ../settings.collapse_filters}}display: none;{{/if}}"
+                   data-max-visible="{{../settings.max_visible_attributes}}"
+                   data-attribute-code="{{this.code}}">
                 {{#each this.options}}
-                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900">
+                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900 filter-option {{#if @index}}{{#if (gt @index ../../../settings.max_visible_attributes)}}hidden{{/if}}{{/if}}"
+                         data-option-index="{{@index}}">
                     <input type="checkbox"
                            class="rounded border-gray-300 text-blue-600"
                            data-action="toggle-filter"
@@ -667,6 +688,13 @@ export const categoryConfig = {
                     <span class="text-gray-400 text-sm ml-auto">({{this.count}})</span>
                   </label>
                 {{/each}}
+                {{#if (gt this.options.length ../settings.max_visible_attributes)}}
+                  <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn"
+                          data-action="toggle-show-more"
+                          data-attribute-code="{{this.code}}">
+                    Show More
+                  </button>
+                {{/if}}
               </div>
             </div>
           {{/each}}
