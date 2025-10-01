@@ -37,7 +37,57 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         component: 'CategoryBreadcrumbs',
-        displayName: 'Breadcrumb Navigation'
+        displayName: 'Breadcrumb Navigation',
+        breadcrumbConfig: {
+          enabled: true,
+          showHomeLink: true,
+          homeLabel: 'Home',
+          separator: '/',
+          showCategoryInBreadcrumb: true,
+          maxDepth: null, // null = unlimited
+          truncateLength: null // null = no truncation
+        }
+      }
+    },
+
+    // Breadcrumb styling configuration
+    breadcrumb_styles: {
+      id: 'breadcrumb_styles',
+      type: 'style_config',
+      content: '',
+      className: '',
+      parentClassName: '',
+      styles: {
+        containerBgColor: 'transparent',
+        containerPadding: '0',
+        containerMargin: '0 0 1.5rem 0',
+        itemTextColor: '#22C55E', // green-500 (parent categories)
+        itemHoverColor: '#16A34A', // green-600
+        activeItemColor: '#1F2937', // gray-800
+        separatorColor: '#9CA3AF', // gray-400
+        fontSize: '0.875rem', // text-sm
+        fontWeight: '400'
+      },
+      parentId: 'breadcrumbs_content',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Breadcrumb Styling',
+        labelType: 'styling',
+        customizable: [
+          'containerBgColor',
+          'containerPadding',
+          'containerMargin',
+          'itemTextColor',
+          'itemHoverColor',
+          'activeItemColor',
+          'separatorColor',
+          'fontSize',
+          'fontWeight'
+        ]
       }
     },
 
@@ -142,7 +192,7 @@ export const categoryConfig = {
       component: 'ProductCountInfo',
       content: `
         <div class="text-sm text-gray-600">
-          Showing {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
+          Hamid {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
         </div>
       `,
       className: '',
@@ -163,7 +213,7 @@ export const categoryConfig = {
     product_count_text: {
       id: 'product_count_text',
       type: 'text',
-      content: 'Showing {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products',
+      content: 'Hamid {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products',
       className: 'text-sm text-gray-600',
       parentClassName: '',
       styles: {
