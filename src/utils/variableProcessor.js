@@ -19,11 +19,11 @@ export function processVariables(content, context, pageData = {}) {
 
   let processedContent = content;
 
-  // 1. Process conditional blocks first
-  processedContent = processConditionals(processedContent, context, pageData);
-
-  // 2. Process loops
+  // 1. Process loops FIRST - this sets up item contexts for nested conditionals
   processedContent = processLoops(processedContent, context, pageData);
+
+  // 2. Process conditional blocks - after loops so item context is available
+  processedContent = processConditionals(processedContent, context, pageData);
 
   // 3. Process simple variables
   processedContent = processSimpleVariables(processedContent, context, pageData);
