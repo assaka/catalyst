@@ -489,6 +489,7 @@ export default function Category() {
       code: a.code,
       name: a.name,
       is_filterable: a.is_filterable,
+      filter_type: a.filter_type,
       filter_input_type: a.filter_input_type
     })));
 
@@ -569,8 +570,8 @@ export default function Category() {
         });
       }
 
-      // Handle price attribute with slider input type
-      if (attrCode === 'price' && attr.filter_input_type === 'slider') {
+      // Handle price attribute with slider filter type
+      if (attrCode === 'price' && (attr.filter_type === 'slider' || attr.filter_input_type === 'slider')) {
         const prices = filteredProducts.map(p => {
           let price = parseFloat(p.price || 0);
           // Use the lowest price if compare_price exists and is lower
