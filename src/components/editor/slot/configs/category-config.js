@@ -265,7 +265,7 @@ export const categoryConfig = {
       }
     },
 
-    // Active filters display (above Filter Now heading)
+    // Active filters display (below Filter Now heading)
     active_filters: {
       id: 'active_filters',
       type: 'component',
@@ -273,7 +273,7 @@ export const categoryConfig = {
       content: `
         {{#if activeFilters.length}}
           <div class="mb-4">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2">Active Filters:</h4>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2">Active Filters</h4>
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
                 <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
@@ -303,7 +303,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
-      position: { col: 1, row: 1.5 },
+      position: { col: 1, row: 2.5 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
