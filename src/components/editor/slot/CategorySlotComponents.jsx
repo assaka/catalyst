@@ -18,25 +18,8 @@ const BreadcrumbRenderer = createSlotComponent({
     // Get configuration from slot metadata
     const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
-    console.log('🔍 BreadcrumbRenderer Component - CategorySlotComponents.jsx BEFORE extraction:', {
-      hasCategoryContext: !!categoryContext,
-      categoryContextKeys: categoryContext ? Object.keys(categoryContext) : [],
-      hasCategoryContextSlots: !!categoryContext?.slots,
-      categoryContextSlotsKeys: categoryContext?.slots ? Object.keys(categoryContext.slots).slice(0, 5) : [],
-      hasBreadcrumbStylesSlot: !!categoryContext?.slots?.breadcrumb_styles,
-      breadcrumbStylesFromSlot: categoryContext?.slots?.breadcrumb_styles?.styles,
-      breadcrumbStylesDirectlyPassed: categoryContext?.breadcrumbStyles
-    });
-
-    // Get styles from breadcrumb_styles slot
-    const breadcrumbStyles =
-      categoryContext?.breadcrumbStyles || // Directly passed
-      categoryContext?.slots?.breadcrumb_styles?.styles || // From slots
-      {}; // Fallback
-
-    console.log('🔍 BreadcrumbRenderer Component - AFTER extraction:', {
-      finalBreadcrumbStyles: breadcrumbStyles
-    });
+    // DIRECT FIX: Get styles directly from categoryContext.breadcrumbStyles (which is passed from CategorySlotRenderer line 330)
+    const breadcrumbStyles = categoryContext?.breadcrumbStyles || {};
 
     const {
       category,
