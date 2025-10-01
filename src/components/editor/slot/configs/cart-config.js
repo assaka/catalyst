@@ -200,7 +200,7 @@ export const cartConfig = {
                   <h3 class="text-lg font-medium text-gray-900">{{this.product.name}}</h3>
 
                   <div class="mt-1 text-sm text-gray-600">
-                    ${{this.price}} × {{this.quantity}}
+                    {{this.price}} × {{this.quantity}}
                   </div>
 
                   <!-- Selected Options -->

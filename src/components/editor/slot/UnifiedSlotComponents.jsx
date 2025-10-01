@@ -1333,14 +1333,21 @@ const CartItemsSlot = createSlotComponent({
       React.useEffect(() => {
         if (!containerRef.current) return;
 
-        // Calculate and display item totals
-        const itemTotalElements = containerRef.current.querySelectorAll('[data-item-total]');
-        itemTotalElements.forEach((el) => {
-          const cartItem = el.closest('.cart-item');
-          if (cartItem) {
-            const price = parseFloat(cartItem.getAttribute('data-price')) || 0;
-            const quantity = parseInt(cartItem.getAttribute('data-quantity')) || 1;
-            el.textContent = `$${(price * quantity).toFixed(2)}`;
+        // Update prices for editor preview
+        containerRef.current.querySelectorAll('.cart-item').forEach((cartItemEl) => {
+          const price = parseFloat(cartItemEl.getAttribute('data-price')) || 0;
+          const quantity = parseInt(cartItemEl.getAttribute('data-quantity')) || 1;
+
+          // Update item price display
+          const priceDisplay = cartItemEl.querySelector('.text-sm.text-gray-600');
+          if (priceDisplay && priceDisplay.textContent.includes('×')) {
+            priceDisplay.textContent = `$${price.toFixed(2)} × ${quantity}`;
+          }
+
+          // Update item total
+          const itemTotalEl = cartItemEl.querySelector('[data-item-total]');
+          if (itemTotalEl) {
+            itemTotalEl.textContent = `$${(price * quantity).toFixed(2)}`;
           }
         });
 
@@ -1403,16 +1410,23 @@ const CartItemsSlot = createSlotComponent({
     React.useEffect(() => {
       if (!containerRef.current) return;
 
-      // Calculate and display item totals
-      const itemTotalElements = containerRef.current.querySelectorAll('[data-item-total]');
-      itemTotalElements.forEach((el) => {
-        const cartItem = el.closest('.cart-item');
-        if (cartItem) {
-          const itemId = cartItem.getAttribute('data-item-id');
-          const item = cartItems.find(i => i.id === itemId);
-          if (item) {
+      // Update prices with currency symbol
+      containerRef.current.querySelectorAll('.cart-item').forEach((cartItemEl) => {
+        const itemId = cartItemEl.getAttribute('data-item-id');
+        const item = cartItems.find(i => i.id === itemId);
+
+        if (item) {
+          // Update item price display
+          const priceDisplay = cartItemEl.querySelector('.text-sm.text-gray-600');
+          if (priceDisplay && priceDisplay.textContent.includes('×')) {
+            priceDisplay.textContent = `${currencySymbol}${safeToFixed(item.price)} × ${item.quantity}`;
+          }
+
+          // Update item total
+          const itemTotalEl = cartItemEl.querySelector('[data-item-total]');
+          if (itemTotalEl) {
             const total = calculateItemTotal(item, item.product);
-            el.textContent = `${currencySymbol}${safeToFixed(total)}`;
+            itemTotalEl.textContent = `${currencySymbol}${safeToFixed(total)}`;
           }
         }
       });
