@@ -247,6 +247,16 @@ function processLoops(content, context, pageData, depth = 0) {
           ? { ...pageData, this: item, ...item }
           : { ...pageData, this: item };
 
+        // Debug: Check itemContext for first product
+        if (index === 0 && arrayPath === 'products') {
+          console.log('🔍 processLoops - itemContext for products[0]:', {
+            has_this: !!itemContext.this,
+            this_in_stock: itemContext.this?.in_stock,
+            in_stock: itemContext.in_stock,
+            itemContext_keys: Object.keys(itemContext)
+          });
+        }
+
         // Process conditionals with item context
         itemContent = processConditionals(itemContent, context, itemContext);
 
