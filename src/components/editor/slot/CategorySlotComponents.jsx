@@ -19,16 +19,18 @@ const BreadcrumbRenderer = createSlotComponent({
     const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
     // Get styles from breadcrumb_styles slot (need to access from context)
-    const breadcrumbStyles = categoryContext?.slots?.breadcrumb_styles?.styles || {};
+    const breadcrumbStylesSlot = categoryContext?.slots?.breadcrumb_styles;
+    const breadcrumbStyles = breadcrumbStylesSlot?.styles || {};
 
-    // Debug logging
+    // Debug logging - ALWAYS log to see what's happening
     console.log('🔍 CategorySlotComponents BreadcrumbRenderer:', {
       hasCategoryContext: !!categoryContext,
       hasSlots: !!categoryContext?.slots,
-      breadcrumbStylesSlot: categoryContext?.slots?.breadcrumb_styles,
-      allSlotKeys: categoryContext?.slots ? Object.keys(categoryContext.slots) : [],
-      breadcrumbConfig,
-      breadcrumbStyles
+      slotsIsObject: typeof categoryContext?.slots,
+      allSlotKeys: categoryContext?.slots ? Object.keys(categoryContext.slots).slice(0, 10) : [],
+      breadcrumbStylesSlot: breadcrumbStylesSlot,
+      breadcrumbStyles: breadcrumbStyles,
+      breadcrumbConfig: breadcrumbConfig
     });
 
     const {
