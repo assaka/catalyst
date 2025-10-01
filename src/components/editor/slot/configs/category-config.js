@@ -373,6 +373,27 @@ export const categoryConfig = {
       type: 'component',
       component: 'ProductItemsGrid',
       content: `
+        <!--
+          ============================================
+          AI EDITING INSTRUCTIONS FOR BUTTON COLORS
+          ============================================
+
+          This template uses dynamic button colors from theme settings.
+
+          BUTTON COLOR MAPPINGS:
+          - Add to Cart button → settings.theme.add_to_cart_button_color
+          - View Cart button → settings.theme.view_cart_button_color
+          - Checkout button → settings.theme.checkout_button_color
+          - Place Order button → settings.theme.place_order_button_color
+
+          TO CHANGE A BUTTON COLOR:
+          1. Update the corresponding database setting (e.g., settings.theme.add_to_cart_button_color = '#ff0000')
+          2. Keep the template variable in the HTML (e.g., style="background-color: {{settings.theme.add_to_cart_button_color}};")
+          3. DO NOT hardcode colors like style="background-color: #ff0000;" - this breaks global theme control
+
+          This ensures users can change all button colors from Admin > Store > Theme & Layout.
+          ============================================
+        -->
         <div class="products-grid-container">
           {{#each products}}
             <div class="group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card"
@@ -418,6 +439,9 @@ export const categoryConfig = {
               </div>
 
               <!-- Add to Cart Button -->
+              <!-- AI INSTRUCTION: To change this button color, update the database setting: settings.theme.add_to_cart_button_color -->
+              <!-- DO NOT hardcode colors here - always use the template variable {{settings.theme.add_to_cart_button_color}} -->
+              <!-- This ensures the color can be changed globally from Admin > Store > Theme & Layout -->
               {{#if this.in_stock}}
                 <button class="w-full text-white border-0 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
                         style="background-color: {{settings.theme.add_to_cart_button_color}};"
