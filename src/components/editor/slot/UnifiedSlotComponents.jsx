@@ -757,7 +757,7 @@ const ProductTabs = createSlotComponent({
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     ${Object.entries(sampleProduct.attributes).map(([key, value]) => `
                       <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="font-medium capitalize">${key.replace(/_/g, ' ')}</span>
+                        <span class="font-bold capitalize">${key.replace(/_/g, ' ')}</span>
                         <span>${String(value ?? '')}</span>
                       </div>
                     `).join('')}
