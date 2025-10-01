@@ -19,7 +19,6 @@ const BreadcrumbRenderer = createSlotComponent({
     const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
     // Get styles from breadcrumb_styles slot (need to access from context)
-    // For now, we'll use slot.styles or pass empty object
     const breadcrumbStyles = categoryContext?.slots?.breadcrumb_styles?.styles || {};
 
     const {
