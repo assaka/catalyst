@@ -284,6 +284,13 @@ export function CategorySlotRenderer({
       };
 
       // Prepare variable context for processVariables
+      // Ensure settings have proper defaults for filter behavior
+      const settingsWithDefaults = {
+        ...(settings || {}),
+        collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
+        max_visible_attributes: settings?.max_visible_attributes || 5
+      };
+
       const variableContext = {
         category,
         products: formattedProducts,
@@ -303,7 +310,7 @@ export function CategorySlotRenderer({
         sorting: {
           current: sortOption
         },
-        settings: settings || {}
+        settings: settingsWithDefaults
       };
 
       // Special handling for breadcrumbs - pass styles directly

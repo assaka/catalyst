@@ -151,6 +151,13 @@ const LayeredNavigation = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
 
+    console.log('🔍 LayeredNavigation variableContext:', {
+      hasSettings: !!variableContext?.settings,
+      collapse_filters: variableContext?.settings?.collapse_filters,
+      max_visible_attributes: variableContext?.settings?.max_visible_attributes,
+      fullSettings: variableContext?.settings
+    });
+
     // Use template from slot.content or fallback
     const template = slot?.content || `
       <div class="space-y-6">
@@ -343,30 +350,52 @@ const LayeredNavigation = createSlotComponent({
       const initMaxVisibleAttributes = () => {
         const filterContents = containerRef.current?.querySelectorAll('[data-max-visible]');
 
+        console.log('🔍 Found filter contents:', filterContents?.length);
+
         filterContents?.forEach(filterContent => {
-          const maxVisible = parseInt(filterContent.getAttribute('data-max-visible'));
+          const maxVisibleAttr = filterContent.getAttribute('data-max-visible');
+          const maxVisible = parseInt(maxVisibleAttr);
           const attributeCode = filterContent.getAttribute('data-attribute-code');
 
-          console.log('🔍 Init max visible for:', attributeCode, 'max:', maxVisible);
+          console.log('🔍 Init max visible for:', attributeCode, {
+            maxVisibleAttr,
+            maxVisible,
+            isNaN: isNaN(maxVisible),
+            isEmpty: !maxVisibleAttr || maxVisibleAttr === '' || maxVisibleAttr === 'null' || maxVisibleAttr === 'undefined'
+          });
 
           // Only apply if maxVisible is a valid number and > 0
-          if (!maxVisible || isNaN(maxVisible) || maxVisible <= 0) {
+          // If not set or invalid, don't limit (show all)
+          if (!maxVisibleAttr || maxVisibleAttr === '' || maxVisibleAttr === 'null' || maxVisibleAttr === 'undefined' || isNaN(maxVisible) || maxVisible <= 0) {
+            console.log('🔍 Skipping max visible for', attributeCode, '- not configured or invalid');
             return;
           }
 
           const allOptions = filterContent.querySelectorAll('.filter-option');
           const showMoreBtn = filterContent.querySelector('.show-more-btn');
 
+          console.log('🔍 Processing max visible:', {
+            attributeCode,
+            maxVisible,
+            totalOptions: allOptions.length,
+            hasShowMoreBtn: !!showMoreBtn
+          });
+
           // Hide options beyond max visible
+          let hiddenCount = 0;
           allOptions.forEach((option, index) => {
             if (index >= maxVisible) {
               option.classList.add('hidden');
+              hiddenCount++;
             }
           });
+
+          console.log('🔍 Hidden', hiddenCount, 'options for', attributeCode);
 
           // Show "Show More" button if there are hidden options
           if (allOptions.length > maxVisible && showMoreBtn) {
             showMoreBtn.classList.remove('hidden');
+            console.log('🔍 Showing "Show More" button for', attributeCode);
           }
         });
       };
