@@ -29,11 +29,20 @@ export default function BreadcrumbRenderer({
   // DIRECT PROP for passing styles
   slots
 }) {
+  console.log('🎯 BreadcrumbRenderer received:', {
+    breadcrumbStylesProp: breadcrumbStyles,
+    slotsProp: !!slots,
+    slotsHasBreadcrumbStyles: !!slots?.breadcrumb_styles?.styles
+  });
+
   // If breadcrumbStyles is empty but slots is provided, extract from slots
   if ((!breadcrumbStyles || Object.keys(breadcrumbStyles).length === 0) && slots?.breadcrumb_styles?.styles) {
     breadcrumbStyles = slots.breadcrumb_styles.styles;
     console.log('🎯 FIXED: Extracted breadcrumbStyles from slots prop:', breadcrumbStyles);
   }
+
+  console.log('🎯 Final breadcrumbStyles to use:', breadcrumbStyles);
+
   // Extract config with defaults
   const {
     enabled = true,
