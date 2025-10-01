@@ -375,7 +375,8 @@ export default function Attributes() {
       select: "bg-purple-100 text-purple-700",
       multiselect: "bg-pink-100 text-pink-700",
       boolean: "bg-orange-100 text-orange-700",
-      date: "bg-indigo-100 text-indigo-700"
+      date: "bg-indigo-100 text-indigo-700",
+      file: "bg-yellow-100 text-yellow-700"
     };
     return colors[type] || "bg-gray-100 text-gray-700";
   };
@@ -437,6 +438,7 @@ export default function Attributes() {
                   <SelectItem value="multiselect">Multi-select</SelectItem>
                   <SelectItem value="boolean">Boolean</SelectItem>
                   <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="file">File</SelectItem>
                 </SelectContent>
               </Select>
               {(searchQuery || selectedTypeFilter !== "all") && (
