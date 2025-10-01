@@ -284,6 +284,19 @@ const ProductItemCard = ({
           <div className="space-y-3 mt-4">
             {/* Price display */}
             <div className="flex items-baseline gap-2">
+              {(() => {
+                console.log('💰 Price Debug:', {
+                  product_id: product.id,
+                  product_name: product.name,
+                  price: product.price,
+                  compare_price: product.compare_price,
+                  price_parsed: parseFloat(product.price || 0),
+                  compare_price_parsed: parseFloat(product.compare_price || 0),
+                  has_compare_price: !!product.compare_price,
+                  compare_price_gt_zero: parseFloat(product.compare_price || 0) > 0,
+                  prices_different: parseFloat(product.compare_price || 0) !== parseFloat(product.price || 0)
+                });
+              })()}
               {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                 <>
                   <p className={productPrice.className || "font-bold text-red-600 text-xl"} style={productPrice.styles || {}}>
