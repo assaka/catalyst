@@ -153,6 +153,7 @@ function processConditionalsStep(content, context, pageData) {
 
 /**
  * Process loop blocks: {{#each array}}...{{/each}}
+ * Uses bracket counting to properly handle nested loops
  */
 function processLoops(content, context, pageData, depth = 0) {
   // Prevent infinite recursion - max 10 levels of nesting
@@ -161,54 +162,101 @@ function processLoops(content, context, pageData, depth = 0) {
     return content;
   }
 
-  const loopRegex = /\{\{#each\s+([^}]+)\}\}([\s\S]*?)\{\{\/each\}\}/g;
+  let result = content;
+  let startIndex = 0;
 
-  // Debug: Log when processing loops
-  if (depth === 1 && content.includes('{{#each this.options}}')) {
-    console.log('🔍 processLoops depth=' + depth + ': Found nested {{#each this.options}}');
-    console.log('🔍 Content sample:', content.substring(0, 500));
-  }
+  while (true) {
+    // Find the next {{#each
+    const eachIndex = result.indexOf('{{#each', startIndex);
+    if (eachIndex === -1) break;
 
-  return content.replace(loopRegex, (match, arrayPath, template) => {
-    if (depth === 1) {
-      console.log('🔍 processLoops depth=' + depth + ': Processing arrayPath=' + arrayPath);
+    // Extract array path
+    const pathStart = eachIndex + 7; // after {{#each
+    const pathEnd = result.indexOf('}}', pathStart);
+    if (pathEnd === -1) break;
+
+    const arrayPath = result.substring(pathStart, pathEnd).trim();
+
+    // Find matching {{/each}} by counting brackets
+    let bracketCount = 1;
+    let searchIndex = pathEnd + 2; // after }}
+    let endIndex = -1;
+
+    while (bracketCount > 0 && searchIndex < result.length) {
+      const nextEach = result.indexOf('{{#each', searchIndex);
+      const nextEndEach = result.indexOf('{{/each}}', searchIndex);
+
+      // Build candidates list
+      const candidates = [];
+      if (nextEach !== -1) candidates.push({ pos: nextEach, type: 'each', len: 7 });
+      if (nextEndEach !== -1) candidates.push({ pos: nextEndEach, type: 'endeach', len: 9 });
+
+      if (candidates.length === 0) break;
+
+      // Sort by position
+      candidates.sort((a, b) => a.pos - b.pos);
+      const nextTag = candidates[0];
+
+      if (nextTag.type === 'each') {
+        bracketCount++;
+        searchIndex = nextTag.pos + nextTag.len;
+      } else if (nextTag.type === 'endeach') {
+        bracketCount--;
+        if (bracketCount === 0) {
+          endIndex = nextTag.pos;
+          break;
+        }
+        searchIndex = nextTag.pos + nextTag.len;
+      }
     }
+
+    if (endIndex === -1) {
+      startIndex = eachIndex + 1;
+      continue;
+    }
+
+    // Extract template content between {{#each ...}} and {{/each}}
+    const template = result.substring(pathEnd + 2, endIndex);
     const array = getNestedValue(arrayPath, context, pageData);
 
+    let replacement = '';
+    if (Array.isArray(array) && array.length > 0) {
+      replacement = array.map((item, index) => {
+        let itemContent = template;
 
-    if (!Array.isArray(array) || array.length === 0) {
-      // For product.labels specifically, since it's null/undefined, just return empty
-      if (arrayPath === 'product.labels') {
-        return ''; // Don't show anything if no labels
-      }
-      return '';
+        // Replace {{this}} with current item
+        const itemValue = typeof item === 'string' ? item : String(item);
+        itemContent = itemContent.replace(/\{\{this\}\}/g, itemValue);
+
+        // Replace {{@index}} with current index
+        itemContent = itemContent.replace(/\{\{@index\}\}/g, index);
+
+        // Build item context
+        const itemContext = typeof item === 'object' && item !== null
+          ? { ...pageData, this: item, ...item }
+          : { ...pageData, this: item };
+
+        // Process conditionals with item context
+        itemContent = processConditionals(itemContent, context, itemContext);
+
+        // Process nested loops recursively
+        itemContent = processLoops(itemContent, context, itemContext, depth + 1);
+
+        // Process simple variables
+        return processSimpleVariables(itemContent, context, itemContext);
+      }).join('');
+    } else if (arrayPath === 'product.labels') {
+      replacement = ''; // Don't show anything if no labels
     }
 
-    return array.map((item, index) => {
-      let itemContent = template;
-      // Replace {{this}} with current item (as string, not JSON)
-      const itemValue = typeof item === 'string' ? item : String(item);
-      itemContent = itemContent.replace(/\{\{this\}\}/g, itemValue);
-      // Replace {{@index}} with current index
-      itemContent = itemContent.replace(/\{\{@index\}\}/g, index);
+    // Replace the entire loop block with the processed content
+    result = result.substring(0, eachIndex) + replacement + result.substring(endIndex + 9);
 
-      // Process nested variables within the item context
-      // If item is an object, spread its properties to make them available at root level
-      // This allows {{color}} instead of requiring {{this.color}}
-      const itemContext = typeof item === 'object' && item !== null
-        ? { ...pageData, this: item, ...item }
-        : { ...pageData, this: item };
+    // Continue from the beginning
+    startIndex = 0;
+  }
 
-      // First process conditionals with the item context so {{#if tab_type}} works
-      itemContent = processConditionals(itemContent, context, itemContext);
-
-      // IMPORTANT: Process nested loops recursively before simple variables
-      // Pass depth + 1 to prevent infinite recursion
-      itemContent = processLoops(itemContent, context, itemContext, depth + 1);
-
-      return processSimpleVariables(itemContent, context, itemContext);
-    }).join('');
-  });
+  return result;
 }
 
 /**
