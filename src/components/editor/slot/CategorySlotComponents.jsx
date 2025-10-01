@@ -282,6 +282,16 @@ const LayeredNavigation = createSlotComponent({
         const maxSlider = containerRef.current?.querySelector('#price-slider-max');
 
         if (minSlider && maxSlider) {
+          console.log('🔍 Initial slider HTML attributes:', {
+            minAttr: minSlider.getAttribute('min'),
+            maxAttr: minSlider.getAttribute('max'),
+            minValue: minSlider.getAttribute('value'),
+            maxValue: maxSlider.getAttribute('value'),
+            minDataMin: minSlider.dataset.min,
+            minDataMax: minSlider.dataset.max,
+            outerHTML: minSlider.outerHTML.substring(0, 200)
+          });
+
           // Get min/max from attributes or data attributes
           let min = parseInt(minSlider.getAttribute('min')) || parseInt(minSlider.dataset.min);
           let max = parseInt(minSlider.getAttribute('max')) || parseInt(minSlider.dataset.max);
@@ -294,12 +304,16 @@ const LayeredNavigation = createSlotComponent({
             max = parseInt(maxSlider.getAttribute('value')) || 100;
           }
 
+          console.log('🔍 Calculated min/max:', { min, max });
+
           // Set attributes if they're missing
-          if (!minSlider.getAttribute('min') && min) {
+          if (!minSlider.getAttribute('min') || minSlider.getAttribute('min') === 'null') {
+            console.log('🔍 Setting min attribute to:', min);
             minSlider.setAttribute('min', min);
             maxSlider.setAttribute('min', min);
           }
-          if (!minSlider.getAttribute('max') && max) {
+          if (!minSlider.getAttribute('max') || minSlider.getAttribute('max') === 'null') {
+            console.log('🔍 Setting max attribute to:', max);
             minSlider.setAttribute('max', max);
             maxSlider.setAttribute('max', max);
           }
