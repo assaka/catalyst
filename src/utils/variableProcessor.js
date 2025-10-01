@@ -291,9 +291,13 @@ function evaluateCondition(condition, context, pageData) {
       console.log('🔍 Evaluating condition:', {
         condition,
         value,
+        valueType: typeof value,
         booleanResult: !!value,
         contextKeys: Object.keys(context || {}),
-        pageDataKeys: Object.keys(pageData || {})
+        pageDataKeys: Object.keys(pageData || {}),
+        pageData_compare_price: pageData?.compare_price,
+        context_product_compare_price: context?.product?.compare_price,
+        this_compare_price: pageData?.this?.compare_price
       });
     }
 
