@@ -196,9 +196,9 @@ export const categoryConfig = {
       type: 'component',
       component: 'ActiveFilters',
       content: `
-        <div class="mb-4 -mt-2 bg-yellow-100 p-2">
-          <p class="text-xs text-gray-500">Active Filters Debug: {{activeFilters.length}} filters</p>
-          {{#if activeFilters}}
+        {{#if activeFilters}}
+          <div class="mb-4">
+            <h4 class="text-sm font-semibold text-gray-700 mb-2">Active Filters:</h4>
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
                 <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
@@ -221,10 +221,8 @@ export const categoryConfig = {
                 </button>
               {{/if}}
             </div>
-          {{else}}
-            <p class="text-xs text-gray-500">No active filters</p>
-          {{/if}}
-        </div>
+          </div>
+        {{/if}}
       `,
       className: '',
       parentClassName: '',
