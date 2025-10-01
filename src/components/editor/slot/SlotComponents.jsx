@@ -9,7 +9,7 @@ import { Image, Square, Settings, Plus, Loader2, Save, Code, X, Check, Rocket, T
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
-import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
+import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper'; // @deprecated - only used by unused EditableElement
 import { SlotManager } from '@/utils/slotUtils';
 import FilePickerModal from '@/components/ui/FilePickerModal';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
@@ -328,6 +328,12 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   );
 }
 
+/**
+ * @deprecated This component is no longer used in the codebase.
+ *
+ * Modern slots use GridColumn directly for editor functionality.
+ * Can be safely removed in a future cleanup along with EditorInteractionWrapper.
+ */
 // EditableElement Component
 export function EditableElement({
   slotId,

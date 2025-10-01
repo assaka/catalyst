@@ -15,7 +15,8 @@ import { Badge } from '@/components/ui/badge';
 import { ResizeWrapper } from '@/components/ui/resize-element-wrapper';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
-import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
+// @deprecated - EditorInteractionWrapper is not used in UnifiedSlotRenderer (dead import, can be removed)
+// import EditorInteractionWrapper from '@/components/editor/EditorInteractionWrapper';
 import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';

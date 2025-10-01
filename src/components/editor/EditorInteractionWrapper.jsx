@@ -1,5 +1,14 @@
 import React from 'react';
 
+/**
+ * @deprecated This component is no longer actively used in the codebase.
+ *
+ * Modern editor functionality is handled directly by GridColumn in SlotComponents.jsx
+ * which implements drag/drop, resize, and selection without this wrapper.
+ *
+ * Only used by the legacy EditableElement component (also unused).
+ * Can be safely removed in a future cleanup.
+ */
 const EditorInteractionWrapper = ({
   children,
   mode,
