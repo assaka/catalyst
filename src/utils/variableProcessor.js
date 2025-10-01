@@ -298,6 +298,18 @@ function evaluateCondition(condition, context, pageData) {
  * Get nested value from object path (e.g., 'product.name')
  */
 function getNestedValue(path, context, pageData) {
+  // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
+  if (path.startsWith('this.')) {
+    const propertyPath = path.substring(5); // Remove 'this.'
+
+    // If context itself is the item (not wrapped in an object), access it directly
+    const result = propertyPath.split('.').reduce((obj, key) => {
+      return obj && obj[key] !== undefined ? obj[key] : null;
+    }, context);
+
+    return result;
+  }
+
   const fullData = { ...pageData, ...context };
 
   const result = path.split('.').reduce((obj, key) => {
