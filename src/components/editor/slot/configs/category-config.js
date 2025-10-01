@@ -63,7 +63,7 @@ export const categoryConfig = {
         containerMargin: '0 0 1.5rem 0',
         itemTextColor: '#A855F7', // purple-500 (parent categories)
         itemHoverColor: '#9333EA', // purple-600
-        activeItemColor: '#1F2937', // gray-800
+        activeItemColor: '#DC2626', // red-600 (current category)
         separatorColor: '#9CA3AF', // gray-400
         fontSize: '0.875rem', // text-sm
         fontWeight: '400'
@@ -289,7 +289,9 @@ export const categoryConfig = {
                   </button>
                 </div>
               {{/each}}
-              <button class="text-sm text-red-600 hover:text-red-800 underline ml-2"
+            </div>
+            <div class="mt-2">
+              <button class="text-sm text-red-600 hover:text-red-800 underline"
                       data-action="clear-all-filters">
                 Clear All
               </button>

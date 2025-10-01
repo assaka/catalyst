@@ -40,7 +40,7 @@ export default function BreadcrumbRenderer({
   // Extract styles with defaults - use from config or fallback to purple
   const itemTextColor = breadcrumbStyles?.itemTextColor || '#A855F7'; // Purple from category-config.js
   const itemHoverColor = breadcrumbStyles?.itemHoverColor || '#9333EA';
-  const activeItemColor = breadcrumbStyles?.activeItemColor || '#1F2937';
+  const activeItemColor = breadcrumbStyles?.activeItemColor || '#DC2626'; // Red for current category
   const separatorColor = breadcrumbStyles?.separatorColor || '#9CA3AF';
   const fontSize = breadcrumbStyles?.fontSize || '0.875rem';
   const fontWeight = breadcrumbStyles?.fontWeight || '400';
