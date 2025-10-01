@@ -697,8 +697,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     step="0.01"
                     value={formData.compare_price}
                     onChange={(e) => handleInputChange("compare_price", e.target.value)}
+                    className={formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? "border-red-500" : ""}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Leave empty if no sale price</p>
+                  {formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? (
+                    <p className="text-xs text-red-600 mt-1">⚠️ Sale price should be lower than regular price (${formData.price})</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">Leave empty if no sale price</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
