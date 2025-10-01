@@ -544,43 +544,8 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Handle product_items slot specifically (main product grid from category-config.js)
-    if (id === 'product_items') {
-      // Use the className from slot configuration if available, otherwise use dynamic grid
-      const dynamicGridClass = getDynamicGridClasses(slot);
-      const finalClassName = className || dynamicGridClass;
-
-      // Create slot configuration object for ProductItemCard
-      const slotConfig = {
-        productTemplate: slots?.product_template || {},
-        productImage: slots?.product_image || {},
-        productName: slots?.product_name || {},
-        productPrice: slots?.product_price || {},
-        productComparePrice: slots?.product_compare_price || {},
-        productAddToCart: slots?.product_add_to_cart || {}
-      };
-
-      return wrapWithParentClass(
-        <div className={`${finalClassName} mb-8`} style={styles}>
-          {products.map(product => (
-            <ProductItemCard
-              key={product.id}
-              product={product}
-              settings={settings}
-              store={store}
-              taxes={taxes}
-              selectedCountry={selectedCountry}
-              productLabels={productLabels}
-              viewMode={viewMode}
-              slotConfig={slotConfig}
-              onAddToCartStateChange={(isAdding) => {
-                // Handle add to cart state change
-              }}
-            />
-          ))}
-        </div>
-      );
-    }
+    // NOTE: product_items now uses ComponentRegistry with templates from category-config.js
+    // The old hardcoded ProductItemCard rendering has been removed
 
     // Handle product_item_card slot specifically
     if (id === 'product_item_card') {
