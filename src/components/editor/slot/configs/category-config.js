@@ -190,7 +190,7 @@ export const categoryConfig = {
       }
     },
 
-    // Active filters display (at top of sidebar below Filter By)
+    // Active filters display (below Filter Now heading)
     active_filters: {
       id: 'active_filters',
       type: 'component',
@@ -226,7 +226,7 @@ export const categoryConfig = {
       className: '',
       parentClassName: '',
       styles: {},
-      parentId: 'filters_container',
+      parentId: 'layered_navigation',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
