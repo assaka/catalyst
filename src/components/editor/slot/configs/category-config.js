@@ -491,15 +491,32 @@ export const categoryConfig = {
       }
     },
 
-    // Simplified Layered Navigation - Single container with editable labels
+    // Filter heading - separate from layered navigation
+    filter_heading: {
+      id: 'filter_heading',
+      type: 'text',
+      content: 'Filter Now',
+      className: 'text-lg font-semibold text-gray-900 mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'filters_container',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        htmlTag: 'h3',
+        displayName: 'Filter Heading'
+      }
+    },
+
+    // Simplified Layered Navigation - Filter options only (no heading)
     layered_navigation: {
       id: 'layered_navigation',
       type: 'component',
       component: 'LayeredNavigation',
       content: `
         <div class="space-y-6">
-          <h3 class="text-lg font-semibold text-gray-900">Filter Now</h3>
-
           <!-- Price Filter -->
           {{#if filters.price}}
             <div class="border-b border-gray-200 pb-4">
@@ -548,7 +565,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
-      position: { col: 1, row: 2 },
+      position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
