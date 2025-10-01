@@ -3,98 +3,274 @@
  * Register category-specific slot components with the unified registry
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
+import { processVariables } from '@/utils/variableProcessor';
 
 // Breadcrumb Navigation Component
 const BreadcrumbRenderer = createSlotComponent({
   name: 'BreadcrumbRenderer',
-  render: ({ slot, className, styles }) => (
-    <div className={className || slot.className} style={styles || slot.styles}>
-      <nav className="flex items-center space-x-2 text-sm text-gray-600">
+  render: ({ slot, className, styles, categoryContext, variableContext }) => {
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      <nav class="flex items-center space-x-2 text-sm text-gray-600">
         <span>Home</span>
         <span>/</span>
         <span>Category</span>
         <span>/</span>
-        <span className="font-medium text-gray-900">Current Page</span>
+        <span class="font-medium text-gray-900">Current Page</span>
       </nav>
-    </div>
-  )
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    return (
+      <div className={className || slot.className} style={styles || slot.styles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
 });
 
-// Active Filters Component
+// Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
   name: 'ActiveFilters',
-  render: ({ slot, className, styles }) => (
-    <div className={className || slot.className} style={styles || slot.styles}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-gray-700">Active Filters:</span>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-          Brand: Apple ×
-        </span>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-          Price: $100-$500 ×
-        </span>
-      </div>
-    </div>
-  )
+  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+    const containerRef = useRef(null);
+
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      {{#if activeFilters}}
+        <div class="mb-4">
+          <div class="flex flex-wrap gap-2">
+            {{#each activeFilters}}
+              <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                <span>{{this.label}}: {{this.value}}</span>
+                <button class="ml-1 hover:text-blue-900"
+                        data-action="remove-filter"
+                        data-filter-type="{{this.type}}"
+                        data-filter-value="{{this.value}}">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            {{/each}}
+            {{#if (gt activeFilters.length 1)}}
+              <button class="text-sm text-red-600 hover:text-red-800 underline ml-2"
+                      data-action="clear-all-filters">
+                Clear All
+              </button>
+            {{/if}}
+          </div>
+        </div>
+      {{/if}}
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    // Attach event listeners in storefront
+    useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const handleClick = (e) => {
+        const removeBtn = e.target.closest('[data-action="remove-filter"]');
+        const clearAllBtn = e.target.closest('[data-action="clear-all-filters"]');
+
+        if (removeBtn && categoryContext?.handleFilterChange) {
+          const filterType = removeBtn.getAttribute('data-filter-type');
+          const filterValue = removeBtn.getAttribute('data-filter-value');
+          categoryContext.handleFilterChange(filterType, filterValue, false);
+        } else if (clearAllBtn && categoryContext?.clearFilters) {
+          categoryContext.clearFilters();
+        }
+      };
+
+      containerRef.current.addEventListener('click', handleClick);
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleClick);
+        }
+      };
+    }, [categoryContext, context]);
+
+    return (
+      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
 });
 
-// Layered Navigation Component
+// Layered Navigation Component with processVariables
 const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
-  render: ({ slot, className, styles }) => (
-    <div className={className || slot.className} style={styles || slot.styles}>
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">Filter By</h3>
+  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+    const containerRef = useRef(null);
+
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      <div class="space-y-6">
+        <h3 class="text-lg font-semibold text-gray-900">Filter By</h3>
         <div>
-          <h4 className="font-medium text-gray-700 mb-2">Price</h4>
-          <div className="space-y-2">
-            <label className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span className="text-sm">Under $25</span>
-            </label>
-            <label className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span className="text-sm">$25 - $50</span>
+          <h4 class="font-medium text-gray-700 mb-2">Price</h4>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="checkbox" class="mr-2" />
+              <span class="text-sm">Under $25</span>
             </label>
           </div>
         </div>
       </div>
-    </div>
-  )
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    // Attach event listeners in storefront
+    useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const handleChange = (e) => {
+        const checkbox = e.target.closest('[data-action="toggle-filter"]');
+        if (!checkbox || !categoryContext?.handleFilterChange) return;
+
+        const filterType = checkbox.getAttribute('data-filter-type');
+        const filterValue = checkbox.getAttribute('data-filter-value');
+        const attributeCode = checkbox.getAttribute('data-attribute-code');
+
+        if (filterType === 'attribute' && attributeCode) {
+          categoryContext.handleFilterChange(attributeCode, filterValue, checkbox.checked);
+        } else if (filterType) {
+          categoryContext.handleFilterChange(filterType, filterValue, checkbox.checked);
+        }
+      };
+
+      containerRef.current.addEventListener('change', handleChange);
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('change', handleChange);
+        }
+      };
+    }, [categoryContext, context]);
+
+    return (
+      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
 });
 
-// Sort Selector Component
+// Sort Selector Component with processVariables
 const SortSelector = createSlotComponent({
   name: 'SortSelector',
-  render: ({ slot, className, styles }) => (
-    <div className={className || slot.className} style={styles || slot.styles}>
-      <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
-        <option>Sort by: Featured</option>
-        <option>Price: Low to High</option>
-        <option>Price: High to Low</option>
-        <option>Name: A to Z</option>
-      </select>
-    </div>
-  )
+  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+    const containerRef = useRef(null);
+
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700 font-medium">Sort by:</label>
+        <select class="border border-gray-300 rounded px-3 py-1.5 text-sm"
+                data-action="change-sort">
+          <option value="position">Position</option>
+          <option value="name_asc">Name (A-Z)</option>
+          <option value="price_asc">Price (Low to High)</option>
+        </select>
+      </div>
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    // Attach event listeners in storefront
+    useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const selectElement = containerRef.current.querySelector('[data-action="change-sort"]');
+      if (!selectElement) return;
+
+      const handleChange = (e) => {
+        if (categoryContext?.handleSortChange) {
+          categoryContext.handleSortChange(e.target.value);
+        }
+      };
+
+      selectElement.addEventListener('change', handleChange);
+      return () => {
+        selectElement.removeEventListener('change', handleChange);
+      };
+    }, [categoryContext, context]);
+
+    return (
+      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
 });
 
-// Pagination Component
+// Pagination Component with processVariables
 const PaginationComponent = createSlotComponent({
   name: 'PaginationComponent',
-  render: ({ slot, className, styles }) => (
-    <div className={className || slot.className} style={styles || slot.styles}>
-      <div className="flex items-center justify-center space-x-2">
-        <button className="px-3 py-1 border rounded">Previous</button>
-        <span className="px-3 py-1">1 of 10</span>
-        <button className="px-3 py-1 border rounded">Next</button>
+  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+    const containerRef = useRef(null);
+
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      <div class="flex justify-center mt-8">
+        <nav class="flex items-center gap-1">
+          <button class="px-3 py-2 border rounded hover:bg-gray-50"
+                  data-action="go-to-page"
+                  data-page="prev">
+            Previous
+          </button>
+          <span class="px-3 py-2">1 of 10</span>
+          <button class="px-3 py-2 border rounded hover:bg-gray-50"
+                  data-action="go-to-page"
+                  data-page="next">
+            Next
+          </button>
+        </nav>
       </div>
-    </div>
-  )
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    // Attach event listeners in storefront
+    useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const handleClick = (e) => {
+        const button = e.target.closest('[data-action="go-to-page"]');
+        if (!button || !categoryContext?.handlePageChange) return;
+
+        const page = button.getAttribute('data-page');
+        if (page === 'prev' || page === 'next') {
+          // Handle prev/next
+          const currentPage = categoryContext.currentPage || 1;
+          const newPage = page === 'prev' ? currentPage - 1 : currentPage + 1;
+          categoryContext.handlePageChange(newPage);
+        } else {
+          // Handle specific page number
+          const pageNum = parseInt(page, 10);
+          if (!isNaN(pageNum)) {
+            categoryContext.handlePageChange(pageNum);
+          }
+        }
+      };
+
+      containerRef.current.addEventListener('click', handleClick);
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleClick);
+        }
+      };
+    }, [categoryContext, context]);
+
+    return (
+      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
 });
 
 // CMS Block Renderer (already exists, just register it)
@@ -154,10 +330,32 @@ const getGridClasses = (storeSettings) => {
   return classes.length > 0 ? classes.join(' ') : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2';
 };
 
+// Product Count Info Component
+const ProductCountInfo = createSlotComponent({
+  name: 'ProductCountInfo',
+  render: ({ slot, className, styles, categoryContext, variableContext }) => {
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      <div class="text-sm text-gray-600">
+        Showing {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
+      </div>
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    return (
+      <div className={className || slot.className} style={styles || slot.styles}
+           dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
+});
+
 // Product Items Grid - Renders with dynamic grid from admin settings
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
-  render: ({ slot, className, styles, context }) => {
+  render: ({ slot, className, styles, context, categoryContext, variableContext }) => {
+    const containerRef = useRef(null);
+
     if (context === 'editor') {
       // Editor version - simplified container for slot arrangement
       return (
@@ -174,25 +372,66 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
-    // Storefront version - applies dynamic grid classes
-    // Handle null store context gracefully
+    // Storefront version - uses template with processVariables
     const storeContext = useStore();
     const storeSettings = storeContext?.settings || null;
     const gridClasses = getGridClasses(storeSettings);
 
+    // Use template from slot.content or fallback
+    const template = slot?.content || `
+      <div class="products-grid-container">
+        {{#each products}}
+          <div class="group overflow-hidden rounded-lg border bg-card p-4 product-card"
+               data-product-id="{{this.id}}">
+            <div class="relative overflow-hidden mb-4">
+              <img src="{{this.image_url}}" alt="{{this.name}}"
+                   class="w-full h-48 object-cover" />
+            </div>
+            <h3 class="font-semibold text-lg mb-2">{{this.name}}</h3>
+            <div class="flex items-baseline gap-2 mb-4">
+              <span class="text-lg font-bold text-green-600">{{this.formatted_price}}</span>
+            </div>
+            <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-md"
+                    data-action="add-to-cart"
+                    data-product-id="{{this.id}}">
+              Add to Cart
+            </button>
+          </div>
+        {{/each}}
+      </div>
+    `;
+
+    const html = processVariables(template, variableContext);
+
+    // Attach event listeners in storefront
+    useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const handleClick = (e) => {
+        const addToCartBtn = e.target.closest('[data-action="add-to-cart"]');
+        if (!addToCartBtn) return;
+
+        const productId = addToCartBtn.getAttribute('data-product-id');
+        if (productId && categoryContext?.onProductClick) {
+          categoryContext.onProductClick(productId);
+        }
+      };
+
+      containerRef.current.addEventListener('click', handleClick);
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleClick);
+        }
+      };
+    }, [categoryContext, context]);
+
     return (
       <div
+        ref={containerRef}
         className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
         style={styles || slot.styles}
-      >
-        {/* Render child slots (product cards) */}
-        <UnifiedSlotRenderer
-          slots={{}}
-          parentId={slot.id}
-          viewMode="grid"
-          context="storefront"
-        />
-      </div>
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     );
   }
 });
@@ -203,6 +442,7 @@ registerSlotComponent('ActiveFilters', ActiveFilters);
 registerSlotComponent('LayeredNavigation', LayeredNavigation);
 registerSlotComponent('SortSelector', SortSelector);
 registerSlotComponent('PaginationComponent', PaginationComponent);
+registerSlotComponent('ProductCountInfo', ProductCountInfo);
 registerSlotComponent('CmsBlockRenderer', CmsBlockComponent);
 registerSlotComponent('ProductItemsGrid', ProductItemsGrid);
 
@@ -212,6 +452,7 @@ export {
   LayeredNavigation,
   SortSelector,
   PaginationComponent,
+  ProductCountInfo,
   CmsBlockComponent,
   ProductItemsGrid
 };

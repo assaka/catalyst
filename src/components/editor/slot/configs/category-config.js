@@ -133,9 +133,14 @@ export const categoryConfig = {
     // Product count info
     product_count_info: {
       id: 'product_count_info',
-      type: 'text',
-      content: 'Showing 1-12 of 48 products',
-      className: 'text-sm text-gray-600',
+      type: 'component',
+      component: 'ProductCountInfo',
+      content: `
+        <div class="text-sm text-gray-600">
+          Showing {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
+        </div>
+      `,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'sorting_controls',
@@ -153,8 +158,21 @@ export const categoryConfig = {
       id: 'sort_selector',
       type: 'component',
       component: 'SortSelector',
-      content: '',
-      className: 'flex items-center gap-2',
+      content: `
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-gray-700 font-medium">Sort by:</label>
+          <select class="border border-gray-300 rounded px-3 py-1.5 text-sm"
+                  data-action="change-sort">
+            <option value="position" {{#if (eq sorting.current "position")}}selected{{/if}}>Position</option>
+            <option value="name_asc" {{#if (eq sorting.current "name_asc")}}selected{{/if}}>Name (A-Z)</option>
+            <option value="name_desc" {{#if (eq sorting.current "name_desc")}}selected{{/if}}>Name (Z-A)</option>
+            <option value="price_asc" {{#if (eq sorting.current "price_asc")}}selected{{/if}}>Price (Low to High)</option>
+            <option value="price_desc" {{#if (eq sorting.current "price_desc")}}selected{{/if}}>Price (High to Low)</option>
+            <option value="created_desc" {{#if (eq sorting.current "created_desc")}}selected{{/if}}>Newest First</option>
+          </select>
+        </div>
+      `,
+      className: '',
       parentClassName: 'text-right',
       styles: {},
       parentId: 'sorting_controls',
@@ -172,8 +190,34 @@ export const categoryConfig = {
       id: 'active_filters',
       type: 'component',
       component: 'ActiveFilters',
-      content: '',
-      className: 'mb-4',
+      content: `
+        {{#if activeFilters}}
+          <div class="mb-4">
+            <div class="flex flex-wrap gap-2">
+              {{#each activeFilters}}
+                <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <span>{{this.label}}: {{this.value}}</span>
+                  <button class="ml-1 hover:text-blue-900"
+                          data-action="remove-filter"
+                          data-filter-type="{{this.type}}"
+                          data-filter-value="{{this.value}}">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+              {{/each}}
+              {{#if (gt activeFilters.length 1)}}
+                <button class="text-sm text-red-600 hover:text-red-800 underline ml-2"
+                        data-action="clear-all-filters">
+                  Clear All
+                </button>
+              {{/if}}
+            </div>
+          </div>
+        {{/if}}
+      `,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
@@ -186,12 +230,75 @@ export const categoryConfig = {
       }
     },
 
-    // Main products display using ProductItemsGrid component with dynamic grid from admin settings
+    // Main products display using HTML template with processVariables
     product_items: {
       id: 'product_items',
       type: 'component',
       component: 'ProductItemsGrid',
-      content: '',
+      content: `
+        <div class="products-grid-container">
+          {{#each products}}
+            <div class="group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card"
+                 data-product-id="{{this.id}}"
+                 data-product-name="{{this.name}}"
+                 data-product-price="{{this.price}}">
+
+              <!-- Product Image -->
+              <div class="relative overflow-hidden mb-4">
+                <a href="{{this.url}}" class="block">
+                  <img src="{{this.image_url}}"
+                       alt="{{this.name}}"
+                       class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105" />
+                </a>
+
+                <!-- Product Labels -->
+                {{#if this.labels}}
+                  <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                    {{#each this.labels}}
+                      <span class="px-2 py-1 text-xs font-semibold rounded {{this.className}}">
+                        {{this.text}}
+                      </span>
+                    {{/each}}
+                  </div>
+                {{/if}}
+              </div>
+
+              <!-- Product Name -->
+              <a href="{{this.url}}" class="block">
+                <h3 class="font-semibold text-lg truncate mb-2">{{this.name}}</h3>
+              </a>
+
+              <!-- Price Container -->
+              <div class="flex items-baseline gap-2 mb-4">
+                <span class="text-lg font-bold text-green-600" data-product-price>
+                  {{this.formatted_price}}
+                </span>
+                {{#if this.compare_price}}
+                  <span class="text-sm text-gray-500 line-through">
+                    {{this.formatted_compare_price}}
+                  </span>
+                {{/if}}
+              </div>
+
+              <!-- Add to Cart Button -->
+              {{#if this.in_stock}}
+                <button class="w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
+                        data-action="add-to-cart"
+                        data-product-id="{{this.id}}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  Add to Cart
+                </button>
+              {{else}}
+                <button class="w-full bg-gray-400 text-white cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium" disabled>
+                  Out of Stock
+                </button>
+              {{/if}}
+            </div>
+          {{/each}}
+        </div>
+      `,
       className: '',
       parentClassName: '',
       styles: {},
@@ -202,140 +309,8 @@ export const categoryConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Product Items Grid',
-        description: 'Product grid that uses admin theme & layout settings'
+        description: 'Product grid using HTML template with processVariables'
       }
-    },
-
-    // Single product template with microslots (for products_grid alternative)
-    product_item_card: {
-      id: 'product_item_card',
-      type: 'container',
-      content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_items',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: true,
-        isTemplate: true,
-        repeatable: true
-      }
-    },
-
-    // Product microslots
-    product_image_container: {
-      id: 'product_image_container',
-      type: 'container',
-      content: '',
-      className: 'relative overflow-hidden',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 4 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true }
-    },
-
-    product_image: {
-      id: 'product_image',
-      type: 'image',
-      content: '',
-      className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_image_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_labels: {
-      id: 'product_labels',
-      type: 'container',
-      content: '',
-      className: 'absolute top-2 left-2 z-10 flex flex-col gap-1',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_image_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true, overlay: true }
-    },
-
-    product_name: {
-      id: 'product_name',
-      type: 'text',
-      content: 'Sample Product Name',
-      className: 'font-semibold text-lg truncate',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 2 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_price_container: {
-      id: 'product_price_container',
-      type: 'container',
-      content: '',
-      className: 'flex items-baseline gap-2',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 3 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: true, microslot: true }
-    },
-
-    product_price: {
-      id: 'product_price',
-      type: 'text',
-      content: '$29.99',
-      className: 'text-lg font-bold text-green-600',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_price_container',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 6, list: 6 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_compare_price: {
-      id: 'product_compare_price',
-      type: 'text',
-      content: '$39.99',
-      className: 'text-sm text-gray-500 line-through',
-      parentClassName: '',
-      styles: {},
-      parentId: 'product_price_container',
-      position: { col: 7, row: 1 },
-      colSpan: { grid: 6, list: 6 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
-    },
-
-    product_add_to_cart: {
-      id: 'product_add_to_cart',
-      type: 'button',
-      content: 'Add to Cart',
-      className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
-      parentClassName: 'text-center',
-      styles: {},
-      parentId: 'product_item_card',
-      position: { col: 1, row: 4 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: { hierarchical: false, microslot: true }
     },
 
     // CMS blocks below products
@@ -366,9 +341,45 @@ export const categoryConfig = {
       id: 'pagination_container',
       type: 'component',
       component: 'PaginationComponent',
-      content: '',
-      className: 'flex justify-center mt-8',
-      parentClassName: 'text-center',
+      content: `
+        {{#if pagination.totalPages}}
+          <div class="flex justify-center mt-8">
+            <nav class="flex items-center gap-1">
+              <!-- Previous Button -->
+              <button class="px-3 py-2 border rounded hover:bg-gray-50 {{#unless pagination.hasPrev}}opacity-50 cursor-not-allowed{{/unless}}"
+                      data-action="go-to-page"
+                      data-page="{{pagination.prevPage}}"
+                      {{#unless pagination.hasPrev}}disabled{{/unless}}>
+                Previous
+              </button>
+
+              <!-- Page Numbers -->
+              {{#each pagination.pages}}
+                {{#if this.isEllipsis}}
+                  <span class="px-3 py-2">...</span>
+                {{else}}
+                  <button class="px-3 py-2 border rounded {{#if this.isCurrent}}bg-blue-600 text-white{{else}}hover:bg-gray-50{{/if}}"
+                          data-action="go-to-page"
+                          data-page="{{this.number}}"
+                          {{#if this.isCurrent}}disabled{{/if}}>
+                    {{this.number}}
+                  </button>
+                {{/if}}
+              {{/each}}
+
+              <!-- Next Button -->
+              <button class="px-3 py-2 border rounded hover:bg-gray-50 {{#unless pagination.hasNext}}opacity-50 cursor-not-allowed{{/unless}}"
+                      data-action="go-to-page"
+                      data-page="{{pagination.nextPage}}"
+                      {{#unless pagination.hasNext}}disabled{{/unless}}>
+                Next
+              </button>
+            </nav>
+          </div>
+        {{/if}}
+      `,
+      className: '',
+      parentClassName: '',
       styles: {},
       parentId: 'products_container',
       position: { col: 1, row: 5 },
@@ -423,8 +434,55 @@ export const categoryConfig = {
       id: 'layered_navigation',
       type: 'component',
       component: 'LayeredNavigation',
-      content: '',
-      className: 'space-y-6',
+      content: `
+        <div class="space-y-6">
+          <h3 class="text-lg font-semibold text-gray-900">Filter By</h3>
+
+          <!-- Price Filter -->
+          {{#if filters.price}}
+            <div class="border-b border-gray-200 pb-4">
+              <h4 class="font-semibold text-base text-gray-900 mb-3">Price</h4>
+              <div class="space-y-2">
+                {{#each filters.price.ranges}}
+                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900">
+                    <input type="checkbox"
+                           class="rounded border-gray-300 text-blue-600"
+                           data-action="toggle-filter"
+                           data-filter-type="price"
+                           data-filter-value="{{this.value}}"
+                           {{#if this.active}}checked{{/if}} />
+                    <span class="text-gray-700">{{this.label}}</span>
+                    <span class="text-gray-400 text-sm ml-auto">({{this.count}})</span>
+                  </label>
+                {{/each}}
+              </div>
+            </div>
+          {{/if}}
+
+          <!-- Attribute Filters (Brand, Color, Size, Material, etc.) -->
+          {{#each filters.attributes}}
+            <div class="border-b border-gray-200 pb-4">
+              <h4 class="font-semibold text-base text-gray-900 mb-3">{{this.label}}</h4>
+              <div class="space-y-2 max-h-48 overflow-y-auto">
+                {{#each this.options}}
+                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900">
+                    <input type="checkbox"
+                           class="rounded border-gray-300 text-blue-600"
+                           data-action="toggle-filter"
+                           data-filter-type="attribute"
+                           data-attribute-code="{{../code}}"
+                           data-filter-value="{{this.value}}"
+                           {{#if this.active}}checked{{/if}} />
+                    <span class="text-gray-700">{{this.label}}</span>
+                    <span class="text-gray-400 text-sm ml-auto">({{this.count}})</span>
+                  </label>
+                {{/each}}
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      `,
+      className: '',
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
