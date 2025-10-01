@@ -792,10 +792,10 @@ export const productConfig = {
                 data-tab-index="{{@index}}"
                 data-tab-type="{{this.tab_type}}"
                 data-tab-text-content="{{this.content}}">
-                <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container bg-gray-50 p-6 rounded-lg" data-attributes-template='
+                <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container bg-blue-50 p-6 rounded-lg" data-attributes-template='
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex justify-between py-2 border-b border-gray-100">
-                      <span class="font-bold capitalize">__KEY__</span>
+                      <span class="font-bold capitalize text-green-600">__KEY__</span>
                       <span>__VALUE__</span>
                     </div>
                   </div>
