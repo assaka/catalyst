@@ -18,19 +18,19 @@ const BreadcrumbRenderer = createSlotComponent({
     // Get configuration from slot metadata
     const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
-    // Get styles from breadcrumb_styles slot
-    const allSlots = categoryContext?.slots || {};
-    const breadcrumbStylesSlot = allSlots.breadcrumb_styles || allSlots['breadcrumb_styles'];
-    const breadcrumbStyles = breadcrumbStylesSlot?.styles || {};
+    // Get styles - try multiple sources
+    const breadcrumbStyles =
+      categoryContext?.breadcrumbStyles || // Directly passed
+      categoryContext?.slots?.breadcrumb_styles?.styles || // From slots
+      {}; // Fallback
 
     // Debug logging
-    console.log('🎨 BREADCRUMB YELLOW COLOR TEST:', {
-      hasSlots: !!allSlots,
-      slotKeys: Object.keys(allSlots).filter(k => k.includes('breadcrumb')),
-      breadcrumbStylesSlot,
-      breadcrumbStyles,
-      itemTextColor: breadcrumbStyles.itemTextColor || 'NOT FOUND',
-      EXPECTED_YELLOW: '#EAB308'
+    console.log('🎨 BREADCRUMB FINAL TEST:', {
+      directStyles: categoryContext?.breadcrumbStyles,
+      fromSlots: categoryContext?.slots?.breadcrumb_styles?.styles,
+      finalStyles: breadcrumbStyles,
+      itemTextColor: breadcrumbStyles.itemTextColor,
+      IS_YELLOW: breadcrumbStyles.itemTextColor === '#EAB308'
     });
 
     const {

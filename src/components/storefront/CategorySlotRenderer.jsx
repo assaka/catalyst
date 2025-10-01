@@ -176,6 +176,11 @@ export function CategorySlotRenderer({
       // Debug for breadcrumbs
       if (id === 'breadcrumbs_content') {
         console.log('🔍 About to call registeredComponent.render for breadcrumbs');
+        console.log('🔍 Passing categoryContext with slots:', {
+          hasSlots: !!categoryContext.slots,
+          hasBreadcrumbStyles: !!slots?.breadcrumb_styles,
+          breadcrumbStylesData: slots?.breadcrumb_styles?.styles
+        });
       }
 
       // Format products with all necessary fields for templates
@@ -323,13 +328,22 @@ export function CategorySlotRenderer({
         }
       };
 
+      // Special handling for breadcrumbs - pass styles directly
+      const contextToPass = id === 'breadcrumbs_content'
+        ? {
+            ...categoryContext,
+            slots, // Ensure slots object is passed
+            breadcrumbStyles: slots?.breadcrumb_styles?.styles || {} // Pass styles directly too
+          }
+        : {
+            ...categoryContext,
+            slots
+          };
+
       // Use the registered component's render method
       return registeredComponent.render({
         slot,
-        categoryContext: {
-          ...categoryContext,
-          slots // Ensure slots are passed to component
-        },
+        categoryContext: contextToPass,
         variableContext,
         context: 'storefront',
         className,
