@@ -727,7 +727,8 @@ export const categoryConfig = {
     'category_footer'
   ],
 
-  // Filter configuration - Define which attributes to show and their options
+  // Filter configuration - Define which attributes are filterable
+  // Options will be loaded dynamically from products (only showing options with count > 0)
   filterConfig: {
     // Price filter configuration
     price: {
@@ -736,43 +737,28 @@ export const categoryConfig = {
       type: 'range'
     },
 
-    // Attribute filters - define all filterable attributes here
+    // Attribute filters - define which attributes should be filterable
+    // Values are extracted from products dynamically
     attributes: {
       color: {
         enabled: true,
         label: 'Color',
-        type: 'checkbox',
-        options: [
-          { value: 'Red', label: 'Red' },
-          { value: 'Blue', label: 'Blue' },
-          { value: 'Green', label: 'Green' },
-          { value: 'Black', label: 'Black' },
-          { value: 'White', label: 'White' },
-          { value: 'Yellow', label: 'Yellow' },
-          { value: 'Orange', label: 'Orange' },
-          { value: 'Purple', label: 'Purple' },
-          { value: 'Pink', label: 'Pink' },
-          { value: 'Gray', label: 'Gray' },
-          { value: 'Brown', label: 'Brown' }
-        ]
+        type: 'checkbox'
       },
       brand: {
         enabled: true,
         label: 'Brand',
-        type: 'checkbox',
-        options: [] // Will be populated from products
+        type: 'checkbox'
       },
       size: {
         enabled: true,
         label: 'Size',
-        type: 'checkbox',
-        options: [] // Will be populated from products
+        type: 'checkbox'
       },
       material: {
         enabled: true,
         label: 'Material',
-        type: 'checkbox',
-        options: [] // Will be populated from products
+        type: 'checkbox'
       }
     }
   },

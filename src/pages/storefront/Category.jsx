@@ -480,6 +480,7 @@ export default function Category() {
 
 
   // Build dynamic filters using filterConfig from category-config.js as the source of truth
+  // Only show options that have products (count > 0)
   const buildFilters = () => {
     const filters = {};
 
@@ -496,98 +497,75 @@ export default function Category() {
         return; // Skip disabled filters
       }
 
-      const values = new Set();
-      const optionObjects = [];
+      // Extract values from products only (dynamic from DB)
+      const valueCountMap = new Map(); // Map<value, count>
 
-      // 1. First, add predefined options from filterConfig (this is the source of truth)
-      if (attrConfig.options && Array.isArray(attrConfig.options) && attrConfig.options.length > 0) {
-        attrConfig.options.forEach(option => {
-          if (typeof option === 'object' && option !== null) {
-            const value = String(option.value || option.label || '');
-            const label = option.label || option.value || value;
-            if (value !== '') {
-              optionObjects.push({ value, label });
-              values.add(value);
+      if (products && products.length > 0) {
+        products.forEach(p => {
+          const productAttributes = p.attributes || p.attribute_values || {};
+
+          // Try multiple possible keys for the attribute
+          const possibleKeys = [
+            attrCode,
+            attrCode.toLowerCase(),
+            attrCode.toLowerCase().replace(/[_-\s]/g, ''),
+            // Common variations
+            'color', 'Color', 'COLOR',
+            'colour', 'Colour', 'COLOUR',
+            'brand', 'Brand', 'BRAND',
+            'size', 'Size', 'SIZE',
+            'material', 'Material', 'MATERIAL'
+          ].filter(Boolean);
+
+          let attributeValue = null;
+          for (const key of possibleKeys) {
+            if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
+              attributeValue = productAttributes[key] || p[key];
+              break;
             }
-          } else if (option !== null && option !== undefined && option !== '') {
-            const value = String(option);
-            optionObjects.push({ value, label: value });
-            values.add(value);
+          }
+
+          if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
+            if (Array.isArray(attributeValue)) {
+              attributeValue.forEach(val => {
+                if (val) {
+                  let extractedValue;
+                  if (typeof val === 'object' && val !== null) {
+                    extractedValue = val.value || val.label || val.name;
+                  } else {
+                    extractedValue = val;
+                  }
+
+                  if (extractedValue) {
+                    const valueStr = String(extractedValue);
+                    valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
+                  }
+                }
+              });
+            } else if (typeof attributeValue === 'object' && attributeValue !== null) {
+              const extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
+              if (extractedValue) {
+                const valueStr = String(extractedValue);
+                valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
+              }
+            } else {
+              const valueStr = String(attributeValue);
+              valueCountMap.set(valueStr, (valueCountMap.get(valueStr) || 0) + 1);
+            }
           }
         });
-      } else {
-        // 2. If no predefined options, extract values from products
-        if (products && products.length > 0) {
-          products.forEach(p => {
-            const productAttributes = p.attributes || p.attribute_values || {};
-
-            // Try multiple possible keys for the attribute
-            const possibleKeys = [
-              attrCode,
-              attrCode.toLowerCase(),
-              attrCode.toLowerCase().replace(/[_-\s]/g, ''),
-              // Common variations
-              'color', 'Color', 'COLOR',
-              'colour', 'Colour', 'COLOUR',
-              'brand', 'Brand', 'BRAND',
-              'size', 'Size', 'SIZE',
-              'material', 'Material', 'MATERIAL'
-            ].filter(Boolean);
-
-            let attributeValue = null;
-            for (const key of possibleKeys) {
-              if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
-                attributeValue = productAttributes[key] || p[key];
-                break;
-              }
-            }
-
-            if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
-              if (Array.isArray(attributeValue)) {
-                attributeValue.forEach(val => {
-                  if (val) {
-                    if (typeof val === 'object' && val !== null) {
-                      const extractedValue = val.value || val.label || val.name;
-                      if (extractedValue) values.add(String(extractedValue));
-                    } else {
-                      values.add(String(val));
-                    }
-                  }
-                });
-              } else if (typeof attributeValue === 'object' && attributeValue !== null) {
-                const extractedValue = attributeValue.value || attributeValue.label || attributeValue.name;
-                if (extractedValue) values.add(String(extractedValue));
-              } else {
-                values.add(String(attributeValue));
-              }
-            }
-          });
-        }
       }
 
-      // Only include attributes that have values
-      if (values.size > 0) {
-        // Create a map to store the best label for each value
-        const valueToLabel = {};
-
-        // First, add labels from predefined options (from filterConfig)
-        optionObjects.forEach(opt => {
-          valueToLabel[opt.value] = opt.label;
-        });
-
-        // Then add any values found in products (these might not have labels)
-        Array.from(values).forEach(value => {
-          if (!valueToLabel[value]) {
-            valueToLabel[value] = value; // Use value as label if no label exists
-          }
-        });
-
-        // Create the final filter array with proper labels
-        filters[attrCode] = Object.entries(valueToLabel).sort(([a], [b]) => a.localeCompare(b)).map(([value, label]) => ({
-          value,
-          label,
-          count: 0 // Will be calculated in CategorySlotRenderer
-        }));
+      // Only include attributes that have values with count > 0
+      if (valueCountMap.size > 0) {
+        // Create the final filter array with counts, sorted alphabetically
+        filters[attrCode] = Array.from(valueCountMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([value, count]) => ({
+            value,
+            label: value, // Use value as label (can be enhanced with DB labels later)
+            count
+          }));
       }
     });
 
