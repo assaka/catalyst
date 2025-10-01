@@ -50,6 +50,13 @@ export default function BreadcrumbRenderer({
     fontWeight = '400'
   } = breadcrumbStyles;
 
+  console.log('🔍 BreadcrumbRenderer.jsx - Final styles applied:', {
+    breadcrumbStylesProp: breadcrumbStyles,
+    itemTextColor,
+    activeItemColor,
+    itemHoverColor
+  });
+
   // If disabled, return null
   if (!enabled) {
     return null;
