@@ -6,17 +6,22 @@ const router = express.Router();
 // Basic CRUD operations for attributes
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, search, attribute_set_id, exclude_assigned } = req.query;
+    const { page = 1, limit = 100, store_id, search, attribute_set_id, exclude_assigned, is_filterable } = req.query;
     const offset = (page - 1) * limit;
-    
+
     // Check if this is a public request
     const isPublicRequest = req.originalUrl.includes('/api/public/attributes');
 
     const where = {};
-    
+
     if (isPublicRequest) {
       // Public access - return all attributes for specific store (no is_active field in Attribute model)
       if (store_id) where.store_id = store_id;
+
+      // Filter by is_filterable if provided
+      if (is_filterable !== undefined) {
+        where.is_filterable = is_filterable === 'true' || is_filterable === true;
+      }
     } else {
       // Authenticated access
       if (!req.user) {
