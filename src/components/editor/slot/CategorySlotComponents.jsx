@@ -339,7 +339,42 @@ const LayeredNavigation = createSlotComponent({
         }
       };
 
-      setTimeout(initSlider, 100);
+      // Initialize max visible attributes
+      const initMaxVisibleAttributes = () => {
+        const filterContents = containerRef.current?.querySelectorAll('[data-max-visible]');
+
+        filterContents?.forEach(filterContent => {
+          const maxVisible = parseInt(filterContent.getAttribute('data-max-visible'));
+          const attributeCode = filterContent.getAttribute('data-attribute-code');
+
+          console.log('🔍 Init max visible for:', attributeCode, 'max:', maxVisible);
+
+          // Only apply if maxVisible is a valid number and > 0
+          if (!maxVisible || isNaN(maxVisible) || maxVisible <= 0) {
+            return;
+          }
+
+          const allOptions = filterContent.querySelectorAll('.filter-option');
+          const showMoreBtn = filterContent.querySelector('.show-more-btn');
+
+          // Hide options beyond max visible
+          allOptions.forEach((option, index) => {
+            if (index >= maxVisible) {
+              option.classList.add('hidden');
+            }
+          });
+
+          // Show "Show More" button if there are hidden options
+          if (allOptions.length > maxVisible && showMoreBtn) {
+            showMoreBtn.classList.remove('hidden');
+          }
+        });
+      };
+
+      setTimeout(() => {
+        initSlider();
+        initMaxVisibleAttributes();
+      }, 100);
 
       // Handle filter section toggle (collapse/expand)
       const handleToggleSection = (e) => {
