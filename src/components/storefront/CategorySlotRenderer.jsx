@@ -10,6 +10,11 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import LayeredNavigation from '@/components/storefront/LayeredNavigation';
 import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
+import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
+import { processVariables } from '@/utils/variableProcessor';
+
+// Import CategorySlotComponents to ensure they're registered
+import '@/components/editor/slot/CategorySlotComponents';
 
 /**
  * CategorySlotRenderer - Renders slots with full category functionality
@@ -147,9 +152,46 @@ export function CategorySlotRenderer({
       className = '',
       styles = {},
       parentClassName = '',
-      metadata = {}
+      metadata = {},
+      component: componentName
     } = slot || {};
 
+    // Check if this is a registered component type - use ComponentRegistry
+    if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
+      const registeredComponent = ComponentRegistry.get(componentName);
+
+      // Prepare variable context for processVariables
+      const variableContext = {
+        category,
+        products,
+        filters: {},
+        activeFilters: [],
+        pagination: {
+          start: (currentPage - 1) * itemsPerPage + 1,
+          end: Math.min(currentPage * itemsPerPage, allProducts?.length || 0),
+          total: allProducts?.length || 0,
+          currentPage,
+          totalPages,
+          hasPrev: currentPage > 1,
+          hasNext: currentPage < totalPages,
+          prevPage: currentPage - 1,
+          nextPage: currentPage + 1
+        },
+        sorting: {
+          current: sortOption
+        }
+      };
+
+      // Use the registered component's render method
+      return registeredComponent.render({
+        slot,
+        categoryContext: categoryContext,
+        variableContext,
+        context: 'storefront',
+        className,
+        styles
+      });
+    }
 
     // Helper function to wrap content with parent class if needed
     const wrapWithParentClass = (children) => {
