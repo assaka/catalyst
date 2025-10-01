@@ -309,6 +309,17 @@ export function CategorySlotRenderer({
         settings: settingsWithDefaults // Pass settings within filters object for easier template access
       };
 
+      // Debug: Check formattedProducts before passing to variableContext
+      if (formattedProducts && formattedProducts.length > 0) {
+        console.log('🔍 formattedProducts[0] before variableContext:', {
+          name: formattedProducts[0].name?.substring(0, 30),
+          in_stock: formattedProducts[0].in_stock,
+          stock_quantity: formattedProducts[0].stock_quantity,
+          infinite_stock: formattedProducts[0].infinite_stock,
+          keys: Object.keys(formattedProducts[0])
+        });
+      }
+
       const variableContext = {
         category,
         products: formattedProducts,
