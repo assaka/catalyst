@@ -484,6 +484,26 @@ export default function Category() {
   const buildFilters = () => {
     const filters = {};
 
+    // Define min and max price from entire product collection first
+    const allPrices = products.map(p => {
+      let price = parseFloat(p.price || 0);
+      // Use the lowest price if compare_price exists and is lower
+      if (p.compare_price && parseFloat(p.compare_price) > 0) {
+        price = Math.min(price, parseFloat(p.compare_price));
+      }
+      return price;
+    }).filter(p => p > 0);
+
+    const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices)) : 0;
+    const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices)) : 0;
+
+    console.log(`🔍 Price range from product collection:`, {
+      min: minPrice,
+      max: maxPrice,
+      totalProducts: products.length,
+      pricesFound: allPrices.length
+    });
+
     // Debug: Show which attributes are filterable
     console.log('📋 Filterable attributes from database:', filterableAttributes?.map(a => ({
       code: a.code,
@@ -572,29 +592,12 @@ export default function Category() {
 
       // Handle price attribute with slider filter type
       if (attrCode === 'price' && (attr.filter_type === 'slider' || attr.filter_input_type === 'slider')) {
-        const prices = filteredProducts.map(p => {
-          let price = parseFloat(p.price || 0);
-          // Use the lowest price if compare_price exists and is lower
-          if (p.compare_price && parseFloat(p.compare_price) > 0) {
-            price = Math.min(price, parseFloat(p.compare_price));
-          }
-          return price;
-        }).filter(p => p > 0);
-
-        if (prices.length > 0) {
-          const minPrice = Math.floor(Math.min(...prices));
-          const maxPrice = Math.ceil(Math.max(...prices));
+        if (minPrice > 0 && maxPrice > 0) {
           filters[attrCode] = {
             min: minPrice,
             max: maxPrice,
             type: 'slider'
           };
-          console.log(`🔍 Price range calculated:`, {
-            min: minPrice,
-            max: maxPrice,
-            pricesFound: prices.length,
-            samplePrices: prices.slice(0, 5)
-          });
         }
       }
       // Only include attributes that have values with count > 0
