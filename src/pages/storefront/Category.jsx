@@ -497,25 +497,8 @@ export default function Category() {
     const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices)) : 0;
     const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices)) : 0;
 
-    console.log(`🔍 Price range from product collection:`, {
-      min: minPrice,
-      max: maxPrice,
-      totalProducts: products.length,
-      pricesFound: allPrices.length
-    });
-
-    // Debug: Show which attributes are filterable
-    console.log('📋 Filterable attributes from database:', filterableAttributes?.map(a => ({
-      code: a.code,
-      name: a.name,
-      is_filterable: a.is_filterable,
-      filter_type: a.filter_type,
-      filter_input_type: a.filter_input_type
-    })));
-
     // Use filterableAttributes from database (where is_filterable = true)
     if (!filterableAttributes || filterableAttributes.length === 0) {
-      console.log('⚠️ No filterable attributes found');
       return filters;
     }
 
@@ -610,16 +593,8 @@ export default function Category() {
             label: value, // Use value as label (can be enhanced with DB labels later)
             count
           }));
-
-        // Debug: Show filter options and counts for color and manufacturer only
-        if (attrCode === 'color' || attrCode === 'manufacturer') {
-          console.log(`🔍 Filter options for ${attrCode}:`, filters[attrCode].slice(0, 5));
-          console.log(`   Total options: ${filters[attrCode].length}`);
-        }
       }
     });
-
-    console.log('✅ Final filters object:', Object.keys(filters));
     return filters;
   };
 
@@ -627,12 +602,8 @@ export default function Category() {
   const buildActiveFiltersArray = () => {
     const activeFiltersArray = [];
 
-    console.log('🔍 Building active filters from:', activeFilters);
-
     Object.entries(activeFilters).forEach(([attributeCode, values]) => {
       if (attributeCode === 'priceRange') {
-        // Handle price range separately if needed
-        console.log('🔍 Skipping priceRange:', values);
         return;
       }
 
@@ -652,8 +623,6 @@ export default function Category() {
         });
       }
     });
-
-    console.log('🔍 Active filters array built:', activeFiltersArray);
     return activeFiltersArray;
   };
 

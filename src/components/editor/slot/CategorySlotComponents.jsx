@@ -65,13 +65,6 @@ const ActiveFilters = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
 
-    console.log('🔍 ActiveFilters component rendering:', {
-      hasVariableContext: !!variableContext,
-      activeFiltersCount: variableContext?.activeFilters?.length,
-      activeFilters: variableContext?.activeFilters,
-      slotContent: slot?.content?.substring(0, 100)
-    });
-
     // Use template from slot.content or fallback
     const template = slot?.content || `
       {{#if activeFilters}}
@@ -102,8 +95,6 @@ const ActiveFilters = createSlotComponent({
     `;
 
     const html = processVariables(template, variableContext);
-
-    console.log('🔍 ActiveFilters processed HTML:', html.substring(0, 200));
 
     // Attach event listeners in storefront
     useEffect(() => {
@@ -160,13 +151,6 @@ const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
   render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
     const containerRef = useRef(null);
-
-    console.log('🔍 LayeredNavigation variableContext:', {
-      hasSettings: !!variableContext?.settings,
-      collapse_filters: variableContext?.settings?.collapse_filters,
-      max_visible_attributes: variableContext?.settings?.max_visible_attributes,
-      fullSettings: variableContext?.settings
-    });
 
     // Use template from slot.content or fallback
     const template = slot?.content || `
@@ -245,8 +229,6 @@ const LayeredNavigation = createSlotComponent({
         const minValue = parseInt(minSlider.value);
         const maxValue = parseInt(maxSlider.value);
 
-        console.log('🔍 updatePriceSliderTrack:', { min, max, minValue, maxValue });
-
         const percentMin = ((minValue - min) / (max - min)) * 100;
         const percentMax = ((maxValue - min) / (max - min)) * 100;
         rangeTrack.style.left = percentMin + '%';
@@ -299,16 +281,6 @@ const LayeredNavigation = createSlotComponent({
         const maxSlider = containerRef.current?.querySelector('#price-slider-max');
 
         if (minSlider && maxSlider) {
-          console.log('🔍 Initial slider HTML attributes:', {
-            minAttr: minSlider.getAttribute('min'),
-            maxAttr: minSlider.getAttribute('max'),
-            minValue: minSlider.getAttribute('value'),
-            maxValue: maxSlider.getAttribute('value'),
-            minDataMin: minSlider.dataset.min,
-            minDataMax: minSlider.dataset.max,
-            outerHTML: minSlider.outerHTML.substring(0, 200)
-          });
-
           // Get min/max from attributes or data attributes (now clean numbers)
           let min = parseInt(minSlider.getAttribute('min'));
           let max = parseInt(minSlider.getAttribute('max'));
@@ -321,16 +293,12 @@ const LayeredNavigation = createSlotComponent({
             max = parseInt(maxSlider.getAttribute('value')) || 100;
           }
 
-          console.log('🔍 Calculated min/max:', { min, max });
-
           // Set attributes if they're missing
           if (!minSlider.getAttribute('min') || minSlider.getAttribute('min') === 'null') {
-            console.log('🔍 Setting min attribute to:', min);
             minSlider.setAttribute('min', min);
             maxSlider.setAttribute('min', min);
           }
           if (!minSlider.getAttribute('max') || minSlider.getAttribute('max') === 'null') {
-            console.log('🔍 Setting max attribute to:', max);
             minSlider.setAttribute('max', max);
             maxSlider.setAttribute('max', max);
           }
@@ -343,15 +311,6 @@ const LayeredNavigation = createSlotComponent({
             maxSlider.value = max;
           }
 
-          console.log('🔍 Price slider initialized:', {
-            minValue: minSlider.value,
-            maxValue: maxSlider.value,
-            minAttr: min,
-            maxAttr: max,
-            htmlMin: minSlider.getAttribute('min'),
-            htmlMax: minSlider.getAttribute('max')
-          });
-
           updatePriceSliderTrack();
         }
       };
@@ -360,36 +319,19 @@ const LayeredNavigation = createSlotComponent({
       const initMaxVisibleAttributes = () => {
         const filterContents = containerRef.current?.querySelectorAll('[data-max-visible]');
 
-        console.log('🔍 Found filter contents:', filterContents?.length);
-
         filterContents?.forEach(filterContent => {
           const maxVisibleAttr = filterContent.getAttribute('data-max-visible');
           const maxVisible = parseInt(maxVisibleAttr);
           const attributeCode = filterContent.getAttribute('data-attribute-code');
 
-          console.log('🔍 Init max visible for:', attributeCode, {
-            maxVisibleAttr,
-            maxVisible,
-            isNaN: isNaN(maxVisible),
-            isEmpty: !maxVisibleAttr || maxVisibleAttr === '' || maxVisibleAttr === 'null' || maxVisibleAttr === 'undefined'
-          });
-
           // Only apply if maxVisible is a valid number and > 0
           // If not set or invalid, don't limit (show all)
           if (!maxVisibleAttr || maxVisibleAttr === '' || maxVisibleAttr === 'null' || maxVisibleAttr === 'undefined' || isNaN(maxVisible) || maxVisible <= 0) {
-            console.log('🔍 Skipping max visible for', attributeCode, '- not configured or invalid');
             return;
           }
 
           const allOptions = filterContent.querySelectorAll('.filter-option');
           const showMoreBtn = filterContent.querySelector('.show-more-btn');
-
-          console.log('🔍 Processing max visible:', {
-            attributeCode,
-            maxVisible,
-            totalOptions: allOptions.length,
-            hasShowMoreBtn: !!showMoreBtn
-          });
 
           // Hide options beyond max visible
           let hiddenCount = 0;
@@ -400,12 +342,9 @@ const LayeredNavigation = createSlotComponent({
             }
           });
 
-          console.log('🔍 Hidden', hiddenCount, 'options for', attributeCode);
-
           // Show "Show More" button if there are hidden options
           if (allOptions.length > maxVisible && showMoreBtn) {
             showMoreBtn.classList.remove('hidden');
-            console.log('🔍 Showing "Show More" button for', attributeCode);
           }
         });
       };
