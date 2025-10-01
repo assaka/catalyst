@@ -163,7 +163,16 @@ function processLoops(content, context, pageData, depth = 0) {
 
   const loopRegex = /\{\{#each\s+([^}]+)\}\}([\s\S]*?)\{\{\/each\}\}/g;
 
+  // Debug: Log when processing loops
+  if (depth === 1 && content.includes('{{#each this.options}}')) {
+    console.log('🔍 processLoops depth=' + depth + ': Found nested {{#each this.options}}');
+    console.log('🔍 Content sample:', content.substring(0, 500));
+  }
+
   return content.replace(loopRegex, (match, arrayPath, template) => {
+    if (depth === 1) {
+      console.log('🔍 processLoops depth=' + depth + ': Processing arrayPath=' + arrayPath);
+    }
     const array = getNestedValue(arrayPath, context, pageData);
 
 
