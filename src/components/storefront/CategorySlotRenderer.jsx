@@ -1,19 +1,14 @@
-import React, { useState, useMemo, useEffect, Fragment } from 'react';
+import React, {Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Search } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
-import LayeredNavigation from '@/components/storefront/LayeredNavigation';
 import BreadcrumbRenderer from '@/components/storefront/BreadcrumbRenderer';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
-import { processVariables } from '@/utils/variableProcessor';
-
-// Import CategorySlotComponents to ensure they're registered
 import '@/components/editor/slot/CategorySlotComponents';
 
 /**
@@ -87,7 +82,6 @@ export function CategorySlotRenderer({
     currentPage,
     totalPages,
     itemsPerPage = 12, // Dynamic items per page
-    subcategories = [],
     breadcrumbs = [],
     selectedFilters = {},
     priceRange = {},
@@ -155,19 +149,6 @@ export function CategorySlotRenderer({
       metadata = {},
       component: componentName
     } = slot || {};
-
-    // Debug breadcrumbs slot
-    if (id === 'breadcrumbs_content') {
-      console.log('🔍 Rendering breadcrumbs_content slot:', {
-        id,
-        type,
-        componentName,
-        hasComponent: ComponentRegistry.has(componentName),
-        metadata,
-        slotsAvailable: !!slots,
-        breadcrumbStylesInSlots: slots?.breadcrumb_styles
-      });
-    }
 
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
@@ -241,7 +222,6 @@ export function CategorySlotRenderer({
             max: filtersData.price.max,
             type: 'slider'
           };
-          console.log('🔍 Price slider passed to template:', priceFilter);
         } else if (Array.isArray(filtersData.price)) {
           priceFilter = {
             ranges: filtersData.price.map(item => ({
@@ -297,9 +277,6 @@ export function CategorySlotRenderer({
 
         return result;
       }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
-
-      // Only log color and manufacturer from final result
-      const debugFilters = attributeFilters.filter(a => a.code === 'color' || a.code === 'manufacturer');
 
       const formattedFilters = {
         price: priceFilter,
@@ -452,9 +429,6 @@ export function CategorySlotRenderer({
         </div>
       );
     }
-
-    // NOTE: layered_navigation now uses ComponentRegistry with templates from category-config.js
-    // The old hardcoded React component rendering has been removed
 
     // Handle active_filters slot from category-config.js
     // Note: Active filters are now handled directly within LayeredNavigation component

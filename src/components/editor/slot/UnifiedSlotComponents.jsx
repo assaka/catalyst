@@ -2039,28 +2039,6 @@ const ProductThumbnails = createSlotComponent({
       return 'https://placehold.co/100x100?text=Invalid';
     };
 
-    // 🔧 ENHANCED DEBUG LOGGING: Show both setting sources and final resolution
-    console.log('[THUMBNAIL-SYNC] 🖼️ UNIFIED THUMBNAILS - SETTINGS DEBUG:', {
-      context,
-      finalClassName,
-      imageCount: thumbnailImages.length,
-      activeIndex: activeImageIndex,
-      SETTINGS_FROM_PRODUCT_CONTEXT: {
-        product_gallery_layout: settings?.product_gallery_layout,
-        vertical_gallery_position: settings?.vertical_gallery_position
-      },
-      SETTINGS_FROM_VARIABLE_CONTEXT: {
-        product_gallery_layout: variableContext?.settings?.product_gallery_layout,
-        vertical_gallery_position: variableContext?.settings?.vertical_gallery_position
-      },
-      FINAL_RESOLVED: {
-        galleryLayout,
-        verticalPosition,
-        isVertical
-      },
-      timestamp: new Date().toISOString()
-    });
-
     return (
       <div className={finalClassName} style={styles}>
         {thumbnailImages.map((image, index) => (

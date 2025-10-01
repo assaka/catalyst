@@ -174,11 +174,7 @@ export const StoreProvider = ({ children }) => {
     try {
       const channel = new BroadcastChannel('store_settings_update');
       channel.onmessage = (event) => {
-        console.log('[THUMBNAIL-SYNC] 📢 BROADCAST RECEIVED:', event.data);
         if (event.data.type === 'clear_cache') {
-          console.log('[THUMBNAIL-SYNC] 📢 Cache clear broadcast from admin - reloading page in 1 second...');
-          console.log('[THUMBNAIL-SYNC] 📢 Broadcast details:', event.data);
-
           // Clear all caches
           apiCache.clear();
           localStorage.removeItem('storeProviderCache');
@@ -186,7 +182,6 @@ export const StoreProvider = ({ children }) => {
 
           // Force reload the page after a short delay to see the messages
           setTimeout(() => {
-            console.log('[THUMBNAIL-SYNC] 📢 RELOADING PAGE NOW');
             window.location.reload();
           }, 1000);
         }
@@ -211,7 +206,6 @@ export const StoreProvider = ({ children }) => {
       const forceRefresh = localStorage.getItem('forceRefreshStore') || seoRefreshParam;
       
       if (forceRefresh) {
-        console.log('StoreProvider - Force refresh detected, clearing cache');
         apiCache.clear();
         localStorage.removeItem('storeProviderCache');
         // Clear the force refresh flag after using it
@@ -271,26 +265,12 @@ export const StoreProvider = ({ children }) => {
       const selectedStore = stores?.[0];
 
       if (!selectedStore) {
-        console.warn('StoreProvider: No store found!');
-        console.warn('Available stores:', stores);
-        console.warn('Looking for slug:', storeIdentifier);
-        console.warn('Cache key:', storeCacheKey);
         setLoading(false);
         return;
       }
       
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
-      console.log('StoreProvider - Original store settings:', selectedStore.settings);
-      console.log('StoreProvider - Original product_grid:', selectedStore.settings?.product_grid);
-
-      // 🔍 DEBUG: Gallery settings from database
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] STOREPROVIDER - RAW DATABASE VALUES:');
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - product_gallery_layout from DB:', selectedStore.settings?.product_gallery_layout);
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - vertical_gallery_position from DB:', selectedStore.settings?.vertical_gallery_position);
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - settings object type:', typeof selectedStore.settings);
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 1] - settings keys:', selectedStore.settings ? Object.keys(selectedStore.settings) : 'No settings');
-
       const mergedSettings = {
         // Spread existing store settings first to preserve saved values
         ...(selectedStore.settings || {}),
@@ -398,15 +378,6 @@ export const StoreProvider = ({ children }) => {
       };
       
       setStore({ ...selectedStore, settings: mergedSettings });
-
-      // Debug: Log the final merged settings
-      console.log('StoreProvider - Final merged settings:', mergedSettings);
-      console.log('StoreProvider - Product grid config:', mergedSettings.product_grid);
-
-      // 🔍 DEBUG: Final gallery settings after merge
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 2] STOREPROVIDER - AFTER MERGE WITH DEFAULTS:');
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 2] - product_gallery_layout final:', mergedSettings.product_gallery_layout);
-      console.log('[THUMBNAIL-SYNC] 🔍 [STEP 2] - vertical_gallery_position final:', mergedSettings.vertical_gallery_position);
 
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries
       const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';
@@ -606,16 +577,6 @@ export const StoreProvider = ({ children }) => {
     selectedCountry,
     setSelectedCountry: handleSetSelectedCountry,
   };
-
-  // Debug gallery settings loading
-  if (store?.settings?.product_gallery_layout) {
-    console.log('[THUMBNAIL-SYNC] 🏪 STORE PROVIDER - Gallery Settings Loaded:', {
-      product_gallery_layout: store.settings.product_gallery_layout,
-      vertical_gallery_position: store.settings.vertical_gallery_position,
-      storeId: store.id,
-      timestamp: new Date().toISOString()
-    });
-  }
 
   return (
     <StoreContext.Provider value={value}>

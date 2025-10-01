@@ -323,38 +323,14 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
 
-        console.log('[THUMBNAIL-SYNC] 🔧 ADMIN SAVE START:', {
-            storeId: store.id,
-            currentSettings: store.settings,
-            galleryLayout: store.settings?.product_gallery_layout,
-            verticalPosition: store.settings?.vertical_gallery_position
-        });
-
-        // 🔍 DETAILED DEBUG: Log the exact values being saved
-        console.log('[THUMBNAIL-SYNC] 🔍 [STEP 0] ADMIN - SAVING TO DATABASE:');
-        console.log('[THUMBNAIL-SYNC] 🔍 [STEP 0] - product_gallery_layout:', store.settings?.product_gallery_layout);
-        console.log('[THUMBNAIL-SYNC] 🔍 [STEP 0] - vertical_gallery_position:', store.settings?.vertical_gallery_position);
-        console.log('[THUMBNAIL-SYNC] 🔍 [STEP 0] - Full settings object keys:', Object.keys(store.settings || {}));
-        console.log('[THUMBNAIL-SYNC] 🔍 [STEP 0] - Full settings object:', JSON.stringify(store.settings, null, 2));
-
         try {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
-                console.log('[THUMBNAIL-SYNC] 🔧 ADMIN SAVE - Sending to API:', {
-                    storeId: store.id,
-                    settingsBeingSaved: store.settings
-                });
                 const apiResult = await Store.update(store.id, { settings: store.settings });
-
-                // 🔍 DEBUG: Log API response
-                console.log('[THUMBNAIL-SYNC] 🔍 [STEP 0] ADMIN - API RESPONSE:', apiResult);
-
                 return apiResult;
             });
 
-            console.log('[THUMBNAIL-SYNC] 🔧 ADMIN SAVE - API Response:', result);
-            
             // ALWAYS clear specific cache keys when admin saves settings
             const clearSpecificCacheKeys = () => {
                 const keysToAlwaysClear = [
@@ -375,14 +351,11 @@ export default function ThemeLayout() {
                 keysToAlwaysClear.forEach(key => {
                     localStorage.removeItem(key);
                     sessionStorage.removeItem(key);
-                    console.log(`[THUMBNAIL-SYNC] 🧹 Cleared cache key: ${key}`);
                 });
 
                 // Force store refresh
                 localStorage.setItem('forceRefreshStore', 'true');
                 localStorage.setItem('settings_updated_at', Date.now().toString());
-
-                console.log('[THUMBNAIL-SYNC] 🔧 ADMIN SAVE: Cleared all settings cache keys');
             };
 
             try {
