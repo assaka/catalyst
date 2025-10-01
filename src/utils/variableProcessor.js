@@ -141,6 +141,17 @@ function processConditionalsStep(content, context, pageData) {
     const isTrue = evaluateCondition(condition, context, pageData);
     const selectedContent = isTrue ? trueContent : falseContent;
 
+    // Debug stock-related conditions
+    if (condition.includes('in_stock')) {
+      console.log('🔍 Conditional evaluation:', {
+        condition,
+        isTrue,
+        pageData_this: pageData?.this,
+        pageData_this_in_stock: pageData?.this?.in_stock,
+        selectedBranch: isTrue ? 'TRUE' : 'FALSE'
+      });
+    }
+
     // Replace the entire conditional block with the selected content
     result = result.substring(0, ifIndex) + selectedContent + result.substring(endIndex + 7);
 
