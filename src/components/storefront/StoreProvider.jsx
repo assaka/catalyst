@@ -522,6 +522,15 @@ export const StoreProvider = ({ children }) => {
           const result = await StorefrontAttribute.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }, CACHE_DURATION_MEDIUM),
+
+        // MEDIUM cache (5 minutes) - filterable attributes only (is_filterable = true)
+        cachedApiCall(`filterable-attributes-${selectedStore.id}`, async () => {
+          const result = await StorefrontAttribute.filter({
+            store_id: selectedStore.id,
+            is_filterable: true
+          });
+          return Array.isArray(result) ? result : [];
+        }, CACHE_DURATION_MEDIUM),
         
         // MEDIUM cache (5 minutes) - semi-static data
         cachedApiCall(`attr-sets-${selectedStore.id}`, async () => {
@@ -555,12 +564,12 @@ export const StoreProvider = ({ children }) => {
       
       const attrData = results[3].status === 'fulfilled' ? (results[3].value || []) : [];
       setAttributes(attrData);
-      
-      const filterableAttrs = attrData.filter(a => a?.is_filterable);
+
+      const filterableAttrs = results[4].status === 'fulfilled' ? (results[4].value || []) : [];
       setFilterableAttributes(filterableAttrs);
-      
-      setAttributeSets(results[4].status === 'fulfilled' ? (results[4].value || []) : []);
-      setSeoTemplates(results[5].status === 'fulfilled' ? (results[5].value || []) : []);
+
+      setAttributeSets(results[5].status === 'fulfilled' ? (results[5].value || []) : []);
+      setSeoTemplates(results[6].status === 'fulfilled' ? (results[6].value || []) : []);
 
     } catch (error) {
       console.error("StoreProvider: Failed to fetch data:", error);

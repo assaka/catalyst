@@ -489,15 +489,8 @@ export default function Category() {
       return filters;
     }
 
-    // Process each filterable attribute from database
+    // Process each filterable attribute from database (already filtered by is_filterable = true)
     filterableAttributes.forEach(attr => {
-      // Check if attribute is filterable
-      const isFilterable = attr.is_filterable || attr.filterable || attr.use_for_filter;
-
-      if (!isFilterable) {
-        return; // Skip non-filterable attributes
-      }
-
       const attrCode = attr.code || attr.name || attr.attribute_name;
 
       // Extract values from products only (dynamic from DB)
