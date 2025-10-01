@@ -401,6 +401,16 @@ const ProductItemsGrid = createSlotComponent({
       </div>
     `;
 
+    // Debug: Log products data to see compare_price
+    console.log('🛒 ProductItemsGrid variableContext.products:', variableContext?.products?.map(p => ({
+      name: p.name,
+      price: p.price,
+      price_formatted: p.price_formatted,
+      compare_price: p.compare_price,
+      compare_price_formatted: p.compare_price_formatted,
+      hasComparePrice: !!p.compare_price
+    })));
+
     const html = processVariables(template, variableContext);
 
     // Attach event listeners in storefront
