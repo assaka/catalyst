@@ -298,10 +298,12 @@ function evaluateCondition(condition, context, pageData) {
  * Get nested value from object path (e.g., 'product.name')
  */
 function getNestedValue(path, context, pageData) {
+  // Merge data: pageData should override context (pageData has loop item context)
+  const fullData = { ...context, ...pageData };
+
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
-    const fullData = { ...pageData, ...context };
 
     // Try to find 'this' object in the data first (loop creates { this: item, ...item })
     if (fullData.this) {
@@ -320,8 +322,7 @@ function getNestedValue(path, context, pageData) {
     return result;
   }
 
-  const fullData = { ...pageData, ...context };
-
+  // For non-'this' paths, use standard lookup
   const result = path.split('.').reduce((obj, key) => {
     return obj && obj[key] !== undefined ? obj[key] : null;
   }, fullData);
