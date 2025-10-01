@@ -342,12 +342,13 @@ export function CategorySlotRenderer({
         settings: settingsWithDefaults
       };
 
-      // Special handling for breadcrumbs - pass styles directly
+      // Special handling for breadcrumbs - pass styles directly and slots at top level
       const contextToPass = id === 'breadcrumbs_content'
         ? {
             ...categoryContext,
             slots, // Ensure slots object is passed
-            breadcrumbStyles: slots?.breadcrumb_styles?.styles || {} // Pass styles directly too
+            breadcrumbStyles: slots?.breadcrumb_styles?.styles || {}, // Pass styles directly too
+            allSlots: slots // Also pass as allSlots for direct access
           }
         : {
             ...categoryContext,

@@ -52,7 +52,7 @@ const BreadcrumbRenderer = createSlotComponent({
         settings={settings}
         breadcrumbConfig={breadcrumbConfig}
         breadcrumbStyles={breadcrumbStyles}
-        slots={categoryContext?.slots}
+        slots={categoryContext?.allSlots || categoryContext?.slots}
         className={className || slot?.className}
       />
     );
