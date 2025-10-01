@@ -163,13 +163,20 @@ export function CategorySlotRenderer({
         type,
         componentName,
         hasComponent: ComponentRegistry.has(componentName),
-        metadata
+        metadata,
+        slotsAvailable: !!slots,
+        breadcrumbStylesInSlots: slots?.breadcrumb_styles
       });
     }
 
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
       const registeredComponent = ComponentRegistry.get(componentName);
+
+      // Debug for breadcrumbs
+      if (id === 'breadcrumbs_content') {
+        console.log('🔍 About to call registeredComponent.render for breadcrumbs');
+      }
 
       // Format products with all necessary fields for templates
       const formattedProducts = products.map(product => {
