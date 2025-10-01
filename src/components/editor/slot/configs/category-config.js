@@ -475,7 +475,7 @@ export const categoryConfig = {
                            class="rounded border-gray-300 text-blue-600"
                            data-action="toggle-filter"
                            data-filter-type="attribute"
-                           data-attribute-code="{{../code}}"
+                           data-attribute-code="{{this.attributeCode}}"
                            data-filter-value="{{this.value}}"
                            {{#if this.active}}checked{{/if}} />
                     <span class="text-gray-700">{{this.label}}</span>

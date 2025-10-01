@@ -258,14 +258,16 @@ export function CategorySlotRenderer({
                   value: option.value || option.label || String(option),
                   label: option.label || option.value || String(option),
                   count: option.count || 0,
-                  active: false
+                  active: false,
+                  attributeCode: attrCode // Add attribute code to each option
                 };
               }
               return {
                 value: String(option),
                 label: String(option),
                 count: 0,
-                active: false
+                active: false,
+                attributeCode: attrCode // Add attribute code to each option
               };
             })
           : [];
