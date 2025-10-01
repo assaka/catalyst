@@ -470,13 +470,23 @@ export default function MiniCart() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Button asChild className="w-full btn-view-cart" onClick={() => setIsOpen(false)}>
+                  <Button
+                    asChild
+                    className="w-full btn-view-cart"
+                    style={{ backgroundColor: settings?.theme?.view_cart_button_color || '#17a2b8' }}
+                    onClick={() => setIsOpen(false)}
+                  >
                     <Link to={createPublicUrl(store.slug, 'CART')}>
                       View Cart
                     </Link>
                   </Button>
                   {!settings?.hide_header_checkout && (
-                    <Button asChild className="w-full btn-checkout" onClick={() => setIsOpen(false)}>
+                    <Button
+                      asChild
+                      className="w-full btn-checkout"
+                      style={{ backgroundColor: settings?.theme?.checkout_button_color || '#007bff' }}
+                      onClick={() => setIsOpen(false)}
+                    >
                       <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>
                         Checkout
                       </Link>
