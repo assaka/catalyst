@@ -594,7 +594,7 @@ export const categoryConfig = {
         <div class="space-y-6">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
-            <div class="border-b border-gray-200 pb-4" data-filter-section="price">
+            <div class="border-b border-gray-200 pb-2" data-filter-section="price">
               <button class="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3"
                       data-action="toggle-filter-section"
                       data-section="price">
@@ -660,7 +660,7 @@ export const categoryConfig = {
 
           <!-- Attribute Filters (Brand, Color, Size, Material, etc.) -->
           {{#each filters.attributes}}
-            <div class="border-b border-gray-200 pb-4" data-filter-section="{{this.code}}">
+            <div class="border-b border-gray-200 pb-2" data-filter-section="{{this.code}}">
               <button class="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3"
                       data-action="toggle-filter-section"
                       data-section="{{this.code}}">
