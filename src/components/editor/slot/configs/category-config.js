@@ -675,7 +675,7 @@ export const categoryConfig = {
                    data-max-visible="{{../settings.max_visible_attributes}}"
                    data-attribute-code="{{this.code}}">
                 {{#each this.options}}
-                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900 filter-option {{#if @index}}{{#if (gt @index ../../../settings.max_visible_attributes)}}hidden{{/if}}{{/if}}"
+                  <label class="flex items-center gap-2 cursor-pointer hover:text-gray-900 filter-option"
                          data-option-index="{{@index}}">
                     <input type="checkbox"
                            class="rounded border-gray-300 text-blue-600"
@@ -688,13 +688,11 @@ export const categoryConfig = {
                     <span class="text-gray-400 text-sm ml-auto">({{this.count}})</span>
                   </label>
                 {{/each}}
-                {{#if (gt this.options.length ../settings.max_visible_attributes)}}
-                  <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn"
-                          data-action="toggle-show-more"
-                          data-attribute-code="{{this.code}}">
-                    Show More
-                  </button>
-                {{/if}}
+                <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
+                        data-action="toggle-show-more"
+                        data-attribute-code="{{this.code}}">
+                  Show More
+                </button>
               </div>
             </div>
           {{/each}}
