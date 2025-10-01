@@ -164,14 +164,13 @@ export function CategorySlotRenderer({
       const formattedProducts = products.map(product => {
         // formatDisplayPrice now properly handles both product objects and price values
         const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
-        const comparePrice = product.compare_price || product.compare_at_price;
+        const comparePrice = product.compare_price;
 
         // Debug: Log ALL products to see their data
         console.log('Formatting product:', {
           name: product.name,
           price: product.price,
           compare_price: product.compare_price,
-          compare_at_price: product.compare_at_price,
           hasComparePrice: !!comparePrice,
           allKeys: Object.keys(product)
         });
@@ -179,14 +178,25 @@ export function CategorySlotRenderer({
         // displayPrice is already a formatted string like "$1349.00"
         const formattedPriceStr = displayPrice;
 
+        // Calculate lowest and highest prices when compare_price exists
+        const price = parseFloat(product.price || 0);
+        const comparePriceNum = parseFloat(comparePrice || 0);
+        const hasValidComparePrice = comparePriceNum > 0 && comparePriceNum !== price;
+
+        const lowestPrice = hasValidComparePrice ? Math.min(price, comparePriceNum) : price;
+        const highestPrice = hasValidComparePrice ? Math.max(price, comparePriceNum) : price;
+
         return {
           ...product,
           // Use same naming as product-config.js: price_formatted and compare_price_formatted
           price_formatted: formattedPriceStr,
-          compare_price_formatted: comparePrice ? `${currencySymbol}${parseFloat(comparePrice).toFixed(2)}` : null,
+          compare_price_formatted: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
+          // Lowest and highest price formatted (for sale display)
+          lowest_price_formatted: `${currencySymbol}${lowestPrice.toFixed(2)}`,
+          highest_price_formatted: `${currencySymbol}${highestPrice.toFixed(2)}`,
           // Also keep old names for backwards compatibility
           formatted_price: formattedPriceStr,
-          formatted_compare_price: comparePrice ? `${currencySymbol}${parseFloat(comparePrice).toFixed(2)}` : null,
+          formatted_compare_price: comparePrice ? `${currencySymbol}${comparePriceNum.toFixed(2)}` : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || `/product/${product.slug || product.id}`,
           in_stock: product.in_stock !== false && product.stock_quantity !== 0, // Default to true unless explicitly false or 0
