@@ -1510,7 +1510,7 @@ const CartCouponSlot = createSlotComponent({
                 className="w-1/2 border rounded px-3 py-2"
                 readOnly
               />
-              <button className="w-1/2 bg-red-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply</button>
+              <button className="w-1/2 bg-blue-600 text-white px-4 py-2 rounded whitespace-nowrap">Apply</button>
             </div>
           </div>
         </div>
@@ -1562,7 +1562,7 @@ const CartCouponSlot = createSlotComponent({
               />
               <button
                 onClick={handleApplyCoupon}
-                className="w-1/2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded whitespace-nowrap"
+                className="w-1/2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded whitespace-nowrap"
               >
                 Apply
               </button>
@@ -1590,19 +1590,19 @@ const CartOrderSummarySlot = createSlotComponent({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-bold text-green-600">$99.99</span>
+                <span>$99.99</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span className="font-bold text-green-600">$8.00</span>
+                <span>$8.00</span>
               </div>
               <div className="border-t pt-2 flex justify-between text-lg font-semibold">
                 <span>Total</span>
-                <span className="font-bold text-green-600">$107.99</span>
+                <span>$107.99</span>
               </div>
             </div>
             <button className="w-full bg-blue-600 text-white py-3 rounded mt-4">
-              Hamid Checkout
+              Proceed to Checkout
             </button>
           </div>
         </div>
@@ -1629,34 +1629,34 @@ const CartOrderSummarySlot = createSlotComponent({
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span className="font-bold text-green-600">{currencySymbol}{safeToFixed(subtotal)}</span>
+              <span>{currencySymbol}{safeToFixed(subtotal)}</span>
             </div>
             {customOptionsTotal > 0 && (
               <div className="flex justify-between">
                 <span>Additional Products</span>
-                <span className="font-bold text-green-600">+{currencySymbol}{safeToFixed(customOptionsTotal)}</span>
+                <span>+{currencySymbol}{safeToFixed(customOptionsTotal)}</span>
               </div>
             )}
             {appliedCoupon && discount > 0 && (
-              <div className="flex justify-between">
+              <div className="flex justify-between text-green-600">
                 <span>Discount ({appliedCoupon.name})</span>
-                <span className="font-bold text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
+                <span>-{currencySymbol}{safeToFixed(discount)}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span>Tax</span>
-              <span className="font-bold text-green-600">{currencySymbol}{safeToFixed(tax)}</span>
+              <span>{currencySymbol}{safeToFixed(tax)}</span>
             </div>
             <div className="border-t pt-2 flex justify-between text-lg font-semibold">
               <span>Total</span>
-              <span className="font-bold text-green-600">{currencySymbol}{safeToFixed(total)}</span>
+              <span>{currencySymbol}{safeToFixed(total)}</span>
             </div>
           </div>
           <button
             onClick={handleCheckout}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded mt-4 transition-colors"
           >
-            Hamid Checkout
+            Proceed to Checkout
           </button>
         </div>
       </div>
