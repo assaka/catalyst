@@ -753,16 +753,20 @@ const ProductTabs = createSlotComponent({
               break;
             case 'attributes':
               if (sampleProduct?.attributes && Object.keys(sampleProduct.attributes).length > 0) {
-                html = `
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${Object.entries(sampleProduct.attributes).map(([key, value]) => `
-                      <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="font-bold capitalize">${key.replace(/_/g, ' ')}</span>
-                        <span>${String(value ?? '')}</span>
-                      </div>
-                    `).join('')}
+                const template = contentContainer.getAttribute('data-attributes-template') || `
+                  <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="font-bold capitalize">__KEY__</span>
+                    <span>__VALUE__</span>
                   </div>
                 `;
+
+                const itemsHtml = Object.entries(sampleProduct.attributes).map(([key, value]) =>
+                  template
+                    .replace('__KEY__', key.replace(/_/g, ' '))
+                    .replace('__VALUE__', String(value ?? ''))
+                ).join('');
+
+                html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${itemsHtml}</div>`;
               } else {
                 html = '<p class="text-gray-500">No specifications available for this product.</p>';
               }
@@ -836,16 +840,20 @@ const ProductTabs = createSlotComponent({
             break;
           case 'attributes':
             if (product?.attributes && Object.keys(product.attributes).length > 0) {
-              html = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  ${Object.entries(product.attributes).map(([key, value]) => `
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                      <span class="font-medium capitalize">${key.replace(/_/g, ' ')}</span>
-                      <span>${String(value ?? '')}</span>
-                    </div>
-                  `).join('')}
+              const template = contentContainer.getAttribute('data-attributes-template') || `
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                  <span class="font-bold capitalize">__KEY__</span>
+                  <span>__VALUE__</span>
                 </div>
               `;
+
+              const itemsHtml = Object.entries(product.attributes).map(([key, value]) =>
+                template
+                  .replace('__KEY__', key.replace(/_/g, ' '))
+                  .replace('__VALUE__', String(value ?? ''))
+              ).join('');
+
+              html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${itemsHtml}</div>`;
             } else {
               html = '<p class="text-gray-500">No specifications available for this product.</p>';
             }

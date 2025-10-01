@@ -792,7 +792,14 @@ export const productConfig = {
                 data-tab-index="{{@index}}"
                 data-tab-type="{{this.tab_type}}"
                 data-tab-text-content="{{this.content}}">
-                <div class="prose max-w-none text-gray-700 leading-relaxed tab-content-container">
+                <div class="prose max-w-none text-gray-700 leading-relaxed tab-content-container" data-attributes-template='
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                      <span class="font-bold capitalize">__KEY__</span>
+                      <span>__VALUE__</span>
+                    </div>
+                  </div>
+                '>
                   <!-- Content will be rendered by JavaScript based on data-tab-type -->
                 </div>
               </div>
