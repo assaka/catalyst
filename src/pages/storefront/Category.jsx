@@ -484,8 +484,16 @@ export default function Category() {
   const buildFilters = () => {
     const filters = {};
 
+    // Debug: Show which attributes are filterable
+    console.log('📋 Filterable attributes from database:', filterableAttributes?.map(a => ({
+      code: a.code,
+      name: a.name,
+      is_filterable: a.is_filterable
+    })));
+
     // Use filterableAttributes from database (where is_filterable = true)
     if (!filterableAttributes || filterableAttributes.length === 0) {
+      console.log('⚠️ No filterable attributes found');
       return filters;
     }
 
