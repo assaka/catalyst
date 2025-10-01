@@ -431,14 +431,6 @@ export function CategorySlotRenderer({
       const breadcrumbStylesSlot = slots?.breadcrumb_styles;
       const breadcrumbStyles = breadcrumbStylesSlot?.styles || {};
 
-      console.log('🔍 BREADCRUMB INLINE DEBUG:', {
-        hasSlotsParam: !!slots,
-        slotsKeys: slots ? Object.keys(slots) : [],
-        hasBreadcrumbStylesSlot: !!breadcrumbStylesSlot,
-        breadcrumbStyles,
-        breadcrumbConfig
-      });
-
       // Use unified breadcrumb renderer with auto-generation
       return wrapWithParentClass(
         <BreadcrumbRenderer
@@ -450,6 +442,7 @@ export function CategorySlotRenderer({
           settings={settings}
           breadcrumbConfig={breadcrumbConfig}
           breadcrumbStyles={breadcrumbStyles}
+          slots={slots}
           className={className}
         />
       );
@@ -759,6 +752,7 @@ export function CategorySlotRenderer({
             settings={settings}
             breadcrumbConfig={breadcrumbConfigFallback}
             breadcrumbStyles={breadcrumbStylesFallback}
+            slots={slots}
             className={className}
           />
         );
