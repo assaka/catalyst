@@ -431,6 +431,13 @@ export function CategorySlotRenderer({
       const breadcrumbStylesSlot = slots?.breadcrumb_styles;
       const breadcrumbStyles = breadcrumbStylesSlot?.styles || {};
 
+      console.log('🎯 CategorySlotRenderer breadcrumb rendering:', {
+        hasSlotsParam: !!slots,
+        slotsKeys: slots ? Object.keys(slots).slice(0, 15) : [],
+        breadcrumbStylesSlot,
+        breadcrumbStyles
+      });
+
       // Use unified breadcrumb renderer with auto-generation
       return wrapWithParentClass(
         <BreadcrumbRenderer
