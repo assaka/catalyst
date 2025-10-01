@@ -14,12 +14,24 @@ import { processVariables } from '@/utils/variableProcessor';
 // Breadcrumb Navigation Component
 const BreadcrumbRenderer = createSlotComponent({
   name: 'BreadcrumbRenderer',
-  render: ({ slot, className, styles, categoryContext, variableContext }) => {
+  render: (props) => {
+    console.log('🚨 CategorySlotComponents BreadcrumbRenderer RECEIVED PROPS:', {
+      hasProps: !!props,
+      propsKeys: props ? Object.keys(props) : [],
+      hasCategoryContext: !!props?.categoryContext,
+      categoryContextKeys: props?.categoryContext ? Object.keys(props.categoryContext).slice(0, 10) : [],
+      breadcrumbStylesInContext: props?.categoryContext?.breadcrumbStyles
+    });
+
+    const { slot, className, styles, categoryContext, variableContext } = props;
+
     // Get configuration from slot metadata
     const breadcrumbConfig = slot?.metadata?.breadcrumbConfig || {};
 
     // DIRECT FIX: Get styles directly from categoryContext.breadcrumbStyles (which is passed from CategorySlotRenderer line 330)
     const breadcrumbStyles = categoryContext?.breadcrumbStyles || {};
+
+    console.log('🚨 EXTRACTED breadcrumbStyles:', breadcrumbStyles);
 
     const {
       category,
