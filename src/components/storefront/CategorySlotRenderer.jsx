@@ -162,12 +162,29 @@ export function CategorySlotRenderer({
 
       // Format products with all necessary fields for templates
       const formattedProducts = products.map(product => {
-        const displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
+        let displayPrice = formatDisplayPrice ? formatDisplayPrice(product) : product.price;
         const comparePrice = product.compare_price || product.compare_at_price;
+
+        // Handle if displayPrice is an object (extract the actual price value)
+        if (typeof displayPrice === 'object' && displayPrice !== null) {
+          displayPrice = displayPrice.value || displayPrice.amount || displayPrice.price || product.price;
+        }
+
+        // Format the price string
+        let formattedPriceStr;
+        if (typeof displayPrice === 'string') {
+          formattedPriceStr = displayPrice;
+        } else if (typeof displayPrice === 'number') {
+          formattedPriceStr = `${currencySymbol}${displayPrice.toFixed(2)}`;
+        } else {
+          // Fallback to product.price
+          const fallbackPrice = parseFloat(product.price || 0);
+          formattedPriceStr = `${currencySymbol}${fallbackPrice.toFixed(2)}`;
+        }
 
         return {
           ...product,
-          formatted_price: typeof displayPrice === 'string' ? displayPrice : `${currencySymbol}${parseFloat(displayPrice || 0).toFixed(2)}`,
+          formatted_price: formattedPriceStr,
           formatted_compare_price: comparePrice ? `${currencySymbol}${parseFloat(comparePrice).toFixed(2)}` : null,
           image_url: getProductImageUrl ? getProductImageUrl(product) : (product.images?.[0]?.url || product.image_url || product.image || ''),
           url: product.url || `/product/${product.slug || product.id}`,
