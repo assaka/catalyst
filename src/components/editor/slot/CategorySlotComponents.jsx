@@ -234,8 +234,110 @@ const ActiveFilters = createSlotComponent({
 // Layered Navigation Component with processVariables
 const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
-  render: ({ slot, className, styles, categoryContext, variableContext, context }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, onSlotUpdate }) => {
     const containerRef = useRef(null);
+
+    if (context === 'editor') {
+      // Editor version - render filter elements as individual editable slot instances
+      const filters = categoryContext?.filters || { attributes: [] };
+
+      // Create dynamic slot instances for filter elements
+      const filterSlotInstances = {};
+
+      // Filter heading
+      filterSlotInstances['filter_heading_instance'] = {
+        id: 'filter_heading_instance',
+        type: 'text',
+        content: 'Filter By',
+        className: 'text-lg font-semibold text-gray-900 mb-4',
+        styles: {},
+        parentId: 'layered_navigation',
+        metadata: {
+          microslot: true,
+          editable: true,
+          resizable: true,
+          draggable: true,
+          htmlTag: 'h3'
+        }
+      };
+
+      // Price filter section
+      if (filters.price) {
+        filterSlotInstances['price_filter_title'] = {
+          id: 'price_filter_title',
+          type: 'text',
+          content: 'Price',
+          className: 'font-semibold text-base text-gray-900 mb-3',
+          styles: {},
+          parentId: 'layered_navigation',
+          metadata: {
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true
+          }
+        };
+      }
+
+      // Attribute filters (Brand, Color, Size, Material, etc.)
+      filters.attributes?.forEach((attribute, attrIndex) => {
+        // Filter group title
+        filterSlotInstances[`filter_title_${attribute.code}`] = {
+          id: `filter_title_${attribute.code}`,
+          type: 'text',
+          content: attribute.label,
+          className: 'font-semibold text-base text-gray-900 mb-3',
+          styles: {},
+          parentId: 'layered_navigation',
+          metadata: {
+            attributeCode: attribute.code,
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true
+          }
+        };
+
+        // Filter options
+        attribute.options?.forEach((option, optIndex) => {
+          filterSlotInstances[`filter_option_${attribute.code}_${optIndex}`] = {
+            id: `filter_option_${attribute.code}_${optIndex}`,
+            type: 'text',
+            content: `${option.label} (${option.count})`,
+            className: 'text-gray-700 text-sm',
+            styles: {},
+            parentId: 'layered_navigation',
+            metadata: {
+              attributeCode: attribute.code,
+              optionValue: option.value,
+              microslot: true,
+              editable: true,
+              resizable: true,
+              draggable: true
+            }
+          };
+        });
+      });
+
+      // Render filter slots using UnifiedSlotRenderer
+      return (
+        <div className={className || slot.className} style={styles || slot.styles}>
+          <div className="space-y-4">
+            {Object.values(filterSlotInstances).map((filterSlot) => (
+              <UnifiedSlotRenderer
+                key={filterSlot.id}
+                slots={{ [filterSlot.id]: filterSlot }}
+                parentId={filterSlot.id}
+                context={context}
+                categoryData={categoryContext}
+                variableContext={variableContext}
+                onSlotUpdate={onSlotUpdate}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
 
     // Use template from slot.content or fallback
     const template = slot?.content || `
@@ -704,11 +806,11 @@ const ProductCountInfo = createSlotComponent({
 // Product Items Grid - Renders with dynamic grid from admin settings
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
-  render: ({ slot, className, styles, context, categoryContext, variableContext }) => {
+  render: ({ slot, className, styles, context, categoryContext, variableContext, allSlots, onSlotUpdate }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor version - render products as individual editable slot trees
+      // Editor version - render products as individual editable slot instances
       const storeContext = useStore();
       const storeSettings = storeContext?.settings || null;
       const gridClasses = getGridClasses(storeSettings);
@@ -729,65 +831,136 @@ const ProductItemsGrid = createSlotComponent({
         );
       }
 
+      // Create dynamic slot instances for each product element
+      const productSlotInstances = {};
+
+      products.forEach((product, productIndex) => {
+        // Product card container
+        productSlotInstances[`product_card_${productIndex}`] = {
+          id: `product_card_${productIndex}`,
+          type: 'container',
+          className: 'group overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-lg transition-shadow p-4 product-card',
+          styles: {},
+          parentId: 'product_items',
+          metadata: {
+            productId: product.id,
+            productIndex,
+            hierarchical: true
+          }
+        };
+
+        // Product image
+        productSlotInstances[`product_image_${productIndex}`] = {
+          id: `product_image_${productIndex}`,
+          type: 'image',
+          content: product.images?.[0] || 'https://placehold.co/400x400?text=Product',
+          className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
+          styles: {},
+          parentId: `product_card_${productIndex}`,
+          metadata: {
+            productId: product.id,
+            productIndex,
+            alt: product.name,
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true
+          }
+        };
+
+        // Product name
+        productSlotInstances[`product_name_${productIndex}`] = {
+          id: `product_name_${productIndex}`,
+          type: 'text',
+          content: product.name,
+          className: 'font-semibold text-lg truncate mb-2 text-red-600',
+          styles: {},
+          parentId: `product_card_${productIndex}`,
+          metadata: {
+            productId: product.id,
+            productIndex,
+            htmlTag: 'h3',
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true
+          }
+        };
+
+        // Product price
+        productSlotInstances[`product_price_${productIndex}`] = {
+          id: `product_price_${productIndex}`,
+          type: 'text',
+          content: product.price_formatted || `$${product.price}`,
+          className: 'text-lg font-bold text-red-600',
+          styles: {},
+          parentId: `product_card_${productIndex}`,
+          metadata: {
+            productId: product.id,
+            productIndex,
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true
+          }
+        };
+
+        // Product compare price (if exists)
+        if (product.compare_price) {
+          productSlotInstances[`product_compare_price_${productIndex}`] = {
+            id: `product_compare_price_${productIndex}`,
+            type: 'text',
+            content: product.compare_price_formatted || `$${product.compare_price}`,
+            className: 'text-sm text-gray-500 line-through',
+            styles: {},
+            parentId: `product_card_${productIndex}`,
+            metadata: {
+              productId: product.id,
+              productIndex,
+              microslot: true,
+              editable: true,
+              resizable: true,
+              draggable: true
+            }
+          };
+        }
+
+        // Add to cart button
+        productSlotInstances[`product_add_to_cart_${productIndex}`] = {
+          id: `product_add_to_cart_${productIndex}`,
+          type: 'button',
+          content: 'Add to Cart',
+          className: 'w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium',
+          styles: {},
+          parentId: `product_card_${productIndex}`,
+          metadata: {
+            productId: product.id,
+            productIndex,
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true
+          }
+        };
+      });
+
+      // Render slots using UnifiedSlotRenderer
       return (
         <div
           className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
           style={styles || slot.styles}
         >
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="group overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-lg transition-shadow p-4 product-card"
-              data-slot-id={`product_card_${product.id}`}
-              data-editable="true"
-            >
-              <div className="relative overflow-hidden mb-4">
-                <img
-                  src={product.images?.[0] || 'https://placehold.co/400x400?text=Product'}
-                  alt={product.name}
-                  className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                  data-slot-id={`product_image_${product.id}`}
-                  data-editable="true"
-                  style={{ cursor: 'pointer' }}
-                />
-              </div>
-              <h3
-                className="font-semibold text-lg truncate mb-2 text-red-600"
-                data-slot-id={`product_name_${product.id}`}
-                data-editable="true"
-                style={{ cursor: 'pointer' }}
-              >
-                {product.name}
-              </h3>
-              <div className="flex items-baseline gap-2 mb-4">
-                <span
-                  className="text-lg font-bold text-red-600"
-                  data-slot-id={`product_price_${product.id}`}
-                  data-editable="true"
-                  style={{ cursor: 'pointer' }}
-                >
-                  {product.price_formatted || `$${product.price}`}
-                </span>
-                {product.compare_price && (
-                  <span
-                    className="text-sm text-gray-500 line-through"
-                    data-slot-id={`product_compare_price_${product.id}`}
-                    data-editable="true"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {product.compare_price_formatted || `$${product.compare_price}`}
-                  </span>
-                )}
-              </div>
-              <button
-                className="w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
-                data-slot-id={`product_add_to_cart_${product.id}`}
-                data-editable="true"
-                style={{ cursor: 'pointer' }}
-              >
-                Add to Cart
-              </button>
-            </div>
+          {products.map((product, productIndex) => (
+            <UnifiedSlotRenderer
+              key={`product_${productIndex}`}
+              slots={productSlotInstances}
+              parentId={`product_card_${productIndex}`}
+              context={context}
+              productData={{ product }}
+              categoryData={categoryContext}
+              variableContext={variableContext}
+              onSlotUpdate={onSlotUpdate}
+            />
           ))}
         </div>
       );
