@@ -180,15 +180,27 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
     // Render all descendants of a category with proper indentation
     const renderCategoryDescendants = (category, depth = 0, isDropdown = true) => {
         const items = [];
-        
+
         // Add the category itself
         if (isDropdown) {
             items.push(
                 <DropdownMenuItem key={category.id} asChild>
                     <Link
                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                        className="w-full text-gray-700"
-                        style={{ paddingLeft: `${depth * 16 + 12}px` }}
+                        className="w-full transition-colors"
+                        style={{
+                            paddingLeft: `${depth * 16 + 12}px`,
+                            color: subcategoryLinkColor,
+                            backgroundColor: 'transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = subcategoryLinkHoverColor;
+                            e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = subcategoryLinkColor;
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                     >
                         {depth > 0 && '→ '}{category.name}
                     </Link>
@@ -196,11 +208,23 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
             );
         } else {
             items.push(
-                <Link 
+                <Link
                     key={category.id}
                     to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                    className="block w-full text-gray-700 hover:bg-gray-100 px-3 py-2 text-sm"
-                    style={{ paddingLeft: `${depth * 16 + 12}px` }}
+                    className="block w-full px-3 py-2 text-sm transition-colors"
+                    style={{
+                        paddingLeft: `${depth * 16 + 12}px`,
+                        color: subcategoryLinkColor,
+                        backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.color = subcategoryLinkHoverColor;
+                        e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.color = subcategoryLinkColor;
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                 >
                     {depth > 0 && '→ '}{category.name}
                 </Link>
@@ -275,11 +299,20 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
                             <ChevronDown className="w-3 h-3" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
+                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto z-50 border border-gray-200 shadow-lg" style={{ backgroundColor: subcategoryBgColor }}>
                         <DropdownMenuItem asChild>
-                            <Link 
+                            <Link
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                                className="w-full font-medium text-gray-900 border-b border-gray-200 pb-2 mb-2"
+                                className="w-full font-medium border-b border-gray-200 pb-2 mb-2 transition-colors"
+                                style={{ color: subcategoryLinkColor }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = subcategoryLinkHoverColor;
+                                    e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = subcategoryLinkColor;
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                             >
                                 View All {category.name}
                             </Link>
@@ -324,9 +357,18 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
                         style={{ backgroundColor: subcategoryBgColor }}
                     >
                         <div>
-                            <Link 
+                            <Link
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                className="block px-4 py-2 text-sm font-medium border-b border-gray-200 transition-colors"
+                                style={{ color: subcategoryLinkColor, backgroundColor: 'transparent' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = subcategoryLinkHoverColor;
+                                    e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = subcategoryLinkColor;
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                             >
                                 View All {category.name}
                             </Link>

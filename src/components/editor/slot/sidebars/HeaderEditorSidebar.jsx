@@ -129,11 +129,29 @@ const HeaderEditorSidebar = ({
     }
 
     // Navigation Links
-    const navSection = allSlots['navigation_section'];
-    if (navSection?.styles) {
-      if (navSection.styles.color) updates.navLinkColor = navSection.styles.color;
-      if (navSection.styles.fontSize) updates.navLinkSize = navSection.styles.fontSize;
-      if (navSection.styles.fontWeight) updates.navLinkWeight = navSection.styles.fontWeight;
+    const categoryNav = allSlots['category_navigation'];
+    if (categoryNav?.styles) {
+      if (categoryNav.styles.color) updates.navLinkColor = categoryNav.styles.color;
+      if (categoryNav.styles.hoverColor) updates.navLinkHoverColor = categoryNav.styles.hoverColor;
+      if (categoryNav.styles.fontSize) updates.navLinkSize = categoryNav.styles.fontSize;
+      if (categoryNav.styles.fontWeight) updates.navLinkWeight = categoryNav.styles.fontWeight;
+    }
+
+    // Subcategory styles from metadata
+    if (categoryNav?.metadata) {
+      if (categoryNav.metadata.subcategoryLinkColor) updates.subcategoryLinkColor = categoryNav.metadata.subcategoryLinkColor;
+      if (categoryNav.metadata.subcategoryLinkHoverColor) updates.subcategoryLinkHoverColor = categoryNav.metadata.subcategoryLinkHoverColor;
+      if (categoryNav.metadata.subcategoryBgColor) updates.subcategoryBgColor = categoryNav.metadata.subcategoryBgColor;
+      if (categoryNav.metadata.subcategoryBgHoverColor) updates.subcategoryBgHoverColor = categoryNav.metadata.subcategoryBgHoverColor;
+    }
+
+    // User Account Menu
+    const userAccountMenu = allSlots['user_account_menu'];
+    if (userAccountMenu?.styles) {
+      if (userAccountMenu.styles.backgroundColor) updates.userMenuBg = userAccountMenu.styles.backgroundColor;
+      if (userAccountMenu.styles.hoverBackgroundColor) updates.userMenuHoverBg = userAccountMenu.styles.hoverBackgroundColor;
+      if (userAccountMenu.styles.color) updates.userMenuTextColor = userAccountMenu.styles.color;
+      if (userAccountMenu.styles.borderRadius) updates.userMenuBorderRadius = userAccountMenu.styles.borderRadius;
     }
 
     if (Object.keys(updates).length > 0) {
