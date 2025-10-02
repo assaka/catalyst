@@ -300,7 +300,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             <ChevronDown className="w-3 h-3" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto z-50 border border-gray-200 shadow-lg" style={{ backgroundColor: subcategoryBgColor }}>
+                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto z-[9999] border border-gray-200 shadow-lg" style={{ backgroundColor: subcategoryBgColor }}>
                         <DropdownMenuItem asChild>
                             <Link
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -354,7 +354,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
 
                     {/* Submenu - absolutely positioned to avoid layout shifts */}
                     <div
-                        className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                        className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
                         style={{ backgroundColor: subcategoryBgColor }}
                     >
                         <div>
@@ -452,7 +452,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     
                     {/* Nested submenu - appears on hover to the right */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -505,7 +505,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     
                     {/* Side submenu - shows this category's children on hover */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -552,7 +552,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     
                     {/* Side submenu - shows this category's direct children on hover */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -599,7 +599,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     
                     {/* Nested submenu - appears on hover to the right, shows only this category's direct children */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -790,7 +790,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     
                     {/* Nested submenu - appears on hover to the right */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -853,7 +853,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
                                     {/* Submenu visible on hover */}
-                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
                                         style={{ backgroundColor: subcategoryBgColor }}
                                     >
                                         <div>
