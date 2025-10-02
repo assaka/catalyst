@@ -237,16 +237,19 @@ const LayeredNavigation = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context, onSlotUpdate, allSlots }) => {
     const containerRef = useRef(null);
 
+    console.log('🔍🔍🔍 LayeredNavigation CALLED - context:', context);
+
     if (context === 'editor') {
       // Editor version - render filter elements as individual editable slot instances
       const filters = categoryContext?.filters || { attributes: [] };
 
-      console.log('🔍 LayeredNavigation render in editor:', {
+      console.log('🔍 LayeredNavigation render in EDITOR mode:', {
         hasFilters: !!filters,
         attributesCount: filters?.attributes?.length,
         attributes: filters?.attributes,
         hasCategoryContext: !!categoryContext,
-        filterableAttributesCount: categoryContext?.filterableAttributes?.length
+        filterableAttributesCount: categoryContext?.filterableAttributes?.length,
+        allFilters: filters
       });
 
       // Get shared attribute filter label configuration from category-config.js
@@ -354,10 +357,23 @@ const LayeredNavigation = createSlotComponent({
       });
 
       // Render filter slots using UnifiedSlotRenderer
+      const filterSlotValues = Object.values(filterSlotInstances);
+      console.log('🔍 Filter slot instances created:', filterSlotValues.length);
+
+      if (filterSlotValues.length === 0) {
+        return (
+          <div className={className || slot.className} style={styles || slot.styles}>
+            <div className="p-4 border-2 border-dashed border-gray-300 rounded bg-gray-50">
+              <p className="text-gray-500 text-sm">No filters available. Check filterableAttributes in database.</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className={className || slot.className} style={styles || slot.styles}>
           <div className="space-y-4">
-            {Object.values(filterSlotInstances).map((filterSlot) => (
+            {filterSlotValues.map((filterSlot) => (
               <UnifiedSlotRenderer
                 key={filterSlot.id}
                 slots={{ [filterSlot.id]: filterSlot }}
