@@ -243,11 +243,16 @@ const LayeredNavigation = createSlotComponent({
 
       // Get child label slots that have layered_navigation as parent
       const childLabelSlots = {};
+
+      console.log('🔍 allSlots:', allSlots ? Object.keys(allSlots) : 'null');
+
       if (allSlots) {
         Object.values(allSlots).forEach(childSlot => {
+          console.log('🔍 Checking slot:', childSlot.id, 'parentId:', childSlot.parentId);
           if (childSlot.parentId === 'layered_navigation' &&
               (childSlot.id.includes('filter_label') || childSlot.id === 'filter_heading')) {
             childLabelSlots[childSlot.id] = childSlot;
+            console.log('✅ Added child slot:', childSlot.id);
           }
         });
       }
