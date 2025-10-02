@@ -462,26 +462,6 @@ export function CategorySlotRenderer({
       );
     }
 
-    // Handle active_filters slot from category-config.js
-    // Render as a separate component for independent positioning
-    if (id === 'active_filters') {
-      if (ComponentRegistry.has('ActiveFilters')) {
-        const ActiveFiltersComp = ComponentRegistry.get('ActiveFilters');
-        return wrapWithParentClass(
-          ActiveFiltersComp.render({
-            slot,
-            className,
-            styles,
-            categoryContext,
-            variableContext,
-            context: 'storefront',
-            allSlots: slots
-          })
-        );
-      }
-      return null;
-    }
-
     // Main content container
     if (id === 'main_content_container') {
       return wrapWithParentClass(
