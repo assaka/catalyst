@@ -205,101 +205,70 @@ const LayeredNavigationSidebar = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto space-y-0">
-        {/* Preview Section - Shows Filter Heading, Labels, and Active Filters */}
-        {Object.keys(previewSlots).length > 0 && (
-        <div className="border-b border-gray-200">
-          <div className="p-3 bg-blue-50">
-            <div className="space-y-2">
-              {Object.values(previewSlots).map((previewSlot) => (
-                <div
-                  key={previewSlot.id}
-                  className="bg-white p-2 rounded border border-gray-300"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="text-xs text-gray-500 mb-1">
-                    {previewSlot.metadata?.displayName || previewSlot.id}
-                  </div>
-                  <div className="pointer-events-none">
-                    <UnifiedSlotRenderer
-                      slots={{ [previewSlot.id]: previewSlot }}
-                      parentId={null}
-                      context="editor"
-                      variableContext={{}}
-                      mode="view"
-                      showBorders={false}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+        {/* Filter Heading */}
+        <SectionHeader
+          title="Filter Heading"
+          section="filterHeading"
+          expanded={expandedSections.filterHeading}
+          onToggle={toggleSection}
+        >
+          <FilterHeadingSection
+            styles={filterStyles}
+            onStyleChange={handleStyleChange}
+          />
+        </SectionHeader>
 
-      {/* Filter Heading */}
-      <SectionHeader
-        title="Filter Heading"
-        section="filterHeading"
-        expanded={expandedSections.filterHeading}
-        onToggle={toggleSection}
-      >
-        <FilterHeadingSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
+        {/* Attribute Filter Labels (also applies to Price filter) */}
+        <SectionHeader
+          title="Filter Labels (Brand, Price, etc.)"
+          section="filterLabels"
+          expanded={expandedSections.filterLabels}
+          onToggle={toggleSection}
+        >
+          <FilterLabelsSection
+            styles={filterStyles}
+            onStyleChange={handleStyleChange}
+          />
+        </SectionHeader>
 
-      {/* Attribute Filter Labels (also applies to Price filter) */}
-      <SectionHeader
-        title="Filter Labels (Brand, Price, etc.)"
-        section="filterLabels"
-        expanded={expandedSections.filterLabels}
-        onToggle={toggleSection}
-      >
-        <FilterLabelsSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
+        {/* Filter Options */}
+        <SectionHeader
+          title="Filter Options"
+          section="filterOptions"
+          expanded={expandedSections.filterOptions}
+          onToggle={toggleSection}
+        >
+          <FilterOptionsSection
+            styles={filterStyles}
+            onStyleChange={handleStyleChange}
+          />
+        </SectionHeader>
 
-      {/* Filter Options */}
-      <SectionHeader
-        title="Filter Options"
-        section="filterOptions"
-        expanded={expandedSections.filterOptions}
-        onToggle={toggleSection}
-      >
-        <FilterOptionsSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
+        {/* Active Filters */}
+        <SectionHeader
+          title="Active Filters"
+          section="activeFilters"
+          expanded={expandedSections.activeFilters}
+          onToggle={toggleSection}
+        >
+          <ActiveFiltersSection
+            styles={filterStyles}
+            onStyleChange={handleStyleChange}
+          />
+        </SectionHeader>
 
-      {/* Active Filters */}
-      <SectionHeader
-        title="Active Filters"
-        section="activeFilters"
-        expanded={expandedSections.activeFilters}
-        onToggle={toggleSection}
-      >
-        <ActiveFiltersSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
-
-      {/* Container */}
-      <SectionHeader
-        title="Container"
-        section="container"
-        expanded={expandedSections.container}
-        onToggle={toggleSection}
-      >
-        <ContainerSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
+        {/* Container */}
+        <SectionHeader
+          title="Container"
+          section="container"
+          expanded={expandedSections.container}
+          onToggle={toggleSection}
+        >
+          <ContainerSection
+            styles={filterStyles}
+            onStyleChange={handleStyleChange}
+          />
+        </SectionHeader>
       </div>
     </div>
   );
