@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
@@ -20,6 +21,8 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const [isMobile, setIsMobile] = useState(false);
     const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
     const [hoveredCategory, setHoveredCategory] = useState(null);
+    const [dropdownPosition, setDropdownPosition] = useState(null);
+    const categoryRefs = useRef({});
 
     // Extract styles from slot configuration
     const linkStyles = {
@@ -845,12 +848,29 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     {rootCategories.map(category => {
                         if (category.children && category.children.length > 0) {
                             const isHovered = hoveredCategory === category.id;
+
+                            const handleMouseEnter = (e) => {
+                                setHoveredCategory(category.id);
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setDropdownPosition({
+                                    top: rect.bottom,
+                                    left: rect.left,
+                                    categoryId: category.id
+                                });
+                            };
+
+                            const handleMouseLeave = () => {
+                                setHoveredCategory(null);
+                                setDropdownPosition(null);
+                            };
+
                             return (
                                 <div
                                     key={category.id}
                                     className="relative group"
-                                    onMouseEnter={() => setHoveredCategory(category.id)}
-                                    onMouseLeave={() => setHoveredCategory(null)}
+                                    ref={el => categoryRefs.current[category.id] = el}
+                                    onMouseEnter={handleMouseEnter}
+                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <Link
                                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -859,15 +879,18 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         {category.name}
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
-                                    {/* Submenu visible on hover */}
-                                    <div
-                                        className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] transition-all duration-200"
-                                        style={{
-                                            backgroundColor: subcategoryBgColor,
-                                            visibility: isHovered ? 'visible' : 'hidden',
-                                            opacity: isHovered ? 1 : 0
-                                        }}
-                                    >
+                                    {/* Submenu rendered in portal */}
+                                    {isHovered && dropdownPosition?.categoryId === category.id && createPortal(
+                                        <div
+                                            className="fixed w-64 border border-gray-200 rounded-md shadow-lg z-[9999]"
+                                            style={{
+                                                backgroundColor: subcategoryBgColor,
+                                                top: `${dropdownPosition.top}px`,
+                                                left: `${dropdownPosition.left}px`
+                                            }}
+                                            onMouseEnter={() => setHoveredCategory(category.id)}
+                                            onMouseLeave={handleMouseLeave}
+                                        >
                                         <div>
                                             <Link
                                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
