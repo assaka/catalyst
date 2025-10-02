@@ -708,17 +708,57 @@ const ProductItemsGrid = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor version - simplified container for slot arrangement
+      // Editor version - show actual product grid with sample data
+      const storeContext = useStore();
+      const storeSettings = storeContext?.settings || null;
+      const gridClasses = getGridClasses(storeSettings);
+
+      // Get sample products from categoryContext
+      const products = categoryContext?.products?.slice(0, 6) || [];
+
+      if (products.length === 0) {
+        return (
+          <div
+            className={`${className || slot.className || ''}`}
+            style={styles || slot.styles}
+          >
+            <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+              Product Items Grid - No products available
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div
-          className={`${className || slot.className || ''}`}
+          className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
           style={styles || slot.styles}
         >
-          {/* In editor, let the grid system handle layout - just show placeholder */}
-          <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-            Product Items Grid
-            <div className="text-xs mt-1">Configure grid layout in Admin → Store → Theme & Layout</div>
-          </div>
+          {products.map((product) => (
+            <div key={product.id} className="group overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-lg transition-shadow p-4 product-card">
+              <div className="relative overflow-hidden mb-4">
+                <img
+                  src={product.image_url || product.images?.[0] || 'https://placehold.co/400x400?text=Product'}
+                  alt={product.name}
+                  className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <h3 className="font-semibold text-lg truncate mb-2 text-red-600">{product.name}</h3>
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-lg font-bold text-red-600">
+                  {product.price_formatted || `$${product.price}`}
+                </span>
+                {product.compare_price && (
+                  <span className="text-sm text-gray-500 line-through">
+                    {product.compare_price_formatted || `$${product.compare_price}`}
+                  </span>
+                )}
+              </div>
+              <button className="w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2">
+                Add to Cart
+              </button>
+            </div>
+          ))}
         </div>
       );
     }
