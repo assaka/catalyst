@@ -400,17 +400,20 @@ const LayeredNavigation = createSlotComponent({
         >
           <div className="text-green-700 font-bold mb-2">🔍 FILTERS CONTAINER (29 slots)</div>
           <div className="space-y-4">
-            {filterSlotValues.map((filterSlot) => (
-              <UnifiedSlotRenderer
-                key={filterSlot.id}
-                slots={{ [filterSlot.id]: filterSlot }}
-                parentId={filterSlot.id}
-                context={context}
-                categoryData={categoryContext}
-                variableContext={variableContext}
-                onSlotUpdate={onSlotUpdate}
-              />
-            ))}
+            {filterSlotValues.map((filterSlot) => {
+              console.log('🔍 Rendering filter slot:', filterSlot.id, filterSlot.type, filterSlot.content);
+              return (
+                <UnifiedSlotRenderer
+                  key={filterSlot.id}
+                  slots={{ [filterSlot.id]: filterSlot }}
+                  parentId={null}
+                  context={context}
+                  categoryData={categoryContext}
+                  variableContext={variableContext}
+                  onSlotUpdate={onSlotUpdate}
+                />
+              );
+            })}
           </div>
         </div>
       );
