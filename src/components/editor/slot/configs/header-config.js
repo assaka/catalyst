@@ -603,7 +603,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Menu (Collapsible)',
-        description: 'Shown when hamburger menu is clicked'
+        description: 'Shown when hamburger menu is clicked',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -620,7 +621,8 @@ export const headerConfig = {
       viewMode: ['mobile'],
       metadata: {
         hierarchical: true,
-        displayName: 'Mobile Menu Inner Container'
+        displayName: 'Mobile Menu Inner Container',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -656,7 +658,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Navigation Menu',
-        component: 'MobileNavigation'
+        component: 'MobileNavigation',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -734,7 +737,8 @@ export const headerConfig = {
       viewMode: ['desktop'],
       metadata: {
         hierarchical: true,
-        displayName: 'Navigation Inner Container'
+        displayName: 'Navigation Inner Container',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -751,7 +755,8 @@ export const headerConfig = {
       viewMode: ['desktop'],
       metadata: {
         hierarchical: true,
-        displayName: 'Navigation Content Wrapper'
+        displayName: 'Navigation Content Wrapper',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -771,7 +776,8 @@ export const headerConfig = {
         hierarchical: false,
         displayName: 'Category Navigation',
         component: 'CategoryNav',
-        description: 'Main category navigation menu'
+        description: 'Main category navigation menu',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 

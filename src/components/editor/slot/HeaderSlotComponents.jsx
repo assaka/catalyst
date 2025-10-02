@@ -20,34 +20,36 @@ import { CountrySelect } from '@/components/ui/country-select';
  */
 const StoreLogo = createSlotComponent({
   name: 'StoreLogo',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { store } = headerContext || {};
     const storeUrl = store ? createPublicUrl(store.slug, 'STOREFRONT') : '/';
 
     if (context === 'editor') {
       return (
-        <div className="flex items-center">
-          <div className="text-xl font-bold text-gray-900">
-            {store?.name || 'Store Logo'}
-          </div>
+        <div className={className || "flex items-center space-x-2"} style={styles}>
+          {store?.logo_url ? (
+            <img src={store.logo_url} alt={store.name} className="h-8 w-8 object-contain" />
+          ) : (
+            <ShoppingBag className="h-8 w-8 text-blue-600" />
+          )}
+          <span className="text-xl font-bold text-gray-800">{store?.name || 'Demo Store'}</span>
         </div>
       );
     }
 
     // Storefront rendering
     return (
-      <Link to={storeUrl} className="flex items-center">
+      <Link to={storeUrl} className={className || "flex items-center space-x-2"} style={styles}>
         {store?.logo_url ? (
           <img
             src={store.logo_url}
             alt={store.name}
-            className="h-8 w-auto"
+            className="h-8 w-8 object-contain"
           />
         ) : (
-          <span className="text-xl font-bold text-gray-900">
-            {store?.name || 'Store'}
-          </span>
+          <ShoppingBag className="h-8 w-8 text-blue-600" />
         )}
+        <span className="text-xl font-bold text-gray-800">{store?.name || 'Store'}</span>
       </Link>
     );
   }
@@ -58,12 +60,12 @@ const StoreLogo = createSlotComponent({
  */
 const HeaderSearchSlot = createSlotComponent({
   name: 'HeaderSearch',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { settings = {} } = headerContext || {};
 
     if (context === 'editor') {
       return (
-        <div className="flex-1 max-w-xl mx-4">
+        <div className={className || "w-full max-w-lg"} style={styles}>
           <div className="relative">
             <input
               type="text"
@@ -80,7 +82,11 @@ const HeaderSearchSlot = createSlotComponent({
     // Storefront rendering
     if (settings.hide_header_search) return null;
 
-    return <HeaderSearch />;
+    return (
+      <div className={className} style={styles}>
+        <HeaderSearch />
+      </div>
+    );
   }
 });
 
@@ -89,12 +95,12 @@ const HeaderSearchSlot = createSlotComponent({
  */
 const MiniCartSlot = createSlotComponent({
   name: 'MiniCart',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { settings = {} } = headerContext || {};
 
     if (context === 'editor') {
       return (
-        <button className="relative p-2 text-gray-700 hover:text-gray-900">
+        <button className={className || "relative p-2 text-gray-700 hover:text-gray-900"} style={styles}>
           <ShoppingBag className="w-6 h-6" />
           <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
             0
@@ -106,7 +112,11 @@ const MiniCartSlot = createSlotComponent({
     // Storefront rendering
     if (settings.hide_header_cart) return null;
 
-    return <MiniCart />;
+    return (
+      <div className={className} style={styles}>
+        <MiniCart />
+      </div>
+    );
   }
 });
 
@@ -134,21 +144,25 @@ const WishlistDropdownSlot = createSlotComponent({
  */
 const CategoryNavSlot = createSlotComponent({
   name: 'CategoryNav',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { categories = [] } = headerContext || {};
 
     if (context === 'editor') {
       return (
-        <nav className="flex space-x-6">
-          <a href="#" className="text-gray-700 hover:text-gray-900">Electronics</a>
-          <a href="#" className="text-gray-700 hover:text-gray-900">Clothing</a>
-          <a href="#" className="text-gray-700 hover:text-gray-900">Home & Garden</a>
+        <nav className={className || "flex space-x-8"} style={styles}>
+          <a href="#" className="text-sm font-medium text-gray-700 hover:text-gray-900">Electronics</a>
+          <a href="#" className="text-sm font-medium text-gray-700 hover:text-gray-900">Clothing</a>
+          <a href="#" className="text-sm font-medium text-gray-700 hover:text-gray-900">Home & Garden</a>
         </nav>
       );
     }
 
     // Storefront rendering
-    return <CategoryNav categories={categories} />;
+    return (
+      <div className={className} style={styles}>
+        <CategoryNav categories={categories} />
+      </div>
+    );
   }
 });
 
