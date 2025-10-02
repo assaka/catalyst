@@ -586,7 +586,7 @@ export const categoryConfig = {
                 <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>_label
+                </svg>
               </button>
               <div class="filter-content px-2 {{#unless settings.collapse_filters}}block{{/unless}}"
                    style="{{#if settings.collapse_filters}}display: none;{{/if}}">
