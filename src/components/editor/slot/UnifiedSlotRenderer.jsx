@@ -548,6 +548,11 @@ export function UnifiedSlotRenderer({
    * Wrap slot content with editor functionality if needed
    */
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
+    // If slot content is null (e.g., style_config slots), don't render anything
+    if (slotContent === null) {
+      return null;
+    }
+
     // Check if slot has absolute positioning - if so, return it directly without any wrapper
     const isAbsolutePositioned = slot.className?.includes('absolute') || slot.styles?.position === 'absolute';
 
