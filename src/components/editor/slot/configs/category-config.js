@@ -268,7 +268,8 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         component: 'ActiveFilters',
-        displayName: 'Active Filters Display'
+        displayName: 'Active Filters Display',
+        editorSidebar: 'LayeredNavigationSidebar'
       }
     },
 
@@ -568,7 +569,8 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         htmlTag: 'h3',
-        displayName: 'Filter Heading'
+        displayName: 'Filter Heading',
+        editorSidebar: 'LayeredNavigationSidebar'
       }
     },
 
