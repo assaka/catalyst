@@ -49,12 +49,20 @@ const HeaderEditorSidebar = ({
     searchPlaceholder: 'Search products...',
     searchIconColor: '#9ca3af',
 
-    // Navigation
+    // Navigation Bar
+    navBarBg: '#F9FAFB',
+    navBarPadding: '0.75rem 0',
     navLinkColor: '#374151',
-    navLinkHoverColor: '#111827',
+    navLinkHoverColor: '#2563EB',
     navLinkSize: '0.875rem',
     navLinkWeight: '500',
     navLinkSpacing: '1.5rem',
+
+    // Subcategory Colors
+    subcategoryLinkColor: '#6B7280',
+    subcategoryLinkHoverColor: '#2563EB',
+    subcategoryBgColor: '#ffffff',
+    subcategoryBgHoverColor: '#F3F4F6',
 
     // User Actions (Cart, Wishlist, User Icon)
     actionIconColor: '#374151',
@@ -62,6 +70,12 @@ const HeaderEditorSidebar = ({
     actionIconSize: '1.5rem',
     cartBadgeBg: '#3b82f6',
     cartBadgeColor: '#ffffff',
+
+    // User Menu Button (Sign In)
+    userMenuBg: '#2563EB',
+    userMenuHoverBg: '#1D4ED8',
+    userMenuTextColor: '#ffffff',
+    userMenuBorderRadius: '0.5rem',
 
     // Mobile Menu
     mobileMenuBg: '#ffffff',
@@ -107,7 +121,14 @@ const HeaderEditorSidebar = ({
       if (searchSection.styles.borderRadius) updates.searchBorderRadius = searchSection.styles.borderRadius;
     }
 
-    // Navigation
+    // Navigation Bar
+    const navBar = allSlots['navigation_bar'];
+    if (navBar?.styles) {
+      if (navBar.styles.backgroundColor) updates.navBarBg = navBar.styles.backgroundColor;
+      if (navBar.styles.padding) updates.navBarPadding = navBar.styles.padding;
+    }
+
+    // Navigation Links
     const navSection = allSlots['navigation_section'];
     if (navSection?.styles) {
       if (navSection.styles.color) updates.navLinkColor = navSection.styles.color;
@@ -154,10 +175,27 @@ const HeaderEditorSidebar = ({
         searchBorder: { slot: 'search_section', type: 'style', prop: 'borderColor' },
         searchBorderRadius: { slot: 'search_section', type: 'style', prop: 'borderRadius' },
 
-        // Navigation
-        navLinkColor: { slot: 'navigation_section', type: 'style', prop: 'color' },
-        navLinkSize: { slot: 'navigation_section', type: 'style', prop: 'fontSize' },
-        navLinkWeight: { slot: 'navigation_section', type: 'style', prop: 'fontWeight' }
+        // Navigation Bar
+        navBarBg: { slot: 'navigation_bar', type: 'style', prop: 'backgroundColor' },
+        navBarPadding: { slot: 'navigation_bar', type: 'style', prop: 'padding' },
+
+        // Navigation Links
+        navLinkColor: { slot: 'category_navigation', type: 'style', prop: 'color' },
+        navLinkHoverColor: { slot: 'category_navigation', type: 'style', prop: 'hoverColor' },
+        navLinkSize: { slot: 'category_navigation', type: 'style', prop: 'fontSize' },
+        navLinkWeight: { slot: 'category_navigation', type: 'style', prop: 'fontWeight' },
+
+        // Subcategories
+        subcategoryLinkColor: { slot: 'category_navigation', type: 'metadata', prop: 'subcategoryLinkColor' },
+        subcategoryLinkHoverColor: { slot: 'category_navigation', type: 'metadata', prop: 'subcategoryLinkHoverColor' },
+        subcategoryBgColor: { slot: 'category_navigation', type: 'metadata', prop: 'subcategoryBgColor' },
+        subcategoryBgHoverColor: { slot: 'category_navigation', type: 'metadata', prop: 'subcategoryBgHoverColor' },
+
+        // User Menu Button
+        userMenuBg: { slot: 'user_account_menu', type: 'style', prop: 'backgroundColor' },
+        userMenuHoverBg: { slot: 'user_account_menu', type: 'style', prop: 'hoverBackgroundColor' },
+        userMenuTextColor: { slot: 'user_account_menu', type: 'style', prop: 'color' },
+        userMenuBorderRadius: { slot: 'user_account_menu', type: 'style', prop: 'borderRadius' }
       };
 
       const mapping = styleMap[property];
@@ -391,27 +429,78 @@ const HeaderEditorSidebar = ({
 
         {/* Navigation */}
         <SectionHeader
-          title="Navigation Links"
+          title="Navigation Bar"
           section="navigation"
           expanded={expandedSections.navigation}
           onToggle={toggleSection}
         >
           <div className="space-y-3 p-3">
             <div>
-              <Label className="text-xs">Link Color</Label>
-              <div className="flex gap-2">
+              <Label className="text-xs font-semibold">Navbar Background</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.navBarBg}
+                  onChange={(e) => handleStyleChange('navBarBg', e.target.value, 'navigation_bar')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.navBarBg}
+                  onChange={(e) => handleStyleChange('navBarBg', e.target.value, 'navigation_bar')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#F9FAFB"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Navbar Padding</Label>
+              <Input
+                type="text"
+                value={headerStyles.navBarPadding}
+                onChange={(e) => handleStyleChange('navBarPadding', e.target.value, 'navigation_bar')}
+                className="h-8 text-xs mt-1"
+                placeholder="0.75rem 0"
+              />
+            </div>
+
+            <hr className="my-2" />
+
+            <div>
+              <Label className="text-xs font-semibold">Main Link Color</Label>
+              <div className="flex gap-2 mt-1">
                 <Input
                   type="color"
                   value={headerStyles.navLinkColor}
-                  onChange={(e) => handleStyleChange('navLinkColor', e.target.value, 'navigation_section')}
+                  onChange={(e) => handleStyleChange('navLinkColor', e.target.value, 'category_navigation')}
                   className="w-12 h-8 p-1"
                 />
                 <Input
                   type="text"
                   value={headerStyles.navLinkColor}
-                  onChange={(e) => handleStyleChange('navLinkColor', e.target.value, 'navigation_section')}
+                  onChange={(e) => handleStyleChange('navLinkColor', e.target.value, 'category_navigation')}
                   className="flex-1 h-8 text-xs"
                   placeholder="#374151"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Main Link Hover Color</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.navLinkHoverColor}
+                  onChange={(e) => handleStyleChange('navLinkHoverColor', e.target.value, 'category_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.navLinkHoverColor}
+                  onChange={(e) => handleStyleChange('navLinkHoverColor', e.target.value, 'category_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#2563EB"
                 />
               </div>
             </div>
@@ -421,8 +510,8 @@ const HeaderEditorSidebar = ({
               <Input
                 type="text"
                 value={headerStyles.navLinkSize}
-                onChange={(e) => handleStyleChange('navLinkSize', e.target.value, 'navigation_section')}
-                className="h-8 text-xs"
+                onChange={(e) => handleStyleChange('navLinkSize', e.target.value, 'category_navigation')}
+                className="h-8 text-xs mt-1"
                 placeholder="0.875rem"
               />
             </div>
@@ -431,8 +520,8 @@ const HeaderEditorSidebar = ({
               <Label className="text-xs">Font Weight</Label>
               <select
                 value={headerStyles.navLinkWeight}
-                onChange={(e) => handleStyleChange('navLinkWeight', e.target.value, 'navigation_section')}
-                className="w-full h-8 text-xs border rounded px-2"
+                onChange={(e) => handleStyleChange('navLinkWeight', e.target.value, 'category_navigation')}
+                className="w-full h-8 text-xs border rounded px-2 mt-1"
               >
                 <option value="400">Normal (400)</option>
                 <option value="500">Medium (500)</option>
@@ -440,12 +529,91 @@ const HeaderEditorSidebar = ({
                 <option value="700">Bold (700)</option>
               </select>
             </div>
+
+            <hr className="my-2" />
+            <p className="text-xs font-semibold text-gray-700">Subcategory Styling</p>
+
+            <div>
+              <Label className="text-xs">Subcategory Link Color</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.subcategoryLinkColor}
+                  onChange={(e) => handleStyleChange('subcategoryLinkColor', e.target.value, 'category_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.subcategoryLinkColor}
+                  onChange={(e) => handleStyleChange('subcategoryLinkColor', e.target.value, 'category_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#6B7280"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Subcategory Hover Color</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.subcategoryLinkHoverColor}
+                  onChange={(e) => handleStyleChange('subcategoryLinkHoverColor', e.target.value, 'category_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.subcategoryLinkHoverColor}
+                  onChange={(e) => handleStyleChange('subcategoryLinkHoverColor', e.target.value, 'category_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#2563EB"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Subcategory Background</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.subcategoryBgColor}
+                  onChange={(e) => handleStyleChange('subcategoryBgColor', e.target.value, 'category_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.subcategoryBgColor}
+                  onChange={(e) => handleStyleChange('subcategoryBgColor', e.target.value, 'category_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#ffffff"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Subcategory Hover Background</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.subcategoryBgHoverColor}
+                  onChange={(e) => handleStyleChange('subcategoryBgHoverColor', e.target.value, 'category_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.subcategoryBgHoverColor}
+                  onChange={(e) => handleStyleChange('subcategoryBgHoverColor', e.target.value, 'category_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#F3F4F6"
+                />
+              </div>
+            </div>
           </div>
         </SectionHeader>
 
         {/* User Actions */}
         <SectionHeader
-          title="User Actions (Cart, Icons)"
+          title="User Actions & Sign In"
           section="userActions"
           expanded={expandedSections.userActions}
           onToggle={toggleSection}
@@ -453,7 +621,7 @@ const HeaderEditorSidebar = ({
           <div className="space-y-3 p-3">
             <div>
               <Label className="text-xs">Icon Color</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-1">
                 <Input
                   type="color"
                   value={headerStyles.actionIconColor}
@@ -472,7 +640,7 @@ const HeaderEditorSidebar = ({
 
             <div>
               <Label className="text-xs">Cart Badge Background</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-1">
                 <Input
                   type="color"
                   value={headerStyles.cartBadgeBg}
@@ -487,6 +655,77 @@ const HeaderEditorSidebar = ({
                   placeholder="#3b82f6"
                 />
               </div>
+            </div>
+
+            <hr className="my-2" />
+            <p className="text-xs font-semibold text-gray-700">Sign In Button</p>
+
+            <div>
+              <Label className="text-xs">Button Background</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.userMenuBg}
+                  onChange={(e) => handleStyleChange('userMenuBg', e.target.value, 'user_account_menu')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.userMenuBg}
+                  onChange={(e) => handleStyleChange('userMenuBg', e.target.value, 'user_account_menu')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#2563EB"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Button Hover Background</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.userMenuHoverBg}
+                  onChange={(e) => handleStyleChange('userMenuHoverBg', e.target.value, 'user_account_menu')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.userMenuHoverBg}
+                  onChange={(e) => handleStyleChange('userMenuHoverBg', e.target.value, 'user_account_menu')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#1D4ED8"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Button Text Color</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.userMenuTextColor}
+                  onChange={(e) => handleStyleChange('userMenuTextColor', e.target.value, 'user_account_menu')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.userMenuTextColor}
+                  onChange={(e) => handleStyleChange('userMenuTextColor', e.target.value, 'user_account_menu')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#ffffff"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Button Border Radius</Label>
+              <Input
+                type="text"
+                value={headerStyles.userMenuBorderRadius}
+                onChange={(e) => handleStyleChange('userMenuBorderRadius', e.target.value, 'user_account_menu')}
+                className="h-8 text-xs mt-1"
+                placeholder="0.5rem"
+              />
             </div>
           </div>
         </SectionHeader>
