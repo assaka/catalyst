@@ -768,41 +768,6 @@ const ProductItemsGrid = createSlotComponent({
 
       return (
         <div>
-          {/* Product Style Controls */}
-          {Object.keys(productStyleSlots).length > 0 && (
-            <div
-              className="mb-4 p-3 bg-purple-50 border-2 border-purple-300 rounded"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-xs text-purple-700 font-bold mb-2">
-                📝 PRODUCT ELEMENT STYLES (Click to edit):
-              </div>
-              <div className="text-xs text-gray-600 mb-2">
-                Edit styles here → They'll be applied to all products in the grid
-              </div>
-              <div className="space-y-2">
-                {Object.values(productStyleSlots).map((styleSlot) => (
-                  <div
-                    key={styleSlot.id}
-                    className="bg-white p-2 rounded border border-purple-200"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="text-xs text-gray-500 mb-1">{styleSlot.metadata?.displayName || styleSlot.id}</div>
-                    <UnifiedSlotRenderer
-                      slots={{ [styleSlot.id]: styleSlot }}
-                      parentId={null}
-                      context={context}
-                      categoryData={categoryContext}
-                      variableContext={variableContext}
-                      mode="edit"
-                      showBorders={true}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Product Grid Template - Show products if HTML is empty */}
           {html && html.trim().length > 0 ? (
             <div

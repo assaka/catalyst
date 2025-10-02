@@ -826,7 +826,7 @@ export function GridColumn({
                       ? 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/20'
                       : 'hover:border-blue-400 hover:border-2 hover:border-dashed hover:bg-blue-50/10'
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
-          : 'overflow-hidden'
+          : 'overflow-visible'
       } relative responsive-slot ${colSpanClass} ${processedParentClassName}`}
       ref={(el) => {
       }}
