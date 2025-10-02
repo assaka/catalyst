@@ -338,10 +338,13 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
         } else {
             // Regular category without children
             return (
-                <Link 
+                <Link
                     key={category.id}
-                    to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
+                    to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
+                    className="px-3 py-2 rounded-md whitespace-nowrap transition-colors"
+                    style={linkStyles}
+                    onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
+                    onMouseLeave={(e) => e.currentTarget.style.color = linkStyles.color}
                 >
                     {category.name}
                 </Link>
@@ -352,14 +355,26 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
     // Render submenu items with full flat indentation (for expandAllMenuItems = true)
     const renderDesktopSubmenuItem = (category, depth = 0) => {
         const items = [];
-        
+
         // Add the category itself
         items.push(
-            <Link 
+            <Link
                 key={category.id}
                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                style={{ paddingLeft: `${16 + depth * 12}px` }}
+                className="block px-4 py-2 text-sm transition-colors"
+                style={{
+                    paddingLeft: `${16 + depth * 12}px`,
+                    color: subcategoryLinkColor,
+                    backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.color = subcategoryLinkHoverColor;
+                    e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.color = subcategoryLinkColor;
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }}
             >
                 {depth > 0 && '→ '}{category.name}
             </Link>
