@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 
 /**
  * Filter Options Section - controls for filter option styling (text, hover, checkbox)
+ * Saves to filter_option_styles slot
  */
 const FilterOptionsSection = ({ styles, onStyleChange }) => {
   return (
@@ -13,29 +14,46 @@ const FilterOptionsSection = ({ styles, onStyleChange }) => {
           <input
             type="color"
             value={styles.optionTextColor}
-            onChange={(e) => onStyleChange('optionTextColor', e.target.value)}
+            onChange={(e) => onStyleChange('optionTextColor', e.target.value, 'filter_option_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
             value={styles.optionTextColor}
-            onChange={(e) => onStyleChange('optionTextColor', e.target.value)}
+            onChange={(e) => onStyleChange('optionTextColor', e.target.value, 'filter_option_styles')}
             className="text-xs h-7"
           />
         </div>
       </div>
 
       <div>
-        <Label className="text-xs font-medium">Hover Background</Label>
+        <Label className="text-xs font-medium">Hover Color</Label>
         <div className="flex items-center gap-2 mt-1">
           <input
             type="color"
-            value={styles.optionHoverBg}
-            onChange={(e) => onStyleChange('optionHoverBg', e.target.value)}
+            value={styles.optionHoverColor}
+            onChange={(e) => onStyleChange('optionHoverColor', e.target.value, 'filter_option_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
-            value={styles.optionHoverBg}
-            onChange={(e) => onStyleChange('optionHoverBg', e.target.value)}
+            value={styles.optionHoverColor}
+            onChange={(e) => onStyleChange('optionHoverColor', e.target.value, 'filter_option_styles')}
+            className="text-xs h-7"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium">Count Badge Color</Label>
+        <div className="flex items-center gap-2 mt-1">
+          <input
+            type="color"
+            value={styles.optionCountColor}
+            onChange={(e) => onStyleChange('optionCountColor', e.target.value, 'filter_option_styles')}
+            className="w-8 h-7 rounded border border-gray-300"
+          />
+          <Input
+            value={styles.optionCountColor}
+            onChange={(e) => onStyleChange('optionCountColor', e.target.value, 'filter_option_styles')}
             className="text-xs h-7"
           />
         </div>
@@ -47,12 +65,46 @@ const FilterOptionsSection = ({ styles, onStyleChange }) => {
           <input
             type="color"
             value={styles.checkboxColor}
-            onChange={(e) => onStyleChange('checkboxColor', e.target.value)}
+            onChange={(e) => onStyleChange('checkboxColor', e.target.value, 'filter_option_styles')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
             value={styles.checkboxColor}
-            onChange={(e) => onStyleChange('checkboxColor', e.target.value)}
+            onChange={(e) => onStyleChange('checkboxColor', e.target.value, 'filter_option_styles')}
+            className="text-xs h-7"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium">Active Filter Background</Label>
+        <div className="flex items-center gap-2 mt-1">
+          <input
+            type="color"
+            value={styles.activeFilterBgColor}
+            onChange={(e) => onStyleChange('activeFilterBgColor', e.target.value, 'filter_option_styles')}
+            className="w-8 h-7 rounded border border-gray-300"
+          />
+          <Input
+            value={styles.activeFilterBgColor}
+            onChange={(e) => onStyleChange('activeFilterBgColor', e.target.value, 'filter_option_styles')}
+            className="text-xs h-7"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium">Active Filter Text Color</Label>
+        <div className="flex items-center gap-2 mt-1">
+          <input
+            type="color"
+            value={styles.activeFilterTextColor}
+            onChange={(e) => onStyleChange('activeFilterTextColor', e.target.value, 'filter_option_styles')}
+            className="w-8 h-7 rounded border border-gray-300"
+          />
+          <Input
+            value={styles.activeFilterTextColor}
+            onChange={(e) => onStyleChange('activeFilterTextColor', e.target.value, 'filter_option_styles')}
             className="text-xs h-7"
           />
         </div>

@@ -47,10 +47,13 @@ const LayeredNavigationSidebar = ({
     priceLabelFontSize: '0.875rem',
     priceLabelFontWeight: '500',
 
-    // Filter Options
-    optionTextColor: '#4B5563',
-    optionHoverBg: '#F3F4F6',
+    // Filter Options (from filter_option_styles slot)
+    optionTextColor: '#374151',
+    optionHoverColor: '#1F2937',
+    optionCountColor: '#9CA3AF',
     checkboxColor: '#3B82F6',
+    activeFilterBgColor: '#DBEAFE',
+    activeFilterTextColor: '#1E40AF',
 
     // Counter Badges
     counterBgColor: '#E5E7EB',
@@ -92,6 +95,17 @@ const LayeredNavigationSidebar = ({
       if (priceLabel.styles?.fontWeight) updates.priceLabelFontWeight = priceLabel.styles.fontWeight;
     }
 
+    // Filter Options (from filter_option_styles slot)
+    const filterOptionStyles = allSlots['filter_option_styles'];
+    if (filterOptionStyles && filterOptionStyles.styles) {
+      if (filterOptionStyles.styles.optionTextColor) updates.optionTextColor = filterOptionStyles.styles.optionTextColor;
+      if (filterOptionStyles.styles.optionHoverColor) updates.optionHoverColor = filterOptionStyles.styles.optionHoverColor;
+      if (filterOptionStyles.styles.optionCountColor) updates.optionCountColor = filterOptionStyles.styles.optionCountColor;
+      if (filterOptionStyles.styles.checkboxColor) updates.checkboxColor = filterOptionStyles.styles.checkboxColor;
+      if (filterOptionStyles.styles.activeFilterBgColor) updates.activeFilterBgColor = filterOptionStyles.styles.activeFilterBgColor;
+      if (filterOptionStyles.styles.activeFilterTextColor) updates.activeFilterTextColor = filterOptionStyles.styles.activeFilterTextColor;
+    }
+
     if (Object.keys(updates).length > 0) {
       setFilterStyles(prev => ({ ...prev, ...updates }));
     }
@@ -110,7 +124,7 @@ const LayeredNavigationSidebar = ({
       const targetSlot = allSlots[targetSlotId];
       const styles = { ...targetSlot.styles };
 
-      // Map property to CSS property
+      // Map property to CSS property for label slots
       const cssPropertyMap = {
         headingColor: 'color',
         headingFontSize: 'fontSize',
@@ -126,13 +140,24 @@ const LayeredNavigationSidebar = ({
         counterFontSize: 'fontSize'
       };
 
-      const cssProperty = cssPropertyMap[property];
-      if (cssProperty) {
-        styles[cssProperty] = value;
+      // For filter_option_styles, store the property directly (not mapped to CSS property)
+      if (targetSlotId === 'filter_option_styles') {
+        styles[property] = value;
 
         // Call onClassChange to update database
         if (onClassChange) {
           onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
+        }
+      } else {
+        // For other slots, use CSS property mapping
+        const cssProperty = cssPropertyMap[property];
+        if (cssProperty) {
+          styles[cssProperty] = value;
+
+          // Call onClassChange to update database
+          if (onClassChange) {
+            onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata || {});
+          }
         }
       }
     }
