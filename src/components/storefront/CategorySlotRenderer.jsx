@@ -463,9 +463,23 @@ export function CategorySlotRenderer({
     }
 
     // Handle active_filters slot from category-config.js
-    // Note: Active filters are now handled directly within LayeredNavigation component
+    // Render as a separate component for independent positioning
     if (id === 'active_filters') {
-      return null; // LayeredNavigation handles active filters display
+      const ActiveFiltersComp = getSlotComponent('ActiveFilters');
+      if (ActiveFiltersComp) {
+        return wrapWithParentClass(
+          <ActiveFiltersComp
+            slot={slot}
+            className={className}
+            styles={styles}
+            categoryContext={categoryContext}
+            variableContext={variableContext}
+            context="storefront"
+            allSlots={slots}
+          />
+        );
+      }
+      return null;
     }
 
     // Main content container
