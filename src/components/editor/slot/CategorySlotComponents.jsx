@@ -248,8 +248,19 @@ const LayeredNavigation = createSlotComponent({
         const checkboxMatch = html.match(/accent-color:\s*([^;]+);/);
         console.log('🔍 Checkbox accent-color value:', checkboxMatch ? checkboxMatch[1] : 'not found');
       }
+
+      // Check count color
+      const countMatch = html.match(/<span class="text-sm ml-auto" style="color:\s*([^;]+);"/);
+      console.log('🔍 Count color value:', countMatch ? countMatch[1] : 'not found');
+
       if (html.includes('optionCountColor')) {
         console.log('❌ optionCountColor NOT replaced - still in HTML!');
+      }
+
+      // Show sample of filter option HTML
+      const sampleStart = html.indexOf('filter-option');
+      if (sampleStart !== -1) {
+        console.log('🔍 Filter option HTML sample:', html.substring(sampleStart, sampleStart + 400));
       }
 
       return (
