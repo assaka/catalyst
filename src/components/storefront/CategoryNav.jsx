@@ -678,31 +678,63 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
                         setHoveredSubmenuItem(null);
                     }}
                 >
-                    <Link 
+                    <Link
                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        style={{ paddingLeft: `${16 + depth * 12}px` }}
+                        className="flex items-center justify-between px-4 py-2 text-sm transition-colors"
+                        style={{
+                            paddingLeft: `${16 + depth * 12}px`,
+                            color: subcategoryLinkColor,
+                            backgroundColor: 'transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = subcategoryLinkHoverColor;
+                            e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = subcategoryLinkColor;
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
                         <ChevronRight className="w-3 h-3" />
                     </Link>
-                    
+
                     {/* Side submenu - shows ONLY this category's direct children when hoveredSubmenuItem matches */}
                     {hoveredSubmenuItem === category.id && (
-                        <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[60]">
+                        <div className="absolute left-full top-0 w-64 border border-gray-200 rounded-md shadow-lg z-[60]"
+                            style={{ backgroundColor: subcategoryBgColor }}
+                        >
                             <div>
-                                <Link 
+                                <Link
                                     to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                                    className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                    className="block px-4 py-2 text-sm font-medium border-b border-gray-200 transition-colors"
+                                    style={{ color: subcategoryLinkColor, backgroundColor: 'transparent' }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = subcategoryLinkHoverColor;
+                                        e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = subcategoryLinkColor;
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
                                 >
                                     View All {category.name}
                                 </Link>
                                 {/* Show direct children as simple links WITHOUT further hover capabilities */}
                                 {category.children.map(child => (
-                                    <Link 
+                                    <Link
                                         key={child.id}
                                         to={createCategoryUrl(store.slug, buildCategoryPath(child, categories).join('/'))}
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="block px-4 py-2 text-sm transition-colors"
+                                        style={{ color: subcategoryLinkColor, backgroundColor: 'transparent' }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.color = subcategoryLinkHoverColor;
+                                            e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.color = subcategoryLinkColor;
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                        }}
                                     >
                                         {child.name}
                                     </Link>
@@ -715,11 +747,23 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
         } else {
             // Regular category without children - simple link without chevron
             return (
-                <Link 
+                <Link
                     key={category.id}
                     to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    style={{ paddingLeft: `${16 + depth * 12}px` }}
+                    className="block px-4 py-2 text-sm transition-colors"
+                    style={{
+                        paddingLeft: `${16 + depth * 12}px`,
+                        color: subcategoryLinkColor,
+                        backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.color = subcategoryLinkHoverColor;
+                        e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.color = subcategoryLinkColor;
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                 >
                     {depth > 0 && '→ '}{category.name}
                 </Link>
@@ -808,11 +852,22 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
                                     {/* Submenu visible on hover */}
-                                    <div className="absolute left-0 top-full w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                                        style={{ backgroundColor: subcategoryBgColor }}
+                                    >
                                         <div>
-                                            <Link 
+                                            <Link
                                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                                className="block px-4 py-2 text-sm font-medium border-b border-gray-200 transition-colors"
+                                                style={{ color: subcategoryLinkColor, backgroundColor: 'transparent' }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.color = subcategoryLinkHoverColor;
+                                                    e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.color = subcategoryLinkColor;
+                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                }}
                                             >
                                                 View All {category.name}
                                             </Link>

@@ -24,32 +24,32 @@ const StoreLogo = createSlotComponent({
     const { store } = headerContext || {};
     const storeUrl = store ? createPublicUrl(store.slug, 'STOREFRONT') : '/';
 
+    // Use same rendering for both editor and storefront
+    const content = (
+      <>
+        {store?.logo_url ? (
+          <img src={store.logo_url} alt={store.name} className="h-8 w-8 object-contain" />
+        ) : (
+          <ShoppingBag className="h-8 w-8 text-blue-600" />
+        )}
+        <span className="text-xl font-bold text-gray-800" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
+          {store?.name || 'Demo Store'}
+        </span>
+      </>
+    );
+
     if (context === 'editor') {
       return (
         <div className={className || "flex items-center space-x-2"} style={styles}>
-          {store?.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="h-8 w-8 object-contain" />
-          ) : (
-            <ShoppingBag className="h-8 w-8 text-blue-600" />
-          )}
-          <span className="text-xl font-bold text-gray-800">{store?.name || 'Demo Store'}</span>
+          {content}
         </div>
       );
     }
 
-    // Storefront rendering
+    // Storefront rendering with link
     return (
       <Link to={storeUrl} className={className || "flex items-center space-x-2"} style={styles}>
-        {store?.logo_url ? (
-          <img
-            src={store.logo_url}
-            alt={store.name}
-            className="h-8 w-8 object-contain"
-          />
-        ) : (
-          <ShoppingBag className="h-8 w-8 text-blue-600" />
-        )}
-        <span className="text-xl font-bold text-gray-800">{store?.name || 'Store'}</span>
+        {content}
       </Link>
     );
   }
@@ -110,12 +110,14 @@ const MiniCartSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className={className || "relative p-2 text-gray-700 hover:text-gray-900"} style={styles}>
-          <ShoppingBag className="w-6 h-6" />
-          <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            0
-          </span>
-        </button>
+        <div className={className || "relative"} style={styles}>
+          <button className="relative p-2 text-gray-700 hover:text-gray-900">
+            <ShoppingBag className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              0
+            </span>
+          </button>
+        </div>
       );
     }
 
@@ -135,17 +137,23 @@ const MiniCartSlot = createSlotComponent({
  */
 const WishlistDropdownSlot = createSlotComponent({
   name: 'WishlistDropdown',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     if (context === 'editor') {
       return (
-        <button className="relative p-2 text-gray-700 hover:text-gray-900">
-          <Heart className="w-6 h-6" />
-        </button>
+        <div className={className} style={styles}>
+          <button className="relative p-2 text-gray-700 hover:text-gray-900">
+            <Heart className="w-6 h-6" />
+          </button>
+        </div>
       );
     }
 
     // Storefront rendering
-    return <WishlistDropdown />;
+    return (
+      <div className={className} style={styles}>
+        <WishlistDropdown />
+      </div>
+    );
   }
 });
 
@@ -217,25 +225,27 @@ const CategoryNavSlot = createSlotComponent({
 });
 
 /**
- * UserMenu Component
+ * UserMenu Component - Simple icon-based user menu
  */
 const UserMenuSlot = createSlotComponent({
   name: 'UserMenu',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { user, userLoading, handleCustomerLogout } = headerContext || {};
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900">
-          <User className="w-6 h-6" />
-        </button>
+        <div className={className} style={styles}>
+          <button className="p-2 text-gray-700 hover:text-gray-900">
+            <User className="w-6 h-6" />
+          </button>
+        </div>
       );
     }
 
     // Storefront rendering
     if (userLoading) {
       return (
-        <div className="p-2">
+        <div className={className || "p-2"} style={styles}>
           <User className="w-6 h-6 text-gray-400 animate-pulse" />
         </div>
       );
@@ -243,7 +253,7 @@ const UserMenuSlot = createSlotComponent({
 
     if (user) {
       return (
-        <div className="relative group">
+        <div className={className || "relative group"} style={styles}>
           <button className="flex items-center p-2 text-gray-700 hover:text-gray-900">
             <User className="w-6 h-6" />
             <ChevronDown className="w-4 h-4 ml-1" />
@@ -265,9 +275,82 @@ const UserMenuSlot = createSlotComponent({
     }
 
     return (
-      <Link to="/customer/login" className="p-2 text-gray-700 hover:text-gray-900">
+      <Link to="/customer/login" className={className || "p-2 text-gray-700 hover:text-gray-900"} style={styles}>
         <User className="w-6 h-6" />
       </Link>
+    );
+  }
+});
+
+/**
+ * UserAccountMenu Component - Button-based user account menu (for desktop)
+ */
+const UserAccountMenuSlot = createSlotComponent({
+  name: 'UserAccountMenu',
+  render: ({ slot, context, headerContext, className, styles }) => {
+    const { user, userLoading, handleCustomerLogout, store, navigate } = headerContext || {};
+
+    const buttonStyles = {
+      backgroundColor: styles?.backgroundColor || '#2563EB',
+      color: styles?.color || '#ffffff',
+      borderRadius: styles?.borderRadius || '0.5rem',
+      padding: styles?.padding || '0.5rem 1rem'
+    };
+
+    const hoverBg = styles?.hoverBackgroundColor || '#1D4ED8';
+
+    if (context === 'editor') {
+      return (
+        <div className={className} style={styles}>
+          <Button
+            size="sm"
+            className="px-4 py-2 flex items-center space-x-2"
+            style={buttonStyles}
+          >
+            <User className="w-4 h-4" />
+            <span>Sign In</span>
+          </Button>
+        </div>
+      );
+    }
+
+    // Storefront rendering
+    if (user) {
+      return (
+        <div className={className} style={styles}>
+          <Button
+            size="sm"
+            className="px-4 py-2 flex items-center space-x-1"
+            style={buttonStyles}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
+          >
+            <User className="w-4 h-4" />
+            <span>{user.first_name || user.name || user.email}</span>
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className={className} style={styles}>
+        <Button
+          onClick={() => {
+            localStorage.setItem('customer_auth_store_id', store?.id);
+            localStorage.setItem('customer_auth_store_code', store?.slug);
+            navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
+          }}
+          disabled={userLoading}
+          className="px-4 py-2 flex items-center space-x-2"
+          style={buttonStyles}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
+        >
+          <User className="w-5 h-5 mr-2" />
+          <span>Sign In</span>
+        </Button>
+      </div>
     );
   }
 });
@@ -399,6 +482,90 @@ const MobileSearchButtonSlot = createSlotComponent({
   }
 });
 
+// Create aliases for mobile components with correct names
+const MobileSearchToggleSlot = MobileSearchButtonSlot;
+const MobileMenuToggleSlot = MobileMenuButtonSlot;
+
+// MobileUserMenu - Icon button for mobile user menu
+const MobileUserMenuSlot = createSlotComponent({
+  name: 'MobileUserMenu',
+  render: ({ slot, context, headerContext, className, styles }) => {
+    const { user, userLoading, store, navigate } = headerContext || {};
+
+    if (context === 'editor') {
+      return (
+        <div className={className} style={styles}>
+          <Button variant="ghost" size="icon">
+            <User className="w-5 h-5" />
+          </Button>
+        </div>
+      );
+    }
+
+    // Storefront rendering
+    return (
+      <div className={className} style={styles}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            if (user) {
+              // Show dropdown or navigate to account
+            } else {
+              localStorage.setItem('customer_auth_store_id', store?.id);
+              localStorage.setItem('customer_auth_store_code', store?.slug);
+              navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
+            }
+          }}
+          disabled={userLoading}
+        >
+          <User className="w-5 h-5" />
+        </Button>
+      </div>
+    );
+  }
+});
+
+// Create MobileNavigation component
+const MobileNavigationSlot = createSlotComponent({
+  name: 'MobileNavigation',
+  render: ({ slot, context, headerContext, className, styles }) => {
+    const { categories = [], store, setMobileMenuOpen } = headerContext || {};
+
+    if (context === 'editor') {
+      return (
+        <div className={className || "space-y-2"} style={styles}>
+          <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md">
+            Electronics
+          </a>
+          <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md">
+            Clothing
+          </a>
+          <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md">
+            Home & Garden
+          </a>
+        </div>
+      );
+    }
+
+    // Storefront rendering
+    return (
+      <div className={className} style={styles}>
+        {categories?.map(cat => (
+          <Link
+            key={cat.id}
+            to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
+            className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
+            onClick={() => setMobileMenuOpen?.(false)}
+          >
+            {cat.name}
+          </Link>
+        ))}
+      </div>
+    );
+  }
+});
+
 // Register all components with the ComponentRegistry
 registerSlotComponent('StoreLogo', StoreLogo);
 registerSlotComponent('HeaderSearch', HeaderSearchSlot);
@@ -406,10 +573,16 @@ registerSlotComponent('MiniCart', MiniCartSlot);
 registerSlotComponent('WishlistDropdown', WishlistDropdownSlot);
 registerSlotComponent('CategoryNav', CategoryNavSlot);
 registerSlotComponent('UserMenu', UserMenuSlot);
+registerSlotComponent('UserAccountMenu', UserAccountMenuSlot);
 registerSlotComponent('LanguageSelector', LanguageSelectorSlot);
 registerSlotComponent('CountrySelector', CountrySelectorSlot);
+registerSlotComponent('CountrySelect', CountrySelectorSlot);
 registerSlotComponent('MobileMenuButton', MobileMenuButtonSlot);
 registerSlotComponent('MobileSearchButton', MobileSearchButtonSlot);
+registerSlotComponent('MobileSearchToggle', MobileSearchToggleSlot);
+registerSlotComponent('MobileUserMenu', MobileUserMenuSlot);
+registerSlotComponent('MobileMenuToggle', MobileMenuToggleSlot);
+registerSlotComponent('MobileNavigation', MobileNavigationSlot);
 
 // Export all components for potential individual use
 export {
@@ -419,8 +592,13 @@ export {
   WishlistDropdownSlot,
   CategoryNavSlot,
   UserMenuSlot,
+  UserAccountMenuSlot,
   LanguageSelectorSlot,
   CountrySelectorSlot,
   MobileMenuButtonSlot,
-  MobileSearchButtonSlot
+  MobileSearchButtonSlot,
+  MobileSearchToggleSlot,
+  MobileUserMenuSlot,
+  MobileMenuToggleSlot,
+  MobileNavigationSlot
 };
