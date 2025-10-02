@@ -566,8 +566,8 @@ const categoryCustomSlotRenderer = (slot, context) => {
   return null;
 };
 
-// Category Editor Configuration
-const categoryEditorConfig = {
+// Category Editor Configuration Factory - creates config with real filterableAttributes
+const createCategoryEditorConfig = (filterableAttributes) => ({
   pageType: 'category',
   pageName: 'Category',
   slotType: 'category_layout',
@@ -596,7 +596,7 @@ const categoryEditorConfig = {
     CategoryProductItemCardSlot,
     CategoryProductItemsSlot
   },
-  generateContext: generateMockCategoryContext,
+  generateContext: () => generateMockCategoryContext(filterableAttributes),
   createDefaultSlots,
   viewModeAdjustments: {
     filters_container: {
@@ -681,10 +681,14 @@ const CategorySlotsEditor = ({
   onSave,
   viewMode = 'grid'
 }) => {
-  // Get store settings for product grid configuration
+  // Get store context for settings and filterableAttributes
   // Handle null case when StoreProvider is not available in editor context
   const storeContext = useStore();
   const storeSettings = storeContext?.settings || null;
+  const filterableAttributes = storeContext?.filterableAttributes || [];
+
+  // Create editor config with real filterableAttributes from database (same as storefront)
+  const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes);
 
   // Create enhanced config with store settings
   const enhancedConfig = {

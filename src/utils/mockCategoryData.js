@@ -1,8 +1,9 @@
 /**
  * Mock category data generator for editor preview
+ * Can optionally receive real filterableAttributes from StoreProvider to maintain uniform flow
  */
 
-export const generateMockCategoryContext = () => {
+export const generateMockCategoryContext = (realFilterableAttributes = null) => {
   const brands = ['Apple', 'Samsung', 'Google', 'OnePlus', 'Sony', 'LG'];
   const colors = ['Black', 'White', 'Blue', 'Red', 'Silver', 'Gold'];
   const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL'];
@@ -38,59 +39,76 @@ export const generateMockCategoryContext = () => {
     };
   });
 
+  // Use real filterableAttributes from database if provided, otherwise use mock data
+  const filterableAttributesToUse = realFilterableAttributes && realFilterableAttributes.length > 0
+    ? realFilterableAttributes
+    : [
+        {
+          code: 'color',
+          name: 'Color',
+          is_filterable: true,
+          options: colors.map(color => ({ value: color, label: color }))
+        },
+        {
+          code: 'brand',
+          name: 'Brand',
+          is_filterable: true,
+          options: brands.map(brand => ({ value: brand, label: brand }))
+        },
+        {
+          code: 'size',
+          name: 'Size',
+          is_filterable: true,
+          options: sizes.map(size => ({ value: size, label: size }))
+        },
+        {
+          code: 'material',
+          name: 'Material',
+          is_filterable: true,
+          options: materials.map(material => ({ value: material, label: material }))
+        }
+      ];
+
   // Build filters object with proper structure for templates
+  // Build attribute filters from filterableAttributes (same as storefront)
+  const attributeFilters = filterableAttributesToUse.map(attr => {
+    const attrCode = attr.code || attr.name;
+
+    // For mock data, create some sample options if not provided
+    let options = attr.options || [];
+    if (options.length === 0) {
+      // Generate mock options based on attribute code
+      const mockValues = {
+        'brand': brands,
+        'color': colors,
+        'size': sizes,
+        'material': materials
+      };
+      const values = mockValues[attrCode] || ['Option 1', 'Option 2', 'Option 3'];
+      options = values.map(val => ({ value: val, label: val }));
+    }
+
+    return {
+      code: attrCode,
+      label: attr.name || attr.label || attrCode,
+      options: options.map(opt => ({
+        value: opt.value,
+        label: opt.label || opt.value,
+        count: Math.floor(Math.random() * 10) + 1,
+        active: false,
+        attributeCode: attrCode
+      }))
+    };
+  });
+
   const filters = {
     price: {
       min: 50,
       max: 500,
-      selected: [50, 500]
+      selected: [50, 500],
+      type: 'slider'
     },
-    attributes: [
-      {
-        code: 'brand',
-        label: 'Brand',
-        options: brands.map((brand, idx) => ({
-          value: brand,
-          label: brand,
-          count: Math.floor(Math.random() * 10) + 1,
-          active: false,
-          attributeCode: 'brand'
-        }))
-      },
-      {
-        code: 'color',
-        label: 'Color',
-        options: colors.map((color, idx) => ({
-          value: color,
-          label: color,
-          count: Math.floor(Math.random() * 8) + 1,
-          active: false,
-          attributeCode: 'color'
-        }))
-      },
-      {
-        code: 'size',
-        label: 'Size',
-        options: sizes.map((size, idx) => ({
-          value: size,
-          label: size,
-          count: Math.floor(Math.random() * 5) + 1,
-          active: false,
-          attributeCode: 'size'
-        }))
-      },
-      {
-        code: 'material',
-        label: 'Material',
-        options: materials.map((material, idx) => ({
-          value: material,
-          label: material,
-          count: Math.floor(Math.random() * 6) + 1,
-          active: false,
-          attributeCode: 'material'
-        }))
-      }
-    ]
+    attributes: attributeFilters
   };
 
   // Pagination data
@@ -129,32 +147,7 @@ export const generateMockCategoryContext = () => {
     products: sampleProducts,
     allProducts: sampleProducts,
     filters,
-    filterableAttributes: [
-      {
-        code: 'color',
-        name: 'Color',
-        is_filterable: true,
-        options: colors.map(color => ({ value: color, label: color }))
-      },
-      {
-        code: 'brand',
-        name: 'Brand',
-        is_filterable: true,
-        options: brands.map(brand => ({ value: brand, label: brand }))
-      },
-      {
-        code: 'size',
-        name: 'Size',
-        is_filterable: true,
-        options: sizes.map(size => ({ value: size, label: size }))
-      },
-      {
-        code: 'material',
-        name: 'Material',
-        is_filterable: true,
-        options: materials.map(material => ({ value: material, label: material }))
-      }
-    ],
+    filterableAttributes: filterableAttributesToUse,
     pagination,
     sortOption: 'default',
     currentPage: 1,
