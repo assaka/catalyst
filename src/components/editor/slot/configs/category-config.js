@@ -575,10 +575,10 @@ export const categoryConfig = {
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
-              <button class="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3"
+              <button class="w-full flex items-center justify-between mb-3"
                       data-action="toggle-filter-section"
                       data-section="price">
-                <span>Price</span>
+                <span style="color: {{priceLabelStyles.color}}; font-size: {{priceLabelStyles.fontSize}}; font-weight: {{priceLabelStyles.fontWeight}};">Price</span>
                 <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -641,10 +641,10 @@ export const categoryConfig = {
           <!-- Attribute Filters (Brand, Color, Size, Material, etc.) -->
           {{#each filters.attributes}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="{{this.code}}">
-              <button class="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3"
+              <button class="w-full flex items-center justify-between mb-3"
                       data-action="toggle-filter-section"
                       data-section="{{this.code}}">
-                <span>{{this.label}}</span>
+                <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">{{this.label}}</span>
                 <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>

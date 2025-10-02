@@ -169,6 +169,20 @@ export function UnifiedSlotRenderer({
     activeFilterTextColor: '#1E40AF'
   };
 
+  // Get attribute label styles
+  const attributeLabelStyles = slots?.attribute_filter_label?.styles || {
+    color: '#374151',
+    fontSize: '1rem',
+    fontWeight: '600'
+  };
+
+  // Get price label styles
+  const priceLabelStyles = slots?.price_filter_label?.styles || {
+    color: '#374151',
+    fontSize: '1rem',
+    fontWeight: '600'
+  };
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     category: categoryData?.category || categoryData,
@@ -178,6 +192,8 @@ export function UnifiedSlotRenderer({
     // Category-specific data
     filters: categoryData?.filters || {},
     filterOptionStyles: filterOptionStyles,
+    attributeLabelStyles: attributeLabelStyles,
+    priceLabelStyles: priceLabelStyles,
     filterableAttributes: categoryData?.filterableAttributes || [],
     pagination: categoryData?.pagination || {}
   };

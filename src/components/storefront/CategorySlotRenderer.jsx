@@ -310,6 +310,20 @@ export function CategorySlotRenderer({
         activeFilterTextColor: '#1E40AF'
       };
 
+      // Get attribute label styles
+      const attributeLabelStyles = slots?.attribute_filter_label?.styles || {
+        color: '#374151',
+        fontSize: '1rem',
+        fontWeight: '600'
+      };
+
+      // Get price label styles
+      const priceLabelStyles = slots?.price_filter_label?.styles || {
+        color: '#374151',
+        fontSize: '1rem',
+        fontWeight: '600'
+      };
+
       const variableContext = {
         category,
         products: formattedProducts,
@@ -330,7 +344,9 @@ export function CategorySlotRenderer({
           current: sortOption
         },
         settings: settingsWithDefaults,
-        filterOptionStyles: filterOptionStyles
+        filterOptionStyles: filterOptionStyles,
+        attributeLabelStyles: attributeLabelStyles,
+        priceLabelStyles: priceLabelStyles
       };
 
       // Special handling for breadcrumbs - pass styles directly and slots at top level
