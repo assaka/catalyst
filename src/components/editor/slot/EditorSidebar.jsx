@@ -1316,10 +1316,11 @@ const EditorSidebar = ({
   // Only show sidebar when a slot element is selected
   if (!isVisible || !isSlotElement) return null;
 
-  // Check if this is a LayeredNavigation slot - render specialized sidebar
-  const isLayeredNavigation = slotId === 'layered_navigation' || slotConfig?.component === 'LayeredNavigation';
+  // Check if slot has a specialized sidebar configured
+  const specializedSidebar = slotConfig?.metadata?.editorSidebar;
 
-  if (isLayeredNavigation) {
+  // Render specialized sidebar if configured
+  if (specializedSidebar === 'LayeredNavigationSidebar') {
     return (
       <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col editor-sidebar" style={{ zIndex: 1000 }}>
         {/* Header */}

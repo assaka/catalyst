@@ -688,7 +688,8 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         component: 'LayeredNavigation',
-        displayName: 'Product Filters (Price, Brand, Size, etc.)'
+        displayName: 'Product Filters (Price, Brand, Size, etc.)',
+        editorSidebar: 'LayeredNavigationSidebar'
       }
     },
 

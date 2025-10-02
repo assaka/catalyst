@@ -238,82 +238,17 @@ const LayeredNavigation = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor: Render child label slots from category-config.js (allSlots)
-      // These provide style controls - user can edit color, fontSize, fontWeight
-
-      // Get child label slots that have layered_navigation as parent
-      const childLabelSlots = {};
-
-      console.log('🔍 allSlots:', allSlots ? Object.keys(allSlots) : 'null');
-
-      if (allSlots) {
-        Object.values(allSlots).forEach(childSlot => {
-          console.log('🔍 Checking slot:', childSlot.id, 'parentId:', childSlot.parentId);
-          if (childSlot.parentId === 'layered_navigation' &&
-              (childSlot.id.includes('filter_label') || childSlot.id === 'filter_heading')) {
-            childLabelSlots[childSlot.id] = childSlot;
-            console.log('✅ Added child slot:', childSlot.id);
-          }
-        });
-      }
-
-      console.log('🔍 Found child label slots:', Object.keys(childLabelSlots));
-
-      // Render template with filters
+      // Editor: Render template with filters
+      // Style controls are now in the specialized LayeredNavigationSidebar
       const html = processVariables(slot?.content || '', variableContext);
 
       return (
-        <div>
-          {/* Editable style controls for filter labels */}
-          <div
-            className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded"
-            onClick={(e) => {
-              // Prevent parent slot selection when clicking in this area
-              e.stopPropagation();
-            }}
-          >
-            <div className="text-xs text-blue-700 font-bold mb-2">
-              📝 FILTER LABEL STYLES (Click to edit color, font size, font weight):
-            </div>
-            <div className="text-xs text-gray-600 mb-2">
-              Edit styles here → They'll be applied to the template on publish
-            </div>
-            <div className="space-y-2">
-              {Object.values(childLabelSlots).map((childSlot) => {
-                console.log('🔍 Rendering child slot:', childSlot.id, childSlot);
-                return (
-                  <div
-                    key={childSlot.id}
-                    className="bg-white p-2 rounded border border-gray-300 hover:border-blue-500 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('🔍 Child slot clicked:', childSlot.id);
-                    }}
-                  >
-                    <div className="text-xs text-gray-500 mb-1">{childSlot.metadata?.displayName || childSlot.id}</div>
-                    <UnifiedSlotRenderer
-                      slots={{ [childSlot.id]: childSlot }}
-                      parentId={null}
-                      context={context}
-                      categoryData={categoryContext}
-                      variableContext={variableContext}
-                      mode="edit"
-                      showBorders={true}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Template with filter structure */}
-          <div
-            ref={containerRef}
-            className={className || slot.className}
-            style={styles || slot.styles}
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        </div>
+        <div
+          ref={containerRef}
+          className={className || slot.className}
+          style={styles || slot.styles}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       );
     }
 

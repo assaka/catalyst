@@ -6,6 +6,7 @@ import PriceFilterLabelSection from './sections/PriceFilterLabelSection';
 import FilterOptionsSection from './sections/FilterOptionsSection';
 import CounterBadgesSection from './sections/CounterBadgesSection';
 import ContainerSection from './sections/ContainerSection';
+import UnifiedSlotRenderer from '../UnifiedSlotRenderer';
 
 /**
  * Specialized sidebar for LayeredNavigation filter styling
@@ -134,8 +135,54 @@ const LayeredNavigationSidebar = ({
     }
   };
 
+  // Get child label slots for preview
+  const childLabelSlots = {};
+  if (allSlots) {
+    Object.values(allSlots).forEach(childSlot => {
+      if (childSlot.parentId === 'layered_navigation' &&
+          (childSlot.id.includes('filter_label') || childSlot.id === 'filter_heading')) {
+        childLabelSlots[childSlot.id] = childSlot;
+      }
+    });
+  }
+
   return (
     <div className="space-y-0">
+      {/* Preview Section - Editable Filter Labels */}
+      {Object.keys(childLabelSlots).length > 0 && (
+        <div className="border-b border-gray-200">
+          <div className="p-3 bg-blue-50">
+            <div className="text-xs text-blue-700 font-bold mb-2">
+              📝 FILTER LABEL PREVIEW (Click to edit):
+            </div>
+            <div className="text-xs text-gray-600 mb-3">
+              Edit styles below → They'll be applied to filters on publish
+            </div>
+            <div className="space-y-2">
+              {Object.values(childLabelSlots).map((childSlot) => (
+                <div
+                  key={childSlot.id}
+                  className="bg-white p-2 rounded border border-gray-300 hover:border-blue-500 cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-xs text-gray-500 mb-1">
+                    {childSlot.metadata?.displayName || childSlot.id}
+                  </div>
+                  <UnifiedSlotRenderer
+                    slots={{ [childSlot.id]: childSlot }}
+                    parentId={null}
+                    context="editor"
+                    variableContext={{}}
+                    mode="edit"
+                    showBorders={true}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filter Heading */}
       <SectionHeader
         title="Filter Heading"
