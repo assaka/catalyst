@@ -176,6 +176,16 @@ export function UnifiedSlotRenderer({
     fontWeight: '600'
   };
 
+  // Get active filter styles
+  const activeFilterStyles = slots?.active_filter_styles?.styles || {
+    titleColor: '#374151',
+    titleFontSize: '0.875rem',
+    titleFontWeight: '600',
+    backgroundColor: '#DBEAFE',
+    textColor: '#1E40AF',
+    clearAllColor: '#DC2626'
+  };
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     category: categoryData?.category || categoryData,
@@ -186,8 +196,14 @@ export function UnifiedSlotRenderer({
     filters: categoryData?.filters || {},
     filterOptionStyles: filterOptionStyles,
     attributeLabelStyles: attributeLabelStyles,
+    activeFilterStyles: activeFilterStyles,
     filterableAttributes: categoryData?.filterableAttributes || [],
-    pagination: categoryData?.pagination || {}
+    pagination: categoryData?.pagination || {},
+    // Demo active filters for editor
+    activeFilters: context === 'editor' ? [
+      { label: 'Brand', value: 'Nike', type: 'attribute', attributeCode: 'brand' },
+      { label: 'Color', value: 'Blue', type: 'attribute', attributeCode: 'color' }
+    ] : (categoryData?.activeFilters || [])
   };
 
 

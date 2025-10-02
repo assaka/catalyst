@@ -317,6 +317,16 @@ export function CategorySlotRenderer({
         fontWeight: '600'
       };
 
+      // Get active filter styles
+      const activeFilterStyles = slots?.active_filter_styles?.styles || {
+        titleColor: '#374151',
+        titleFontSize: '0.875rem',
+        titleFontWeight: '600',
+        backgroundColor: '#DBEAFE',
+        textColor: '#1E40AF',
+        clearAllColor: '#DC2626'
+      };
+
       const variableContext = {
         category,
         products: formattedProducts,
@@ -338,7 +348,8 @@ export function CategorySlotRenderer({
         },
         settings: settingsWithDefaults,
         filterOptionStyles: filterOptionStyles,
-        attributeLabelStyles: attributeLabelStyles
+        attributeLabelStyles: attributeLabelStyles,
+        activeFilterStyles: activeFilterStyles
       };
 
       // Special handling for breadcrumbs - pass styles directly and slots at top level

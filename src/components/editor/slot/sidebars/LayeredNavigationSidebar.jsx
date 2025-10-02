@@ -5,6 +5,7 @@ import SectionHeader from './components/SectionHeader';
 import FilterHeadingSection from './sections/FilterHeadingSection';
 import FilterLabelsSection from './sections/FilterLabelsSection';
 import FilterOptionsSection from './sections/FilterOptionsSection';
+import ActiveFiltersSection from './sections/ActiveFiltersSection';
 import ContainerSection from './sections/ContainerSection';
 import UnifiedSlotRenderer from '../UnifiedSlotRenderer';
 
@@ -24,6 +25,7 @@ const LayeredNavigationSidebar = ({
     filterHeading: true,
     filterLabels: true,
     filterOptions: true,
+    activeFilters: true,
     container: true
   });
 
@@ -47,6 +49,12 @@ const LayeredNavigationSidebar = ({
     checkboxColor: '#3B82F6',
     activeFilterBgColor: '#DBEAFE',
     activeFilterTextColor: '#1E40AF',
+
+    // Active Filters (from active_filter_styles slot)
+    activeFilterTitleColor: '#374151',
+    activeFilterTitleFontSize: '0.875rem',
+    activeFilterTitleFontWeight: '600',
+    activeFilterClearAllColor: '#DC2626',
 
     // Container
     containerBg: 'transparent',
@@ -87,6 +95,17 @@ const LayeredNavigationSidebar = ({
       if (filterOptionStyles.styles.checkboxColor) updates.checkboxColor = filterOptionStyles.styles.checkboxColor;
       if (filterOptionStyles.styles.activeFilterBgColor) updates.activeFilterBgColor = filterOptionStyles.styles.activeFilterBgColor;
       if (filterOptionStyles.styles.activeFilterTextColor) updates.activeFilterTextColor = filterOptionStyles.styles.activeFilterTextColor;
+    }
+
+    // Active Filters (from active_filter_styles slot)
+    const activeFilterStylesSlot = allSlots['active_filter_styles'];
+    if (activeFilterStylesSlot && activeFilterStylesSlot.styles) {
+      if (activeFilterStylesSlot.styles.titleColor) updates.activeFilterTitleColor = activeFilterStylesSlot.styles.titleColor;
+      if (activeFilterStylesSlot.styles.titleFontSize) updates.activeFilterTitleFontSize = activeFilterStylesSlot.styles.titleFontSize;
+      if (activeFilterStylesSlot.styles.titleFontWeight) updates.activeFilterTitleFontWeight = activeFilterStylesSlot.styles.titleFontWeight;
+      if (activeFilterStylesSlot.styles.backgroundColor) updates.activeFilterBgColor = activeFilterStylesSlot.styles.backgroundColor;
+      if (activeFilterStylesSlot.styles.textColor) updates.activeFilterTextColor = activeFilterStylesSlot.styles.textColor;
+      if (activeFilterStylesSlot.styles.clearAllColor) updates.activeFilterClearAllColor = activeFilterStylesSlot.styles.clearAllColor;
     }
 
     // Container (from filters_container slot)
@@ -250,6 +269,19 @@ const LayeredNavigationSidebar = ({
         onToggle={toggleSection}
       >
         <FilterOptionsSection
+          styles={filterStyles}
+          onStyleChange={handleStyleChange}
+        />
+      </SectionHeader>
+
+      {/* Active Filters */}
+      <SectionHeader
+        title="Active Filters"
+        section="activeFilters"
+        expanded={expandedSections.activeFilters}
+        onToggle={toggleSection}
+      >
+        <ActiveFiltersSection
           styles={filterStyles}
           onStyleChange={handleStyleChange}
         />

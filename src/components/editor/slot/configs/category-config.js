@@ -229,12 +229,14 @@ export const categoryConfig = {
       content: `
         {{#if activeFilters.length}}
           <div class="mb-4">
-            <h4 class="text-sm font-semibold text-gray-700 mb-2">Active Filters</h4>
+            <h4 style="color: {{activeFilterStyles.titleColor}}; font-size: {{activeFilterStyles.titleFontSize}}; font-weight: {{activeFilterStyles.titleFontWeight}};" class="mb-2">Active Filters</h4>
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
-                <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                <div class="flex items-center gap-1 rounded-full text-sm px-3 py-1"
+                     style="background-color: {{activeFilterStyles.backgroundColor}}; color: {{activeFilterStyles.textColor}};">
                   <span>{{this.label}}: {{this.value}}</span>
-                  <button class="ml-1 hover:text-blue-900"
+                  <button class="ml-1"
+                          style="color: {{activeFilterStyles.textColor}};"
                           data-action="remove-filter"
                           data-filter-type="{{this.type}}"
                           data-filter-value="{{this.value}}"
@@ -247,7 +249,8 @@ export const categoryConfig = {
               {{/each}}
             </div>
             <div class="mt-2">
-              <button class="text-sm text-red-600 hover:text-red-800 underline"
+              <button class="text-sm underline"
+                      style="color: {{activeFilterStyles.clearAllColor}};"
                       data-action="clear-all-filters">
                 Clear All
               </button>
@@ -259,7 +262,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'filters_container',
-      position: { col: 1, row: 2.5 },
+      position: { col: 1, row: 2.1 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
@@ -269,20 +272,20 @@ export const categoryConfig = {
       }
     },
 
-    // Active filter tag styling
-    active_filter_tag_styles: {
-      id: 'active_filter_tag_styles',
+    // Active filter styling
+    active_filter_styles: {
+      id: 'active_filter_styles',
       type: 'style_config',
       content: '',
       className: '',
       parentClassName: '',
       styles: {
-        backgroundColor: '#DBEAFE', // Default blue-100
-        textColor: '#1E40AF', // Default blue-800
-        hoverColor: '#1E3A8A', // Default blue-900
-        borderRadius: '9999px', // Full rounded
-        fontSize: '0.875rem', // text-sm
-        padding: '0.25rem 0.75rem' // py-1 px-3
+        titleColor: '#374151', // Default gray-700 for "Active Filters" heading
+        titleFontSize: '0.875rem', // Default text-sm
+        titleFontWeight: '600', // Default semibold
+        backgroundColor: '#DBEAFE', // Default blue-100 for filter tags
+        textColor: '#1E40AF', // Default blue-800 for filter tag text
+        clearAllColor: '#DC2626' // Default red-600 for "Clear All" button
       },
       parentId: 'active_filters',
       position: { col: 1, row: 1 },
@@ -291,9 +294,9 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         microslot: true,
-        displayName: 'Active Filter Tag Styling',
+        displayName: 'Active Filter Styling',
         labelType: 'styling',
-        customizable: ['backgroundColor', 'textColor', 'hoverColor', 'borderRadius', 'fontSize', 'padding']
+        customizable: ['titleColor', 'titleFontSize', 'titleFontWeight', 'backgroundColor', 'textColor', 'clearAllColor']
       }
     },
 
