@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { 
-  Bold, 
-  Italic, 
-  AlignLeft, 
-  AlignCenter, 
+import {
+  Bold,
+  Italic,
+  AlignLeft,
+  AlignCenter,
   AlignRight,
   Maximize2,
   X,
@@ -20,6 +20,7 @@ import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
 import GridLayoutControl from './GridLayoutControl';
+import LayeredNavigationSidebar from './sidebars/LayeredNavigationSidebar';
 
 /**
  * Check if a class string contains bold styling
@@ -1315,6 +1316,42 @@ const EditorSidebar = ({
   // Only show sidebar when a slot element is selected
   if (!isVisible || !isSlotElement) return null;
 
+  // Check if this is a LayeredNavigation slot - render specialized sidebar
+  const isLayeredNavigation = slotId === 'layered_navigation' || slotConfig?.component === 'LayeredNavigation';
+
+  if (isLayeredNavigation) {
+    return (
+      <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col editor-sidebar" style={{ zIndex: 1000 }}>
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Filter Styling
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearSelection}
+            className="h-6 w-6 p-0"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          <LayeredNavigationSidebar
+            slotId={slotId}
+            slotConfig={slotConfig}
+            allSlots={allSlots}
+            onClassChange={onClassChange}
+            onTextChange={onTextChange}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Default general sidebar
   return (
     <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col editor-sidebar" style={{ zIndex: 1000 }}>
       {/* Header */}
