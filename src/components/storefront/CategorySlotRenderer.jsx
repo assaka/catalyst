@@ -162,18 +162,6 @@ export function CategorySlotRenderer({
     // Fallback: check metadata.component if component field is missing (for backward compatibility)
     const finalComponentName = componentName || metadata?.component;
 
-    // Debug logging for active_filters
-    if (id === 'active_filters') {
-      console.log('🔍 active_filters slot:', {
-        id,
-        type,
-        componentName,
-        finalComponentName,
-        hasContent: !!content,
-        contentPreview: content?.substring(0, 100)
-      });
-    }
-
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && finalComponentName && ComponentRegistry.has(finalComponentName)) {
       const registeredComponent = ComponentRegistry.get(finalComponentName);
