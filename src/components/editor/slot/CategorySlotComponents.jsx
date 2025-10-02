@@ -238,126 +238,63 @@ const LayeredNavigation = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor: Render template + editable label overlays
-      const filters = categoryContext?.filters || { attributes: [] };
+      // Editor: Render child label slots from category-config.js (allSlots)
+      // These provide style controls - user can edit color, fontSize, fontWeight
 
-      // Get shared attribute filter label configuration from category-config.js
-      const attributeFilterLabelSlot = allSlots?.attribute_filter_label || {};
-      const sharedLabelStyles = attributeFilterLabelSlot.styles || { color: '#374151' };
-
-      // Create editable slot instances for filter labels
-      const editableLabelSlots = {};
-
-      // Shared Attribute Filter Label (editable control that mirrors to all)
-      editableLabelSlots['attribute_filter_label'] = {
-        id: 'attribute_filter_label',
-        type: 'text',
-        content: 'Edit All Attribute Labels',
-        className: 'font-semibold text-base mb-3 bg-yellow-100 border-2 border-yellow-400 px-2 py-1',
-        styles: {
-          ...sharedLabelStyles,
-          fontSize: sharedLabelStyles.fontSize || '1rem',
-          fontWeight: sharedLabelStyles.fontWeight || '600',
-          color: sharedLabelStyles.color || '#374151'
-        },
-        parentId: 'layered_navigation',
-        metadata: {
-          microslot: true,
-          editable: true,
-          resizable: false,
-          draggable: false,
-          displayName: 'All Attribute Filter Labels (Brand, Color, Size, Material)',
-          editableProperties: ['color', 'fontSize', 'fontWeight']
-        }
-      };
-
-      // Price filter label
-      editableLabelSlots['price_filter_label'] = {
-        id: 'price_filter_label',
-        type: 'text',
-        content: 'Price',
-        className: 'font-semibold text-base mb-3',
-        styles: {
-          fontSize: '1rem',
-          fontWeight: '600',
-          color: '#374151'
-        },
-        parentId: 'layered_navigation',
-        metadata: {
-          microslot: true,
-          editable: true,
-          resizable: false,
-          draggable: false,
-          displayName: 'Price Filter Label',
-          editableProperties: ['color', 'fontSize', 'fontWeight']
-        }
-      };
-
-      // Individual attribute filter labels (Brand, Color, Size, Material)
-      filters.attributes?.forEach((attribute) => {
-        editableLabelSlots[`${attribute.code}_filter_label`] = {
-          id: `${attribute.code}_filter_label`,
-          type: 'text',
-          content: attribute.label,
-          className: 'font-semibold text-base mb-3',
-          styles: {
-            ...sharedLabelStyles,
-            fontSize: sharedLabelStyles.fontSize || '1rem',
-            fontWeight: sharedLabelStyles.fontWeight || '600',
-            color: sharedLabelStyles.color || '#374151'
-          },
-          parentId: 'layered_navigation',
-          metadata: {
-            attributeCode: attribute.code,
-            microslot: true,
-            editable: true,
-            resizable: false,
-            draggable: false,
-            displayName: `${attribute.label} Filter Label`,
-            mirroredFrom: 'attribute_filter_label',
-            editableProperties: ['color', 'fontSize', 'fontWeight']
+      // Get child label slots that have layered_navigation as parent
+      const childLabelSlots = {};
+      if (allSlots) {
+        Object.values(allSlots).forEach(childSlot => {
+          if (childSlot.parentId === 'layered_navigation' &&
+              (childSlot.id.includes('filter_label') || childSlot.id === 'filter_heading')) {
+            childLabelSlots[childSlot.id] = childSlot;
           }
-        };
-      });
+        });
+      }
 
-      // Render template
+      console.log('🔍 Found child label slots:', Object.keys(childLabelSlots));
+
+      // Render template with filters
       const html = processVariables(slot?.content || '', variableContext);
-
-      console.log('🔍 Creating editable label slots:', Object.keys(editableLabelSlots));
 
       return (
         <div>
-          {/* Editable label slots at the top for easy access */}
+          {/* Editable style controls for filter labels */}
           <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded">
-            <div className="text-xs text-blue-700 font-bold mb-2">EDITABLE FILTER LABELS (Click to edit color/font):</div>
+            <div className="text-xs text-blue-700 font-bold mb-2">
+              📝 FILTER LABEL STYLES (Click to edit color, font size, font weight):
+            </div>
+            <div className="text-xs text-gray-600 mb-2">
+              Edit styles here → They'll be applied to the template on publish
+            </div>
             <div className="space-y-2">
-              {Object.values(editableLabelSlots).map((labelSlot) => {
-                console.log('🔍 Rendering label slot:', labelSlot.id, labelSlot.content);
-                return (
-                  <div
-                    key={labelSlot.id}
-                    className={`bg-white p-2 rounded border border-blue-200 cursor-pointer hover:border-blue-500 ${labelSlot.className}`}
-                    style={labelSlot.styles}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('🔍 Label clicked:', labelSlot.id);
-                      // This will be handled by the editor's slot selection
-                    }}
-                  >
-                    <span className="text-sm">{labelSlot.content}</span>
-                  </div>
-                );
-              })}
+              {Object.values(childLabelSlots).map((childSlot) => (
+                <UnifiedSlotRenderer
+                  key={childSlot.id}
+                  slots={{ [childSlot.id]: childSlot }}
+                  parentId={null}
+                  context={context}
+                  categoryData={categoryContext}
+                  variableContext={variableContext}
+                  onSlotUpdate={onSlotUpdate}
+                  mode="edit"
+                />
+              ))}
             </div>
           </div>
 
-          {/* Template with filter structure */}
-          <div
-            ref={containerRef}
-            className={className || slot.className}
-            style={styles || slot.styles}
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
+          {/* Template with filter structure (preview) */}
+          <div className="relative">
+            <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs px-2 py-1 rounded-bl">
+              Preview (styles will apply on publish)
+            </div>
+            <div
+              ref={containerRef}
+              className={className || slot.className}
+              style={styles || slot.styles}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
         </div>
       );
     }
