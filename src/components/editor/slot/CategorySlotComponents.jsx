@@ -242,6 +242,16 @@ const LayeredNavigation = createSlotComponent({
       // Style controls are now in the specialized LayeredNavigationSidebar
       const html = processVariables(slot?.content || '', variableContext);
 
+      // Debug: Check if checkbox and count colors are in processed HTML
+      console.log('🔍 Checkbox color in HTML?', html.includes('accent-color'));
+      if (html.includes('accent-color')) {
+        const checkboxMatch = html.match(/accent-color:\s*([^;]+);/);
+        console.log('🔍 Checkbox accent-color value:', checkboxMatch ? checkboxMatch[1] : 'not found');
+      }
+      if (html.includes('optionCountColor')) {
+        console.log('❌ optionCountColor NOT replaced - still in HTML!');
+      }
+
       return (
         <div
           ref={containerRef}
