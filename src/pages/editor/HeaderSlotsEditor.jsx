@@ -31,9 +31,39 @@ const generateHeaderContext = (viewMode) => ({
   user: null,
   userLoading: false,
   categories: [
-    { id: 1, name: 'Electronics', slug: 'electronics', parent_id: null },
-    { id: 2, name: 'Clothing', slug: 'clothing', parent_id: null },
-    { id: 3, name: 'Home & Garden', slug: 'home-garden', parent_id: null }
+    {
+      id: 1,
+      name: 'Electronics',
+      slug: 'electronics',
+      parent_id: null,
+      children: [
+        { id: 11, name: 'Computers', slug: 'computers', parent_id: 1, children: [] },
+        { id: 12, name: 'Phones & Tablets', slug: 'phones-tablets', parent_id: 1, children: [] },
+        { id: 13, name: 'Audio', slug: 'audio', parent_id: 1, children: [] }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Clothing',
+      slug: 'clothing',
+      parent_id: null,
+      children: [
+        { id: 21, name: 'Men', slug: 'men', parent_id: 2, children: [] },
+        { id: 22, name: 'Women', slug: 'women', parent_id: 2, children: [] },
+        { id: 23, name: 'Kids', slug: 'kids', parent_id: 2, children: [] }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Home & Garden',
+      slug: 'home-garden',
+      parent_id: null,
+      children: [
+        { id: 31, name: 'Furniture', slug: 'furniture', parent_id: 3, children: [] },
+        { id: 32, name: 'Decor', slug: 'decor', parent_id: 3, children: [] },
+        { id: 33, name: 'Garden', slug: 'garden', parent_id: 3, children: [] }
+      ]
+    }
   ],
   languages: [
     { id: 1, code: 'en', name: 'English', flag_icon: '🇺🇸' },
