@@ -224,10 +224,22 @@ const HeaderEditorSidebar = ({
           metadata[mapping.prop] = value;
         }
 
+        // DEBUG: Log what we're about to save
+        console.log('💾 HeaderEditorSidebar saving:', {
+          property,
+          value,
+          targetSlotId,
+          mapping,
+          styles,
+          metadata
+        });
+
         // Call onClassChange to update database
         if (onClassChange) {
           onClassChange(targetSlotId, targetSlot.className || '', styles, metadata);
         }
+      } else {
+        console.warn('⚠️ No mapping found for property:', property, 'targetSlotId:', targetSlotId);
       }
     }
   };
