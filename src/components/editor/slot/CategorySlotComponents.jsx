@@ -238,24 +238,118 @@ const LayeredNavigation = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor: Create individual editable slot instances for filter labels
+      // Editor: Render template + editable label overlays
       const filters = categoryContext?.filters || { attributes: [] };
 
       // Get shared attribute filter label configuration from category-config.js
       const attributeFilterLabelSlot = allSlots?.attribute_filter_label || {};
-      const sharedLabelClassName = attributeFilterLabelSlot.className || 'font-semibold text-base text-gray-900';
       const sharedLabelStyles = attributeFilterLabelSlot.styles || { color: '#374151' };
 
-      // Use template to render the full filter structure
+      // Create editable slot instances for filter labels
+      const editableLabelSlots = {};
+
+      // Shared Attribute Filter Label (editable control that mirrors to all)
+      editableLabelSlots['attribute_filter_label'] = {
+        id: 'attribute_filter_label',
+        type: 'text',
+        content: 'Edit All Attribute Labels',
+        className: 'font-semibold text-base mb-3 bg-yellow-100 border-2 border-yellow-400 px-2 py-1',
+        styles: {
+          ...sharedLabelStyles,
+          fontSize: sharedLabelStyles.fontSize || '1rem',
+          fontWeight: sharedLabelStyles.fontWeight || '600',
+          color: sharedLabelStyles.color || '#374151'
+        },
+        parentId: 'layered_navigation',
+        metadata: {
+          microslot: true,
+          editable: true,
+          resizable: false,
+          draggable: false,
+          displayName: 'All Attribute Filter Labels (Brand, Color, Size, Material)',
+          editableProperties: ['color', 'fontSize', 'fontWeight']
+        }
+      };
+
+      // Price filter label
+      editableLabelSlots['price_filter_label'] = {
+        id: 'price_filter_label',
+        type: 'text',
+        content: 'Price',
+        className: 'font-semibold text-base mb-3',
+        styles: {
+          fontSize: '1rem',
+          fontWeight: '600',
+          color: '#374151'
+        },
+        parentId: 'layered_navigation',
+        metadata: {
+          microslot: true,
+          editable: true,
+          resizable: false,
+          draggable: false,
+          displayName: 'Price Filter Label',
+          editableProperties: ['color', 'fontSize', 'fontWeight']
+        }
+      };
+
+      // Individual attribute filter labels (Brand, Color, Size, Material)
+      filters.attributes?.forEach((attribute) => {
+        editableLabelSlots[`${attribute.code}_filter_label`] = {
+          id: `${attribute.code}_filter_label`,
+          type: 'text',
+          content: attribute.label,
+          className: 'font-semibold text-base mb-3',
+          styles: {
+            ...sharedLabelStyles,
+            fontSize: sharedLabelStyles.fontSize || '1rem',
+            fontWeight: sharedLabelStyles.fontWeight || '600',
+            color: sharedLabelStyles.color || '#374151'
+          },
+          parentId: 'layered_navigation',
+          metadata: {
+            attributeCode: attribute.code,
+            microslot: true,
+            editable: true,
+            resizable: false,
+            draggable: false,
+            displayName: `${attribute.label} Filter Label`,
+            mirroredFrom: 'attribute_filter_label',
+            editableProperties: ['color', 'fontSize', 'fontWeight']
+          }
+        };
+      });
+
+      // Render template
       const html = processVariables(slot?.content || '', variableContext);
 
       return (
-        <div
-          ref={containerRef}
-          className={className || slot.className}
-          style={styles || slot.styles}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="relative">
+          {/* Template with filter structure */}
+          <div
+            ref={containerRef}
+            className={className || slot.className}
+            style={styles || slot.styles}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+
+          {/* Editable label overlays */}
+          <div className="absolute top-0 left-0 right-0 pointer-events-none">
+            <div className="space-y-4 pointer-events-auto">
+              {Object.values(editableLabelSlots).map((labelSlot) => (
+                <UnifiedSlotRenderer
+                  key={labelSlot.id}
+                  slots={{ [labelSlot.id]: labelSlot }}
+                  parentId={null}
+                  context={context}
+                  categoryData={categoryContext}
+                  variableContext={variableContext}
+                  onSlotUpdate={onSlotUpdate}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       );
     }
 
