@@ -237,10 +237,29 @@ const LayeredNavigation = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context, onSlotUpdate, allSlots }) => {
     const containerRef = useRef(null);
 
-    // Both editor and storefront use the same template-based approach
-    // Inject filter data from categoryContext into the template from category-config.js
+    if (context === 'editor') {
+      // Editor: Create individual editable slot instances for filter labels
+      const filters = categoryContext?.filters || { attributes: [] };
 
-    // Use template from slot.content or fallback
+      // Get shared attribute filter label configuration from category-config.js
+      const attributeFilterLabelSlot = allSlots?.attribute_filter_label || {};
+      const sharedLabelClassName = attributeFilterLabelSlot.className || 'font-semibold text-base text-gray-900';
+      const sharedLabelStyles = attributeFilterLabelSlot.styles || { color: '#374151' };
+
+      // Use template to render the full filter structure
+      const html = processVariables(slot?.content || '', variableContext);
+
+      return (
+        <div
+          ref={containerRef}
+          className={className || slot.className}
+          style={styles || slot.styles}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    }
+
+    // Storefront: Use template from slot.content or fallback
     const template = slot?.content || `
       <div class="space-y-6">
         <h3 class="text-lg font-semibold text-gray-900">Filter By</h3>
