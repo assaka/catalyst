@@ -260,7 +260,13 @@ const LayeredNavigation = createSlotComponent({
       return (
         <div>
           {/* Editable style controls for filter labels */}
-          <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded">
+          <div
+            className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded"
+            onClick={(e) => {
+              // Prevent parent slot selection when clicking in this area
+              e.stopPropagation();
+            }}
+          >
             <div className="text-xs text-blue-700 font-bold mb-2">
               📝 FILTER LABEL STYLES (Click to edit color, font size, font weight):
             </div>
@@ -269,16 +275,21 @@ const LayeredNavigation = createSlotComponent({
             </div>
             <div className="space-y-2">
               {Object.values(childLabelSlots).map((childSlot) => (
-                <UnifiedSlotRenderer
+                <div
                   key={childSlot.id}
-                  slots={{ [childSlot.id]: childSlot }}
-                  parentId={null}
-                  context={context}
-                  categoryData={categoryContext}
-                  variableContext={variableContext}
-                  onSlotUpdate={onSlotUpdate}
-                  mode="edit"
-                />
+                  className="bg-white p-2 rounded border border-gray-300"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <UnifiedSlotRenderer
+                    slots={{ [childSlot.id]: childSlot }}
+                    parentId={null}
+                    context={context}
+                    categoryData={categoryContext}
+                    variableContext={variableContext}
+                    onSlotUpdate={onSlotUpdate}
+                    mode="edit"
+                  />
+                </div>
               ))}
             </div>
           </div>
