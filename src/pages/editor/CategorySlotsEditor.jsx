@@ -309,14 +309,7 @@ const categoryCustomSlotRenderer = (slot, context) => {
     );
   }
 
-  // Handle generic slot types as fallbacks
-  if (slot.type === 'text') {
-    return (
-      <div className={slot.className} style={slot.styles}>
-        <span dangerouslySetInnerHTML={{ __html: slot.content || 'Text content' }} />
-      </div>
-    );
-  }
+  // Remove text slot handler - let UnifiedSlotRenderer handle it with proper variable processing
 
   if (slot.type === 'select') {
     return (

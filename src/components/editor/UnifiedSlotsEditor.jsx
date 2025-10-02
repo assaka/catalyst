@@ -551,7 +551,9 @@ const UnifiedSlotsEditor = ({
                     viewMode={viewMode}
                     viewportMode={currentViewport}
                     context="editor"
-                    productData={pageContext}
+                    productData={pageType === 'product' ? pageContext : {}}
+                    categoryData={pageType === 'category' ? pageContext : null}
+                    cartData={pageType === 'cart' ? pageContext : null}
                     mode={showPreview ? 'view' : mode}
                     showBorders={showPreview ? false : showSlotBorders}
                     currentDragInfo={currentDragInfo}
