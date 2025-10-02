@@ -145,7 +145,8 @@ export function UnifiedSlotRenderer({
 
   // Additional contexts for different page types
   categoryData = null,
-  cartData = null
+  cartData = null,
+  headerContext = null
 }) {
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
@@ -440,6 +441,7 @@ export function UnifiedSlotRenderer({
             saveConfiguration={saveConfiguration}
             categoryData={categoryData}
             cartData={cartData}
+            headerContext={headerContext}
           />
         </div>
       );
@@ -477,6 +479,7 @@ export function UnifiedSlotRenderer({
           productContext: productData,
           categoryContext: categoryData,
           cartContext: cartData,
+          headerContext: headerContext,
           context,
           className: processedClassName,
           styles,

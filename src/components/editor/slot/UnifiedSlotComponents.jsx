@@ -26,8 +26,9 @@ import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
 
-// Import category slot components to register them
+// Import category and header slot components to register them
 import './CategorySlotComponents.jsx';
+import './HeaderSlotComponents.jsx';
 
 /**
  * QuantitySelector - Unified quantity selector component
