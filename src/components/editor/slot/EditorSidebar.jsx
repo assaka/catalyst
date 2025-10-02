@@ -28,6 +28,7 @@ import GridLayoutControl from './GridLayoutControl';
 // 3. Set metadata.editorSidebar: 'SidebarName' in the slot config
 const SIDEBAR_COMPONENTS = {
   LayeredNavigationSidebar: () => import('./sidebars/LayeredNavigationSidebar'),
+  HeaderEditorSidebar: () => import('./sidebars/HeaderEditorSidebar'),
   // Add more specialized sidebars here as needed
   // ProductGridSidebar: () => import('./sidebars/ProductGridSidebar'),
 };

@@ -68,12 +68,12 @@ const LayeredNavigationSidebar = ({
 
     const updates = {};
 
-    // Filter Heading
-    const filterHeading = allSlots['filter_heading'];
-    if (filterHeading) {
-      if (filterHeading.styles?.color) updates.headingColor = filterHeading.styles.color;
-      if (filterHeading.styles?.fontSize) updates.headingFontSize = filterHeading.styles.fontSize;
-      if (filterHeading.styles?.fontWeight) updates.headingFontWeight = filterHeading.styles.fontWeight;
+    // Filter Heading (from filter_by_label slot)
+    const filterByLabel = allSlots['filter_by_label'];
+    if (filterByLabel) {
+      if (filterByLabel.styles?.color) updates.headingColor = filterByLabel.styles.color;
+      if (filterByLabel.styles?.fontSize) updates.headingFontSize = filterByLabel.styles.fontSize;
+      if (filterByLabel.styles?.fontWeight) updates.headingFontWeight = filterByLabel.styles.fontWeight;
     }
 
     // Attribute Filter Label (also applies to Price filter)
@@ -147,8 +147,8 @@ const LayeredNavigationSidebar = ({
         containerBorderRadius: 'borderRadius'
       };
 
-      // For filter_option_styles, store the property directly (not mapped to CSS property)
-      if (targetSlotId === 'filter_option_styles') {
+      // For filter_option_styles and active_filter_styles, store the property directly (not mapped to CSS property)
+      if (targetSlotId === 'filter_option_styles' || targetSlotId === 'active_filter_styles') {
         styles[property] = value;
 
         // Call onClassChange to update database
