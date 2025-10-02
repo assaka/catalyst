@@ -170,13 +170,18 @@ const LayeredNavigationSidebar = ({
     }
   };
 
-  // Get child label slots for preview
-  const childLabelSlots = {};
+  // Get slots for preview (filter labels, heading, and active filters)
+  const previewSlots = {};
   if (allSlots) {
-    Object.values(allSlots).forEach(childSlot => {
-      if (childSlot.parentId === 'layered_navigation' &&
-          (childSlot.id.includes('filter_label') || childSlot.id === 'filter_heading')) {
-        childLabelSlots[childSlot.id] = childSlot;
+    Object.values(allSlots).forEach(slot => {
+      // Include filter labels and filter heading from layered_navigation
+      if (slot.parentId === 'layered_navigation' &&
+          (slot.id.includes('filter_label') || slot.id === 'filter_by_label')) {
+        previewSlots[slot.id] = slot;
+      }
+      // Include active_filters from filters_container
+      if (slot.id === 'active_filters' && slot.parentId === 'filters_container') {
+        previewSlots[slot.id] = slot;
       }
     });
   }
@@ -200,28 +205,28 @@ const LayeredNavigationSidebar = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto space-y-0">
-        {/* Preview Section - Editable Filter Labels */}
-        {Object.keys(childLabelSlots).length > 0 && (
+        {/* Preview Section - Shows Filter Heading, Labels, and Active Filters */}
+        {Object.keys(previewSlots).length > 0 && (
         <div className="border-b border-gray-200">
           <div className="p-3 bg-blue-50">
             <div className="text-xs text-blue-700 font-bold mb-2">
-              📝 FILTER LABEL PREVIEW (Click to edit):
+              📝 PREVIEW (Edit styles below):
             </div>
             <div className="text-xs text-gray-600 mb-3">
-              Edit styles below → They'll be applied to filters on publish
+              Filter Heading, Labels & Active Filters
             </div>
             <div className="space-y-2">
-              {Object.values(childLabelSlots).map((childSlot) => (
+              {Object.values(previewSlots).map((previewSlot) => (
                 <div
-                  key={childSlot.id}
+                  key={previewSlot.id}
                   className="bg-white p-2 rounded border border-gray-300 hover:border-blue-500 cursor-pointer"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="text-xs text-gray-500 mb-1">
-                    {childSlot.metadata?.displayName || childSlot.id}
+                    {previewSlot.metadata?.displayName || previewSlot.id}
                   </div>
                   <UnifiedSlotRenderer
-                    slots={{ [childSlot.id]: childSlot }}
+                    slots={{ [previewSlot.id]: previewSlot }}
                     parentId={null}
                     context="editor"
                     variableContext={{}}
