@@ -323,8 +323,29 @@ const LayeredNavigation = createSlotComponent({
       // Render template
       const html = processVariables(slot?.content || '', variableContext);
 
+      console.log('🔍 Creating editable label slots:', Object.keys(editableLabelSlots));
+
       return (
-        <div className="relative">
+        <div>
+          {/* Editable label slots at the top for easy access */}
+          <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded">
+            <div className="text-xs text-blue-700 font-bold mb-2">EDITABLE FILTER LABELS:</div>
+            <div className="space-y-2">
+              {Object.values(editableLabelSlots).map((labelSlot) => (
+                <div key={labelSlot.id} className="bg-white p-1 rounded border border-blue-200">
+                  <UnifiedSlotRenderer
+                    slots={{ [labelSlot.id]: labelSlot }}
+                    parentId={null}
+                    context={context}
+                    categoryData={categoryContext}
+                    variableContext={variableContext}
+                    onSlotUpdate={onSlotUpdate}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Template with filter structure */}
           <div
             ref={containerRef}
@@ -332,23 +353,6 @@ const LayeredNavigation = createSlotComponent({
             style={styles || slot.styles}
             dangerouslySetInnerHTML={{ __html: html }}
           />
-
-          {/* Editable label overlays */}
-          <div className="absolute top-0 left-0 right-0 pointer-events-none">
-            <div className="space-y-4 pointer-events-auto">
-              {Object.values(editableLabelSlots).map((labelSlot) => (
-                <UnifiedSlotRenderer
-                  key={labelSlot.id}
-                  slots={{ [labelSlot.id]: labelSlot }}
-                  parentId={null}
-                  context={context}
-                  categoryData={categoryContext}
-                  variableContext={variableContext}
-                  onSlotUpdate={onSlotUpdate}
-                />
-              ))}
-            </div>
-          </div>
         </div>
       );
     }
