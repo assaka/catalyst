@@ -555,11 +555,11 @@ export const categoryConfig = {
       }
     },
 
-    // Filter heading - separate from layered navigation
+    // Filter heading - separate slot for positioning
     filter_heading: {
       id: 'filter_heading',
       type: 'text',
-      content: 'Filter Now',
+      content: 'Filter By',
       className: 'text-lg font-semibold text-gray-900 mb-4',
       parentClassName: '',
       styles: {},
@@ -704,29 +704,6 @@ export const categoryConfig = {
         component: 'LayeredNavigation',
         displayName: 'Product Filters (Price, Brand, Size, etc.)',
         editorSidebar: 'LayeredNavigationSidebar'
-      }
-    },
-
-    // Editable labels for layered navigation with color customization
-    filter_by_label: {
-      id: 'filter_by_label',
-      type: 'text',
-      content: 'Filter Now',
-      className: 'text-lg font-semibold text-gray-900',
-      parentClassName: '',
-      styles: {
-        color: '#1F2937' // Default dark gray
-      },
-      parentId: 'layered_navigation',
-      position: { col: 1, row: 1 },
-      colSpan: { grid: 12, list: 12 },
-      viewMode: ['grid', 'list'],
-      metadata: {
-        hierarchical: false,
-        microslot: true,
-        displayName: 'Filter By Label',
-        labelType: 'header',
-        customizable: ['color', 'fontSize', 'fontWeight']
       }
     },
 

@@ -12,12 +12,27 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
-export default function CategoryNav({ categories }) {
+export default function CategoryNav({ categories, styles = {}, metadata = {} }) {
     const { store } = useStore();
-    
+
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
     const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
+
+    // Extract styles from slot configuration
+    const linkStyles = {
+        color: styles?.color || '#374151',
+        fontSize: styles?.fontSize || '0.875rem',
+        fontWeight: styles?.fontWeight || '500',
+    };
+
+    const hoverColor = styles?.hoverColor || '#2563EB';
+
+    // Subcategory styles from metadata
+    const subcategoryLinkColor = metadata?.subcategoryLinkColor || '#6B7280';
+    const subcategoryLinkHoverColor = metadata?.subcategoryLinkHoverColor || '#2563EB';
+    const subcategoryBgColor = metadata?.subcategoryBgColor || '#ffffff';
+    const subcategoryBgHoverColor = metadata?.subcategoryBgHoverColor || '#F3F4F6';
     
     if (!categories || categories.length === 0 || !store) {
         return null;
@@ -292,16 +307,22 @@ export default function CategoryNav({ categories }) {
         if (category.children && category.children.length > 0) {
             return (
                 <div key={category.id} className="relative group">
-                    <Link 
+                    <Link
                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
+                        className="px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap transition-colors"
+                        style={linkStyles}
+                        onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
+                        onMouseLeave={(e) => e.currentTarget.style.color = linkStyles.color}
                     >
                         {category.name}
                         <ChevronDown className="w-3 h-3" />
                     </Link>
-                    
+
                     {/* Submenu - absolutely positioned to avoid layout shifts */}
-                    <div className="absolute left-0 top-full w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div
+                        className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                        style={{ backgroundColor: subcategoryBgColor }}
+                    >
                         <div>
                             <Link 
                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}

@@ -9,12 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDisplayPrice } from '@/utils/priceUtils';
 
-export default function HeaderSearch() {
+export default function HeaderSearch({ styles = {} }) {
   const navigate = useNavigate();
   const { store, settings, taxes, selectedCountry } = useStore();
-  
+
   // Get currency symbol from settings
   const currencySymbol = settings?.currency_symbol || '$';
+
+  // Extract input styles from slot configuration
+  const inputStyles = {
+    backgroundColor: styles?.backgroundColor,
+    borderColor: styles?.borderColor,
+    borderRadius: styles?.borderRadius,
+  };
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -110,6 +117,7 @@ export default function HeaderSearch() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 pr-12 py-2 w-full"
+            style={inputStyles}
           />
           {searchQuery && (
             <Button

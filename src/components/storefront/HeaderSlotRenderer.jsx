@@ -154,14 +154,16 @@ export function HeaderSlotRenderer({
     switch (component) {
       case 'StoreLogo':
         return (
-          <div key={id} data-slot-id={id}>
+          <div key={id} className={className} style={styles} data-slot-id={id}>
             <Link to={createPublicUrl(store?.slug, 'STOREFRONT')} className="flex items-center space-x-2">
               {store?.logo_url ? (
                 <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-8 w-8 object-contain" />
               ) : (
                 <ShoppingBag className="h-8 w-8 text-blue-600" />
               )}
-              <span className="text-xl font-bold text-gray-800">{store?.name || 'Catalyst'}</span>
+              <span className="text-xl font-bold text-gray-800" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
+                {store?.name || 'Catalyst'}
+              </span>
             </Link>
           </div>
         );
@@ -169,8 +171,8 @@ export function HeaderSlotRenderer({
       case 'HeaderSearch':
         if (settings?.hide_header_search) return null;
         return (
-          <div key={id} className={className} data-slot-id={id}>
-            <HeaderSearch />
+          <div key={id} className={className} style={styles} data-slot-id={id}>
+            <HeaderSearch styles={styles} />
           </div>
         );
 
@@ -249,12 +251,23 @@ export function HeaderSlotRenderer({
         );
 
       case 'UserAccountMenu':
+        const buttonStyles = {
+          backgroundColor: styles?.backgroundColor || '#2563EB',
+          color: styles?.color || '#ffffff',
+          borderRadius: styles?.borderRadius || '0.5rem',
+        };
+
+        const hoverBg = styles?.hoverBackgroundColor || '#1D4ED8';
+
         return (
           <div key={id} className={className} data-slot-id={id}>
             {user ? (
               <Button
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                className="px-4 py-2 flex items-center space-x-1"
+                style={buttonStyles}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
                 <User className="w-4 h-4" />
                 <span>{user.first_name || user.name || user.email}</span>
@@ -268,7 +281,10 @@ export function HeaderSlotRenderer({
                   navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
                 }}
                 disabled={userLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                className="px-4 py-2 flex items-center space-x-2"
+                style={buttonStyles}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
                 <User className="w-5 h-5 mr-2" />
                 <span>Sign In</span>
@@ -318,8 +334,8 @@ export function HeaderSlotRenderer({
 
       case 'CategoryNav':
         return (
-          <div key={id} className={className} data-slot-id={id}>
-            <CategoryNav categories={categories} />
+          <div key={id} className={className} style={styles} data-slot-id={id}>
+            <CategoryNav categories={categories} styles={styles} metadata={metadata} />
           </div>
         );
 

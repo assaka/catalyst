@@ -234,7 +234,7 @@ const ActiveFilters = createSlotComponent({
 // Layered Navigation Component with processVariables
 const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
-  render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots, onElementClick }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
@@ -242,33 +242,13 @@ const LayeredNavigation = createSlotComponent({
       // Style controls are now in the specialized LayeredNavigationSidebar
       const html = processVariables(slot?.content || '', variableContext);
 
-      // Get filter_by_label child slot
-      const filterByLabel = allSlots?.filter_by_label || { content: 'Filter By', styles: {} };
-
       return (
         <div
           ref={containerRef}
           className={className || slot.className}
           style={styles || slot.styles}
-        >
-          {/* Render Filter By heading */}
-          <div
-            className={filterByLabel.className || 'text-lg font-semibold text-gray-900 mb-4'}
-            style={filterByLabel.styles}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onElementClick) {
-                onElementClick('filter_by_label', e.currentTarget);
-              }
-            }}
-            data-slot-id="filter_by_label"
-          >
-            {filterByLabel.content || 'Filter By'}
-          </div>
-
-          {/* Render filters template */}
-          <div dangerouslySetInnerHTML={{ __html: html }} />
-        </div>
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       );
     }
 

@@ -73,16 +73,16 @@ const LayeredNavigationSidebar = ({
 
     const updates = {};
 
-    // Filter Heading (from filter_by_label slot)
-    const filterByLabel = allSlots['filter_by_label'];
-    if (filterByLabel) {
+    // Filter Heading (from filter_heading slot)
+    const filterHeading = allSlots['filter_heading'];
+    if (filterHeading) {
       // Only update headingText if user is not actively editing
-      if (filterByLabel.content && !isEditingTextRef.current) {
-        updates.headingText = filterByLabel.content;
+      if (filterHeading.content && !isEditingTextRef.current) {
+        updates.headingText = filterHeading.content;
       }
-      if (filterByLabel.styles?.color) updates.headingColor = filterByLabel.styles.color;
-      if (filterByLabel.styles?.fontSize) updates.headingFontSize = filterByLabel.styles.fontSize;
-      if (filterByLabel.styles?.fontWeight) updates.headingFontWeight = filterByLabel.styles.fontWeight;
+      if (filterHeading.styles?.color) updates.headingColor = filterHeading.styles.color;
+      if (filterHeading.styles?.fontSize) updates.headingFontSize = filterHeading.styles.fontSize;
+      if (filterHeading.styles?.fontWeight) updates.headingFontWeight = filterHeading.styles.fontWeight;
     }
 
     // Attribute Filter Label (also applies to Price filter)
@@ -188,9 +188,9 @@ const LayeredNavigationSidebar = ({
     isEditingTextRef.current = true;
 
     // Update local state immediately
-    if (targetSlotId === 'filter_by_label') {
+    if (targetSlotId === 'filter_heading') {
       setFilterStyles(prev => ({ ...prev, headingText: value }));
-      // Update filter_by_label content via onTextChange
+      // Update filter_heading content via onTextChange
       if (onTextChange) {
         onTextChange(targetSlotId, value);
       }
