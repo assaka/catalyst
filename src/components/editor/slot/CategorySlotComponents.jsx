@@ -954,24 +954,34 @@ const ProductItemsGrid = createSlotComponent({
         };
       });
 
-      // Render slots using UnifiedSlotRenderer
+      // Render slots using UnifiedSlotRenderer - each product card gets its own isolated slot tree
       return (
         <div
           className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
           style={styles || slot.styles}
         >
-          {products.map((product, productIndex) => (
-            <UnifiedSlotRenderer
-              key={`product_${productIndex}`}
-              slots={productSlotInstances}
-              parentId={`product_card_${productIndex}`}
-              context={context}
-              productData={{ product }}
-              categoryData={categoryContext}
-              variableContext={variableContext}
-              onSlotUpdate={onSlotUpdate}
-            />
-          ))}
+          {products.map((product, productIndex) => {
+            // Filter slots for this specific product
+            const productSpecificSlots = {};
+            Object.keys(productSlotInstances).forEach(key => {
+              if (key.endsWith(`_${productIndex}`)) {
+                productSpecificSlots[key] = productSlotInstances[key];
+              }
+            });
+
+            return (
+              <UnifiedSlotRenderer
+                key={`product_${productIndex}`}
+                slots={productSpecificSlots}
+                parentId={`product_card_${productIndex}`}
+                context={context}
+                productData={{ product }}
+                categoryData={categoryContext}
+                variableContext={variableContext}
+                onSlotUpdate={onSlotUpdate}
+              />
+            );
+          })}
         </div>
       );
     }
