@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null }) {
+    console.log('🚀 CategoryNav RENDER - categories:', categories, 'store:', storeProp || 'from context');
     const storeContext = useStore();
     const store = storeProp || storeContext?.store;
 

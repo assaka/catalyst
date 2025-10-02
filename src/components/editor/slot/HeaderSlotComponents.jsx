@@ -166,6 +166,14 @@ const CategoryNavSlot = createSlotComponent({
     const { categories = [], store } = headerContext || {};
     const metadata = slot?.metadata || {};
 
+    console.log('🎯 CategoryNavSlot RENDER:', {
+      context,
+      categoriesCount: categories?.length,
+      categoriesWithChildren: categories?.filter(c => c.children?.length > 0)?.length,
+      hasStore: !!store,
+      store
+    });
+
     // Extract link styles
     const linkColor = styles?.color || '#374151';
     const linkHoverColor = styles?.hoverColor || '#2563EB';
