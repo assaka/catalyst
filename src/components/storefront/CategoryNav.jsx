@@ -19,6 +19,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
     const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
+    const [hoveredCategory, setHoveredCategory] = useState(null);
 
     // Extract styles from slot configuration
     const linkStyles = {
@@ -843,9 +844,15 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     {rootCategories.map(category => {
                         if (category.children && category.children.length > 0) {
+                            const isHovered = hoveredCategory === category.id;
                             return (
-                                <div key={category.id} className="relative group">
-                                    <Link 
+                                <div
+                                    key={category.id}
+                                    className="relative group"
+                                    onMouseEnter={() => setHoveredCategory(category.id)}
+                                    onMouseLeave={() => setHoveredCategory(null)}
+                                >
+                                    <Link
                                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                         className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
                                     >
@@ -853,8 +860,13 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
                                     {/* Submenu visible on hover */}
-                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
-                                        style={{ backgroundColor: subcategoryBgColor }}
+                                    <div
+                                        className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] transition-all duration-200"
+                                        style={{
+                                            backgroundColor: subcategoryBgColor,
+                                            visibility: isHovered ? 'visible' : 'hidden',
+                                            opacity: isHovered ? 1 : 0
+                                        }}
                                     >
                                         <div>
                                             <Link
