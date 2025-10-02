@@ -724,7 +724,7 @@ const ProductItemsGrid = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor: Render child style control slots from category-config.js
+      // Editor: Render individual product cards as slot-based containers
       const storeContext = useStore();
       const storeSettings = storeContext?.settings || null;
       const gridClasses = getGridClasses(storeSettings);
@@ -732,18 +732,6 @@ const ProductItemsGrid = createSlotComponent({
       // Get sample products from categoryContext OR variableContext
       const products = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
 
-      // Get child product style control slots
-      const productStyleSlots = {};
-      if (allSlots) {
-        Object.values(allSlots).forEach(childSlot => {
-          if (childSlot.parentId === 'product_items' &&
-              childSlot.id.includes('_style')) {
-            productStyleSlots[childSlot.id] = childSlot;
-          }
-        });
-      }
-
-      console.log('🔍 Found product style slots:', Object.keys(productStyleSlots));
       console.log('🔍 Products available:', products.length);
 
       if (products.length === 0) {
@@ -759,31 +747,43 @@ const ProductItemsGrid = createSlotComponent({
         );
       }
 
-      // Render template from slot.content with variableContext
-      const template = slot?.content || '';
-      const html = processVariables(template, variableContext || {});
+      // Find product card template and its child slots
+      const productCardTemplate = allSlots?.product_card_template;
+      const productCardChildSlots = {};
 
-      console.log('🔍 Rendered HTML length:', html?.length || 0);
-      console.log('🔍 Rendered HTML preview:', html?.substring(0, 200));
+      if (allSlots) {
+        Object.values(allSlots).forEach(childSlot => {
+          if (childSlot.parentId === 'product_card_template') {
+            productCardChildSlots[childSlot.id] = childSlot;
+          }
+        });
+      }
 
+      console.log('🔍 Product card template:', !!productCardTemplate);
+      console.log('🔍 Product card child slots:', Object.keys(productCardChildSlots));
+
+      // Render each product as an individual slot-based container
       return (
-        <div>
-          {/* Product Grid Template - Show products if HTML is empty */}
-          {html && html.trim().length > 0 ? (
+        <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
+          {products.map((product, index) => (
             <div
-              className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
-              style={styles || slot.styles}
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          ) : (
-            <div className="text-sm text-gray-500 p-4 border border-dashed rounded">
-              Waiting for product template to render...
-              <div className="mt-2 text-xs">
-                Products available: {products.length}<br />
-                Template length: {template?.length || 0}
-              </div>
+              key={`product-${index}`}
+              className={productCardTemplate?.className || 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card'}
+              style={productCardTemplate?.styles || {}}
+            >
+              {/* Render each child slot of the product card */}
+              <UnifiedSlotRenderer
+                slots={productCardChildSlots}
+                parentId={null}
+                context={context}
+                categoryData={{ ...categoryContext, product }}
+                productData={{ product }}
+                variableContext={{ ...variableContext, ...product, product }}
+                mode="edit"
+                showBorders={true}
+              />
             </div>
-          )}
+          ))}
         </div>
       );
     }

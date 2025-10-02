@@ -328,6 +328,143 @@ export const categoryConfig = {
       }
     },
 
+    // Product Card Template - defines structure for ONE product card
+    product_card_template: {
+      id: 'product_card_template',
+      type: 'container',
+      content: '',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_items',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 1, list: 1 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        isTemplate: true,
+        displayName: 'Product Card Template'
+      }
+    },
+
+    // Product Image Slot
+    product_card_image: {
+      id: 'product_card_image',
+      type: 'image',
+      content: '{{this.image_url}}',
+      className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
+      parentClassName: 'relative overflow-hidden mb-4',
+      styles: {},
+      parentId: 'product_card_template',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Product Image',
+        dataBinding: 'product.image_url'
+      }
+    },
+
+    // Product Name Slot
+    product_card_name: {
+      id: 'product_card_name',
+      type: 'text',
+      content: '{{this.name}}',
+      className: 'font-semibold text-lg truncate mb-2 text-red-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_template',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Product Name',
+        htmlTag: 'h3',
+        dataBinding: 'product.name'
+      }
+    },
+
+    // Product Price Container
+    product_card_price_container: {
+      id: 'product_card_price_container',
+      type: 'container',
+      content: '',
+      className: 'flex items-baseline gap-2 mb-4',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_template',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: true,
+        displayName: 'Price Container'
+      }
+    },
+
+    // Product Price
+    product_card_price: {
+      id: 'product_card_price',
+      type: 'text',
+      content: '{{this.price_formatted}}',
+      className: 'text-lg font-bold text-red-600',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_price_container',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Product Price',
+        dataBinding: 'product.price_formatted'
+      }
+    },
+
+    // Product Compare Price
+    product_card_compare_price: {
+      id: 'product_card_compare_price',
+      type: 'text',
+      content: '{{this.compare_price_formatted}}',
+      className: 'text-sm text-gray-500 line-through',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_price_container',
+      position: { col: 7, row: 1 },
+      colSpan: { grid: 6, list: 6 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Compare Price',
+        dataBinding: 'product.compare_price_formatted',
+        conditionalDisplay: 'product.compare_price_formatted'
+      }
+    },
+
+    // Add to Cart Button
+    product_card_add_to_cart: {
+      id: 'product_card_add_to_cart',
+      type: 'button',
+      content: 'Add to Cart',
+      className: 'w-full text-white border-0 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
+      parentClassName: '',
+      styles: {
+        backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
+      },
+      parentId: 'product_card_template',
+      position: { col: 1, row: 4 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Add to Cart Button',
+        action: 'add-to-cart',
+        conditionalDisplay: 'product.in_stock'
+      }
+    },
+
     // Main products display using HTML template with processVariables
 
     /*
