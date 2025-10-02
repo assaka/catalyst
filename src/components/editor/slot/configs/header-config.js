@@ -28,7 +28,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Main Header Container',
-        description: 'Top-level header wrapper with sticky positioning'
+        description: 'Top-level header wrapper with sticky positioning',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -46,7 +47,8 @@ export const headerConfig = {
       viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: true,
-        displayName: 'Header Inner Container'
+        displayName: 'Header Inner Container',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -69,7 +71,8 @@ export const headerConfig = {
       viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: true,
-        displayName: 'Header Top Row'
+        displayName: 'Header Top Row',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -87,7 +90,8 @@ export const headerConfig = {
       viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: true,
-        displayName: 'Logo Section'
+        displayName: 'Logo Section',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -117,7 +121,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: false,
         displayName: 'Store Logo & Name',
-        component: 'StoreLogo'
+        component: 'StoreLogo',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -166,7 +171,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Search Section (Desktop)',
-        description: 'Hidden on mobile, visible on desktop'
+        description: 'Hidden on mobile, visible on desktop',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -228,7 +234,8 @@ export const headerConfig = {
       viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: true,
-        displayName: 'Actions Section (Cart, User, Menu)'
+        displayName: 'Actions Section (Cart, User, Menu)',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
@@ -709,7 +716,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Navigation Bar (Desktop)',
-        description: 'Main navigation menu below header'
+        description: 'Main navigation menu below header',
+        editorSidebar: 'HeaderEditorSidebar'
       }
     },
 
