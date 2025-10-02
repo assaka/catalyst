@@ -293,7 +293,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
       existingRecord.configuration = configuration;
       existingRecord.status = 'draft';
       existingRecord.updated_at = new Date();
-      existingRecord.has_unpublished_changes = isReset ? false : true;
+      existingRecord.has_unpublished_changes = isReset ? false : isNewChanges;
       await existingRecord.save();
       console.log('✅ BACKEND - Successfully transitioned to draft status');
       return existingRecord;
@@ -333,7 +333,7 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
       version_number: (maxVersion || 0) + 1,
       page_type: pageType,
       parent_version_id: null,
-      has_unpublished_changes: isReset ? false : true
+      has_unpublished_changes: isReset ? false : isNewChanges
     });
     return newDraft;
   } else {
