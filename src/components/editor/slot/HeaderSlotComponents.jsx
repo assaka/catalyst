@@ -64,13 +64,23 @@ const HeaderSearchSlot = createSlotComponent({
     const { settings = {} } = headerContext || {};
 
     if (context === 'editor') {
+      // Extract input-specific styles
+      const inputStyles = {
+        backgroundColor: styles?.backgroundColor || '#ffffff',
+        borderColor: styles?.borderColor || '#d1d5db',
+        borderRadius: styles?.borderRadius || '0.5rem',
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      };
+
       return (
-        <div className={className || "w-full max-w-lg"} style={styles}>
+        <div className={className || "w-full max-w-lg"}>
           <div className="relative">
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 focus:outline-none focus:border-blue-500"
+              style={inputStyles}
               disabled
             />
             <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />

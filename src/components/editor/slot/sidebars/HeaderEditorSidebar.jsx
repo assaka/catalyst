@@ -114,11 +114,11 @@ const HeaderEditorSidebar = ({
     }
 
     // Search Bar
-    const searchSection = allSlots['search_section'];
-    if (searchSection?.styles) {
-      if (searchSection.styles.backgroundColor) updates.searchBg = searchSection.styles.backgroundColor;
-      if (searchSection.styles.border) updates.searchBorder = searchSection.styles.border;
-      if (searchSection.styles.borderRadius) updates.searchBorderRadius = searchSection.styles.borderRadius;
+    const searchBar = allSlots['search_bar'];
+    if (searchBar?.styles) {
+      if (searchBar.styles.backgroundColor) updates.searchBg = searchBar.styles.backgroundColor;
+      if (searchBar.styles.borderColor) updates.searchBorder = searchBar.styles.borderColor;
+      if (searchBar.styles.borderRadius) updates.searchBorderRadius = searchBar.styles.borderRadius;
     }
 
     // Navigation Bar
@@ -171,9 +171,9 @@ const HeaderEditorSidebar = ({
         storeNameWeight: { slot: 'store_logo', type: 'style', prop: 'fontWeight' },
 
         // Search
-        searchBg: { slot: 'search_section', type: 'style', prop: 'backgroundColor' },
-        searchBorder: { slot: 'search_section', type: 'style', prop: 'borderColor' },
-        searchBorderRadius: { slot: 'search_section', type: 'style', prop: 'borderRadius' },
+        searchBg: { slot: 'search_bar', type: 'style', prop: 'backgroundColor' },
+        searchBorder: { slot: 'search_bar', type: 'style', prop: 'borderColor' },
+        searchBorderRadius: { slot: 'search_bar', type: 'style', prop: 'borderRadius' },
 
         // Navigation Bar
         navBarBg: { slot: 'navigation_bar', type: 'style', prop: 'backgroundColor' },
@@ -382,13 +382,13 @@ const HeaderEditorSidebar = ({
                 <Input
                   type="color"
                   value={headerStyles.searchBg}
-                  onChange={(e) => handleStyleChange('searchBg', e.target.value, 'search_section')}
+                  onChange={(e) => handleStyleChange('searchBg', e.target.value, 'search_bar')}
                   className="w-12 h-8 p-1"
                 />
                 <Input
                   type="text"
                   value={headerStyles.searchBg}
-                  onChange={(e) => handleStyleChange('searchBg', e.target.value, 'search_section')}
+                  onChange={(e) => handleStyleChange('searchBg', e.target.value, 'search_bar')}
                   className="flex-1 h-8 text-xs"
                   placeholder="#ffffff"
                 />
@@ -397,17 +397,17 @@ const HeaderEditorSidebar = ({
 
             <div>
               <Label className="text-xs">Border Color</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-1">
                 <Input
                   type="color"
                   value={headerStyles.searchBorder}
-                  onChange={(e) => handleStyleChange('searchBorder', e.target.value, 'search_section')}
+                  onChange={(e) => handleStyleChange('searchBorder', e.target.value, 'search_bar')}
                   className="w-12 h-8 p-1"
                 />
                 <Input
                   type="text"
                   value={headerStyles.searchBorder}
-                  onChange={(e) => handleStyleChange('searchBorder', e.target.value, 'search_section')}
+                  onChange={(e) => handleStyleChange('searchBorder', e.target.value, 'search_bar')}
                   className="flex-1 h-8 text-xs"
                   placeholder="#d1d5db"
                 />
@@ -419,8 +419,8 @@ const HeaderEditorSidebar = ({
               <Input
                 type="text"
                 value={headerStyles.searchBorderRadius}
-                onChange={(e) => handleStyleChange('searchBorderRadius', e.target.value, 'search_section')}
-                className="h-8 text-xs"
+                onChange={(e) => handleStyleChange('searchBorderRadius', e.target.value, 'search_bar')}
+                className="h-8 text-xs mt-1"
                 placeholder="0.5rem"
               />
             </div>
