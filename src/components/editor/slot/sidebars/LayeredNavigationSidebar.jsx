@@ -4,9 +4,7 @@ import { Button } from '@/components/ui/button';
 import SectionHeader from './components/SectionHeader';
 import FilterHeadingSection from './sections/FilterHeadingSection';
 import FilterLabelsSection from './sections/FilterLabelsSection';
-import PriceFilterLabelSection from './sections/PriceFilterLabelSection';
 import FilterOptionsSection from './sections/FilterOptionsSection';
-import CounterBadgesSection from './sections/CounterBadgesSection';
 import ContainerSection from './sections/ContainerSection';
 import UnifiedSlotRenderer from '../UnifiedSlotRenderer';
 
@@ -25,7 +23,6 @@ const LayeredNavigationSidebar = ({
   const [expandedSections, setExpandedSections] = useState({
     filterHeading: true,
     filterLabels: true,
-    priceLabel: true,
     filterOptions: true,
     container: true
   });
@@ -36,20 +33,17 @@ const LayeredNavigationSidebar = ({
     headingFontSize: '1.125rem',
     headingFontWeight: '600',
 
-    // Attribute Filter Labels
+    // Attribute Filter Labels (also applies to Price filter)
     labelColor: '#374151',
     labelFontSize: '0.875rem',
     labelFontWeight: '500',
-
-    // Price Filter Label
-    priceLabelColor: '#374151',
-    priceLabelFontSize: '0.875rem',
-    priceLabelFontWeight: '500',
 
     // Filter Options (from filter_option_styles slot)
     optionTextColor: '#374151',
     optionHoverColor: '#1F2937',
     optionCountColor: '#9CA3AF',
+    optionFontSize: '0.875rem',
+    optionFontWeight: '400',
     checkboxColor: '#3B82F6',
     activeFilterBgColor: '#DBEAFE',
     activeFilterTextColor: '#1E40AF',
@@ -74,20 +68,12 @@ const LayeredNavigationSidebar = ({
       if (filterHeading.styles?.fontWeight) updates.headingFontWeight = filterHeading.styles.fontWeight;
     }
 
-    // Attribute Filter Label
+    // Attribute Filter Label (also applies to Price filter)
     const attrLabel = allSlots['attribute_filter_label'];
     if (attrLabel) {
       if (attrLabel.styles?.color) updates.labelColor = attrLabel.styles.color;
       if (attrLabel.styles?.fontSize) updates.labelFontSize = attrLabel.styles.fontSize;
       if (attrLabel.styles?.fontWeight) updates.labelFontWeight = attrLabel.styles.fontWeight;
-    }
-
-    // Price Filter Label
-    const priceLabel = allSlots['price_filter_label'];
-    if (priceLabel) {
-      if (priceLabel.styles?.color) updates.priceLabelColor = priceLabel.styles.color;
-      if (priceLabel.styles?.fontSize) updates.priceLabelFontSize = priceLabel.styles.fontSize;
-      if (priceLabel.styles?.fontWeight) updates.priceLabelFontWeight = priceLabel.styles.fontWeight;
     }
 
     // Filter Options (from filter_option_styles slot)
@@ -96,6 +82,8 @@ const LayeredNavigationSidebar = ({
       if (filterOptionStyles.styles.optionTextColor) updates.optionTextColor = filterOptionStyles.styles.optionTextColor;
       if (filterOptionStyles.styles.optionHoverColor) updates.optionHoverColor = filterOptionStyles.styles.optionHoverColor;
       if (filterOptionStyles.styles.optionCountColor) updates.optionCountColor = filterOptionStyles.styles.optionCountColor;
+      if (filterOptionStyles.styles.optionFontSize) updates.optionFontSize = filterOptionStyles.styles.optionFontSize;
+      if (filterOptionStyles.styles.optionFontWeight) updates.optionFontWeight = filterOptionStyles.styles.optionFontWeight;
       if (filterOptionStyles.styles.checkboxColor) updates.checkboxColor = filterOptionStyles.styles.checkboxColor;
       if (filterOptionStyles.styles.activeFilterBgColor) updates.activeFilterBgColor = filterOptionStyles.styles.activeFilterBgColor;
       if (filterOptionStyles.styles.activeFilterTextColor) updates.activeFilterTextColor = filterOptionStyles.styles.activeFilterTextColor;
@@ -135,12 +123,6 @@ const LayeredNavigationSidebar = ({
         labelColor: 'color',
         labelFontSize: 'fontSize',
         labelFontWeight: 'fontWeight',
-        priceLabelColor: 'color',
-        priceLabelFontSize: 'fontSize',
-        priceLabelFontWeight: 'fontWeight',
-        counterBgColor: 'backgroundColor',
-        counterTextColor: 'color',
-        counterFontSize: 'fontSize',
         containerBg: 'backgroundColor',
         containerPadding: 'padding',
         containerBorderRadius: 'borderRadius'
@@ -247,27 +229,14 @@ const LayeredNavigationSidebar = ({
         />
       </SectionHeader>
 
-      {/* Attribute Filter Labels */}
+      {/* Attribute Filter Labels (also applies to Price filter) */}
       <SectionHeader
-        title="Attribute Filter Labels"
+        title="Filter Labels (Brand, Price, etc.)"
         section="filterLabels"
         expanded={expandedSections.filterLabels}
         onToggle={toggleSection}
       >
         <FilterLabelsSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
-
-      {/* Price Filter Label */}
-      <SectionHeader
-        title="Price Filter Label"
-        section="priceLabel"
-        expanded={expandedSections.priceLabel}
-        onToggle={toggleSection}
-      >
-        <PriceFilterLabelSection
           styles={filterStyles}
           onStyleChange={handleStyleChange}
         />

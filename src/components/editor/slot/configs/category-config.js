@@ -582,7 +582,7 @@ export const categoryConfig = {
               <button class="w-full flex items-center justify-between mb-3"
                       data-action="toggle-filter-section"
                       data-section="price">
-                <span style="color: {{priceLabelStyles.color}}; font-size: {{priceLabelStyles.fontSize}}; font-weight: {{priceLabelStyles.fontWeight}};">Price</span>
+                <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">Price</span>
                 <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -660,7 +660,7 @@ export const categoryConfig = {
                    data-attribute-code="{{this.code}}">
                 {{#each this.options}}
                   <label class="flex items-center gap-2 cursor-pointer filter-option"
-                         style="color: {{filterOptionStyles.optionTextColor}};"
+                         style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
                          onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                          onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
                          data-option-index="{{@index}}">
@@ -673,7 +673,7 @@ export const categoryConfig = {
                            data-filter-value="{{this.value}}"
                            {{#if this.active}}checked{{/if}} />
                     <span>{{this.label}}</span>
-                    <span class="text-sm ml-auto" style="color: {{filterOptionStyles.optionCountColor}};">({{this.count}})</span>
+                    <span class="ml-auto" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
                   </label>
                 {{/each}}
                 <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
@@ -868,6 +868,8 @@ export const categoryConfig = {
         optionTextColor: '#374151', // Default gray-700 for option text
         optionHoverColor: '#1F2937', // Default gray-800 for hover
         optionCountColor: '#9CA3AF', // Default gray-400 for count
+        optionFontSize: '0.875rem', // Default text-sm
+        optionFontWeight: '400', // Default normal
         checkboxColor: '#3B82F6', // Default blue-500 for checkbox
         activeFilterBgColor: '#DBEAFE', // Default blue-100 for active filter background
         activeFilterTextColor: '#1E40AF' // Default blue-800 for active filter text
@@ -881,7 +883,7 @@ export const categoryConfig = {
         microslot: true,
         displayName: 'Filter Options Styling',
         labelType: 'styling',
-        customizable: ['optionTextColor', 'optionHoverColor', 'optionCountColor', 'checkboxColor', 'activeFilterBgColor', 'activeFilterTextColor']
+        customizable: ['optionTextColor', 'optionHoverColor', 'optionCountColor', 'optionFontSize', 'optionFontWeight', 'checkboxColor', 'activeFilterBgColor', 'activeFilterTextColor']
       }
     },
 

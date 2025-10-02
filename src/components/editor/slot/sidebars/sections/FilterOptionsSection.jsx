@@ -60,6 +60,31 @@ const FilterOptionsSection = ({ styles, onStyleChange }) => {
       </div>
 
       <div>
+        <Label className="text-xs font-medium">Font Size</Label>
+        <Input
+          value={styles.optionFontSize}
+          onChange={(e) => onStyleChange('optionFontSize', e.target.value, 'filter_option_styles')}
+          className="text-xs h-7 mt-1"
+          placeholder="0.875rem"
+        />
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium">Font Weight</Label>
+        <select
+          value={styles.optionFontWeight}
+          onChange={(e) => onStyleChange('optionFontWeight', e.target.value, 'filter_option_styles')}
+          className="w-full mt-1 h-7 text-xs border border-gray-300 rounded-md"
+        >
+          <option value="300">Light</option>
+          <option value="400">Normal</option>
+          <option value="500">Medium</option>
+          <option value="600">Semibold</option>
+          <option value="700">Bold</option>
+        </select>
+      </div>
+
+      <div>
         <Label className="text-xs font-medium">Checkbox Color</Label>
         <div className="flex items-center gap-2 mt-1">
           <input

@@ -310,15 +310,8 @@ export function CategorySlotRenderer({
         activeFilterTextColor: '#1E40AF'
       };
 
-      // Get attribute label styles
+      // Get attribute label styles (also used for Price label)
       const attributeLabelStyles = slots?.attribute_filter_label?.styles || {
-        color: '#374151',
-        fontSize: '1rem',
-        fontWeight: '600'
-      };
-
-      // Get price label styles
-      const priceLabelStyles = slots?.price_filter_label?.styles || {
         color: '#374151',
         fontSize: '1rem',
         fontWeight: '600'
@@ -345,8 +338,7 @@ export function CategorySlotRenderer({
         },
         settings: settingsWithDefaults,
         filterOptionStyles: filterOptionStyles,
-        attributeLabelStyles: attributeLabelStyles,
-        priceLabelStyles: priceLabelStyles
+        attributeLabelStyles: attributeLabelStyles
       };
 
       // Special handling for breadcrumbs - pass styles directly and slots at top level

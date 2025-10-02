@@ -169,15 +169,8 @@ export function UnifiedSlotRenderer({
     activeFilterTextColor: '#1E40AF'
   };
 
-  // Get attribute label styles
+  // Get attribute label styles (also used for Price label)
   const attributeLabelStyles = slots?.attribute_filter_label?.styles || {
-    color: '#374151',
-    fontSize: '1rem',
-    fontWeight: '600'
-  };
-
-  // Get price label styles
-  const priceLabelStyles = slots?.price_filter_label?.styles || {
     color: '#374151',
     fontSize: '1rem',
     fontWeight: '600'
@@ -193,7 +186,6 @@ export function UnifiedSlotRenderer({
     filters: categoryData?.filters || {},
     filterOptionStyles: filterOptionStyles,
     attributeLabelStyles: attributeLabelStyles,
-    priceLabelStyles: priceLabelStyles,
     filterableAttributes: categoryData?.filterableAttributes || [],
     pagination: categoryData?.pagination || {}
   };
