@@ -163,7 +163,7 @@ const WishlistDropdownSlot = createSlotComponent({
 const CategoryNavSlot = createSlotComponent({
   name: 'CategoryNav',
   render: ({ slot, context, headerContext, className, styles }) => {
-    const { categories = [] } = headerContext || {};
+    const { categories = [], store } = headerContext || {};
     const metadata = slot?.metadata || {};
 
     // Extract link styles
@@ -176,7 +176,7 @@ const CategoryNavSlot = createSlotComponent({
       // Use actual CategoryNav component in editor for interactive dropdowns
       return (
         <div className={className} style={styles}>
-          <CategoryNav categories={categories} styles={styles} metadata={metadata} />
+          <CategoryNav categories={categories} styles={styles} metadata={metadata} store={store} />
         </div>
       );
     }

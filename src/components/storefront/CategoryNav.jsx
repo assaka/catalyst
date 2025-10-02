@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
-export default function CategoryNav({ categories, styles = {}, metadata = {} }) {
-    const { store } = useStore();
+export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null }) {
+    const storeContext = useStore();
+    const store = storeProp || storeContext?.store;
 
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
