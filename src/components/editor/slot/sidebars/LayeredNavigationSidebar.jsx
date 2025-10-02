@@ -209,12 +209,6 @@ const LayeredNavigationSidebar = ({
         {Object.keys(previewSlots).length > 0 && (
         <div className="border-b border-gray-200">
           <div className="p-3 bg-blue-50">
-            <div className="text-xs text-blue-700 font-bold mb-2">
-              📝 PREVIEW (Edit styles below):
-            </div>
-            <div className="text-xs text-gray-600 mb-3">
-              Filter Heading, Labels & Active Filters
-            </div>
             <div className="space-y-2">
               {Object.values(previewSlots).map((previewSlot) => (
                 <div
