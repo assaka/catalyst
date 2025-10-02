@@ -13,12 +13,12 @@ const ContainerSection = ({ styles, onStyleChange }) => {
           <input
             type="color"
             value={styles.containerBg}
-            onChange={(e) => onStyleChange('containerBg', e.target.value)}
+            onChange={(e) => onStyleChange('containerBg', e.target.value, 'filters_container')}
             className="w-8 h-7 rounded border border-gray-300"
           />
           <Input
             value={styles.containerBg}
-            onChange={(e) => onStyleChange('containerBg', e.target.value)}
+            onChange={(e) => onStyleChange('containerBg', e.target.value, 'filters_container')}
             className="text-xs h-7"
           />
         </div>
@@ -28,9 +28,19 @@ const ContainerSection = ({ styles, onStyleChange }) => {
         <Label className="text-xs font-medium">Padding</Label>
         <Input
           value={styles.containerPadding}
-          onChange={(e) => onStyleChange('containerPadding', e.target.value)}
+          onChange={(e) => onStyleChange('containerPadding', e.target.value, 'filters_container')}
           className="text-xs h-7 mt-1"
           placeholder="1rem"
+        />
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium">Border Radius</Label>
+        <Input
+          value={styles.containerBorderRadius}
+          onChange={(e) => onStyleChange('containerBorderRadius', e.target.value, 'filters_container')}
+          className="text-xs h-7 mt-1"
+          placeholder="0.5rem"
         />
       </div>
     </div>

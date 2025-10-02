@@ -61,8 +61,9 @@ const LayeredNavigationSidebar = ({
     counterFontSize: '0.75rem',
 
     // Container
-    containerBg: '#FFFFFF',
-    containerPadding: '1rem'
+    containerBg: 'transparent',
+    containerPadding: '1rem',
+    containerBorderRadius: '0.5rem'
   });
 
   // Load existing styles from child slots
@@ -106,6 +107,14 @@ const LayeredNavigationSidebar = ({
       if (filterOptionStyles.styles.activeFilterTextColor) updates.activeFilterTextColor = filterOptionStyles.styles.activeFilterTextColor;
     }
 
+    // Container (from filters_container slot)
+    const filtersContainer = allSlots['filters_container'];
+    if (filtersContainer && filtersContainer.styles) {
+      if (filtersContainer.styles.backgroundColor) updates.containerBg = filtersContainer.styles.backgroundColor;
+      if (filtersContainer.styles.padding) updates.containerPadding = filtersContainer.styles.padding;
+      if (filtersContainer.styles.borderRadius) updates.containerBorderRadius = filtersContainer.styles.borderRadius;
+    }
+
     if (Object.keys(updates).length > 0) {
       setFilterStyles(prev => ({ ...prev, ...updates }));
     }
@@ -137,7 +146,10 @@ const LayeredNavigationSidebar = ({
         priceLabelFontWeight: 'fontWeight',
         counterBgColor: 'backgroundColor',
         counterTextColor: 'color',
-        counterFontSize: 'fontSize'
+        counterFontSize: 'fontSize',
+        containerBg: 'backgroundColor',
+        containerPadding: 'padding',
+        containerBorderRadius: 'borderRadius'
       };
 
       // For filter_option_styles, store the property directly (not mapped to CSS property)

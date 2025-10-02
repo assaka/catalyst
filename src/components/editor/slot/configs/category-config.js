@@ -515,7 +515,11 @@ export const categoryConfig = {
       content: '',
       className: 'lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto',
       parentClassName: '',
-      styles: {},
+      styles: {
+        backgroundColor: 'transparent',
+        padding: '1rem',
+        borderRadius: '0.5rem'
+      },
       parentId: null,
       position: { col: 1, row: 2 },
       colSpan: { grid: 3, list: 12 },
