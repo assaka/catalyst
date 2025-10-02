@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SectionHeader from './components/SectionHeader';
@@ -28,6 +28,9 @@ const LayeredNavigationSidebar = ({
     activeFilters: true,
     container: true
   });
+
+  // Track if user is actively editing text to prevent overwrites
+  const isEditingTextRef = useRef(false);
 
   const [filterStyles, setFilterStyles] = useState({
     // Filter Heading
@@ -73,7 +76,10 @@ const LayeredNavigationSidebar = ({
     // Filter Heading (from filter_by_label slot)
     const filterByLabel = allSlots['filter_by_label'];
     if (filterByLabel) {
-      if (filterByLabel.content) updates.headingText = filterByLabel.content;
+      // Only update headingText if user is not actively editing
+      if (filterByLabel.content && !isEditingTextRef.current) {
+        updates.headingText = filterByLabel.content;
+      }
       if (filterByLabel.styles?.color) updates.headingColor = filterByLabel.styles.color;
       if (filterByLabel.styles?.fontSize) updates.headingFontSize = filterByLabel.styles.fontSize;
       if (filterByLabel.styles?.fontWeight) updates.headingFontWeight = filterByLabel.styles.fontWeight;
@@ -103,7 +109,10 @@ const LayeredNavigationSidebar = ({
     // Active Filters (from active_filter_styles slot)
     const activeFilterStylesSlot = allSlots['active_filter_styles'];
     if (activeFilterStylesSlot && activeFilterStylesSlot.styles) {
-      if (activeFilterStylesSlot.styles.titleText) updates.activeFilterTitleText = activeFilterStylesSlot.styles.titleText;
+      // Only update activeFilterTitleText if user is not actively editing
+      if (activeFilterStylesSlot.styles.titleText && !isEditingTextRef.current) {
+        updates.activeFilterTitleText = activeFilterStylesSlot.styles.titleText;
+      }
       if (activeFilterStylesSlot.styles.titleColor) updates.activeFilterTitleColor = activeFilterStylesSlot.styles.titleColor;
       if (activeFilterStylesSlot.styles.titleFontSize) updates.activeFilterTitleFontSize = activeFilterStylesSlot.styles.titleFontSize;
       if (activeFilterStylesSlot.styles.titleFontWeight) updates.activeFilterTitleFontWeight = activeFilterStylesSlot.styles.titleFontWeight;
@@ -175,7 +184,10 @@ const LayeredNavigationSidebar = ({
   };
 
   const handleTextChange = (targetSlotId, value) => {
-    // Update local state
+    // Set editing flag to prevent useEffect from overwriting
+    isEditingTextRef.current = true;
+
+    // Update local state immediately
     if (targetSlotId === 'filter_by_label') {
       setFilterStyles(prev => ({ ...prev, headingText: value }));
       // Update filter_by_label content via onTextChange
@@ -193,6 +205,11 @@ const LayeredNavigationSidebar = ({
         }
       }
     }
+
+    // Clear editing flag after a short delay
+    setTimeout(() => {
+      isEditingTextRef.current = false;
+    }, 500);
   };
 
   // Get slots for preview (filter labels, heading, and active filters)
