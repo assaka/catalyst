@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Maximize2, Minimize2, ShoppingCart, Package, CreditCard, CheckCircle, Grid3X3 } from 'lucide-react';
+import { Maximize2, Minimize2, ShoppingCart, Package, CreditCard, CheckCircle, Grid3X3, Menu } from 'lucide-react';
 import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
+import HeaderSlotsEditor from '@/pages/editor/HeaderSlotsEditor';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';
 import ProductSlotsEditor from '@/pages/editor/ProductSlotsEditor';
@@ -15,6 +16,15 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 // Define the slot-enabled files with their metadata
 const slotEnabledFiles = [
+  {
+    id: 'header',
+    name: 'Header',
+    path: 'src/pages/editor/HeaderSlotsEditor.jsx',
+    pageType: 'header',
+    icon: Menu,
+    description: 'Header and navigation customization',
+    color: 'text-indigo-500'
+  },
   {
     id: 'cart',
     name: 'Cart',
@@ -149,6 +159,14 @@ const AIContextWindowPage = () => {
                       };
 
                       switch (selectedSlotEditor.pageType) {
+                        case 'header':
+                          return (
+                            <HeaderSlotsEditor
+                              mode="edit"
+                              viewMode="desktop"
+                              onSave={handleSave}
+                            />
+                          );
                         case 'category':
                           return (
                             <CategorySlotsEditor
@@ -270,6 +288,14 @@ const AIContextWindowPage = () => {
                         };
 
                         switch (selectedSlotEditor.pageType) {
+                          case 'header':
+                            return (
+                              <HeaderSlotsEditor
+                                mode="edit"
+                                viewMode="desktop"
+                                onSave={handleSave}
+                              />
+                            );
                           case 'category':
                             return (
                               <CategorySlotsEditor
