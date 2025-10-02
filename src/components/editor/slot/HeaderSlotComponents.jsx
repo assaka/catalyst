@@ -156,13 +156,53 @@ const CategoryNavSlot = createSlotComponent({
   name: 'CategoryNav',
   render: ({ slot, context, headerContext, className, styles }) => {
     const { categories = [] } = headerContext || {};
+    const metadata = slot?.metadata || {};
+
+    // Extract link styles
+    const linkColor = styles?.color || '#374151';
+    const linkHoverColor = styles?.hoverColor || '#2563EB';
+    const linkFontSize = styles?.fontSize || '0.875rem';
+    const linkFontWeight = styles?.fontWeight || '500';
 
     if (context === 'editor') {
       return (
-        <nav className={className || "flex space-x-8"} style={styles}>
-          <a href="#" className="text-sm font-medium text-gray-700 hover:text-gray-900">Electronics</a>
-          <a href="#" className="text-sm font-medium text-gray-700 hover:text-gray-900">Clothing</a>
-          <a href="#" className="text-sm font-medium text-gray-700 hover:text-gray-900">Home & Garden</a>
+        <nav className={className || "flex space-x-8"}>
+          <a
+            href="#"
+            style={{
+              fontSize: linkFontSize,
+              fontWeight: linkFontWeight,
+              color: linkColor
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
+          >
+            Electronics
+          </a>
+          <a
+            href="#"
+            style={{
+              fontSize: linkFontSize,
+              fontWeight: linkFontWeight,
+              color: linkColor
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
+          >
+            Clothing
+          </a>
+          <a
+            href="#"
+            style={{
+              fontSize: linkFontSize,
+              fontWeight: linkFontWeight,
+              color: linkColor
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
+            onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
+          >
+            Home & Garden
+          </a>
         </nav>
       );
     }
@@ -170,7 +210,7 @@ const CategoryNavSlot = createSlotComponent({
     // Storefront rendering
     return (
       <div className={className} style={styles}>
-        <CategoryNav categories={categories} />
+        <CategoryNav categories={categories} styles={styles} metadata={metadata} />
       </div>
     );
   }
