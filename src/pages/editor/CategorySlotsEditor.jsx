@@ -201,56 +201,8 @@ const categoryCustomSlotRenderer = (slot, context) => {
       );
     }
 
-    // LayeredNavigation component
-    if (componentName === 'LayeredNavigation') {
-      return (
-        <div className={slot.className} style={slot.styles}>
-          <div className="space-y-3">
-            {/* Price Filter */}
-            <div className="border-b border-gray-200 pb-2">
-              <button className="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3">
-                <span>Price</span>
-                <svg className="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              <div className="px-2">
-                <div className="flex justify-between items-center mb-4 text-sm">
-                  <span className="text-gray-700 font-medium">€0</span>
-                  <span className="text-gray-400">-</span>
-                  <span className="text-gray-700 font-medium">€1000</span>
-                </div>
-                <div className="relative h-2 mb-2">
-                  <div className="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
-                  <div className="absolute h-2 bg-blue-500 rounded-lg" style={{left: '0%', width: '100%'}}></div>
-                </div>
-              </div>
-            </div>
-            {/* Brand Filter */}
-            <div className="border-b border-gray-200 pb-2">
-              <button className="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3">
-                <span>Brand</span>
-                <svg className="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer hover:text-gray-900">
-                  <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
-                  <span className="text-gray-700">Apple</span>
-                  <span className="text-gray-400 text-sm ml-auto">(15)</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer hover:text-gray-900">
-                  <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
-                  <span className="text-gray-700">Samsung</span>
-                  <span className="text-gray-400 text-sm ml-auto">(8)</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    // LayeredNavigation component - now handled by ComponentRegistry
+    // Removed hardcoded renderer to allow UnifiedSlotRenderer to use the actual component
 
     // SortSelector component
     if (componentName === 'SortSelector') {
