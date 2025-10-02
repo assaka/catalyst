@@ -237,16 +237,10 @@ const LayeredNavigation = createSlotComponent({
   render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots }) => {
     const containerRef = useRef(null);
 
-    console.log('🔵 LayeredNavigation render called - context:', context);
-
     if (context === 'editor') {
       // Editor: Render template with filters
       // Style controls are now in the specialized LayeredNavigationSidebar
-      console.log('🎨 LayeredNavigation Editor - filterOptionStyles:', variableContext?.filterOptionStyles);
-      console.log('🎨 LayeredNavigation Editor - allSlots.filter_option_styles:', allSlots?.filter_option_styles);
-      console.log('🎨 LayeredNavigation Editor - slot.content preview:', slot?.content?.substring(0, 200));
       const html = processVariables(slot?.content || '', variableContext);
-      console.log('🎨 LayeredNavigation Editor - processed HTML preview:', html.substring(0, 300));
 
       return (
         <div

@@ -232,10 +232,10 @@ function processLoops(content, context, pageData, depth = 0) {
         // Replace {{@index}} with current index
         itemContent = itemContent.replace(/\{\{@index\}\}/g, index);
 
-        // Build item context
+        // Build item context - preserve parent context for nested loops
         const itemContext = typeof item === 'object' && item !== null
-          ? { ...pageData, this: item, ...item }
-          : { ...pageData, this: item };
+          ? { ...context, ...pageData, this: item, ...item }
+          : { ...context, ...pageData, this: item };
 
         // Process conditionals with item context
         itemContent = processConditionals(itemContent, context, itemContext);

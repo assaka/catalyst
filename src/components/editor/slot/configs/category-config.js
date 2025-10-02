@@ -656,20 +656,20 @@ export const categoryConfig = {
                    data-attribute-code="{{this.code}}">
                 {{#each this.options}}
                   <label class="flex items-center gap-2 cursor-pointer filter-option"
-                         style="color: {{../../../filterOptionStyles.optionTextColor}};"
-                         onmouseover="this.style.color='{{../../../filterOptionStyles.optionHoverColor}}';"
-                         onmouseout="this.style.color='{{../../../filterOptionStyles.optionTextColor}}';"
+                         style="color: {{filterOptionStyles.optionTextColor}};"
+                         onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
+                         onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
                          data-option-index="{{@index}}">
                     <input type="checkbox"
                            class="rounded border-gray-300"
-                           style="accent-color: {{../../../filterOptionStyles.checkboxColor}};"
+                           style="accent-color: {{filterOptionStyles.checkboxColor}};"
                            data-action="toggle-filter"
                            data-filter-type="attribute"
                            data-attribute-code="{{this.attributeCode}}"
                            data-filter-value="{{this.value}}"
                            {{#if this.active}}checked{{/if}} />
                     <span>{{this.label}}</span>
-                    <span class="text-sm ml-auto" style="color: {{../../../filterOptionStyles.optionCountColor}};">({{this.count}})</span>
+                    <span class="text-sm ml-auto" style="color: {{filterOptionStyles.optionCountColor}};">({{this.count}})</span>
                   </label>
                 {{/each}}
                 <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
