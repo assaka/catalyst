@@ -219,20 +219,22 @@ const LayeredNavigationSidebar = ({
               {Object.values(previewSlots).map((previewSlot) => (
                 <div
                   key={previewSlot.id}
-                  className="bg-white p-2 rounded border border-gray-300 hover:border-blue-500 cursor-pointer"
+                  className="bg-white p-2 rounded border border-gray-300"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="text-xs text-gray-500 mb-1">
                     {previewSlot.metadata?.displayName || previewSlot.id}
                   </div>
-                  <UnifiedSlotRenderer
-                    slots={{ [previewSlot.id]: previewSlot }}
-                    parentId={null}
-                    context="editor"
-                    variableContext={{}}
-                    mode="edit"
-                    showBorders={true}
-                  />
+                  <div className="pointer-events-none">
+                    <UnifiedSlotRenderer
+                      slots={{ [previewSlot.id]: previewSlot }}
+                      parentId={null}
+                      context="editor"
+                      variableContext={{}}
+                      mode="view"
+                      showBorders={false}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
