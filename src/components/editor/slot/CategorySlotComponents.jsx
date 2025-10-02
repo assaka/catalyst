@@ -266,7 +266,13 @@ const LayeredNavigation = createSlotComponent({
         type: 'text',
         content: 'Filter By',
         className: 'text-lg font-semibold text-gray-900 mb-4',
-        styles: {},
+        styles: {
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          color: '#111827',
+          marginBottom: '1rem',
+          display: 'block'
+        },
         parentId: 'layered_navigation',
         metadata: {
           microslot: true,
@@ -303,7 +309,13 @@ const LayeredNavigation = createSlotComponent({
           type: 'text',
           content: 'Price',
           className: 'font-semibold text-base text-gray-900 mb-3',
-          styles: {},
+          styles: {
+            fontSize: '1rem',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '0.75rem',
+            display: 'block'
+          },
           parentId: 'layered_navigation',
           metadata: {
             microslot: true,
@@ -342,7 +354,12 @@ const LayeredNavigation = createSlotComponent({
             type: 'text',
             content: `${option.label} (${option.count})`,
             className: 'text-gray-700 text-sm',
-            styles: {},
+            styles: {
+              fontSize: '0.875rem',
+              color: '#374151',
+              display: 'block',
+              marginBottom: '0.5rem'
+            },
             parentId: 'layered_navigation',
             metadata: {
               attributeCode: attribute.code,
