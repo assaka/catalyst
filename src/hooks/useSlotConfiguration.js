@@ -686,6 +686,11 @@ export const sortSlotsByGridCoordinates = (filteredSlots) => {
 async function loadPageConfig(pageType) {
   let config;
   switch (pageType) {
+    case 'header': {
+      const { headerConfig } = await import('@/components/editor/slot/configs/header-config');
+      config = headerConfig;
+      break;
+    }
     case 'cart': {
       const { cartConfig } = await import('@/components/editor/slot/configs/cart-config');
       config = cartConfig;
