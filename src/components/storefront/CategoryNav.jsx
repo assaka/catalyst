@@ -917,7 +917,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     category.children.map(child => renderDirectChildrenOnly(child, 0))
                             })()}
                                         </div>
-                                    </div>
+                                        </div>,
+                                        document.body
+                                    )}
                                 </div>
                             );
                         } else {
