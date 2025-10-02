@@ -166,7 +166,8 @@ export function UnifiedSlotRenderer({
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Category-specific data
     filters: categoryData?.filters || {},
-    filterableAttributes: categoryData?.filterableAttributes || []
+    filterableAttributes: categoryData?.filterableAttributes || [],
+    pagination: categoryData?.pagination || {}
   };
 
 

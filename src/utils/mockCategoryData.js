@@ -83,6 +83,32 @@ export const generateMockCategoryContext = () => {
     ]
   };
 
+  // Pagination data
+  const totalProducts = sampleProducts.length;
+  const productsPerPage = 12;
+  const currentPage = 1;
+  const totalPages = Math.ceil(totalProducts / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = Math.min(startIndex + productsPerPage, totalProducts);
+
+  const pagination = {
+    start: startIndex + 1,
+    end: endIndex,
+    total: totalProducts,
+    currentPage,
+    totalPages,
+    perPage: productsPerPage,
+    hasPrev: currentPage > 1,
+    hasNext: currentPage < totalPages,
+    prevPage: currentPage - 1,
+    nextPage: currentPage + 1,
+    pages: Array.from({ length: Math.min(totalPages, 5) }, (_, i) => ({
+      number: i + 1,
+      isCurrent: i + 1 === currentPage,
+      isEllipsis: false
+    }))
+  };
+
   return {
     category: {
       id: 1,
@@ -119,6 +145,7 @@ export const generateMockCategoryContext = () => {
         options: materials.map(material => ({ value: material, label: material }))
       }
     ],
+    pagination,
     sortOption: 'default',
     currentPage: 1,
     totalPages: 1,
