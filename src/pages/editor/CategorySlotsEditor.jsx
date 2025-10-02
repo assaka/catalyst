@@ -572,7 +572,7 @@ const createCategoryEditorConfig = (filterableAttributes) => ({
   },
   customSlotRenderer: categoryCustomSlotRenderer,
   cmsBlockPositions: ['category_above_products', 'category_below_products']
-};
+});
 
 // AI Enhancement Configuration for Category
 const categoryAiConfig = {

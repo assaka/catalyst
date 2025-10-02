@@ -241,6 +241,14 @@ const LayeredNavigation = createSlotComponent({
       // Editor version - render filter elements as individual editable slot instances
       const filters = categoryContext?.filters || { attributes: [] };
 
+      console.log('🔍 LayeredNavigation render in editor:', {
+        hasFilters: !!filters,
+        attributesCount: filters?.attributes?.length,
+        attributes: filters?.attributes,
+        hasCategoryContext: !!categoryContext,
+        filterableAttributesCount: categoryContext?.filterableAttributes?.length
+      });
+
       // Get shared attribute filter label configuration from category-config.js
       const attributeFilterLabelSlot = allSlots?.attribute_filter_label || {};
       const sharedLabelClassName = attributeFilterLabelSlot.className || 'font-semibold text-base text-gray-900';
