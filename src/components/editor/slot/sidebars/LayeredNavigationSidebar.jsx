@@ -31,6 +31,7 @@ const LayeredNavigationSidebar = ({
 
   const [filterStyles, setFilterStyles] = useState({
     // Filter Heading
+    headingText: 'Filter By',
     headingColor: '#111827',
     headingFontSize: '1.125rem',
     headingFontWeight: '600',
@@ -51,6 +52,7 @@ const LayeredNavigationSidebar = ({
     activeFilterTextColor: '#1E40AF',
 
     // Active Filters (from active_filter_styles slot)
+    activeFilterTitleText: 'Active Filters',
     activeFilterTitleColor: '#374151',
     activeFilterTitleFontSize: '0.875rem',
     activeFilterTitleFontWeight: '600',
@@ -71,6 +73,7 @@ const LayeredNavigationSidebar = ({
     // Filter Heading (from filter_by_label slot)
     const filterByLabel = allSlots['filter_by_label'];
     if (filterByLabel) {
+      if (filterByLabel.content) updates.headingText = filterByLabel.content;
       if (filterByLabel.styles?.color) updates.headingColor = filterByLabel.styles.color;
       if (filterByLabel.styles?.fontSize) updates.headingFontSize = filterByLabel.styles.fontSize;
       if (filterByLabel.styles?.fontWeight) updates.headingFontWeight = filterByLabel.styles.fontWeight;
@@ -100,6 +103,7 @@ const LayeredNavigationSidebar = ({
     // Active Filters (from active_filter_styles slot)
     const activeFilterStylesSlot = allSlots['active_filter_styles'];
     if (activeFilterStylesSlot && activeFilterStylesSlot.styles) {
+      if (activeFilterStylesSlot.styles.titleText) updates.activeFilterTitleText = activeFilterStylesSlot.styles.titleText;
       if (activeFilterStylesSlot.styles.titleColor) updates.activeFilterTitleColor = activeFilterStylesSlot.styles.titleColor;
       if (activeFilterStylesSlot.styles.titleFontSize) updates.activeFilterTitleFontSize = activeFilterStylesSlot.styles.titleFontSize;
       if (activeFilterStylesSlot.styles.titleFontWeight) updates.activeFilterTitleFontWeight = activeFilterStylesSlot.styles.titleFontWeight;
@@ -170,6 +174,32 @@ const LayeredNavigationSidebar = ({
     }
   };
 
+  const handleTextChange = (targetSlotId, value) => {
+    // Update local state
+    if (targetSlotId === 'filter_by_label') {
+      setFilterStyles(prev => ({ ...prev, headingText: value }));
+    } else if (targetSlotId === 'active_filters') {
+      setFilterStyles(prev => ({ ...prev, activeFilterTitleText: value }));
+      // For active_filters, store the text in active_filter_styles
+      const activeFilterStylesSlot = allSlots['active_filter_styles'];
+      if (activeFilterStylesSlot) {
+        const styles = { ...activeFilterStylesSlot.styles, titleText: value };
+        if (onClassChange) {
+          onClassChange('active_filter_styles', activeFilterStylesSlot.className || '', styles, activeFilterStylesSlot.metadata || {});
+        }
+      }
+      return;
+    }
+
+    // Update the target slot content
+    if (targetSlotId && allSlots[targetSlotId]) {
+      const targetSlot = allSlots[targetSlotId];
+      if (onClassChange) {
+        onClassChange(targetSlotId, targetSlot.className || '', targetSlot.styles || {}, targetSlot.metadata || {}, value);
+      }
+    }
+  };
+
   // Get slots for preview (filter labels, heading, and active filters)
   const previewSlots = {};
   if (allSlots) {
@@ -215,6 +245,7 @@ const LayeredNavigationSidebar = ({
           <FilterHeadingSection
             styles={filterStyles}
             onStyleChange={handleStyleChange}
+            onTextChange={handleTextChange}
           />
         </SectionHeader>
 
@@ -254,6 +285,7 @@ const LayeredNavigationSidebar = ({
           <ActiveFiltersSection
             styles={filterStyles}
             onStyleChange={handleStyleChange}
+            onTextChange={handleTextChange}
           />
         </SectionHeader>
 

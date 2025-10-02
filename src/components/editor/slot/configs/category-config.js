@@ -229,7 +229,7 @@ export const categoryConfig = {
       content: `
         {{#if activeFilters.length}}
           <div class="mb-4">
-            <h4 style="color: {{activeFilterStyles.titleColor}}; font-size: {{activeFilterStyles.titleFontSize}}; font-weight: {{activeFilterStyles.titleFontWeight}};" class="mb-2">Active Filters</h4>
+            <h4 style="color: {{activeFilterStyles.titleColor}}; font-size: {{activeFilterStyles.titleFontSize}}; font-weight: {{activeFilterStyles.titleFontWeight}};" class="mb-2">{{activeFilterStyles.titleText}}</h4>
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
                 <div class="flex items-center gap-1 rounded-full text-sm px-3 py-1"
@@ -281,6 +281,7 @@ export const categoryConfig = {
       className: '',
       parentClassName: '',
       styles: {
+        titleText: 'Active Filters', // Default title text
         titleColor: '#374151', // Default gray-700 for "Active Filters" heading
         titleFontSize: '0.875rem', // Default text-sm
         titleFontWeight: '600', // Default semibold

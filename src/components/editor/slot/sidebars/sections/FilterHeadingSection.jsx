@@ -5,9 +5,19 @@ import { Label } from '@/components/ui/label';
  * Filter Heading Section - controls for filter heading style
  * Saves to filter_by_label slot
  */
-const FilterHeadingSection = ({ styles, onStyleChange }) => {
+const FilterHeadingSection = ({ styles, onStyleChange, onTextChange }) => {
   return (
     <div className="space-y-3">
+      <div>
+        <Label className="text-xs font-medium">Heading Text</Label>
+        <Input
+          value={styles.headingText || 'Filter By'}
+          onChange={(e) => onTextChange && onTextChange('filter_by_label', e.target.value)}
+          className="text-xs h-7 mt-1"
+          placeholder="Filter By"
+        />
+      </div>
+
       <div>
         <Label className="text-xs font-medium">Color</Label>
         <div className="flex items-center gap-2 mt-1">

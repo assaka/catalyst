@@ -5,9 +5,19 @@ import { Label } from '@/components/ui/label';
  * Active Filters Section - controls for active filter display styling
  * Saves to active_filter_styles slot
  */
-const ActiveFiltersSection = ({ styles, onStyleChange }) => {
+const ActiveFiltersSection = ({ styles, onStyleChange, onTextChange }) => {
   return (
     <div className="space-y-3">
+      <div>
+        <Label className="text-xs font-medium">Title Text</Label>
+        <Input
+          value={styles.activeFilterTitleText || 'Active Filters'}
+          onChange={(e) => onTextChange && onTextChange('active_filters', e.target.value)}
+          className="text-xs h-7 mt-1"
+          placeholder="Active Filters"
+        />
+      </div>
+
       <div>
         <Label className="text-xs font-medium">Title Color</Label>
         <div className="flex items-center gap-2 mt-1">
