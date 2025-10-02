@@ -4,13 +4,15 @@ import { categoryConfig } from './category-config';
 import { productConfig } from './product-config';
 import { homepageConfig } from './homepage-config';
 import { checkoutConfig } from './checkout-config';
+import { headerConfig } from './header-config';
 
 export const PAGE_CONFIGS = {
   cart: cartConfig,
   category: categoryConfig,
   product: productConfig,
   homepage: homepageConfig,
-  checkout: checkoutConfig
+  checkout: checkoutConfig,
+  header: headerConfig
 };
 
 // Helper function to get page configuration
@@ -61,5 +63,6 @@ export {
   categoryConfig,
   productConfig,
   homepageConfig,
-  checkoutConfig
+  checkoutConfig,
+  headerConfig
 };
