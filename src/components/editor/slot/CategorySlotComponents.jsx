@@ -729,8 +729,8 @@ const ProductItemsGrid = createSlotComponent({
       const storeSettings = storeContext?.settings || null;
       const gridClasses = getGridClasses(storeSettings);
 
-      // Get sample products from categoryContext
-      const products = categoryContext?.products?.slice(0, 6) || [];
+      // Get sample products from categoryContext OR variableContext
+      const products = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
 
       // Get child product style control slots
       const productStyleSlots = {};
@@ -744,6 +744,7 @@ const ProductItemsGrid = createSlotComponent({
       }
 
       console.log('🔍 Found product style slots:', Object.keys(productStyleSlots));
+      console.log('🔍 Products available:', products.length);
 
       if (products.length === 0) {
         return (
@@ -752,15 +753,18 @@ const ProductItemsGrid = createSlotComponent({
             style={styles || slot.styles}
           >
             <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-              Product Items Grid - No products available
+              Product Items Grid - No products available in editor
             </div>
           </div>
         );
       }
 
-      // Render template from slot.content
+      // Render template from slot.content with variableContext
       const template = slot?.content || '';
-      const html = processVariables(template, variableContext);
+      const html = processVariables(template, variableContext || {});
+
+      console.log('🔍 Rendered HTML length:', html?.length || 0);
+      console.log('🔍 Rendered HTML preview:', html?.substring(0, 200));
 
       return (
         <div>
@@ -799,12 +803,22 @@ const ProductItemsGrid = createSlotComponent({
             </div>
           )}
 
-          {/* Product Grid Template */}
-          <div
-            className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
-            style={styles || slot.styles}
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
+          {/* Product Grid Template - Show products if HTML is empty */}
+          {html && html.trim().length > 0 ? (
+            <div
+              className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
+              style={styles || slot.styles}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <div className="text-sm text-gray-500 p-4 border border-dashed rounded">
+              Waiting for product template to render...
+              <div className="mt-2 text-xs">
+                Products available: {products.length}<br />
+                Template length: {template?.length || 0}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
