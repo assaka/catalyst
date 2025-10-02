@@ -275,9 +275,12 @@ export const usePublishHandler = (pageType, pageConfig, handlePublishConfigurati
       setters.setConfigurationStatus('draft'); // Set to draft since new draft was created based on published
       setters.updateLastSavedConfig(pageConfig);
 
-      // Refresh the SlotEnabledFileSelector badge status
+      // Refresh the SlotEnabledFileSelector badge status after a short delay
+      // to ensure the new draft has been created and is queryable
       if (window.slotFileSelectorRefresh) {
-        window.slotFileSelectorRefresh(pageType);
+        setTimeout(() => {
+          window.slotFileSelectorRefresh(pageType);
+        }, 500);
       }
 
       setTimeout(() => setPublishStatus(''), 3000);
@@ -428,9 +431,11 @@ export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftCo
           };
         }
 
-        // Refresh the SlotEnabledFileSelector badge status
+        // Refresh the SlotEnabledFileSelector badge status after a short delay
         if (window.slotFileSelectorRefresh) {
-          window.slotFileSelectorRefresh(pageType);
+          setTimeout(() => {
+            window.slotFileSelectorRefresh(pageType);
+          }, 500);
         }
       }
     } catch (error) {
