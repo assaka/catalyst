@@ -873,8 +873,12 @@ const ProductItemsGrid = createSlotComponent({
           id: `product_name_${productIndex}`,
           type: 'text',
           content: product.name,
-          className: 'font-semibold text-lg truncate mb-2 text-red-600',
-          styles: {},
+          className: 'font-semibold mb-2',
+          styles: {
+            fontSize: '1.125rem',
+            color: '#DC2626',
+            fontWeight: '600'
+          },
           parentId: `product_card_${productIndex}`,
           metadata: {
             productId: product.id,
@@ -883,7 +887,8 @@ const ProductItemsGrid = createSlotComponent({
             microslot: true,
             editable: true,
             resizable: true,
-            draggable: true
+            draggable: true,
+            editableProperties: ['fontSize', 'color', 'fontWeight', 'textAlign']
           }
         };
 
@@ -930,8 +935,12 @@ const ProductItemsGrid = createSlotComponent({
           id: `product_add_to_cart_${productIndex}`,
           type: 'button',
           content: 'Add to Cart',
-          className: 'w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium',
-          styles: {},
+          className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md font-medium',
+          styles: {
+            fontSize: '0.875rem',
+            backgroundColor: '#2563EB',
+            color: '#FFFFFF'
+          },
           parentId: `product_card_${productIndex}`,
           metadata: {
             productId: product.id,
@@ -939,7 +948,8 @@ const ProductItemsGrid = createSlotComponent({
             microslot: true,
             editable: true,
             resizable: true,
-            draggable: true
+            draggable: true,
+            editableProperties: ['fontSize', 'backgroundColor', 'color', 'borderRadius', 'padding']
           }
         };
       });
