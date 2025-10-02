@@ -160,10 +160,13 @@ export function UnifiedSlotRenderer({
   // SIMPLIFIED: Use same data structure for both editor and storefront
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
-    category: categoryData,
+    category: categoryData?.category || categoryData,
     cart: cartData,
-    settings: productData.settings || {}, // SAME settings for both contexts
-    productLabels: productData.productLabels
+    settings: productData.settings || categoryData?.settings || {},
+    productLabels: productData.productLabels || categoryData?.productLabels,
+    // Category-specific data
+    filters: categoryData?.filters || {},
+    filterableAttributes: categoryData?.filterableAttributes || []
   };
 
 

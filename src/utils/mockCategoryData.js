@@ -28,6 +28,61 @@ export const generateMockCategoryContext = () => {
     };
   });
 
+  // Build filters object with proper structure for templates
+  const filters = {
+    price: {
+      min: 50,
+      max: 500,
+      selected: [50, 500]
+    },
+    attributes: [
+      {
+        code: 'brand',
+        label: 'Brand',
+        options: brands.map((brand, idx) => ({
+          value: brand,
+          label: brand,
+          count: Math.floor(Math.random() * 10) + 1,
+          active: false,
+          attributeCode: 'brand'
+        }))
+      },
+      {
+        code: 'color',
+        label: 'Color',
+        options: colors.map((color, idx) => ({
+          value: color,
+          label: color,
+          count: Math.floor(Math.random() * 8) + 1,
+          active: false,
+          attributeCode: 'color'
+        }))
+      },
+      {
+        code: 'size',
+        label: 'Size',
+        options: sizes.map((size, idx) => ({
+          value: size,
+          label: size,
+          count: Math.floor(Math.random() * 5) + 1,
+          active: false,
+          attributeCode: 'size'
+        }))
+      },
+      {
+        code: 'material',
+        label: 'Material',
+        options: materials.map((material, idx) => ({
+          value: material,
+          label: material,
+          count: Math.floor(Math.random() * 6) + 1,
+          active: false,
+          attributeCode: 'material'
+        }))
+      }
+    ]
+  };
+
   return {
     category: {
       id: 1,
@@ -37,7 +92,7 @@ export const generateMockCategoryContext = () => {
     },
     products: sampleProducts,
     allProducts: sampleProducts,
-    filters: {},
+    filters,
     filterableAttributes: [
       {
         code: 'color',
