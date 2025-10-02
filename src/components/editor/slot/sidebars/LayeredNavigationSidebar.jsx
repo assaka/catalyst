@@ -178,6 +178,10 @@ const LayeredNavigationSidebar = ({
     // Update local state
     if (targetSlotId === 'filter_by_label') {
       setFilterStyles(prev => ({ ...prev, headingText: value }));
+      // Update filter_by_label content via onTextChange
+      if (onTextChange) {
+        onTextChange(targetSlotId, value);
+      }
     } else if (targetSlotId === 'active_filters') {
       setFilterStyles(prev => ({ ...prev, activeFilterTitleText: value }));
       // For active_filters, store the text in active_filter_styles
@@ -187,15 +191,6 @@ const LayeredNavigationSidebar = ({
         if (onClassChange) {
           onClassChange('active_filter_styles', activeFilterStylesSlot.className || '', styles, activeFilterStylesSlot.metadata || {});
         }
-      }
-      return;
-    }
-
-    // Update the target slot content
-    if (targetSlotId && allSlots[targetSlotId]) {
-      const targetSlot = allSlots[targetSlotId];
-      if (onClassChange) {
-        onClassChange(targetSlotId, targetSlot.className || '', targetSlot.styles || {}, targetSlot.metadata || {}, value);
       }
     }
   };
