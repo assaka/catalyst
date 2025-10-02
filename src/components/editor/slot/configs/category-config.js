@@ -93,7 +93,7 @@ export const categoryConfig = {
       id: 'products_container',
       type: 'container',
       content: '',
-      className: '',
+      className: 'ml-6',
       parentClassName: '',
       styles: {},
       parentId: null,
@@ -582,7 +582,7 @@ export const categoryConfig = {
                 <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
+                </svg>_label
               </button>
               <div class="filter-content px-2 {{#unless settings.collapse_filters}}block{{/unless}}"
                    style="{{#if settings.collapse_filters}}display: none;{{/if}}">
@@ -895,6 +895,79 @@ export const categoryConfig = {
         props: {
           position: 'category_below_filters'
         }
+      }
+    },
+
+    // Product Element Style Controls (for editor)
+    product_name_style: {
+      id: 'product_name_style',
+      type: 'text',
+      content: 'Product Name',
+      className: 'font-semibold text-lg text-red-600',
+      parentClassName: '',
+      styles: {
+        fontSize: '1.125rem',
+        fontWeight: '600',
+        color: '#DC2626'
+      },
+      parentId: 'product_items',
+      position: { col: 1, row: 1 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Product Name Style',
+        editableProperties: ['fontSize', 'fontWeight', 'color']
+      }
+    },
+
+    product_price_style: {
+      id: 'product_price_style',
+      type: 'text',
+      content: '$99.99',
+      className: 'text-lg font-bold text-red-600',
+      parentClassName: '',
+      styles: {
+        fontSize: '1.125rem',
+        fontWeight: '700',
+        color: '#DC2626'
+      },
+      parentId: 'product_items',
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Product Price Style',
+        editableProperties: ['fontSize', 'fontWeight', 'color']
+      }
+    },
+
+    product_add_to_cart_style: {
+      id: 'product_add_to_cart_style',
+      type: 'button',
+      content: 'Add to Cart',
+      className: 'w-full text-white px-4 py-2 rounded-md text-sm font-medium',
+      parentClassName: '',
+      styles: {
+        fontSize: '0.875rem',
+        fontWeight: '500',
+        backgroundColor: '#3B82F6',
+        color: '#FFFFFF',
+        borderRadius: '0.375rem',
+        padding: '0.5rem 1rem'
+      },
+      parentId: 'product_items',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        microslot: true,
+        displayName: 'Add to Cart Button Style',
+        editableProperties: ['fontSize', 'fontWeight', 'backgroundColor', 'color', 'borderRadius', 'padding']
       }
     }
 

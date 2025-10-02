@@ -12,7 +12,8 @@ import {
   CheckCircle,
   Grid3X3,
   RefreshCw,
-  Loader2
+  Loader2,
+  Menu
 } from 'lucide-react';
 
 const SlotEnabledFileSelector = ({
@@ -29,6 +30,15 @@ const SlotEnabledFileSelector = ({
 
   // Define the slot-enabled files with their metadata
   const slotEnabledFiles = [
+    {
+      id: 'header',
+      name: 'Header',
+      path: 'src/pages/editor/HeaderSlotsEditor.jsx',
+      pageType: 'header',
+      icon: Menu,
+      description: 'Header and navigation customization',
+      color: 'text-indigo-500'
+    },
     {
       id: 'cart',
       name: 'Cart',

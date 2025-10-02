@@ -789,13 +789,26 @@ const ProductItemsGrid = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor version - render products as individual editable slot instances
+      // Editor: Render child style control slots from category-config.js
       const storeContext = useStore();
       const storeSettings = storeContext?.settings || null;
       const gridClasses = getGridClasses(storeSettings);
 
       // Get sample products from categoryContext
       const products = categoryContext?.products?.slice(0, 6) || [];
+
+      // Get child product style control slots
+      const productStyleSlots = {};
+      if (allSlots) {
+        Object.values(allSlots).forEach(childSlot => {
+          if (childSlot.parentId === 'product_items' &&
+              childSlot.id.includes('_style')) {
+            productStyleSlots[childSlot.id] = childSlot;
+          }
+        });
+      }
+
+      console.log('🔍 Found product style slots:', Object.keys(productStyleSlots));
 
       if (products.length === 0) {
         return (
@@ -810,157 +823,54 @@ const ProductItemsGrid = createSlotComponent({
         );
       }
 
-      // Create dynamic slot instances for each product element
-      const productSlotInstances = {};
+      // Render template from slot.content
+      const template = slot?.content || '';
+      const html = processVariables(template, variableContext);
 
-      products.forEach((product, productIndex) => {
-        // Product card container
-        productSlotInstances[`product_card_${productIndex}`] = {
-          id: `product_card_${productIndex}`,
-          type: 'container',
-          className: 'group overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-lg transition-shadow p-4 product-card',
-          styles: {},
-          parentId: 'product_items',
-          metadata: {
-            productId: product.id,
-            productIndex,
-            hierarchical: true
-          }
-        };
-
-        // Product image
-        productSlotInstances[`product_image_${productIndex}`] = {
-          id: `product_image_${productIndex}`,
-          type: 'image',
-          content: product.images?.[0] || 'https://placehold.co/400x400?text=Product',
-          className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
-          styles: {},
-          parentId: `product_card_${productIndex}`,
-          metadata: {
-            productId: product.id,
-            productIndex,
-            alt: product.name,
-            microslot: true,
-            editable: true,
-            resizable: true,
-            draggable: true
-          }
-        };
-
-        // Product name
-        productSlotInstances[`product_name_${productIndex}`] = {
-          id: `product_name_${productIndex}`,
-          type: 'text',
-          content: product.name,
-          className: 'font-semibold mb-2',
-          styles: {
-            fontSize: '1.125rem',
-            color: '#DC2626',
-            fontWeight: '600'
-          },
-          parentId: `product_card_${productIndex}`,
-          metadata: {
-            productId: product.id,
-            productIndex,
-            htmlTag: 'h3',
-            microslot: true,
-            editable: true,
-            resizable: true,
-            draggable: true,
-            editableProperties: ['fontSize', 'color', 'fontWeight', 'textAlign']
-          }
-        };
-
-        // Product price
-        productSlotInstances[`product_price_${productIndex}`] = {
-          id: `product_price_${productIndex}`,
-          type: 'text',
-          content: product.price_formatted || `$${product.price}`,
-          className: 'text-lg font-bold text-red-600',
-          styles: {},
-          parentId: `product_card_${productIndex}`,
-          metadata: {
-            productId: product.id,
-            productIndex,
-            microslot: true,
-            editable: true,
-            resizable: true,
-            draggable: true
-          }
-        };
-
-        // Product compare price (if exists)
-        if (product.compare_price) {
-          productSlotInstances[`product_compare_price_${productIndex}`] = {
-            id: `product_compare_price_${productIndex}`,
-            type: 'text',
-            content: product.compare_price_formatted || `$${product.compare_price}`,
-            className: 'text-sm text-gray-500 line-through',
-            styles: {},
-            parentId: `product_card_${productIndex}`,
-            metadata: {
-              productId: product.id,
-              productIndex,
-              microslot: true,
-              editable: true,
-              resizable: true,
-              draggable: true
-            }
-          };
-        }
-
-        // Add to cart button
-        productSlotInstances[`product_add_to_cart_${productIndex}`] = {
-          id: `product_add_to_cart_${productIndex}`,
-          type: 'button',
-          content: 'Add to Cart',
-          className: 'bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md font-medium',
-          styles: {
-            fontSize: '0.875rem',
-            backgroundColor: '#2563EB',
-            color: '#FFFFFF'
-          },
-          parentId: `product_card_${productIndex}`,
-          metadata: {
-            productId: product.id,
-            productIndex,
-            microslot: true,
-            editable: true,
-            resizable: true,
-            draggable: true,
-            editableProperties: ['fontSize', 'backgroundColor', 'color', 'borderRadius', 'padding']
-          }
-        };
-      });
-
-      // Render slots using UnifiedSlotRenderer - each product card gets its own isolated slot tree
       return (
-        <div
-          className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
-          style={styles || slot.styles}
-        >
-          {products.map((product, productIndex) => {
-            // Filter slots for this specific product
-            const productSpecificSlots = {};
-            Object.keys(productSlotInstances).forEach(key => {
-              if (key.endsWith(`_${productIndex}`)) {
-                productSpecificSlots[key] = productSlotInstances[key];
-              }
-            });
+        <div>
+          {/* Product Style Controls */}
+          {Object.keys(productStyleSlots).length > 0 && (
+            <div
+              className="mb-4 p-3 bg-purple-50 border-2 border-purple-300 rounded"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-xs text-purple-700 font-bold mb-2">
+                📝 PRODUCT ELEMENT STYLES (Click to edit):
+              </div>
+              <div className="text-xs text-gray-600 mb-2">
+                Edit styles here → They'll be applied to all products in the grid
+              </div>
+              <div className="space-y-2">
+                {Object.values(productStyleSlots).map((styleSlot) => (
+                  <div
+                    key={styleSlot.id}
+                    className="bg-white p-2 rounded border border-purple-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-xs text-gray-500 mb-1">{styleSlot.metadata?.displayName || styleSlot.id}</div>
+                    <UnifiedSlotRenderer
+                      slots={{ [styleSlot.id]: styleSlot }}
+                      parentId={null}
+                      context={context}
+                      categoryData={categoryContext}
+                      variableContext={variableContext}
+                      onSlotUpdate={onSlotUpdate}
+                      mode="edit"
+                      showBorders={true}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-            return (
-              <UnifiedSlotRenderer
-                key={`product_${productIndex}`}
-                slots={productSpecificSlots}
-                parentId={`product_card_${productIndex}`}
-                context={context}
-                productData={{ product }}
-                categoryData={categoryContext}
-                variableContext={variableContext}
-                onSlotUpdate={onSlotUpdate}
-              />
-            );
-          })}
+          {/* Product Grid Template */}
+          <div
+            className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
+            style={styles || slot.styles}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         </div>
       );
     }
@@ -968,54 +878,11 @@ const ProductItemsGrid = createSlotComponent({
     // Storefront version - uses template with processVariables
     const storeContext = useStore();
     const storeSettings = storeContext?.settings || null;
-    const gridClasses = getGridClasses(storeSettings);
+    const gridClasses = getGridClasses(storeContext?.settings ||null);
 
-    // Use template from slot.content or fallback
-    // NOTE: No wrapper div needed - grid classes are applied to the container element
-    const template = slot?.content || `
-      {{#each products}}
-        <div class="group overflow-hidden rounded-lg border bg-card p-4 product-card"
-             data-product-id="{{this.id}}">
-          <div class="relative overflow-hidden mb-4">
-            <img src="{{this.image_url}}" alt="{{this.name}}"
-                 class="w-full h-48 object-cover" />
-          </div>
-          <h3 class="font-semibold text-lg mb-2">{{this.name}}</h3>
-          <div class="flex items-baseline gap-2 mb-4">
-            <span class="text-lg font-bold text-green-600">{{this.formatted_price}}</span>
-          </div>
-          <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-md"
-                  data-action="add-to-cart"
-                  data-product-id="{{this.id}}">
-            Add to Cart
-          </button>
-        </div>
-      {{/each}}
-    `;
-
+    // Use template from slot.content
+    const template = slot?.content || '';
     const html = processVariables(template, variableContext);
-
-    // Attach event listeners in storefront
-    useEffect(() => {
-      if (!containerRef.current || context === 'editor') return;
-
-      const handleClick = (e) => {
-        const addToCartBtn = e.target.closest('[data-action="add-to-cart"]');
-        if (!addToCartBtn) return;
-
-        const productId = addToCartBtn.getAttribute('data-product-id');
-        if (productId && categoryContext?.onProductClick) {
-          categoryContext.onProductClick(productId);
-        }
-      };
-
-      containerRef.current.addEventListener('click', handleClick);
-      return () => {
-        if (containerRef.current) {
-          containerRef.current.removeEventListener('click', handleClick);
-        }
-      };
-    }, [categoryContext, context]);
 
     return (
       <div
@@ -1028,7 +895,7 @@ const ProductItemsGrid = createSlotComponent({
   }
 });
 
-// Register all components
+// Register components
 registerSlotComponent('CategoryBreadcrumbs', CategoryBreadcrumbs);
 registerSlotComponent('ProductBreadcrumbs', ProductBreadcrumbs);
 registerSlotComponent('ActiveFilters', ActiveFilters);

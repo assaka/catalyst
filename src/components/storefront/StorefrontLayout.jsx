@@ -27,6 +27,8 @@ import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
 import HeatmapTrackerComponent from '@/components/admin/heatmap/HeatmapTracker';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import { HeaderSlotRenderer } from './HeaderSlotRenderer';
+import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -69,6 +71,9 @@ export default function StorefrontLayout({ children }) {
 
     // Flash message state
     const [flashMessage, setFlashMessage] = useState(null);
+
+    // Load header slot configuration
+    const { headerSlots, headerConfigLoaded } = useHeaderConfig(store);
 
     // Toggle function for mobile category expansion
     const toggleMobileCategory = (categoryId) => {
@@ -287,8 +292,37 @@ export default function StorefrontLayout({ children }) {
             
             <SeoHeadManager title={store?.name || 'Catalyst Commerce'} description={store?.description || 'Welcome to our store.'} />
 
-            {!hideHeader && (
+            {!hideHeader && headerConfigLoaded && headerSlots ? (
                 <>
+                    {/* New slot-based header */}
+                    <HeaderSlotRenderer
+                        slots={headerSlots}
+                        parentId={null}
+                        viewMode={window.innerWidth < 768 ? 'mobile' : 'desktop'}
+                        headerContext={{
+                            store,
+                            settings,
+                            user,
+                            userLoading,
+                            categories,
+                            languages,
+                            currentLanguage,
+                            selectedCountry,
+                            mobileMenuOpen,
+                            mobileSearchOpen,
+                            setCurrentLanguage,
+                            setSelectedCountry,
+                            setMobileMenuOpen,
+                            setMobileSearchOpen,
+                            handleCustomerLogout,
+                            navigate,
+                            location
+                        }}
+                    />
+                </>
+            ) : !hideHeader && (
+                <>
+                    {/* Fallback to old hardcoded header */}
                     <header className="bg-white shadow-md sticky top-0 z-40">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex items-center justify-between h-16">
