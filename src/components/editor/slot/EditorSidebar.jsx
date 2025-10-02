@@ -20,7 +20,17 @@ import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
 import GridLayoutControl from './GridLayoutControl';
-import LayeredNavigationSidebar from './sidebars/LayeredNavigationSidebar';
+
+// Dynamic sidebar imports map
+// To add a new specialized sidebar:
+// 1. Create the sidebar component in ./sidebars/YourSidebar.jsx
+// 2. Add it to this map: SidebarName: () => import('./sidebars/SidebarName')
+// 3. Set metadata.editorSidebar: 'SidebarName' in the slot config
+const SIDEBAR_COMPONENTS = {
+  LayeredNavigationSidebar: () => import('./sidebars/LayeredNavigationSidebar'),
+  // Add more specialized sidebars here as needed
+  // ProductGridSidebar: () => import('./sidebars/ProductGridSidebar'),
+};
 
 /**
  * Check if a class string contains bold styling
@@ -1313,42 +1323,52 @@ const EditorSidebar = ({
     </div>
   );
 
+  // Check if slot has a specialized sidebar configured
+  const specializedSidebarName = slotConfig?.metadata?.editorSidebar;
+  const [SpecializedSidebar, setSpecializedSidebar] = useState(null);
+
+  // Dynamically load the specialized sidebar component
+  useEffect(() => {
+    if (specializedSidebarName && SIDEBAR_COMPONENTS[specializedSidebarName]) {
+      const loadSidebar = async () => {
+        try {
+          const module = await SIDEBAR_COMPONENTS[specializedSidebarName]();
+          setSpecializedSidebar(() => module.default);
+        } catch (error) {
+          console.error(`Failed to load sidebar: ${specializedSidebarName}`, error);
+        }
+      };
+
+      loadSidebar();
+    } else {
+      setSpecializedSidebar(null);
+    }
+  }, [specializedSidebarName]);
+
   // Only show sidebar when a slot element is selected
   if (!isVisible || !isSlotElement) return null;
 
-  // Check if slot has a specialized sidebar configured
-  const specializedSidebar = slotConfig?.metadata?.editorSidebar;
+  // Render specialized sidebar if configured and loaded
+  if (specializedSidebarName && SIDEBAR_COMPONENTS[specializedSidebarName]) {
+    // Show loading state while sidebar is loading
+    if (!SpecializedSidebar) {
+      return (
+        <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex items-center justify-center editor-sidebar" style={{ zIndex: 1000 }}>
+          <div className="text-gray-500">Loading sidebar...</div>
+        </div>
+      );
+    }
 
-  // Render specialized sidebar if configured
-  if (specializedSidebar === 'LayeredNavigationSidebar') {
+    // Render the loaded specialized sidebar
     return (
-      <div className="fixed top-0 right-0 h-screen w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col editor-sidebar" style={{ zIndex: 1000 }}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Filter Styling
-          </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClearSelection}
-            className="h-6 w-6 p-0"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <LayeredNavigationSidebar
-            slotId={slotId}
-            slotConfig={slotConfig}
-            allSlots={allSlots}
-            onClassChange={onClassChange}
-            onTextChange={onTextChange}
-          />
-        </div>
-      </div>
+      <SpecializedSidebar
+        slotId={slotId}
+        slotConfig={slotConfig}
+        allSlots={allSlots}
+        onClassChange={onClassChange}
+        onTextChange={onTextChange}
+        onClearSelection={onClearSelection}
+      />
     );
   }
 
