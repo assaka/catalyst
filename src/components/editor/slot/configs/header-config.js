@@ -553,9 +553,7 @@ export const headerConfig = {
       content: '',
       className: 'md:hidden border-t border-gray-200 bg-white px-2 py-3',
       parentClassName: '',
-      styles: {
-        display: 'none' // Hidden by default, shown via JS
-      },
+      styles: {},
       parentId: 'header_inner',
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12 },
@@ -563,7 +561,7 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Search Bar (Collapsible)',
-        description: 'Shown when search toggle is clicked'
+        description: 'Shown when search toggle is clicked (always visible in editor)'
       }
     },
 
@@ -593,9 +591,7 @@ export const headerConfig = {
       content: '',
       className: 'md:hidden border-t border-gray-200 bg-white',
       parentClassName: '',
-      styles: {
-        display: 'none' // Hidden by default, shown via JS
-      },
+      styles: {},
       parentId: 'header_inner',
       position: { col: 1, row: 3 },
       colSpan: { mobile: 12 },
@@ -603,7 +599,7 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Menu (Collapsible)',
-        description: 'Shown when hamburger menu is clicked',
+        description: 'Shown when hamburger menu is clicked (always visible in editor)',
         editorSidebar: 'HeaderEditorSidebar'
       }
     },
