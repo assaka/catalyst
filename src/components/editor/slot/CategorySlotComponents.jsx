@@ -242,10 +242,6 @@ const LayeredNavigation = createSlotComponent({
       // Style controls are now in the specialized LayeredNavigationSidebar
       const html = processVariables(slot?.content || '', variableContext);
 
-      // Debug: Check if colors are in the processed HTML
-      console.log('🔍 Processed HTML contains optionTextColor?', html.includes('optionTextColor'));
-      console.log('🔍 Processed HTML sample:', html.substring(html.indexOf('filter-option'), html.indexOf('filter-option') + 200));
-
       return (
         <div
           ref={containerRef}

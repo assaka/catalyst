@@ -398,14 +398,6 @@ function getNestedValue(path, context, pageData) {
   // Merge data: pageData should override context (pageData has loop item context)
   const fullData = { ...context, ...pageData };
 
-  // Debug filterOptionStyles lookup
-  if (path.includes('filterOptionStyles')) {
-    console.log('🔍 getNestedValue lookup:', path);
-    console.log('🔍 context.filterOptionStyles:', context?.filterOptionStyles);
-    console.log('🔍 pageData.filterOptionStyles:', pageData?.filterOptionStyles);
-    console.log('🔍 fullData.filterOptionStyles:', fullData?.filterOptionStyles);
-  }
-
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
