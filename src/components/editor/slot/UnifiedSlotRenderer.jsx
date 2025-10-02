@@ -531,6 +531,11 @@ export function UnifiedSlotRenderer({
       );
     }
 
+    // Hide style_config slots - they don't render visually
+    if (type === 'style_config') {
+      return null;
+    }
+
     // Default fallback
     return (
       <div className={processedClassName} style={styles}>

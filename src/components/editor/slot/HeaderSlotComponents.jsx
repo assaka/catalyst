@@ -64,7 +64,7 @@ const HeaderSearchSlot = createSlotComponent({
     const { settings = {} } = headerContext || {};
 
     if (context === 'editor') {
-      // Extract input-specific styles
+      // Extract input-specific styles to match storefront exactly
       const inputStyles = {
         backgroundColor: styles?.backgroundColor || '#ffffff',
         borderColor: styles?.borderColor || '#d1d5db',
@@ -76,14 +76,14 @@ const HeaderSearchSlot = createSlotComponent({
       return (
         <div className={className || "w-full max-w-lg"}>
           <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full px-4 py-2 focus:outline-none focus:border-blue-500"
+              className="pl-10 pr-12 py-2 w-full focus:outline-none focus:border-blue-500"
               style={inputStyles}
               disabled
             />
-            <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
           </div>
         </div>
       );
@@ -94,7 +94,7 @@ const HeaderSearchSlot = createSlotComponent({
 
     return (
       <div className={className} style={styles}>
-        <HeaderSearch />
+        <HeaderSearch styles={styles} />
       </div>
     );
   }
@@ -173,45 +173,11 @@ const CategoryNavSlot = createSlotComponent({
     const linkFontWeight = styles?.fontWeight || '500';
 
     if (context === 'editor') {
+      // Use actual CategoryNav component in editor for interactive dropdowns
       return (
-        <nav className={className || "flex space-x-8"}>
-          <a
-            href="#"
-            style={{
-              fontSize: linkFontSize,
-              fontWeight: linkFontWeight,
-              color: linkColor
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
-            onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
-          >
-            Electronics
-          </a>
-          <a
-            href="#"
-            style={{
-              fontSize: linkFontSize,
-              fontWeight: linkFontWeight,
-              color: linkColor
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
-            onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
-          >
-            Clothing
-          </a>
-          <a
-            href="#"
-            style={{
-              fontSize: linkFontSize,
-              fontWeight: linkFontWeight,
-              color: linkColor
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
-            onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
-          >
-            Home & Garden
-          </a>
-        </nav>
+        <div className={className} style={styles}>
+          <CategoryNav categories={categories} styles={styles} metadata={metadata} />
+        </div>
       );
     }
 
@@ -360,16 +326,16 @@ const UserAccountMenuSlot = createSlotComponent({
  */
 const LanguageSelectorSlot = createSlotComponent({
   name: 'LanguageSelector',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { languages = [], currentLanguage, setCurrentLanguage } = headerContext || {};
 
     if (context === 'editor') {
       return (
-        <div className="flex items-center space-x-2">
+        <div className={className || "flex items-center space-x-2"} style={styles}>
           <Globe className="w-5 h-5 text-gray-600" />
-          <select className="text-sm border-none bg-transparent text-gray-700">
-            <option>English</option>
-            <option>Español</option>
+          <select className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-blue-500">
+            <option>🇺🇸 English</option>
+            <option>🇪🇸 Español</option>
           </select>
         </div>
       );
@@ -379,12 +345,12 @@ const LanguageSelectorSlot = createSlotComponent({
     if (languages.length <= 1) return null;
 
     return (
-      <div className="flex items-center space-x-2">
+      <div className={className || "flex items-center space-x-2"} style={styles}>
         <Globe className="w-5 h-5 text-gray-600" />
         <select
           value={currentLanguage}
           onChange={(e) => setCurrentLanguage?.(e.target.value)}
-          className="text-sm border-none bg-transparent text-gray-700 cursor-pointer"
+          className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-blue-500"
         >
           {languages.map(lang => (
             <option key={lang.code} value={lang.code}>
