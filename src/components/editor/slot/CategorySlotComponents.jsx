@@ -234,7 +234,7 @@ const ActiveFilters = createSlotComponent({
 // Layered Navigation Component with processVariables
 const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
-  render: ({ slot, className, styles, categoryContext, variableContext, context, onSlotUpdate, allSlots }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, allSlots }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
@@ -297,7 +297,6 @@ const LayeredNavigation = createSlotComponent({
                       context={context}
                       categoryData={categoryContext}
                       variableContext={variableContext}
-                      onSlotUpdate={onSlotUpdate || (() => {})}
                       mode="edit"
                       showBorders={true}
                     />
@@ -785,7 +784,7 @@ const ProductCountInfo = createSlotComponent({
 // Product Items Grid - Renders with dynamic grid from admin settings
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
-  render: ({ slot, className, styles, context, categoryContext, variableContext, allSlots, onSlotUpdate }) => {
+  render: ({ slot, className, styles, context, categoryContext, variableContext, allSlots }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
@@ -855,7 +854,6 @@ const ProductItemsGrid = createSlotComponent({
                       context={context}
                       categoryData={categoryContext}
                       variableContext={variableContext}
-                      onSlotUpdate={onSlotUpdate || (() => {})}
                       mode="edit"
                       showBorders={true}
                     />

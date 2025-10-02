@@ -481,8 +481,7 @@ export function UnifiedSlotRenderer({
           className: processedClassName,
           styles,
           variableContext,
-          allSlots: slots,
-          onSlotUpdate: onSlotUpdate || (() => {})
+          allSlots: slots
         });
       }
 
