@@ -155,13 +155,13 @@ export function HeaderSlotRenderer({
       case 'StoreLogo':
         return (
           <div key={id} className={className} style={styles} data-slot-id={id}>
-            <Link to={createPublicUrl(store?.slug, 'STOREFRONT')} className="flex items-center space-x-2">
+            <Link to={createPublicUrl(store?.slug, 'STOREFRONT')} className="flex items-center space-x-1 md:space-x-2">
               {store?.logo_url ? (
-                <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-8 w-8 object-contain" />
+                <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-6 md:h-8 w-6 md:w-8 object-contain" />
               ) : (
-                <ShoppingBag className="h-8 w-8 text-blue-600" />
+                <ShoppingBag className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
               )}
-              <span className="text-xl font-bold text-gray-800" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
+              <span className="text-base md:text-xl font-bold text-gray-800 truncate" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
                 {store?.name || 'Catalyst'}
               </span>
             </Link>

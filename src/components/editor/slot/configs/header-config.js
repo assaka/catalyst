@@ -38,7 +38,7 @@ export const headerConfig = {
       id: 'header_inner',
       type: 'container',
       content: '',
-      className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8',
+      className: 'max-w-7xl mx-auto px-2 md:px-4 lg:px-8',
       parentClassName: '',
       styles: {},
       parentId: 'header_main',
@@ -100,15 +100,15 @@ export const headerConfig = {
       type: 'component',
       component: 'StoreLogo',
       content: `
-        <a href="{{store.url}}" class="flex items-center space-x-2">
+        <a href="{{store.url}}" class="flex items-center space-x-1 md:space-x-2">
           {{#if store.logo_url}}
-            <img src="{{store.logo_url}}" alt="{{store.name}}" class="h-8 w-8 object-contain" />
+            <img src="{{store.logo_url}}" alt="{{store.name}}" class="h-6 md:h-8 w-6 md:w-8 object-contain" />
           {{else}}
-            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-6 md:h-8 w-6 md:w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
           {{/if}}
-          <span class="text-xl font-bold text-gray-800">{{store.name}}</span>
+          <span class="text-base md:text-xl font-bold text-gray-800 truncate">{{store.name}}</span>
         </a>
       `,
       className: '',
@@ -225,7 +225,7 @@ export const headerConfig = {
       id: 'actions_section',
       type: 'container',
       content: '',
-      className: 'flex items-center space-x-2',
+      className: 'flex items-center space-x-1 md:space-x-2',
       parentClassName: '',
       styles: {},
       parentId: 'header_top_row',
@@ -551,7 +551,7 @@ export const headerConfig = {
       id: 'mobile_search_bar',
       type: 'container',
       content: '',
-      className: 'md:hidden border-t border-gray-200 bg-white px-4 py-3',
+      className: 'md:hidden border-t border-gray-200 bg-white px-2 py-3',
       parentClassName: '',
       styles: {
         display: 'none' // Hidden by default, shown via JS
@@ -612,7 +612,7 @@ export const headerConfig = {
       id: 'mobile_menu_inner',
       type: 'container',
       content: '',
-      className: 'px-4 py-3 space-y-2',
+      className: 'px-2 py-3 space-y-2',
       parentClassName: '',
       styles: {},
       parentId: 'mobile_menu',
@@ -728,7 +728,7 @@ export const headerConfig = {
       id: 'navigation_inner',
       type: 'container',
       content: '',
-      className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8',
+      className: 'max-w-7xl mx-auto px-2 md:px-4 lg:px-8',
       parentClassName: '',
       styles: {},
       parentId: 'navigation_bar',
