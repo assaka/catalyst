@@ -186,8 +186,35 @@ export function UnifiedSlotRenderer({
     clearAllColor: '#DC2626'
   };
 
+  // Format products for category templates (same format as CategorySlotRenderer)
+  const currencySymbol = categoryData?.settings?.currency_symbol || productData?.settings?.currency_symbol || '$';
+  const formattedProducts = (categoryData?.products || []).map(product => {
+    const price = parseFloat(product.price || 0);
+    const comparePrice = parseFloat(product.compare_price || 0);
+    const hasValidComparePrice = comparePrice > 0 && comparePrice !== price;
+
+    const lowestPrice = hasValidComparePrice ? Math.min(price, comparePrice) : price;
+    const highestPrice = hasValidComparePrice ? Math.max(price, comparePrice) : price;
+
+    return {
+      ...product,
+      // Formatted prices for template
+      price_formatted: hasValidComparePrice ? `${currencySymbol}${comparePrice.toFixed(2)}` : `${currencySymbol}${price.toFixed(2)}`,
+      compare_price_formatted: hasValidComparePrice ? `${currencySymbol}${price.toFixed(2)}` : '',
+      lowest_price_formatted: `${currencySymbol}${lowestPrice.toFixed(2)}`,
+      highest_price_formatted: `${currencySymbol}${highestPrice.toFixed(2)}`,
+      formatted_price: `${currencySymbol}${price.toFixed(2)}`,
+      formatted_compare_price: hasValidComparePrice ? `${currencySymbol}${comparePrice.toFixed(2)}` : null,
+      image_url: product.images?.[0] || product.image_url || product.image || '',
+      url: product.url || '#',
+      in_stock: product.infinite_stock || product.stock_quantity > 0,
+      labels: []
+    };
+  });
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
+    products: formattedProducts, // Use formatted products for category templates
     category: categoryData?.category || categoryData,
     cart: cartData,
     settings: productData.settings || categoryData?.settings || {},
