@@ -302,18 +302,13 @@ const LayeredNavigation = createSlotComponent({
             </div>
           </div>
 
-          {/* Template with filter structure (preview) */}
-          <div className="relative">
-            <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs px-2 py-1 rounded-bl">
-              Preview (styles will apply on publish)
-            </div>
-            <div
-              ref={containerRef}
-              className={className || slot.className}
-              style={styles || slot.styles}
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          </div>
+          {/* Template with filter structure */}
+          <div
+            ref={containerRef}
+            className={className || slot.className}
+            style={styles || slot.styles}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         </div>
       );
     }
