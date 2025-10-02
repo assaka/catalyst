@@ -371,7 +371,17 @@ const LayeredNavigation = createSlotComponent({
       }
 
       return (
-        <div className={className || slot.className} style={styles || slot.styles}>
+        <div
+          className={className || slot.className}
+          style={{
+            ...(styles || slot.styles),
+            border: '2px solid #10b981',
+            padding: '1rem',
+            backgroundColor: '#f0fdf4',
+            minHeight: '200px'
+          }}
+        >
+          <div className="text-green-700 font-bold mb-2">🔍 FILTERS CONTAINER (29 slots)</div>
           <div className="space-y-4">
             {filterSlotValues.map((filterSlot) => (
               <UnifiedSlotRenderer
