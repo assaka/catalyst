@@ -928,7 +928,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         </div>
                                         </div>,
                                         document.body
-                                    ))}
+                                    )}
                                 </div>
                             );
                         } else {
