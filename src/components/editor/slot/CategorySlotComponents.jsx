@@ -771,12 +771,27 @@ const ProductItemsGrid = createSlotComponent({
       console.log('🔍 Product card child slots:', Object.keys(productCardChildSlots));
       console.log('🔍 Grid classes:', gridClasses);
 
-      // Render each product as an individual slot-based container
+      // Render each product as an individual editable slot-based container
       return (
         <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
           {products.map((product, index) => {
-            console.log('🔍 Rendering product card:', index, product.name);
-            console.log('🔍 Product data:', { id: product.id, name: product.name, price_formatted: product.price_formatted, image_url: product.image_url });
+            // Create unique slot IDs for this product instance
+            const productSlots = {};
+            Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
+              const uniqueId = `${slotId}_product_${index}`;
+              productSlots[uniqueId] = {
+                ...slotConfig,
+                id: uniqueId,
+                // Replace template variables with actual product data
+                content: slotConfig.content
+                  ?.replace(/\{\{this\.name\}\}/g, product.name)
+                  ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
+                  ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
+                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
+              };
+            });
+
+            console.log('🔍 Product', index, 'slots:', Object.keys(productSlots));
 
             return (
               <div
@@ -784,53 +799,17 @@ const ProductItemsGrid = createSlotComponent({
                 className={productCardTemplate?.className || 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card'}
                 style={productCardTemplate?.styles || {}}
               >
-                <div className="text-xs text-gray-500 mb-2">Product #{index + 1}: {product.name}</div>
-
-                {/* Render product image */}
-                {productCardChildSlots.product_card_image && (
-                  <div className={productCardChildSlots.product_card_image.parentClassName}>
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className={productCardChildSlots.product_card_image.className}
-                    />
-                  </div>
-                )}
-
-                {/* Render product name */}
-                {productCardChildSlots.product_card_name && (
-                  <h3 className={productCardChildSlots.product_card_name.className}>
-                    {product.name}
-                  </h3>
-                )}
-
-                {/* Render price container */}
-                {productCardChildSlots.product_card_price_container && (
-                  <div className={productCardChildSlots.product_card_price_container.className}>
-                    {/* Price */}
-                    {productCardChildSlots.product_card_price && (
-                      <span className={productCardChildSlots.product_card_price.className}>
-                        {product.price_formatted}
-                      </span>
-                    )}
-                    {/* Compare price */}
-                    {product.compare_price_formatted && productCardChildSlots.product_card_compare_price && (
-                      <span className={productCardChildSlots.product_card_compare_price.className}>
-                        {product.compare_price_formatted}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Render add to cart button */}
-                {productCardChildSlots.product_card_add_to_cart && (
-                  <button
-                    className={productCardChildSlots.product_card_add_to_cart.className}
-                    style={productCardChildSlots.product_card_add_to_cart.styles}
-                  >
-                    {productCardChildSlots.product_card_add_to_cart.content}
-                  </button>
-                )}
+                {/* Render each child slot using UnifiedSlotRenderer */}
+                <UnifiedSlotRenderer
+                  slots={productSlots}
+                  parentId={null}
+                  context={context}
+                  categoryData={{ ...categoryContext, product }}
+                  productData={{ product }}
+                  variableContext={{ ...variableContext, ...product }}
+                  mode="edit"
+                  showBorders={true}
+                />
               </div>
             );
           })}
