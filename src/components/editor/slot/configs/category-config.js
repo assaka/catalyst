@@ -591,9 +591,9 @@ export const categoryConfig = {
               <div class="filter-content px-2 {{#unless settings.collapse_filters}}block{{/unless}}"
                    style="{{#if settings.collapse_filters}}display: none;{{/if}}">
                 <div class="flex justify-between items-center mb-4 text-sm">
-                  <span class="text-gray-700 font-medium">€<span id="selected-min">{{filters.price.min}}</span></span>
+                  <span style="color: {{filterOptionStyles.optionTextColor}}; font-weight: 500;">€<span id="selected-min">{{filters.price.min}}</span></span>
                   <span class="text-gray-400">-</span>
-                  <span class="text-gray-700 font-medium">€<span id="selected-max">{{filters.price.max}}</span></span>
+                  <span style="color: {{filterOptionStyles.optionTextColor}}; font-weight: 500;">€<span id="selected-max">{{filters.price.max}}</span></span>
                 </div>
                 <div class="relative h-2 mb-2">
                   <div class="absolute w-full h-2 bg-gray-200 rounded-lg"></div>

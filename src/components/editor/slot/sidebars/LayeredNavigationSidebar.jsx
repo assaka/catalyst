@@ -27,7 +27,6 @@ const LayeredNavigationSidebar = ({
     filterLabels: true,
     priceLabel: true,
     filterOptions: true,
-    counters: true,
     container: true
   });
 
@@ -54,11 +53,6 @@ const LayeredNavigationSidebar = ({
     checkboxColor: '#3B82F6',
     activeFilterBgColor: '#DBEAFE',
     activeFilterTextColor: '#1E40AF',
-
-    // Counter Badges
-    counterBgColor: '#E5E7EB',
-    counterTextColor: '#6B7280',
-    counterFontSize: '0.75rem',
 
     // Container
     containerBg: 'transparent',
@@ -287,19 +281,6 @@ const LayeredNavigationSidebar = ({
         onToggle={toggleSection}
       >
         <FilterOptionsSection
-          styles={filterStyles}
-          onStyleChange={handleStyleChange}
-        />
-      </SectionHeader>
-
-      {/* Counter Badges */}
-      <SectionHeader
-        title="Counter Badges"
-        section="counters"
-        expanded={expandedSections.counters}
-        onToggle={toggleSection}
-      >
-        <CounterBadgesSection
           styles={filterStyles}
           onStyleChange={handleStyleChange}
         />
