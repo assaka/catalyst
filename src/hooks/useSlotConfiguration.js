@@ -1048,6 +1048,7 @@ export function useSlotConfiguration({
     const originalProperties = {
       id: draggedSlot.id,
       type: draggedSlot.type,
+      component: draggedSlot.component,  // CRITICAL: Preserve component field for component slots
       content: draggedSlot.content,
       className: draggedSlot.className,
       parentClassName: draggedSlot.parentClassName,
