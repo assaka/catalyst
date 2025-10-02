@@ -261,6 +261,20 @@ const LayeredNavigationSidebar = ({
           />
         </SectionHeader>
 
+        {/* Active Filters */}
+        <SectionHeader
+          title="Active Filters"
+          section="activeFilters"
+          expanded={expandedSections.activeFilters}
+          onToggle={toggleSection}
+        >
+          <ActiveFiltersSection
+            styles={filterStyles}
+            onStyleChange={handleStyleChange}
+            onTextChange={handleTextChange}
+          />
+        </SectionHeader>
+
         {/* Attribute Filter Labels (also applies to Price filter) */}
         <SectionHeader
           title="Filter Labels (Brand, Price, etc.)"
@@ -284,20 +298,6 @@ const LayeredNavigationSidebar = ({
           <FilterOptionsSection
             styles={filterStyles}
             onStyleChange={handleStyleChange}
-          />
-        </SectionHeader>
-
-        {/* Active Filters */}
-        <SectionHeader
-          title="Active Filters"
-          section="activeFilters"
-          expanded={expandedSections.activeFilters}
-          onToggle={toggleSection}
-        >
-          <ActiveFiltersSection
-            styles={filterStyles}
-            onStyleChange={handleStyleChange}
-            onTextChange={handleTextChange}
           />
         </SectionHeader>
 
