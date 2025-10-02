@@ -159,6 +159,16 @@ export function UnifiedSlotRenderer({
   const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
 
   // SIMPLIFIED: Use same data structure for both editor and storefront
+  // Get filter option styles from slots for both editor and storefront
+  const filterOptionStyles = slots?.filter_option_styles?.styles || {
+    optionTextColor: '#374151',
+    optionHoverColor: '#1F2937',
+    optionCountColor: '#9CA3AF',
+    checkboxColor: '#3B82F6',
+    activeFilterBgColor: '#DBEAFE',
+    activeFilterTextColor: '#1E40AF'
+  };
+
   const variableContext = {
     product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
     category: categoryData?.category || categoryData,
@@ -167,6 +177,7 @@ export function UnifiedSlotRenderer({
     productLabels: productData.productLabels || categoryData?.productLabels,
     // Category-specific data
     filters: categoryData?.filters || {},
+    filterOptionStyles: filterOptionStyles,
     filterableAttributes: categoryData?.filterableAttributes || [],
     pagination: categoryData?.pagination || {}
   };
