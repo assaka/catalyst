@@ -159,20 +159,24 @@ export function CategorySlotRenderer({
       component: componentName
     } = slot || {};
 
+    // Fallback: check metadata.component if component field is missing (for backward compatibility)
+    const finalComponentName = componentName || metadata?.component;
+
     // Debug logging for active_filters
     if (id === 'active_filters') {
       console.log('🔍 active_filters slot:', {
         id,
         type,
         componentName,
+        finalComponentName,
         hasContent: !!content,
         contentPreview: content?.substring(0, 100)
       });
     }
 
     // Check if this is a registered component type - use ComponentRegistry
-    if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
-      const registeredComponent = ComponentRegistry.get(componentName);
+    if (type === 'component' && finalComponentName && ComponentRegistry.has(finalComponentName)) {
+      const registeredComponent = ComponentRegistry.get(finalComponentName);
 
       // Debug for breadcrumbs
       if (id === 'breadcrumbs_content') {
