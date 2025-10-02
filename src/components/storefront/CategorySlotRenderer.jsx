@@ -465,18 +465,18 @@ export function CategorySlotRenderer({
     // Handle active_filters slot from category-config.js
     // Render as a separate component for independent positioning
     if (id === 'active_filters') {
-      const ActiveFiltersComp = getSlotComponent('ActiveFilters');
-      if (ActiveFiltersComp) {
+      if (ComponentRegistry.has('ActiveFilters')) {
+        const ActiveFiltersComp = ComponentRegistry.get('ActiveFilters');
         return wrapWithParentClass(
-          <ActiveFiltersComp
-            slot={slot}
-            className={className}
-            styles={styles}
-            categoryContext={categoryContext}
-            variableContext={variableContext}
-            context="storefront"
-            allSlots={slots}
-          />
+          ActiveFiltersComp.render({
+            slot,
+            className,
+            styles,
+            categoryContext,
+            variableContext,
+            context: 'storefront',
+            allSlots: slots
+          })
         );
       }
       return null;
