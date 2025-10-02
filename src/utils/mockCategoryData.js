@@ -8,6 +8,16 @@ export const generateMockCategoryContext = () => {
   const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL'];
   const materials = ['Cotton', 'Polyester', 'Leather', 'Metal', 'Plastic', 'Glass'];
 
+  // Real working Unsplash product images
+  const productImages = [
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', // Headphones
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop', // Watch
+    'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop', // Sunglasses
+    'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop', // Camera
+    'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=400&h=400&fit=crop', // Sneakers
+    'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&h=400&fit=crop'  // Perfume bottle
+  ];
+
   const sampleProducts = Array.from({ length: 6 }, (_, i) => {
     return {
       id: i + 1,
@@ -15,7 +25,7 @@ export const generateMockCategoryContext = () => {
       description: `Description for sample product ${i + 1}`,
       price: 99.99 + (i * 50),
       compare_price: i % 2 ? 99.99 + (i * 50) + 20 : null,
-      images: [`https://images.unsplash.com/photo-150574042${i}928-5e560c06d30e?w=400&h=400&fit=crop`],
+      images: [productImages[i]],
       stock_status: 'in_stock',
       rating: 4.0 + (i % 10) * 0.1,
       slug: `sample-product-${i + 1}`,
