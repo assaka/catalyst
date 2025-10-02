@@ -732,7 +732,11 @@ const ProductItemsGrid = createSlotComponent({
       // Get sample products from categoryContext OR variableContext
       const products = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
 
+      console.log('🔍 ProductItemsGrid - EDITOR MODE');
       console.log('🔍 Products available:', products.length);
+      console.log('🔍 CategoryContext:', categoryContext);
+      console.log('🔍 VariableContext:', variableContext);
+      console.log('🔍 AllSlots keys:', allSlots ? Object.keys(allSlots) : 'NO SLOTS');
 
       if (products.length === 0) {
         return (
@@ -740,8 +744,12 @@ const ProductItemsGrid = createSlotComponent({
             className={`${className || slot.className || ''}`}
             style={styles || slot.styles}
           >
-            <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-              Product Items Grid - No products available in editor
+            <div className="p-4 border-2 border-dashed border-red-300 rounded-lg text-center">
+              <div className="text-red-600 font-bold">Product Items Grid - No products available in editor</div>
+              <div className="text-xs text-gray-500 mt-2">
+                CategoryContext products: {categoryContext?.products?.length || 0}<br />
+                VariableContext products: {variableContext?.products?.length || 0}
+              </div>
             </div>
           </div>
         );
@@ -761,6 +769,7 @@ const ProductItemsGrid = createSlotComponent({
 
       console.log('🔍 Product card template:', !!productCardTemplate);
       console.log('🔍 Product card child slots:', Object.keys(productCardChildSlots));
+      console.log('🔍 Grid classes:', gridClasses);
 
       // Render each product as an individual slot-based container
       return (
