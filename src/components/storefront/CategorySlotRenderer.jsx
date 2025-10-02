@@ -159,6 +159,17 @@ export function CategorySlotRenderer({
       component: componentName
     } = slot || {};
 
+    // Debug logging for active_filters
+    if (id === 'active_filters') {
+      console.log('🔍 active_filters slot:', {
+        id,
+        type,
+        componentName,
+        hasContent: !!content,
+        contentPreview: content?.substring(0, 100)
+      });
+    }
+
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && componentName && ComponentRegistry.has(componentName)) {
       const registeredComponent = ComponentRegistry.get(componentName);
