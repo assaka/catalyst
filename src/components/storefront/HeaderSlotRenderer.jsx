@@ -333,7 +333,6 @@ export function HeaderSlotRenderer({
         );
 
       case 'CategoryNav':
-        console.log('🔍 HeaderSlotRenderer CategoryNav:', { id, styles, metadata, className });
         return (
           <div key={id} className={className} style={styles} data-slot-id={id}>
             <CategoryNav categories={categories} styles={styles} metadata={metadata} />

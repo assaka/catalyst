@@ -226,16 +226,6 @@ const HeaderEditorSidebar = ({
           metadata[mapping.prop] = value;
         }
 
-        // DEBUG: Log what we're about to save
-        console.log('💾 HeaderEditorSidebar saving:', {
-          property,
-          value,
-          targetSlotId,
-          mapping,
-          styles,
-          metadata
-        });
-
         // CRITICAL FIX: Only pass the properties that changed
         // For style changes, pass styles with the className
         // For metadata changes, pass metadata separately without overwriting styles
