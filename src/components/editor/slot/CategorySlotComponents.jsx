@@ -297,7 +297,7 @@ const LayeredNavigation = createSlotComponent({
                       context={context}
                       categoryData={categoryContext}
                       variableContext={variableContext}
-                      onSlotUpdate={onSlotUpdate}
+                      onSlotUpdate={onSlotUpdate || (() => {})}
                       mode="edit"
                       showBorders={true}
                     />
@@ -855,7 +855,7 @@ const ProductItemsGrid = createSlotComponent({
                       context={context}
                       categoryData={categoryContext}
                       variableContext={variableContext}
-                      onSlotUpdate={onSlotUpdate}
+                      onSlotUpdate={onSlotUpdate || (() => {})}
                       mode="edit"
                       showBorders={true}
                     />
