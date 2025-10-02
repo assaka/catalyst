@@ -1063,6 +1063,16 @@ export function useSlotConfiguration({
       position: draggedSlot.position || {}
     };
 
+    // Debug logging for active_filters
+    if (draggedSlotId === 'active_filters') {
+      console.log('🔍 Moving active_filters slot:', {
+        originalComponent: draggedSlot.component,
+        preservedComponent: originalProperties.component,
+        type: originalProperties.type,
+        hasMetadataComponent: !!draggedSlot.metadata?.component
+      });
+    }
+
     // Calculate new position based on drop zone
     let newParentId, newPosition;
 

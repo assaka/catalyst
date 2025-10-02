@@ -171,8 +171,9 @@ const HeaderEditorSidebar = ({
     // Update the target slot
     if (targetSlotId && allSlots[targetSlotId]) {
       const targetSlot = allSlots[targetSlotId];
-      const styles = { ...targetSlot.styles };
-      const metadata = { ...targetSlot.metadata };
+      // CRITICAL: Start with existing styles and metadata from the slot
+      const styles = { ...(targetSlot.styles || {}) };
+      const metadata = { ...(targetSlot.metadata || {}) };
 
       // Map properties to their corresponding slot style/metadata properties
       const styleMap = {
@@ -218,6 +219,7 @@ const HeaderEditorSidebar = ({
 
       const mapping = styleMap[property];
       if (mapping && targetSlotId === mapping.slot) {
+        // Only update the specific property type
         if (mapping.type === 'style') {
           styles[mapping.prop] = value;
         } else if (mapping.type === 'metadata') {
@@ -234,9 +236,17 @@ const HeaderEditorSidebar = ({
           metadata
         });
 
-        // Call onClassChange to update database
+        // CRITICAL FIX: Only pass the properties that changed
+        // For style changes, pass styles with the className
+        // For metadata changes, pass metadata separately without overwriting styles
         if (onClassChange) {
-          onClassChange(targetSlotId, targetSlot.className || '', styles, metadata);
+          if (mapping.type === 'style') {
+            // Update styles - pass the updated styles
+            onClassChange(targetSlotId, targetSlot.className || '', styles, targetSlot.metadata);
+          } else if (mapping.type === 'metadata') {
+            // Update metadata - pass the existing styles to preserve them
+            onClassChange(targetSlotId, targetSlot.className || '', targetSlot.styles || {}, metadata);
+          }
         }
       } else {
         console.warn('⚠️ No mapping found for property:', property, 'targetSlotId:', targetSlotId);
