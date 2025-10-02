@@ -43,6 +43,12 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
         return null;
     }
 
+    console.log('📊 CategoryNav Debug:', {
+        totalCategories: categories?.length,
+        rootCategoriesCount: categories?.filter(c => !c.parent_id)?.length,
+        categoriesWithChildren: categories?.filter(c => c.children && c.children.length > 0)?.length
+    });
+
     // Detect mobile/desktop
     useEffect(() => {
         const checkIsMobile = () => {
@@ -850,13 +856,16 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             const isHovered = hoveredCategory === category.id;
 
                             const handleMouseEnter = (e) => {
+                                console.log('🔥 Category hover:', category.name, 'ID:', category.id, 'Children:', category.children?.length);
                                 setHoveredCategory(category.id);
                                 const rect = e.currentTarget.getBoundingClientRect();
-                                setDropdownPosition({
+                                const position = {
                                     top: rect.bottom,
                                     left: rect.left,
                                     categoryId: category.id
-                                });
+                                };
+                                console.log('📍 Dropdown position:', position);
+                                setDropdownPosition(position);
                             };
 
                             const handleMouseLeave = () => {
@@ -880,7 +889,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
                                     {/* Submenu rendered in portal */}
-                                    {isHovered && dropdownPosition?.categoryId === category.id && createPortal(
+                                    {isHovered && dropdownPosition?.categoryId === category.id && (
+                                        console.log('✅ Rendering portal for:', category.name, 'Position:', dropdownPosition),
+                                        createPortal(
                                         <div
                                             className="fixed w-64 border border-gray-200 rounded-md shadow-lg z-[9999]"
                                             style={{
@@ -919,7 +930,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         </div>
                                         </div>,
                                         document.body
-                                    )}
+                                    ))}
                                 </div>
                             );
                         } else {
