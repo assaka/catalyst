@@ -708,7 +708,7 @@ const ProductItemsGrid = createSlotComponent({
     const containerRef = useRef(null);
 
     if (context === 'editor') {
-      // Editor version - show actual product grid with sample data
+      // Editor version - render products as individual editable slot trees
       const storeContext = useStore();
       const storeSettings = storeContext?.settings || null;
       const gridClasses = getGridClasses(storeSettings);
@@ -735,26 +735,56 @@ const ProductItemsGrid = createSlotComponent({
           style={styles || slot.styles}
         >
           {products.map((product) => (
-            <div key={product.id} className="group overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-lg transition-shadow p-4 product-card">
+            <div
+              key={product.id}
+              className="group overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-lg transition-shadow p-4 product-card"
+              data-slot-id={`product_card_${product.id}`}
+              data-editable="true"
+            >
               <div className="relative overflow-hidden mb-4">
                 <img
-                  src={product.image_url || product.images?.[0] || 'https://placehold.co/400x400?text=Product'}
+                  src={product.images?.[0] || 'https://placehold.co/400x400?text=Product'}
                   alt={product.name}
                   className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                  data-slot-id={`product_image_${product.id}`}
+                  data-editable="true"
+                  style={{ cursor: 'pointer' }}
                 />
               </div>
-              <h3 className="font-semibold text-lg truncate mb-2 text-red-600">{product.name}</h3>
+              <h3
+                className="font-semibold text-lg truncate mb-2 text-red-600"
+                data-slot-id={`product_name_${product.id}`}
+                data-editable="true"
+                style={{ cursor: 'pointer' }}
+              >
+                {product.name}
+              </h3>
               <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-lg font-bold text-red-600">
+                <span
+                  className="text-lg font-bold text-red-600"
+                  data-slot-id={`product_price_${product.id}`}
+                  data-editable="true"
+                  style={{ cursor: 'pointer' }}
+                >
                   {product.price_formatted || `$${product.price}`}
                 </span>
                 {product.compare_price && (
-                  <span className="text-sm text-gray-500 line-through">
+                  <span
+                    className="text-sm text-gray-500 line-through"
+                    data-slot-id={`product_compare_price_${product.id}`}
+                    data-editable="true"
+                    style={{ cursor: 'pointer' }}
+                  >
                     {product.compare_price_formatted || `$${product.compare_price}`}
                   </span>
                 )}
               </div>
-              <button className="w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2">
+              <button
+                className="w-full bg-blue-600 text-white border-0 hover:bg-blue-700 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2"
+                data-slot-id={`product_add_to_cart_${product.id}`}
+                data-editable="true"
+                style={{ cursor: 'pointer' }}
+              >
                 Add to Cart
               </button>
             </div>
