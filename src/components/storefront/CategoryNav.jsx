@@ -33,6 +33,20 @@ export default function CategoryNav({ categories, styles = {}, metadata = {} }) 
     const subcategoryLinkHoverColor = metadata?.subcategoryLinkHoverColor || '#2563EB';
     const subcategoryBgColor = metadata?.subcategoryBgColor || '#ffffff';
     const subcategoryBgHoverColor = metadata?.subcategoryBgHoverColor || '#F3F4F6';
+
+    // DEBUG: Log what we're receiving
+    console.log('🎨 CategoryNav Received:', {
+        styles,
+        metadata,
+        linkStyles,
+        hoverColor,
+        subcategoryColors: {
+            linkColor: subcategoryLinkColor,
+            linkHoverColor: subcategoryLinkHoverColor,
+            bgColor: subcategoryBgColor,
+            bgHoverColor: subcategoryBgHoverColor
+        }
+    });
     
     if (!categories || categories.length === 0 || !store) {
         return null;
