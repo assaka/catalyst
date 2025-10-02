@@ -329,20 +329,25 @@ const LayeredNavigation = createSlotComponent({
         <div>
           {/* Editable label slots at the top for easy access */}
           <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded">
-            <div className="text-xs text-blue-700 font-bold mb-2">EDITABLE FILTER LABELS:</div>
+            <div className="text-xs text-blue-700 font-bold mb-2">EDITABLE FILTER LABELS (Click to edit color/font):</div>
             <div className="space-y-2">
-              {Object.values(editableLabelSlots).map((labelSlot) => (
-                <div key={labelSlot.id} className="bg-white p-1 rounded border border-blue-200">
-                  <UnifiedSlotRenderer
-                    slots={{ [labelSlot.id]: labelSlot }}
-                    parentId={null}
-                    context={context}
-                    categoryData={categoryContext}
-                    variableContext={variableContext}
-                    onSlotUpdate={onSlotUpdate}
-                  />
-                </div>
-              ))}
+              {Object.values(editableLabelSlots).map((labelSlot) => {
+                console.log('🔍 Rendering label slot:', labelSlot.id, labelSlot.content);
+                return (
+                  <div
+                    key={labelSlot.id}
+                    className={`bg-white p-2 rounded border border-blue-200 cursor-pointer hover:border-blue-500 ${labelSlot.className}`}
+                    style={labelSlot.styles}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('🔍 Label clicked:', labelSlot.id);
+                      // This will be handled by the editor's slot selection
+                    }}
+                  >
+                    <span className="text-sm">{labelSlot.content}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
