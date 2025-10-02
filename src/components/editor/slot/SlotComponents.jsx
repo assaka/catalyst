@@ -815,7 +815,7 @@ export function GridColumn({
     <div
       className={`${
         mode === 'edit'
-          ? `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : ''} rounded-lg overflow-hidden transition-all duration-200 ${
+          ? `${showBorders ? (isNested ? 'border border-dashed' : 'border-2 border-dashed') : ''} rounded-lg overflow-visible transition-all duration-200 ${
                     isDragOver
                       ? 'border-blue-500 shadow-lg shadow-blue-200/60 z-10 ring-2 ring-blue-300' :
                     isDragging
