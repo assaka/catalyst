@@ -274,23 +274,31 @@ const LayeredNavigation = createSlotComponent({
               Edit styles here → They'll be applied to the template on publish
             </div>
             <div className="space-y-2">
-              {Object.values(childLabelSlots).map((childSlot) => (
-                <div
-                  key={childSlot.id}
-                  className="bg-white p-2 rounded border border-gray-300"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <UnifiedSlotRenderer
-                    slots={{ [childSlot.id]: childSlot }}
-                    parentId={null}
-                    context={context}
-                    categoryData={categoryContext}
-                    variableContext={variableContext}
-                    onSlotUpdate={onSlotUpdate}
-                    mode="edit"
-                  />
-                </div>
-              ))}
+              {Object.values(childLabelSlots).map((childSlot) => {
+                console.log('🔍 Rendering child slot:', childSlot.id, childSlot);
+                return (
+                  <div
+                    key={childSlot.id}
+                    className="bg-white p-2 rounded border border-gray-300 hover:border-blue-500 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('🔍 Child slot clicked:', childSlot.id);
+                    }}
+                  >
+                    <div className="text-xs text-gray-500 mb-1">{childSlot.metadata?.displayName || childSlot.id}</div>
+                    <UnifiedSlotRenderer
+                      slots={{ [childSlot.id]: childSlot }}
+                      parentId={null}
+                      context={context}
+                      categoryData={categoryContext}
+                      variableContext={variableContext}
+                      onSlotUpdate={onSlotUpdate}
+                      mode="edit"
+                      showBorders={true}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 
