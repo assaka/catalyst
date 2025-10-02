@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createSlotComponent } from './SlotComponentRegistry';
+import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import { createPublicUrl } from '@/utils/urlUtils';
 import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -334,6 +334,18 @@ const MobileSearchButtonSlot = createSlotComponent({
     );
   }
 });
+
+// Register all components with the ComponentRegistry
+registerSlotComponent('StoreLogo', StoreLogo);
+registerSlotComponent('HeaderSearch', HeaderSearchSlot);
+registerSlotComponent('MiniCart', MiniCartSlot);
+registerSlotComponent('WishlistDropdown', WishlistDropdownSlot);
+registerSlotComponent('CategoryNav', CategoryNavSlot);
+registerSlotComponent('UserMenu', UserMenuSlot);
+registerSlotComponent('LanguageSelector', LanguageSelectorSlot);
+registerSlotComponent('CountrySelector', CountrySelectorSlot);
+registerSlotComponent('MobileMenuButton', MobileMenuButtonSlot);
+registerSlotComponent('MobileSearchButton', MobileSearchButtonSlot);
 
 // Export all components for potential individual use
 export {
