@@ -300,6 +300,16 @@ export function CategorySlotRenderer({
         settings: settingsWithDefaults // Pass settings within filters object for easier template access
       };
 
+      // Get filter option styles from slots
+      const filterOptionStyles = slots?.filter_option_styles?.styles || {
+        optionTextColor: '#374151',
+        optionHoverColor: '#1F2937',
+        optionCountColor: '#9CA3AF',
+        checkboxColor: '#3B82F6',
+        activeFilterBgColor: '#DBEAFE',
+        activeFilterTextColor: '#1E40AF'
+      };
+
       const variableContext = {
         category,
         products: formattedProducts,
@@ -319,7 +329,8 @@ export function CategorySlotRenderer({
         sorting: {
           current: sortOption
         },
-        settings: settingsWithDefaults
+        settings: settingsWithDefaults,
+        filterOptionStyles: filterOptionStyles
       };
 
       // Special handling for breadcrumbs - pass styles directly and slots at top level
