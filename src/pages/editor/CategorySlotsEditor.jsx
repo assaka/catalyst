@@ -109,10 +109,25 @@ const categoryCustomSlotRenderer = (slot, context) => {
 
   console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
 
-  // Handle component slots (new pattern)
+  // Handle component slots (new pattern from category-config.js)
   if (slot.type === 'component') {
     const componentName = slot.component;
 
+    // CategoryBreadcrumbs component
+    if (componentName === 'CategoryBreadcrumbs') {
+      return (
+        <CategoryBreadcrumbsSlot
+          categoryData={sampleCategoryContext}
+          categoryContext={sampleCategoryContext}
+          content={slot.content}
+          className={slot.className}
+          styles={slot.styles}
+          config={{ viewMode: context?.viewMode }}
+        />
+      );
+    }
+
+    // BreadcrumbRenderer (legacy)
     if (componentName === 'BreadcrumbRenderer') {
       return (
         <div className={slot.className} style={slot.styles}>
@@ -127,6 +142,49 @@ const categoryCustomSlotRenderer = (slot, context) => {
       );
     }
 
+    // ProductCountInfo component
+    if (componentName === 'ProductCountInfo') {
+      return (
+        <div className={slot.className} style={slot.styles}>
+          <div className="text-sm text-blue-600 font-bold">
+            Hamid 1-{sampleCategoryContext?.products?.length || 12} of {sampleCategoryContext?.products?.length || 12} products
+          </div>
+        </div>
+      );
+    }
+
+    // ProductItemsGrid component
+    if (componentName === 'ProductItemsGrid') {
+      const gridConfig = storeSettings?.product_grid;
+      const maxColumns = gridConfig?.breakpoints ? Math.max(...Object.values(gridConfig.breakpoints).filter(v => v > 0)) : 3;
+      const rows = gridConfig?.rows || 2;
+      const productsToShow = maxColumns * rows;
+      const products = sampleCategoryContext?.products?.slice(0, productsToShow) || [];
+
+      return (
+        <div className={`grid ${getGridClasses(storeSettings)} gap-4`}>
+          {products.map((product) => (
+            <ProductItemCard
+              key={product.id}
+              product={product}
+              settings={{
+                currency_symbol: '$',
+                theme: { add_to_cart_button_color: '#3B82F6' }
+              }}
+              store={{ slug: 'demo-store', id: 1 }}
+              taxes={[]}
+              selectedCountry="US"
+              productLabels={sampleCategoryContext?.productLabels || []}
+              viewMode={context?.viewMode}
+              slotConfig={slot}
+              onAddToCartStateChange={() => {}}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    // ActiveFilters component
     if (componentName === 'ActiveFilters') {
       return (
         <div className={slot.className} style={slot.styles}>
@@ -143,21 +201,49 @@ const categoryCustomSlotRenderer = (slot, context) => {
       );
     }
 
+    // LayeredNavigation component
     if (componentName === 'LayeredNavigation') {
       return (
         <div className={slot.className} style={slot.styles}>
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Filter By</h3>
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Price</h4>
+          <div className="space-y-3">
+            {/* Price Filter */}
+            <div className="border-b border-gray-200 pb-2">
+              <button className="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3">
+                <span>Price</span>
+                <svg className="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div className="px-2">
+                <div className="flex justify-between items-center mb-4 text-sm">
+                  <span className="text-gray-700 font-medium">€0</span>
+                  <span className="text-gray-400">-</span>
+                  <span className="text-gray-700 font-medium">€1000</span>
+                </div>
+                <div className="relative h-2 mb-2">
+                  <div className="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
+                  <div className="absolute h-2 bg-blue-500 rounded-lg" style={{left: '0%', width: '100%'}}></div>
+                </div>
+              </div>
+            </div>
+            {/* Brand Filter */}
+            <div className="border-b border-gray-200 pb-2">
+              <button className="w-full flex items-center justify-between font-semibold text-base text-gray-900 mb-3">
+                <span>Brand</span>
+                <svg className="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
               <div className="space-y-2">
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" />
-                  <span className="text-sm">Under $25</span>
+                <label className="flex items-center gap-2 cursor-pointer hover:text-gray-900">
+                  <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
+                  <span className="text-gray-700">Apple</span>
+                  <span className="text-gray-400 text-sm ml-auto">(15)</span>
                 </label>
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" />
-                  <span className="text-sm">$25 - $50</span>
+                <label className="flex items-center gap-2 cursor-pointer hover:text-gray-900">
+                  <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
+                  <span className="text-gray-700">Samsung</span>
+                  <span className="text-gray-400 text-sm ml-auto">(8)</span>
                 </label>
               </div>
             </div>
@@ -166,26 +252,37 @@ const categoryCustomSlotRenderer = (slot, context) => {
       );
     }
 
+    // SortSelector component
     if (componentName === 'SortSelector') {
       return (
         <div className={slot.className} style={slot.styles}>
-          <select className="border border-gray-300 rounded px-3 py-1 text-sm bg-white">
-            <option>Sort by: Featured</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
-            <option>Name: A to Z</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-700 font-medium">Sort by:</label>
+            <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
+              <option>Position</option>
+              <option>Name (A-Z)</option>
+              <option>Name (Z-A)</option>
+              <option>Price (Low to High)</option>
+              <option>Price (High to Low)</option>
+              <option>Newest First</option>
+            </select>
+          </div>
         </div>
       );
     }
 
+    // PaginationComponent
     if (componentName === 'PaginationComponent') {
       return (
         <div className={slot.className} style={slot.styles}>
-          <div className="flex items-center justify-center space-x-2">
-            <button className="px-3 py-1 border rounded">Previous</button>
-            <span className="px-3 py-1">1 of 10</span>
-            <button className="px-3 py-1 border rounded">Next</button>
+          <div className="flex justify-center mt-8">
+            <nav className="flex items-center gap-1">
+              <button className="px-3 py-2 border rounded hover:bg-gray-50">Previous</button>
+              <button className="px-3 py-2 border rounded bg-blue-600 text-white">1</button>
+              <button className="px-3 py-2 border rounded hover:bg-gray-50">2</button>
+              <button className="px-3 py-2 border rounded hover:bg-gray-50">3</button>
+              <button className="px-3 py-2 border rounded hover:bg-gray-50">Next</button>
+            </nav>
           </div>
         </div>
       );
