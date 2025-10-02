@@ -234,12 +234,17 @@ const ActiveFilters = createSlotComponent({
 // Layered Navigation Component with processVariables
 const LayeredNavigation = createSlotComponent({
   name: 'LayeredNavigation',
-  render: ({ slot, className, styles, categoryContext, variableContext, context, onSlotUpdate }) => {
+  render: ({ slot, className, styles, categoryContext, variableContext, context, onSlotUpdate, allSlots }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
       // Editor version - render filter elements as individual editable slot instances
       const filters = categoryContext?.filters || { attributes: [] };
+
+      // Get shared attribute filter label configuration from category-config.js
+      const attributeFilterLabelSlot = allSlots?.attribute_filter_label || {};
+      const sharedLabelClassName = attributeFilterLabelSlot.className || 'font-semibold text-base text-gray-900';
+      const sharedLabelStyles = attributeFilterLabelSlot.styles || {};
 
       // Create dynamic slot instances for filter elements
       const filterSlotInstances = {};
@@ -261,6 +266,25 @@ const LayeredNavigation = createSlotComponent({
         }
       };
 
+      // Shared Attribute Filter Label (editable, mirrors to all attribute filters)
+      // This renders the attribute_filter_label slot from category-config.js for editing
+      if (attributeFilterLabelSlot.id) {
+        filterSlotInstances['attribute_filter_label'] = {
+          ...attributeFilterLabelSlot,
+          content: attributeFilterLabelSlot.content || 'All Attribute Labels',
+          parentId: 'layered_navigation',
+          metadata: {
+            ...attributeFilterLabelSlot.metadata,
+            microslot: true,
+            editable: true,
+            resizable: true,
+            draggable: true,
+            isSharedConfig: true, // Mark this as the shared config source
+            displayName: 'All Attribute Filter Labels (Brand, Color, Size, Material)'
+          }
+        };
+      }
+
       // Price filter section
       if (filters.price) {
         filterSlotInstances['price_filter_title'] = {
@@ -280,21 +304,23 @@ const LayeredNavigation = createSlotComponent({
       }
 
       // Attribute filters (Brand, Color, Size, Material, etc.)
+      // Use shared configuration from attribute_filter_label slot in category-config.js
       filters.attributes?.forEach((attribute, attrIndex) => {
-        // Filter group title
+        // Filter group title - uses shared label configuration
         filterSlotInstances[`filter_title_${attribute.code}`] = {
           id: `filter_title_${attribute.code}`,
           type: 'text',
           content: attribute.label,
-          className: 'font-semibold text-base text-gray-900 mb-3',
-          styles: {},
+          className: sharedLabelClassName + ' mb-3', // Apply shared className from config
+          styles: { ...sharedLabelStyles }, // Apply shared styles from config
           parentId: 'layered_navigation',
           metadata: {
             attributeCode: attribute.code,
             microslot: true,
             editable: true,
             resizable: true,
-            draggable: true
+            draggable: true,
+            mirroredFrom: 'attribute_filter_label' // Track that this mirrors the shared config
           }
         };
 
