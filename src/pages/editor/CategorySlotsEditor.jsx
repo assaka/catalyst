@@ -404,6 +404,18 @@ const categoryCustomSlotRenderer = (slot, context) => {
     const products = sampleCategoryContext?.products?.slice(0, productsToShow) || [];
     console.log('🛍️ Rendering products:', products.length, 'Grid classes:', getGridClasses(storeSettings));
 
+    // Get all product card slots from layoutConfig for mirroring
+    const allSlots = context?.layoutConfig?.slots || {};
+    const productCardSlots = {
+      product_card_template: allSlots.product_card_template,
+      product_card_image: allSlots.product_card_image,
+      product_card_name: allSlots.product_card_name,
+      product_card_price: allSlots.product_card_price,
+      product_card_compare_price: allSlots.product_card_compare_price,
+      product_card_add_to_cart: allSlots.product_card_add_to_cart,
+      product_card_price_container: allSlots.product_card_price_container
+    };
+
     return (
       <div className={`grid ${getGridClasses(storeSettings)} gap-4`}>
         {products.map((product, index) => (
@@ -419,8 +431,9 @@ const categoryCustomSlotRenderer = (slot, context) => {
             selectedCountry="US"
             productLabels={sampleCategoryContext?.productLabels || []}
             viewMode={context?.viewMode}
-            slotConfig={slot}
+            slotConfig={productCardSlots}
             onAddToCartStateChange={() => {}}
+            isEditorMode={true}
           />
         ))}
       </div>

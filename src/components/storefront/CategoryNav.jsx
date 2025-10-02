@@ -889,16 +889,13 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         {category.name}
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
-                                    {/* Submenu rendered in portal */}
-                                    {isHovered && dropdownPosition?.categoryId === category.id && (
-                                        console.log('✅ Rendering portal for:', category.name, 'Position:', dropdownPosition),
-                                        createPortal(
+                                    {/* Submenu rendered in portal - TEST ALWAYS VISIBLE */}
+                                    {category.id === 1 && createPortal(
                                         <div
-                                            className="fixed w-64 border border-gray-200 rounded-md shadow-lg z-[9999]"
+                                            className="fixed w-64 border border-gray-200 rounded-md shadow-lg z-[9999] bg-red-500"
                                             style={{
-                                                backgroundColor: subcategoryBgColor,
-                                                top: `${dropdownPosition.top}px`,
-                                                left: `${dropdownPosition.left}px`
+                                                top: '100px',
+                                                left: '100px'
                                             }}
                                             onMouseEnter={() => setHoveredCategory(category.id)}
                                             onMouseLeave={handleMouseLeave}

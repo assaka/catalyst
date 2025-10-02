@@ -24,7 +24,8 @@ const ProductItemCard = ({
   viewMode = 'grid',
   slotConfig = {},
   onAddToCartStateChange = null,
-  isAddingToCart = false
+  isAddingToCart = false,
+  isEditorMode = false
 }) => {
   // Local state for add to cart if not managed externally
   const [localIsAddingToCart, setLocalIsAddingToCart] = useState(false);
@@ -35,15 +36,30 @@ const ProductItemCard = ({
 
   if (!product || !store) return null;
 
-  // Get slot configurations for styling
+  // Get slot configurations for styling - support both nested and flat structures
   const {
     productTemplate = {},
     productImage = {},
     productName = {},
     productPrice = {},
     productComparePrice = {},
-    productAddToCart = {}
+    productAddToCart = {},
+    // Also check for card-specific slots
+    product_card_template = {},
+    product_card_image = {},
+    product_card_name = {},
+    product_card_price = {},
+    product_card_compare_price = {},
+    product_card_add_to_cart = {}
   } = slotConfig;
+
+  // Merge configurations (card-specific takes precedence)
+  const templateConfig = { ...productTemplate, ...product_card_template };
+  const imageConfig = { ...productImage, ...product_card_image };
+  const nameConfig = { ...productName, ...product_card_name };
+  const priceConfig = { ...productPrice, ...product_card_price };
+  const comparePriceConfig = { ...productComparePrice, ...product_card_compare_price };
+  const addToCartConfig = { ...productAddToCart, ...product_card_add_to_cart };
 
   // Product label logic - unified across all components
   const renderProductLabels = () => {
@@ -254,24 +270,31 @@ const ProductItemCard = ({
   };
 
   return (
-    <Card className={productTemplate.className || `group overflow-hidden ${className} ${
-      viewMode === 'list' ? 'flex' : ''
-    }`} style={productTemplate.styles || {}}>
+    <Card
+      className={templateConfig.className || `group overflow-hidden ${className} ${viewMode === 'list' ? 'flex' : ''}`}
+      style={templateConfig.styles || {}}
+      data-product-card={isEditorMode ? 'editable' : undefined}
+    >
       <CardContent className="p-0">
         <Link to={createProductUrl(store.slug, product.slug)}>
-          <div className="relative">
+          <div className={imageConfig.parentClassName || "relative"}>
             <img
               src={getPrimaryImageUrl(product.images) || '/placeholder-product.jpg'}
               alt={product.name}
-              className={productImage.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
-              style={productImage.styles || {}}
+              className={imageConfig.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
+              style={imageConfig.styles || {}}
+              data-slot-id={isEditorMode ? 'product_card_image' : undefined}
             />
             {/* Product labels */}
             {renderProductLabels()}
           </div>
         </Link>
         <div className={viewMode === 'list' ? 'p-4 flex-1' : 'p-4'}>
-          <h3 className={productName.className || "font-semibold text-lg truncate mt-1"} style={productName.styles || {}}>
+          <h3
+            className={nameConfig.className || "font-semibold text-lg truncate mt-1"}
+            style={nameConfig.styles || {}}
+            data-slot-id={isEditorMode ? 'product_card_name' : undefined}
+          >
             <Link to={createProductUrl(store.slug, product.slug)}>{product.name}</Link>
           </h3>
 
@@ -283,7 +306,7 @@ const ProductItemCard = ({
 
           <div className="space-y-3 mt-4">
             {/* Price display */}
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2" data-slot-id={isEditorMode ? 'product_card_price_container' : undefined}>
               {(() => {
                 console.log('💰 Price Debug:', {
                   product_id: product.id,
@@ -299,7 +322,11 @@ const ProductItemCard = ({
               })()}
               {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                 <>
-                  <p className={productPrice.className || "font-bold text-red-600 text-xl"} style={productPrice.styles || {}}>
+                  <p
+                    className={priceConfig.className || "font-bold text-red-600 text-xl"}
+                    style={priceConfig.styles || {}}
+                    data-slot-id={isEditorMode ? 'product_card_price' : undefined}
+                  >
                     {formatDisplayPrice(
                       Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
                       settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
@@ -308,7 +335,11 @@ const ProductItemCard = ({
                       selectedCountry
                     )}
                   </p>
-                  <p className={productComparePrice.className || "text-gray-500 line-through text-sm"} style={productComparePrice.styles || {}}>
+                  <p
+                    className={comparePriceConfig.className || "text-gray-500 line-through text-sm"}
+                    style={comparePriceConfig.styles || {}}
+                    data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
+                  >
                     {formatDisplayPrice(
                       Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
                       settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
@@ -319,7 +350,11 @@ const ProductItemCard = ({
                   </p>
                 </>
               ) : (
-                <p className={productPrice.className || "font-bold text-xl text-gray-900"} style={productPrice.styles || {}}>
+                <p
+                  className={priceConfig.className || "font-bold text-xl text-gray-900"}
+                  style={priceConfig.styles || {}}
+                  data-slot-id={isEditorMode ? 'product_card_price' : undefined}
+                >
                   {formatDisplayPrice(
                     parseFloat(product.price || 0),
                     settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
@@ -335,16 +370,17 @@ const ProductItemCard = ({
             <Button
               onClick={handleAddToCart}
               disabled={addingToCart}
-              className={productAddToCart.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
+              className={addToCartConfig.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
               size="sm"
               style={{
                 backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
                 color: 'white',
-                ...productAddToCart.styles
+                ...addToCartConfig.styles
               }}
+              data-slot-id={isEditorMode ? 'product_card_add_to_cart' : undefined}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              {addingToCart ? 'Adding...' : (productAddToCart.content || 'Add to Cart')}
+              {addingToCart ? 'Adding...' : (addToCartConfig.content || 'Add to Cart')}
             </Button>
 
             {/* Stock status for list view */}
