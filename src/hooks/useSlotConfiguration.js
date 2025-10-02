@@ -54,30 +54,20 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
                 if (response.data?.configuration && !response.data.configuration.slots) noConfigReasons.push('No slots in configuration');
                 if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
 
-                // Fallback to config module
-                const resolvedPath = resolveImportPath(configModulePath);
-                console.log(`Loading fallback config for ${pageType} from: ${resolvedPath}`);
-                // Try to import with .js extension if path doesn't have it
-                const importPath = resolvedPath.endsWith('.js') ? resolvedPath : `${resolvedPath}.js`;
-                const configModule = await import(importPath);
-                const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
+                // Fallback to provided fallback config
+                console.log(`Loading fallback config for ${pageType}`);
 
-                if (!config || !config.slots) {
-                    console.error(`Invalid config module for ${pageType}:`, configModule);
-                    throw new Error(`Invalid configuration module for ${pageType}`);
-                }
-
-                const fallbackConfig = {
-                    slots: { ...config.slots },
+                const finalFallbackConfig = {
+                    slots: { ...fallbackConfig.slots },
                     metadata: {
-                        ...config.metadata,
+                        ...fallbackConfig.metadata,
                         fallbackUsed: true,
                         fallbackReason: `No valid published configuration: ${noConfigReasons.join(', ')}`
                     }
                 };
 
-                console.log(`Loaded fallback config for ${pageType} with ${Object.keys(config.slots).length} slots`);
-                setLayoutConfig(fallbackConfig);
+                console.log(`Loaded fallback config for ${pageType} with ${Object.keys(fallbackConfig.slots).length} slots`);
+                setLayoutConfig(finalFallbackConfig);
                 setConfigLoaded(true);
             }
         } catch (error) {
@@ -90,43 +80,37 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
                 console.error('🔌 Backend connectivity issue detected');
             }
 
-            console.warn(`⚠️ Falling back to ${pageType}-config.js due to error`);
+            console.warn(`⚠️ Falling back to fallback config due to error`);
 
-            // Fallback to config module
+            // Fallback to provided fallback config
             try {
-                const resolvedPath = resolveImportPath(configModulePath);
-                console.log(`Loading error fallback config for ${pageType} from: ${resolvedPath}`);
-                // Try to import with .js extension if path doesn't have it
-                const importPath = resolvedPath.endsWith('.js') ? resolvedPath : `${resolvedPath}.js`;
-                const configModule = await import(importPath);
-                const config = configModule.default || configModule[`${pageType}Config`] || configModule.cartConfig;
+                console.log(`Loading error fallback config for ${pageType}`);
 
-                if (!config || !config.slots) {
-                    console.error(`Invalid config module for ${pageType}:`, configModule);
-                    console.error('Available exports in module:', Object.keys(configModule || {}));
-                    throw new Error(`Invalid configuration module for ${pageType}`);
+                if (!fallbackConfig || !fallbackConfig.slots) {
+                    console.error(`Invalid fallback config for ${pageType}:`, fallbackConfig);
+                    throw new Error(`Invalid fallback configuration for ${pageType}`);
                 }
 
-                const fallbackConfig = {
-                    slots: { ...config.slots },
+                const finalFallbackConfig = {
+                    slots: { ...fallbackConfig.slots },
                     metadata: {
-                        ...config.metadata,
+                        ...fallbackConfig.metadata,
                         fallbackUsed: true,
                         fallbackReason: `Error loading configuration: ${error.message}`
                     }
                 };
 
-                console.log(`Loaded error fallback config for ${pageType} with ${Object.keys(config.slots).length} slots`);
-                setLayoutConfig(fallbackConfig);
+                console.log(`Loaded error fallback config for ${pageType} with ${Object.keys(fallbackConfig.slots).length} slots`);
+                setLayoutConfig(finalFallbackConfig);
                 setConfigLoaded(true);
             } catch (importError) {
-                console.error(`❌ Failed to import fallback config from ${configModulePath}:`, importError);
+                console.error(`❌ Failed to load fallback config:`, importError);
                 // Set empty config if fallback also fails
                 setLayoutConfig({ slots: {}, metadata: { fallbackUsed: true, fallbackReason: 'Failed to load any configuration' } });
                 setConfigLoaded(true);
             }
         }
-    }, [store?.id, pageType, configModulePath]);
+    }, [store?.id, pageType, fallbackConfig]);
 
     useEffect(() => {
         loadLayoutConfig();
