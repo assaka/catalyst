@@ -7,7 +7,7 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
 import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
-import { processVariables, getDemoVariableContext } from '@/utils/variableProcessor';
+import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 // ===============================
 // UTILITY HOOKS FOR SLOT EDITORS
@@ -719,7 +719,7 @@ function createCleanSlots(config) {
   const cleanSlots = {};
 
   // Get demo variable context for processing template variables
-  const variableContext = getDemoVariableContext();
+  const variableContext = generateDemoData('category');
 
   if (config.slots) {
     Object.entries(config.slots).forEach(([key, slot]) => {
