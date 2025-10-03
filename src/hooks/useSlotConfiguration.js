@@ -1433,47 +1433,62 @@ export function useSlotConfiguration({
 
     const updatedSlots = { ...slots };
 
-    if (updatedSlots[slotId]) {
-      // Merge existing styles with new styles
-      const existingStyles = updatedSlots[slotId].styles || {};
-      const mergedStyles = { ...existingStyles, ...styles };
+    // CRITICAL: Create slot if it doesn't exist (for dynamically generated product card slots)
+    if (!updatedSlots[slotId]) {
+      console.log(`🆕 Creating new slot for ${slotId} (dynamically generated product card element)`);
+      updatedSlots[slotId] = {
+        id: slotId,
+        type: 'text', // Default to text type for product card elements
+        content: '',
+        className: '',
+        styles: {},
+        metadata: {
+          styleOnly: true,
+          readOnly: true,
+          created: new Date().toISOString()
+        }
+      };
+    }
 
-      // Define categories of classes
-      const alignmentClasses = ['text-left', 'text-center', 'text-right'];
-      const allClasses = className.split(' ').filter(Boolean);
+    // Merge existing styles with new styles
+    const existingStyles = updatedSlots[slotId].styles || {};
+    const mergedStyles = { ...existingStyles, ...styles };
 
-      if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
-        // For alignment changes, only alignment goes to parent, everything else to element
-        const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
-        const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+    // Define categories of classes
+    const alignmentClasses = ['text-left', 'text-center', 'text-right'];
+    const allClasses = className.split(' ').filter(Boolean);
 
-        updatedSlots[slotId] = {
-          ...updatedSlots[slotId],
-          className: elementClassList.join(' '),
-          parentClassName: alignmentClassList.join(' '),
-          styles: mergedStyles,
-          metadata: {
-            ...updatedSlots[slotId].metadata,
-            ...metadata,
-            lastModified: new Date().toISOString()
-          }
-        };
+    if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
+      // For alignment changes, only alignment goes to parent, everything else to element
+      const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
+      const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
 
-      } else {
-        // For text styling (bold, italic, colors), keep existing parentClassName
-        // and only update className for the text element
-        updatedSlots[slotId] = {
-          ...updatedSlots[slotId],
-          className: className,
-          styles: mergedStyles,
-          metadata: {
-            ...updatedSlots[slotId].metadata,
-            ...metadata,
-            lastModified: new Date().toISOString()
-          }
-        };
+      updatedSlots[slotId] = {
+        ...updatedSlots[slotId],
+        className: elementClassList.join(' '),
+        parentClassName: alignmentClassList.join(' '),
+        styles: mergedStyles,
+        metadata: {
+          ...updatedSlots[slotId].metadata,
+          ...metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
 
-      }
+    } else {
+      // For text styling (bold, italic, colors), keep existing parentClassName
+      // and only update className for the text element
+      updatedSlots[slotId] = {
+        ...updatedSlots[slotId],
+        className: className,
+        styles: mergedStyles,
+        metadata: {
+          ...updatedSlots[slotId].metadata,
+          ...metadata,
+          lastModified: new Date().toISOString()
+        }
+      };
+
     }
 
     return updatedSlots;

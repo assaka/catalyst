@@ -255,19 +255,36 @@ export function UnifiedSlotRenderer({
 
           setPageConfig(prevConfig => {
             const updatedSlots = { ...prevConfig?.slots };
-            if (updatedSlots[slot.id]) {
-              // Save width for all elements when user manually resizes
-              const newStyles = {
-                ...updatedSlots[slot.id].styles,
-                width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-              };
 
+            // CRITICAL: Create slot if it doesn't exist (for dynamically generated product card slots)
+            if (!updatedSlots[slot.id]) {
+              console.log(`🆕 Creating new slot for resize: ${slot.id} (dynamically generated product card element)`);
               updatedSlots[slot.id] = {
-                ...updatedSlots[slot.id],
-                styles: newStyles
+                id: slot.id,
+                type: slot.type || 'text',
+                content: slot.content || '',
+                className: slot.className || '',
+                styles: slot.styles || {},
+                metadata: {
+                  ...(slot.metadata || {}),
+                  styleOnly: true,
+                  readOnly: true,
+                  created: new Date().toISOString()
+                }
               };
             }
+
+            // Save width for all elements when user manually resizes
+            const newStyles = {
+              ...updatedSlots[slot.id].styles,
+              width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+              height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+            };
+
+            updatedSlots[slot.id] = {
+              ...updatedSlots[slot.id],
+              styles: newStyles
+            };
 
             const updatedConfig = { ...prevConfig, slots: updatedSlots };
 
