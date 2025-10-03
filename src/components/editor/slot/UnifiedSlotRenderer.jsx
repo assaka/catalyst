@@ -486,13 +486,14 @@ export function UnifiedSlotRenderer({
       }
 
       // Fallback image for empty, placeholder, or unprocessed template variables
-      if (!imageSrc ||
-          imageSrc === 'product-main-image' ||
-          imageSrc.includes('{{') ||
-          imageSrc.includes('}}')) {
+      if (!imageSrc || imageSrc === 'product-main-image') {
         imageSrc = context === 'storefront' ?
           getProductImageUrl(productData.product) :
           'https://placehold.co/400x400?text=Product+Image';
+      }
+      // In editor mode, check for unprocessed template variables
+      else if (context === 'editor' && (imageSrc.includes('{{') || imageSrc.includes('}}'))) {
+        imageSrc = 'https://placehold.co/400x400?text=Product+Image';
       }
 
       // Remove width from styles for images - let them be full width
