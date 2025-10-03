@@ -754,34 +754,52 @@ const ProductItemsGrid = createSlotComponent({
         );
       }
 
-      // Find product card template and its child slots
+      // Find product card template and ALL its descendant slots (children, grandchildren, etc.)
       const productCardTemplate = allSlots?.product_card_template;
       const productCardChildSlots = {};
 
       if (allSlots) {
-        Object.values(allSlots).forEach(childSlot => {
-          if (childSlot.parentId === 'product_card_template') {
-            productCardChildSlots[childSlot.id] = childSlot;
-          }
-        });
+        // Helper to collect all descendants recursively
+        const collectDescendants = (parentId) => {
+          Object.values(allSlots).forEach(slot => {
+            if (slot.parentId === parentId) {
+              productCardChildSlots[slot.id] = slot;
+              // Recursively collect children of this slot
+              collectDescendants(slot.id);
+            }
+          });
+        };
+
+        // Start collecting from product_card_template
+        collectDescendants('product_card_template');
       }
 
       console.log('🔍 Product card template:', !!productCardTemplate);
-      console.log('🔍 Product card child slots:', Object.keys(productCardChildSlots));
+      console.log('🔍 Product card descendant slots:', Object.keys(productCardChildSlots));
       console.log('🔍 Grid classes:', gridClasses);
 
       // Render each product with its child slots as individual editable elements
       return (
         <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
           {products.map((product, index) => {
-            // Create unique slot IDs for this product instance
+            // Create unique slot IDs for this product instance, preserving hierarchy
             const productSlots = {};
             Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
               const uniqueId = `${slotId}_product_${index}`;
+
+              // Preserve parent hierarchy - if parent was 'product_card_template', use product card
+              // Otherwise, use the unique parent ID
+              let uniqueParentId;
+              if (slotConfig.parentId === 'product_card_template') {
+                uniqueParentId = `product_card_${index}`;
+              } else {
+                uniqueParentId = `${slotConfig.parentId}_product_${index}`;
+              }
+
               productSlots[uniqueId] = {
                 ...slotConfig,
                 id: uniqueId,
-                parentId: `product_card_${index}`, // Set parent to this product's card
+                parentId: uniqueParentId,
                 // Replace template variables with actual product data
                 content: slotConfig.content
                   ?.replace(/\{\{this\.name\}\}/g, product.name)
