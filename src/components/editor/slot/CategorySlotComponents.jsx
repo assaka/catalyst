@@ -803,14 +803,16 @@ const ProductItemsGrid = createSlotComponent({
               // These customizations will apply to ALL product cards
               const savedSlotConfig = allSlots[templateSlotId];
 
-              // Replace template variables in styles
+              // Replace template variables in styles using processVariables
+              // This will use the variableContext which has settings.theme.add_to_cart_button_color
               const processedStyles = {};
 
               // Process each style property from template
               if (slotConfig.styles) {
                 Object.entries(slotConfig.styles).forEach(([key, value]) => {
-                  if (typeof value === 'string' && value.includes('{{settings.theme.add_to_cart_button_color}}')) {
-                    processedStyles[key] = '#3B82F6'; // Default blue for editor
+                  if (typeof value === 'string') {
+                    // Use processVariables to replace template variables with actual values
+                    processedStyles[key] = processVariables(value, variableContext);
                   } else {
                     processedStyles[key] = value;
                   }
@@ -821,8 +823,9 @@ const ProductItemsGrid = createSlotComponent({
               const processedSavedStyles = {};
               if (savedSlotConfig?.styles) {
                 Object.entries(savedSlotConfig.styles).forEach(([key, value]) => {
-                  if (typeof value === 'string' && value.includes('{{settings.theme.add_to_cart_button_color}}')) {
-                    processedSavedStyles[key] = '#3B82F6'; // Default blue for editor
+                  if (typeof value === 'string') {
+                    // Use processVariables to replace template variables with actual values
+                    processedSavedStyles[key] = processVariables(value, variableContext);
                   } else {
                     processedSavedStyles[key] = value;
                   }
