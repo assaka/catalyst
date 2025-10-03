@@ -262,31 +262,24 @@ export function UnifiedSlotRenderer({
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;
 
-          const isTextElement = slot.type === 'text';
-
           setPageConfig(prevConfig => {
             const updatedSlots = { ...prevConfig?.slots };
             if (updatedSlots[slot.id]) {
-              // For text elements, don't save width - let them grow naturally
-              let newStyles;
-              if (isTextElement) {
-                // Remove width property from text elements
-                const { width, ...stylesWithoutWidth } = updatedSlots[slot.id].styles;
-                newStyles = {
-                  ...stylesWithoutWidth,
-                  height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                };
-              } else {
-                newStyles = {
-                  ...updatedSlots[slot.id].styles,
-                  width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-                  height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-                };
-              }
+              // Save width for all elements including text when user manually resizes
+              const newStyles = {
+                ...updatedSlots[slot.id].styles,
+                width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+                height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+              };
+
+              // Remove autoWidth metadata when user manually resizes
+              const updatedMetadata = { ...updatedSlots[slot.id].metadata };
+              delete updatedMetadata.autoWidth;
 
               updatedSlots[slot.id] = {
                 ...updatedSlots[slot.id],
-                styles: newStyles
+                styles: newStyles,
+                metadata: updatedMetadata
               };
             }
 
@@ -560,7 +553,10 @@ export function UnifiedSlotRenderer({
           className: processedClassName,
           styles,
           variableContext,
-          allSlots: slots
+          allSlots: slots,
+          onElementClick,
+          setPageConfig,
+          saveConfiguration
         });
       }
 
