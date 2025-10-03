@@ -1749,7 +1749,14 @@ export function HierarchicalSlotRenderer({
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
                       }
 
-                      const customContent = customSlotRenderer(slot);
+                      // Pass context to custom slot renderer
+                      const customContent = customSlotRenderer(slot, {
+                        layoutConfig: { slots },
+                        storeSettings: categoryData?.storeSettings,
+                        viewMode,
+                        mode,
+                        onElementClick
+                      });
 
                       if (slot.id === 'product_items' || slot.id === 'products_container') {
                       }
