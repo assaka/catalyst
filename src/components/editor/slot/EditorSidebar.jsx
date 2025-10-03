@@ -1249,14 +1249,9 @@ const EditorSidebar = ({
       const finalClassName = currentTailwindClasses.join(' ');
       targetElement.className = finalClassName;
 
-      // CRITICAL: Filter out ALL wrapper and editor classes before saving!
-      // Using the isWrapperOrEditorClass function defined above
-      // SAFETY: Use getAttribute('class') as fallback if className is corrupted
-      const classNameToFilter = (typeof targetElement.className === 'string' && !targetElement.className.includes('<'))
-        ? targetElement.className
-        : (targetElement.getAttribute('class') || '');
-
-      const classNameForSave = classNameToFilter
+      // CRITICAL: Save the className we actually used (including static config fallback)
+      // This ensures classes are persisted to database even if they came from static config
+      const classNameForSave = finalClassName
         .split(' ')
         .filter(cls => cls && !isWrapperOrEditorClass(cls))
         .join(' ');
@@ -1335,7 +1330,15 @@ const EditorSidebar = ({
           if (!saveStyles.borderColor) saveStyles.borderColor = targetElement.style.borderColor;
         }
 
-        onInlineClassChange(elementSlotId, classNameForSave, saveStyles); // Use filtered className
+        // Save to current slot
+        onInlineClassChange(elementSlotId, classNameForSave, saveStyles);
+
+        // MIRROR: If this is a product template instance (has _N suffix), also save to base template
+        const baseTemplateId = elementSlotId.replace(/_\d+$/, '');
+        if (baseTemplateId !== elementSlotId) {
+          console.log(`🔄 Mirroring style change to template ${baseTemplateId}`);
+          onInlineClassChange(baseTemplateId, classNameForSave, saveStyles);
+        }
       } else {
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
