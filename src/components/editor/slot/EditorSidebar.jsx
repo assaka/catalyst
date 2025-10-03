@@ -184,8 +184,12 @@ const EditorSidebar = ({
     const tagName = selectedElement.tagName?.toLowerCase();
     const htmlSupportedTags = ['button', 'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'section', 'article'];
     const isSupported = htmlSupportedTags.includes(tagName);
-    return isSupported;
-  }, [selectedElement]);
+
+    // Don't show HTML editor for elements marked as textOnly (like product card buttons)
+    const isTextOnly = slotConfig?.metadata?.textOnly === true;
+
+    return isSupported && !isTextOnly;
+  }, [selectedElement, slotConfig?.metadata?.textOnly]);
 
   // Generate clean HTML from database content and classes
   const getCleanHtmlFromDatabase = useCallback((slotConfig) => {

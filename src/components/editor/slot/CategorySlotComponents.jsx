@@ -833,28 +833,37 @@ const ProductItemsGrid = createSlotComponent({
               const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
               const finalParentClassName = savedSlotConfig?.parentClassName ?? slotConfig.parentClassName;
 
+              // Check if this is a button slot that should allow text editing
+              const isEditableButton = slotConfig.type === 'button';
+              const isTextSlot = slotConfig.type === 'text';
+
               productSlots[uniqueId] = {
                 ...slotConfig,
                 id: uniqueId,
                 parentId: uniqueParentId,
-                // Replace template variables with actual product data
-                content: slotConfig.content
-                  ?.replace(/\{\{this\.name\}\}/g, product.name)
-                  ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
-                  ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
+                // Replace template variables with actual product data (for text slots only)
+                // Buttons keep their editable content
+                content: isEditableButton
+                  ? (savedSlotConfig?.content || slotConfig.content) // Use saved button text
+                  : slotConfig.content
+                      ?.replace(/\{\{this\.name\}\}/g, product.name)
+                      ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
+                      ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
+                      ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
                 className: finalClassName, // Use merged className
                 parentClassName: finalParentClassName, // Use merged parentClassName
                 styles: finalStyles, // Use merged styles
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Mark as styleOnly to prevent content editing (content comes from product data)
+                // Exception: buttons allow text editing but not full HTML
                 // CRITICAL: Merge saved metadata to preserve disableResize and other settings
                 metadata: {
                   ...slotConfig.metadata,
                   ...(savedSlotConfig?.metadata || {}), // Merge saved metadata
                   conditionalDisplay: undefined, // Always remove conditionalDisplay in editor
-                  styleOnly: true, // Always mark as styleOnly
-                  readOnly: true // Always mark as readOnly
+                  styleOnly: isEditableButton ? false : true, // Buttons allow text editing
+                  readOnly: isTextSlot ? true : false, // Text slots are read-only, buttons are editable
+                  textOnly: isEditableButton ? true : false // Buttons only allow text editing, not HTML
                 }
               };
 
