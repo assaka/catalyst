@@ -793,22 +793,15 @@ const ProductItemsGrid = createSlotComponent({
       return (
         <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
           {products.map((product, index) => {
-            // Create unique slot IDs for this product instance, preserving hierarchy
+            // Use template slot IDs (not unique per product) and apply customizations to ALL products
             const productSlots = {};
             Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
-              const uniqueId = `${slotId}_product_${index}`;
+              // Use the template slot ID directly (same for all products)
+              const templateSlotId = slotId;
 
-              // CRITICAL: Check if this slot has saved customizations in allSlots
-              const savedSlotConfig = allSlots[uniqueId];
-
-              // Preserve parent hierarchy - if parent was 'product_card_template', use product card
-              // Otherwise, use the unique parent ID
-              let uniqueParentId;
-              if (slotConfig.parentId === 'product_card_template') {
-                uniqueParentId = `product_card_${index}`;
-              } else {
-                uniqueParentId = `${slotConfig.parentId}_product_${index}`;
-              }
+              // CRITICAL: Check if template slot has saved customizations in allSlots
+              // These customizations will apply to ALL product cards
+              const savedSlotConfig = allSlots[templateSlotId];
 
               // Replace template variables in styles
               const processedStyles = {};
@@ -837,10 +830,10 @@ const ProductItemsGrid = createSlotComponent({
               const isEditableButton = slotConfig.type === 'button';
               const isTextSlot = slotConfig.type === 'text';
 
-              productSlots[uniqueId] = {
+              productSlots[templateSlotId] = {
                 ...slotConfig,
-                id: uniqueId,
-                parentId: uniqueParentId,
+                id: templateSlotId,
+                parentId: slotConfig.parentId, // Keep original parent ID from template
                 // Replace template variables with actual product data (for text slots only)
                 // Buttons keep their editable content, ensuring content is always set
                 content: isEditableButton
@@ -869,30 +862,30 @@ const ProductItemsGrid = createSlotComponent({
                 }
               };
 
-              // Log when we find saved customizations
-              if (savedSlotConfig) {
-                console.log(`✨ Restored saved customization for ${uniqueId}:`, {
+              // Log when we find saved customizations (only once per template slot)
+              if (savedSlotConfig && index === 0) {
+                console.log(`✨ Applying template customization for ${templateSlotId} to all products:`, {
                   savedClassName: savedSlotConfig.className,
                   savedStyles: savedSlotConfig.styles
                 });
               }
             });
 
-            console.log('🔍 Product', index, 'editable slots:', Object.keys(productSlots));
-            console.log('🔍 Add to cart slot:', productSlots[`product_card_add_to_cart_product_${index}`]);
+            console.log('🔍 Product', index, 'using template slots:', Object.keys(productSlots));
+            console.log('🔍 Add to cart slot:', productSlots['product_card_add_to_cart']);
             console.log('🔍 Product in_stock:', product.in_stock);
 
             return (
               <div
                 key={`product-${index}`}
-                data-slot-id={`product_card_${index}`}
+                data-slot-id="product_card_template"
                 className={productCardTemplate?.className || 'border-2 border-dashed border-gray-300 rounded-lg p-4'}
                 style={{ ...productCardTemplate?.styles, overflow: 'visible' }}
               >
                 {/* Render each child slot using UnifiedSlotRenderer with edit mode */}
                 <UnifiedSlotRenderer
                   slots={productSlots}
-                  parentId={`product_card_${index}`}
+                  parentId="product_card_template"
                   context={context}
                   categoryData={{ ...categoryContext, product }}
                   productData={product}

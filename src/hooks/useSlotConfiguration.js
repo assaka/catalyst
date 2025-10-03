@@ -957,9 +957,7 @@ export function useSlotConfiguration({
       }
 
       // Validate parentId references
-      // Skip validation for dynamically generated product card slots (they're generated from template)
-      const isDynamicProductSlot = slotId.includes('_product_') && slotId.match(/_product_\d+$/);
-      if (slot.parentId && slot.parentId !== null && !slots[slot.parentId] && !isDynamicProductSlot) {
+      if (slot.parentId && slot.parentId !== null && !slots[slot.parentId]) {
         console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId}`);
         return false;
       }
