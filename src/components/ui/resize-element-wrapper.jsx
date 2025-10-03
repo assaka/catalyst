@@ -518,7 +518,7 @@ const ResizeWrapper = ({
         {!disabled && (
           <div
             className={cn(
-              "absolute cursor-se-resize z-50",
+              "absolute cursor-se-resize z-[150]",
               "transition-opacity duration-200",
               "flex items-center justify-center",
               isHovered || isResizing ? "opacity-100" : "opacity-0 hover:opacity-100"
@@ -529,9 +529,9 @@ const ResizeWrapper = ({
               right: '-2px',
               width: '14px',
               height: '14px',
-              background: 'rgba(59, 130, 246, 0.9)',
+              background: 'rgba(239, 68, 68, 0.9)',
               borderRadius: '0 0 4px 0',
-              border: '2px solid rgba(59, 130, 246, 1)',
+              border: '2px solid rgba(220, 38, 38, 1)',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
             }}
           >
@@ -629,7 +629,7 @@ const ResizeWrapper = ({
       {!disabled && (
         <div
           className={cn(
-            "absolute cursor-se-resize z-20",
+            "absolute cursor-se-resize z-[150]",
             "transition-opacity duration-200",
             "flex items-center justify-center",
             isHovered || isResizing ? "opacity-100" : "opacity-0 hover:opacity-100"
@@ -638,11 +638,12 @@ const ResizeWrapper = ({
           style={{
             bottom: '-2px',
             right: '-2px',
-            width: '12px',
-            height: '12px',
-            background: 'rgba(59, 130, 246, 0.8)',
+            width: '14px',
+            height: '14px',
+            background: 'rgba(239, 68, 68, 0.9)',
             borderRadius: '0 0 4px 0',
-            border: '1px solid rgba(59, 130, 246, 1)'
+            border: '2px solid rgba(220, 38, 38, 1)',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
           }}
         >
           {/* Small diagonal grip icon */}
