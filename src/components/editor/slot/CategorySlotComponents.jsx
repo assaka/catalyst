@@ -842,14 +842,16 @@ const ProductItemsGrid = createSlotComponent({
                 id: uniqueId,
                 parentId: uniqueParentId,
                 // Replace template variables with actual product data (for text slots only)
-                // Buttons keep their editable content
+                // Buttons keep their editable content, ensuring content is always set
                 content: isEditableButton
-                  ? (savedSlotConfig?.content || slotConfig.content) // Use saved button text
-                  : slotConfig.content
-                      ?.replace(/\{\{this\.name\}\}/g, product.name)
-                      ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
-                      ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                      ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
+                  ? (savedSlotConfig?.content || slotConfig.content || 'Button') // Always ensure button has content
+                  : (isTextSlot
+                      ? slotConfig.content
+                          ?.replace(/\{\{this\.name\}\}/g, product.name)
+                          ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
+                          ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
+                          ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
+                      : slotConfig.content), // Non-text, non-button slots keep original content
                 className: finalClassName, // Use merged className
                 parentClassName: finalParentClassName, // Use merged parentClassName
                 styles: finalStyles, // Use merged styles
