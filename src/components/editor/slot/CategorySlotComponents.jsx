@@ -729,10 +729,19 @@ const ProductItemsGrid = createSlotComponent({
       const gridClasses = getGridClasses(storeSettings);
 
       // Get sample products from categoryContext OR variableContext
-      const products = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
+      const rawProducts = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
+
+      // Format prices if not already formatted
+      const products = rawProducts.map(p => ({
+        ...p,
+        price_formatted: p.price_formatted || `$${p.price?.toFixed(2) || '0.00'}`,
+        compare_price_formatted: p.compare_price ? `$${p.compare_price.toFixed(2)}` : null,
+        image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg'
+      }));
 
       console.log('🔍 ProductItemsGrid - EDITOR MODE');
       console.log('🔍 Products available:', products.length);
+      console.log('🔍 First product price:', products[0]?.price_formatted);
       console.log('🔍 CategoryContext:', categoryContext);
       console.log('🔍 VariableContext:', variableContext);
       console.log('🔍 AllSlots keys:', allSlots ? Object.keys(allSlots) : 'NO SLOTS');
@@ -776,6 +785,7 @@ const ProductItemsGrid = createSlotComponent({
 
       console.log('🔍 Product card template:', !!productCardTemplate);
       console.log('🔍 Product card descendant slots:', Object.keys(productCardChildSlots));
+      console.log('🔍 Descendant slot details:', productCardChildSlots);
       console.log('🔍 Grid classes:', gridClasses);
 
       // Render each product with its child slots as individual editable elements
