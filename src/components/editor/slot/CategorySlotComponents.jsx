@@ -793,15 +793,29 @@ const ProductItemsGrid = createSlotComponent({
       return (
         <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
           {products.map((product, index) => {
-            // Use template slot IDs (not unique per product) and apply customizations to ALL products
+            // Create unique slot IDs for each product instance
             const productSlots = {};
-            Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
-              // Use the template slot ID directly (same for all products)
-              const templateSlotId = slotId;
+            // Add the product card container itself as a grid slot
+            const productCardId = `product_card_${index}`;
+            productSlots[productCardId] = {
+              ...productCardTemplate,
+              id: productCardId,
+              parentId: 'product_items',
+              metadata: {
+                ...productCardTemplate?.metadata,
+                isProductCard: true,
+                productIndex: index
+              }
+            };
 
-              // CRITICAL: Check if template slot has saved customizations in allSlots
-              // These customizations will apply to ALL product cards
-              const savedSlotConfig = allSlots[templateSlotId];
+            Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
+              // Create unique slot ID for this product instance
+              const templateSlotId = `${slotId}_${index}`;
+
+              // CRITICAL: Check if this specific product slot has saved customizations
+              // First check for product-specific customization (templateSlotId with _index)
+              // Then fall back to template-wide customization (base slotId)
+              const savedSlotConfig = allSlots[templateSlotId] || allSlots[slotId];
 
               // Replace template variables in styles using processVariables
               // This will use the variableContext which has settings.theme.add_to_cart_button_color
@@ -860,7 +874,7 @@ const ProductItemsGrid = createSlotComponent({
               productSlots[templateSlotId] = {
                 ...slotConfig,
                 id: templateSlotId,
-                parentId: slotConfig.parentId, // Keep original parent ID from template
+                parentId: slotConfig.parentId === 'product_card_template' ? productCardId : `${slotConfig.parentId}_${index}`, // Update parent ID to unique product card
                 // Replace template variables with actual product data (for text slots only)
                 // Buttons keep their editable content, ensuring content is always set
                 content: isEditableButton
@@ -905,14 +919,14 @@ const ProductItemsGrid = createSlotComponent({
             return (
               <div
                 key={`product-${index}`}
-                data-slot-id="product_card_template"
+                data-slot-id={productCardId}
                 className={productCardTemplate?.className || 'border-2 border-dashed border-gray-300 rounded-lg p-4'}
                 style={{ ...productCardTemplate?.styles, overflow: 'visible' }}
               >
                 {/* Render each child slot using UnifiedSlotRenderer with edit mode */}
                 <UnifiedSlotRenderer
                   slots={productSlots}
-                  parentId="product_card_template"
+                  parentId={productCardId}
                   context={context}
                   categoryData={{ ...categoryContext, product }}
                   productData={product}
