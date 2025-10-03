@@ -166,12 +166,14 @@ const CategoryNavSlot = createSlotComponent({
     const { categories = [], store } = headerContext || {};
     const metadata = slot?.metadata || {};
 
+    console.log('🎯🎯🎯 CategoryNavSlot ENTRY - SHOULD SEE THIS!!!');
     console.log('🎯 CategoryNavSlot RENDER:', {
       context,
       categoriesCount: categories?.length,
       categoriesWithChildren: categories?.filter(c => c.children?.length > 0)?.length,
       hasStore: !!store,
-      store
+      store,
+      categories: categories
     });
 
     // Extract link styles
