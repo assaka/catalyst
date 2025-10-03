@@ -1195,23 +1195,16 @@ const EditorSidebar = ({
         }
       }
 
-      // CRITICAL: Preserve classes from DATABASE (storedClassName), NOT from contaminated DOM element!
+      // CRITICAL: Preserve ALL classes from DATABASE (storedClassName), NOT from contaminated DOM element!
       // The DOM element might have wrapper classes, but storedClassName is the clean source of truth
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       const databaseClassName = elementSlotConfig?.className || '';
 
+      // Preserve ALL classes from database (except wrapper/editor classes)
       const currentClasses = databaseClassName.split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
-        // Preserve font-weight classes (bold, semibold, etc.)
-        if (cls.startsWith('font-')) {
-          currentTailwindClasses.push(cls);
-        }
-        // Preserve italic
-        else if (cls === 'italic') {
-          currentTailwindClasses.push(cls);
-        }
-        // Preserve ALL text-related classes including alignment (text-left, text-center, text-right)
-        else if (cls.startsWith('text-')) {
+        // Skip wrapper/editor classes, but keep everything else
+        if (!isWrapperOrEditorClass(cls)) {
           currentTailwindClasses.push(cls);
         }
       });
