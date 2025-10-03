@@ -831,10 +831,12 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                   ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
-                // Set width to auto for text slots, apply processed styles for all slots
+                // Set width to auto for text slots, remove width for images, apply processed styles for all other slots
                 styles: slotConfig.type === 'text'
                   ? { ...processedStyles, width: 'auto' }
-                  : processedStyles,
+                  : slotConfig.type === 'image'
+                    ? { ...processedStyles, width: undefined }
+                    : processedStyles,
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Also disable resize for text/button slots to prevent width issues
                 // Mark as styleOnly to prevent content editing (content comes from product data)
