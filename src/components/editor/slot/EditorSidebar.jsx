@@ -1274,7 +1274,8 @@ const EditorSidebar = ({
         formattedValue,
         hasCallback: !!onInlineClassChange,
         className: targetElement.className,
-        styles: { ...currentInlineStyles, [property]: formattedValue }
+        styles: { ...currentInlineStyles, [property]: formattedValue },
+        isButtonBackgroundColor: elementSlotId === 'product_card_add_to_cart' && property === 'backgroundColor'
       });
 
       if (onInlineClassChange) {

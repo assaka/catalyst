@@ -837,6 +837,18 @@ const ProductItemsGrid = createSlotComponent({
                 ? { ...processedStyles, ...processedSavedStyles }
                 : processedStyles;
 
+              // Debug logging for button styles
+              if (templateSlotId === 'product_card_add_to_cart') {
+                console.log('🔵 Add to Cart Button Styles:', {
+                  templateSlotId,
+                  templateStyles: slotConfig.styles,
+                  processedStyles,
+                  savedStyles: savedSlotConfig?.styles,
+                  processedSavedStyles,
+                  finalStyles
+                });
+              }
+
               // CRITICAL: Use saved className if available, otherwise use template className
               const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
               const finalParentClassName = savedSlotConfig?.parentClassName ?? slotConfig.parentClassName;
