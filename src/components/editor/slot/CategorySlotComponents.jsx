@@ -736,7 +736,8 @@ const ProductItemsGrid = createSlotComponent({
         ...p,
         price_formatted: p.price_formatted || `$${p.price?.toFixed(2) || '0.00'}`,
         compare_price_formatted: p.compare_price ? `$${p.compare_price.toFixed(2)}` : null,
-        image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg'
+        image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
+        in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
       }));
 
       console.log('🔍 ProductItemsGrid - EDITOR MODE');
@@ -815,7 +816,11 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.name\}\}/g, product.name)
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
+                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
+                // Remove width from text/button slots to prevent pixel width issues
+                styles: slotConfig.type === 'text' || slotConfig.type === 'button'
+                  ? { ...slotConfig.styles, width: undefined }
+                  : slotConfig.styles
               };
             });
 
