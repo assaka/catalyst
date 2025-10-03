@@ -817,9 +817,21 @@ const ProductItemsGrid = createSlotComponent({
                 });
               }
 
+              // Process saved styles to replace template variables
+              const processedSavedStyles = {};
+              if (savedSlotConfig?.styles) {
+                Object.entries(savedSlotConfig.styles).forEach(([key, value]) => {
+                  if (typeof value === 'string' && value.includes('{{settings.theme.add_to_cart_button_color}}')) {
+                    processedSavedStyles[key] = '#3B82F6'; // Default blue for editor
+                  } else {
+                    processedSavedStyles[key] = value;
+                  }
+                });
+              }
+
               // CRITICAL: Merge saved styles with template styles (saved styles take precedence)
               const finalStyles = savedSlotConfig
-                ? { ...processedStyles, ...savedSlotConfig.styles }
+                ? { ...processedStyles, ...processedSavedStyles }
                 : processedStyles;
 
               // CRITICAL: Use saved className if available, otherwise use template className
