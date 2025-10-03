@@ -428,13 +428,13 @@ const ResizeWrapper = ({
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
   const wrapperStyle = {
-    // For buttons, wrapper should be full width; for others, fit-content
-    width: isButton ? '100%' : 'fit-content',
+    // For buttons and text elements, wrapper should be full width; for others, fit-content
+    width: (isButton || isTextElement) ? '100%' : 'fit-content',
     height: 'fit-content',
     // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
     ...(isButton || isTextElement ? { maxWidth: 'none', overflow: 'visible' } : { maxWidth: '100%' }),
-    display: isButton ? 'block' : 'inline-block',
+    display: (isButton || isTextElement) ? 'block' : 'inline-block',
     position: 'relative'
   };
 
@@ -567,7 +567,7 @@ const ResizeWrapper = ({
   return (
     <div
       ref={wrapperRef}
-      className={cn("relative inline-block group", className)}
+      className={cn("relative group", isTextElement ? "w-full" : "inline-block", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
       onMouseLeave={(e) => {
         if (!disabled) {
