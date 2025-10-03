@@ -1200,20 +1200,14 @@ const EditorSidebar = ({
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
       const databaseClassName = elementSlotConfig?.className || '';
 
-      console.log('[EditorSidebar] Database className for', elementSlotId, ':', databaseClassName);
-
       // Preserve ALL classes from database (except wrapper/editor classes)
       const currentClasses = databaseClassName.split(' ').filter(Boolean);
       currentClasses.forEach(cls => {
         // Skip wrapper/editor classes, but keep everything else
         if (!isWrapperOrEditorClass(cls)) {
           currentTailwindClasses.push(cls);
-        } else {
-          console.log('[EditorSidebar] Filtering out wrapper class:', cls);
         }
       });
-
-      console.log('[EditorSidebar] Preserved classes:', currentTailwindClasses);
 
       const formattedValue = typeof value === 'number' || /^\d+$/.test(value) ? value + 'px' : value;
 

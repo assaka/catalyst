@@ -1455,14 +1455,25 @@ export function useSlotConfiguration({
     if (!updatedSlots[slotId]) {
       console.log(`🆕 Creating new slot for style change: ${slotId}`);
 
+      // Extract base template ID (remove _0, _1, etc. suffix)
+      const baseTemplateId = slotId.replace(/_\d+$/, '');
+      const templateSlot = updatedSlots[baseTemplateId];
+
+      // Copy className and other properties from template if available
+      const templateClassName = templateSlot?.className || '';
+      const templateType = templateSlot?.type || 'text';
+      const templateContent = templateSlot?.content || '';
+
       updatedSlots[slotId] = {
         id: slotId,
-        type: 'text', // Default to text type
-        content: '',
-        className: '',
+        type: templateType,
+        content: templateContent,
+        className: templateClassName, // Inherit from template
         styles: {},
         metadata: metadata || {}
       };
+
+      console.log(`✅ New slot inherits className from template ${baseTemplateId}:`, templateClassName);
     }
 
     // Merge existing styles with new styles
