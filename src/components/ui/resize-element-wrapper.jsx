@@ -25,9 +25,6 @@ const ResizeWrapper = ({
     const existingWidth = children?.props?.style?.width;
     const existingHeight = children?.props?.style?.height;
 
-    // Check if element has autoWidth metadata (for product card elements)
-    const autoWidth = children?.props?.['data-auto-width'] === 'true';
-
     let width = initialWidth || 'auto';
     let widthUnit = 'auto';
     let height = initialHeight || 'auto';
@@ -42,11 +39,7 @@ const ResizeWrapper = ({
                        children.props.className.includes('Add to Cart')
                      ));
 
-    // For elements with autoWidth, always start with 'auto' width
-    if (autoWidth) {
-      width = 'auto';
-      widthUnit = 'auto';
-    } else if (existingWidth && existingWidth !== 'auto') {
+    if (existingWidth && existingWidth !== 'auto') {
       const match = existingWidth.match(/^(\d+(?:\.\d+)?)(.*)/);
       if (match) {
         width = parseFloat(match[1]);
@@ -137,14 +130,7 @@ const ResizeWrapper = ({
 
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
-    // Don't calculate width if resize is disabled or autoWidth is enabled
-    const autoWidth = children?.props?.['data-auto-width'] === 'true';
-    if (disabled || autoWidth) {
-      console.log('🚫 ResizeWrapper: Disabled or autoWidth, skipping width calculation', {
-        disabled,
-        autoWidth,
-        children: children?.props?.['data-slot-id']
-      });
+    if (disabled) {
       return;
     }
 
@@ -217,9 +203,7 @@ const ResizeWrapper = ({
 
   // Monitor parent size changes and auto-shrink text elements to prevent overflow
   useEffect(() => {
-    // Don't auto-shrink if resize is disabled or autoWidth is enabled
-    const autoWidth = children?.props?.['data-auto-width'] === 'true';
-    if (disabled || autoWidth || !isTextElement || !wrapperRef.current) return;
+    if (disabled || !isTextElement || !wrapperRef.current) return;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -469,14 +453,13 @@ const ResizeWrapper = ({
         isResizing && "cursor-se-resize"
       ),
       style: (() => {
-        const autoWidth = children?.props?.['data-auto-width'] === 'true';
-        const widthStyle = !disabled && !autoWidth && (size.width !== 'auto' && size.widthUnit !== 'auto') ?
+        // Apply width if we have a calculated size (not 'auto')
+        const widthStyle = !disabled && (size.width !== 'auto' && size.widthUnit !== 'auto') ?
           { width: `${size.width}${size.widthUnit || 'px'}` } :
           hasWFitClass ? { width: 'fit-content' } : {};
 
         console.log('🎨 ResizeWrapper Button Style:', {
           disabled,
-          autoWidth,
           slotId: children?.props?.['data-slot-id'],
           sizeWidth: size.width,
           sizeWidthUnit: size.widthUnit,
@@ -610,14 +593,13 @@ const ResizeWrapper = ({
           // For text elements, remove any existing width property to avoid constraints
           const { width: existingWidth, ...baseStyles } = children.props.style || {};
           const stylesWithoutWidth = isTextElement ? baseStyles : children.props.style;
-          const autoWidth = children?.props?.['data-auto-width'] === 'true';
 
           return {
             ...stylesWithoutWidth,
             // For elements with w-fit class that haven't been resized, use fit-content
             // For other elements, apply calculated width if available
-            // Don't apply width if disabled or autoWidth is enabled
-            ...(disabled || autoWidth ? {} :
+            // Don't apply width if disabled
+            ...(disabled ? {} :
                 hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
                 { width: `${size.width}${size.widthUnit || 'px'}` } : {}),

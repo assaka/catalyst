@@ -243,15 +243,6 @@ export function UnifiedSlotRenderer({
     }
 
     const isDisabled = slot.metadata?.disableResize || false;
-    const autoWidth = slot.metadata?.autoWidth || false;
-    console.log('🔧 wrapWithResize:', {
-      slotId: slot.id,
-      slotType: slot.type,
-      disableResize: slot.metadata?.disableResize,
-      autoWidth: slot.metadata?.autoWidth,
-      isDisabled,
-      metadata: slot.metadata
-    });
 
     return (
       <ResizeWrapper
@@ -265,21 +256,16 @@ export function UnifiedSlotRenderer({
           setPageConfig(prevConfig => {
             const updatedSlots = { ...prevConfig?.slots };
             if (updatedSlots[slot.id]) {
-              // Save width for all elements including text when user manually resizes
+              // Save width for all elements when user manually resizes
               const newStyles = {
                 ...updatedSlots[slot.id].styles,
                 width: `${newSize.width}${newSize.widthUnit || 'px'}`,
                 height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
               };
 
-              // Remove autoWidth metadata when user manually resizes
-              const updatedMetadata = { ...updatedSlots[slot.id].metadata };
-              delete updatedMetadata.autoWidth;
-
               updatedSlots[slot.id] = {
                 ...updatedSlots[slot.id],
-                styles: newStyles,
-                metadata: updatedMetadata
+                styles: newStyles
               };
             }
 
@@ -293,9 +279,7 @@ export function UnifiedSlotRenderer({
           });
         }}
       >
-        {React.cloneElement(element, {
-          'data-auto-width': autoWidth ? 'true' : undefined
-        })}
+        {element}
       </ResizeWrapper>
     );
   };

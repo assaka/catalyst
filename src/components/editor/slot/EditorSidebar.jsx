@@ -1499,8 +1499,8 @@ const EditorSidebar = ({
         </SectionHeader>
         )}
 
-        {/* Grid Layout Section - Only show when product_items slot exists and we're working on product-related content */}
-        {allSlots['product_items'] && (
+        {/* Grid Layout Section - hide for styleOnly/readOnly slots */}
+        {!slotConfig?.metadata?.styleOnly && !slotConfig?.metadata?.readOnly && allSlots['product_items'] && (
           <SectionHeader title="Product Grid Layout" section="grid">
             <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
               <strong>Product Grid Configuration</strong><br/>
@@ -1525,7 +1525,8 @@ const EditorSidebar = ({
           </SectionHeader>
         )}
 
-            {/* Size Section */}
+            {/* Size Section - hide for styleOnly/readOnly slots */}
+            {!slotConfig?.metadata?.styleOnly && !slotConfig?.metadata?.readOnly && (
             <SectionHeader title="Size" section="size">
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -1656,6 +1657,7 @@ const EditorSidebar = ({
                 </div>
               </div>
             </SectionHeader>
+            )}
 
             {/* Text Section */}
             <SectionHeader title="Typography" section="text">

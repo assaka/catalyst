@@ -831,20 +831,12 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                   ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
-                // Remove width from styles for text and image slots to prevent unwanted inline styles
-                styles: (() => {
-                  const { width, ...restStyles } = processedStyles;
-                  return slotConfig.type === 'text' || slotConfig.type === 'image'
-                    ? restStyles
-                    : processedStyles;
-                })(),
+                styles: processedStyles,
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Mark as styleOnly to prevent content editing (content comes from product data)
-                // Use autoWidth flag to indicate ResizeWrapper should default to 'auto' width
                 metadata: {
                   ...slotConfig.metadata,
                   conditionalDisplay: undefined,
-                  autoWidth: slotConfig.type === 'text' || slotConfig.type === 'button' || slotConfig.type === 'image',
                   styleOnly: true,
                   readOnly: true
                 }
