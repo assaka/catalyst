@@ -1615,7 +1615,19 @@ export function useSlotConfiguration({
       createGridResizeHandler: (gridResizeHandler, saveTimeoutRef) =>
         useCallback((slotId, newColSpan) => {
           setPageConfig(prevConfig => {
-            const updatedSlots = gridResizeHandler(slotId, newColSpan, prevConfig?.slots || {});
+            // Map product-specific slot IDs to template IDs
+            let effectiveSlotId = slotId;
+            const slotMatch = slotId.match(/^(.+)_(\d+)$/);
+            if (slotMatch) {
+              const baseId = slotMatch[1];
+              const slot = prevConfig?.slots?.[slotId];
+              if (slot?.parentId?.startsWith('product_card')) {
+                effectiveSlotId = baseId;
+                console.log('📦 Product slot resize detected, using template ID:', effectiveSlotId);
+              }
+            }
+
+            const updatedSlots = gridResizeHandler(effectiveSlotId, newColSpan, prevConfig?.slots || {});
             const updatedConfig = {
               ...prevConfig,
               slots: updatedSlots
@@ -1636,7 +1648,19 @@ export function useSlotConfiguration({
       createSlotHeightResizeHandler: (slotHeightResizeHandler, saveTimeoutRef) =>
         useCallback((slotId, newHeight) => {
           setPageConfig(prevConfig => {
-            const updatedSlots = slotHeightResizeHandler(slotId, newHeight, prevConfig?.slots || {});
+            // Map product-specific slot IDs to template IDs
+            let effectiveSlotId = slotId;
+            const slotMatch = slotId.match(/^(.+)_(\d+)$/);
+            if (slotMatch) {
+              const baseId = slotMatch[1];
+              const slot = prevConfig?.slots?.[slotId];
+              if (slot?.parentId?.startsWith('product_card')) {
+                effectiveSlotId = baseId;
+                console.log('📦 Product slot height resize detected, using template ID:', effectiveSlotId);
+              }
+            }
+
+            const updatedSlots = slotHeightResizeHandler(effectiveSlotId, newHeight, prevConfig?.slots || {});
             const updatedConfig = {
               ...prevConfig,
               slots: updatedSlots
