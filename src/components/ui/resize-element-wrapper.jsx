@@ -194,6 +194,16 @@ const ResizeWrapper = ({
           return;
         }
 
+        // For text elements, don't set width automatically - let them be fit-content
+        // Only set width if explicitly resized by user (will be in children.props.style.width)
+        if (isTextElement && !existingWidth) {
+          console.log('📏 ResizeWrapper: Skipping auto-width for text element (keeping fit-content)', {
+            slotId: children?.props?.['data-slot-id'],
+            isTextElement
+          });
+          return; // Keep width as 'auto'
+        }
+
         const newWidth = isButton ? rect.width : Math.round(naturalPercentage * 10) / 10;
         const newWidthUnit = isButton ? 'px' : '%';
 
