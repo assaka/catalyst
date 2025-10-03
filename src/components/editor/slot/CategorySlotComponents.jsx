@@ -180,7 +180,6 @@ const ActiveFilters = createSlotComponent({
     `;
 
     const html = processVariables(template, variableContext || {});
-    console.log('🔍 ActiveFilters processed HTML:', html?.substring(0, 200));
 
     // Attach event listeners in storefront
     useEffect(() => {
@@ -771,7 +770,7 @@ const ProductItemsGrid = createSlotComponent({
       console.log('🔍 Product card child slots:', Object.keys(productCardChildSlots));
       console.log('🔍 Grid classes:', gridClasses);
 
-      // Render each product as an individual editable slot-based container
+      // Render each product with its child slots as individual editable elements
       return (
         <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
           {products.map((product, index) => {
@@ -782,6 +781,7 @@ const ProductItemsGrid = createSlotComponent({
               productSlots[uniqueId] = {
                 ...slotConfig,
                 id: uniqueId,
+                parentId: `product_card_${index}`, // Set parent to this product's card
                 // Replace template variables with actual product data
                 content: slotConfig.content
                   ?.replace(/\{\{this\.name\}\}/g, product.name)
@@ -791,24 +791,26 @@ const ProductItemsGrid = createSlotComponent({
               };
             });
 
-            console.log('🔍 Product', index, 'slots:', Object.keys(productSlots));
+            console.log('🔍 Product', index, 'editable slots:', Object.keys(productSlots));
 
             return (
               <div
                 key={`product-${index}`}
-                className={productCardTemplate?.className || 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card'}
+                data-slot-id={`product_card_${index}`}
+                className={productCardTemplate?.className || 'border-2 border-dashed border-gray-300 rounded-lg p-4'}
                 style={productCardTemplate?.styles || {}}
               >
-                {/* Render each child slot using UnifiedSlotRenderer */}
+                {/* Render each child slot using UnifiedSlotRenderer with edit mode */}
                 <UnifiedSlotRenderer
                   slots={productSlots}
-                  parentId={null}
+                  parentId={`product_card_${index}`}
                   context={context}
                   categoryData={{ ...categoryContext, product }}
-                  productData={{ product }}
-                  variableContext={{ ...variableContext, ...product }}
+                  productData={product}
+                  variableContext={{ ...variableContext, product }}
                   mode="edit"
                   showBorders={true}
+                  viewMode="grid"
                 />
               </div>
             );
