@@ -719,7 +719,7 @@ const ProductCountInfo = createSlotComponent({
 // Product Items Grid - Renders with dynamic grid from admin settings
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
-  render: ({ slot, className, styles, context, categoryContext, variableContext, allSlots }) => {
+  render: ({ slot, className, styles, context, categoryContext, variableContext, allSlots, onElementClick }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
@@ -871,6 +871,7 @@ const ProductItemsGrid = createSlotComponent({
                   mode="edit"
                   showBorders={true}
                   viewMode="grid"
+                  onElementClick={onElementClick}
                 />
               </div>
             );
