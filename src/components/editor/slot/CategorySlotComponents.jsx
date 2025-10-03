@@ -817,14 +817,16 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                   ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
-                // Remove width from text/button slots to prevent pixel width issues
-                styles: slotConfig.type === 'text' || slotConfig.type === 'button'
-                  ? { ...slotConfig.styles, width: undefined }
+                // Set width to auto for text slots, keep button width as-is
+                styles: slotConfig.type === 'text'
+                  ? { ...slotConfig.styles, width: 'auto' }
                   : slotConfig.styles
               };
             });
 
             console.log('🔍 Product', index, 'editable slots:', Object.keys(productSlots));
+            console.log('🔍 Add to cart slot:', productSlots[`product_card_add_to_cart_product_${index}`]);
+            console.log('🔍 Product in_stock:', product.in_stock);
 
             return (
               <div
