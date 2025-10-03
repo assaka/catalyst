@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null }) {
-    console.log('🚀 CategoryNav RENDER - categories:', categories, 'store:', storeProp || 'from context');
+    console.log('🚀🚀🚀 CategoryNav COMPONENT ENTRY - categories:', categories, 'store:', storeProp || 'from context');
     const storeContext = useStore();
     const store = storeProp || storeContext?.store;
 
@@ -850,6 +850,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     {rootCategories.map(category => {
                         if (category.children && category.children.length > 0) {
+                            console.log('🎨 Rendering category with dropdown:', category.name, 'children:', category.children.length);
                             return (
                                 <div key={category.id} className="relative group">
                                     <Link
@@ -859,9 +860,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         {category.name}
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
-                                    {/* Submenu visible on hover */}
-                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
-                                        style={{ backgroundColor: subcategoryBgColor }}
+                                    {/* Submenu visible on hover - TESTING: Always visible with red background */}
+                                    <div className="absolute left-0 top-full w-64 border-4 border-red-500 rounded-md shadow-lg z-[9999] visible opacity-100 transition-all duration-200"
+                                        style={{ backgroundColor: 'red' }}
                                     >
                                         <div>
                                             <Link

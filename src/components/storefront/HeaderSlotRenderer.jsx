@@ -316,18 +316,33 @@ export function HeaderSlotRenderer({
         );
 
       case 'MobileNavigation':
-        // Render mobile navigation - this will be replaced by actual CategoryNav data
+        // Render mobile navigation with children
         return (
           <div key={id} className={className} data-slot-id={id}>
             {categories?.map(cat => (
-              <Link
-                key={cat.id}
-                to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
-                className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
-                onClick={() => setMobileMenuOpen?.(false)}
-              >
-                {cat.name}
-              </Link>
+              <div key={cat.id} className="mobile-nav-item">
+                <Link
+                  to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
+                  className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium"
+                  onClick={() => setMobileMenuOpen?.(false)}
+                >
+                  {cat.name}
+                </Link>
+                {cat.children && cat.children.length > 0 && (
+                  <div className="pl-4 space-y-1">
+                    {cat.children.map(child => (
+                      <Link
+                        key={child.id}
+                        to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
+                        className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                        onClick={() => setMobileMenuOpen?.(false)}
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         );
