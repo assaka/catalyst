@@ -820,7 +820,12 @@ const ProductItemsGrid = createSlotComponent({
                 // Set width to auto for text slots, keep button width as-is
                 styles: slotConfig.type === 'text'
                   ? { ...slotConfig.styles, width: 'auto' }
-                  : slotConfig.styles
+                  : slotConfig.styles,
+                // Remove conditionalDisplay in editor mode so all slots are visible
+                metadata: {
+                  ...slotConfig.metadata,
+                  conditionalDisplay: undefined
+                }
               };
             });
 
