@@ -509,15 +509,26 @@ const MobileNavigationSlot = createSlotComponent({
     if (context === 'editor') {
       return (
         <div className={className || "space-y-2"} style={styles}>
-          <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md">
-            Electronics
-          </a>
-          <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md">
-            Clothing
-          </a>
-          <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md">
-            Home & Garden
-          </a>
+          {categories.map(cat => (
+            <div key={cat.id} className="mobile-nav-item">
+              <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium">
+                {cat.name}
+              </a>
+              {cat.children && cat.children.length > 0 && (
+                <div className="pl-4 space-y-1">
+                  {cat.children.map(child => (
+                    <a
+                      key={child.id}
+                      href="#"
+                      className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                    >
+                      {child.name}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       );
     }
@@ -526,14 +537,29 @@ const MobileNavigationSlot = createSlotComponent({
     return (
       <div className={className} style={styles}>
         {categories?.map(cat => (
-          <Link
-            key={cat.id}
-            to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
-            className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
-            onClick={() => setMobileMenuOpen?.(false)}
-          >
-            {cat.name}
-          </Link>
+          <div key={cat.id} className="mobile-nav-item">
+            <Link
+              to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
+              className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium"
+              onClick={() => setMobileMenuOpen?.(false)}
+            >
+              {cat.name}
+            </Link>
+            {cat.children && cat.children.length > 0 && (
+              <div className="pl-4 space-y-1">
+                {cat.children.map(child => (
+                  <Link
+                    key={child.id}
+                    to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
+                    className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                    onClick={() => setMobileMenuOpen?.(false)}
+                  >
+                    {child.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     );

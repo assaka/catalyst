@@ -155,11 +155,17 @@ const categoryCustomSlotRenderer = (slot, context) => {
 
     // ProductItemsGrid component
     if (componentName === 'ProductItemsGrid') {
+      console.log('🛒 ProductItemsGrid component handler called');
+      console.log('📊 storeSettings:', storeSettings);
+      console.log('📦 sampleCategoryContext:', sampleCategoryContext);
+
       const gridConfig = storeSettings?.product_grid;
       const maxColumns = gridConfig?.breakpoints ? Math.max(...Object.values(gridConfig.breakpoints).filter(v => v > 0)) : 3;
       const rows = gridConfig?.rows || 2;
       const productsToShow = maxColumns * rows;
       const products = sampleCategoryContext?.products?.slice(0, productsToShow) || [];
+
+      console.log('🔢 Grid config:', { maxColumns, rows, productsToShow, productsFound: products.length });
 
       // Get all product card slots from layoutConfig for mirroring
       const allSlots = context?.layoutConfig?.slots || {};
@@ -172,6 +178,12 @@ const categoryCustomSlotRenderer = (slot, context) => {
         product_card_add_to_cart: allSlots.product_card_add_to_cart,
         product_card_price_container: allSlots.product_card_price_container
       };
+
+      console.log('🎰 Product card slots:', Object.keys(productCardSlots).filter(k => productCardSlots[k]));
+
+      if (products.length === 0) {
+        return <div className="p-8 text-center text-gray-500">No products available to display</div>;
+      }
 
       return (
         <div className={`grid ${getGridClasses(storeSettings)} gap-4`}>
