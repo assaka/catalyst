@@ -130,6 +130,9 @@ const ResizeWrapper = ({
 
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
+    // Don't calculate width if resize is disabled
+    if (disabled) return;
+
     if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
       const rect = wrapperRef.current.getBoundingClientRect();
       
@@ -446,9 +449,10 @@ const ResizeWrapper = ({
       style: {
         ...children.props.style,
         // Apply size directly to the button element - always use calculated width if available
-        width: (size.width !== 'auto' && size.widthUnit !== 'auto') ?
-               `${size.width}${size.widthUnit || 'px'}` :
-               (hasWFitClass ? 'fit-content' : children.props.style?.width || 'auto'),
+        // Don't apply width if disabled
+        ...(!disabled && (size.width !== 'auto' && size.widthUnit !== 'auto') ?
+          { width: `${size.width}${size.widthUnit || 'px'}` } :
+          hasWFitClass ? { width: 'fit-content' } : {}),
         ...(size.height !== 'auto' && size.height && {
           minHeight: `${size.height}${size.heightUnit || 'px'}`,
           height: `${size.height}${size.heightUnit || 'px'}`
@@ -573,7 +577,9 @@ const ResizeWrapper = ({
             ...stylesWithoutWidth,
             // For elements with w-fit class that haven't been resized, use fit-content
             // For other elements, apply calculated width if available
-            ...(hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
+            // Don't apply width if disabled
+            ...(disabled ? {} :
+                hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
                 { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
             ...(size.height !== 'auto' && size.height && {

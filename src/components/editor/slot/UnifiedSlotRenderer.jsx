@@ -246,6 +246,7 @@ export function UnifiedSlotRenderer({
       <ResizeWrapper
         minWidth={minWidth}
         minHeight={minHeight}
+        disabled={slot.metadata?.disableResize || false}
         hideBorder={selectedElementId === slot.id}
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;
