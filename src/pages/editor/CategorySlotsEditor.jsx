@@ -415,38 +415,29 @@ const categoryCustomSlotRenderer = (slot, context) => {
     const products = sampleCategoryContext?.products?.slice(0, productsToShow) || [];
     console.log('🛍️ Rendering products:', products.length, 'Grid classes:', getGridClasses(storeSettings));
 
-    // Get all product card slots from layoutConfig for mirroring
-    const allSlots = context?.layoutConfig?.slots || {};
-    const productCardSlots = {
-      product_card_template: allSlots.product_card_template,
-      product_card_image: allSlots.product_card_image,
-      product_card_name: allSlots.product_card_name,
-      product_card_price: allSlots.product_card_price,
-      product_card_compare_price: allSlots.product_card_compare_price,
-      product_card_add_to_cart: allSlots.product_card_add_to_cart,
-      product_card_price_container: allSlots.product_card_price_container
-    };
+    if (products.length === 0) {
+      return <div className="p-8 text-center text-gray-500">No products available to display</div>;
+    }
 
+    // Render empty product slot containers
     return (
       <div className={`grid ${getGridClasses(storeSettings)} gap-4`}>
         {products.map((product, index) => (
-          <ProductItemCard
+          <div
             key={product.id}
-            product={product}
-            settings={{
-              currency_symbol: '$',
-              theme: { add_to_cart_button_color: '#3B82F6' }
+            className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50/30 hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer min-h-[300px] flex flex-col items-center justify-center"
+            onClick={(e) => {
+              if (context?.onElementClick) {
+                context.onElementClick(`product_slot_${index}`, e.currentTarget);
+              }
             }}
-            store={{ slug: 'demo-store', id: 1 }}
-            taxes={[]}
-            selectedCountry="US"
-            productLabels={sampleCategoryContext?.productLabels || []}
-            viewMode={context?.viewMode}
-            slotConfig={productCardSlots}
-            onAddToCartStateChange={() => {}}
-            isEditorMode={true}
-            onElementClick={context?.onElementClick}
-          />
+          >
+            <div className="text-center text-gray-500">
+              <div className="text-sm font-medium mb-2">Product Slot {index + 1}</div>
+              <div className="text-xs text-gray-400">{product.name}</div>
+              <div className="text-xs text-gray-400 mt-1">Click to edit</div>
+            </div>
+          </div>
         ))}
       </div>
     );
