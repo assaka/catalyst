@@ -531,10 +531,10 @@ export const generateDemoData = (pageType, settings = {}) => {
       short_description: 'This is a sample product description showing how the content will appear.',
       labels: ['Sale', 'New Arrival', 'Popular'],
       images: [
-        'https://placehold.co/600x600?text=Main+Image',
-        'https://placehold.co/150x150?text=Thumb+1',
-        'https://placehold.co/150x150?text=Thumb+2',
-        'https://placehold.co/150x150?text=Thumb+3'
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=150&h=150&fit=crop',
+        'https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=150&h=150&fit=crop',
+        'https://images.unsplash.com/photo-1545127398-14699f92334b?w=150&h=150&fit=crop'
       ],
       tabs: [
         { name: 'Description', tab_type: 'text', content: 'This is a detailed product description...' },
@@ -542,9 +542,9 @@ export const generateDemoData = (pageType, settings = {}) => {
         { name: 'Reviews', tab_type: 'text', content: 'Customer reviews will appear here...' }
       ],
       related_products: [
-        { name: 'Related Product 1', price: 79.99, image: 'https://placehold.co/300x300?text=Related+1' },
-        { name: 'Related Product 2', price: 119.99, image: 'https://placehold.co/300x300?text=Related+2' },
-        { name: 'Related Product 3', price: 89.99, image: 'https://placehold.co/300x300?text=Related+3' }
+        { name: 'Smart Watch', price: 199.99, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop' },
+        { name: 'Camera Lens', price: 349.99, image: 'https://images.unsplash.com/photo-1606318801954-d46d46d3360a?w=300&h=300&fit=crop' },
+        { name: 'Laptop', price: 1299.99, image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=300&h=300&fit=crop' }
       ],
       attributes: {
         brand: 'Sample Brand',
@@ -558,11 +558,16 @@ export const generateDemoData = (pageType, settings = {}) => {
       name: 'Electronics',
       description: 'This is a sample category description.',
       product_count: 24,
-      products: Array.from({ length: 8 }, (_, i) => ({
-        name: `Product ${i + 1}`,
-        price: 50 + (i * 10),
-        image: `https://placehold.co/300x300?text=Product+${i + 1}`
-      }))
+      products: [
+        { name: 'Wireless Headphones', price: 89.99, image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Smart Watch', price: 199.99, image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Camera Lens', price: 349.99, image_url: 'https://images.unsplash.com/photo-1606318801954-d46d46d3360a?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Laptop', price: 1299.99, image_url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Smartphone', price: 799.99, image_url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Sunglasses', price: 149.99, image_url: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Sneakers', price: 119.99, image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop', in_stock: true },
+        { name: 'Backpack', price: 79.99, image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', in_stock: true }
+      ]
     },
 
     cart: {
