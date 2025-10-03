@@ -204,11 +204,12 @@ const ResizeWrapper = ({
         }));
       }
     }
-  }, [naturalSize.width, size.width]);
+  }, [disabled, naturalSize.width, size.width, children, className]);
 
   // Monitor parent size changes and auto-shrink text elements to prevent overflow
   useEffect(() => {
-    if (!isTextElement || !wrapperRef.current) return;
+    // Don't auto-shrink if resize is disabled
+    if (disabled || !isTextElement || !wrapperRef.current) return;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -257,7 +258,7 @@ const ResizeWrapper = ({
     return () => {
       observer.disconnect();
     };
-  }, [isTextElement, size.width, size.height, size.heightUnit, onResize]);
+  }, [disabled, isTextElement, size.width, size.height, size.heightUnit, onResize]);
 
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
