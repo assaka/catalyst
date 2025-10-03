@@ -916,6 +916,9 @@ const ProductItemsGrid = createSlotComponent({
                 className: finalClassName, // Use merged className
                 parentClassName: finalParentClassName, // Use merged parentClassName
                 styles: finalStyles, // Use merged styles
+                // CRITICAL: Use saved position and colSpan if available
+                position: savedSlotConfig?.position ?? slotConfig.position,
+                colSpan: savedSlotConfig?.colSpan ?? slotConfig.colSpan,
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Mark as styleOnly to prevent content editing (content comes from product data)
                 // Exception: buttons allow text editing but not full HTML
