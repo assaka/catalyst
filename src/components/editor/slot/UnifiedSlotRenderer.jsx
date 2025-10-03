@@ -250,7 +250,8 @@ export function UnifiedSlotRenderer({
         isDisabled,
         disableResize: slot.metadata?.disableResize,
         metadata: slot.metadata,
-        hasOnResize: !!onResize,
+        hasSetPageConfig: !!setPageConfig,
+        hasSaveConfiguration: !!saveConfiguration,
         minWidth,
         minHeight
       });
