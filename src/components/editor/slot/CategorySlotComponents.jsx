@@ -807,6 +807,12 @@ const ProductItemsGrid = createSlotComponent({
                 uniqueParentId = `${slotConfig.parentId}_product_${index}`;
               }
 
+              // Replace template variables in styles
+              const processedStyles = { ...slotConfig.styles };
+              if (slotConfig.styles?.backgroundColor?.includes('{{settings.theme.add_to_cart_button_color}}')) {
+                processedStyles.backgroundColor = '#3B82F6'; // Default blue
+              }
+
               productSlots[uniqueId] = {
                 ...slotConfig,
                 id: uniqueId,
@@ -817,10 +823,10 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                   ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
-                // Set width to auto for text slots, keep button width as-is
+                // Set width to auto for text slots, process button styles
                 styles: slotConfig.type === 'text'
-                  ? { ...slotConfig.styles, width: 'auto' }
-                  : slotConfig.styles,
+                  ? { ...processedStyles, width: 'auto' }
+                  : processedStyles,
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Also disable resize for text/button slots to prevent width issues
                 metadata: {
