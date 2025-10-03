@@ -266,39 +266,28 @@ export function UnifiedSlotRenderer({
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;
 
+          console.log(`📐 Resize: ${slot.id}`, {
+            width: `${newSize.width}${newSize.widthUnit || 'px'}`,
+            height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
+          });
+
           setPageConfig(prevConfig => {
             const updatedSlots = { ...prevConfig?.slots };
 
-            // CRITICAL: Create slot if it doesn't exist (for dynamically generated product card slots)
+            // CRITICAL: Create slot if it doesn't exist (for template slots not yet in config)
             if (!updatedSlots[slot.id]) {
-              console.log(`🆕 Creating new slot for resize: ${slot.id} (dynamically generated product card element)`);
-
-              // Extract parent ID from slot ID pattern (e.g., "product_card_name_product_0" -> "product_card_0")
-              let parentId = slot.parentId;
-              if (!parentId) {
-                const productMatch = slot.id.match(/^(.+)_product_(\d+)$/);
-                if (productMatch) {
-                  const productIndex = productMatch[2];
-                  parentId = `product_card_${productIndex}`;
-                }
-              }
-
+              console.log(`🆕 Creating new slot for resize: ${slot.id}`);
               updatedSlots[slot.id] = {
                 id: slot.id,
                 type: slot.type || 'text',
                 content: slot.content || '',
                 className: slot.className || '',
-                styles: slot.styles || {},
-                parentId: parentId, // Set parent ID to maintain hierarchy
+                styles: {},
+                parentId: slot.parentId,
                 metadata: {
-                  ...(slot.metadata || {}),
-                  styleOnly: true,
-                  readOnly: true,
-                  created: new Date().toISOString()
+                  ...(slot.metadata || {})
                 }
               };
-
-              console.log(`   ↳ Parent ID: ${parentId || 'none'}`);
             }
 
             // Save width for all elements when user manually resizes
