@@ -839,10 +839,12 @@ const ProductItemsGrid = createSlotComponent({
                     : processedStyles;
                 })(),
                 // Remove conditionalDisplay in editor mode so all slots are visible
+                // Disable resize for text/button/image slots to prevent width issues
                 // Mark as styleOnly to prevent content editing (content comes from product data)
                 metadata: {
                   ...slotConfig.metadata,
                   conditionalDisplay: undefined,
+                  disableResize: slotConfig.type === 'text' || slotConfig.type === 'button' || slotConfig.type === 'image',
                   styleOnly: true,
                   readOnly: true
                 }
