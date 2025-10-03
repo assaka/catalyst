@@ -623,10 +623,12 @@ const ResizeWrapper = ({
 
           return {
             ...stylesWithoutWidth,
+            // For text elements, always use fit-content (never apply saved width)
             // For elements with w-fit class that haven't been resized, use fit-content
             // For other elements, apply calculated width if available
             // Don't apply width if disabled
             ...(disabled ? {} :
+                isTextElement ? { width: 'fit-content' } :
                 hasWFitClass && size.width === 'auto' ? { width: 'fit-content' } :
                 (size.width !== 'auto' && size.widthUnit !== 'auto') ?
                 { width: `${size.width}${size.widthUnit || 'px'}` } : {}),
