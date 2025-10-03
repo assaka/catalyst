@@ -7,6 +7,7 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { SlotManager } from '@/utils/slotUtils';
 import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
+import { processVariables, getDemoVariableContext } from '@/utils/variableProcessor';
 
 // ===============================
 // UTILITY HOOKS FOR SLOT EDITORS
@@ -716,8 +717,25 @@ async function loadPageConfig(pageType) {
 // Helper function to create clean slots from config
 function createCleanSlots(config) {
   const cleanSlots = {};
+
+  // Get demo variable context for processing template variables
+  const variableContext = getDemoVariableContext();
+
   if (config.slots) {
     Object.entries(config.slots).forEach(([key, slot]) => {
+      // Process styles to replace template variables with actual values
+      const processedStyles = {};
+      if (slot.styles) {
+        Object.entries(slot.styles).forEach(([styleKey, styleValue]) => {
+          if (typeof styleValue === 'string') {
+            // Process any template variables in the style value
+            processedStyles[styleKey] = processVariables(styleValue, variableContext);
+          } else {
+            processedStyles[styleKey] = styleValue;
+          }
+        });
+      }
+
       // Only copy serializable properties, ensure no undefined values
       cleanSlots[key] = {
         id: slot.id || key,
@@ -726,7 +744,7 @@ function createCleanSlots(config) {
         content: slot.content || '',
         className: slot.className || '',
         parentClassName: slot.parentClassName || '',
-        styles: slot.styles ? { ...slot.styles } : {},
+        styles: processedStyles,
         parentId: slot.parentId === undefined ? null : slot.parentId,
         layout: slot.layout || null,
         gridCols: slot.gridCols || null,

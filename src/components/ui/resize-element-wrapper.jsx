@@ -44,12 +44,6 @@ const ResizeWrapper = ({
       if (match) {
         width = parseFloat(match[1]);
         widthUnit = match[2] || 'px';
-
-        // For buttons with percentage width, reset to auto to recalculate in pixels
-        if (isButton && widthUnit === '%') {
-          width = 'auto';
-          widthUnit = 'auto';
-        }
       }
     } else if (initialWidth) {
       widthUnit = hasWFitClass ? 'px' : '%';
@@ -176,15 +170,6 @@ const ResizeWrapper = ({
         // Check if element has w-fit class (should use pixels for natural sizing)
         const hasWFitClass = children?.props?.className?.includes('w-fit') || className?.includes('w-fit');
 
-        // Check if this is a button element - buttons should always use pixels
-        const isButton = children?.type === 'button' ||
-                        children?.props?.type === 'button' ||
-                        (children?.props?.className && (
-                          children.props.className.includes('btn') ||
-                          children.props.className.includes('button') ||
-                          children.props.className.includes('Add to Cart')
-                        ));
-
         setNaturalSize({ width: rect.width, height: rect.height });
 
         // For w-fit elements, don't set an initial width - let them size naturally
@@ -205,12 +190,11 @@ const ResizeWrapper = ({
           return; // Keep width as 'auto'
         }
 
-        const newWidth = isButton ? rect.width : Math.round(naturalPercentage * 10) / 10;
-        const newWidthUnit = isButton ? 'px' : '%';
+        const newWidth = Math.round(naturalPercentage * 10) / 10;
+        const newWidthUnit = '%';
 
         console.log('📏 ResizeWrapper: Setting initial size', {
           slotId: children?.props?.['data-slot-id'],
-          isButton,
           isTextElement,
           rectWidth: rect.width,
           naturalPercentage,
@@ -352,7 +336,6 @@ const ResizeWrapper = ({
       if (!hasSignificantMovement) return;
 
 
-      // For buttons and text, allow more generous horizontal expansion
       // Check if this is a button element that should have flexible width
       const isButton = isButtonElement(children);
       const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
@@ -362,11 +345,8 @@ const ResizeWrapper = ({
       const maxWidthFromViewport = maxAllowableRight - elementLeft;
 
       let maxAllowedWidth;
-      if (isButton && hasWFitClass) {
-        // For w-fit buttons, constrain to slot container with margin for slot borders
-        maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
-      } else if (isButton) {
-        // For regular buttons, constrain to slot container with margin for slot borders
+      if (isButton) {
+        // For buttons, constrain to slot container with margin for slot borders
         maxAllowedWidth = parentRect ? parentRect.width - 10 : maxWidthFromViewport;
       } else if (isTextElement) {
         // For text elements, prevent overflow when slot shrinks
@@ -394,18 +374,11 @@ const ResizeWrapper = ({
       let widthValue = newWidth;
       let widthUnit = 'px';
 
-      // For buttons, text elements, and w-fit elements, use pixel units
-      if (isButton || isTextElement || hasWFitClass) {
-        // Constrain button width to reasonable bounds, but allow text elements to resize freely
+      // For text elements and w-fit elements, use pixel units
+      if (isTextElement || hasWFitClass) {
+        // Text elements and w-fit elements can resize freely within viewport bounds
         const minWidth = 20;
-        if (isTextElement || hasWFitClass) {
-          // Text elements and w-fit elements can resize freely within viewport bounds
-          widthValue = Math.max(minWidth, newWidth);
-        } else {
-          // Buttons get constrained to 300px max
-          const maxWidth = 300;
-          widthValue = Math.max(minWidth, Math.min(maxWidth, newWidth));
-        }
+        widthValue = Math.max(minWidth, newWidth);
         widthUnit = 'px';
       } else if (parentRect && parentRect.width > 0) {
         // For other elements, persist percentage-based sizing during resize
