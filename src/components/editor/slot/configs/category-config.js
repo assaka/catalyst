@@ -333,7 +333,7 @@ export const categoryConfig = {
       id: 'product_card_template',
       type: 'container',
       content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card grid grid-cols-12 gap-2',
       parentClassName: '',
       styles: {},
       parentId: 'product_items',
@@ -343,7 +343,8 @@ export const categoryConfig = {
       metadata: {
         hierarchical: true,
         isTemplate: true,
-        displayName: 'Product Card Template'
+        displayName: 'Product Card Template',
+        isGridContainer: true
       }
     },
 

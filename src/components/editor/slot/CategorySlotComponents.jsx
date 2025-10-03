@@ -800,9 +800,13 @@ const ProductItemsGrid = createSlotComponent({
             productSlots[productCardId] = {
               ...productCardTemplate,
               id: productCardId,
+              type: 'container', // Make it a container type for proper grid rendering
               parentId: 'product_items',
+              colSpan: { grid: 1, list: 1 }, // Each card takes 1 column in the grid
+              position: { col: index + 1, row: 1 },
               metadata: {
                 ...productCardTemplate?.metadata,
+                hierarchical: true, // Enable child slot rendering
                 isProductCard: true,
                 productIndex: index
               }
@@ -913,32 +917,26 @@ const ProductItemsGrid = createSlotComponent({
             });
 
             console.log('🔍 Product', index, 'using template slots:', Object.keys(productSlots));
-            console.log('🔍 Add to cart slot:', productSlots['product_card_add_to_cart']);
+            console.log('🔍 Add to cart slot:', productSlots[`product_card_add_to_cart_${index}`]);
             console.log('🔍 Product in_stock:', product.in_stock);
 
+            // Render the product card as a container slot with its children
             return (
-              <div
+              <UnifiedSlotRenderer
                 key={`product-${index}`}
-                data-slot-id={productCardId}
-                className={productCardTemplate?.className || 'border-2 border-dashed border-gray-300 rounded-lg p-4'}
-                style={{ ...productCardTemplate?.styles, overflow: 'visible' }}
-              >
-                {/* Render each child slot using UnifiedSlotRenderer with edit mode */}
-                <UnifiedSlotRenderer
-                  slots={productSlots}
-                  parentId={productCardId}
-                  context={context}
-                  categoryData={{ ...categoryContext, product }}
-                  productData={product}
-                  variableContext={{ ...variableContext, product }}
-                  mode="edit"
-                  showBorders={true}
-                  viewMode="grid"
-                  onElementClick={onElementClick}
-                  setPageConfig={setPageConfig}
-                  saveConfiguration={saveConfiguration}
-                />
-              </div>
+                slots={productSlots}
+                parentId="product_items"
+                context={context}
+                categoryData={{ ...categoryContext, product }}
+                productData={product}
+                variableContext={{ ...variableContext, product }}
+                mode="edit"
+                showBorders={true}
+                viewMode="grid"
+                onElementClick={onElementClick}
+                setPageConfig={setPageConfig}
+                saveConfiguration={saveConfiguration}
+              />
             );
           })}
         </div>
