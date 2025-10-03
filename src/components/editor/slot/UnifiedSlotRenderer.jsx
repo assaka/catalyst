@@ -485,8 +485,11 @@ export function UnifiedSlotRenderer({
         imageSrc = getProductImageUrl(productData.product, productData.activeImageIndex || 0);
       }
 
-      // Fallback image
-      if (!imageSrc || imageSrc === 'product-main-image') {
+      // Fallback image for empty, placeholder, or unprocessed template variables
+      if (!imageSrc ||
+          imageSrc === 'product-main-image' ||
+          imageSrc.includes('{{') ||
+          imageSrc.includes('}}')) {
         imageSrc = context === 'storefront' ?
           getProductImageUrl(productData.product) :
           'https://placehold.co/400x400?text=Product+Image';
