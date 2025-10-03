@@ -1528,31 +1528,6 @@ const EditorSidebar = ({
         </SectionHeader>
         )}
 
-        {/* Grid Layout Section - hide for styleOnly/readOnly slots */}
-        {!slotConfig?.metadata?.styleOnly && !slotConfig?.metadata?.readOnly && allSlots['product_items'] && (
-          <SectionHeader title="Product Grid Layout" section="grid">
-            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-              <strong>Product Grid Configuration</strong><br/>
-              Configure how products are displayed across different devices. This only affects the product grid layout.
-            </div>
-            <GridLayoutControl
-              currentConfig={allSlots['product_items']?.metadata?.gridConfig || { mobile: 1, tablet: 2, desktop: 3 }}
-              onConfigChange={(newGridConfig) => {
-                // Update product_items slot configuration with new grid config
-                if (onClassChange) {
-                  const productItemsSlot = allSlots['product_items'];
-                  const newMetadata = {
-                    ...productItemsSlot?.metadata,
-                    gridConfig: newGridConfig
-                  };
-                  onClassChange('product_items', productItemsSlot?.className || '', productItemsSlot?.styles || {}, newMetadata);
-                } else {
-                  console.error('❌ No onClassChange handler available!');
-                }
-              }}
-            />
-          </SectionHeader>
-        )}
 
             {/* Size Section - hide for styleOnly/readOnly slots */}
             {!slotConfig?.metadata?.styleOnly && !slotConfig?.metadata?.readOnly && (

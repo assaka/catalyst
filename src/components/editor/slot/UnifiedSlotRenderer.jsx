@@ -626,7 +626,19 @@ export function UnifiedSlotRenderer({
           allSlots: slots,
           onElementClick,
           setPageConfig,
-          saveConfiguration
+          saveConfiguration,
+          // Pass grid editing props for nested components
+          onGridResize,
+          onSlotDrop,
+          onSlotDelete,
+          onSlotHeightResize,
+          onResizeStart,
+          onResizeEnd,
+          currentDragInfo,
+          setCurrentDragInfo,
+          selectedElementId,
+          showBorders,
+          mode
         });
       }
 
