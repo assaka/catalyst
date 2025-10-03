@@ -719,7 +719,30 @@ const ProductCountInfo = createSlotComponent({
 // Product Items Grid - Renders with dynamic grid from admin settings
 const ProductItemsGrid = createSlotComponent({
   name: 'ProductItemsGrid',
-  render: ({ slot, className, styles, context, categoryContext, variableContext, allSlots, onElementClick, setPageConfig, saveConfiguration }) => {
+  render: ({
+    slot,
+    className,
+    styles,
+    context,
+    categoryContext,
+    variableContext,
+    allSlots,
+    onElementClick,
+    setPageConfig,
+    saveConfiguration,
+    // Editor grid props
+    onGridResize,
+    onSlotDrop,
+    onSlotDelete,
+    onSlotHeightResize,
+    onResizeStart,
+    onResizeEnd,
+    currentDragInfo,
+    setCurrentDragInfo,
+    selectedElementId,
+    showBorders,
+    mode
+  }) => {
     const containerRef = useRef(null);
 
     if (context === 'editor') {
@@ -930,12 +953,22 @@ const ProductItemsGrid = createSlotComponent({
                 categoryData={{ ...categoryContext, product }}
                 productData={product}
                 variableContext={{ ...variableContext, product }}
-                mode="edit"
-                showBorders={true}
+                mode={mode || "edit"}
+                showBorders={showBorders !== undefined ? showBorders : true}
                 viewMode="grid"
                 onElementClick={onElementClick}
                 setPageConfig={setPageConfig}
                 saveConfiguration={saveConfiguration}
+                // Pass grid editing props for draggable functionality
+                onGridResize={onGridResize}
+                onSlotDrop={onSlotDrop}
+                onSlotDelete={onSlotDelete}
+                onSlotHeightResize={onSlotHeightResize}
+                onResizeStart={onResizeStart}
+                onResizeEnd={onResizeEnd}
+                currentDragInfo={currentDragInfo}
+                setCurrentDragInfo={setCurrentDragInfo}
+                selectedElementId={selectedElementId}
               />
             );
           })}
