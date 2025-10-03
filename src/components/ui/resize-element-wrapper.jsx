@@ -478,17 +478,18 @@ const ResizeWrapper = ({
           // Apply size directly to the button element - always use calculated width if available
           // Don't apply width if disabled
           ...widthStyle,
-        ...(size.height !== 'auto' && size.height && {
-          minHeight: `${size.height}${size.heightUnit || 'px'}`,
-          height: `${size.height}${size.heightUnit || 'px'}`
-        }),
-        boxSizing: 'border-box',
-        border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
-        transition: 'border-color 0.2s ease-in-out',
-        position: 'relative',
-        // Ensure button displays properly during resize
-        display: children.props.style?.display || 'inline-block'
-      },
+          ...(size.height !== 'auto' && size.height && {
+            minHeight: `${size.height}${size.heightUnit || 'px'}`,
+            height: `${size.height}${size.heightUnit || 'px'}`
+          }),
+          boxSizing: 'border-box',
+          border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
+          transition: 'border-color 0.2s ease-in-out',
+          position: 'relative',
+          // Ensure button displays properly during resize
+          display: children.props.style?.display || 'inline-block'
+        };
+      })(),
       onMouseEnter: (e) => {
         if (!disabled) {
           setIsHovered(true);
