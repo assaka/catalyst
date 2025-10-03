@@ -1497,6 +1497,7 @@ const EditorSidebar = ({
             )}
           </div>
         </SectionHeader>
+        )}
 
         {/* Grid Layout Section - Only show when product_items slot exists and we're working on product-related content */}
         {allSlots['product_items'] && (
