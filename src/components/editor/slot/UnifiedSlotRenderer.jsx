@@ -244,6 +244,18 @@ export function UnifiedSlotRenderer({
 
     const isDisabled = slot.metadata?.disableResize || false;
 
+    // Debug logging for product card slots
+    if (slot.id?.includes('product_') && context === 'editor') {
+      console.log(`🔧 ResizeWrapper for ${slot.id}:`, {
+        isDisabled,
+        disableResize: slot.metadata?.disableResize,
+        metadata: slot.metadata,
+        hasOnResize: !!onResize,
+        minWidth,
+        minHeight
+      });
+    }
+
     return (
       <ResizeWrapper
         minWidth={minWidth}

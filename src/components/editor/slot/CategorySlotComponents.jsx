@@ -848,11 +848,13 @@ const ProductItemsGrid = createSlotComponent({
                 styles: finalStyles, // Use merged styles
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Mark as styleOnly to prevent content editing (content comes from product data)
+                // CRITICAL: Merge saved metadata to preserve disableResize and other settings
                 metadata: {
                   ...slotConfig.metadata,
-                  conditionalDisplay: undefined,
-                  styleOnly: true,
-                  readOnly: true
+                  ...(savedSlotConfig?.metadata || {}), // Merge saved metadata
+                  conditionalDisplay: undefined, // Always remove conditionalDisplay in editor
+                  styleOnly: true, // Always mark as styleOnly
+                  readOnly: true // Always mark as readOnly
                 }
               };
 
