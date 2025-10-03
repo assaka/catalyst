@@ -25,7 +25,8 @@ const ProductItemCard = ({
   slotConfig = {},
   onAddToCartStateChange = null,
   isAddingToCart = false,
-  isEditorMode = false
+  isEditorMode = false,
+  onElementClick = null
 }) => {
   // Local state for add to cart if not managed externally
   const [localIsAddingToCart, setLocalIsAddingToCart] = useState(false);
@@ -269,21 +270,35 @@ const ProductItemCard = ({
     }
   };
 
+  // Handle slot clicks in editor mode
+  const handleSlotClick = (e, slotId) => {
+    if (isEditorMode && onElementClick) {
+      e.preventDefault();
+      e.stopPropagation();
+      onElementClick(slotId, e.currentTarget);
+    }
+  };
+
   return (
     <Card
       className={templateConfig.className || `group overflow-hidden ${className} ${viewMode === 'list' ? 'flex' : ''}`}
       style={templateConfig.styles || {}}
       data-product-card={isEditorMode ? 'editable' : undefined}
+      data-slot-id={isEditorMode ? 'product_card_template' : undefined}
+      onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_template') : undefined}
     >
       <CardContent className="p-0">
-        <Link to={createProductUrl(store.slug, product.slug)}>
-          <div className={imageConfig.parentClassName || "relative"}>
+        <Link to={createProductUrl(store.slug, product.slug)} onClick={isEditorMode ? (e) => e.preventDefault() : undefined}>
+          <div
+            className={imageConfig.parentClassName || "relative"}
+            data-slot-id={isEditorMode ? 'product_card_image' : undefined}
+            onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_image') : undefined}
+          >
             <img
               src={getPrimaryImageUrl(product.images) || '/placeholder-product.jpg'}
               alt={product.name}
               className={imageConfig.className || `w-full ${viewMode === 'list' ? 'h-32' : 'h-48'} object-cover transition-transform duration-300 group-hover:scale-105`}
               style={imageConfig.styles || {}}
-              data-slot-id={isEditorMode ? 'product_card_image' : undefined}
             />
             {/* Product labels */}
             {renderProductLabels()}
@@ -294,8 +309,9 @@ const ProductItemCard = ({
             className={nameConfig.className || "font-semibold text-lg truncate mt-1"}
             style={nameConfig.styles || {}}
             data-slot-id={isEditorMode ? 'product_card_name' : undefined}
+            onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_name') : undefined}
           >
-            <Link to={createProductUrl(store.slug, product.slug)}>{product.name}</Link>
+            <Link to={createProductUrl(store.slug, product.slug)} onClick={isEditorMode ? (e) => e.preventDefault() : undefined}>{product.name}</Link>
           </h3>
 
           {viewMode === 'list' && product.description && (
@@ -306,7 +322,11 @@ const ProductItemCard = ({
 
           <div className="space-y-3 mt-4">
             {/* Price display */}
-            <div className="flex items-baseline gap-2" data-slot-id={isEditorMode ? 'product_card_price_container' : undefined}>
+            <div
+              className="flex items-baseline gap-2"
+              data-slot-id={isEditorMode ? 'product_card_price_container' : undefined}
+              onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price_container') : undefined}
+            >
               {(() => {
                 console.log('💰 Price Debug:', {
                   product_id: product.id,
@@ -326,6 +346,7 @@ const ProductItemCard = ({
                     className={priceConfig.className || "font-bold text-red-600 text-xl"}
                     style={priceConfig.styles || {}}
                     data-slot-id={isEditorMode ? 'product_card_price' : undefined}
+                    onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                   >
                     {formatDisplayPrice(
                       Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
@@ -339,6 +360,7 @@ const ProductItemCard = ({
                     className={comparePriceConfig.className || "text-gray-500 line-through text-sm"}
                     style={comparePriceConfig.styles || {}}
                     data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
+                    onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_compare_price') : undefined}
                   >
                     {formatDisplayPrice(
                       Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
@@ -354,6 +376,7 @@ const ProductItemCard = ({
                   className={priceConfig.className || "font-bold text-xl text-gray-900"}
                   style={priceConfig.styles || {}}
                   data-slot-id={isEditorMode ? 'product_card_price' : undefined}
+                  onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                 >
                   {formatDisplayPrice(
                     parseFloat(product.price || 0),
@@ -368,8 +391,8 @@ const ProductItemCard = ({
 
             {/* Add to Cart Button */}
             <Button
-              onClick={handleAddToCart}
-              disabled={addingToCart}
+              onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_add_to_cart') : handleAddToCart}
+              disabled={addingToCart && !isEditorMode}
               className={addToCartConfig.className || "w-full text-white border-0 hover:brightness-90 transition-all duration-200"}
               size="sm"
               style={{

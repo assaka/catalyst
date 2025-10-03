@@ -191,6 +191,7 @@ const categoryCustomSlotRenderer = (slot, context) => {
               slotConfig={productCardSlots}
               onAddToCartStateChange={() => {}}
               isEditorMode={true}
+              onElementClick={context?.onElementClick}
             />
           ))}
         </div>
@@ -447,6 +448,7 @@ const categoryCustomSlotRenderer = (slot, context) => {
             slotConfig={productCardSlots}
             onAddToCartStateChange={() => {}}
             isEditorMode={true}
+            onElementClick={context?.onElementClick}
           />
         ))}
       </div>

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
@@ -21,9 +20,6 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
     const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
-    const [hoveredCategory, setHoveredCategory] = useState(null);
-    const [dropdownPosition, setDropdownPosition] = useState(null);
-    const categoryRefs = useRef({});
 
     // Extract styles from slot configuration
     const linkStyles = {
@@ -854,34 +850,8 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     {rootCategories.map(category => {
                         if (category.children && category.children.length > 0) {
-                            const isHovered = hoveredCategory === category.id;
-
-                            const handleMouseEnter = (e) => {
-                                console.log('🔥 Category hover:', category.name, 'ID:', category.id, 'Children:', category.children?.length);
-                                setHoveredCategory(category.id);
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const position = {
-                                    top: rect.bottom,
-                                    left: rect.left,
-                                    categoryId: category.id
-                                };
-                                console.log('📍 Dropdown position:', position);
-                                setDropdownPosition(position);
-                            };
-
-                            const handleMouseLeave = () => {
-                                setHoveredCategory(null);
-                                setDropdownPosition(null);
-                            };
-
                             return (
-                                <div
-                                    key={category.id}
-                                    className="relative group"
-                                    ref={el => categoryRefs.current[category.id] = el}
-                                    onMouseEnter={handleMouseEnter}
-                                    onMouseLeave={handleMouseLeave}
-                                >
+                                <div key={category.id} className="relative group">
                                     <Link
                                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
                                         className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
@@ -889,17 +859,10 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         {category.name}
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
-                                    {/* Submenu rendered in portal - TEST ALWAYS VISIBLE */}
-                                    {category.id === 1 && createPortal(
-                                        <div
-                                            className="fixed w-64 border border-gray-200 rounded-md shadow-lg z-[9999] bg-red-500"
-                                            style={{
-                                                top: '100px',
-                                                left: '100px'
-                                            }}
-                                            onMouseEnter={() => setHoveredCategory(category.id)}
-                                            onMouseLeave={handleMouseLeave}
-                                        >
+                                    {/* Submenu visible on hover */}
+                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                                        style={{ backgroundColor: subcategoryBgColor }}
+                                    >
                                         <div>
                                             <Link
                                                 to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
@@ -917,8 +880,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                                 View All {category.name}
                                             </Link>
                                             {(() => {
-
-                                return expandAllMenuItems ? 
+                                return expandAllMenuItems ?
                                     // Show all children recursively with indentation when expandAllMenuItems = true
                                     category.children.map(child => renderDesktopSubmenuItem(child, 0))
                                     :
@@ -926,9 +888,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                     category.children.map(child => renderDirectChildrenOnly(child, 0))
                             })()}
                                         </div>
-                                        </div>,
-                                        document.body
-                                    )}
+                                    </div>
                                 </div>
                             );
                         } else {
