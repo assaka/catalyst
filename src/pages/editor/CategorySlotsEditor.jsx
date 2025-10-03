@@ -153,10 +153,12 @@ const categoryCustomSlotRenderer = (slot, context) => {
       );
     }
 
-    // ProductItemsGrid component - this is NOT used, product_items slot will handle it
+    // ProductItemsGrid component - let ComponentRegistry handle it
+    // The registered ProductItemsGrid component in CategorySlotComponents.jsx
+    // will create individual slot containers for each product
     if (componentName === 'ProductItemsGrid') {
-      console.log('🛒 ProductItemsGrid component handler - delegating to product_items slot');
-      return undefined; // Let product_items slot handle rendering
+      console.log('🛒 ProductItemsGrid - letting ComponentRegistry handle rendering');
+      return undefined; // Pass through to ComponentRegistry
     }
 
     // ActiveFilters component
@@ -365,47 +367,11 @@ const categoryCustomSlotRenderer = (slot, context) => {
     return null;
   }
 
-  // Handle product_items - render grid with separate product slot containers
+  // Don't handle product_items - let ComponentRegistry ProductItemsGrid handle it
+  // This ensures storefront and editor use the same rendering logic
   if (slot.id === 'product_items') {
-    console.log('🛍️ PRODUCT_ITEMS: Rendering grid with separate product slots');
-
-    // Calculate how many products to show based on grid config
-    const gridConfig = storeSettings?.product_grid;
-    const maxColumns = gridConfig?.breakpoints ? Math.max(...Object.values(gridConfig.breakpoints).filter(v => v > 0)) : 3;
-    const rows = gridConfig?.rows || 2;
-    const productsToShow = maxColumns * rows;
-
-    // Load products based on calculated amount
-    const products = sampleCategoryContext?.products?.slice(0, productsToShow) || [];
-    console.log('🛍️ Rendering', products.length, 'separate product slot containers');
-
-    if (products.length === 0) {
-      return <div className="p-8 text-center text-gray-500">No products available to display</div>;
-    }
-
-    // Render grid with separate product slot containers
-    return (
-      <div className={`grid ${getGridClasses(storeSettings)} gap-4`}>
-        {products.map((product, index) => (
-          <div
-            key={product.id}
-            data-slot-id={`product_slot_${index}`}
-            className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50/30 hover:border-blue-400 hover:bg-blue-50/50 transition-colors cursor-pointer min-h-[300px] flex flex-col items-center justify-center"
-            onClick={(e) => {
-              if (context?.onElementClick) {
-                context.onElementClick(`product_slot_${index}`, e.currentTarget);
-              }
-            }}
-          >
-            <div className="text-center text-gray-500">
-              <div className="text-sm font-medium mb-2">Product Slot {index + 1}</div>
-              <div className="text-xs text-gray-400">{product.name}</div>
-              <div className="text-xs text-gray-400 mt-1">Click to edit</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    console.log('🛍️ PRODUCT_ITEMS: Passing through to ComponentRegistry');
+    return undefined; // Let ComponentRegistry handle it
   }
 
   // Handle individual product_item_card if needed (fallback for individual card rendering)
