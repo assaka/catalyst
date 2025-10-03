@@ -1021,35 +1021,42 @@ const EditorSidebar = ({
       return;
     }
 
-    // Find the content element that has the styling classes (same logic as initialization)
+    // Find the actual content element (button, text, etc.) - not wrappers
+    // CRITICAL: Must find the actual semantic element, not ResizeWrapper or other wrappers
     const findContentElement = (element) => {
-      if (element.hasAttribute('data-slot-id')) {
-        // Look for element with stored classes first
-        const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
-        const storedClassName = elementSlotConfig?.className || '';
-
-        if (storedClassName) {
-          const storedClasses = storedClassName.split(' ').filter(Boolean);
-          for (const child of element.children) {
-            if (child.className) {
-              const childClasses = child.className.split(' ').filter(Boolean);
-              const hasStoredClasses = storedClasses.some(cls => childClasses.includes(cls));
-              if (hasStoredClasses) {
-                return child;
-              }
-            }
-          }
-        }
-
-        // Fallback: Look for element with inline styles
-        for (const child of element.children) {
-          if (child.style && child.style.length > 0) {
-            return child;
-          }
-        }
-
-        return element.children[0] || element;
+      // If element has data-slot-id AND data-editable, it's the actual content element
+      if (element.hasAttribute('data-slot-id') && element.hasAttribute('data-editable')) {
+        return element;
       }
+
+      // If element is a button, it's the actual content element
+      if (element.tagName?.toLowerCase() === 'button') {
+        return element;
+      }
+
+      // Look for child with data-slot-id AND data-editable (the actual content)
+      const contentChild = element.querySelector('[data-slot-id][data-editable]');
+      if (contentChild) {
+        return contentChild;
+      }
+
+      // Look for button child (for button slots wrapped in ResizeWrapper)
+      const buttonChild = element.querySelector('button');
+      if (buttonChild) {
+        return buttonChild;
+      }
+
+      // Look for text element children (h1-h6, p, span) with data-slot-id
+      const textElement = element.querySelector('h1[data-slot-id], h2[data-slot-id], h3[data-slot-id], h4[data-slot-id], h5[data-slot-id], h6[data-slot-id], p[data-slot-id], span[data-slot-id]');
+      if (textElement) {
+        return textElement;
+      }
+
+      // Fallback to the element itself if it has data-slot-id
+      if (element.hasAttribute('data-slot-id')) {
+        return element;
+      }
+
       return element;
     };
 

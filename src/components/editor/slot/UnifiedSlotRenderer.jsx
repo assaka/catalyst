@@ -461,7 +461,18 @@ export function UnifiedSlotRenderer({
       } else {
         // Editor: Visual preview only
         const buttonElement = (
-          <button className={processedClassName} style={styles}>
+          <button
+            className={processedClassName}
+            style={styles}
+            data-slot-id={id}
+            data-editable="true"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onElementClick) {
+                onElementClick(id, e.currentTarget);
+              }
+            }}
+          >
             {isHtmlContent ? (
               <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
             ) : (

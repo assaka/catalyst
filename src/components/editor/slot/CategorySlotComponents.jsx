@@ -885,7 +885,7 @@ const ProductItemsGrid = createSlotComponent({
                 key={`product-${index}`}
                 data-slot-id={`product_card_${index}`}
                 className={productCardTemplate?.className || 'border-2 border-dashed border-gray-300 rounded-lg p-4'}
-                style={productCardTemplate?.styles || {}}
+                style={{ ...productCardTemplate?.styles, overflow: 'visible' }}
               >
                 {/* Render each child slot using UnifiedSlotRenderer with edit mode */}
                 <UnifiedSlotRenderer
