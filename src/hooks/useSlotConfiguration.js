@@ -1436,18 +1436,32 @@ export function useSlotConfiguration({
     // CRITICAL: Create slot if it doesn't exist (for dynamically generated product card slots)
     if (!updatedSlots[slotId]) {
       console.log(`🆕 Creating new slot for ${slotId} (dynamically generated product card element)`);
+
+      // Extract parent ID from slot ID pattern (e.g., "product_card_name_product_0" -> "product_card_0")
+      let parentId = null;
+      const productMatch = slotId.match(/^(.+)_product_(\d+)$/);
+      if (productMatch) {
+        const baseSlotId = productMatch[1]; // e.g., "product_card_name"
+        const productIndex = productMatch[2]; // e.g., "0"
+        // Parent should be "product_card_0" for all product card child slots
+        parentId = `product_card_${productIndex}`;
+      }
+
       updatedSlots[slotId] = {
         id: slotId,
         type: 'text', // Default to text type for product card elements
         content: '',
         className: '',
         styles: {},
+        parentId: parentId, // Set parent ID to maintain hierarchy
         metadata: {
           styleOnly: true,
           readOnly: true,
           created: new Date().toISOString()
         }
       };
+
+      console.log(`   ↳ Parent ID: ${parentId || 'none'}`);
     }
 
     // Merge existing styles with new styles

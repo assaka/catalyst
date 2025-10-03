@@ -798,6 +798,9 @@ const ProductItemsGrid = createSlotComponent({
             Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
               const uniqueId = `${slotId}_product_${index}`;
 
+              // CRITICAL: Check if this slot has saved customizations in allSlots
+              const savedSlotConfig = allSlots[uniqueId];
+
               // Preserve parent hierarchy - if parent was 'product_card_template', use product card
               // Otherwise, use the unique parent ID
               let uniqueParentId;
@@ -810,7 +813,7 @@ const ProductItemsGrid = createSlotComponent({
               // Replace template variables in styles
               const processedStyles = {};
 
-              // Process each style property
+              // Process each style property from template
               if (slotConfig.styles) {
                 Object.entries(slotConfig.styles).forEach(([key, value]) => {
                   if (typeof value === 'string' && value.includes('{{settings.theme.add_to_cart_button_color}}')) {
@@ -820,6 +823,15 @@ const ProductItemsGrid = createSlotComponent({
                   }
                 });
               }
+
+              // CRITICAL: Merge saved styles with template styles (saved styles take precedence)
+              const finalStyles = savedSlotConfig
+                ? { ...processedStyles, ...savedSlotConfig.styles }
+                : processedStyles;
+
+              // CRITICAL: Use saved className if available, otherwise use template className
+              const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
+              const finalParentClassName = savedSlotConfig?.parentClassName ?? slotConfig.parentClassName;
 
               productSlots[uniqueId] = {
                 ...slotConfig,
@@ -831,7 +843,9 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                   ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
-                styles: processedStyles,
+                className: finalClassName, // Use merged className
+                parentClassName: finalParentClassName, // Use merged parentClassName
+                styles: finalStyles, // Use merged styles
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Mark as styleOnly to prevent content editing (content comes from product data)
                 metadata: {
@@ -841,6 +855,14 @@ const ProductItemsGrid = createSlotComponent({
                   readOnly: true
                 }
               };
+
+              // Log when we find saved customizations
+              if (savedSlotConfig) {
+                console.log(`✨ Restored saved customization for ${uniqueId}:`, {
+                  savedClassName: savedSlotConfig.className,
+                  savedStyles: savedSlotConfig.styles
+                });
+              }
             });
 
             console.log('🔍 Product', index, 'editable slots:', Object.keys(productSlots));
