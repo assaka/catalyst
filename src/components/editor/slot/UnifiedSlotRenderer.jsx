@@ -242,11 +242,20 @@ export function UnifiedSlotRenderer({
       return element;
     }
 
+    const isDisabled = slot.metadata?.disableResize || false;
+    console.log('🔧 wrapWithResize:', {
+      slotId: slot.id,
+      slotType: slot.type,
+      disableResize: slot.metadata?.disableResize,
+      isDisabled,
+      metadata: slot.metadata
+    });
+
     return (
       <ResizeWrapper
         minWidth={minWidth}
         minHeight={minHeight}
-        disabled={slot.metadata?.disableResize || false}
+        disabled={isDisabled}
         hideBorder={selectedElementId === slot.id}
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;

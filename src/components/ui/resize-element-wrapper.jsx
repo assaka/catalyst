@@ -131,9 +131,20 @@ const ResizeWrapper = ({
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
     // Don't calculate width if resize is disabled
-    if (disabled) return;
+    if (disabled) {
+      console.log('🚫 ResizeWrapper: Disabled, skipping width calculation', {
+        disabled,
+        children: children?.props?.['data-slot-id']
+      });
+      return;
+    }
 
     if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
+      console.log('📏 ResizeWrapper: Calculating initial width', {
+        disabled,
+        slotId: children?.props?.['data-slot-id'],
+        type: children?.type
+      });
       const rect = wrapperRef.current.getBoundingClientRect();
       
       // Find parent slot container
@@ -446,13 +457,26 @@ const ResizeWrapper = ({
         "resize-none select-none relative group",
         isResizing && "cursor-se-resize"
       ),
-      style: {
-        ...children.props.style,
-        // Apply size directly to the button element - always use calculated width if available
-        // Don't apply width if disabled
-        ...(!disabled && (size.width !== 'auto' && size.widthUnit !== 'auto') ?
+      style: (() => {
+        const widthStyle = !disabled && (size.width !== 'auto' && size.widthUnit !== 'auto') ?
           { width: `${size.width}${size.widthUnit || 'px'}` } :
-          hasWFitClass ? { width: 'fit-content' } : {}),
+          hasWFitClass ? { width: 'fit-content' } : {};
+
+        console.log('🎨 ResizeWrapper Button Style:', {
+          disabled,
+          slotId: children?.props?.['data-slot-id'],
+          sizeWidth: size.width,
+          sizeWidthUnit: size.widthUnit,
+          hasWFitClass,
+          appliedWidth: widthStyle.width,
+          originalStyle: children.props.style
+        });
+
+        return {
+          ...children.props.style,
+          // Apply size directly to the button element - always use calculated width if available
+          // Don't apply width if disabled
+          ...widthStyle,
         ...(size.height !== 'auto' && size.height && {
           minHeight: `${size.height}${size.heightUnit || 'px'}`,
           height: `${size.height}${size.heightUnit || 'px'}`
