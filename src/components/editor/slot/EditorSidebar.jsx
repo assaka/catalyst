@@ -1289,22 +1289,35 @@ const EditorSidebar = ({
           // Cursor styles from wrapper
           if (['cursor'].includes(styleProp)) return true;
 
+          // ResizeWrapper styles (border, transition, etc.)
+          if (styleProp.startsWith('border') && !styleProp.includes('Radius')) return true;
+          if (styleProp.startsWith('transition')) return true;
+
+          // Positioning from wrapper
+          if (['position', 'display', 'boxSizing', 'box-sizing'].includes(styleProp)) return true;
+
           return false;
         };
 
         const saveStyles = { ...currentInlineStyles, [property]: formattedValue };
 
-        // Remove all wrapper styles
+        // Remove all wrapper styles and kebab-case duplicates
         Object.keys(saveStyles).forEach(styleProp => {
           if (isWrapperStyle(styleProp)) {
             delete saveStyles[styleProp];
           }
+          // Remove kebab-case properties (background-color, border-radius, etc.)
+          // Keep camelCase versions only (backgroundColor, borderRadius, etc.)
+          if (styleProp.includes('-')) {
+            delete saveStyles[styleProp];
+          }
         });
 
-        // Include auto-set border properties in save data
+        // Include auto-set border properties in save data (these were explicitly removed earlier)
         if (property === 'borderWidth' && parseInt(formattedValue) > 0) {
-          saveStyles.borderStyle = targetElement.style.borderStyle;
-          saveStyles.borderColor = targetElement.style.borderColor;
+          // Re-add these specific border properties since they're user-set
+          if (!saveStyles.borderStyle) saveStyles.borderStyle = targetElement.style.borderStyle;
+          if (!saveStyles.borderColor) saveStyles.borderColor = targetElement.style.borderColor;
         }
 
         onInlineClassChange(elementSlotId, classNameForSave, saveStyles); // Use filtered className
