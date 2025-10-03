@@ -87,7 +87,7 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
       } else if (slot.id === 'original_price') {
         textContent = '<span data-original-price class="original-price">$129.99</span>';
       }
-      // Skip placeholder for compare_price (conditionally displayed)
+      // Skip rendering for compare_price (conditionally displayed)
     } else if (slot.id === 'product_labels') {
       // Show example labels in editor
       textContent = '<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">Sale</span><span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">New</span>';
@@ -97,6 +97,11 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     }
   } else if (!processedContent && !conditionalSlots.includes(slot.id) && !hasConditionalDisplay) {
     textContent = '[Text placeholder]';
+  }
+
+  // Skip rendering entirely if empty and conditional
+  if (!textContent && (hasConditionalDisplay || conditionalSlots.includes(slot.id))) {
+    return null;
   }
 
   // Check if metadata specifies an HTML tag
@@ -401,6 +406,11 @@ export function UnifiedSlotRenderer({
         const hasConditionalDisplay = metadata?.conditionalDisplay;
         const conditionalSlots = ['product_labels', 'product_card_compare_price'];
         const shouldShowPlaceholder = !processedContent && !hasConditionalDisplay && !conditionalSlots.includes(id);
+
+        // Skip rendering entirely if empty and conditional
+        if (!processedContent && (hasConditionalDisplay || conditionalSlots.includes(id))) {
+          return null;
+        }
 
         const textElement = React.createElement(
           HtmlTag,
