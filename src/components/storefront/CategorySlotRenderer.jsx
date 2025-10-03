@@ -365,7 +365,8 @@ export function CategorySlotRenderer({
           }
         : {
             ...categoryContext,
-            slots
+            slots,
+            allSlots: slots // Pass allSlots to all components, not just breadcrumbs
           };
 
       // Use the registered component's render method
@@ -377,13 +378,23 @@ export function CategorySlotRenderer({
           });
         }
 
+        if (id === 'product_items') {
+          console.log('🔍 ProductItemsGrid - categoryContext:', {
+            hasProducts: !!categoryContext?.products,
+            productsLength: categoryContext?.products?.length,
+            hasAllSlots: !!slots,
+            allSlotsKeys: slots ? Object.keys(slots).slice(0, 20) : []
+          });
+        }
+
         const result = registeredComponent.render({
           slot,
           categoryContext: contextToPass,
           variableContext,
           context: 'storefront',
           className,
-          styles
+          styles,
+          allSlots: slots // Also pass allSlots as a direct prop
         });
         console.log('🔍 registeredComponent.render returned:', !!result);
         return result;

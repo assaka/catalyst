@@ -987,6 +987,16 @@ const ProductItemsGrid = createSlotComponent({
     // Get products from categoryContext
     const rawProducts = categoryContext?.products || variableContext?.products || [];
 
+    console.log('🔍 ProductItemsGrid STOREFRONT - Data received:', {
+      hasCategoryContext: !!categoryContext,
+      categoryContextProducts: categoryContext?.products?.length,
+      variableContextProducts: variableContext?.products?.length,
+      rawProductsLength: rawProducts.length,
+      hasAllSlots: !!allSlots,
+      allSlotsKeys: allSlots ? Object.keys(allSlots).slice(0, 20) : [],
+      hasProductCardTemplate: !!allSlots?.product_card_template
+    });
+
     // Format prices if not already formatted
     const products = rawProducts.map(p => ({
       ...p,
