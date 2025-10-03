@@ -1423,21 +1423,22 @@ const EditorSidebar = ({
           )}
         </div>
 
-        {/* Content Section */}
-        <SectionHeader title="Content" section="content">
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
-              <textarea
-                ref={textContentRef}
-                id="textContent"
-                defaultValue={localTextContent}
-                onChange={handleTextContentChange}
-                onBlur={handleTextContentSave}
-                className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
-                placeholder="Enter text content..."
-              />
-            </div>
+        {/* Content Section - hide for styleOnly/readOnly slots (product cards) */}
+        {!slotConfig?.metadata?.styleOnly && !slotConfig?.metadata?.readOnly && (
+          <SectionHeader title="Content" section="content">
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="textContent" className="text-xs font-medium">Text Content</Label>
+                <textarea
+                  ref={textContentRef}
+                  id="textContent"
+                  defaultValue={localTextContent}
+                  onChange={handleTextContentChange}
+                  onBlur={handleTextContentSave}
+                  className="w-full mt-1 text-xs border border-gray-300 rounded-md p-2 h-20 resize-none"
+                  placeholder="Enter text content..."
+                />
+              </div>
             
             {/* HTML Content Editor - only show for HTML elements */}
             {isHtmlElement && (

@@ -808,9 +808,17 @@ const ProductItemsGrid = createSlotComponent({
               }
 
               // Replace template variables in styles
-              const processedStyles = { ...slotConfig.styles };
-              if (slotConfig.styles?.backgroundColor?.includes('{{settings.theme.add_to_cart_button_color}}')) {
-                processedStyles.backgroundColor = '#3B82F6'; // Default blue
+              const processedStyles = {};
+
+              // Process each style property
+              if (slotConfig.styles) {
+                Object.entries(slotConfig.styles).forEach(([key, value]) => {
+                  if (typeof value === 'string' && value.includes('{{settings.theme.add_to_cart_button_color}}')) {
+                    processedStyles[key] = '#3B82F6'; // Default blue for editor
+                  } else {
+                    processedStyles[key] = value;
+                  }
+                });
               }
 
               productSlots[uniqueId] = {
@@ -823,16 +831,19 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                   ?.replace(/\{\{this\.image_url\}\}/g, product.image_url),
-                // Set width to auto for text slots, process button styles
+                // Set width to auto for text slots, apply processed styles for all slots
                 styles: slotConfig.type === 'text'
                   ? { ...processedStyles, width: 'auto' }
                   : processedStyles,
                 // Remove conditionalDisplay in editor mode so all slots are visible
                 // Also disable resize for text/button slots to prevent width issues
+                // Mark as styleOnly to prevent content editing (content comes from product data)
                 metadata: {
                   ...slotConfig.metadata,
                   conditionalDisplay: undefined,
-                  disableResize: slotConfig.type === 'text' || slotConfig.type === 'button'
+                  disableResize: slotConfig.type === 'text' || slotConfig.type === 'button',
+                  styleOnly: true,
+                  readOnly: true
                 }
               };
             });
