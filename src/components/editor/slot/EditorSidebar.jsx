@@ -356,9 +356,25 @@ const EditorSidebar = ({
       const storedStyles = slotConfig.styles || {};
       
       // Initialize local text content with slot content
-      const textContent = slotConfig.content || '';
+      // For buttons and text elements, fallback to DOM textContent if slotConfig.content is empty
+      let textContent = slotConfig.content || '';
+
+      // If no content in config, try to get from DOM element
+      if (!textContent && selectedElement) {
+        // For buttons, get the text content directly
+        if (selectedElement.tagName?.toLowerCase() === 'button') {
+          textContent = selectedElement.textContent || '';
+        } else {
+          // For text elements (h1-h6, p, span), get textContent
+          const tagName = selectedElement.tagName?.toLowerCase();
+          if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span'].includes(tagName)) {
+            textContent = selectedElement.textContent || '';
+          }
+        }
+      }
+
       setLocalTextContent(textContent);
-      
+
       // Update textarea ref value
       if (textContentRef.current) {
         textContentRef.current.value = textContent;
