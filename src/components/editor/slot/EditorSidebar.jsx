@@ -1246,15 +1246,25 @@ const EditorSidebar = ({
 
       // CRITICAL: Filter out ALL wrapper and editor classes before saving!
       // Using the isWrapperOrEditorClass function defined above
-      const classNameForSave = targetElement.className
+      // SAFETY: Use getAttribute('class') as fallback if className is corrupted
+      const classNameToFilter = (typeof targetElement.className === 'string' && !targetElement.className.includes('<'))
+        ? targetElement.className
+        : (targetElement.getAttribute('class') || '');
+
+      const classNameForSave = classNameToFilter
         .split(' ')
         .filter(cls => cls && !isWrapperOrEditorClass(cls))
         .join(' ');
 
       // Update local state for UI responsiveness
+      // SAFETY: Ensure className is a clean string
+      const safeClassName = (typeof targetElement.className === 'string' && !targetElement.className.includes('<'))
+        ? targetElement.className
+        : (targetElement.getAttribute('class') || '');
+
       setElementProperties(prev => ({
         ...prev,
-        className: targetElement.className,
+        className: safeClassName,
         styles: {
           ...prev.styles,
           ...currentInlineStyles,
