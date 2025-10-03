@@ -1706,7 +1706,12 @@ export function useSlotConfiguration({
                 const draggedSlot = prevConfig.slots[draggedSlotId];
                 if (draggedSlot?.parentId?.startsWith('product_card')) {
                   effectiveDraggedId = baseId; // Use template ID for saving position
-                  console.log('📦 Product slot drag detected, using template ID:', effectiveDraggedId);
+                  console.log('📦 Product slot drag detected:', {
+                    originalId: draggedSlotId,
+                    templateId: effectiveDraggedId,
+                    draggedSlot,
+                    templateExists: !!prevConfig.slots[baseId]
+                  });
                 }
               }
 
@@ -1715,12 +1720,24 @@ export function useSlotConfiguration({
                 const targetSlot = prevConfig.slots[targetSlotId];
                 if (targetSlot?.parentId?.startsWith('product_card')) {
                   effectiveTargetId = baseId; // Use template ID for drop target
-                  console.log('📦 Product slot target detected, using template ID:', effectiveTargetId);
+                  console.log('📦 Product slot target detected:', {
+                    originalId: targetSlotId,
+                    templateId: effectiveTargetId,
+                    targetSlot,
+                    templateExists: !!prevConfig.slots[baseId]
+                  });
                 }
               }
 
               // Use the hook function to handle the drop logic
               const updatedSlots = slotDropHandler(effectiveDraggedId, effectiveTargetId, dropPosition, prevConfig.slots);
+
+              console.log('📦 Drop handler result:', {
+                draggedId: effectiveDraggedId,
+                targetId: effectiveTargetId,
+                dropPosition,
+                updatedSlots: updatedSlots ? Object.keys(updatedSlots).filter(k => k.includes(effectiveDraggedId)) : null
+              });
 
               if (!updatedSlots) {
                 resolve(null);
