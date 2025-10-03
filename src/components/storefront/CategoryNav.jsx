@@ -12,8 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
-export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null }) {
-    console.log('🚀🚀🚀 CategoryNav COMPONENT ENTRY - categories:', categories, 'store:', storeProp || 'from context');
+export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null, isEditor = false }) {
     const storeContext = useStore();
     const store = storeProp || storeContext?.store;
 
@@ -35,16 +34,10 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const subcategoryLinkHoverColor = metadata?.subcategoryLinkHoverColor || '#2563EB';
     const subcategoryBgColor = metadata?.subcategoryBgColor || '#ffffff';
     const subcategoryBgHoverColor = metadata?.subcategoryBgHoverColor || '#F3F4F6';
-    
+
     if (!categories || categories.length === 0 || !store) {
         return null;
     }
-
-    console.log('📊 CategoryNav Debug:', {
-        totalCategories: categories?.length,
-        rootCategoriesCount: categories?.filter(c => !c.parent_id)?.length,
-        categoriesWithChildren: categories?.filter(c => c.children && c.children.length > 0)?.length
-    });
 
     // Detect mobile/desktop
     useEffect(() => {
@@ -850,7 +843,6 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                     </Link>
                     {rootCategories.map(category => {
                         if (category.children && category.children.length > 0) {
-                            console.log('🎨 Rendering category with dropdown:', category.name, 'children:', category.children.length);
                             return (
                                 <div key={category.id} className="relative group">
                                     <Link
@@ -860,9 +852,9 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                         {category.name}
                                         <ChevronDown className="w-3 h-3" />
                                     </Link>
-                                    {/* Submenu visible on hover - TESTING: Always visible with red background */}
-                                    <div className="absolute left-0 top-full w-64 border-4 border-red-500 rounded-md shadow-lg z-[9999] visible opacity-100 transition-all duration-200"
-                                        style={{ backgroundColor: 'red' }}
+                                    {/* Submenu visible on hover */}
+                                    <div className="absolute left-0 top-full w-64 border border-gray-200 rounded-md shadow-lg z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                                        style={{ backgroundColor: subcategoryBgColor }}
                                     >
                                         <div>
                                             <Link

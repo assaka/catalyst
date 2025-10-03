@@ -166,16 +166,6 @@ const CategoryNavSlot = createSlotComponent({
     const { categories = [], store } = headerContext || {};
     const metadata = slot?.metadata || {};
 
-    console.log('🎯🎯🎯 CategoryNavSlot ENTRY - SHOULD SEE THIS!!!');
-    console.log('🎯 CategoryNavSlot RENDER:', {
-      context,
-      categoriesCount: categories?.length,
-      categoriesWithChildren: categories?.filter(c => c.children?.length > 0)?.length,
-      hasStore: !!store,
-      store,
-      categories: categories
-    });
-
     // Extract link styles
     const linkColor = styles?.color || '#374151';
     const linkHoverColor = styles?.hoverColor || '#2563EB';
@@ -186,7 +176,7 @@ const CategoryNavSlot = createSlotComponent({
       // Use actual CategoryNav component in editor for interactive dropdowns
       return (
         <div className={className} style={styles}>
-          <CategoryNav categories={categories} styles={styles} metadata={metadata} store={store} />
+          <CategoryNav categories={categories} styles={styles} metadata={metadata} store={store} isEditor={true} />
         </div>
       );
     }
@@ -412,7 +402,7 @@ const MobileMenuButtonSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900 md:hidden">
+        <button className="p-2 text-gray-700 hover:text-gray-900">
           <Menu className="w-6 h-6" />
         </button>
       );
@@ -440,7 +430,7 @@ const MobileSearchButtonSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900 md:hidden">
+        <button className="p-2 text-gray-700 hover:text-gray-900">
           <Search className="w-6 h-6" />
         </button>
       );
@@ -470,11 +460,9 @@ const MobileUserMenuSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <div className={className} style={styles}>
-          <Button variant="ghost" size="icon">
-            <User className="w-5 h-5" />
-          </Button>
-        </div>
+        <button className="p-2 text-gray-700 hover:text-gray-900">
+          <User className="w-6 h-6" />
+        </button>
       );
     }
 
