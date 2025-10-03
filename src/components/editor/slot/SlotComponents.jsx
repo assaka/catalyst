@@ -1084,7 +1084,7 @@ export function HierarchicalSlotRenderer({
         isNested={true}
         selectedElementId={selectedElementId}
       >
-          {slot.type === 'text' && mode === 'edit' && (
+          {slot.type === 'text' && mode === 'edit' && !slot.metadata?.disableResize && (
             <div
               style={{ display: 'inline-block', position: 'relative' }}
             >
@@ -1165,6 +1165,28 @@ export function HierarchicalSlotRenderer({
             </div>
           )}
 
+          {slot.type === 'text' && mode === 'edit' && slot.metadata?.disableResize && (
+            <span
+              className={`${processedParentClassName} ${slot.className} resize-none select-none`}
+              style={{
+                ...slot.styles,
+                cursor: 'pointer',
+                display: 'inline-block',
+                boxSizing: 'border-box',
+                border: '1px dashed transparent',
+                borderRadius: '4px',
+                transition: 'border-color 0.2s ease-in-out',
+                position: 'relative',
+                ...(slot.className?.includes('italic') && { fontStyle: 'italic' })
+              }}
+              data-slot-id={slot.id}
+              data-editable="true"
+              dangerouslySetInnerHTML={{
+                __html: String(slot.content || `Text: ${slot.id}`)
+              }}
+            />
+          )}
+
           {slot.type === 'text' && mode !== 'edit' && (
             <span
               className={`${processedParentClassName} ${slot.className}`}
@@ -1178,7 +1200,7 @@ export function HierarchicalSlotRenderer({
             />
           )}
 
-          {slot.type === 'button' && mode === 'edit' && (
+          {slot.type === 'button' && mode === 'edit' && !slot.metadata?.disableResize && (
             <div
               style={{ display: 'inline-block' }}
             >
@@ -1262,6 +1284,28 @@ export function HierarchicalSlotRenderer({
               </button>
             </ResizeWrapper>
             </div>
+          )}
+
+          {slot.type === 'button' && mode === 'edit' && slot.metadata?.disableResize && (
+            <button
+              className={`${processedParentClassName} ${slot.className}`}
+              style={{
+                ...slot.styles,
+                cursor: 'pointer'
+              }}
+              data-slot-id={slot.id}
+              data-editable="true"
+            >
+              {(() => {
+                const content = slot.content || `Button: ${slot.id}`;
+                if (content.includes('<') && content.includes('>')) {
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = content;
+                  return tempDiv.textContent || tempDiv.innerText || content;
+                }
+                return content;
+              })()}
+            </button>
           )}
 
               {slot.type === 'button' && mode !== 'edit' && (

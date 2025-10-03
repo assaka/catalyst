@@ -822,9 +822,11 @@ const ProductItemsGrid = createSlotComponent({
                   ? { ...slotConfig.styles, width: 'auto' }
                   : slotConfig.styles,
                 // Remove conditionalDisplay in editor mode so all slots are visible
+                // Also disable resize for text/button slots to prevent width issues
                 metadata: {
                   ...slotConfig.metadata,
-                  conditionalDisplay: undefined
+                  conditionalDisplay: undefined,
+                  disableResize: slotConfig.type === 'text' || slotConfig.type === 'button'
                 }
               };
             });
