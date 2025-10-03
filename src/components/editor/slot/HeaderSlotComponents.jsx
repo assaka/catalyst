@@ -173,10 +173,38 @@ const CategoryNavSlot = createSlotComponent({
     const linkFontWeight = styles?.fontWeight || '500';
 
     if (context === 'editor') {
-      // Use actual CategoryNav component in editor for interactive dropdowns
+      // Render simplified static navigation in editor with hover dropdowns
       return (
-        <div className={className} style={styles}>
-          <CategoryNav categories={categories} styles={styles} metadata={metadata} store={store} isEditor={true} />
+        <div className={className || "flex items-center space-x-2"} style={styles}>
+          <a href="#" className="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">Home</a>
+          {categories.map(cat => (
+            <div key={cat.id} className="relative group">
+              <a
+                href="#"
+                className="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md inline-flex items-center transition-colors"
+                style={{ color: linkColor, fontSize: linkFontSize, fontWeight: linkFontWeight }}
+              >
+                {cat.name}
+                {cat.children && cat.children.length > 0 && <ChevronDown className="w-3 h-3 ml-1" />}
+              </a>
+              {cat.children && cat.children.length > 0 && (
+                <div className="absolute left-0 top-full w-48 bg-white border border-gray-200 rounded-md shadow-lg p-2 space-y-1 z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                  <a href="#" className="block px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded border-b border-gray-200 pb-2 mb-1">
+                    View All {cat.name}
+                  </a>
+                  {cat.children.map(child => (
+                    <a
+                      key={child.id}
+                      href="#"
+                      className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                    >
+                      {child.name}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       );
     }
