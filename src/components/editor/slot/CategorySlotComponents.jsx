@@ -931,22 +931,103 @@ const ProductItemsGrid = createSlotComponent({
       );
     }
 
-    // Storefront version - uses template with processVariables
+    // Storefront version - use same slot-based rendering as editor
     const storeContext = useStore();
     const storeSettings = storeContext?.settings || null;
-    const gridClasses = getGridClasses(storeContext?.settings ||null);
+    const gridClasses = getGridClasses(storeSettings);
 
-    // Use template from slot.content
-    const template = slot?.content || '';
-    const html = processVariables(template, variableContext);
+    // Get products from categoryContext
+    const rawProducts = categoryContext?.products || variableContext?.products || [];
+
+    // Format prices if not already formatted
+    const products = rawProducts.map(p => ({
+      ...p,
+      price_formatted: p.price_formatted || `$${p.price?.toFixed(2) || '0.00'}`,
+      compare_price_formatted: p.compare_price ? `$${p.compare_price.toFixed(2)}` : null,
+      image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
+      in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
+    }));
+
+    // Find product card template and descendants
+    const productCardTemplate = allSlots?.product_card_template;
+    const productCardChildSlots = {};
+
+    if (allSlots) {
+      const collectDescendants = (parentId) => {
+        Object.values(allSlots).forEach(slot => {
+          if (slot.parentId === parentId) {
+            productCardChildSlots[slot.id] = slot;
+            collectDescendants(slot.id);
+          }
+        });
+      };
+      collectDescendants('product_card_template');
+    }
 
     return (
-      <div
-        ref={containerRef}
-        className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`}
-        style={styles || slot.styles}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <div className={`grid ${gridClasses} gap-4 ${className || slot.className || ''}`} style={styles || slot.styles}>
+        {products.map((product, index) => {
+          const productSlots = {};
+
+          Object.entries(productCardChildSlots).forEach(([slotId, slotConfig]) => {
+            const savedSlotConfig = allSlots[slotId];
+
+            // Process styles
+            const processedStyles = {};
+            if (slotConfig.styles) {
+              Object.entries(slotConfig.styles).forEach(([key, value]) => {
+                processedStyles[key] = typeof value === 'string' ? processVariables(value, variableContext) : value;
+              });
+            }
+
+            const processedSavedStyles = {};
+            if (savedSlotConfig?.styles) {
+              Object.entries(savedSlotConfig.styles).forEach(([key, value]) => {
+                processedSavedStyles[key] = typeof value === 'string' ? processVariables(value, variableContext) : value;
+              });
+            }
+
+            const finalStyles = savedSlotConfig ? { ...processedStyles, ...processedSavedStyles } : processedStyles;
+            const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
+            const isEditableButton = slotConfig.type === 'button';
+            const isTextSlot = slotConfig.type === 'text';
+
+            productSlots[slotId] = {
+              ...slotConfig,
+              content: isEditableButton
+                ? (savedSlotConfig?.content || slotConfig.content || 'Button')
+                : (isTextSlot
+                    ? slotConfig.content
+                        ?.replace(/\{\{this\.name\}\}/g, product.name)
+                        ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
+                        ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
+                        ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
+                    : slotConfig.content),
+              className: finalClassName,
+              styles: finalStyles,
+              metadata: { ...(slotConfig.metadata || {}), ...(savedSlotConfig?.metadata || {}) }
+            };
+          });
+
+          return (
+            <div
+              key={`product-${product.id || index}`}
+              data-slot-id="product_card_template"
+              style={{ ...productCardTemplate?.styles, overflow: 'visible' }}
+            >
+              <UnifiedSlotRenderer
+                slots={productSlots}
+                parentId="product_card_template"
+                context="storefront"
+                categoryData={{ ...categoryContext, product }}
+                productData={product}
+                variableContext={{ ...variableContext, product }}
+                viewMode="grid"
+              />
+            </div>
+          );
+        })}
+      </div>
     );
   }
 });
