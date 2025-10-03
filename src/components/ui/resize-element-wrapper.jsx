@@ -126,7 +126,9 @@ const ResizeWrapper = ({
 
   // Check element types
   const isButton = isButtonElement(children);
-  const isTextElement = children?.type === 'span' || children?.props?.['data-slot-id']?.includes('text');
+  // Detect text elements: span, h1-h6, p, or has text/name/price/description in slot ID
+  const isTextElement = ['span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'].includes(children?.type) ||
+                        children?.props?.['data-slot-id']?.match(/(text|name|price|description|title|heading)/);
 
   // Capture natural dimensions and calculate initial percentage
   useEffect(() => {
@@ -192,10 +194,24 @@ const ResizeWrapper = ({
           return;
         }
 
+        const newWidth = isButton ? rect.width : Math.round(naturalPercentage * 10) / 10;
+        const newWidthUnit = isButton ? 'px' : '%';
+
+        console.log('📏 ResizeWrapper: Setting initial size', {
+          slotId: children?.props?.['data-slot-id'],
+          isButton,
+          isTextElement,
+          rectWidth: rect.width,
+          naturalPercentage,
+          newWidth,
+          newWidthUnit,
+          existingWidth: children?.props?.style?.width
+        });
+
         setSize(prev => ({
           ...prev,
-          width: isButton ? rect.width : Math.round(naturalPercentage * 10) / 10,
-          widthUnit: isButton ? 'px' : '%'
+          width: newWidth,
+          widthUnit: newWidthUnit
         }));
       }
     }
@@ -431,9 +447,9 @@ const ResizeWrapper = ({
     // Wrapper should always be fit-content to not affect parent layout
     width: 'fit-content',
     height: 'fit-content',
-    // Remove maxWidth constraint for text elements to allow free resizing
+    // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
-    ...(isButton || isTextElement ? {} : { maxWidth: '100%' }),
+    ...(isButton || isTextElement ? { maxWidth: 'none', overflow: 'visible' } : { maxWidth: '100%' }),
     display: 'inline-block',
     position: 'relative'
   };
