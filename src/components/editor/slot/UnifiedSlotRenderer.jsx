@@ -377,15 +377,18 @@ export function UnifiedSlotRenderer({
           ? `${processedClassName} ${htmlClass}`.trim()
           : processedClassName;
 
+        // Remove width from styles for text elements - let them be fit-content
+        const { width, ...stylesWithoutWidth } = styles || {};
+
         const textElement = React.createElement(
           HtmlTag,
           {
             className: mergedClassName,
             style: {
-              ...styles,
+              ...stylesWithoutWidth, // Use styles without width
               cursor: 'pointer',
               display: 'inline-block',
-              width: hasWFit ? 'fit-content' : (styles?.width || 'auto')
+              width: 'fit-content' // Always fit-content for text
             },
             onClick: (e) => {
               e.stopPropagation();
@@ -489,12 +492,15 @@ export function UnifiedSlotRenderer({
           'https://placehold.co/400x400?text=Product+Image';
       }
 
+      // Remove width from styles for images - let them be full width
+      const { width, ...stylesWithoutWidth } = styles || {};
+
       const imageElement = (
         <img
           src={imageSrc}
           alt={variableContext.product?.name || 'Image'}
           className={processedClassName}
-          style={styles}
+          style={{ ...stylesWithoutWidth, width: '100%' }} // Force full width
         />
       );
       return wrapWithResize(imageElement, slot, 50, 50);
