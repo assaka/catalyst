@@ -92,7 +92,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   }, [onResize, onResizeStart, onResizeEnd]);
 
   const handleMouseDown = (e) => {
-    console.log('RESIZE: 🔵 GridResizeHandle: MouseDown', { direction, currentValue });
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -103,15 +102,6 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     startValueRef.current = currentValue;
     lastValueRef.current = currentValue;
 
-    // Debug starting positions
-    console.log('RESIZE: 🏁 Start Position Debug:', {
-      startX: e.clientX,
-      startY: e.clientY,
-      startValue: currentValue,
-      direction
-    });
-
-
     // Prevent text selection during drag
     document.body.style.userSelect = 'none';
     document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
@@ -121,14 +111,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
     }
 
     const handleMouseMove = (e) => {
-      console.log('🟢 GridResizeHandle: MouseMove', {
-        isDragging: isDraggingRef.current,
-        eventTimestamp: Date.now(),
-        hasListeners: !!mouseMoveHandlerRef.current
-      });
 
       if (!isDraggingRef.current) {
-        console.log('❌ MouseMove but isDragging is false!');
         return;
       }
 
@@ -142,21 +126,8 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const colSpanDelta = Math.round(deltaX / sensitivity);
         const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
 
-        console.log('RESIZE: 🟢 GridResizeHandle: Horizontal', { deltaX, sensitivity, colSpanDelta, startValue, newColSpan, lastValue: lastValueRef.current });
-
-        // Debug cursor and handle positions
-        console.log('RESIZE: 🎯 Position Debug:', {
-          mouseX: e.clientX,
-          startX: startXRef.current,
-          deltaX,
-          colSpanDelta,
-          newColSpan,
-          sensitivity
-        });
-
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
-          console.log('RESIZE: 🟢 GridResizeHandle: Calling onResize', { newColSpan, lastValue: lastValueRef.current });
           lastValueRef.current = newColSpan;
           onResizeRef.current(newColSpan);
         }
@@ -168,12 +139,7 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
 
         if (mainLayout) {
           const containerWidth = mainLayout.getBoundingClientRect().width;
-          columnWidth = containerWidth / 12; // 12-column grid
-          console.log('RESIZE: 📏 Column width calculation:', {
-            container: mainLayout.getAttribute('data-slot-id') || 'grid-cols-12',
-            containerWidth,
-            columnWidth: Math.round(columnWidth)
-          });
+          columnWidth = containerWidth / 12; // 12-column gri
         }
 
         // Get slot element boundaries for detailed position debugging
@@ -182,44 +148,20 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         if (slotElement && handleElementRef.current) {
           const slotRect = slotElement.getBoundingClientRect();
           const handleRect = handleElementRef.current.getBoundingClientRect();
-
-          // Throttle debug logs - only log every 10px of movement
-          if (Math.abs(deltaX) % 10 < 2) {
-            console.log('RESIZE: 📍 Detailed Position Debug:', {
-              leftBorderX: Math.round(slotRect.left),
-              rightBorderX: Math.round(slotRect.right),
-              slotWidth: Math.round(slotRect.width),
-              handleX: Math.round(handleRect.left),
-              cursorX: e.clientX,
-              handleRightDiff: Math.round(handleRect.left - slotRect.right),
-              deltaX: deltaX
-            });
-          }
         }
 
         // Handle stays at slot's right edge naturally, no offset needed
         // The slot itself resizes, so handle moves with the slot's edge
         const actualColumnChange = newColSpan - startValue;
-        console.log('RESIZE: 📐 Visual Offset Debug:', {
-          colSpanDelta: colSpanDelta,
-          actualColumnChange,
-          startValue,
-          newColSpan,
-          columnWidth,
-          mouseDeltaX: deltaX,
-          mouseOffset: 0
-        });
+
         setMouseOffset(0);
       } else if (direction === 'vertical') {
         const deltaY = e.clientY - startY;
         const heightDelta = Math.round(deltaY / 2); // Reduced sensitivity for height
         const newHeight = Math.max(20, startValue + heightDelta);
 
-        console.log('🟢 GridResizeHandle: Vertical', { deltaY, heightDelta, startValue, newHeight, lastValue: lastValueRef.current });
-
         // Only call onResize if the value actually changed
         if (newHeight !== lastValueRef.current) {
-          console.log('🟢 GridResizeHandle: Calling onResize', { newHeight, lastValue: lastValueRef.current });
           lastValueRef.current = newHeight;
           onResizeRef.current(newHeight);
         }
@@ -258,16 +200,12 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   };
 
   useEffect(() => {
-    console.log('🟦 GridResizeHandle: Component mounted', { currentValue, direction });
     return () => {
-      console.log('🟥 GridResizeHandle: Component unmounting!', { currentValue, direction, isDragging });
       if (mouseMoveHandlerRef.current) {
         document.removeEventListener('mousemove', mouseMoveHandlerRef.current);
-        console.log('🟥 Removed mousemove listener');
       }
       if (mouseUpHandlerRef.current) {
         document.removeEventListener('mouseup', mouseUpHandlerRef.current);
-        console.log('🟥 Removed mouseup listener');
       }
     };
   }, []);
@@ -427,13 +365,6 @@ export function GridColumn({
   const variableContext = generateDemoData('product', productData.settings || {});
   const processedParentClassName = slot?.parentClassName ? processVariables(slot.parentClassName, variableContext) : '';
 
-  console.log('🔧 GRIDCOLUMN PROCESSING:', {
-    slotId: slot?.id,
-    originalParentClassName: slot?.parentClassName,
-    processedParentClassName: processedParentClassName,
-    isEmpty: !processedParentClassName || processedParentClassName.trim() === ''
-  });
-
   // Calculate grid position for ghost preview
   const calculateGridPosition = useCallback((dropPosition, targetSlot) => {
     if (!targetSlot || !slots) return null;
@@ -491,27 +422,6 @@ export function GridColumn({
   const isContainerType = ['container', 'grid', 'flex'].includes(slot?.type);
   const showHorizontalHandle = onGridResize && mode === 'edit' && colSpan >= 1;
   const showVerticalHandle = onSlotHeightResize && mode === 'edit';
-  const isSelected = selectedElementId === slotId;
-
-  // Debug resize handle conditions
-  console.log('🔍 GridColumn render conditions:', {
-    slotId,
-    mode,
-    onGridResize: !!onGridResize,
-    onSlotHeightResize: !!onSlotHeightResize,
-    showHorizontalHandle,
-    showVerticalHandle,
-    isHovered,
-    colSpan
-  });
-
-  // Log mount/unmount
-  useEffect(() => {
-    console.log('🟦 GridColumn: Mounted', { slotId, colSpan });
-    return () => {
-      console.log('🟥 GridColumn: Unmounting!', { slotId, colSpan });
-    };
-  }, []);
 
   const handleDragStart = useCallback((e) => {
     if (mode !== 'edit') return;
@@ -1057,15 +967,6 @@ export function HierarchicalSlotRenderer({
   customSlotRenderer = null // Add custom slot renderer function
 }) {
   const childSlots = SlotManager.getChildSlots(slots, parentId);
-
-  // Debug: Log when HierarchicalSlotRenderer is called and show child slots
-  if (parentId === 'products_container' || parentId === null || parentId === 'filters_container' || parentId === 'page_header') {
-    console.log(`🔎 HIERARCHICAL SLOT RENDERER - parentId: ${parentId}`, {
-      totalSlots: Object.keys(slots || {}).length,
-      childSlots: childSlots.map(s => ({ id: s.id, type: s.type, viewMode: s.viewMode })),
-      parentId: parentId
-    });
-  }
 
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
