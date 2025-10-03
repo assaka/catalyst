@@ -331,18 +331,30 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
 
+    // Process variables in styles (e.g., {{settings.theme.add_to_cart_button_color}})
+    const processedStyles = {};
+    if (styles) {
+      Object.entries(styles).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          processedStyles[key] = processVariables(value, variableContext);
+        } else {
+          processedStyles[key] = value;
+        }
+      });
+    }
+
 
     // HTML Element (raw HTML content)
     if (type === 'html') {
       const htmlElement = (
         <div
           className={processedClassName}
-          style={styles}
+          style={processedStyles}
           dangerouslySetInnerHTML={{ __html: processedContent || '[HTML placeholder]' }}
         />
       );
       // Don't wrap absolute positioned elements with ResizeWrapper as it interferes with positioning
-      const isAbsolutePositioned = processedClassName?.includes('absolute') || styles?.position === 'absolute';
+      const isAbsolutePositioned = processedClassName?.includes('absolute') || processedStyles?.position === 'absolute';
       // Don't wrap gallery container to prevent width constraints
       const isGalleryContainer = id === 'product_gallery_container';
       if (context === 'editor' && !isAbsolutePositioned && !isGalleryContainer) {
@@ -378,7 +390,7 @@ export function UnifiedSlotRenderer({
           : processedClassName;
 
         // Remove width from styles for text elements - let them be fit-content
-        const { width, ...stylesWithoutWidth } = styles || {};
+        const { width, ...stylesWithoutWidth } = processedStyles || {};
 
         const textElement = React.createElement(
           HtmlTag,
@@ -431,7 +443,7 @@ export function UnifiedSlotRenderer({
         return (
           <Button
             className={processedClassName}
-            style={styles}
+            style={processedStyles}
             onClick={() => {
               // Handle different button actions based on slot id or configuration
               if (id === 'add_to_cart_button') {
@@ -455,7 +467,7 @@ export function UnifiedSlotRenderer({
         const buttonElement = (
           <button
             className={processedClassName}
-            style={styles}
+            style={processedStyles}
             data-slot-id={id}
             data-editable="true"
             onClick={(e) => {
@@ -497,7 +509,7 @@ export function UnifiedSlotRenderer({
       }
 
       // Remove width from styles for images - let them be full width
-      const { width, ...stylesWithoutWidth } = styles || {};
+      const { width, ...stylesWithoutWidth } = processedStyles || {};
 
       const imageElement = (
         <img
@@ -525,7 +537,7 @@ export function UnifiedSlotRenderer({
       }
 
       return (
-        <div className={containerClass} style={styles}>
+        <div className={containerClass} style={processedStyles}>
           <UnifiedSlotRenderer
             slots={slots}
             parentId={id}
@@ -565,7 +577,7 @@ export function UnifiedSlotRenderer({
 
 
         return (
-          <div className={processedClassName} style={styles}>
+          <div className={processedClassName} style={processedStyles}>
             <CmsBlockRenderer position={position} />
           </div>
         );
@@ -589,7 +601,7 @@ export function UnifiedSlotRenderer({
           headerContext: headerContext,
           context,
           className: processedClassName,
-          styles,
+          styles: processedStyles,
           variableContext,
           allSlots: slots,
           onElementClick,
@@ -600,7 +612,7 @@ export function UnifiedSlotRenderer({
 
       // Fallback for unregistered components
       return (
-        <div className={processedClassName} style={styles}>
+        <div className={processedClassName} style={processedStyles}>
           {componentName ? `[${componentName} component]` : '[Unknown component]'}
         </div>
       );
@@ -613,7 +625,7 @@ export function UnifiedSlotRenderer({
 
     // Default fallback
     return (
-      <div className={processedClassName} style={styles}>
+      <div className={processedClassName} style={processedStyles}>
         {processedContent || `[${type} slot]`}
       </div>
     );

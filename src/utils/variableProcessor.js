@@ -625,6 +625,11 @@ export const generateDemoData = (pageType, settings = {}) => {
         out_of_stock_label: 'Out of Stock',
         low_stock_label: 'Only {quantity} left!'
       },
+      theme: {
+        add_to_cart_button_color: '#3B82F6',
+        primary_color: '#3B82F6',
+        secondary_color: '#10B981'
+      },
       ...settings // Merge any passed-in settings to override defaults
     }
   };
