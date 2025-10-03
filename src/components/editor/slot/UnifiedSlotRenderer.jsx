@@ -243,10 +243,12 @@ export function UnifiedSlotRenderer({
     }
 
     const isDisabled = slot.metadata?.disableResize || false;
+    const autoWidth = slot.metadata?.autoWidth || false;
     console.log('🔧 wrapWithResize:', {
       slotId: slot.id,
       slotType: slot.type,
       disableResize: slot.metadata?.disableResize,
+      autoWidth: slot.metadata?.autoWidth,
       isDisabled,
       metadata: slot.metadata
     });
@@ -298,7 +300,9 @@ export function UnifiedSlotRenderer({
           });
         }}
       >
-        {element}
+        {React.cloneElement(element, {
+          'data-auto-width': autoWidth ? 'true' : undefined
+        })}
       </ResizeWrapper>
     );
   };
