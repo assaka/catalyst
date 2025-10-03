@@ -20,6 +20,7 @@ import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
 import FeatureIntegration from '../features/FeatureIntegration';
 import GridLayoutControl from './GridLayoutControl';
+import categoryConfig from './configs/category-config';
 
 // Dynamic sidebar imports map
 // To add a new specialized sidebar:
@@ -1198,7 +1199,18 @@ const EditorSidebar = ({
       // CRITICAL: Preserve ALL classes from DATABASE (storedClassName), NOT from contaminated DOM element!
       // The DOM element might have wrapper classes, but storedClassName is the clean source of truth
       const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
-      const databaseClassName = elementSlotConfig?.className || '';
+      let databaseClassName = elementSlotConfig?.className || '';
+
+      // If database className is empty, fall back to static config template
+      if (!databaseClassName) {
+        // Extract base template ID (remove _0, _1, etc. suffix for template slots)
+        const baseTemplateId = elementSlotId.replace(/_\d+$/, '');
+        const staticSlot = categoryConfig.slots?.[baseTemplateId];
+        if (staticSlot?.className) {
+          databaseClassName = staticSlot.className;
+          console.log(`[EditorSidebar] Database className empty, using static config for ${baseTemplateId}:`, databaseClassName);
+        }
+      }
 
       // Preserve ALL classes from database (except wrapper/editor classes)
       const currentClasses = databaseClassName.split(' ').filter(Boolean);

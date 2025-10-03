@@ -1667,8 +1667,36 @@ export function useSlotConfiguration({
                 return prevConfig;
               }
 
+              // Check if dragged/target slots are product-specific instances (have _N suffix)
+              // Map them to template IDs for position changes
+              let effectiveDraggedId = draggedSlotId;
+              let effectiveTargetId = targetSlotId;
+
+              // Pattern: product_card_X_N where N is product index
+              const draggedMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
+              const targetMatch = targetSlotId.match(/^(.+)_(\d+)$/);
+
+              if (draggedMatch) {
+                const baseId = draggedMatch[1];
+                // Check if this is a product card child slot (parent should be product_card_template or product_card_N)
+                const draggedSlot = prevConfig.slots[draggedSlotId];
+                if (draggedSlot?.parentId?.startsWith('product_card')) {
+                  effectiveDraggedId = baseId; // Use template ID for saving position
+                  console.log('📦 Product slot drag detected, using template ID:', effectiveDraggedId);
+                }
+              }
+
+              if (targetMatch) {
+                const baseId = targetMatch[1];
+                const targetSlot = prevConfig.slots[targetSlotId];
+                if (targetSlot?.parentId?.startsWith('product_card')) {
+                  effectiveTargetId = baseId; // Use template ID for drop target
+                  console.log('📦 Product slot target detected, using template ID:', effectiveTargetId);
+                }
+              }
+
               // Use the hook function to handle the drop logic
-              const updatedSlots = slotDropHandler(draggedSlotId, targetSlotId, dropPosition, prevConfig.slots);
+              const updatedSlots = slotDropHandler(effectiveDraggedId, effectiveTargetId, dropPosition, prevConfig.slots);
 
               if (!updatedSlots) {
                 resolve(null);
