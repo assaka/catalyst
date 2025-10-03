@@ -705,7 +705,7 @@ export default function Category() {
           </div>
         ) : (
           <>
-            {(settings?.enable_product_filters !== false && categoryContext.filterableAttributes?.length > 0) ? (
+            {sortedProducts.length > 0 || loading ? (
               <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 <CategorySlotRenderer
                   slots={categorySlots}
