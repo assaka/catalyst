@@ -552,12 +552,18 @@ const EditorSidebar = ({
             });
 
             // Copy element inline styles safely from styledElement (content with classes)
+            // BUT: Don't overwrite color properties that we already converted to hex
+            const colorProps = ['color', 'backgroundColor', 'borderColor'];
             if (styledElement.style) {
               for (const property in styledElement.style) {
                 if (styledElement.style.hasOwnProperty(property)) {
                   const value = styledElement.style[property];
                   if (value && !property.startsWith('webkit') && !property.startsWith('moz')) {
                     try {
+                      // Skip color properties if we already have a hex value
+                      if (colorProps.includes(property) && elementStyles[property]) {
+                        continue; // Already converted to hex, don't overwrite
+                      }
                       elementStyles[property] = value;
                     } catch (e) {
                       // Skip read-only properties
