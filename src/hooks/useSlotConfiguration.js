@@ -978,14 +978,22 @@ export function useSlotConfiguration({
       }
 
       // Validate parentId references
+      // Allow slots to reference template parents (without _N suffix) OR instance parents (with _N suffix)
       if (slot.parentId && slot.parentId !== null && !slots[slot.parentId]) {
-        console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId}`, {
-          slotId,
-          parentId: slot.parentId,
-          parentExists: !!slots[slot.parentId],
-          availableSlots: Object.keys(slots).filter(k => k.includes('product_card'))
-        });
-        return false;
+        // Check if this references a template parent (e.g., product_card_price_0 -> product_card_price_container)
+        const baseTemplateParentId = slot.parentId.replace(/_\d+$/, '');
+        if (!slots[baseTemplateParentId]) {
+          console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId} (template: ${baseTemplateParentId})`, {
+            slotId,
+            parentId: slot.parentId,
+            parentExists: !!slots[slot.parentId],
+            templateParentExists: !!slots[baseTemplateParentId],
+            availableSlots: Object.keys(slots).filter(k => k.includes('product_card'))
+          });
+          return false;
+        }
+        // Template parent exists, so this is valid
+        console.log(`✅ Slot ${slotId} references instance parent ${slot.parentId}, but template ${baseTemplateParentId} exists - allowing`);
       }
     }
 
