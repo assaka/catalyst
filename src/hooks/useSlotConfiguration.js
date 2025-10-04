@@ -1300,17 +1300,23 @@ export function useSlotConfiguration({
 
       // Use position relative to target
       if (dropPosition === 'before') {
+        // Place at start of target's row (col: 1) to ensure it appears before other slots
         newPosition = {
-          col: targetSlot.position?.col || 1,
+          col: 1,
           row: targetSlot.position?.row || 1
         };
       } else {
         const targetPos = targetSlot.position || { col: 1, row: 1 };
         // For cross-container moves, place after target
-        if (targetPos.col < 12) {
-          newPosition = { col: targetPos.col + 1, row: targetPos.row };
-        } else {
+        // Calculate next position based on target's colSpan
+        const targetColSpan = typeof targetSlot.colSpan === 'number' ? targetSlot.colSpan :
+                            (targetSlot.colSpan?.grid || targetSlot.colSpan?.list || 1);
+        let newCol = targetPos.col + targetColSpan;
+
+        if (newCol > 12) {
           newPosition = { col: 1, row: targetPos.row + 1 };
+        } else {
+          newPosition = { col: newCol, row: targetPos.row };
         }
       }
 
