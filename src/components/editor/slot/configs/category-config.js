@@ -372,7 +372,7 @@ export const categoryConfig = {
       id: 'product_card_content',
       type: 'container',
       content: '',
-      className: 'flex flex-col gap-2 col-span-12 md:col-span-7',
+      className: 'grid grid-cols-12 gap-2 col-span-12 md:col-span-7',
       parentClassName: '',
       styles: {},
       parentId: 'product_card_template',
@@ -381,7 +381,8 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
-        displayName: 'Product Content Container'
+        displayName: 'Product Content Container',
+        isGridContainer: true
       }
     },
 
