@@ -630,6 +630,16 @@ const EditorSidebar = ({
             }
 
             const finalStyles = { ...storedStyles, ...elementStyles };
+
+            console.log('[EditorSidebar] Setting elementProperties.styles:', {
+              slotId,
+              storedStyles,
+              elementStyles,
+              finalStyles,
+              backgroundColor: finalStyles.backgroundColor,
+              color: finalStyles.color
+            });
+
             return finalStyles;
           } catch (error) {
             console.warn('Error merging styles:', error);
@@ -1806,7 +1816,15 @@ const EditorSidebar = ({
                     <input
                       id="bgColor"
                       type="color"
-                      value={elementProperties.styles.backgroundColor && elementProperties.styles.backgroundColor.startsWith('#') ? elementProperties.styles.backgroundColor : '#ffffff'}
+                      value={(() => {
+                        const bgColor = elementProperties.styles.backgroundColor;
+                        console.log('[ColorPicker] backgroundColor value:', {
+                          raw: bgColor,
+                          startsWith: bgColor?.startsWith('#'),
+                          final: bgColor && bgColor.startsWith('#') ? bgColor : '#ffffff'
+                        });
+                        return bgColor && bgColor.startsWith('#') ? bgColor : '#ffffff';
+                      })()}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="w-8 h-7 rounded border border-gray-300"
                     />
