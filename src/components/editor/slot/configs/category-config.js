@@ -450,10 +450,7 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
-        displayName: 'Price Container',
-        readOnly: true,
-        styleOnly: true,
-        nonEditable: true
+        displayName: 'Price Container'
       }
     },
 

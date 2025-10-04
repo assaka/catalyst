@@ -425,15 +425,6 @@ export function UnifiedSlotRenderer({
             onClick: (e) => {
               e.stopPropagation();
               if (!currentDragInfo && onElementClick) {
-                // Check if parent container is non-editable, if so select grandparent
-                const parentSlot = slots?.[slot?.parentId];
-                if (parentSlot?.metadata?.nonEditable === true && parentSlot?.parentId) {
-                  const grandparentElement = e.currentTarget.closest(`[data-slot-id="${parentSlot.parentId}"]`);
-                  if (grandparentElement) {
-                    onElementClick(parentSlot.parentId, grandparentElement);
-                    return;
-                  }
-                }
                 onElementClick(id, e.currentTarget);
               }
             },
@@ -502,15 +493,6 @@ export function UnifiedSlotRenderer({
             onClick={(e) => {
               e.stopPropagation();
               if (onElementClick) {
-                // Check if parent container is non-editable, if so select grandparent
-                const parentSlot = slots?.[slot?.parentId];
-                if (parentSlot?.metadata?.nonEditable === true && parentSlot?.parentId) {
-                  const grandparentElement = e.currentTarget.closest(`[data-slot-id="${parentSlot.parentId}"]`);
-                  if (grandparentElement) {
-                    onElementClick(parentSlot.parentId, grandparentElement);
-                    return;
-                  }
-                }
                 onElementClick(id, e.currentTarget);
               }
             }}
