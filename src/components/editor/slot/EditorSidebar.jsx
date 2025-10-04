@@ -500,19 +500,24 @@ const EditorSidebar = ({
                 isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent'
               });
 
-              // For color property, check Tailwind classes first, then computed styles
+              // For color property, check inline styles FIRST (from database), then Tailwind classes
               if (prop === 'color') {
-                // Check for explicit Tailwind colors in stored className
-                if (storedClassName) {
-                  const tailwindColorHex = getTailwindColorHex(storedClassName);
-                  if (tailwindColorHex) {
-                    elementStyles[prop] = tailwindColorHex;
-                    console.log(`[EditorSidebar] ${prop} from Tailwind:`, tailwindColorHex);
-                    return;
+                // PRIORITY 1: Check if there's an inline style color (from database)
+                const hasInlineColor = storedStyles?.color || styledElement.style.color;
+
+                if (!hasInlineColor) {
+                  // PRIORITY 2: Check for explicit Tailwind colors in stored className
+                  if (storedClassName) {
+                    const tailwindColorHex = getTailwindColorHex(storedClassName);
+                    if (tailwindColorHex) {
+                      elementStyles[prop] = tailwindColorHex;
+                      console.log(`[EditorSidebar] ${prop} from Tailwind:`, tailwindColorHex);
+                      return;
+                    }
                   }
                 }
 
-                // Fall back to computed styles from the element
+                // PRIORITY 3: Use computed styles from the element (includes inline styles)
 
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
 
