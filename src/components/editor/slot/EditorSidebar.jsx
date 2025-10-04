@@ -1330,10 +1330,8 @@ const EditorSidebar = ({
           if (!saveStyles.borderColor) saveStyles.borderColor = targetElement.style.borderColor;
         }
 
-        // Save to current slot
-        onInlineClassChange(elementSlotId, classNameForSave, saveStyles);
-
-        // MIRROR: If this is a product template instance (has _N suffix), also save to base template
+        // MIRROR: If this is a product template instance (has _N suffix), save to base template FIRST
+        // This ensures the template has the latest styles before the instance
         const baseTemplateId = elementSlotId.replace(/_\d+$/, '');
         if (baseTemplateId !== elementSlotId) {
           console.log(`🔄 Mirroring style change to template ${baseTemplateId}`, {
@@ -1344,6 +1342,10 @@ const EditorSidebar = ({
           });
           onInlineClassChange(baseTemplateId, classNameForSave, saveStyles);
         }
+
+        // Save to current slot AFTER mirroring to template
+        // This ensures both are saved in the correct order
+        onInlineClassChange(elementSlotId, classNameForSave, saveStyles);
       } else {
         console.error(`❌ STYLE CHANGE - No onInlineClassChange callback!`);
       }
