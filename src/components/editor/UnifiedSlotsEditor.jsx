@@ -575,7 +575,12 @@ const UnifiedSlotsEditor = ({
                   />
                 ) : (
                   <div className="col-span-12 text-center py-12 text-gray-500">
-                    {layoutConfig ? 'No slots configured' : 'Loading configuration...'}
+                    {layoutConfig ? `No slots configured (slots: ${Object.keys(layoutConfig.slots || {}).length})` : 'Loading configuration...'}
+                    {console.log('[UnifiedSlotsEditor] layoutConfig state:', {
+                      exists: !!layoutConfig,
+                      slotsCount: Object.keys(layoutConfig?.slots || {}).length,
+                      layoutConfig
+                    })}
                   </div>
                 )}
               </div>

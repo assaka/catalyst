@@ -808,6 +808,14 @@ export function useSlotConfiguration({
         };
       }
 
+      // Verify config has slots before saving
+      if (!config.slots || Object.keys(config.slots).length === 0) {
+        console.error('❌ Reset layout failed: config has no slots', config);
+        throw new Error('Cannot reset to empty configuration');
+      }
+
+      console.log(`💾 Saving reset config with ${Object.keys(config.slots).length} slots`);
+
       // Save the config to database (this will overwrite any existing draft)
       // Pass isReset=true to set has_unpublished_changes = false
       await slotConfigurationService.saveConfiguration(storeId, config, pageType, true);
@@ -904,9 +912,18 @@ export function useSlotConfiguration({
     }
 
     try {
+      console.log(`🔍 [getDraftConfiguration] Getting draft for pageType: ${pageType}, storeId: ${storeId}`);
 
       // Get draft from database (may be empty on first load)
       const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
+
+      console.log(`📥 [getDraftConfiguration] Draft response:`, {
+        success: savedConfig?.success,
+        hasData: !!savedConfig?.data,
+        status: savedConfig?.data?.status,
+        configExists: !!savedConfig?.data?.configuration,
+        slotsCount: Object.keys(savedConfig?.data?.configuration?.slots || {}).length
+      });
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
         const draftConfig = savedConfig.data.configuration;
@@ -914,9 +931,11 @@ export function useSlotConfiguration({
 
         // Check if draft needs initialization (status = 'init')
         if (draftStatus === 'init') {
+          console.log(`🔧 [getDraftConfiguration] Draft status is 'init', loading static config for ${pageType}`);
 
           // Load static config to populate init draft
           const staticConfig = await loadStaticConfiguration();
+          console.log(`📦 [getDraftConfiguration] Static config loaded with ${Object.keys(staticConfig.slots || {}).length} slots`);
 
           // Create complete configuration from static config
           const populatedConfig = {
@@ -931,19 +950,24 @@ export function useSlotConfiguration({
             }
           };
 
+          console.log(`✅ [getDraftConfiguration] Populated config created with ${Object.keys(populatedConfig.slots || {}).length} slots`);
+
           // Save the populated configuration back to database
           // This should change status from 'init' to 'draft'
           try {
+            console.log(`💾 [getDraftConfiguration] Saving populated config to database...`);
             await slotConfigurationService.updateDraftConfiguration(
               savedConfig.data.id,
               populatedConfig,
               false // not a reset
             );
+            console.log(`✅ [getDraftConfiguration] Populated config saved successfully`);
           } catch (saveError) {
-            console.warn('⚠️ EDITOR - Failed to save populated config:', saveError);
+            console.error('❌ [getDraftConfiguration] Failed to save populated config:', saveError);
             // Continue with populated config even if save fails
           }
 
+          console.log(`🎯 [getDraftConfiguration] Returning populated config`);
           return populatedConfig;
         } else if (draftStatus === 'draft') {
 
@@ -1030,6 +1054,28 @@ export function useSlotConfiguration({
   const createSlot = useCallback((slotType, content = '', parentId = null, additionalProps = {}, slots) => {
     const newSlotId = `new_${slotType}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
+    // Determine default viewMode based on page type
+    let defaultViewMode = [];
+    switch (pageType) {
+      case 'cart':
+        defaultViewMode = ['emptyCart', 'withProducts'];
+        break;
+      case 'category':
+        defaultViewMode = ['grid', 'list'];
+        break;
+      case 'product':
+        defaultViewMode = ['default'];
+        break;
+      case 'checkout':
+        defaultViewMode = ['default'];
+        break;
+      case 'header':
+        defaultViewMode = ['default'];
+        break;
+      default:
+        defaultViewMode = [];
+    }
+
     const newSlot = {
       id: newSlotId,
       type: slotType,
@@ -1043,7 +1089,7 @@ export function useSlotConfiguration({
       position: { col: 1, row: 1 },
       colSpan: slotType === 'container' ? 12 : 6, // Containers full width, others half width
       rowSpan: 1,
-      viewMode: ['emptyCart', 'withProducts'], // Show in both modes by default
+      viewMode: defaultViewMode, // Show in all view modes for this page type
       isCustom: true, // Mark as custom slot for deletion
       metadata: {
         created: new Date().toISOString(),
@@ -1059,7 +1105,7 @@ export function useSlotConfiguration({
     // No need to update order - slots use grid coordinates
 
     return { updatedSlots, newSlotId };
-  }, []);
+  }, [pageType]);
 
   // Helper function to get the parent of a parent
   const getParentOfParent = (slots, slotId) => {
