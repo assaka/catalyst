@@ -143,7 +143,19 @@ export function CategorySlotRenderer({
   // Filter by conditionalDisplay
   childSlots = childSlots.filter(slot => {
     if (!slot.conditionalDisplay) return true;
-    return evaluateConditionalDisplay(slot.conditionalDisplay, categoryContext);
+    const shouldShow = evaluateConditionalDisplay(slot.conditionalDisplay, categoryContext);
+
+    // Debug logging for view_mode_toggle
+    if (slot.id === 'view_mode_toggle') {
+      console.log('🔍 view_mode_toggle conditional check:', {
+        conditionalDisplay: slot.conditionalDisplay,
+        shouldShow,
+        settingsValue: categoryContext?.settings?.enable_view_mode_toggle,
+        fullSettings: categoryContext?.settings
+      });
+    }
+
+    return shouldShow;
   });
 
   // Filter by viewMode if applicable

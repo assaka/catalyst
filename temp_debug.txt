@@ -1,0 +1,1 @@
+Check if settings.enable_view_mode_toggle is being set

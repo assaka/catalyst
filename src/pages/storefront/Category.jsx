@@ -652,7 +652,12 @@ export default function Category() {
     selectedFilters: activeFilters,
     priceRange: {},
     currencySymbol: settings?.currency_symbol || '$',
-    settings,
+    settings: {
+      ...settings,
+      // Ensure defaults for view mode toggle
+      enable_view_mode_toggle: settings?.enable_view_mode_toggle ?? true,
+      default_view_mode: settings?.default_view_mode || 'grid'
+    },
     store,
     categories,
     slots: categorySlots, // Add slots to context for breadcrumb configuration access
