@@ -1242,7 +1242,9 @@ export function useSlotConfiguration({
       targetTemplateParent,
       sameTemplateParent,
       isContainerTarget,
-      dropPosition
+      dropPosition,
+      actualTargetSlotId,
+      targetSlotType: targetSlot?.type
     });
 
     if (dropPosition === 'inside' && isContainerTarget) {
