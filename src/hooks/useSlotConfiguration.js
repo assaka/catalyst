@@ -1659,6 +1659,15 @@ export function useSlotConfiguration({
       try {
         const storeId = getSelectedStoreId();
         if (storeId) {
+          // Log button template slot BEFORE filtering
+          const templateButtonSlot = configToSave.slots['product_card_add_to_cart'];
+          console.log(`[saveConfiguration] 🎯 Template button slot BEFORE filter:`, {
+            id: 'product_card_add_to_cart',
+            exists: !!templateButtonSlot,
+            className: templateButtonSlot?.className,
+            styles: templateButtonSlot?.styles
+          });
+
           // Filter out instance slots (with _N suffix) before saving - only save template slots
           const filteredSlots = {};
           Object.entries(configToSave.slots).forEach(([slotId, slot]) => {
@@ -1669,11 +1678,21 @@ export function useSlotConfiguration({
               // Check if the base is a product card child template
               if (configToSave.slots[baseId]?.parentId === 'product_card_template') {
                 // Skip instance slots - they're dynamically generated
+                console.log(`[saveConfiguration] ⏭️ Filtering out instance slot: ${slotId}`);
                 return;
               }
             }
             // Keep this slot
             filteredSlots[slotId] = slot;
+          });
+
+          // Log button template slot AFTER filtering
+          const filteredTemplateButton = filteredSlots['product_card_add_to_cart'];
+          console.log(`[saveConfiguration] 🎯 Template button slot AFTER filter:`, {
+            id: 'product_card_add_to_cart',
+            exists: !!filteredTemplateButton,
+            className: filteredTemplateButton?.className,
+            styles: filteredTemplateButton?.styles
           });
 
           const configToSaveFiltered = {
