@@ -1246,7 +1246,12 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
-      console.error('❌ Configuration validation failed after drag, reverting changes');
+      console.error('❌ Configuration validation failed after drag, reverting changes', {
+        draggedSlotId,
+        newParentId,
+        newPosition,
+        parentExists: !!updatedSlots[newParentId]
+      });
       return null;
     }
 
