@@ -1163,7 +1163,19 @@ export function useSlotConfiguration({
     const targetTemplateParent = targetParent?.replace(/_\d+$/, '') || targetParent;
     const sameTemplateParent = currentTemplateParent === targetTemplateParent;
 
+    console.log('📍 Drop context:', {
+      currentParent,
+      targetParent,
+      currentTemplateParent,
+      targetTemplateParent,
+      sameTemplateParent,
+      isContainerTarget,
+      dropPosition
+    });
+
     if (dropPosition === 'inside' && isContainerTarget) {
+      console.log('📥 Drop INSIDE container');
+
       // Check if this is really a cross-container move or accidental parent hit
       if (originalProperties.parentId && targetSlotId === getParentOfParent(slots, originalProperties.parentId)) {
         // User dragged to grandparent container - likely trying to reorder within current parent
@@ -1183,6 +1195,7 @@ export function useSlotConfiguration({
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent) {
+      console.log('🔄 Same parent reordering');
       // Intra-container reordering - same parent, different position
       newParentId = currentParent;
 
@@ -1210,6 +1223,7 @@ export function useSlotConfiguration({
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent) {
+      console.log('🔀 Cross-container move - different parents');
       // Different parents - move to target's parent container
       newParentId = targetParent;
 
@@ -1231,6 +1245,15 @@ export function useSlotConfiguration({
 
     } else {
       // Invalid drop - should only be for "inside" on non-containers
+      console.log('❌ Invalid drop configuration', {
+        dropPosition,
+        isContainerTarget,
+        currentParent,
+        targetParent,
+        condition1: dropPosition === 'inside' && isContainerTarget,
+        condition2: (dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent,
+        condition3: (dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent
+      });
       return null;
     }
 
