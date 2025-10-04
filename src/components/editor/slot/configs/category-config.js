@@ -97,7 +97,7 @@ export const categoryConfig = {
       parentClassName: '',
       styles: {},
       parentId: null,
-      position: { col: 4, row: 2 },
+      position: { col: 4, row: 2 }, // col 4 in grid, but will shift to col 1 in list when filters are hidden
       colSpan: { grid: 9, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: { hierarchical: true }
@@ -685,7 +685,7 @@ export const categoryConfig = {
       parentId: null,
       position: { col: 1, row: 2 },
       colSpan: { grid: 3, list: 12 },
-      viewMode: ['grid', 'list'],
+      viewMode: ['grid'], // Only show filters in grid view
       metadata: { hierarchical: true }
     },
 

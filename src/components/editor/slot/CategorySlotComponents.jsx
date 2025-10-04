@@ -741,7 +741,8 @@ const ProductItemsGrid = createSlotComponent({
     setCurrentDragInfo,
     selectedElementId,
     showBorders,
-    mode
+    mode,
+    viewMode = 'grid' // Add viewMode prop with default
   }) => {
     const containerRef = useRef(null);
 
@@ -749,7 +750,8 @@ const ProductItemsGrid = createSlotComponent({
       // Editor: Render individual product cards as slot-based containers
       const storeContext = useStore();
       const storeSettings = storeContext?.settings || null;
-      const gridClasses = getGridClasses(storeSettings);
+      // Use grid-cols-1 for list view, dynamic grid for grid view
+      const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
 
       // Get sample products from categoryContext OR variableContext
       const rawProducts = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
@@ -966,7 +968,7 @@ const ProductItemsGrid = createSlotComponent({
                 variableContext={{ ...variableContext, product }}
                 mode={mode || "edit"}
                 showBorders={showBorders !== undefined ? showBorders : true}
-                viewMode="grid"
+                viewMode={viewMode}
                 onElementClick={onElementClick}
                 setPageConfig={setPageConfig}
                 saveConfiguration={saveConfiguration}
@@ -990,7 +992,8 @@ const ProductItemsGrid = createSlotComponent({
     // Storefront version - use same slot-based rendering as editor
     const storeContext = useStore();
     const storeSettings = storeContext?.settings || null;
-    const gridClasses = getGridClasses(storeSettings);
+    // Use grid-cols-1 for list view, dynamic grid for grid view
+    const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
 
     // Get products from categoryContext
     const rawProducts = categoryContext?.products || variableContext?.products || [];
@@ -1088,7 +1091,7 @@ const ProductItemsGrid = createSlotComponent({
                 categoryData={{ ...categoryContext, product }}
                 productData={product}
                 variableContext={{ ...variableContext, product }}
-                viewMode="grid"
+                viewMode={viewMode}
               />
             </div>
           );
