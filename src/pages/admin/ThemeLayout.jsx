@@ -70,6 +70,8 @@ export default function ThemeLayout() {
                 enable_product_filters: true,
                 collapse_filters: false,
                 max_visible_attributes: 5,
+                enable_view_mode_toggle: fullStore?.settings?.enable_view_mode_toggle ?? true,
+                default_view_mode: fullStore?.settings?.default_view_mode || 'grid',
                 // Product gallery defaults
                 product_gallery_layout: fullStore?.settings?.product_gallery_layout || 'horizontal',
                 vertical_gallery_position: fullStore?.settings?.vertical_gallery_position || 'left',
@@ -568,6 +570,43 @@ export default function ThemeLayout() {
                                         className="text-center"
                                     />
                                 </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="p-3 border rounded-lg space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label htmlFor="enable_view_mode_toggle">Enable Grid/List View Toggle</Label>
+                                        <p className="text-sm text-gray-500">Show toggle button to switch between grid and list view on category pages.</p>
+                                    </div>
+                                    <Switch
+                                        id="enable_view_mode_toggle"
+                                        checked={!!store.settings.enable_view_mode_toggle}
+                                        onCheckedChange={(c) => handleSettingsChange('enable_view_mode_toggle', c)}
+                                    />
+                                </div>
+
+                                {store.settings.enable_view_mode_toggle && (
+                                    <div className="pt-3 border-t">
+                                        <div>
+                                            <Label htmlFor="default_view_mode">Default View Mode</Label>
+                                            <p className="text-sm text-gray-500">Choose which view mode to show by default.</p>
+                                        </div>
+                                        <Select
+                                            value={store.settings.default_view_mode || 'grid'}
+                                            onValueChange={(value) => handleSettingsChange('default_view_mode', value)}
+                                        >
+                                            <SelectTrigger className="mt-2">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="grid">Grid View</SelectItem>
+                                                <SelectItem value="list">List View</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />

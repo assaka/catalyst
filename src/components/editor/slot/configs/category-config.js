@@ -233,6 +233,7 @@ export const categoryConfig = {
       position: { col: 11, row: 1 },
       colSpan: { grid: 2, list: 4 },
       viewMode: ['grid', 'list'],
+      conditionalDisplay: 'settings.enable_view_mode_toggle',
       metadata: {
         hierarchical: false,
         component: 'ViewModeToggle',

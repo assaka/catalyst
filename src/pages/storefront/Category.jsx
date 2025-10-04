@@ -75,7 +75,7 @@ export default function Category() {
   const [itemsPerPage, setItemsPerPage] = useState(calculateItemsPerPage());
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // Add view mode state (grid or list)
+  const [viewMode, setViewMode] = useState(settings?.default_view_mode || 'grid'); // Use default from settings
 
   const { storeCode } = useParams();
   const location = useLocation();
