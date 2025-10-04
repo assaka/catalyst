@@ -131,11 +131,6 @@ const ResizeWrapper = ({
     }
 
     if (wrapperRef.current && !naturalSize.width && size.width === 'auto') {
-      console.log('📏 ResizeWrapper: Calculating initial width', {
-        disabled,
-        slotId: children?.props?.['data-slot-id'],
-        type: children?.type
-      });
       const rect = wrapperRef.current.getBoundingClientRect();
       
       // Find parent slot container
@@ -193,16 +188,6 @@ const ResizeWrapper = ({
         const newWidth = Math.round(naturalPercentage * 10) / 10;
         const newWidthUnit = '%';
 
-        console.log('📏 ResizeWrapper: Setting initial size', {
-          slotId: children?.props?.['data-slot-id'],
-          isTextElement,
-          rectWidth: rect.width,
-          naturalPercentage,
-          newWidth,
-          newWidthUnit,
-          existingWidth: children?.props?.style?.width
-        });
-
         setSize(prev => ({
           ...prev,
           width: newWidth,
@@ -225,11 +210,6 @@ const ResizeWrapper = ({
         if (currentWidth !== 'auto' && parentRect.width > 0) {
           const maxAllowedWidth = parentRect.width - 10; // 10px margin
           if (currentWidth > maxAllowedWidth) {
-            console.log('TEXT RESIZE: Auto-shrinking text to prevent overflow', {
-              currentWidth,
-              maxAllowedWidth,
-              parentWidth: parentRect.width
-            });
 
             setSize(prevSize => ({
               ...prevSize,
@@ -267,10 +247,6 @@ const ResizeWrapper = ({
 
   const handleMouseDown = useCallback((e) => {
     if (disabled) return;
-
-    console.log('🟧 ResizeWrapper: MouseDown', { isButton });
-    e.preventDefault();
-    e.stopPropagation();
     
     const rect = wrapperRef.current.getBoundingClientRect();
     
@@ -457,16 +433,6 @@ const ResizeWrapper = ({
         const widthStyle = !disabled && (size.width !== 'auto' && size.widthUnit !== 'auto') ?
           { width: `${size.width}${size.widthUnit || 'px'}` } :
           hasWFitClass ? { width: 'fit-content' } : {};
-
-        console.log('🎨 ResizeWrapper Button Style:', {
-          disabled,
-          slotId: children?.props?.['data-slot-id'],
-          sizeWidth: size.width,
-          sizeWidthUnit: size.widthUnit,
-          hasWFitClass,
-          appliedWidth: widthStyle.width,
-          originalStyle: children.props.style
-        });
 
         return {
           ...children.props.style,
