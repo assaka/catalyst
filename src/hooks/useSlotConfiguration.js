@@ -1098,6 +1098,12 @@ export function useSlotConfiguration({
       console.log('[DRAG-DROP] 📦 Target is product card instance, using product_card_template');
       targetSlot = slots['product_card_template'];
       actualTargetSlotId = 'product_card_template';
+      console.log('[DRAG-DROP] 🔍 Product card template slot:', {
+        found: !!targetSlot,
+        type: targetSlot?.type,
+        parentId: targetSlot?.parentId,
+        hasParentId: targetSlot?.parentId !== undefined
+      });
     }
 
     if (!targetSlot) {
