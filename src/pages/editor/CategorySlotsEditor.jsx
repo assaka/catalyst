@@ -107,8 +107,6 @@ const categoryCustomSlotRenderer = (slot, context) => {
   const sampleCategoryContext = context || generateMockCategoryContext();
   const storeSettings = context?.storeSettings || {};
 
-  console.log(`🎯 CUSTOM SLOT RENDERER CALLED FOR: ${slot.id} (parentId: ${slot.parentId})`);
-
   // Handle component slots (new pattern from category-config.js)
   if (slot.type === 'component') {
     const componentName = slot.component;
@@ -157,7 +155,6 @@ const categoryCustomSlotRenderer = (slot, context) => {
     // The registered ProductItemsGrid component in CategorySlotComponents.jsx
     // will create individual slot containers for each product
     if (componentName === 'ProductItemsGrid') {
-      console.log('🛒 ProductItemsGrid - letting ComponentRegistry handle rendering');
       return undefined; // Pass through to ComponentRegistry
     }
 
@@ -316,22 +313,12 @@ const categoryCustomSlotRenderer = (slot, context) => {
     );
   }
 
-  // IMMEDIATELY check for product_items
-  if (slot.id === 'product_items') {
-    console.log('🚨 PRODUCT_ITEMS REACHED CUSTOM SLOT RENDERER!');
-    console.log('🚨 This should trigger our handler');
-  }
-
   // Handle products_container explicitly
   if (slot.id === 'products_container') {
-    console.log('📦 PRODUCTS_CONTAINER EXPLICIT HANDLER RUNNING!');
-    console.log('📦 WILL RENDER CHILDREN RECURSIVELY');
-
     // Find the product_items child slot and render it explicitly
     const productItemsSlot = Object.values(context?.layoutConfig?.slots || {}).find(s => s.id === 'product_items');
 
     if (productItemsSlot) {
-      console.log('📦 FOUND product_items slot, rendering explicitly');
 
       // Get microslot configurations from category config
       const microslotConfigs = {
@@ -370,13 +357,11 @@ const categoryCustomSlotRenderer = (slot, context) => {
   // Don't handle product_items - let ComponentRegistry ProductItemsGrid handle it
   // This ensures storefront and editor use the same rendering logic
   if (slot.id === 'product_items') {
-    console.log('🛍️ PRODUCT_ITEMS: Passing through to ComponentRegistry');
     return undefined; // Let ComponentRegistry handle it
   }
 
   // Handle individual product_item_card if needed (fallback for individual card rendering)
   if (slot.id === 'product_item_card') {
-    console.log('🎴 PRODUCT_ITEM_CARD HANDLER RUNNING!');
 
     // For individual card rendering, just render a single sample card
     const sampleProduct = sampleCategoryContext?.products?.[0];
