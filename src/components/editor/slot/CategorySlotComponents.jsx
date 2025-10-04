@@ -3,7 +3,7 @@
  * Register category-specific slot components with the unified registry
  */
 
-import React, { useRef, useEffect, Fragment } from 'react';
+import React, { useRef, useEffect, Fragment, useState, useCallback } from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
