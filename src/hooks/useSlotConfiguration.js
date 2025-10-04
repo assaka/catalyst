@@ -1699,12 +1699,12 @@ export function useSlotConfiguration({
               let effectiveTargetId = targetSlotId;
               let isProductSlotDrag = false;
 
-              // Check if dragged slot is a product card child
+              // Check if dragged slot is a product card child by checking the TEMPLATE slot
               if (draggedMatch) {
                 const baseId = draggedMatch[1];
-                const draggedSlot = prevConfig.slots[draggedSlotId];
+                const templateSlot = prevConfig.slots[baseId]; // Check template, not instance
 
-                if (draggedSlot?.parentId?.startsWith('product_card')) {
+                if (templateSlot?.parentId === 'product_card_template') {
                   effectiveDraggedId = baseId;
                   isProductSlotDrag = true;
                   console.log('📦 Product slot detected, using template ID:', baseId);
@@ -1714,9 +1714,9 @@ export function useSlotConfiguration({
               // Check if target slot is a product card child
               if (targetMatch && isProductSlotDrag) {
                 const baseId = targetMatch[1];
-                const targetSlot = prevConfig.slots[targetSlotId];
+                const templateSlot = prevConfig.slots[baseId]; // Check template, not instance
 
-                if (targetSlot?.parentId?.startsWith('product_card')) {
+                if (templateSlot?.parentId === 'product_card_template') {
                   effectiveTargetId = baseId;
                 }
               }
