@@ -410,7 +410,7 @@ export const categoryConfig = {
       id: 'product_card_price_container',
       type: 'container',
       content: '',
-      className: 'flex items-baseline gap-2',
+      className: 'flex flex-wrap items-baseline gap-2',
       parentClassName: '',
       styles: {},
       parentId: 'product_card_content',
