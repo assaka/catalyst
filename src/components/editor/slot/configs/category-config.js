@@ -392,7 +392,7 @@ export const categoryConfig = {
       id: 'product_card_content',
       type: 'container',
       content: '',
-      className: 'grid grid-cols-12 gap-2',
+      className: 'grid grid-cols-12 gap-2 border border-gray-300 bg-white rounded-lg p-2',
       parentClassName: '',
       styles: {},
       parentId: 'product_card_template',
