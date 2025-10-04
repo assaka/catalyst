@@ -1121,22 +1121,27 @@ export function useSlotConfiguration({
     }
 
     // Store ALL original properties to preserve them
+    // Use template slot for properties if dragged slot is instance
+    const draggedInstanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
+    const draggedTemplateId = draggedInstanceMatch ? draggedInstanceMatch[1] : draggedSlotId;
+    const draggedTemplateSlot = slots[draggedTemplateId] || draggedSlot;
+
     const originalProperties = {
       id: draggedSlot.id,
-      type: draggedSlot.type,
-      component: draggedSlot.component,  // CRITICAL: Preserve component field for component slots
-      content: draggedSlot.content,
-      className: draggedSlot.className,
-      parentClassName: draggedSlot.parentClassName,
-      parentId: draggedSlot.parentId,  // CRITICAL: Must preserve parentId!
-      styles: draggedSlot.styles || {},
-      layout: draggedSlot.layout,
-      gridCols: draggedSlot.gridCols,
-      colSpan: draggedSlot.colSpan,
-      rowSpan: draggedSlot.rowSpan,
-      viewMode: draggedSlot.viewMode,
-      metadata: draggedSlot.metadata || {},
-      position: draggedSlot.position || {}
+      type: draggedTemplateSlot.type,
+      component: draggedTemplateSlot.component,  // CRITICAL: Preserve component field for component slots
+      content: draggedTemplateSlot.content,
+      className: draggedTemplateSlot.className,
+      parentClassName: draggedTemplateSlot.parentClassName,
+      parentId: draggedTemplateSlot.parentId,  // CRITICAL: Must preserve parentId!
+      styles: draggedTemplateSlot.styles || {},
+      layout: draggedTemplateSlot.layout,
+      gridCols: draggedTemplateSlot.gridCols,
+      colSpan: draggedTemplateSlot.colSpan,
+      rowSpan: draggedTemplateSlot.rowSpan,
+      viewMode: draggedTemplateSlot.viewMode,
+      metadata: draggedTemplateSlot.metadata || {},
+      position: draggedTemplateSlot.position || {}
     };
 
     // Calculate new position based on drop zone
