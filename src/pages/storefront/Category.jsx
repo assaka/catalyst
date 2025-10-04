@@ -8,7 +8,7 @@ import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
-import { Package } from "lucide-react";
+import { Package, Grid, List } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
@@ -75,6 +75,7 @@ export default function Category() {
   const [itemsPerPage, setItemsPerPage] = useState(calculateItemsPerPage());
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // Add view mode state (grid or list)
 
   const { storeCode } = useParams();
   const location = useLocation();
@@ -706,21 +707,52 @@ export default function Category() {
         ) : (
           <>
             {sortedProducts.length > 0 || loading ? (
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                {console.log('🔍 Category.jsx - Rendering CategorySlotRenderer with:', {
-                  productsLength: paginatedProducts.length,
-                  sortedProductsLength: sortedProducts.length,
-                  allProductsLength: products.length,
-                  hasCategorySlots: !!categorySlots,
-                  categorySlotKeys: categorySlots ? Object.keys(categorySlots).slice(0, 20) : []
-                })}
-                <CategorySlotRenderer
-                  slots={categorySlots}
-                  parentId={null}
-                  viewMode="grid"
-                  categoryContext={categoryContext}
-                />
-              </div>
+              <>
+                {/* View Mode Toggle */}
+                <div className="flex justify-end mb-4">
+                  <div className="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                        viewMode === 'grid'
+                          ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Grid className="w-4 h-4" />
+                      <span>Grid</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                        viewMode === 'list'
+                          ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                      <span>List</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 gap-2 auto-rows-min">
+                  {console.log('🔍 Category.jsx - Rendering CategorySlotRenderer with:', {
+                    productsLength: paginatedProducts.length,
+                    sortedProductsLength: sortedProducts.length,
+                    allProductsLength: products.length,
+                    hasCategorySlots: !!categorySlots,
+                    categorySlotKeys: categorySlots ? Object.keys(categorySlots).slice(0, 20) : [],
+                    viewMode
+                  })}
+                  <CategorySlotRenderer
+                    slots={categorySlots}
+                    parentId={null}
+                    viewMode={viewMode}
+                    categoryContext={categoryContext}
+                  />
+                </div>
+              </>
             ) : (
               <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
                 <Package className="w-16 h-16 text-gray-400 mb-4" />
