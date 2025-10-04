@@ -827,7 +827,7 @@ const ProductItemsGrid = createSlotComponent({
               id: productCardId,
               type: 'container', // Make it a container type for proper grid rendering
               parentId: 'product_items',
-              colSpan: { grid: 1, list: 1 }, // Each card takes 1 column in the grid
+              colSpan: productCardTemplate?.colSpan || { grid: 1, list: 12 }, // Use template's colSpan
               position: { col: index + 1, row: 1 },
               metadata: {
                 ...productCardTemplate?.metadata,
