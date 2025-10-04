@@ -598,7 +598,16 @@ const UnifiedSlotsEditor = ({
           slotId={selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null}
           slotConfig={(() => {
             const slotId = selectedElement?.getAttribute ? selectedElement.getAttribute('data-slot-id') : null;
-            const config = layoutConfig && layoutConfig.slots && slotId ? layoutConfig.slots[slotId] : null;
+            if (!slotId) return null;
+
+            // First try to get from layoutConfig (saved/modified slots)
+            let config = layoutConfig?.slots?.[slotId];
+
+            // If not found, try to get from static default config (templates that haven't been modified yet)
+            if (!config && defaultConfig?.slots?.[slotId]) {
+              config = defaultConfig.slots[slotId];
+            }
+
             return config;
           })()}
           allSlots={layoutConfig?.slots || {}}
