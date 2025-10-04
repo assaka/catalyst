@@ -331,9 +331,9 @@ export const categoryConfig = {
     // Product Card Template - defines structure for ONE product card
     product_card_template: {
       id: 'product_card_template',
-      type: 'container',
+      type: 'flex',
       content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card grid grid-cols-12 gap-2',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card flex flex-wrap gap-2',
       parentClassName: '',
       styles: {},
       parentId: 'product_items',
@@ -344,7 +344,7 @@ export const categoryConfig = {
         hierarchical: true,
         isTemplate: true,
         displayName: 'Product Card Template',
-        isGridContainer: true
+        isGridContainer: false
       }
     },
 
@@ -354,8 +354,8 @@ export const categoryConfig = {
       type: 'image',
       content: '{{this.image_url}}',
       className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
-      parentClassName: 'relative overflow-hidden mb-4',
-      styles: {},
+      parentClassName: 'relative overflow-hidden flex-shrink-0',
+      styles: { width: '200px' },
       parentId: 'product_card_template',
       position: { col: 1, row: 1 },
       colSpan: { grid: 12, list: 12 },
@@ -392,9 +392,9 @@ export const categoryConfig = {
       id: 'product_card_price_container',
       type: 'container',
       content: '',
-      className: 'flex items-baseline gap-2 mb-4',
+      className: 'flex items-baseline gap-2 mb-4 flex-grow',
       parentClassName: '',
-      styles: {},
+      styles: { minWidth: '150px' },
       parentId: 'product_card_template',
       position: { col: 1, row: 3 },
       colSpan: { grid: 12, list: 12 },
