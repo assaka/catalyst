@@ -753,6 +753,9 @@ const ProductItemsGrid = createSlotComponent({
       // Use grid-cols-1 for list view, dynamic grid for grid view
       const gridClasses = viewMode === 'list' ? 'grid-cols-1' : getGridClasses(storeSettings);
 
+      // Find product card template early for logging
+      const productCardTemplate = allSlots?.product_card_template;
+
       console.log('🔍 ProductItemsGrid - Editor Mode:', {
         viewMode,
         gridClasses,
@@ -795,8 +798,7 @@ const ProductItemsGrid = createSlotComponent({
         );
       }
 
-      // Find product card template and ALL its descendant slots (children, grandchildren, etc.)
-      const productCardTemplate = allSlots?.product_card_template;
+      // Find ALL descendant slots of product card template (children, grandchildren, etc.)
       const productCardChildSlots = {};
 
       if (allSlots) {
