@@ -982,18 +982,29 @@ export function useSlotConfiguration({
       if (slot.parentId && slot.parentId !== null && !slots[slot.parentId]) {
         // Check if this references a template parent (e.g., product_card_price_0 -> product_card_price_container)
         const baseTemplateParentId = slot.parentId.replace(/_\d+$/, '');
-        if (!slots[baseTemplateParentId]) {
+
+        // Special case: product_card_N instances reference product_card_template
+        const isProductCardInstance = slot.parentId.match(/^product_card_(\d+)$/);
+
+        if (!slots[baseTemplateParentId] && !isProductCardInstance) {
           console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId} (template: ${baseTemplateParentId})`, {
             slotId,
             parentId: slot.parentId,
             parentExists: !!slots[slot.parentId],
             templateParentExists: !!slots[baseTemplateParentId],
+            isProductCardInstance: !!isProductCardInstance,
             availableSlots: Object.keys(slots).filter(k => k.includes('product_card'))
           });
           return false;
         }
-        // Template parent exists, so this is valid
-        console.log(`✅ Slot ${slotId} references instance parent ${slot.parentId}, but template ${baseTemplateParentId} exists - allowing`);
+
+        if (isProductCardInstance && slots['product_card_template']) {
+          // product_card_0 references product_card_template
+          console.log(`✅ Slot ${slotId} references instance parent ${slot.parentId} (product card instance), template exists - allowing`);
+        } else if (slots[baseTemplateParentId]) {
+          // Template parent exists, so this is valid
+          console.log(`✅ Slot ${slotId} references instance parent ${slot.parentId}, but template ${baseTemplateParentId} exists - allowing`);
+        }
       }
     }
 
