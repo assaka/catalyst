@@ -1721,6 +1721,16 @@ export function useSlotConfiguration({
                 }
               }
 
+              // Debug: check if template slots exist before drop
+              console.log('📦 Before drop handler:', {
+                draggedId: effectiveDraggedId,
+                targetId: effectiveTargetId,
+                draggedSlotExists: !!prevConfig.slots[effectiveDraggedId],
+                targetSlotExists: !!prevConfig.slots[effectiveTargetId],
+                draggedSlot: prevConfig.slots[effectiveDraggedId],
+                targetSlot: prevConfig.slots[effectiveTargetId]
+              });
+
               // Use the hook function to handle the drop logic
               const updatedSlots = slotDropHandler(effectiveDraggedId, effectiveTargetId, dropPosition, prevConfig.slots);
 
