@@ -774,13 +774,6 @@ const ProductItemsGrid = createSlotComponent({
         in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
       }));
 
-      console.log('🔍 ProductItemsGrid - EDITOR MODE');
-      console.log('🔍 Products available:', products.length);
-      console.log('🔍 First product price:', products[0]?.price_formatted);
-      console.log('🔍 CategoryContext:', categoryContext);
-      console.log('🔍 VariableContext:', variableContext);
-      console.log('🔍 AllSlots keys:', allSlots ? Object.keys(allSlots) : 'NO SLOTS');
-
       if (products.length === 0) {
         return (
           <div
@@ -816,11 +809,6 @@ const ProductItemsGrid = createSlotComponent({
         // Start collecting from product_card_template
         collectDescendants('product_card_template');
       }
-
-      console.log('🔍 Product card template:', !!productCardTemplate);
-      console.log('🔍 Product card descendant slots:', Object.keys(productCardChildSlots));
-      console.log('🔍 Descendant slot details:', productCardChildSlots);
-      console.log('🔍 Grid classes:', gridClasses);
 
       // Render each product with its child slots as individual editable elements
       return (
@@ -897,20 +885,6 @@ const ProductItemsGrid = createSlotComponent({
                 ? { ...processedStyles, ...processedSavedStyles }
                 : processedStyles;
 
-              // Debug logging for button styles
-              if (slotId === 'product_card_add_to_cart') {
-                console.log(`[CategorySlotComponents] 🔵 Add to Cart Button - Loading slot ${templateSlotId}:`, {
-                  templateSlotId,
-                  savedSlotConfigExists: !!savedSlotConfig,
-                  savedSlotConfigId: savedSlotConfig?.id,
-                  templateStyles: slotConfig.styles,
-                  processedStyles,
-                  savedStylesRaw: savedSlotConfig?.styles,
-                  processedSavedStyles,
-                  finalStyles
-                });
-              }
-
               // CRITICAL: Use saved className if available, otherwise use template className
               const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
               const finalParentClassName = savedSlotConfig?.parentClassName ?? slotConfig.parentClassName;
@@ -957,24 +931,7 @@ const ProductItemsGrid = createSlotComponent({
                 }
               };
 
-              // Log when we find saved customizations (only once per template slot)
-              if (savedSlotConfig && index === 0) {
-                console.log(`✨ Applying template customization for ${slotId} to all products:`, {
-                  savedClassName: savedSlotConfig.className,
-                  savedStyles: savedSlotConfig.styles,
-                  savedPosition: savedSlotConfig.position,
-                  savedColSpan: savedSlotConfig.colSpan,
-                  templatePosition: slotConfig.position,
-                  templateColSpan: slotConfig.colSpan,
-                  finalPosition: savedSlotConfig?.position ?? slotConfig.position,
-                  finalColSpan: savedSlotConfig?.colSpan ?? slotConfig.colSpan
-                });
-              }
             });
-
-            console.log('🔍 Product', index, 'using template slots:', Object.keys(productSlots));
-            console.log('🔍 Add to cart slot:', productSlots[`product_card_add_to_cart_${index}`]);
-            console.log('🔍 Product in_stock:', product.in_stock);
 
             // Render the product card as a container slot with its children
             return (
@@ -1018,17 +975,6 @@ const ProductItemsGrid = createSlotComponent({
     // Get products from categoryContext
     const rawProducts = categoryContext?.products || variableContext?.products || [];
 
-    console.log('🔍 ProductItemsGrid STOREFRONT - Data received:', {
-      hasCategoryContext: !!categoryContext,
-      categoryContextProducts: categoryContext?.products?.length,
-      variableContextProducts: variableContext?.products?.length,
-      rawProductsLength: rawProducts.length,
-      hasAllSlots: !!allSlots,
-      allSlotsKeys: allSlots ? Object.keys(allSlots).slice(0, 20) : [],
-      hasProductCardTemplate: !!allSlots?.product_card_template,
-      firstProductImages: rawProducts[0]?.images
-    });
-
     // Format prices if not already formatted
     const products = rawProducts.map(p => ({
       ...p,
@@ -1037,13 +983,6 @@ const ProductItemsGrid = createSlotComponent({
       image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
       in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
     }));
-
-    console.log('🔍 ProductItemsGrid STOREFRONT - First product after formatting:', {
-      name: products[0]?.name,
-      price_formatted: products[0]?.price_formatted,
-      image_url: products[0]?.image_url,
-      in_stock: products[0]?.in_stock
-    });
 
     // Find product card template and descendants
     const productCardTemplate = allSlots?.product_card_template;
@@ -1100,15 +1039,6 @@ const ProductItemsGrid = createSlotComponent({
                 ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                 ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                 ?.replace(/\{\{this\.image_url\}\}/g, product.image_url);
-
-              if (isImageSlot && index === 0) {
-                console.log('🔍 Image slot processing:', {
-                  slotId,
-                  originalContent: slotConfig.content,
-                  processedContent,
-                  productImageUrl: product.image_url
-                });
-              }
             }
 
             productSlots[slotId] = {

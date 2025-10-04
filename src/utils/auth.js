@@ -205,7 +205,6 @@ export const setRoleBasedAuthData = (user, token) => {
     localStorage.setItem('customer_user_data', JSON.stringify(user));
     localStorage.setItem('customer_session_id', generateSessionId());
     apiClient.setToken(token);
-    console.log('✅ Customer session stored');
     
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);

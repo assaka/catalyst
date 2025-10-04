@@ -254,19 +254,6 @@ export function UnifiedSlotRenderer({
 
     const isDisabled = slot.metadata?.disableResize || false;
 
-    // Debug logging for product card slots
-    if (slot.id?.includes('product_') && context === 'editor') {
-      console.log(`🔧 ResizeWrapper for ${slot.id}:`, {
-        isDisabled,
-        disableResize: slot.metadata?.disableResize,
-        metadata: slot.metadata,
-        hasSetPageConfig: !!setPageConfig,
-        hasSaveConfiguration: !!saveConfiguration,
-        minWidth,
-        minHeight
-      });
-    }
-
     return (
       <ResizeWrapper
         minWidth={minWidth}
@@ -276,17 +263,11 @@ export function UnifiedSlotRenderer({
         onResize={(newSize) => {
           if (!setPageConfig || !saveConfiguration) return;
 
-          console.log(`📐 Resize: ${slot.id}`, {
-            width: `${newSize.width}${newSize.widthUnit || 'px'}`,
-            height: newSize.height !== 'auto' ? `${newSize.height}${newSize.heightUnit || 'px'}` : 'auto'
-          });
-
           setPageConfig(prevConfig => {
             const updatedSlots = { ...prevConfig?.slots };
 
             // CRITICAL: Create slot if it doesn't exist (for template slots not yet in config)
             if (!updatedSlots[slot.id]) {
-              console.log(`🆕 Creating new slot for resize: ${slot.id}`);
               updatedSlots[slot.id] = {
                 id: slot.id,
                 type: slot.type || 'text',
@@ -333,10 +314,6 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
 
-    if (id === 'product_sku') {
-      console.log('renderBasicSlot - product_sku:', { type, className, content: content?.substring(0, 50) });
-    }
-
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
     const processedClassName = processVariables(className, variableContext);
@@ -375,17 +352,6 @@ export function UnifiedSlotRenderer({
 
     // Text Element
     if (type === 'text') {
-      if (id === 'product_sku') {
-        console.log('SKU rendering:', {
-          context,
-          className,
-          processedClassName,
-          content: content?.substring(0, 50),
-          processedContent: processedContent?.substring(0, 100),
-          metadata,
-          variableContext: variableContext?.product?.sku
-        });
-      }
 
       if (context === 'editor' && mode === 'edit') {
         const hasWFit = className?.includes('w-fit');
@@ -512,15 +478,6 @@ export function UnifiedSlotRenderer({
     if (type === 'image') {
       let imageSrc = processedContent || content;
 
-      console.log('🔍 UnifiedSlotRenderer IMAGE:', {
-        id,
-        context,
-        content,
-        processedContent,
-        imageSrc,
-        hasTemplateVars: imageSrc?.includes('{{')
-      });
-
       // Handle product-specific images
       if (id === 'product_image' && productData.product) {
         imageSrc = getProductImageUrl(productData.product, productData.activeImageIndex || 0);
@@ -534,7 +491,6 @@ export function UnifiedSlotRenderer({
       }
       // Check for unprocessed template variables in both editor and storefront
       else if (imageSrc.includes('{{') || imageSrc.includes('}}')) {
-        console.warn('🔍 Found unprocessed template variables in image src:', imageSrc);
         imageSrc = context === 'storefront' ?
           getProductImageUrl(productData.product) :
           'https://placehold.co/400x400?text=Product+Image';
@@ -688,18 +644,6 @@ export function UnifiedSlotRenderer({
     // Check if slot has absolute positioning - if so, return it directly without any wrapper
     const isAbsolutePositioned = slot.className?.includes('absolute') || slot.styles?.position === 'absolute';
 
-    // Debug product labels wrapper
-    if (slot.id === 'product_labels') {
-      console.log('🏷️ PRODUCT LABELS WRAPPER:', {
-        slotId: slot.id,
-        className: slot.className,
-        styles: slot.styles,
-        isAbsolutePositioned,
-        context,
-        willSkipWrapper: isAbsolutePositioned
-      });
-    }
-
     if (isAbsolutePositioned) {
       // For absolutely positioned elements, return directly without any grid wrapper
       return <React.Fragment key={slot.id}>{slotContent}</React.Fragment>;
@@ -803,17 +747,6 @@ export function UnifiedSlotRenderer({
           if (typeof viewModeValue === 'number') {
             colSpanClass = `col-span-${viewModeValue}`;
             gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
-
-            // Debug logging for product card children in list view
-            if (viewMode === 'list' && (slot.id?.includes('product_card_image') || slot.id?.includes('product_card_content'))) {
-              console.log(`🔍 UnifiedSlotRenderer - ${slot.id}:`, {
-                viewMode,
-                colSpan: slot.colSpan,
-                viewModeValue,
-                colSpanClass,
-                slotId: slot.id
-              });
-            }
           } else if (typeof viewModeValue === 'string') {
             colSpanClass = viewModeValue;
             gridColumn = null;

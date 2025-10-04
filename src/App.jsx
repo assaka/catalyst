@@ -26,7 +26,6 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
-    console.log('📦 Loading plugins from database registry...');
     
     // Fetch active plugins from database
     const response = await fetch('/api/plugins/registry?status=active');
@@ -38,7 +37,6 @@ async function initializeDatabasePlugins() {
     }
     
     const activePlugins = result.data || [];
-    console.log(`🔌 Found ${activePlugins.length} active plugins in database`);
     
     // Load hooks and events for each plugin
     for (const plugin of activePlugins) {
@@ -47,8 +45,6 @@ async function initializeDatabasePlugins() {
     
     // Set up pricing notifications globally
     setupGlobalPricingNotifications();
-    
-    console.log('✅ Database-driven plugins initialized');
     
   } catch (error) {
     console.error('❌ Error initializing database plugins:', error);
@@ -70,7 +66,6 @@ async function loadPluginHooksAndEvents(pluginId) {
           if (hook.enabled) {
             const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
             hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
-            console.log(`🎣 Registered database hook: ${hook.hook_name}`);
           }
         }
       }
@@ -81,7 +76,6 @@ async function loadPluginHooksAndEvents(pluginId) {
           if (event.enabled) {
             const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
             eventSystem.on(event.event_name, listenerFunction);
-            console.log(`📡 Registered database event: ${event.event_name}`);
           }
         }
       }
@@ -159,15 +153,13 @@ function setupGlobalPricingNotifications() {
     }
   `;
   document.head.appendChild(style);
-  
-  console.log('✅ Global pricing notifications initialized');
+
 }
 
 function App() {
   // Initialize the new hook-based architecture
   useEffect(() => {
     const initializeExtensionSystem = async () => {
-      console.log('🚀 Initializing Extension System...')
       
       try {
         // Load core extensions
@@ -186,11 +178,8 @@ function App() {
 
         // Initialize extensions
         await extensionSystem.loadFromConfig(extensionsToLoad)
-        
-        console.log('✅ Extension System initialized successfully')
-        
+
         // Initialize database-driven plugins by loading hooks from database
-        console.log('💰 Loading database-driven plugins...')
         await initializeDatabasePlugins();
         
         // Emit system ready event
