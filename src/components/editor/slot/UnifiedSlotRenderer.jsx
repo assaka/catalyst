@@ -71,28 +71,27 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   let textContent = processedContent;
 
   // Special handling for price-related slots
-  const isPriceSlot = ['product_price', 'original_price', 'compare_price'].includes(slot.id);
+  const isPriceSlot = ['product_price', 'product_card_price', 'original_price', 'compare_price'].includes(slot.id);
 
   // Slots that should remain empty when there's no content (conditional slots)
-  const conditionalSlots = ['product_labels', 'product_card_compare_price'];
+  const conditionalSlots = ['product_labels', 'product_card_compare_price', 'compare_price'];
 
   // Check if slot has conditionalDisplay metadata
   const hasConditionalDisplay = slot.metadata?.conditionalDisplay;
 
   if (context === 'editor' && !processedContent) {
-    if (isPriceSlot) {
-      // Show example price in editor for price slots
-      if (slot.id === 'product_price') {
+    if (isPriceSlot && !conditionalSlots.includes(slot.id)) {
+      // Show example price in editor for main price slots only (not compare prices)
+      if (slot.id === 'product_price' || slot.id === 'product_card_price') {
         textContent = '<span data-main-price class="main-price">$99.99</span>';
       } else if (slot.id === 'original_price') {
         textContent = '<span data-original-price class="original-price">$129.99</span>';
       }
-      // Skip rendering for compare_price (conditionally displayed)
     } else if (slot.id === 'product_labels') {
       // Show example labels in editor
       textContent = '<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">Sale</span><span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">New</span>';
     }
-    // Don't show '[Text placeholder]' - just leave empty
+    // For conditional slots or slots with conditionalDisplay, don't show any placeholder
   }
 
   // Skip rendering entirely if empty (no placeholder text)
