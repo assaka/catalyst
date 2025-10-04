@@ -1284,7 +1284,7 @@ export function useSlotConfiguration({
         const newParentMatch = newParentId.match(/^(.+)_(\d+)$/);
         const templateParentId = newParentMatch ? newParentMatch[1] : newParentId;
 
-        console.log('🔄 Mapping instance drag to template:', {
+        console.log('[DRAG-DROP] 🔄 Mapping instance drag to template:', {
           instanceSlotId: draggedSlotId,
           templateSlotId,
           instanceParentId: newParentId,
@@ -1340,7 +1340,7 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
-      console.error('❌ Configuration validation failed after drag, reverting changes', {
+      console.error('[DRAG-DROP] ❌ Configuration validation failed after drag, reverting changes', {
         draggedSlotId,
         targetSlotId,
         dropPosition,
@@ -1350,7 +1350,7 @@ export function useSlotConfiguration({
       return null;
     }
 
-    console.log('✅ Drag successful:', {
+    console.log('[DRAG-DROP] ✅ Drag successful:', {
       draggedSlotId,
       targetSlotId,
       dropPosition,
