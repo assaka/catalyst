@@ -140,6 +140,15 @@ export function CategorySlotRenderer({
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
+  // Debug: Check if view_mode_toggle exists
+  if (parentId === 'sorting_controls') {
+    console.log('🔍 sorting_controls childSlots:', {
+      childSlotIds: childSlots.map(s => s.id),
+      hasViewModeToggle: childSlots.some(s => s.id === 'view_mode_toggle'),
+      allSlotsKeys: slots ? Object.keys(slots).filter(k => k.includes('view_mode')) : []
+    });
+  }
+
   // Filter by conditionalDisplay
   childSlots = childSlots.filter(slot => {
     if (!slot.conditionalDisplay) return true;
