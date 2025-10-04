@@ -998,13 +998,7 @@ export function useSlotConfiguration({
           return false;
         }
 
-        if (isProductCardInstance && slots['product_card_template']) {
-          // product_card_0 references product_card_template
-          console.log(`✅ Slot ${slotId} references instance parent ${slot.parentId} (product card instance), template exists - allowing`);
-        } else if (slots[baseTemplateParentId]) {
-          // Template parent exists, so this is valid
-          console.log(`✅ Slot ${slotId} references instance parent ${slot.parentId}, but template ${baseTemplateParentId} exists - allowing`);
-        }
+        // Validation passed - template parent exists for instance slot
       }
     }
 
@@ -1273,12 +1267,7 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
-      console.error('❌ Configuration validation failed after drag, reverting changes', {
-        draggedSlotId,
-        newParentId,
-        newPosition,
-        parentExists: !!updatedSlots[newParentId]
-      });
+      console.error('❌ Configuration validation failed after drag, reverting changes');
       return null;
     }
 
@@ -1657,23 +1646,13 @@ export function useSlotConfiguration({
     return useCallback(async (configToSave = pageConfig) => {
       if (!configToSave) return;
 
-      console.log(`[saveConfiguration] 💾 START - Saving configuration for ${slotType}`);
-
       // Validate configuration before saving
       if (!validateSlotConfiguration(configToSave.slots)) {
-        console.error('[saveConfiguration] ❌ Cannot save invalid configuration');
+        console.error('❌ Cannot save invalid configuration');
         setLocalSaveStatus('error');
         setTimeout(() => setLocalSaveStatus(''), 5000);
         return;
       }
-
-      // Log product card button slots before save
-      const buttonSlots = Object.entries(configToSave.slots).filter(([id]) => id.includes('add_to_cart'));
-      console.log(`[saveConfiguration] 📋 Button slots being saved:`, buttonSlots.map(([id, slot]) => ({
-        id,
-        className: slot.className,
-        styles: slot.styles
-      })));
 
       setLocalSaveStatus('saving');
 
@@ -1690,7 +1669,6 @@ export function useSlotConfiguration({
               // Check if the base is a product card child template
               if (configToSave.slots[baseId]?.parentId === 'product_card_template') {
                 // Skip instance slots - they're dynamically generated
-                console.log(`[saveConfiguration] ⏭️ Skipping instance slot: ${slotId}`);
                 return;
               }
             }
@@ -1702,17 +1680,13 @@ export function useSlotConfiguration({
             ...configToSave,
             slots: filteredSlots
           };
-
-          console.log(`[saveConfiguration] 🚀 Calling slotConfigurationService.saveConfiguration for store ${storeId}`);
-          console.log(`[saveConfiguration] 📊 Slots before filter: ${Object.keys(configToSave.slots).length}, after filter: ${Object.keys(filteredSlots).length}`);
           await slotConfigurationService.saveConfiguration(storeId, configToSaveFiltered, slotType);
-          console.log(`[saveConfiguration] ✅ Save successful`);
         }
 
         setLocalSaveStatus('saved');
         setTimeout(() => setLocalSaveStatus(''), 3000);
       } catch (error) {
-        console.error('[saveConfiguration] ❌ Save failed:', error);
+        console.error('❌ Save failed:', error);
         setLocalSaveStatus('error');
         setTimeout(() => setLocalSaveStatus(''), 5000);
       }
@@ -1762,7 +1736,6 @@ export function useSlotConfiguration({
               const templateSlot = prevConfig?.slots?.[baseId]; // Check template, not instance
               if (templateSlot?.parentId === 'product_card_template') {
                 effectiveSlotId = baseId;
-                console.log('📦 Product slot resize detected, using template ID:', effectiveSlotId);
               }
             }
 
@@ -1795,7 +1768,6 @@ export function useSlotConfiguration({
               const templateSlot = prevConfig?.slots?.[baseId]; // Check template, not instance
               if (templateSlot?.parentId === 'product_card_template') {
                 effectiveSlotId = baseId;
-                console.log('📦 Product slot height resize detected, using template ID:', effectiveSlotId);
               }
             }
 
@@ -1846,7 +1818,6 @@ export function useSlotConfiguration({
                 if (templateSlot?.parentId === 'product_card_template') {
                   effectiveDraggedId = baseId;
                   isProductSlotDrag = true;
-                  console.log('📦 Product slot detected, using template ID:', baseId);
                 }
               }
 
@@ -1860,31 +1831,8 @@ export function useSlotConfiguration({
                 }
               }
 
-              // Debug: check if template slots exist before drop
-              const draggedSlotDebug = prevConfig.slots[effectiveDraggedId];
-              const targetSlotDebug = prevConfig.slots[effectiveTargetId];
-
-              console.log('📦 Before drop handler:', {
-                draggedId: effectiveDraggedId,
-                targetId: effectiveTargetId,
-                draggedSlotExists: !!draggedSlotDebug,
-                targetSlotExists: !!targetSlotDebug,
-                draggedParentId: draggedSlotDebug?.parentId,
-                targetParentId: targetSlotDebug?.parentId,
-                sameParent: draggedSlotDebug?.parentId === targetSlotDebug?.parentId,
-                draggedSlot: draggedSlotDebug,
-                targetSlot: targetSlotDebug
-              });
-
               // Use the hook function to handle the drop logic
               const updatedSlots = slotDropHandler(effectiveDraggedId, effectiveTargetId, dropPosition, prevConfig.slots);
-
-              console.log('📦 Drop handler executed:', {
-                draggedId: effectiveDraggedId,
-                targetId: effectiveTargetId,
-                dropPosition,
-                updatedSlots: updatedSlots ? 'success' : 'failed'
-              });
 
               if (!updatedSlots) {
                 resolve(null);
