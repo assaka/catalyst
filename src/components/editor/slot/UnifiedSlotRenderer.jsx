@@ -91,16 +91,12 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
     } else if (slot.id === 'product_labels') {
       // Show example labels in editor
       textContent = '<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">Sale</span><span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-2">New</span>';
-    } else if (!hasConditionalDisplay && !conditionalSlots.includes(slot.id)) {
-      // Only show placeholder if slot doesn't have conditional display
-      textContent = '[Text placeholder]';
     }
-  } else if (!processedContent && !conditionalSlots.includes(slot.id) && !hasConditionalDisplay) {
-    textContent = '[Text placeholder]';
+    // Don't show '[Text placeholder]' - just leave empty
   }
 
-  // Skip rendering entirely if empty and conditional
-  if (!textContent && (hasConditionalDisplay || conditionalSlots.includes(slot.id))) {
+  // Skip rendering entirely if empty (no placeholder text)
+  if (!textContent) {
     return null;
   }
 
