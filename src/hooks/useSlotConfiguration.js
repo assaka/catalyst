@@ -1469,12 +1469,13 @@ export function useSlotConfiguration({
 
   // Generic class change handler
   const handleClassChange = useCallback((slotId, className, styles, metadata = null, isAlignmentChange = false, slots) => {
+    console.log(`[handleClassChange] 🎨 START - slotId: ${slotId}`, { className, styles, metadata });
 
     const updatedSlots = { ...slots };
 
     // CRITICAL: Create slot if it doesn't exist (for template slots not yet in config)
     if (!updatedSlots[slotId]) {
-      console.log(`🆕 Creating new slot for style change: ${slotId}`);
+      console.log(`[handleClassChange] 🆕 Creating new slot for style change: ${slotId}`);
 
       // Extract base template ID (remove _0, _1, etc. suffix)
       const baseTemplateId = slotId.replace(/_\d+$/, '');
@@ -1497,7 +1498,7 @@ export function useSlotConfiguration({
         metadata: metadata || {}
       };
 
-      console.log(`✅ New slot inherits from template ${baseTemplateId}:`, {
+      console.log(`[handleClassChange] ✅ New slot inherits from template ${baseTemplateId}:`, {
         className: templateClassName,
         styles: templateStyles
       });
@@ -1506,6 +1507,7 @@ export function useSlotConfiguration({
     // Merge existing styles with new styles
     const existingStyles = updatedSlots[slotId].styles || {};
     const mergedStyles = { ...existingStyles, ...styles };
+    console.log(`[handleClassChange] 🔀 Merging styles for ${slotId}:`, { existingStyles, newStyles: styles, mergedStyles });
 
     // Define categories of classes
     const alignmentClasses = ['text-left', 'text-center', 'text-right'];
@@ -1527,6 +1529,11 @@ export function useSlotConfiguration({
           lastModified: new Date().toISOString()
         }
       };
+      console.log(`[handleClassChange] ✅ Updated instance ${slotId} (alignment):`, {
+        className: elementClassList.join(' '),
+        parentClassName: alignmentClassList.join(' '),
+        styles: mergedStyles
+      });
 
     } else {
       // For text styling (bold, italic, colors), keep existing parentClassName
@@ -1541,6 +1548,10 @@ export function useSlotConfiguration({
           lastModified: new Date().toISOString()
         }
       };
+      console.log(`[handleClassChange] ✅ Updated instance ${slotId} (non-alignment):`, {
+        className: className,
+        styles: mergedStyles
+      });
 
     }
 
@@ -1548,11 +1559,16 @@ export function useSlotConfiguration({
     // This ensures template and instance are updated in the SAME state update
     const baseTemplateId = slotId.replace(/_\d+$/, '');
     if (baseTemplateId !== slotId && updatedSlots[baseTemplateId]) {
-      console.log(`🔄 Auto-mirroring to template ${baseTemplateId} in same update`);
+      console.log(`[handleClassChange] 🔄 MIRRORING to template ${baseTemplateId} in same update`);
 
       // Apply the same changes to the template slot
       const templateExistingStyles = updatedSlots[baseTemplateId].styles || {};
       const templateMergedStyles = { ...templateExistingStyles, ...styles };
+      console.log(`[handleClassChange] 🔀 Template style merge for ${baseTemplateId}:`, {
+        templateExistingStyles,
+        newStyles: styles,
+        templateMergedStyles
+      });
 
       if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
         const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
@@ -1568,6 +1584,11 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
+        console.log(`[handleClassChange] ✅ Updated template ${baseTemplateId} (alignment):`, {
+          className: elementClassList.join(' '),
+          parentClassName: alignmentClassList.join(' '),
+          styles: templateMergedStyles
+        });
       } else {
         updatedSlots[baseTemplateId] = {
           ...updatedSlots[baseTemplateId],
@@ -1578,9 +1599,16 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
+        console.log(`[handleClassChange] ✅ Updated template ${baseTemplateId} (non-alignment):`, {
+          className: className,
+          styles: templateMergedStyles
+        });
       }
+    } else if (baseTemplateId !== slotId && !updatedSlots[baseTemplateId]) {
+      console.log(`[handleClassChange] ⚠️ Template ${baseTemplateId} NOT FOUND for mirroring`);
     }
 
+    console.log(`[handleClassChange] 🏁 COMPLETE - Returning updatedSlots with ${Object.keys(updatedSlots).length} slots`);
     return updatedSlots;
   }, []);
 
@@ -1618,26 +1646,38 @@ export function useSlotConfiguration({
     return useCallback(async (configToSave = pageConfig) => {
       if (!configToSave) return;
 
+      console.log(`[saveConfiguration] 💾 START - Saving configuration for ${slotType}`);
+
       // Validate configuration before saving
       if (!validateSlotConfiguration(configToSave.slots)) {
-        console.error('❌ Cannot save invalid configuration');
+        console.error('[saveConfiguration] ❌ Cannot save invalid configuration');
         setLocalSaveStatus('error');
         setTimeout(() => setLocalSaveStatus(''), 5000);
         return;
       }
+
+      // Log product card button slots before save
+      const buttonSlots = Object.entries(configToSave.slots).filter(([id]) => id.includes('add_to_cart'));
+      console.log(`[saveConfiguration] 📋 Button slots being saved:`, buttonSlots.map(([id, slot]) => ({
+        id,
+        className: slot.className,
+        styles: slot.styles
+      })));
 
       setLocalSaveStatus('saving');
 
       try {
         const storeId = getSelectedStoreId();
         if (storeId) {
+          console.log(`[saveConfiguration] 🚀 Calling slotConfigurationService.saveConfiguration for store ${storeId}`);
           await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
+          console.log(`[saveConfiguration] ✅ Save successful`);
         }
 
         setLocalSaveStatus('saved');
         setTimeout(() => setLocalSaveStatus(''), 3000);
       } catch (error) {
-        console.error('❌ Save failed:', error);
+        console.error('[saveConfiguration] ❌ Save failed:', error);
         setLocalSaveStatus('error');
         setTimeout(() => setLocalSaveStatus(''), 5000);
       }

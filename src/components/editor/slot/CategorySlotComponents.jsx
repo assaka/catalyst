@@ -879,12 +879,14 @@ const ProductItemsGrid = createSlotComponent({
                 : processedStyles;
 
               // Debug logging for button styles
-              if (templateSlotId === 'product_card_add_to_cart') {
-                console.log('🔵 Add to Cart Button Styles:', {
+              if (slotId === 'product_card_add_to_cart') {
+                console.log(`[CategorySlotComponents] 🔵 Add to Cart Button - Loading slot ${templateSlotId}:`, {
                   templateSlotId,
+                  savedSlotConfigExists: !!savedSlotConfig,
+                  savedSlotConfigId: savedSlotConfig?.id,
                   templateStyles: slotConfig.styles,
                   processedStyles,
-                  savedStyles: savedSlotConfig?.styles,
+                  savedStylesRaw: savedSlotConfig?.styles,
                   processedSavedStyles,
                   finalStyles
                 });
