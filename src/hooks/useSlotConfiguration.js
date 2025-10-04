@@ -929,11 +929,13 @@ export function useSlotConfiguration({
         const draftConfig = savedConfig.data.configuration;
         const draftStatus = savedConfig.data.status;
 
-        // Check if draft needs initialization (status = 'init')
-        if (draftStatus === 'init') {
-          console.log(`🔧 [getDraftConfiguration] Draft status is 'init', loading static config for ${pageType}`);
+        // Check if draft needs initialization (status = 'init' OR empty slots)
+        const needsInitialization = draftStatus === 'init' || !draftConfig.slots || Object.keys(draftConfig.slots).length === 0;
 
-          // Load static config to populate init draft
+        if (needsInitialization) {
+          console.log(`🔧 [getDraftConfiguration] Draft needs initialization (status: ${draftStatus}, slots: ${Object.keys(draftConfig?.slots || {}).length})`);
+
+          // Load static config to populate draft
           const staticConfig = await loadStaticConfiguration();
           console.log(`📦 [getDraftConfiguration] Static config loaded with ${Object.keys(staticConfig.slots || {}).length} slots`);
 
@@ -970,9 +972,7 @@ export function useSlotConfiguration({
           console.log(`🎯 [getDraftConfiguration] Returning populated config`);
           return populatedConfig;
         } else if (draftStatus === 'draft') {
-
-          // 🚀 DEBUG: Check which slots are in database vs should be there
-          const draftSlotIds = Object.keys(draftConfig?.slots || {});
+          console.log(`✅ [getDraftConfiguration] Draft already has ${Object.keys(draftConfig?.slots || {}).length} slots, returning as-is`);
           return draftConfig;
         } else {
           console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
