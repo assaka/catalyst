@@ -935,9 +935,15 @@ const ProductItemsGrid = createSlotComponent({
 
               // Log when we find saved customizations (only once per template slot)
               if (savedSlotConfig && index === 0) {
-                console.log(`✨ Applying template customization for ${templateSlotId} to all products:`, {
+                console.log(`✨ Applying template customization for ${slotId} to all products:`, {
                   savedClassName: savedSlotConfig.className,
-                  savedStyles: savedSlotConfig.styles
+                  savedStyles: savedSlotConfig.styles,
+                  savedPosition: savedSlotConfig.position,
+                  savedColSpan: savedSlotConfig.colSpan,
+                  templatePosition: slotConfig.position,
+                  templateColSpan: slotConfig.colSpan,
+                  finalPosition: savedSlotConfig?.position ?? slotConfig.position,
+                  finalColSpan: savedSlotConfig?.colSpan ?? slotConfig.colSpan
                 });
               }
             });
