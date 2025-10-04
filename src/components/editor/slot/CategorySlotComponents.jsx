@@ -1124,6 +1124,8 @@ const ProductItemsGrid = createSlotComponent({
             <div
               key={`product-${product.id || index}`}
               data-slot-id="product_card_template"
+              data-editable="true"
+              className={productCardTemplate?.className || ''}
               style={{ ...productCardTemplate?.styles, overflow: 'visible' }}
             >
               <UnifiedSlotRenderer

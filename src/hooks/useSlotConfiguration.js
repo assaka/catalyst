@@ -1221,7 +1221,13 @@ export function useSlotConfiguration({
     // Determine if this is container-to-container or intra-container reordering
     const isContainerTarget = ['container', 'grid', 'flex'].includes(targetSlot.type);
     const currentParent = originalProperties.parentId;
-    const targetParent = targetSlot.parentId;
+
+    // Special handling for product_card_template - when it's the target, use it as parent
+    let targetParent = targetSlot.parentId;
+    if (actualTargetSlotId === 'product_card_template') {
+      targetParent = 'product_card_template';
+      console.log('[DRAG-DROP] 🎯 Target is product_card_template, using as parent');
+    }
 
     // For instance slots, also check template-level parent equality
     // This allows cross-container moves between instance containers that share the same template parent
