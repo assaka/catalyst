@@ -638,7 +638,8 @@ export function UnifiedSlotRenderer({
           setCurrentDragInfo,
           selectedElementId,
           showBorders,
-          mode
+          mode,
+          viewMode // Pass viewMode to components
         });
       }
 
