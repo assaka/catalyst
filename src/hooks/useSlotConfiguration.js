@@ -1060,13 +1060,22 @@ export function useSlotConfiguration({
 
   // Generic slot drop handler
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
+    console.log('🎯 handleSlotDrop called:', {
+      draggedSlotId,
+      targetSlotId,
+      dropPosition,
+      draggedSlot: slots[draggedSlotId],
+      targetSlot: slots[targetSlotId]
+    });
 
     if (draggedSlotId === targetSlotId) {
+      console.log('❌ Cannot drop on self');
       return null;
     }
 
     const targetSlot = slots[targetSlotId];
     if (!targetSlot) {
+      console.log('❌ Target slot not found');
       return null;
     }
 
@@ -1147,6 +1156,12 @@ export function useSlotConfiguration({
     const isContainerTarget = ['container', 'grid', 'flex'].includes(targetSlot.type);
     const currentParent = originalProperties.parentId;
     const targetParent = targetSlot.parentId;
+
+    // For instance slots, also check template-level parent equality
+    // This allows cross-container moves between instance containers that share the same template parent
+    const currentTemplateParent = currentParent?.replace(/_\d+$/, '') || currentParent;
+    const targetTemplateParent = targetParent?.replace(/_\d+$/, '') || targetParent;
+    const sameTemplateParent = currentTemplateParent === targetTemplateParent;
 
     if (dropPosition === 'inside' && isContainerTarget) {
       // Check if this is really a cross-container move or accidental parent hit

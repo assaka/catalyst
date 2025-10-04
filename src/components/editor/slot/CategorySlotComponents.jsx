@@ -768,8 +768,8 @@ const ProductItemsGrid = createSlotComponent({
       // Format prices if not already formatted
       const products = rawProducts.map(p => ({
         ...p,
-        price_formatted: p.price_formatted || `$${p.price?.toFixed(2) || '0.00'}`,
-        compare_price_formatted: p.compare_price ? `$${p.compare_price.toFixed(2)}` : null,
+        price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
+        compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
         image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
         in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
       }));
@@ -1028,8 +1028,8 @@ const ProductItemsGrid = createSlotComponent({
     // Format prices if not already formatted
     const products = rawProducts.map(p => ({
       ...p,
-      price_formatted: p.price_formatted || `$${p.price?.toFixed(2) || '0.00'}`,
-      compare_price_formatted: p.compare_price ? `$${p.compare_price.toFixed(2)}` : null,
+      price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
+      compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
       image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
       in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
     }));
