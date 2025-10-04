@@ -1093,6 +1093,13 @@ export function useSlotConfiguration({
       }
     }
 
+    // Special case: product_card_N is a dynamically created container, treat as product_card_template
+    if (!targetSlot && targetSlotId.match(/^product_card_\d+$/)) {
+      console.log('[DRAG-DROP] 📦 Target is product card instance, using product_card_template');
+      targetSlot = slots['product_card_template'];
+      actualTargetSlotId = 'product_card_template';
+    }
+
     if (!targetSlot) {
       console.log('[DRAG-DROP] ❌ Target slot not found (tried instance and template)');
       return null;
