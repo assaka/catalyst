@@ -825,6 +825,11 @@ const ProductItemsGrid = createSlotComponent({
               parentId: 'product_items',
               colSpan: productCardTemplate?.colSpan || { grid: 1, list: 12 }, // Use template's colSpan
               position: { col: index + 1, row: 1 },
+              styles: {
+                ...productCardTemplate?.styles,
+                width: '100%',
+                height: 'auto'
+              },
               metadata: {
                 ...productCardTemplate?.metadata,
                 hierarchical: true, // Enable child slot rendering

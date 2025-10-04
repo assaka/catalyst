@@ -399,9 +399,11 @@ export const categoryConfig = {
       id: 'product_card_content',
       type: 'container',
       content: '',
-      className: 'grid grid-cols-12 gap-2',
+      className: 'grid grid-cols-12 gap-2 w-full',
       parentClassName: '',
-      styles: {},
+      styles: {
+        width: '100%'
+      },
       parentId: 'product_card_template',
       position: { col: 6, row: 1 },
       colSpan: { grid: 7, list: 12 },
