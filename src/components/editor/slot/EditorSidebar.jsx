@@ -1336,7 +1336,12 @@ const EditorSidebar = ({
         // MIRROR: If this is a product template instance (has _N suffix), also save to base template
         const baseTemplateId = elementSlotId.replace(/_\d+$/, '');
         if (baseTemplateId !== elementSlotId) {
-          console.log(`🔄 Mirroring style change to template ${baseTemplateId}`);
+          console.log(`🔄 Mirroring style change to template ${baseTemplateId}`, {
+            instanceId: elementSlotId,
+            templateId: baseTemplateId,
+            className: classNameForSave,
+            styles: saveStyles
+          });
           onInlineClassChange(baseTemplateId, classNameForSave, saveStyles);
         }
       } else {
