@@ -1669,8 +1669,32 @@ export function useSlotConfiguration({
       try {
         const storeId = getSelectedStoreId();
         if (storeId) {
+          // Filter out instance slots (with _N suffix) before saving - only save template slots
+          const filteredSlots = {};
+          Object.entries(configToSave.slots).forEach(([slotId, slot]) => {
+            // Check if this is an instance slot (has _N suffix like product_card_name_0)
+            const instanceMatch = slotId.match(/^(.+)_(\d+)$/);
+            if (instanceMatch) {
+              const baseId = instanceMatch[1];
+              // Check if the base is a product card child template
+              if (configToSave.slots[baseId]?.parentId === 'product_card_template') {
+                // Skip instance slots - they're dynamically generated
+                console.log(`[saveConfiguration] ⏭️ Skipping instance slot: ${slotId}`);
+                return;
+              }
+            }
+            // Keep this slot
+            filteredSlots[slotId] = slot;
+          });
+
+          const configToSaveFiltered = {
+            ...configToSave,
+            slots: filteredSlots
+          };
+
           console.log(`[saveConfiguration] 🚀 Calling slotConfigurationService.saveConfiguration for store ${storeId}`);
-          await slotConfigurationService.saveConfiguration(storeId, configToSave, slotType);
+          console.log(`[saveConfiguration] 📊 Slots before filter: ${Object.keys(configToSave.slots).length}, after filter: ${Object.keys(filteredSlots).length}`);
+          await slotConfigurationService.saveConfiguration(storeId, configToSaveFiltered, slotType);
           console.log(`[saveConfiguration] ✅ Save successful`);
         }
 
