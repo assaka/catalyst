@@ -353,14 +353,9 @@ export const categoryConfig = {
       id: 'product_card_template',
       type: 'container',
       content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card grid grid-cols-12 gap-2',
+      className: 'group overflow-hidden grid grid-cols-12 gap-2',
       parentClassName: '',
-      styles: {
-        borderColor: '#e5e7eb',
-        backgroundColor: '#ffffff',
-        borderWidth: '1px',
-        borderRadius: '0.5rem'
-      },
+      styles: {},
       parentId: 'product_items',
       position: { col: 1, row: 1 },
       colSpan: { grid: 1, list: 12 },
@@ -382,6 +377,9 @@ export const categoryConfig = {
       className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
       parentClassName: 'relative overflow-hidden w-full',
       styles: {
+        width: '100%'
+      },
+      parentStyles: {
         width: '100%'
       },
       parentId: 'product_card_template',
