@@ -338,7 +338,7 @@ export const categoryConfig = {
       styles: {},
       parentId: 'product_items',
       position: { col: 1, row: 1 },
-      colSpan: { grid: 1, list: 1 },
+      colSpan: { grid: 1, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
