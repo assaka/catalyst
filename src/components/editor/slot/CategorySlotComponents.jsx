@@ -918,22 +918,25 @@ const ProductItemsGrid = createSlotComponent({
               // Check if this is a button slot that should allow text editing
               const isEditableButton = slotConfig.type === 'button';
               const isTextSlot = slotConfig.type === 'text';
+              const isImageSlot = slotConfig.type === 'image';
+
+              // Process template variables in content for text AND image slots
+              let processedContent = slotConfig.content;
+              if (isEditableButton) {
+                processedContent = savedSlotConfig?.content || slotConfig.content || 'Button';
+              } else if (isTextSlot || isImageSlot) {
+                processedContent = slotConfig.content
+                  ?.replace(/\{\{this\.name\}\}/g, product.name)
+                  ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
+                  ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
+                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url);
+              }
 
               productSlots[templateSlotId] = {
                 ...slotConfig,
                 id: templateSlotId,
                 parentId: slotConfig.parentId === 'product_card_template' ? productCardId : `${slotConfig.parentId}_${index}`, // Update parent ID to unique product card
-                // Replace template variables with actual product data (for text slots only)
-                // Buttons keep their editable content, ensuring content is always set
-                content: isEditableButton
-                  ? (savedSlotConfig?.content || slotConfig.content || 'Button') // Always ensure button has content
-                  : (isTextSlot
-                      ? slotConfig.content
-                          ?.replace(/\{\{this\.name\}\}/g, product.name)
-                          ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
-                          ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                          ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
-                      : slotConfig.content), // Non-text, non-button slots keep original content
+                content: processedContent,
                 className: finalClassName, // Use merged className
                 parentClassName: finalParentClassName, // Use merged parentClassName
                 styles: finalStyles, // Use merged styles
@@ -1077,18 +1080,23 @@ const ProductItemsGrid = createSlotComponent({
             const finalClassName = savedSlotConfig?.className ?? slotConfig.className;
             const isEditableButton = slotConfig.type === 'button';
             const isTextSlot = slotConfig.type === 'text';
+            const isImageSlot = slotConfig.type === 'image';
+
+            // Process template variables in content for text AND image slots
+            let processedContent = slotConfig.content;
+            if (isEditableButton) {
+              processedContent = savedSlotConfig?.content || slotConfig.content || 'Button';
+            } else if (isTextSlot || isImageSlot) {
+              processedContent = slotConfig.content
+                ?.replace(/\{\{this\.name\}\}/g, product.name)
+                ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
+                ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
+                ?.replace(/\{\{this\.image_url\}\}/g, product.image_url);
+            }
 
             productSlots[slotId] = {
               ...slotConfig,
-              content: isEditableButton
-                ? (savedSlotConfig?.content || slotConfig.content || 'Button')
-                : (isTextSlot
-                    ? slotConfig.content
-                        ?.replace(/\{\{this\.name\}\}/g, product.name)
-                        ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
-                        ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                        ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
-                    : slotConfig.content),
+              content: processedContent,
               className: finalClassName,
               styles: finalStyles,
               metadata: { ...(slotConfig.metadata || {}), ...(savedSlotConfig?.metadata || {}) }

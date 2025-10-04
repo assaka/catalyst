@@ -1060,7 +1060,7 @@ export function useSlotConfiguration({
 
   // Generic slot drop handler
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
-    console.log('🎯 handleSlotDrop called:', {
+    console.log('[DRAG-DROP] 🎯 handleSlotDrop called:', {
       draggedSlotId,
       targetSlotId,
       dropPosition,
@@ -1069,13 +1069,13 @@ export function useSlotConfiguration({
     });
 
     if (draggedSlotId === targetSlotId) {
-      console.log('❌ Cannot drop on self');
+      console.log('[DRAG-DROP] ❌ Cannot drop on self');
       return null;
     }
 
     const targetSlot = slots[targetSlotId];
     if (!targetSlot) {
-      console.log('❌ Target slot not found');
+      console.log('[DRAG-DROP] ❌ Target slot not found');
       return null;
     }
 
@@ -1163,7 +1163,7 @@ export function useSlotConfiguration({
     const targetTemplateParent = targetParent?.replace(/_\d+$/, '') || targetParent;
     const sameTemplateParent = currentTemplateParent === targetTemplateParent;
 
-    console.log('📍 Drop context:', {
+    console.log('[DRAG-DROP] 📍 Drop context:', {
       currentParent,
       targetParent,
       currentTemplateParent,
@@ -1174,7 +1174,7 @@ export function useSlotConfiguration({
     });
 
     if (dropPosition === 'inside' && isContainerTarget) {
-      console.log('📥 Drop INSIDE container');
+      console.log('[DRAG-DROP] 📥 Drop INSIDE container');
 
       // Check if this is really a cross-container move or accidental parent hit
       if (originalProperties.parentId && targetSlotId === getParentOfParent(slots, originalProperties.parentId)) {
@@ -1195,7 +1195,7 @@ export function useSlotConfiguration({
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent) {
-      console.log('🔄 Same parent reordering');
+      console.log('[DRAG-DROP] 🔄 Same parent reordering');
       // Intra-container reordering - same parent, different position
       newParentId = currentParent;
 
@@ -1223,7 +1223,7 @@ export function useSlotConfiguration({
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent) {
-      console.log('🔀 Cross-container move - different parents');
+      console.log('[DRAG-DROP] 🔀 Cross-container move - different parents');
       // Different parents - move to target's parent container
       newParentId = targetParent;
 
@@ -1245,7 +1245,7 @@ export function useSlotConfiguration({
 
     } else {
       // Invalid drop - should only be for "inside" on non-containers
-      console.log('❌ Invalid drop configuration', {
+      console.log('[DRAG-DROP] ❌ Invalid drop configuration', {
         dropPosition,
         isContainerTarget,
         currentParent,
