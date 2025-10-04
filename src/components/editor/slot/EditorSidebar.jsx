@@ -1373,7 +1373,13 @@ const EditorSidebar = ({
 
         // MIRROR: If this is a product template instance (has _N suffix), save to base template FIRST
         // This ensures the template has the latest styles before the instance
-        const baseTemplateId = elementSlotId.replace(/_\d+$/, '');
+        let baseTemplateId = elementSlotId.replace(/_\d+$/, '');
+
+        // Special case: product_card_N should map to product_card_template
+        if (baseTemplateId === 'product_card') {
+          baseTemplateId = 'product_card_template';
+        }
+
         if (baseTemplateId !== elementSlotId) {
           console.log(`🔄 Mirroring style change to template ${baseTemplateId}`, {
             instanceId: elementSlotId,

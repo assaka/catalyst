@@ -1027,7 +1027,7 @@ export function useSlotConfiguration({
   }, []);
 
   // Generic slot creation function
-  const createSlot = useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}, slots) => {
+  const createSlot = useCallback((slotType, content = '', parentId = null, additionalProps = {}, slots) => {
     const newSlotId = `new_${slotType}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
     const newSlot = {
@@ -2011,7 +2011,7 @@ export function useSlotConfiguration({
         }, [slotDropHandler, saveConfigurationHandler]),
 
       createSlotCreateHandler: (createSlot) =>
-        useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}) => {
+        useCallback((slotType, content = '', parentId = null, additionalProps = {}) => {
           console.log('[createSlotCreateHandler] 🆕 Creating new slot:', { slotType, content, parentId, additionalProps });
 
           setPageConfig(prevConfig => {
