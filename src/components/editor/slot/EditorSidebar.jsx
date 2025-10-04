@@ -494,6 +494,12 @@ const EditorSidebar = ({
             const colorProperties = ['color', 'backgroundColor', 'borderColor'];
 
             colorProperties.forEach(prop => {
+              const computedValue = computedStyle[prop];
+              console.log(`[EditorSidebar] Processing ${prop}:`, {
+                computedValue,
+                isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent'
+              });
+
               // For color property, check Tailwind classes first, then computed styles
               if (prop === 'color') {
                 // Check for explicit Tailwind colors in stored className
@@ -501,12 +507,12 @@ const EditorSidebar = ({
                   const tailwindColorHex = getTailwindColorHex(storedClassName);
                   if (tailwindColorHex) {
                     elementStyles[prop] = tailwindColorHex;
+                    console.log(`[EditorSidebar] ${prop} from Tailwind:`, tailwindColorHex);
                     return;
                   }
                 }
 
                 // Fall back to computed styles from the element
-                const computedValue = computedStyle[prop];
 
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
 
@@ -518,9 +524,11 @@ const EditorSidebar = ({
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
                       elementStyles[prop] = hex;
+                      console.log(`[EditorSidebar] ${prop} converted RGB to hex:`, hex);
                     }
                   } else if (computedValue.startsWith('#')) {
                     elementStyles[prop] = computedValue;
+                    console.log(`[EditorSidebar] ${prop} already hex:`, computedValue);
                   } else {
                   }
                 } else {
@@ -533,7 +541,7 @@ const EditorSidebar = ({
                 }
               } else {
                 // For backgroundColor and borderColor, convert rgb to hex for color picker
-                const computedValue = computedStyle[prop];
+
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
                   // Convert rgb/rgba to hex for color picker compatibility
                   if (computedValue.startsWith('rgb')) {
@@ -543,10 +551,14 @@ const EditorSidebar = ({
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
                       elementStyles[prop] = hex;
+                      console.log(`[EditorSidebar] ${prop} converted RGB to hex:`, hex);
                     }
                   } else if (computedValue.startsWith('#')) {
                     elementStyles[prop] = computedValue;
+                    console.log(`[EditorSidebar] ${prop} already hex:`, computedValue);
                   }
+                } else {
+                  console.log(`[EditorSidebar] ${prop} skipped (transparent or invalid)`);
                 }
               }
             });
