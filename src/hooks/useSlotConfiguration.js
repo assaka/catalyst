@@ -1112,36 +1112,57 @@ export function useSlotConfiguration({
 
     // Create a deep clone to avoid mutations
     const updatedSlots = JSON.parse(JSON.stringify(slots));
-    const draggedSlot = updatedSlots[draggedSlotId];
-    const updatedTargetSlot = updatedSlots[targetSlotId];
+    let draggedSlot = updatedSlots[draggedSlotId];
+    let actualDraggedSlotId = draggedSlotId;
+
+    // If dragged slot not found, check if it's an instance slot and try template slot
+    if (!draggedSlot) {
+      const draggedInstanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
+      if (draggedInstanceMatch) {
+        const templateDraggedId = draggedInstanceMatch[1];
+        draggedSlot = updatedSlots[templateDraggedId];
+        if (draggedSlot) {
+          console.log('[DRAG-DROP] 📝 Dragged is instance slot, using template slot:', {
+            instanceDraggedId: draggedSlotId,
+            templateDraggedId,
+            found: !!draggedSlot
+          });
+          actualDraggedSlotId = templateDraggedId;
+        }
+      }
+    }
+
+    const updatedTargetSlot = updatedSlots[actualTargetSlotId];
 
     if (!draggedSlot || !updatedTargetSlot) {
-      console.error('❌ Slot not found:', { draggedSlotId, targetSlotId });
+      console.error('[DRAG-DROP] ❌ Dragged or target slot not found:', {
+        draggedSlotId,
+        actualDraggedSlotId,
+        targetSlotId,
+        actualTargetSlotId,
+        foundDragged: !!draggedSlot,
+        foundTarget: !!updatedTargetSlot
+      });
       return null;
     }
 
     // Store ALL original properties to preserve them
-    // Use template slot for properties if dragged slot is instance
-    const draggedInstanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
-    const draggedTemplateId = draggedInstanceMatch ? draggedInstanceMatch[1] : draggedSlotId;
-    const draggedTemplateSlot = slots[draggedTemplateId] || draggedSlot;
-
     const originalProperties = {
-      id: draggedSlot.id,
-      type: draggedTemplateSlot.type,
-      component: draggedTemplateSlot.component,  // CRITICAL: Preserve component field for component slots
-      content: draggedTemplateSlot.content,
-      className: draggedTemplateSlot.className,
-      parentClassName: draggedTemplateSlot.parentClassName,
-      parentId: draggedTemplateSlot.parentId,  // CRITICAL: Must preserve parentId!
-      styles: draggedTemplateSlot.styles || {},
-      layout: draggedTemplateSlot.layout,
-      gridCols: draggedTemplateSlot.gridCols,
-      colSpan: draggedTemplateSlot.colSpan,
-      rowSpan: draggedTemplateSlot.rowSpan,
-      viewMode: draggedTemplateSlot.viewMode,
-      metadata: draggedTemplateSlot.metadata || {},
-      position: draggedTemplateSlot.position || {}
+      id: draggedSlotId, // Use original instance ID
+      type: draggedSlot.type,
+      component: draggedSlot.component,  // CRITICAL: Preserve component field for component slots
+      content: draggedSlot.content,
+      className: draggedSlot.className,
+      parentClassName: draggedSlot.parentClassName,
+      parentId: draggedSlot.parentId,  // CRITICAL: Must preserve parentId!
+      styles: draggedSlot.styles || {},
+      layout: draggedSlot.layout,
+      gridCols: draggedSlot.gridCols,
+      colSpan: draggedSlot.colSpan,
+      rowSpan: draggedSlot.rowSpan,
+      viewMode: draggedSlot.viewMode,
+      metadata: draggedSlot.metadata || {},
+      position: draggedSlot.position || {}
     };
 
     // Calculate new position based on drop zone
@@ -1284,8 +1305,10 @@ export function useSlotConfiguration({
     // Position validation completed
 
     // Update dragged slot position while preserving ALL essential properties
-    updatedSlots[draggedSlotId] = {
+    // Use actualDraggedSlotId which is the template slot ID
+    updatedSlots[actualDraggedSlotId] = {
       ...originalProperties,
+      id: actualDraggedSlotId, // Update to actual slot ID (template)
       parentId: newParentId,
       position: newPosition,
       metadata: {
@@ -1296,39 +1319,19 @@ export function useSlotConfiguration({
 
     // Ensure we preserve viewMode array properly
     if (Array.isArray(originalProperties.viewMode)) {
-      updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
+      updatedSlots[actualDraggedSlotId].viewMode = [...originalProperties.viewMode];
     }
 
-    // CRITICAL: Map instance slot changes to template slots for persistence
-    const instanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
-    if (instanceMatch) {
-      const templateSlotId = instanceMatch[1];
-      if (updatedSlots[templateSlotId]) {
-        // Map instance parent ID to template parent ID
-        const newParentMatch = newParentId.match(/^(.+)_(\d+)$/);
-        const templateParentId = newParentMatch ? newParentMatch[1] : newParentId;
+    console.log('[DRAG-DROP] 💾 Updated slot:', {
+      originalDraggedSlotId: draggedSlotId,
+      actualDraggedSlotId,
+      newParentId,
+      newPosition,
+      wasInstanceSlot: draggedSlotId !== actualDraggedSlotId
+    });
 
-        console.log('[DRAG-DROP] 🔄 Mapping instance drag to template:', {
-          instanceSlotId: draggedSlotId,
-          templateSlotId,
-          instanceParentId: newParentId,
-          templateParentId,
-          newPosition,
-          templateParentExists: !!updatedSlots[templateParentId]
-        });
-
-        // Update template slot with new position and parent
-        updatedSlots[templateSlotId] = {
-          ...updatedSlots[templateSlotId],
-          parentId: templateParentId,
-          position: newPosition,
-          metadata: {
-            ...updatedSlots[templateSlotId].metadata,
-            lastModified: new Date().toISOString()
-          }
-        };
-      }
-    }
+    // Note: If we used template slots (actualDraggedSlotId !== draggedSlotId),
+    // the template is already updated above. No additional mapping needed.
 
     // Handle slot shifting for intra-container reordering
     if (currentParent === newParentId && (dropPosition === 'before' || dropPosition === 'after')) {
