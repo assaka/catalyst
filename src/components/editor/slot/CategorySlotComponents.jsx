@@ -1146,9 +1146,11 @@ const ProductItemsGrid = createSlotComponent({
 // View Mode Toggle Component
 const ViewModeToggle = createSlotComponent({
   name: 'ViewModeToggle',
-  render: ({ slot, className, styles, categoryContext, context }) => {
-    const [viewMode, setViewMode] = useState('grid');
+  render: ({ slot, className, styles, categoryContext, context, viewMode: parentViewMode }) => {
     const containerRef = useRef(null);
+
+    // Use viewMode from parent (Category.jsx) or default to 'grid'
+    const currentViewMode = parentViewMode || 'grid';
 
     // In editor mode, just show the static UI
     if (context === 'editor') {
@@ -1178,12 +1180,11 @@ const ViewModeToggle = createSlotComponent({
     }
 
     // Storefront mode with actual functionality
-    const handleViewModeChange = useCallback((mode) => {
-      setViewMode(mode);
+    const handleViewModeChange = (mode) => {
       if (categoryContext?.onViewModeChange) {
         categoryContext.onViewModeChange(mode);
       }
-    }, [categoryContext]);
+    };
 
     return (
       <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}>
@@ -1191,7 +1192,7 @@ const ViewModeToggle = createSlotComponent({
           <button
             onClick={() => handleViewModeChange('grid')}
             className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-              viewMode === 'grid'
+              currentViewMode === 'grid'
                 ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
             }`}
@@ -1207,7 +1208,7 @@ const ViewModeToggle = createSlotComponent({
           <button
             onClick={() => handleViewModeChange('list')}
             className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-              viewMode === 'list'
+              currentViewMode === 'list'
                 ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
             }`}
