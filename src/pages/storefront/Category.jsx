@@ -75,10 +75,17 @@ export default function Category() {
   const [itemsPerPage, setItemsPerPage] = useState(calculateItemsPerPage());
   const [categoryLayoutConfig, setCategoryLayoutConfig] = useState(null);
   const [categoryConfigLoaded, setCategoryConfigLoaded] = useState(false);
-  const [viewMode, setViewMode] = useState(settings?.default_view_mode || 'grid'); // Use default from settings
+  const [viewMode, setViewMode] = useState('grid');
 
   const { storeCode } = useParams();
   const location = useLocation();
+
+  // Update viewMode when settings are loaded
+  useEffect(() => {
+    if (settings?.default_view_mode) {
+      setViewMode(settings.default_view_mode);
+    }
+  }, [settings?.default_view_mode]);
 
   // Extract category path from URL: /public/storeCode/category/path/to/category
   const categoryPath = location.pathname.split('/').slice(4).join('/');

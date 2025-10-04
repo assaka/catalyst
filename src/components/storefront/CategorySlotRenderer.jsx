@@ -115,8 +115,36 @@ export function CategorySlotRenderer({
   // Check if filters should be enabled
   const filtersEnabled = settings?.enable_product_filters !== false && filterableAttributes?.length > 0;
 
+  // Helper function to evaluate conditional display expressions
+  const evaluateConditionalDisplay = (expression, context) => {
+    if (!expression) return true; // No condition means always show
+
+    try {
+      // Handle simple dot notation like "settings.enable_view_mode_toggle"
+      const parts = expression.split('.');
+      let value = context;
+
+      for (const part of parts) {
+        if (value === undefined || value === null) return false;
+        value = value[part];
+      }
+
+      // Return the boolean value
+      return !!value;
+    } catch (error) {
+      console.warn('Failed to evaluate conditional display:', expression, error);
+      return true; // Default to showing if evaluation fails
+    }
+  };
+
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
+
+  // Filter by conditionalDisplay
+  childSlots = childSlots.filter(slot => {
+    if (!slot.conditionalDisplay) return true;
+    return evaluateConditionalDisplay(slot.conditionalDisplay, categoryContext);
+  });
 
   // Filter by viewMode if applicable
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
