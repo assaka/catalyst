@@ -349,17 +349,23 @@ SlotConfiguration.upsertDraft = async function(userId, storeId, pageType, config
       configurationToUse = latestPublished.configuration;
       statusToUse = 'draft'; // Set to draft since it's already populated from published
     } else {
-      console.log('⚠️ BACKEND - No published version found, creating minimal init configuration');
+      console.log('⚠️ BACKEND - No published version found, loading from config.js');
+      // Load configuration from the appropriate config file (cart-config.js, category-config.js, etc.)
+      const pageConfig = await loadPageConfig(pageType);
       configurationToUse = {
-        page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
-        slot_type: `${pageType}_layout`,
-        slots: {},
+        page_name: pageConfig.page_name || pageType.charAt(0).toUpperCase() + pageType.slice(1),
+        slot_type: pageConfig.slot_type || `${pageType}_layout`,
+        slots: pageConfig.slots || {},
+        rootSlots: pageConfig.rootSlots || [],
+        slotDefinitions: pageConfig.slotDefinitions || {},
         metadata: {
           created: new Date().toISOString(),
           lastModified: new Date().toISOString(),
+          source: `${pageType}-config.js`,
           status: 'init'
         }
       };
+      statusToUse = 'draft'; // Set to draft since it's already populated from config.js
     }
 
     // Create init/draft record (draft if copied from published, init if empty)
