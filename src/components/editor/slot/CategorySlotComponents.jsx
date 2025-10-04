@@ -1025,7 +1025,8 @@ const ProductItemsGrid = createSlotComponent({
       rawProductsLength: rawProducts.length,
       hasAllSlots: !!allSlots,
       allSlotsKeys: allSlots ? Object.keys(allSlots).slice(0, 20) : [],
-      hasProductCardTemplate: !!allSlots?.product_card_template
+      hasProductCardTemplate: !!allSlots?.product_card_template,
+      firstProductImages: rawProducts[0]?.images
     });
 
     // Format prices if not already formatted
@@ -1036,6 +1037,13 @@ const ProductItemsGrid = createSlotComponent({
       image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
       in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
     }));
+
+    console.log('🔍 ProductItemsGrid STOREFRONT - First product after formatting:', {
+      name: products[0]?.name,
+      price_formatted: products[0]?.price_formatted,
+      image_url: products[0]?.image_url,
+      in_stock: products[0]?.in_stock
+    });
 
     // Find product card template and descendants
     const productCardTemplate = allSlots?.product_card_template;
@@ -1092,6 +1100,15 @@ const ProductItemsGrid = createSlotComponent({
                 ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                 ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
                 ?.replace(/\{\{this\.image_url\}\}/g, product.image_url);
+
+              if (isImageSlot && index === 0) {
+                console.log('🔍 Image slot processing:', {
+                  slotId,
+                  originalContent: slotConfig.content,
+                  processedContent,
+                  productImageUrl: product.image_url
+                });
+              }
             }
 
             productSlots[slotId] = {
