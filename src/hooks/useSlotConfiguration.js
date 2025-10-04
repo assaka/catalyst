@@ -1119,24 +1119,26 @@ export function useSlotConfiguration({
 
     // Create a deep clone to avoid mutations
     const updatedSlots = JSON.parse(JSON.stringify(slots));
-    let draggedSlot = updatedSlots[draggedSlotId];
+    let draggedSlot = null;
     let actualDraggedSlotId = draggedSlotId;
 
-    // If dragged slot not found, check if it's an instance slot and try template slot
-    if (!draggedSlot) {
-      const draggedInstanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
-      if (draggedInstanceMatch) {
-        const templateDraggedId = draggedInstanceMatch[1];
-        draggedSlot = updatedSlots[templateDraggedId];
-        if (draggedSlot) {
-          console.log('[DRAG-DROP] 📝 Dragged is instance slot, using template slot:', {
-            instanceDraggedId: draggedSlotId,
-            templateDraggedId,
-            found: !!draggedSlot
-          });
-          actualDraggedSlotId = templateDraggedId;
-        }
+    // ALWAYS check if dragged is an instance slot first (product_card_name_0, etc.)
+    const draggedInstanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
+    if (draggedInstanceMatch) {
+      const templateDraggedId = draggedInstanceMatch[1];
+      // For instance slots, ALWAYS use template slot
+      draggedSlot = updatedSlots[templateDraggedId];
+      if (draggedSlot) {
+        console.log('[DRAG-DROP] 📝 Dragged is instance slot, using template slot:', {
+          instanceDraggedId: draggedSlotId,
+          templateDraggedId,
+          found: !!draggedSlot
+        });
+        actualDraggedSlotId = templateDraggedId;
       }
+    } else {
+      // Not an instance slot, use as-is
+      draggedSlot = updatedSlots[draggedSlotId];
     }
 
     const updatedTargetSlot = updatedSlots[actualTargetSlotId];
