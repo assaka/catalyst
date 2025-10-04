@@ -1758,14 +1758,17 @@ export function useSlotConfiguration({
         templateMergedStyles
       });
 
-      if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
-        const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
-        const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+      if (isAlignmentChange || newClasses.some(cls => alignmentClasses.includes(cls))) {
+        // For template, also preserve ALL existing classes, only move alignment to parent
+        const templateExistingClassName = updatedSlots[baseTemplateId].className || '';
+        const templateExistingClasses = templateExistingClassName.split(' ').filter(Boolean);
+        const templateExistingNonAlignmentClasses = templateExistingClasses.filter(cls => !alignmentClasses.includes(cls));
+        const templateNewAlignmentClasses = newClasses.filter(cls => alignmentClasses.includes(cls));
 
         updatedSlots[baseTemplateId] = {
           ...updatedSlots[baseTemplateId],
-          className: elementClassList.join(' '),
-          parentClassName: alignmentClassList.join(' '),
+          className: templateExistingNonAlignmentClasses.join(' '),
+          parentClassName: templateNewAlignmentClasses.join(' '),
           styles: templateMergedStyles,
           metadata: {
             ...updatedSlots[baseTemplateId].metadata,
@@ -1773,8 +1776,9 @@ export function useSlotConfiguration({
           }
         };
         console.log(`[handleClassChange] ✅ Updated template ${baseTemplateId} (alignment):`, {
-          className: elementClassList.join(' '),
-          parentClassName: alignmentClassList.join(' '),
+          preservedClasses: templateExistingNonAlignmentClasses,
+          className: templateExistingNonAlignmentClasses.join(' '),
+          parentClassName: templateNewAlignmentClasses.join(' '),
           styles: templateMergedStyles
         });
       } else {
