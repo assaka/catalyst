@@ -209,15 +209,34 @@ export const categoryConfig = {
         </div>
       `,
       className: '',
-      parentClassName: 'text-right',
+      parentClassName: '',
       styles: {},
       parentId: 'sorting_controls',
       position: { col: 7, row: 1 },
-      colSpan: { grid: 6, list: 12 },
+      colSpan: { grid: 4, list: 8 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
         component: 'SortSelector'
+      }
+    },
+
+    // View mode toggle (grid/list)
+    view_mode_toggle: {
+      id: 'view_mode_toggle',
+      type: 'component',
+      component: 'ViewModeToggle',
+      className: '',
+      parentClassName: 'text-right',
+      styles: {},
+      parentId: 'sorting_controls',
+      position: { col: 11, row: 1 },
+      colSpan: { grid: 2, list: 4 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        component: 'ViewModeToggle',
+        displayName: 'View Mode Toggle'
       }
     },
 

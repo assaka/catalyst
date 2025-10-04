@@ -1143,12 +1143,95 @@ const ProductItemsGrid = createSlotComponent({
   }
 });
 
+// View Mode Toggle Component
+const ViewModeToggle = createSlotComponent({
+  name: 'ViewModeToggle',
+  render: ({ slot, className, styles, categoryContext, context }) => {
+    const [viewMode, setViewMode] = useState('grid');
+    const containerRef = useRef(null);
+
+    // In editor mode, just show the static UI
+    if (context === 'editor') {
+      return (
+        <div className={className || slot.className} style={styles || slot.styles}>
+          <div className="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
+            <button className="px-3 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm border border-gray-200 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
+              <span>Grid</span>
+            </button>
+            <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-200 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+              <span>List</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Storefront mode with actual functionality
+    const handleViewModeChange = useCallback((mode) => {
+      setViewMode(mode);
+      if (categoryContext?.onViewModeChange) {
+        categoryContext.onViewModeChange(mode);
+      }
+    }, [categoryContext]);
+
+    return (
+      <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}>
+        <div className="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
+          <button
+            onClick={() => handleViewModeChange('grid')}
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+              viewMode === 'grid'
+                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" strokeWidth="2" />
+              <rect x="14" y="3" width="7" height="7" strokeWidth="2" />
+              <rect x="3" y="14" width="7" height="7" strokeWidth="2" />
+              <rect x="14" y="14" width="7" height="7" strokeWidth="2" />
+            </svg>
+            <span>Grid</span>
+          </button>
+          <button
+            onClick={() => handleViewModeChange('list')}
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+              viewMode === 'list'
+                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="3" y1="6" x2="21" y2="6" strokeWidth="2" />
+              <line x1="3" y1="12" x2="21" y2="12" strokeWidth="2" />
+              <line x1="3" y1="18" x2="21" y2="18" strokeWidth="2" />
+            </svg>
+            <span>List</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+});
+
 // Register components
 registerSlotComponent('CategoryBreadcrumbs', CategoryBreadcrumbs);
 registerSlotComponent('ProductBreadcrumbs', ProductBreadcrumbs);
 registerSlotComponent('ActiveFilters', ActiveFilters);
 registerSlotComponent('LayeredNavigation', LayeredNavigation);
 registerSlotComponent('SortSelector', SortSelector);
+registerSlotComponent('ViewModeToggle', ViewModeToggle);
 registerSlotComponent('PaginationComponent', PaginationComponent);
 registerSlotComponent('ProductCountInfo', ProductCountInfo);
 registerSlotComponent('CmsBlockRenderer', CmsBlockComponent);
@@ -1160,6 +1243,7 @@ export {
   ActiveFilters,
   LayeredNavigation,
   SortSelector,
+  ViewModeToggle,
   PaginationComponent,
   ProductCountInfo,
   CmsBlockComponent,
