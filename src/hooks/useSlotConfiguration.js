@@ -1060,16 +1060,7 @@ export function useSlotConfiguration({
 
   // Generic slot drop handler
   const handleSlotDrop = useCallback((draggedSlotId, targetSlotId, dropPosition, slots) => {
-    console.log('[DRAG-DROP] 🎯 handleSlotDrop called:', {
-      draggedSlotId,
-      targetSlotId,
-      dropPosition,
-      draggedSlot: slots[draggedSlotId],
-      targetSlot: slots[targetSlotId]
-    });
-
     if (draggedSlotId === targetSlotId) {
-      console.log('[DRAG-DROP] ❌ Cannot drop on self');
       return null;
     }
 
@@ -1083,11 +1074,6 @@ export function useSlotConfiguration({
         const templateTargetId = targetInstanceMatch[1];
         targetSlot = slots[templateTargetId];
         if (targetSlot) {
-          console.log('[DRAG-DROP] 📝 Target is instance slot, using template slot:', {
-            instanceTargetId: targetSlotId,
-            templateTargetId,
-            found: !!targetSlot
-          });
           actualTargetSlotId = templateTargetId;
         }
       }
@@ -1095,19 +1081,11 @@ export function useSlotConfiguration({
 
     // Special case: product_card_N is a dynamically created container, treat as product_card_template
     if (!targetSlot && targetSlotId.match(/^product_card_\d+$/)) {
-      console.log('[DRAG-DROP] 📦 Target is product card instance, using product_card_template');
       targetSlot = slots['product_card_template'];
       actualTargetSlotId = 'product_card_template';
-      console.log('[DRAG-DROP] 🔍 Product card template slot:', {
-        found: !!targetSlot,
-        type: targetSlot?.type,
-        parentId: targetSlot?.parentId,
-        hasParentId: targetSlot?.parentId !== undefined
-      });
     }
 
     if (!targetSlot) {
-      console.log('[DRAG-DROP] ❌ Target slot not found (tried instance and template)');
       return null;
     }
 
@@ -1134,11 +1112,6 @@ export function useSlotConfiguration({
       // For instance slots, ALWAYS use template slot
       draggedSlot = updatedSlots[templateDraggedId];
       if (draggedSlot) {
-        console.log('[DRAG-DROP] 📝 Dragged is instance slot, using template slot:', {
-          instanceDraggedId: draggedSlotId,
-          templateDraggedId,
-          found: !!draggedSlot
-        });
         actualDraggedSlotId = templateDraggedId;
       }
     } else {
@@ -1149,21 +1122,12 @@ export function useSlotConfiguration({
     const updatedTargetSlot = updatedSlots[actualTargetSlotId];
 
     if (!draggedSlot || !updatedTargetSlot) {
-      console.error('[DRAG-DROP] ❌ Dragged or target slot not found:', {
-        draggedSlotId,
-        actualDraggedSlotId,
-        targetSlotId,
-        actualTargetSlotId,
-        foundDragged: !!draggedSlot,
-        foundTarget: !!updatedTargetSlot
-      });
       return null;
     }
 
     // Prevent moving template containers (product_card_content, product_card_price_container, etc.)
     // These are structural containers that should stay within their parent template
     if (draggedSlot?.type === 'container' && draggedSlot?.metadata?.hierarchical) {
-      console.log('[DRAG-DROP] ⚠️ Cannot move template container - structural element');
       return null;
     }
 
@@ -1226,7 +1190,6 @@ export function useSlotConfiguration({
     let targetParent = targetSlot.parentId;
     if (actualTargetSlotId === 'product_card_template') {
       targetParent = 'product_card_template';
-      console.log('[DRAG-DROP] 🎯 Target is product_card_template, using as parent');
     }
 
     // For instance slots, also check template-level parent equality
@@ -1235,20 +1198,7 @@ export function useSlotConfiguration({
     const targetTemplateParent = targetParent?.replace(/_\d+$/, '') || targetParent;
     const sameTemplateParent = currentTemplateParent === targetTemplateParent;
 
-    console.log('[DRAG-DROP] 📍 Drop context:', {
-      currentParent,
-      targetParent,
-      currentTemplateParent,
-      targetTemplateParent,
-      sameTemplateParent,
-      isContainerTarget,
-      dropPosition,
-      actualTargetSlotId,
-      targetSlotType: targetSlot?.type
-    });
-
     if (dropPosition === 'inside' && isContainerTarget) {
-      console.log('[DRAG-DROP] 📥 Drop INSIDE container');
 
       // Check if trying to drop on own parent - this means move to grandparent
       // Also handle template parent matching for instance slots
@@ -1256,14 +1206,12 @@ export function useSlotConfiguration({
       const currentTemplateParent = originalProperties.parentId?.replace(/_\d+$/, '') || originalProperties.parentId;
 
       if (currentTemplateParent === targetTemplateId) {
-        console.log('[DRAG-DROP] 🔼 Dropping on own parent - moving to grandparent');
         // Move to the parent's parent (grandparent)
         const parentSlot = updatedSlots[actualTargetSlotId];
         if (parentSlot && parentSlot.parentId) {
           newParentId = parentSlot.parentId;
           newPosition = findAvailablePosition(newParentId, 1, 1);
         } else {
-          console.log('[DRAG-DROP] ❌ No grandparent found');
           return null;
         }
       }
@@ -1286,7 +1234,6 @@ export function useSlotConfiguration({
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent) {
-      console.log('[DRAG-DROP] 🔄 Same parent reordering');
       // Intra-container reordering - same parent, different position
       newParentId = currentParent;
 
@@ -1314,12 +1261,9 @@ export function useSlotConfiguration({
       }
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent) {
-      console.log('[DRAG-DROP] 🔀 Cross-container move - different parents');
-
       // Special case: if target is product_card_template and we're dropping before/after,
       // treat it as moving INSIDE the template, not to product_items
       if (actualTargetSlotId === 'product_card_template' && (dropPosition === 'before' || dropPosition === 'after')) {
-        console.log('[DRAG-DROP] 📦 Dropping on product card template - moving inside');
         newParentId = 'product_card_template';
 
         if (dropPosition === 'before') {
@@ -1336,8 +1280,6 @@ export function useSlotConfiguration({
               };
             }
           });
-
-          console.log('[DRAG-DROP] 🎯 Placed at row 1 (top), shifted existing slots down');
         } else {
           // Place at bottom - find max row and place after it
           const childSlots = Object.values(updatedSlots).filter(s =>
@@ -1345,8 +1287,6 @@ export function useSlotConfiguration({
           );
           const maxRow = childSlots.length > 0 ? Math.max(...childSlots.map(s => s.position?.row || 1)) : 0;
           newPosition = { col: 1, row: maxRow + 1 };
-
-          console.log('[DRAG-DROP] 🎯 Placed at bottom (row ' + (maxRow + 1) + ')');
         }
       } else {
         // Different parents - move to target's parent container
@@ -1377,15 +1317,6 @@ export function useSlotConfiguration({
 
     } else {
       // Invalid drop - should only be for "inside" on non-containers
-      console.log('[DRAG-DROP] ❌ Invalid drop configuration', {
-        dropPosition,
-        isContainerTarget,
-        currentParent,
-        targetParent,
-        condition1: dropPosition === 'inside' && isContainerTarget,
-        condition2: (dropPosition === 'before' || dropPosition === 'after') && currentParent === targetParent,
-        condition3: (dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent
-      });
       return null;
     }
 
@@ -1408,14 +1339,6 @@ export function useSlotConfiguration({
     if (Array.isArray(originalProperties.viewMode)) {
       updatedSlots[actualDraggedSlotId].viewMode = [...originalProperties.viewMode];
     }
-
-    console.log('[DRAG-DROP] 💾 Updated slot:', {
-      originalDraggedSlotId: draggedSlotId,
-      actualDraggedSlotId,
-      newParentId,
-      newPosition,
-      wasInstanceSlot: draggedSlotId !== actualDraggedSlotId
-    });
 
     // Note: If we used template slots (actualDraggedSlotId !== draggedSlotId),
     // the template is already updated above. No additional mapping needed.
@@ -1454,23 +1377,8 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
-      console.error('[DRAG-DROP] ❌ Configuration validation failed after drag, reverting changes', {
-        draggedSlotId,
-        targetSlotId,
-        dropPosition,
-        newParentId,
-        newPosition
-      });
       return null;
     }
-
-    console.log('[DRAG-DROP] ✅ Drag successful:', {
-      draggedSlotId,
-      targetSlotId,
-      dropPosition,
-      newParentId,
-      newPosition
-    });
 
     return updatedSlots;
   }, [validateSlotConfiguration]);
