@@ -512,6 +512,15 @@ export function UnifiedSlotRenderer({
     if (type === 'image') {
       let imageSrc = processedContent || content;
 
+      console.log('🔍 UnifiedSlotRenderer IMAGE:', {
+        id,
+        context,
+        content,
+        processedContent,
+        imageSrc,
+        hasTemplateVars: imageSrc?.includes('{{')
+      });
+
       // Handle product-specific images
       if (id === 'product_image' && productData.product) {
         imageSrc = getProductImageUrl(productData.product, productData.activeImageIndex || 0);
@@ -523,9 +532,12 @@ export function UnifiedSlotRenderer({
           getProductImageUrl(productData.product) :
           'https://placehold.co/400x400?text=Product+Image';
       }
-      // In editor mode, check for unprocessed template variables
-      else if (context === 'editor' && (imageSrc.includes('{{') || imageSrc.includes('}}'))) {
-        imageSrc = 'https://placehold.co/400x400?text=Product+Image';
+      // Check for unprocessed template variables in both editor and storefront
+      else if (imageSrc.includes('{{') || imageSrc.includes('}}')) {
+        console.warn('🔍 Found unprocessed template variables in image src:', imageSrc);
+        imageSrc = context === 'storefront' ?
+          getProductImageUrl(productData.product) :
+          'https://placehold.co/400x400?text=Product+Image';
       }
 
       // Remove width from styles for images - let them be full width

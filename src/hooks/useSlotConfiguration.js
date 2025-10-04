@@ -1073,9 +1073,28 @@ export function useSlotConfiguration({
       return null;
     }
 
-    const targetSlot = slots[targetSlotId];
+    let targetSlot = slots[targetSlotId];
+    let actualTargetSlotId = targetSlotId;
+
+    // If target slot not found, check if it's an instance slot and try template slot
     if (!targetSlot) {
-      console.log('[DRAG-DROP] ❌ Target slot not found');
+      const targetInstanceMatch = targetSlotId.match(/^(.+)_(\d+)$/);
+      if (targetInstanceMatch) {
+        const templateTargetId = targetInstanceMatch[1];
+        targetSlot = slots[templateTargetId];
+        if (targetSlot) {
+          console.log('[DRAG-DROP] 📝 Target is instance slot, using template slot:', {
+            instanceTargetId: targetSlotId,
+            templateTargetId,
+            found: !!targetSlot
+          });
+          actualTargetSlotId = templateTargetId;
+        }
+      }
+    }
+
+    if (!targetSlot) {
+      console.log('[DRAG-DROP] ❌ Target slot not found (tried instance and template)');
       return null;
     }
 
