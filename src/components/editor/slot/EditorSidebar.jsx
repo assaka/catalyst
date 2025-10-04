@@ -532,10 +532,21 @@ const EditorSidebar = ({
                   }
                 }
               } else {
-                // For non-color properties, just use computed styles
+                // For backgroundColor and borderColor, convert rgb to hex for color picker
                 const computedValue = computedStyle[prop];
                 if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
-                  elementStyles[prop] = computedValue;
+                  // Convert rgb/rgba to hex for color picker compatibility
+                  if (computedValue.startsWith('rgb')) {
+                    const rgbMatch = computedValue.match(/\d+/g);
+                    if (rgbMatch && rgbMatch.length >= 3) {
+                      const hex = '#' + rgbMatch.slice(0, 3)
+                        .map(x => parseInt(x).toString(16).padStart(2, '0'))
+                        .join('');
+                      elementStyles[prop] = hex;
+                    }
+                  } else if (computedValue.startsWith('#')) {
+                    elementStyles[prop] = computedValue;
+                  }
                 }
               }
             });
