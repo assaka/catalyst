@@ -1221,18 +1221,25 @@ export function useSlotConfiguration({
     if (dropPosition === 'inside' && isContainerTarget) {
       console.log('[DRAG-DROP] 📥 Drop INSIDE container');
 
-      // Check if trying to drop on own parent (should be ignored - can't drop inside same container)
+      // Check if trying to drop on own parent - this means move to grandparent
       // Also handle template parent matching for instance slots
       const targetTemplateId = actualTargetSlotId;
       const currentTemplateParent = originalProperties.parentId?.replace(/_\d+$/, '') || originalProperties.parentId;
 
       if (currentTemplateParent === targetTemplateId) {
-        console.log('[DRAG-DROP] ⚠️ Cannot drop slot inside its own parent container');
-        return null;
+        console.log('[DRAG-DROP] 🔼 Dropping on own parent - moving to grandparent');
+        // Move to the parent's parent (grandparent)
+        const parentSlot = updatedSlots[actualTargetSlotId];
+        if (parentSlot && parentSlot.parentId) {
+          newParentId = parentSlot.parentId;
+          newPosition = findAvailablePosition(newParentId, 1, 1);
+        } else {
+          console.log('[DRAG-DROP] ❌ No grandparent found');
+          return null;
+        }
       }
-
       // Check if this is really a cross-container move or accidental parent hit
-      if (originalProperties.parentId && targetSlotId === getParentOfParent(slots, originalProperties.parentId)) {
+      else if (originalProperties.parentId && targetSlotId === getParentOfParent(slots, originalProperties.parentId)) {
         // User dragged to grandparent container - likely trying to reorder within current parent
         newParentId = originalProperties.parentId;
 
