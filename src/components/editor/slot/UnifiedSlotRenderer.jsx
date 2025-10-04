@@ -108,11 +108,11 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   const HtmlTag = slot.metadata?.htmlTag || 'div';
   const htmlAttributes = slot.metadata?.htmlAttributes || {};
 
-  // Merge className with htmlAttributes.class if both exist
+  // Merge className with htmlAttributes.class if both exist, and add whitespace-normal
   const { class: htmlClass, ...otherHtmlAttributes } = htmlAttributes;
   const mergedClassName = htmlClass
-    ? `${processedClassName} ${htmlClass}`.trim()
-    : processedClassName;
+    ? `${processedClassName} ${htmlClass} whitespace-normal`.trim()
+    : `${processedClassName} whitespace-normal`.trim();
 
   return React.createElement(
     HtmlTag,
@@ -393,11 +393,11 @@ export function UnifiedSlotRenderer({
         const HtmlTag = metadata?.htmlTag || 'span';
         const htmlAttributes = metadata?.htmlAttributes || {};
 
-        // Merge className with htmlAttributes.class if both exist
+        // Merge className with htmlAttributes.class if both exist, and add whitespace-normal
         const { class: htmlClass, ...otherHtmlAttributes } = htmlAttributes;
         const mergedClassName = htmlClass
-          ? `${processedClassName} ${htmlClass}`.trim()
-          : processedClassName;
+          ? `${processedClassName} ${htmlClass} whitespace-normal`.trim()
+          : `${processedClassName} whitespace-normal`.trim();
 
         // Remove width from styles for text elements - let them be fit-content
         const { width, ...stylesWithoutWidth } = processedStyles || {};
