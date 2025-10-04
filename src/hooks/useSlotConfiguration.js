@@ -1321,7 +1321,9 @@ export function useSlotConfiguration({
       if (actualTargetSlotId === 'product_card_template' && (dropPosition === 'before' || dropPosition === 'after')) {
         console.log('[DRAG-DROP] 📦 Dropping on product card template - moving inside');
         newParentId = 'product_card_template';
-        newPosition = findAvailablePosition('product_card_template', 1, 1);
+        // Place at the very beginning (col: 1, row: 1) to appear above image
+        newPosition = { col: 1, row: 1 };
+        console.log('[DRAG-DROP] 🎯 Forcing position to start:', newPosition);
       } else {
         // Different parents - move to target's parent container
         newParentId = targetParent;
