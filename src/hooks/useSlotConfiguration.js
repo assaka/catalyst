@@ -1321,20 +1321,33 @@ export function useSlotConfiguration({
       if (actualTargetSlotId === 'product_card_template' && (dropPosition === 'before' || dropPosition === 'after')) {
         console.log('[DRAG-DROP] 📦 Dropping on product card template - moving inside');
         newParentId = 'product_card_template';
-        newPosition = { col: 1, row: 1 };
 
-        // Shift all existing slots in product_card_template down by one row
-        Object.keys(updatedSlots).forEach(slotId => {
-          const slot = updatedSlots[slotId];
-          if (slot.parentId === 'product_card_template' && slot.id !== actualDraggedSlotId && slot.position) {
-            slot.position = {
-              ...slot.position,
-              row: (slot.position.row || 1) + 1
-            };
-          }
-        });
+        if (dropPosition === 'before') {
+          // Place at top (row 1) and shift existing slots down
+          newPosition = { col: 1, row: 1 };
 
-        console.log('[DRAG-DROP] 🎯 Placed at row 1, shifted existing slots down');
+          // Shift all existing slots in product_card_template down by one row
+          Object.keys(updatedSlots).forEach(slotId => {
+            const slot = updatedSlots[slotId];
+            if (slot.parentId === 'product_card_template' && slot.id !== actualDraggedSlotId && slot.position) {
+              slot.position = {
+                ...slot.position,
+                row: (slot.position.row || 1) + 1
+              };
+            }
+          });
+
+          console.log('[DRAG-DROP] 🎯 Placed at row 1 (top), shifted existing slots down');
+        } else {
+          // Place at bottom - find max row and place after it
+          const childSlots = Object.values(updatedSlots).filter(s =>
+            s.parentId === 'product_card_template' && s.id !== actualDraggedSlotId
+          );
+          const maxRow = childSlots.length > 0 ? Math.max(...childSlots.map(s => s.position?.row || 1)) : 0;
+          newPosition = { col: 1, row: maxRow + 1 };
+
+          console.log('[DRAG-DROP] 🎯 Placed at bottom (row ' + (maxRow + 1) + ')');
+        }
       } else {
         // Different parents - move to target's parent container
         newParentId = targetParent;
