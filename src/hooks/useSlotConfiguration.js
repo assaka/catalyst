@@ -1528,6 +1528,43 @@ export function useSlotConfiguration({
 
     }
 
+    // MIRROR: If this is a product template instance (has _N suffix), also update the base template
+    // This ensures template and instance are updated in the SAME state update
+    const baseTemplateId = slotId.replace(/_\d+$/, '');
+    if (baseTemplateId !== slotId && updatedSlots[baseTemplateId]) {
+      console.log(`🔄 Auto-mirroring to template ${baseTemplateId} in same update`);
+
+      // Apply the same changes to the template slot
+      const templateExistingStyles = updatedSlots[baseTemplateId].styles || {};
+      const templateMergedStyles = { ...templateExistingStyles, ...styles };
+
+      if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
+        const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
+        const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+
+        updatedSlots[baseTemplateId] = {
+          ...updatedSlots[baseTemplateId],
+          className: elementClassList.join(' '),
+          parentClassName: alignmentClassList.join(' '),
+          styles: templateMergedStyles,
+          metadata: {
+            ...updatedSlots[baseTemplateId].metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+      } else {
+        updatedSlots[baseTemplateId] = {
+          ...updatedSlots[baseTemplateId],
+          className: className,
+          styles: templateMergedStyles,
+          metadata: {
+            ...updatedSlots[baseTemplateId].metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+      }
+    }
+
     return updatedSlots;
   }, []);
 
