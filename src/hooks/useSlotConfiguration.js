@@ -1459,21 +1459,27 @@ export function useSlotConfiguration({
       const baseTemplateId = slotId.replace(/_\d+$/, '');
       const templateSlot = updatedSlots[baseTemplateId];
 
-      // Copy className and other properties from template if available
+      // Copy className, styles, and other properties from template if available
       const templateClassName = templateSlot?.className || '';
+      const templateStyles = templateSlot?.styles ? { ...templateSlot.styles } : {};
       const templateType = templateSlot?.type || 'text';
       const templateContent = templateSlot?.content || '';
+      const templateParentClassName = templateSlot?.parentClassName || '';
 
       updatedSlots[slotId] = {
         id: slotId,
         type: templateType,
         content: templateContent,
         className: templateClassName, // Inherit from template
-        styles: {},
+        parentClassName: templateParentClassName, // Inherit from template
+        styles: templateStyles, // Inherit styles from template
         metadata: metadata || {}
       };
 
-      console.log(`✅ New slot inherits className from template ${baseTemplateId}:`, templateClassName);
+      console.log(`✅ New slot inherits from template ${baseTemplateId}:`, {
+        className: templateClassName,
+        styles: templateStyles
+      });
     }
 
     // Merge existing styles with new styles
