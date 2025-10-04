@@ -986,19 +986,23 @@ export function useSlotConfiguration({
         // Special case: product_card_N instances reference product_card_template
         const isProductCardInstance = slot.parentId.match(/^product_card_(\d+)$/);
 
-        if (!slots[baseTemplateParentId] && !isProductCardInstance) {
+        // Special case: Template slots can reference product_card_template or other template containers
+        const isTemplateSlot = slot.metadata?.isTemplate || slot.parentId === 'product_card_template';
+
+        if (!slots[baseTemplateParentId] && !isProductCardInstance && !isTemplateSlot) {
           console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId} (template: ${baseTemplateParentId})`, {
             slotId,
             parentId: slot.parentId,
             parentExists: !!slots[slot.parentId],
             templateParentExists: !!slots[baseTemplateParentId],
             isProductCardInstance: !!isProductCardInstance,
+            isTemplateSlot,
             availableSlots: Object.keys(slots).filter(k => k.includes('product_card'))
           });
           return false;
         }
 
-        // Validation passed - template parent exists for instance slot
+        // Validation passed - template parent exists for instance slot or is template slot
       }
     }
 
@@ -1242,6 +1246,15 @@ export function useSlotConfiguration({
         const newParentMatch = newParentId.match(/^(.+)_(\d+)$/);
         const templateParentId = newParentMatch ? newParentMatch[1] : newParentId;
 
+        console.log('🔄 Mapping instance drag to template:', {
+          instanceSlotId: draggedSlotId,
+          templateSlotId,
+          instanceParentId: newParentId,
+          templateParentId,
+          newPosition,
+          templateParentExists: !!updatedSlots[templateParentId]
+        });
+
         // Update template slot with new position and parent
         updatedSlots[templateSlotId] = {
           ...updatedSlots[templateSlotId],
@@ -1289,9 +1302,23 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
-      console.error('❌ Configuration validation failed after drag, reverting changes');
+      console.error('❌ Configuration validation failed after drag, reverting changes', {
+        draggedSlotId,
+        targetSlotId,
+        dropPosition,
+        newParentId,
+        newPosition
+      });
       return null;
     }
+
+    console.log('✅ Drag successful:', {
+      draggedSlotId,
+      targetSlotId,
+      dropPosition,
+      newParentId,
+      newPosition
+    });
 
     return updatedSlots;
   }, [validateSlotConfiguration]);

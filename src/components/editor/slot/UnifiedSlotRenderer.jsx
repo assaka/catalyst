@@ -790,6 +790,17 @@ export function UnifiedSlotRenderer({
           if (typeof viewModeValue === 'number') {
             colSpanClass = `col-span-${viewModeValue}`;
             gridColumn = `span ${viewModeValue} / span ${viewModeValue}`;
+
+            // Debug logging for product card children in list view
+            if (viewMode === 'list' && (slot.id?.includes('product_card_image') || slot.id?.includes('product_card_content'))) {
+              console.log(`🔍 UnifiedSlotRenderer - ${slot.id}:`, {
+                viewMode,
+                colSpan: slot.colSpan,
+                viewModeValue,
+                colSpanClass,
+                slotId: slot.id
+              });
+            }
           } else if (typeof viewModeValue === 'string') {
             colSpanClass = viewModeValue;
             gridColumn = null;
