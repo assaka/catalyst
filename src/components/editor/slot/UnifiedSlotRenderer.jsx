@@ -553,7 +553,7 @@ export function UnifiedSlotRenderer({
       } else {
         // Fallback to default classes if no className provided
         containerClass = type === 'grid' ? 'grid grid-cols-12 gap-2' :
-                        type === 'flex' ? 'flex' : '';
+                        type === 'flex' ? 'flex flex-wrap gap-2' : '';
       }
 
       return (
