@@ -769,39 +769,50 @@ export function useSlotConfiguration({
   // Generic reset layout function
   const handleResetLayout = useCallback(async () => {
     try {
-
-      // Load the clean static configuration for this page type
-      const config = await loadPageConfig(pageType);
-
-      if (!config || !config.slots) {
-        throw new Error(`${pageType} configuration is invalid or missing slots`);
-      }
-
-      // Create clean slots
-      const cleanSlots = createCleanSlots(config);
-
-      const cleanConfig = {
-        page_name: config.page_name || pageName,
-        slot_type: config.slot_type || slotType,
-        slots: cleanSlots,
-        metadata: {
-          created: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-          version: '1.0',
-          pageType: pageType
-        },
-        cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
-      };
-
-      // Save the clean config to database (this will overwrite any existing draft)
-      // Pass isReset=true to set has_unpublished_changes = false
       const storeId = selectedStore?.id;
-      if (storeId) {
-        await slotConfigurationService.saveConfiguration(storeId, cleanConfig, pageType, true);
+      if (!storeId) {
+        throw new Error('No store selected');
       }
 
+      // First, try to get the last published configuration
+      const publishedResponse = await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
+      let config;
 
-      return cleanConfig;
+      if (publishedResponse.success && publishedResponse.data?.configuration) {
+        console.log('✅ Restoring layout from last published version');
+        config = publishedResponse.data.configuration;
+      } else {
+        console.log('⚠️ No published version found, loading from config.js');
+        // Load the clean static configuration for this page type
+        config = await loadPageConfig(pageType);
+
+        if (!config || !config.slots) {
+          throw new Error(`${pageType} configuration is invalid or missing slots`);
+        }
+
+        // Create clean slots
+        const cleanSlots = createCleanSlots(config);
+
+        config = {
+          page_name: config.page_name || pageName,
+          slot_type: config.slot_type || slotType,
+          slots: cleanSlots,
+          metadata: {
+            created: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            version: '1.0',
+            pageType: pageType,
+            source: `${pageType}-config.js`
+          },
+          cmsBlocks: config.cmsBlocks ? [...config.cmsBlocks] : []
+        };
+      }
+
+      // Save the config to database (this will overwrite any existing draft)
+      // Pass isReset=true to set has_unpublished_changes = false
+      await slotConfigurationService.saveConfiguration(storeId, config, pageType, true);
+
+      return config;
     } catch (error) {
       console.error(`❌ Failed to reset ${pageType} layout:`, error);
       throw error;
@@ -1784,12 +1795,6 @@ export function useSlotConfiguration({
         if (storeId) {
           // Log button template slot BEFORE filtering
           const templateButtonSlot = configToSave.slots['product_card_add_to_cart'];
-          console.log(`[saveConfiguration] 🎯 Template button slot BEFORE filter:`, {
-            id: 'product_card_add_to_cart',
-            exists: !!templateButtonSlot,
-            className: templateButtonSlot?.className,
-            styles: templateButtonSlot?.styles
-          });
 
           // Filter out instance slots (with _N suffix) before saving - only save template slots
           const filteredSlots = {};
@@ -1801,7 +1806,6 @@ export function useSlotConfiguration({
               // Check if the base is a product card child template
               if (configToSave.slots[baseId]?.parentId === 'product_card_template') {
                 // Skip instance slots - they're dynamically generated
-                console.log(`[saveConfiguration] ⏭️ Filtering out instance slot: ${slotId}`);
                 return;
               }
             }
@@ -1811,12 +1815,6 @@ export function useSlotConfiguration({
 
           // Log button template slot AFTER filtering
           const filteredTemplateButton = filteredSlots['product_card_add_to_cart'];
-          console.log(`[saveConfiguration] 🎯 Template button slot AFTER filter:`, {
-            id: 'product_card_add_to_cart',
-            exists: !!filteredTemplateButton,
-            className: filteredTemplateButton?.className,
-            styles: filteredTemplateButton?.styles
-          });
 
           const configToSaveFiltered = {
             ...configToSave,
@@ -2014,8 +2012,20 @@ export function useSlotConfiguration({
 
       createSlotCreateHandler: (createSlot) =>
         useCallback((slotType, content = '', parentId = 'main_layout', additionalProps = {}) => {
+          console.log('[createSlotCreateHandler] 🆕 Creating new slot:', { slotType, content, parentId, additionalProps });
+
           setPageConfig(prevConfig => {
+            console.log('[createSlotCreateHandler] 📦 Current config:', {
+              slotsCount: Object.keys(prevConfig?.slots || {}).length,
+              hasSlots: !!prevConfig?.slots
+            });
+
             const { updatedSlots, newSlotId } = createSlot(slotType, content, parentId, additionalProps, prevConfig?.slots || {});
+
+            console.log('[createSlotCreateHandler] ✅ Slot created:', {
+              newSlotId,
+              totalSlots: Object.keys(updatedSlots).length
+            });
 
             const updatedConfig = {
               ...prevConfig,
@@ -2027,7 +2037,13 @@ export function useSlotConfiguration({
             };
 
             // Auto-save the new slot
-            saveConfigurationHandler(updatedConfig);
+            try {
+              saveConfigurationHandler(updatedConfig);
+              console.log('[createSlotCreateHandler] 💾 Auto-save triggered');
+            } catch (error) {
+              console.error('[createSlotCreateHandler] ❌ Auto-save failed:', error);
+            }
+
             return updatedConfig;
           });
         }, [createSlot, saveConfigurationHandler]),
