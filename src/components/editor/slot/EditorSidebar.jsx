@@ -1844,11 +1844,6 @@ const EditorSidebar = ({
                       type="color"
                       value={(() => {
                         const bgColor = elementProperties.styles.backgroundColor;
-                        console.log('[ColorPicker] backgroundColor value:', {
-                          raw: bgColor,
-                          startsWith: bgColor?.startsWith('#'),
-                          final: bgColor && bgColor.startsWith('#') ? bgColor : '#ffffff'
-                        });
                         return bgColor && bgColor.startsWith('#') ? bgColor : '#ffffff';
                       })()}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}

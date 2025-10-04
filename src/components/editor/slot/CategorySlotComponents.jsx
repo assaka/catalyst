@@ -756,12 +756,6 @@ const ProductItemsGrid = createSlotComponent({
       // Find product card template early for logging
       const productCardTemplate = allSlots?.product_card_template;
 
-      console.log('🔍 ProductItemsGrid - Editor Mode:', {
-        viewMode,
-        gridClasses,
-        productCardTemplateColSpan: productCardTemplate?.colSpan
-      });
-
       // Get sample products from categoryContext OR variableContext
       const rawProducts = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
 
@@ -846,15 +840,6 @@ const ProductItemsGrid = createSlotComponent({
               // First check for product-specific customization (templateSlotId with _index)
               // Then fall back to template-wide customization (base slotId)
               const savedSlotConfig = allSlots[templateSlotId] || allSlots[slotId];
-
-              // Debug logging for image and content slots
-              if (index === 0 && (slotId === 'product_card_image' || slotId === 'product_card_content')) {
-                console.log(`🔍 Product 0 - ${slotId}:`, {
-                  templateColSpan: slotConfig.colSpan,
-                  savedColSpan: savedSlotConfig?.colSpan,
-                  viewMode
-                });
-              }
 
               // Replace template variables in styles using processVariables
               // This will use the variableContext which has settings.theme.add_to_cart_button_color

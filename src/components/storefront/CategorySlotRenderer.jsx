@@ -21,15 +21,7 @@ export function CategorySlotRenderer({
   viewMode = 'grid',
   categoryContext = {}
 }) {
-  // DEBUG: Check slots at entry point
-  if (parentId === null) {
-    console.log('🔍 CategorySlotRenderer ENTRY - slots received:', {
-      hasSlotsParam: !!slots,
-      slotsKeys: slots ? Object.keys(slots).slice(0, 10) : [],
-      hasBreadcrumbStyles: !!slots?.breadcrumb_styles,
-      breadcrumbStylesValue: slots?.breadcrumb_styles
-    });
-  }
+
   // Helper function to generate dynamic grid classes
   const getDynamicGridClasses = (slot) => {
     if (viewMode === 'list') {
@@ -139,31 +131,10 @@ export function CategorySlotRenderer({
 
   // Get child slots for current parent
   let childSlots = SlotManager.getChildSlots(slots, parentId);
-
-  // Debug: Check if view_mode_toggle exists
-  if (parentId === 'sorting_controls') {
-    console.log('🔍 sorting_controls childSlots:', {
-      childSlotIds: childSlots.map(s => s.id),
-      hasViewModeToggle: childSlots.some(s => s.id === 'view_mode_toggle'),
-      allSlotsKeys: slots ? Object.keys(slots).filter(k => k.includes('view_mode')) : []
-    });
-  }
-
   // Filter by conditionalDisplay
   childSlots = childSlots.filter(slot => {
     if (!slot.conditionalDisplay) return true;
     const shouldShow = evaluateConditionalDisplay(slot.conditionalDisplay, categoryContext);
-
-    // Debug logging for view_mode_toggle
-    if (slot.id === 'view_mode_toggle') {
-      console.log('🔍 view_mode_toggle conditional check:', {
-        conditionalDisplay: slot.conditionalDisplay,
-        shouldShow,
-        settingsValue: categoryContext?.settings?.enable_view_mode_toggle,
-        fullSettings: categoryContext?.settings
-      });
-    }
-
     return shouldShow;
   });
 
@@ -214,16 +185,6 @@ export function CategorySlotRenderer({
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && finalComponentName && ComponentRegistry.has(finalComponentName)) {
       const registeredComponent = ComponentRegistry.get(finalComponentName);
-
-      // Debug for breadcrumbs
-      if (id === 'breadcrumbs_content') {
-        console.log('🔍 About to call registeredComponent.render for breadcrumbs');
-        console.log('🔍 Passing categoryContext with slots:', {
-          hasSlots: !!categoryContext.slots,
-          hasBreadcrumbStyles: !!slots?.breadcrumb_styles,
-          breadcrumbStylesData: slots?.breadcrumb_styles?.styles
-        });
-      }
 
       // Format products with all necessary fields for templates
       const formattedProducts = products.map(product => {
@@ -420,22 +381,6 @@ export function CategorySlotRenderer({
 
       // Use the registered component's render method
       try {
-        if (id === 'breadcrumbs_content') {
-          console.log('🔍 RIGHT BEFORE CALLING RENDER - contextToPass:', {
-            hasBreadcrumbStyles: !!contextToPass.breadcrumbStyles,
-            breadcrumbStylesValue: contextToPass.breadcrumbStyles
-          });
-        }
-
-        if (id === 'product_items') {
-          console.log('🔍 ProductItemsGrid - categoryContext:', {
-            hasProducts: !!categoryContext?.products,
-            productsLength: categoryContext?.products?.length,
-            hasAllSlots: !!slots,
-            allSlotsKeys: slots ? Object.keys(slots).slice(0, 20) : []
-          });
-        }
-
         const result = registeredComponent.render({
           slot,
           categoryContext: contextToPass,
@@ -446,7 +391,6 @@ export function CategorySlotRenderer({
           viewMode, // Pass viewMode to components
           allSlots: slots // Also pass allSlots as a direct prop
         });
-        console.log('🔍 registeredComponent.render returned:', !!result);
         return result;
       } catch (error) {
         console.error('🔍 Error in registeredComponent.render:', error);
