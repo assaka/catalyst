@@ -755,9 +755,17 @@ export function GridColumn({
       onClick={(e) => {
         if (mode === 'edit' && onElementClick && !isOverResizeHandle) {
           e.stopPropagation();
+
+          // Check if this slot is non-editable, if so select parent instead
+          const isNonEditable = slot?.metadata?.nonEditable === true;
+          const targetSlotId = isNonEditable && slot?.parentId ? slot.parentId : slotId;
+          const targetElement = isNonEditable && slot?.parentId
+            ? e.currentTarget.closest(`[data-slot-id="${slot.parentId}"]`) || e.currentTarget
+            : e.currentTarget;
+
           // Ensure the element has the data-slot-id attribute
-          e.currentTarget.setAttribute('data-slot-id', slotId);
-          onElementClick(slotId, e.currentTarget);
+          targetElement.setAttribute('data-slot-id', targetSlotId);
+          onElementClick(targetSlotId, targetElement);
         }
       }}
       onMouseEnter={() => {
