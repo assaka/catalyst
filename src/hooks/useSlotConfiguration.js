@@ -954,29 +954,37 @@ export function useSlotConfiguration({
 
   // Generic validation function for slot configurations
   const validateSlotConfiguration = useCallback((slots) => {
-    if (!slots || typeof slots !== 'object') return false;
+    if (!slots || typeof slots !== 'object') {
+      console.error('❌ Validation failed: slots is not an object');
+      return false;
+    }
 
     // Check for required properties in each slot
     for (const [slotId, slot] of Object.entries(slots)) {
       if (!slot.id || slot.id !== slotId) {
-        console.error(`❌ Slot ${slotId} has invalid or missing id`);
+        console.error(`❌ Slot ${slotId} has invalid or missing id`, { slotId, actualId: slot.id });
         return false;
       }
 
       if (!slot.type) {
-        console.error(`❌ Slot ${slotId} missing type`);
+        console.error(`❌ Slot ${slotId} missing type`, slot);
         return false;
       }
 
       // Ensure viewMode is always an array
       if (slot.viewMode && !Array.isArray(slot.viewMode)) {
-        console.error(`❌ Slot ${slotId} has invalid viewMode (not an array)`);
+        console.error(`❌ Slot ${slotId} has invalid viewMode (not an array)`, { viewMode: slot.viewMode });
         return false;
       }
 
       // Validate parentId references
       if (slot.parentId && slot.parentId !== null && !slots[slot.parentId]) {
-        console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId}`);
+        console.error(`❌ Slot ${slotId} references non-existent parent ${slot.parentId}`, {
+          slotId,
+          parentId: slot.parentId,
+          parentExists: !!slots[slot.parentId],
+          availableSlots: Object.keys(slots).filter(k => k.includes('product_card'))
+        });
         return false;
       }
     }
