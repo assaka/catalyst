@@ -403,14 +403,19 @@ const ResizeWrapper = ({
     document.addEventListener('mouseup', handleMouseUp);
   }, [minWidth, minHeight, maxWidth, maxHeight, onResize, disabled]);
 
+  // Check if this is an image element
+  const isImageElement = children?.type === 'img' ||
+                        children?.props?.src ||
+                        (children?.props?.className && children.props.className.includes('object-cover'));
+
   const wrapperStyle = {
-    // For buttons and text elements, wrapper should be full width; for others, fit-content
-    width: (isButton || isTextElement) ? '100%' : 'fit-content',
+    // For buttons, text, and image elements, wrapper should be full width; for others, fit-content
+    width: (isButton || isTextElement || isImageElement) ? '100%' : 'fit-content',
     height: 'fit-content',
     // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
     ...(isButton || isTextElement ? { maxWidth: 'none', overflow: 'visible' } : { maxWidth: '100%' }),
-    display: (isButton || isTextElement) ? 'block' : 'inline-block',
+    display: (isButton || isTextElement || isImageElement) ? 'block' : 'inline-block',
     position: 'relative'
   };
 

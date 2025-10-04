@@ -405,8 +405,8 @@ export const categoryConfig = {
         width: '100%'
       },
       parentId: 'product_card_template',
-      position: { col: 6, row: 1 },
-      colSpan: { grid: 7, list: 12 },
+      position: { col: 1, row: 2 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
