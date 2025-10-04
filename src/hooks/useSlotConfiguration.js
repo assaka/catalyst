@@ -1684,8 +1684,8 @@ export function useSlotConfiguration({
             const slotMatch = slotId.match(/^(.+)_(\d+)$/);
             if (slotMatch) {
               const baseId = slotMatch[1];
-              const slot = prevConfig?.slots?.[slotId];
-              if (slot?.parentId?.startsWith('product_card')) {
+              const templateSlot = prevConfig?.slots?.[baseId]; // Check template, not instance
+              if (templateSlot?.parentId === 'product_card_template') {
                 effectiveSlotId = baseId;
                 console.log('📦 Product slot resize detected, using template ID:', effectiveSlotId);
               }
@@ -1717,8 +1717,8 @@ export function useSlotConfiguration({
             const slotMatch = slotId.match(/^(.+)_(\d+)$/);
             if (slotMatch) {
               const baseId = slotMatch[1];
-              const slot = prevConfig?.slots?.[slotId];
-              if (slot?.parentId?.startsWith('product_card')) {
+              const templateSlot = prevConfig?.slots?.[baseId]; // Check template, not instance
+              if (templateSlot?.parentId === 'product_card_template') {
                 effectiveSlotId = baseId;
                 console.log('📦 Product slot height resize detected, using template ID:', effectiveSlotId);
               }
