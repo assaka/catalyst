@@ -1722,13 +1722,19 @@ export function useSlotConfiguration({
               }
 
               // Debug: check if template slots exist before drop
+              const draggedSlotDebug = prevConfig.slots[effectiveDraggedId];
+              const targetSlotDebug = prevConfig.slots[effectiveTargetId];
+
               console.log('📦 Before drop handler:', {
                 draggedId: effectiveDraggedId,
                 targetId: effectiveTargetId,
-                draggedSlotExists: !!prevConfig.slots[effectiveDraggedId],
-                targetSlotExists: !!prevConfig.slots[effectiveTargetId],
-                draggedSlot: prevConfig.slots[effectiveDraggedId],
-                targetSlot: prevConfig.slots[effectiveTargetId]
+                draggedSlotExists: !!draggedSlotDebug,
+                targetSlotExists: !!targetSlotDebug,
+                draggedParentId: draggedSlotDebug?.parentId,
+                targetParentId: targetSlotDebug?.parentId,
+                sameParent: draggedSlotDebug?.parentId === targetSlotDebug?.parentId,
+                draggedSlot: draggedSlotDebug,
+                targetSlot: targetSlotDebug
               });
 
               // Use the hook function to handle the drop logic
