@@ -1116,6 +1116,13 @@ export function useSlotConfiguration({
       return null;
     }
 
+    // Prevent moving template containers (product_card_content, product_card_price_container, etc.)
+    // These are structural containers that should stay within their parent template
+    if (actualDraggedSlotId && draggedSlot?.type === 'container' && draggedSlot?.metadata?.hierarchical) {
+      console.log('[DRAG-DROP] ⚠️ Cannot move template container - structural element');
+      return null;
+    }
+
 
     // Create a deep clone to avoid mutations
     const updatedSlots = JSON.parse(JSON.stringify(slots));
