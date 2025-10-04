@@ -500,13 +500,33 @@ const EditorSidebar = ({
                 isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent'
               });
 
-              // For color property, check inline styles FIRST (from database), then Tailwind classes
+              // For color property, prioritize inline styles over Tailwind classes
               if (prop === 'color') {
-                // PRIORITY 1: Check if there's an inline style color (from database)
+                // Check if element has inline color style (from database saves)
                 const hasInlineColor = storedStyles?.color || styledElement.style.color;
 
-                if (!hasInlineColor) {
-                  // PRIORITY 2: Check for explicit Tailwind colors in stored className
+                // If we have inline color OR computed color is different from Tailwind white,
+                // use the computed/inline value instead of Tailwind
+                if (hasInlineColor || (computedValue && computedValue !== 'rgb(255, 255, 255)' && computedValue !== '#ffffff')) {
+                  // Use computed styles (includes inline styles)
+                  if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
+                    // Convert rgb/rgba to hex for color picker
+                    if (computedValue.startsWith('rgb')) {
+                      const rgbMatch = computedValue.match(/\d+/g);
+                      if (rgbMatch && rgbMatch.length >= 3) {
+                        const hex = '#' + rgbMatch.slice(0, 3)
+                          .map(x => parseInt(x).toString(16).padStart(2, '0'))
+                          .join('');
+                        elementStyles[prop] = hex;
+                        console.log(`[EditorSidebar] ${prop} from inline/computed (RGB to hex):`, hex);
+                      }
+                    } else if (computedValue.startsWith('#')) {
+                      elementStyles[prop] = computedValue;
+                      console.log(`[EditorSidebar] ${prop} from inline/computed (already hex):`, computedValue);
+                    }
+                  }
+                } else {
+                  // No inline color - check for Tailwind classes
                   if (storedClassName) {
                     const tailwindColorHex = getTailwindColorHex(storedClassName);
                     if (tailwindColorHex) {
@@ -515,32 +535,9 @@ const EditorSidebar = ({
                       return;
                     }
                   }
-                }
 
-                // PRIORITY 3: Use computed styles from the element (includes inline styles)
-
-                if (computedValue && computedValue !== 'rgba(0, 0, 0, 0)' && computedValue !== 'transparent') {
-
-                  // Convert rgb/rgba to hex for color picker
-                  if (computedValue.startsWith('rgb')) {
-                    const rgbMatch = computedValue.match(/\d+/g);
-                    if (rgbMatch && rgbMatch.length >= 3) {
-                      const hex = '#' + rgbMatch.slice(0, 3)
-                        .map(x => parseInt(x).toString(16).padStart(2, '0'))
-                        .join('');
-                      elementStyles[prop] = hex;
-                      console.log(`[EditorSidebar] ${prop} converted RGB to hex:`, hex);
-                    }
-                  } else if (computedValue.startsWith('#')) {
-                    elementStyles[prop] = computedValue;
-                    console.log(`[EditorSidebar] ${prop} already hex:`, computedValue);
-                  } else {
-                  }
-                } else {
-                  // No color detected - check if element actually has black text that we should capture
-                  if (computedValue === 'rgb(0, 0, 0)' || computedValue === 'rgba(0, 0, 0, 1)') {
-                    elementStyles[prop] = '#000000';
-                  } else {
+                  // Fallback to black if no color found
+                  if (!elementStyles[prop]) {
                     elementStyles[prop] = '#000000';
                   }
                 }
