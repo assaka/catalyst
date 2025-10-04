@@ -394,6 +394,7 @@ export function CategorySlotRenderer({
           context: 'storefront',
           className,
           styles,
+          viewMode, // Pass viewMode to components
           allSlots: slots // Also pass allSlots as a direct prop
         });
         console.log('🔍 registeredComponent.render returned:', !!result);
