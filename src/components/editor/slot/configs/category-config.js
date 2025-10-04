@@ -389,7 +389,8 @@ export const categoryConfig = {
       metadata: {
         hierarchical: false,
         displayName: 'Product Image',
-        dataBinding: 'product.image_url'
+        dataBinding: 'product.image_url',
+        readOnly: true
       }
     },
 
@@ -408,7 +409,10 @@ export const categoryConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Product Content Container',
-        isGridContainer: true
+        isGridContainer: true,
+        readOnly: true,
+        styleOnly: true,
+        nonEditable: true
       }
     },
 
