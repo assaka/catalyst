@@ -1233,6 +1233,28 @@ export function useSlotConfiguration({
       updatedSlots[draggedSlotId].viewMode = [...originalProperties.viewMode];
     }
 
+    // CRITICAL: Map instance slot changes to template slots for persistence
+    const instanceMatch = draggedSlotId.match(/^(.+)_(\d+)$/);
+    if (instanceMatch) {
+      const templateSlotId = instanceMatch[1];
+      if (updatedSlots[templateSlotId]) {
+        // Map instance parent ID to template parent ID
+        const newParentMatch = newParentId.match(/^(.+)_(\d+)$/);
+        const templateParentId = newParentMatch ? newParentMatch[1] : newParentId;
+
+        // Update template slot with new position and parent
+        updatedSlots[templateSlotId] = {
+          ...updatedSlots[templateSlotId],
+          parentId: templateParentId,
+          position: newPosition,
+          metadata: {
+            ...updatedSlots[templateSlotId].metadata,
+            lastModified: new Date().toISOString()
+          }
+        };
+      }
+    }
+
     // Handle slot shifting for intra-container reordering
     if (currentParent === newParentId && (dropPosition === 'before' || dropPosition === 'after')) {
       // Shift other slots in the same container to make room
@@ -1360,12 +1382,26 @@ export function useSlotConfiguration({
   const handleGridResize = useCallback((slotId, newColSpan, slots) => {
     const updatedSlots = { ...slots };
 
+    // Map instance slot IDs (product_card_name_0) to template IDs (product_card_name)
+    const instanceMatch = slotId.match(/^(.+)_(\d+)$/);
+    const templateSlotId = instanceMatch ? instanceMatch[1] : slotId;
+    const isInstanceSlot = instanceMatch !== null;
+
+    // Update the instance slot for immediate UI feedback
     if (updatedSlots[slotId]) {
       const oldColSpan = updatedSlots[slotId].colSpan || 12;
 
       // Update hierarchical slot colSpan
       updatedSlots[slotId] = {
         ...updatedSlots[slotId],
+        colSpan: newColSpan
+      };
+    }
+
+    // CRITICAL: Also update the template slot so changes persist
+    if (isInstanceSlot && updatedSlots[templateSlotId]) {
+      updatedSlots[templateSlotId] = {
+        ...updatedSlots[templateSlotId],
         colSpan: newColSpan
       };
 
