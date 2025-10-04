@@ -1301,28 +1301,37 @@ export function useSlotConfiguration({
 
     } else if ((dropPosition === 'before' || dropPosition === 'after') && currentParent !== targetParent) {
       console.log('[DRAG-DROP] 🔀 Cross-container move - different parents');
-      // Different parents - move to target's parent container
-      newParentId = targetParent;
 
-      // Use position relative to target
-      if (dropPosition === 'before') {
-        // Place at start of target's row (col: 1) to ensure it appears before other slots
-        newPosition = {
-          col: 1,
-          row: targetSlot.position?.row || 1
-        };
+      // Special case: if target is product_card_template and we're dropping before/after,
+      // treat it as moving INSIDE the template, not to product_items
+      if (actualTargetSlotId === 'product_card_template' && (dropPosition === 'before' || dropPosition === 'after')) {
+        console.log('[DRAG-DROP] 📦 Dropping on product card template - moving inside');
+        newParentId = 'product_card_template';
+        newPosition = findAvailablePosition('product_card_template', 1, 1);
       } else {
-        const targetPos = targetSlot.position || { col: 1, row: 1 };
-        // For cross-container moves, place after target
-        // Calculate next position based on target's colSpan
-        const targetColSpan = typeof targetSlot.colSpan === 'number' ? targetSlot.colSpan :
-                            (targetSlot.colSpan?.grid || targetSlot.colSpan?.list || 1);
-        let newCol = targetPos.col + targetColSpan;
+        // Different parents - move to target's parent container
+        newParentId = targetParent;
 
-        if (newCol > 12) {
-          newPosition = { col: 1, row: targetPos.row + 1 };
+        // Use position relative to target
+        if (dropPosition === 'before') {
+          // Place at start of target's row (col: 1) to ensure it appears before other slots
+          newPosition = {
+            col: 1,
+            row: targetSlot.position?.row || 1
+          };
         } else {
-          newPosition = { col: newCol, row: targetPos.row };
+          const targetPos = targetSlot.position || { col: 1, row: 1 };
+          // For cross-container moves, place after target
+          // Calculate next position based on target's colSpan
+          const targetColSpan = typeof targetSlot.colSpan === 'number' ? targetSlot.colSpan :
+                              (targetSlot.colSpan?.grid || targetSlot.colSpan?.list || 1);
+          let newCol = targetPos.col + targetColSpan;
+
+          if (newCol > 12) {
+            newPosition = { col: 1, row: targetPos.row + 1 };
+          } else {
+            newPosition = { col: newCol, row: targetPos.row };
+          }
         }
       }
 
