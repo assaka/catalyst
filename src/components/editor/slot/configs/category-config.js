@@ -380,11 +380,13 @@ export const categoryConfig = {
       type: 'image',
       content: '{{this.image_url}}',
       className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
-      parentClassName: 'relative overflow-hidden',
-      styles: {},
+      parentClassName: 'relative overflow-hidden w-full',
+      styles: {
+        width: '100%'
+      },
       parentId: 'product_card_template',
       position: { col: 1, row: 1 },
-      colSpan: { grid: 5, list: 12 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
