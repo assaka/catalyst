@@ -1691,17 +1691,23 @@ export function useSlotConfiguration({
 
     // Define categories of classes
     const alignmentClasses = ['text-left', 'text-center', 'text-right'];
-    const allClasses = className.split(' ').filter(Boolean);
+    const newClasses = className.split(' ').filter(Boolean);
 
-    if (isAlignmentChange || allClasses.some(cls => alignmentClasses.includes(cls))) {
-      // For alignment changes, only alignment goes to parent, everything else to element
-      const alignmentClassList = allClasses.filter(cls => alignmentClasses.includes(cls));
-      const elementClassList = allClasses.filter(cls => !alignmentClasses.includes(cls));
+    if (isAlignmentChange || newClasses.some(cls => alignmentClasses.includes(cls))) {
+      // For alignment changes, preserve ALL existing classes on element, only move alignment to parent
+      const existingClassName = updatedSlots[slotId].className || '';
+      const existingClasses = existingClassName.split(' ').filter(Boolean);
+
+      // Remove old alignment classes from existing classes (keep colors, fonts, etc.)
+      const existingNonAlignmentClasses = existingClasses.filter(cls => !alignmentClasses.includes(cls));
+
+      // Get new alignment classes from the change
+      const newAlignmentClasses = newClasses.filter(cls => alignmentClasses.includes(cls));
 
       updatedSlots[slotId] = {
         ...updatedSlots[slotId],
-        className: elementClassList.join(' '),
-        parentClassName: alignmentClassList.join(' '),
+        className: existingNonAlignmentClasses.join(' '), // Keep all existing non-alignment classes
+        parentClassName: newAlignmentClasses.join(' '),   // Only alignment goes to parent
         styles: mergedStyles,
         metadata: {
           ...updatedSlots[slotId].metadata,
@@ -1710,8 +1716,10 @@ export function useSlotConfiguration({
         }
       };
       console.log(`[handleClassChange] ✅ Updated instance ${slotId} (alignment):`, {
-        className: elementClassList.join(' '),
-        parentClassName: alignmentClassList.join(' '),
+        existingClasses,
+        preservedClasses: existingNonAlignmentClasses,
+        className: existingNonAlignmentClasses.join(' '),
+        parentClassName: newAlignmentClasses.join(' '),
         styles: mergedStyles
       });
 
