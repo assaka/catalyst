@@ -333,11 +333,9 @@ export const categoryConfig = {
       id: 'product_card_template',
       type: 'container',
       content: '',
-      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card grid gap-2',
+      className: 'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-shadow p-4 product-card grid grid-cols-12 gap-2',
       parentClassName: '',
-      styles: {
-        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))'
-      },
+      styles: {},
       parentId: 'product_items',
       position: { col: 1, row: 1 },
       colSpan: { grid: 1, list: 1 },
@@ -346,8 +344,7 @@ export const categoryConfig = {
         hierarchical: true,
         isTemplate: true,
         displayName: 'Product Card Template',
-        isGridContainer: true,
-        isAutoFitGrid: true // Mark this as auto-fit grid for special handling
+        isGridContainer: true
       }
     },
 
@@ -357,11 +354,11 @@ export const categoryConfig = {
       type: 'image',
       content: '{{this.image_url}}',
       className: 'w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105',
-      parentClassName: 'relative overflow-hidden',
+      parentClassName: 'relative overflow-hidden col-span-12 md:col-span-5',
       styles: {},
       parentId: 'product_card_template',
       position: { col: 1, row: 1 },
-      colSpan: { grid: 1, list: 1 },
+      colSpan: { grid: 5, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
@@ -375,12 +372,12 @@ export const categoryConfig = {
       id: 'product_card_content',
       type: 'container',
       content: '',
-      className: 'flex flex-col gap-2',
+      className: 'flex flex-col gap-2 col-span-12 md:col-span-7',
       parentClassName: '',
       styles: {},
       parentId: 'product_card_template',
-      position: { col: 2, row: 1 },
-      colSpan: { grid: 1, list: 1 },
+      position: { col: 6, row: 1 },
+      colSpan: { grid: 7, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
@@ -393,12 +390,12 @@ export const categoryConfig = {
       id: 'product_card_name',
       type: 'text',
       content: '{{this.name}}',
-      className: 'font-semibold text-lg truncate text-red-600',
+      className: 'font-semibold text-lg text-red-600',
       parentClassName: '',
       styles: {},
       parentId: 'product_card_content',
       position: { col: 1, row: 1 },
-      colSpan: { grid: 1, list: 1 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
@@ -418,7 +415,7 @@ export const categoryConfig = {
       styles: {},
       parentId: 'product_card_content',
       position: { col: 1, row: 2 },
-      colSpan: { grid: 1, list: 1 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: true,
@@ -477,7 +474,7 @@ export const categoryConfig = {
       },
       parentId: 'product_card_content',
       position: { col: 1, row: 3 },
-      colSpan: { grid: 1, list: 1 },
+      colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
