@@ -1058,6 +1058,7 @@ export function useSlotConfiguration({
     let defaultViewMode = [];
     let defaultPosition = { col: 1, row: 1 };
     let defaultColSpan = slotType === 'container' ? 12 : 6;
+    let effectiveParentId = parentId;
 
     switch (pageType) {
       case 'cart':
@@ -1067,13 +1068,19 @@ export function useSlotConfiguration({
         defaultViewMode = ['grid', 'list'];
         // For category, place new slots in page_header (row 1) to appear above products
         // Products are in products_container at row 2
-        if (parentId === null) {
+        if (effectiveParentId === null) {
           defaultPosition = { col: 1, row: 1 };
           defaultColSpan = 12; // Full width in header
         }
         break;
       case 'product':
         defaultViewMode = ['default'];
+        // For product, place new slots in main_layout at row 1 to appear above content_area (row 2)
+        if (effectiveParentId === null) {
+          effectiveParentId = 'main_layout'; // Place inside main_layout instead of root
+          defaultPosition = { col: 1, row: 1 };
+          defaultColSpan = 12; // Full width
+        }
         break;
       case 'checkout':
         defaultViewMode = ['default'];
@@ -1094,7 +1101,7 @@ export function useSlotConfiguration({
                 slotType === 'image' ? 'w-full h-auto' : '',
       parentClassName: '',
       styles: slotType === 'container' ? { minHeight: '80px' } : {},
-      parentId: parentId,
+      parentId: effectiveParentId,
       position: defaultPosition,
       colSpan: defaultColSpan,
       rowSpan: 1,

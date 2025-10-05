@@ -495,6 +495,26 @@ export const categoryConfig = {
       }
     },
 
+    // Stock Label
+    product_card_stock_label: {
+      id: 'product_card_stock_label',
+      type: 'text',
+      content: '{{product.stock_label}}',
+      className: 'text-xs px-2 py-1 rounded mb-2 inline-block',
+      parentClassName: '',
+      styles: {},
+      parentId: 'product_card_content',
+      position: { col: 1, row: 3 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Stock Label',
+        dataBinding: 'product.stock_label',
+        conditionalDisplay: 'settings.show_stock_label'
+      }
+    },
+
     // Add to Cart Button
     product_card_add_to_cart: {
       id: 'product_card_add_to_cart',
@@ -506,7 +526,7 @@ export const categoryConfig = {
         backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
       },
       parentId: 'product_card_content',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },
       viewMode: ['grid', 'list'],
       metadata: {

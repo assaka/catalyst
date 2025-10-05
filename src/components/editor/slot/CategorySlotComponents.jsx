@@ -760,13 +760,18 @@ const ProductItemsGrid = createSlotComponent({
       const rawProducts = categoryContext?.products?.slice(0, 6) || variableContext?.products || [];
 
       // Format prices if not already formatted
-      const products = rawProducts.map(p => ({
-        ...p,
-        price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
-        compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
-        image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
-        in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
-      }));
+      const products = rawProducts.map(p => {
+        const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
+        return {
+          ...p,
+          price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
+          compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
+          image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
+          in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
+          stock_label: isInStock ? 'In Stock' : 'Out of Stock',
+          stock_label_class: isInStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        };
+      });
 
       if (products.length === 0) {
         return (
@@ -893,15 +898,21 @@ const ProductItemsGrid = createSlotComponent({
                   ?.replace(/\{\{this\.name\}\}/g, product.name)
                   ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                   ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url);
+                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
+                  ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
               }
+
+              // Add stock label class dynamically for stock label slot
+              const dynamicClassName = slotConfig.id === 'product_card_stock_label'
+                ? `${finalClassName} ${product.stock_label_class}`.trim()
+                : finalClassName;
 
               productSlots[templateSlotId] = {
                 ...slotConfig,
                 id: templateSlotId,
                 parentId: slotConfig.parentId === 'product_card_template' ? productCardId : `${slotConfig.parentId}_${index}`, // Update parent ID to unique product card
                 content: processedContent,
-                className: finalClassName, // Use merged className
+                className: dynamicClassName, // Use merged className with dynamic stock class
                 parentClassName: finalParentClassName, // Use merged parentClassName
                 styles: finalStyles, // Use merged styles
                 // CRITICAL: Use saved position and colSpan if available
@@ -966,13 +977,18 @@ const ProductItemsGrid = createSlotComponent({
     const rawProducts = categoryContext?.products || variableContext?.products || [];
 
     // Format prices if not already formatted
-    const products = rawProducts.map(p => ({
-      ...p,
-      price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
-      compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
-      image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
-      in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock')
-    }));
+    const products = rawProducts.map(p => {
+      const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
+      return {
+        ...p,
+        price_formatted: p.price_formatted || `$${parseFloat(p.price || 0).toFixed(2)}`,
+        compare_price_formatted: p.compare_price ? `$${parseFloat(p.compare_price).toFixed(2)}` : null,
+        image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
+        in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
+        stock_label: isInStock ? 'In Stock' : 'Out of Stock',
+        stock_label_class: isInStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+      };
+    });
 
     // Find product card template and descendants
     const productCardTemplate = allSlots?.product_card_template;
@@ -1028,7 +1044,8 @@ const ProductItemsGrid = createSlotComponent({
                 ?.replace(/\{\{this\.name\}\}/g, product.name)
                 ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
                 ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                ?.replace(/\{\{this\.image_url\}\}/g, product.image_url);
+                ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
+                ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
             }
 
             productSlots[slotId] = {
