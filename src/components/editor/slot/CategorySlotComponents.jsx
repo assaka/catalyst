@@ -1069,13 +1069,6 @@ const ProductItemsGrid = createSlotComponent({
               data-editable="true"
               className={productCardTemplate?.className || ''}
               style={{ ...productCardTemplate?.styles, overflow: 'visible', width: '100%' }}
-              onClick={(e) => {
-                // Only handle clicks on the wrapper itself, not children
-                if (e.target === e.currentTarget && onElementClick) {
-                  e.stopPropagation();
-                  onElementClick('product_card_template', e.currentTarget);
-                }
-              }}
             >
               <UnifiedSlotRenderer
                 slots={productSlots}

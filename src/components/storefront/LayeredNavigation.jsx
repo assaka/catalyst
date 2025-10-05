@@ -61,6 +61,7 @@ export default function LayeredNavigation({
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
     const [expandedAttributes, setExpandedAttributes] = useState({});
+    const [isFilterVisible, setIsFilterVisible] = useState(false);
 
     // Extract label configurations and styles from simplified slot structure
     const {
@@ -323,44 +324,57 @@ export default function LayeredNavigation({
     }
 
     return (
-        <Card className="w-full">
-            <CardHeader>
-                <div className="flex justify-between items-center h-5">
-                    {isEditMode ? (
-                        <EditableSlotElement
-                            slotKey="filter_by_label"
-                            slot={childSlots?.filter_by_label || { content: 'Filter By' }}
-                            onElementClick={onElementClick}
-                            className="text-lg font-semibold"
-                        >
-                            Filter By
-                        </EditableSlotElement>
-                    ) : (
-                        <CardTitle
-                            className="text-lg font-semibold"
-                            style={{
-                                color: filter_by_label.styles?.color || filter_card_header.styles?.color || '#1F2937',
-                                ...filter_by_label.styles,
-                                ...filter_card_header.styles
-                            }}
-                        >
-                            {filter_by_label.content || filter_card_header.content || "Filter By"}
-                        </CardTitle>
-                    )}
-                    {hasActiveFilters && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={isEditMode ? () => {} : clearAllFilters}
-                            disabled={isEditMode}
-                            className={`text-xs ${isEditMode ? "pointer-events-none" : ""}`}
-                        >
-                            Clear All
-                        </Button>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent>
+        <>
+            {/* Mobile Filter Toggle - visible only on screens smaller than sm */}
+            <div className="sm:hidden mb-4">
+                <Button
+                    variant="outline"
+                    onClick={() => setIsFilterVisible(!isFilterVisible)}
+                    className="w-full"
+                >
+                    {isFilterVisible ? 'Hide Filters' : 'Show Filters'}
+                </Button>
+            </div>
+
+            {/* Layered Navigation - hidden on mobile unless toggled, always visible on sm+ */}
+            <Card className={`w-full ${isFilterVisible ? 'block' : 'hidden'} sm:block`}>
+                <CardHeader>
+                    <div className="flex justify-between items-center h-5">
+                        {isEditMode ? (
+                            <EditableSlotElement
+                                slotKey="filter_by_label"
+                                slot={childSlots?.filter_by_label || { content: 'Filter By' }}
+                                onElementClick={onElementClick}
+                                className="text-lg font-semibold"
+                            >
+                                Filter By
+                            </EditableSlotElement>
+                        ) : (
+                            <CardTitle
+                                className="text-lg font-semibold"
+                                style={{
+                                    color: filter_by_label.styles?.color || filter_card_header.styles?.color || '#1F2937',
+                                    ...filter_by_label.styles,
+                                    ...filter_card_header.styles
+                                }}
+                            >
+                                {filter_by_label.content || filter_card_header.content || "Filter By"}
+                            </CardTitle>
+                        )}
+                        {hasActiveFilters && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={isEditMode ? () => {} : clearAllFilters}
+                                disabled={isEditMode}
+                                className={`text-xs ${isEditMode ? "pointer-events-none" : ""}`}
+                            >
+                                Clear All
+                            </Button>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent>
                 {/* Active Filters - below Filter By title */}
                 {showActiveFilters && hasActiveFilters && (
                     <div className="mb-4 p-2">
@@ -659,5 +673,6 @@ export default function LayeredNavigation({
                 </Accordion>
             </CardContent>
         </Card>
+        </>
     );
 }
