@@ -1056,12 +1056,21 @@ export function useSlotConfiguration({
 
     // Determine default viewMode based on page type
     let defaultViewMode = [];
+    let defaultPosition = { col: 1, row: 1 };
+    let defaultColSpan = slotType === 'container' ? 12 : 6;
+
     switch (pageType) {
       case 'cart':
         defaultViewMode = ['emptyCart', 'withProducts'];
         break;
       case 'category':
         defaultViewMode = ['grid', 'list'];
+        // For category, place new slots in page_header (row 1) to appear above products
+        // Products are in products_container at row 2
+        if (parentId === null) {
+          defaultPosition = { col: 1, row: 1 };
+          defaultColSpan = 12; // Full width in header
+        }
         break;
       case 'product':
         defaultViewMode = ['default'];
@@ -1086,8 +1095,8 @@ export function useSlotConfiguration({
       parentClassName: '',
       styles: slotType === 'container' ? { minHeight: '80px' } : {},
       parentId: parentId,
-      position: { col: 1, row: 1 },
-      colSpan: slotType === 'container' ? 12 : 6, // Containers full width, others half width
+      position: defaultPosition,
+      colSpan: defaultColSpan,
       rowSpan: 1,
       viewMode: defaultViewMode, // Show in all view modes for this page type
       isCustom: true, // Mark as custom slot for deletion
