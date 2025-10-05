@@ -718,9 +718,22 @@ export function UnifiedSlotRenderer({
     return layoutWrapper;
   };
 
+  // Filter mobile search and menu based on state (storefront behavior)
+  const finalSlots = sortedSlots.filter((slot) => {
+    // In storefront context, hide mobile_search_bar unless mobileSearchOpen
+    if (context === 'storefront' && slot.id === 'mobile_search_bar' && !headerContext?.mobileSearchOpen) {
+      return false;
+    }
+    // In storefront context, hide mobile_menu unless mobileMenuOpen
+    if (context === 'storefront' && slot.id === 'mobile_menu' && !headerContext?.mobileMenuOpen) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <>
-      {sortedSlots.map((slot) => {
+      {finalSlots.map((slot) => {
         // Handle colSpan configuration
         let colSpanClass = 'col-span-12';
         let gridColumn = 'span 12 / span 12';

@@ -492,19 +492,7 @@ const MobileMenuButtonSlot = createSlotComponent({
   render: ({ slot, context, headerContext }) => {
     const { mobileMenuOpen, setMobileMenuOpen } = headerContext || {};
 
-    if (context === 'editor') {
-      return (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
-      );
-    }
-
-    // Storefront rendering
+    // Same interactive behavior in both editor and storefront
     return (
       <Button
         variant="ghost"
@@ -526,19 +514,7 @@ const MobileSearchButtonSlot = createSlotComponent({
   render: ({ slot, context, headerContext }) => {
     const { mobileSearchOpen, setMobileSearchOpen } = headerContext || {};
 
-    if (context === 'editor') {
-      return (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-        >
-          <Search className="w-5 h-5" />
-        </Button>
-      );
-    }
-
-    // Storefront rendering
+    // Same interactive behavior in both editor and storefront
     return (
       <Button
         variant="ghost"

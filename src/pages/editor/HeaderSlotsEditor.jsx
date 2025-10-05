@@ -5,32 +5,41 @@
  * - Mobile and desktop views
  */
 
+import { useState } from 'react';
 import { Menu, Search } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import aiEnhancementService from '@/services/aiEnhancementService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
 
-// Generate header context
-const generateHeaderContext = (viewMode) => ({
-  store: {
-    id: 1,
-    name: 'Demo Store',
-    slug: 'demo-store',
-    logo_url: null
-  },
-  settings: {
-    hide_header_search: false,
-    hide_header_cart: false,
-    show_permanent_search: false,
-    allowed_countries: ['US', 'CA', 'UK'],
-    theme: {
-      primary_button_color: '#2563EB',
-      add_to_cart_button_color: '#10B981'
-    }
-  },
-  user: null,
-  userLoading: false,
-  categories: [
+/**
+ * HeaderSlotsEditor Component
+ */
+export default function HeaderSlotsEditor() {
+  // State for mobile menu and search toggles
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Generate header context with interactive state
+  const generateHeaderContext = (viewMode) => ({
+    store: {
+      id: 1,
+      name: 'Demo Store',
+      slug: 'demo-store',
+      logo_url: null
+    },
+    settings: {
+      hide_header_search: false,
+      hide_header_cart: false,
+      show_permanent_search: false,
+      allowed_countries: ['US', 'CA', 'UK'],
+      theme: {
+        primary_button_color: '#2563EB',
+        add_to_cart_button_color: '#10B981'
+      }
+    },
+    user: null,
+    userLoading: false,
+    categories: [
     {
       id: 1,
       name: 'Electronics',
@@ -68,73 +77,69 @@ const generateHeaderContext = (viewMode) => ({
   languages: [
     { id: 1, code: 'en', name: 'English', flag_icon: '🇺🇸' },
     { id: 2, code: 'es', name: 'Español', flag_icon: '🇪🇸' }
-  ],
-  currentLanguage: 'en',
-  selectedCountry: 'US',
-  mobileMenuOpen: viewMode === 'mobile',
-  mobileSearchOpen: false,
-  setCurrentLanguage: () => {},
-  setSelectedCountry: () => {},
-  setMobileMenuOpen: () => {},
-  setMobileSearchOpen: () => {},
-  handleCustomerLogout: () => {},
-  navigate: () => {},
-  location: { pathname: '/' }
-});
+    ],
+    currentLanguage: 'en',
+    selectedCountry: 'US',
+    mobileMenuOpen: mobileMenuOpen,
+    mobileSearchOpen: mobileSearchOpen,
+    setCurrentLanguage: () => {},
+    setSelectedCountry: () => {},
+    setMobileMenuOpen: setMobileMenuOpen,
+    setMobileSearchOpen: setMobileSearchOpen,
+    handleCustomerLogout: () => {},
+    navigate: () => {},
+    location: { pathname: '/' }
+  });
 
-// Header Editor Configuration
-const headerEditorConfig = {
-  ...headerConfig,
-  pageType: 'header',
-  pageName: 'Header',
-  slotType: 'header_layout',
-  defaultViewMode: 'desktop',
-  viewModes: headerConfig.views.map(view => ({
-    key: view.id,
-    label: view.label,
-    icon: view.icon
-  })),
-  slotComponents: {},
-  generateContext: generateHeaderContext,
-  viewModeAdjustments: {},
-  cmsBlockPositions: headerConfig.cmsBlocks
-};
+  // Header Editor Configuration
+  const headerEditorConfig = {
+    ...headerConfig,
+    pageType: 'header',
+    pageName: 'Header',
+    slotType: 'header_layout',
+    defaultViewMode: 'desktop',
+    viewModes: headerConfig.views.map(view => ({
+      key: view.id,
+      label: view.label,
+      icon: view.icon
+    })),
+    slotComponents: {},
+    generateContext: generateHeaderContext,
+    viewModeAdjustments: {},
+    cmsBlockPositions: headerConfig.cmsBlocks
+  };
 
-// AI Enhancement Configuration for Header
-const headerAiConfig = {
-  enabled: true,
-  onScreenshotAnalysis: async (file, layoutConfig, context) => {
-    try {
-      return await aiEnhancementService.analyzeScreenshot(file, layoutConfig, 'header', context);
-    } catch (error) {
-      console.error('AI analysis failed, using fallback:', error);
-      return {
-        summary: "AI analysis temporarily unavailable. Using fallback analysis for header layout.",
-        suggestions: [
-          "Update logo size and positioning",
-          "Adjust navigation menu styling",
-          "Modify search bar appearance",
-          "Enhance user menu button design",
-          "Update mobile menu layout"
-        ],
-        confidence: 0.6
-      };
+  // AI Enhancement Configuration for Header
+  const headerAiConfig = {
+    enabled: true,
+    onScreenshotAnalysis: async (file, layoutConfig, context) => {
+      try {
+        return await aiEnhancementService.analyzeScreenshot(file, layoutConfig, 'header', context);
+      } catch (error) {
+        console.error('AI analysis failed, using fallback:', error);
+        return {
+          summary: "AI analysis temporarily unavailable. Using fallback analysis for header layout.",
+          suggestions: [
+            "Update logo size and positioning",
+            "Adjust navigation menu styling",
+            "Modify search bar appearance",
+            "Enhance user menu button design",
+            "Update mobile menu layout"
+          ],
+          confidence: 0.6
+        };
+      }
+    },
+    onStyleGeneration: async (analysis, layoutConfig) => {
+      try {
+        return await aiEnhancementService.generateStyles(analysis, layoutConfig, 'header');
+      } catch (error) {
+        console.error('Style generation failed:', error);
+        return { slots: layoutConfig.slots };
+      }
     }
-  },
-  onStyleGeneration: async (analysis, layoutConfig) => {
-    try {
-      return await aiEnhancementService.generateStyles(analysis, layoutConfig, 'header');
-    } catch (error) {
-      console.error('Style generation failed:', error);
-      return { slots: layoutConfig.slots };
-    }
-  }
-};
+  };
 
-/**
- * HeaderSlotsEditor Component
- */
-export default function HeaderSlotsEditor() {
   return (
     <UnifiedSlotsEditor
       config={headerEditorConfig}
