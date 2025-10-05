@@ -576,6 +576,19 @@ const MobileNavigationSlot = createSlotComponent({
   name: 'MobileNavigation',
   render: ({ slot, context, headerContext, className, styles }) => {
     const { categories = [], store, setMobileMenuOpen } = headerContext || {};
+    const [expandedCategories, setExpandedCategories] = React.useState(new Set());
+
+    const toggleCategory = (categoryId) => {
+      setExpandedCategories(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(categoryId)) {
+          newSet.delete(categoryId);
+        } else {
+          newSet.add(categoryId);
+        }
+        return newSet;
+      });
+    };
 
     if (context === 'editor') {
       return (
@@ -604,34 +617,49 @@ const MobileNavigationSlot = createSlotComponent({
       );
     }
 
-    // Storefront rendering
+    // Storefront rendering with collapsible submenus
     return (
       <div className={className} style={styles}>
-        {categories?.map(cat => (
-          <div key={cat.id} className="mobile-nav-item">
-            <Link
-              to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
-              className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium"
-              onClick={() => setMobileMenuOpen?.(false)}
-            >
-              {cat.name}
-            </Link>
-            {cat.children && cat.children.length > 0 && (
-              <div className="pl-4 space-y-1">
-                {cat.children.map(child => (
-                  <Link
-                    key={child.id}
-                    to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
-                    className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
-                    onClick={() => setMobileMenuOpen?.(false)}
+        {categories?.map(cat => {
+          const hasChildren = cat.children && cat.children.length > 0;
+          const isExpanded = expandedCategories.has(cat.id);
+
+          return (
+            <div key={cat.id} className="mobile-nav-item">
+              <div className="flex items-center">
+                {hasChildren && (
+                  <button
+                    onClick={() => toggleCategory(cat.id)}
+                    className="p-2 hover:bg-gray-200 rounded touch-manipulation"
                   >
-                    {child.name}
-                  </Link>
-                ))}
+                    {isExpanded ? '▼' : '▶'}
+                  </button>
+                )}
+                <Link
+                  to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
+                  className="flex-1 block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium"
+                  onClick={() => setMobileMenuOpen?.(false)}
+                >
+                  {cat.name}
+                </Link>
               </div>
-            )}
-          </div>
-        ))}
+              {hasChildren && isExpanded && (
+                <div className="pl-4 space-y-1">
+                  {cat.children.map(child => (
+                    <Link
+                      key={child.id}
+                      to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
+                      className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                      onClick={() => setMobileMenuOpen?.(false)}
+                    >
+                      {child.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }

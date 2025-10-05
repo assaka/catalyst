@@ -310,10 +310,12 @@ export default function StorefrontLayout({ children }) {
                             selectedCountry,
                             mobileMenuOpen,
                             mobileSearchOpen,
+                            expandedMobileCategories,
                             setCurrentLanguage,
                             setSelectedCountry,
                             setMobileMenuOpen,
                             setMobileSearchOpen,
+                            setExpandedMobileCategories,
                             handleCustomerLogout,
                             navigate,
                             location
