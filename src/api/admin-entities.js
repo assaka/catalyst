@@ -18,7 +18,7 @@ class AdminBaseEntity {
       
       return Array.isArray(response) ? response : [];
     } catch (error) {
-      console.error(`Admin ${this.endpoint}.findAll() error:`, error.message);
+      console.error(`Admin ${this.endpoint}.findAll()c error:`, error.message);
       throw error; // Don't suppress errors in admin context
     }
   }

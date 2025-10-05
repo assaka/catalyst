@@ -2012,16 +2012,6 @@ const CmsBlockRenderer = createSlotComponent({
     // Get the position from slot metadata or id
     const position = slot.metadata?.cmsPosition || slot.id?.replace('cms_block_', '') || 'default';
 
-    console.log('🔍 CmsBlockRenderer Debug:', {
-      slotId: slot.id,
-      position,
-      context,
-      hasProductContext: !!productContext,
-      hasCmsBlocks: !!(productContext?.cmsBlocks),
-      cmsBlocksCount: productContext?.cmsBlocks?.length || 0,
-      allCmsBlocks: productContext?.cmsBlocks
-    });
-
     // In editor mode, use mock CMS blocks from context
     if (context === 'editor') {
       // Try to get cmsBlocks from any available context

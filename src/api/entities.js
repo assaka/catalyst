@@ -746,17 +746,10 @@ class OrderService extends BaseEntity {
   // Override filter to ensure proper order items loading
   async filter(params = {}) {
     try {
-      console.log('🔍 OrderService.filter called with params:', params);
       const result = await this.findAll(params);
-      console.log('🔍 OrderService.filter result:', result);
       
       // Double-check that result is an array and log first order structure
       const finalResult = Array.isArray(result) ? result : [];
-      if (finalResult.length > 0) {
-        console.log('🔍 OrderService.filter - first order structure:', finalResult[0]);
-        console.log('🔍 OrderService.filter - first order OrderItems:', finalResult[0]?.OrderItems);
-      }
-      
       return finalResult;
     } catch (error) {
       console.error(`OrderService.filter() error:`, error.message);
