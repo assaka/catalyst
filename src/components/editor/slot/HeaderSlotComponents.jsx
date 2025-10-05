@@ -7,8 +7,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import { createPublicUrl } from '@/utils/urlUtils';
-import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, Heart, X } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Search, User, Menu, Globe, ChevronDown, Heart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import HeaderSearch from '@/components/storefront/HeaderSearch';
 import MiniCart from '@/components/storefront/MiniCart';
 import WishlistDropdown from '@/components/storefront/WishlistDropdown';
@@ -30,7 +31,7 @@ const StoreLogo = createSlotComponent({
         {store?.logo_url ? (
           <img src={store.logo_url} alt={store.name} className="h-6 md:h-8 w-6 md:w-8 object-contain" />
         ) : (
-          <ShoppingBag className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
+          <ShoppingCart className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
         )}
         <span className="text-base md:text-xl font-bold text-gray-800 truncate" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
           {store?.name || 'Demo Store'}
@@ -116,10 +117,13 @@ const MiniCartSlot = createSlotComponent({
             size="icon"
             className="relative"
           >
-            <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+            <ShoppingCart className="w-5 h-5" />
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
+            >
               0
-            </span>
+            </Badge>
           </Button>
         </div>
       );
@@ -406,21 +410,25 @@ const LanguageSelectorSlot = createSlotComponent({
   render: ({ slot, context, headerContext, className, styles }) => {
     const { languages = [], currentLanguage, setCurrentLanguage } = headerContext || {};
 
+    // Hide if no languages or only one language (feature disabled on storefront)
+    if (!languages || languages.length <= 1) return null;
+
     if (context === 'editor') {
       return (
         <div className={className || "flex items-center space-x-2"} style={styles}>
           <Globe className="w-5 h-5 text-gray-600" />
           <select className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-blue-500">
-            <option>🇺🇸 English</option>
-            <option>🇪🇸 Español</option>
+            {languages.map(lang => (
+              <option key={lang.code || lang.id} value={lang.code}>
+                {lang.flag_icon} {lang.name}
+              </option>
+            ))}
           </select>
         </div>
       );
     }
 
     // Storefront rendering
-    if (languages.length <= 1) return null;
-
     return (
       <div className={className || "flex items-center space-x-2"} style={styles}>
         <Globe className="w-5 h-5 text-gray-600" />
