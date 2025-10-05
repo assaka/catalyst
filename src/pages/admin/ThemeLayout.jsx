@@ -70,6 +70,7 @@ export default function ThemeLayout() {
                 enable_product_filters: true,
                 collapse_filters: false,
                 max_visible_attributes: 5,
+                show_stock_label: fullStore?.settings?.show_stock_label ?? false,
                 enable_view_mode_toggle: fullStore?.settings?.enable_view_mode_toggle ?? true,
                 default_view_mode: fullStore?.settings?.default_view_mode || 'grid',
                 // Product gallery defaults

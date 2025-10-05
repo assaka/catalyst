@@ -667,7 +667,8 @@ export default function Category() {
       ...settings,
       // Ensure defaults for view mode toggle
       enable_view_mode_toggle: settings?.enable_view_mode_toggle ?? true,
-      default_view_mode: settings?.default_view_mode || 'grid'
+      default_view_mode: settings?.default_view_mode || 'grid',
+      show_stock_label: settings?.show_stock_label ?? false
     },
     store,
     categories,
