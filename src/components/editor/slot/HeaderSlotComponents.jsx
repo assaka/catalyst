@@ -207,8 +207,8 @@ const CategoryNavSlot = createSlotComponent({
               </a>
               {cat.children && cat.children.length > 0 && (
                 <div
-                  className="absolute left-0 top-full w-48 border border-gray-200 rounded-md shadow-lg p-2 space-y-1 z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
-                  style={{ backgroundColor: subcategoryBgColor }}
+                  className="absolute left-0 top-full w-48 border border-gray-200 rounded-md shadow-lg p-2 space-y-1 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                  style={{ backgroundColor: subcategoryBgColor, zIndex: 99999 }}
                 >
                   <a
                     href="#"
