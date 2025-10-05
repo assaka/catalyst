@@ -237,53 +237,9 @@ const ProductGallery = createSlotComponent({
     // SIMPLIFIED: Get settings from ONE place - variableContext (which now has same data for both contexts)
     const settings = variableContext?.settings || {};
 
-    console.log('🔍 [STEP 3] COMPONENT - RECEIVED SETTINGS:', {
-      raw_settings: settings,
-      has_gallery_layout: 'product_gallery_layout' in settings,
-      gallery_layout_value: settings.product_gallery_layout,
-      has_vertical_position: 'vertical_gallery_position' in settings,
-      vertical_position_value: settings.vertical_gallery_position,
-      all_setting_keys: Object.keys(settings)
-    });
-
     const galleryLayout = settings.product_gallery_layout || 'horizontal';
     const verticalPosition = settings.vertical_gallery_position || 'left';
     const isVertical = galleryLayout === 'vertical';
-
-    // 🔍 ULTRA DEBUG: Test the actual conditional logic
-    const testIsVertical = galleryLayout === 'vertical';
-    const testVerticalLeft = verticalPosition === 'left';
-    const testVerticalRight = verticalPosition === 'right';
-    console.log('🔍 [STEP 4] COMPONENT - CONDITIONAL LOGIC TESTS:');
-    console.log('🔍 [STEP 4] - isVertical (galleryLayout === "vertical"):', testIsVertical);
-    console.log('🔍 [STEP 4] - verticalLeft (verticalPosition === "left"):', testVerticalLeft);
-    console.log('🔍 [STEP 4] - verticalRight (verticalPosition === "right"):', testVerticalRight);
-    console.log('🔍 [STEP 4] - Will render thumbnails first?:', testIsVertical && testVerticalLeft);
-    console.log('🔍 [STEP 4] - Will render main image first?:', !testIsVertical || testVerticalRight);
-
-    // Debug logging - DETAILED
-    console.log('🔍 GALLERY SYNC DEBUG:', {
-      '1_CONTEXT': context,
-      '2_SETTINGS_SOURCE': {
-        productContext_exists: !!productContext,
-        productContext_settings: productContext?.settings,
-        variableContext_exists: !!variableContext,
-        variableContext_settings: variableContext?.settings,
-        final_settings_used: settings
-      },
-      '3_LAYOUT_VALUES': {
-        galleryLayout,
-        verticalPosition,
-        isVertical
-      },
-      '4_CSS_CLASS': isVertical
-        ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
-        : 'flex flex-col space-y-4',
-      '5_FULL_CONTEXTS': {
-        productContext,
-        variableContext
-      }
-    });
 
     if (context === 'editor') {
       // Editor version - show both main image and thumbnails
@@ -294,15 +250,6 @@ const ProductGallery = createSlotComponent({
       const containerClass = isVertical
         ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
         : `flex flex-col space-y-4`;
-
-      console.log('🚨 EDITOR POSITION CHECK:', {
-        verticalPosition,
-        isLeft: verticalPosition === 'left',
-        expectedClass: verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse',
-        actualClass: containerClass,
-        isVertical,
-        galleryLayout
-      });
 
       const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
@@ -396,17 +343,6 @@ const ProductGallery = createSlotComponent({
 
     const images = product.images || [];
 
-    // Debug image structure
-    console.log('🖼️ STOREFRONT IMAGES DEBUG:', {
-      imagesCount: images.length,
-      imagesType: typeof images[0],
-      firstImage: images[0],
-      allImages: images,
-      activeImageIndex,
-      currentSettings: settings,
-      layoutBeingUsed: { galleryLayout, verticalPosition, isVertical }
-    });
-
     // Handle both string URLs and object structures
     const getImageUrl = (img) => {
       if (!img) return 'https://placehold.co/600x600?text=No+Image';
@@ -425,13 +361,6 @@ const ProductGallery = createSlotComponent({
     const containerClass = isVertical
       ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
       : `flex flex-col space-y-4`;
-
-    console.log('🚨 POSITION CHECK:', {
-      verticalPosition,
-      isLeft: verticalPosition === 'left',
-      expectedClass: verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse',
-      actualClass: containerClass
-    });
 
     // Apply className if provided
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
@@ -1064,8 +993,6 @@ const CustomOptions = createSlotComponent({
     const [customOptionsData, setCustomOptionsData] = React.useState(null);
     const [displayLabel, setDisplayLabel] = React.useState('Custom Options');
 
-    console.log('CustomOptions render:', { context, hasContent: !!content, contentLength: content.length });
-
     // Load custom options data for storefront
     React.useEffect(() => {
       if (context !== 'editor' && productContext?.product && productContext?.store) {
@@ -1192,7 +1119,6 @@ const CustomOptions = createSlotComponent({
 
     const processedContent = React.useMemo(() => {
       const result = processVariables(content, enhancedVariableContext);
-      console.log('Processed content preview:', result.substring(0, 200));
       return result;
     }, [content, enhancedVariableContext]);
 
@@ -2077,6 +2003,69 @@ const ProductThumbnails = createSlotComponent({
   }
 });
 
+/**
+ * CmsBlockRenderer - Renders CMS blocks in editor and storefront
+ */
+const CmsBlockRenderer = createSlotComponent({
+  name: 'CmsBlockRenderer',
+  render: ({ slot, className, styles, context, productContext, categoryContext, cartContext, headerContext }) => {
+    // Get the position from slot metadata or id
+    const position = slot.metadata?.cmsPosition || slot.id?.replace('cms_block_', '') || 'default';
+
+    // In editor mode, use mock CMS blocks from context
+    if (context === 'editor') {
+      // Try to get cmsBlocks from any available context
+      const cmsBlocks = productContext?.cmsBlocks ||
+                        categoryContext?.cmsBlocks ||
+                        cartContext?.cmsBlocks ||
+                        headerContext?.cmsBlocks ||
+                        [];
+
+      // Filter blocks by position
+      const matchingBlocks = cmsBlocks.filter(block => {
+        if (!block.is_active) return false;
+        return block.position === position;
+      });
+
+      // Sort by sort_order
+      matchingBlocks.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+      if (matchingBlocks.length === 0) {
+        return (
+          <div className={`${className || slot.className || ''} border-2 border-dashed border-gray-300 rounded-lg p-6 text-center`}
+               style={styles || slot.styles}>
+            <div className="text-gray-500 text-sm">
+              <div className="font-semibold mb-1">CMS Block Area: {position}</div>
+              <div className="text-xs">No CMS blocks assigned to this position</div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className={`${className || slot.className || ''} cms-blocks`} style={styles || slot.styles}>
+          {matchingBlocks.map((block) => (
+            <div
+              key={block.id}
+              className="cms-block mb-4"
+              dangerouslySetInnerHTML={{ __html: block.content }}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    // In storefront mode, use the real CmsBlockRenderer component
+    const CmsBlockRendererComponent = require('@/components/storefront/CmsBlockRenderer').default;
+    return (
+      <div className={className || slot.className} style={styles || slot.styles}>
+        <CmsBlockRendererComponent position={position} />
+      </div>
+    );
+  }
+});
+
+registerSlotComponent('CmsBlockRenderer', CmsBlockRenderer);
 registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('StockStatus', StockStatus);
 registerSlotComponent('ProductImage', ProductImage);
@@ -2094,5 +2083,6 @@ export {
   TotalPriceDisplay,
   StockStatus,
   ProductImage,
-  ProductThumbnails
+  ProductThumbnails,
+  CmsBlockRenderer
 };

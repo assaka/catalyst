@@ -26,11 +26,8 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
 
     const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
-            console.log(`Store not available for ${pageType} configuration`);
             return;
         }
-        // Remove the early return based on configLoaded to ensure config loads
-        console.log(`Starting to load ${pageType} configuration for store ${store.id}`);
 
         try {
             // Load published configuration using the new versioning API
@@ -55,9 +52,6 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
                 if (response.data?.configuration && !response.data.configuration.slots) noConfigReasons.push('No slots in configuration');
                 if (response.data?.configuration?.slots && Object.keys(response.data.configuration.slots).length === 0) noConfigReasons.push('Empty slots object');
 
-                // Fallback to provided fallback config
-                console.log(`Loading fallback config for ${pageType}`);
-
                 const finalFallbackConfig = {
                     slots: { ...fallbackConfig.slots },
                     metadata: {
@@ -67,7 +61,6 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
                     }
                 };
 
-                console.log(`Loaded fallback config for ${pageType} with ${Object.keys(fallbackConfig.slots).length} slots`);
                 setLayoutConfig(finalFallbackConfig);
                 setConfigLoaded(true);
             }
@@ -85,7 +78,6 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
 
             // Fallback to provided fallback config
             try {
-                console.log(`Loading error fallback config for ${pageType}`);
 
                 if (!fallbackConfig || !fallbackConfig.slots) {
                     console.error(`Invalid fallback config for ${pageType}:`, fallbackConfig);
@@ -101,7 +93,6 @@ export function useLayoutConfig(store, pageType, fallbackConfig) {
                     }
                 };
 
-                console.log(`Loaded error fallback config for ${pageType} with ${Object.keys(fallbackConfig.slots).length} slots`);
                 setLayoutConfig(finalFallbackConfig);
                 setConfigLoaded(true);
             } catch (importError) {
@@ -201,11 +192,10 @@ export const useDraftStatusManagement = (storeId, pageType) => {
             setLatestPublished(publishedResponse.data[0]);
           }
         } catch (publishedError) {
-          console.log('Could not get latest published version:', publishedError);
+          console.warn('Could not get latest published version:', publishedError);
         }
       }
     } catch (error) {
-      console.log('Could not determine configuration status:', error);
       setConfigurationStatus('published');
       setHasUnsavedChanges(false);
     }
@@ -262,7 +252,6 @@ export const usePublishHandler = (pageType, pageConfig, handlePublishConfigurati
   const [publishStatus, setPublishStatus] = useState('');
 
   const handlePublish = useCallback(async () => {
-    console.log(`🚀 handlePublish called for ${pageType} - closing sidebar`);
     setPublishStatus('publishing');
 
     // Close sidebar when publishing
@@ -409,7 +398,6 @@ export const usePreviewModeHandlers = (showPreview, setIsSidebarVisible, setSele
 // Publish panel handlers hook
 export const usePublishPanelHandlers = (pageType, getSelectedStoreId, getDraftConfiguration, setPageConfig, slotConfigurationService) => {
   const handlePublishPanelPublished = useCallback(async () => {
-    console.log(`📋 handlePublishPanelPublished called for ${pageType} - closing sidebar`);
 
     try {
       const storeId = getSelectedStoreId();
@@ -779,10 +767,8 @@ export function useSlotConfiguration({
       let config;
 
       if (publishedResponse.success && publishedResponse.data?.configuration) {
-        console.log('✅ Restoring layout from last published version');
         config = publishedResponse.data.configuration;
       } else {
-        console.log('⚠️ No published version found, loading from config.js');
         // Load the clean static configuration for this page type
         config = await loadPageConfig(pageType);
 
@@ -813,8 +799,6 @@ export function useSlotConfiguration({
         console.error('❌ Reset layout failed: config has no slots', config);
         throw new Error('Cannot reset to empty configuration');
       }
-
-      console.log(`💾 Saving reset config with ${Object.keys(config.slots).length} slots`);
 
       // Save the config to database (this will overwrite any existing draft)
       // Pass isReset=true to set has_unpublished_changes = false
@@ -912,18 +896,9 @@ export function useSlotConfiguration({
     }
 
     try {
-      console.log(`🔍 [getDraftConfiguration] Getting draft for pageType: ${pageType}, storeId: ${storeId}`);
 
       // Get draft from database (may be empty on first load)
       const savedConfig = await slotConfigurationService.getDraftConfiguration(storeId, pageType, null);
-
-      console.log(`📥 [getDraftConfiguration] Draft response:`, {
-        success: savedConfig?.success,
-        hasData: !!savedConfig?.data,
-        status: savedConfig?.data?.status,
-        configExists: !!savedConfig?.data?.configuration,
-        slotsCount: Object.keys(savedConfig?.data?.configuration?.slots || {}).length
-      });
 
       if (savedConfig && savedConfig.success && savedConfig.data && savedConfig.data.configuration) {
         const draftConfig = savedConfig.data.configuration;
@@ -933,12 +908,8 @@ export function useSlotConfiguration({
         const needsInitialization = draftStatus === 'init' || !draftConfig.slots || Object.keys(draftConfig.slots).length === 0;
 
         if (needsInitialization) {
-          console.log(`🔧 [getDraftConfiguration] Draft needs initialization (status: ${draftStatus}, slots: ${Object.keys(draftConfig?.slots || {}).length})`);
-
           // Load static config to populate draft
           const staticConfig = await loadStaticConfiguration();
-          console.log(`📦 [getDraftConfiguration] Static config loaded with ${Object.keys(staticConfig.slots || {}).length} slots`);
-
           // Create complete configuration from static config
           const populatedConfig = {
             ...draftConfig,
@@ -952,27 +923,21 @@ export function useSlotConfiguration({
             }
           };
 
-          console.log(`✅ [getDraftConfiguration] Populated config created with ${Object.keys(populatedConfig.slots || {}).length} slots`);
-
           // Save the populated configuration back to database
           // This should change status from 'init' to 'draft'
           try {
-            console.log(`💾 [getDraftConfiguration] Saving populated config to database...`);
             await slotConfigurationService.updateDraftConfiguration(
               savedConfig.data.id,
               populatedConfig,
               false // not a reset
             );
-            console.log(`✅ [getDraftConfiguration] Populated config saved successfully`);
           } catch (saveError) {
             console.error('❌ [getDraftConfiguration] Failed to save populated config:', saveError);
             // Continue with populated config even if save fails
           }
 
-          console.log(`🎯 [getDraftConfiguration] Returning populated config`);
           return populatedConfig;
         } else if (draftStatus === 'draft') {
-          console.log(`✅ [getDraftConfiguration] Draft already has ${Object.keys(draftConfig?.slots || {}).length} slots, returning as-is`);
           return draftConfig;
         } else {
           console.warn(`⚠️ EDITOR - Unexpected draft status: ${draftStatus}`);
@@ -1481,22 +1446,8 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
-      console.error('❌ [handleSlotDrop] Validation failed after drop:', {
-        draggedSlotId: actualDraggedSlotId,
-        targetSlotId: actualTargetSlotId,
-        newParentId,
-        newPosition,
-        dropPosition
-      });
       return null;
     }
-
-    console.log('✅ [handleSlotDrop] Drop successful:', {
-      draggedSlotId: actualDraggedSlotId,
-      targetSlotId: actualTargetSlotId,
-      newParentId,
-      newPosition
-    });
 
     return updatedSlots;
   }, [validateSlotConfiguration]);
@@ -1710,13 +1661,11 @@ export function useSlotConfiguration({
 
   // Generic class change handler
   const handleClassChange = useCallback((slotId, className, styles, metadata = null, isAlignmentChange = false, slots) => {
-    console.log(`[handleClassChange] 🎨 START - slotId: ${slotId}`, { className, styles, metadata });
 
     const updatedSlots = { ...slots };
 
     // CRITICAL: Create slot if it doesn't exist (for template slots not yet in config)
     if (!updatedSlots[slotId]) {
-      console.log(`[handleClassChange] 🆕 Creating new slot for style change: ${slotId}`);
 
       // Extract base template ID (remove _0, _1, etc. suffix)
       const baseTemplateId = slotId.replace(/_\d+$/, '');
@@ -1739,16 +1688,11 @@ export function useSlotConfiguration({
         metadata: metadata || {}
       };
 
-      console.log(`[handleClassChange] ✅ New slot inherits from template ${baseTemplateId}:`, {
-        className: templateClassName,
-        styles: templateStyles
-      });
     }
 
     // Merge existing styles with new styles
     const existingStyles = updatedSlots[slotId].styles || {};
     const mergedStyles = { ...existingStyles, ...styles };
-    console.log(`[handleClassChange] 🔀 Merging styles for ${slotId}:`, { existingStyles, newStyles: styles, mergedStyles });
 
     // Define categories of classes
     const alignmentClasses = ['text-left', 'text-center', 'text-right'];
@@ -1776,13 +1720,6 @@ export function useSlotConfiguration({
           lastModified: new Date().toISOString()
         }
       };
-      console.log(`[handleClassChange] ✅ Updated instance ${slotId} (alignment):`, {
-        existingClasses,
-        preservedClasses: existingNonAlignmentClasses,
-        className: existingNonAlignmentClasses.join(' '),
-        parentClassName: newAlignmentClasses.join(' '),
-        styles: mergedStyles
-      });
 
     } else {
       // For text styling (bold, italic, colors), keep existing parentClassName
@@ -1797,10 +1734,6 @@ export function useSlotConfiguration({
           lastModified: new Date().toISOString()
         }
       };
-      console.log(`[handleClassChange] ✅ Updated instance ${slotId} (non-alignment):`, {
-        className: className,
-        styles: mergedStyles
-      });
 
     }
 
@@ -1808,16 +1741,10 @@ export function useSlotConfiguration({
     // This ensures template and instance are updated in the SAME state update
     const baseTemplateId = slotId.replace(/_\d+$/, '');
     if (baseTemplateId !== slotId && updatedSlots[baseTemplateId]) {
-      console.log(`[handleClassChange] 🔄 MIRRORING to template ${baseTemplateId} in same update`);
 
       // Apply the same changes to the template slot
       const templateExistingStyles = updatedSlots[baseTemplateId].styles || {};
       const templateMergedStyles = { ...templateExistingStyles, ...styles };
-      console.log(`[handleClassChange] 🔀 Template style merge for ${baseTemplateId}:`, {
-        templateExistingStyles,
-        newStyles: styles,
-        templateMergedStyles
-      });
 
       if (isAlignmentChange || newClasses.some(cls => alignmentClasses.includes(cls))) {
         // For template, also preserve ALL existing classes, only move alignment to parent
@@ -1836,12 +1763,6 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
-        console.log(`[handleClassChange] ✅ Updated template ${baseTemplateId} (alignment):`, {
-          preservedClasses: templateExistingNonAlignmentClasses,
-          className: templateExistingNonAlignmentClasses.join(' '),
-          parentClassName: templateNewAlignmentClasses.join(' '),
-          styles: templateMergedStyles
-        });
       } else {
         updatedSlots[baseTemplateId] = {
           ...updatedSlots[baseTemplateId],
@@ -1852,16 +1773,11 @@ export function useSlotConfiguration({
             lastModified: new Date().toISOString()
           }
         };
-        console.log(`[handleClassChange] ✅ Updated template ${baseTemplateId} (non-alignment):`, {
-          className: className,
-          styles: templateMergedStyles
-        });
       }
     } else if (baseTemplateId !== slotId && !updatedSlots[baseTemplateId]) {
-      console.log(`[handleClassChange] ⚠️ Template ${baseTemplateId} NOT FOUND for mirroring`);
+      console.warn(`[handleClassChange] ⚠️ Template ${baseTemplateId} NOT FOUND for mirroring`);
     }
 
-    console.log(`[handleClassChange] 🏁 COMPLETE - Returning updatedSlots with ${Object.keys(updatedSlots).length} slots`);
     return updatedSlots;
   }, []);
 
@@ -2131,20 +2047,9 @@ export function useSlotConfiguration({
 
       createSlotCreateHandler: (createSlot) =>
         useCallback((slotType, content = '', parentId = null, additionalProps = {}) => {
-          console.log('[createSlotCreateHandler] 🆕 Creating new slot:', { slotType, content, parentId, additionalProps });
 
           setPageConfig(prevConfig => {
-            console.log('[createSlotCreateHandler] 📦 Current config:', {
-              slotsCount: Object.keys(prevConfig?.slots || {}).length,
-              hasSlots: !!prevConfig?.slots
-            });
-
             const { updatedSlots, newSlotId } = createSlot(slotType, content, parentId, additionalProps, prevConfig?.slots || {});
-
-            console.log('[createSlotCreateHandler] ✅ Slot created:', {
-              newSlotId,
-              totalSlots: Object.keys(updatedSlots).length
-            });
 
             const updatedConfig = {
               ...prevConfig,
@@ -2158,7 +2063,6 @@ export function useSlotConfiguration({
             // Auto-save the new slot
             try {
               saveConfigurationHandler(updatedConfig);
-              console.log('[createSlotCreateHandler] 💾 Auto-save triggered');
             } catch (error) {
               console.error('[createSlotCreateHandler] ❌ Auto-save failed:', error);
             }
