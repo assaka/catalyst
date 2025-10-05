@@ -70,6 +70,12 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Don't show placeholder for intentionally empty content (like conditional price displays)
   let textContent = processedContent;
 
+  // Filter out old placeholder text patterns from database
+  if (textContent && typeof textContent === 'string') {
+    // Remove [Text placeholder] or [text placeholder] patterns
+    textContent = textContent.replace(/\[Text placeholder\]/gi, '').trim();
+  }
+
   // Special handling for price-related slots
   const isPriceSlot = ['product_price', 'product_card_price', 'original_price', 'compare_price'].includes(slot.id);
 
