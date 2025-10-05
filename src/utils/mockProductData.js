@@ -178,6 +178,44 @@ export const generateMockProductContext = () => {
       { name: 'Electronics', url: '/category/electronics' },
       { name: 'Audio', url: '/category/audio' },
       { name: 'Premium Wireless Headphones', url: null }
+    ],
+    cmsBlocks: [
+      {
+        id: 1,
+        title: 'Product Features Banner',
+        identifier: 'product-features-banner',
+        content: '<div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg mb-6"><h3 class="text-xl font-bold text-gray-900 mb-4">Why Choose Our Headphones?</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="flex items-start"><div class="flex-shrink-0"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="ml-3"><h4 class="font-semibold text-gray-900">Premium Quality</h4><p class="text-sm text-gray-600">Industry-leading sound with crystal clear audio</p></div></div><div class="flex items-start"><div class="flex-shrink-0"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="ml-3"><h4 class="font-semibold text-gray-900">30-Hour Battery</h4><p class="text-sm text-gray-600">All-day listening without interruption</p></div></div><div class="flex items-start"><div class="flex-shrink-0"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div><div class="ml-3"><h4 class="font-semibold text-gray-900">Free Shipping</h4><p class="text-sm text-gray-600">Fast delivery on all orders</p></div></div></div></div>',
+        position: 'product_above',
+        is_active: true,
+        sort_order: 1
+      },
+      {
+        id: 2,
+        title: 'Trust Badges',
+        identifier: 'product-trust-badges',
+        content: '<div class="border-t border-b border-gray-200 py-6 my-6"><div class="flex flex-wrap justify-center gap-8 items-center"><div class="flex items-center gap-2"><svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg><div><div class="font-semibold text-gray-900">Secure Checkout</div><div class="text-xs text-gray-500">SSL Encrypted</div></div></div><div class="flex items-center gap-2"><svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><div><div class="font-semibold text-gray-900">Money-back Guarantee</div><div class="text-xs text-gray-500">30 Days Return</div></div></div><div class="flex items-center gap-2"><svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg><div><div class="font-semibold text-gray-900">Authentic Products</div><div class="text-xs text-gray-500">100% Genuine</div></div></div></div></div>',
+        position: 'product_above',
+        is_active: true,
+        sort_order: 2
+      },
+      {
+        id: 3,
+        title: 'Product Care Information',
+        identifier: 'product-care-info',
+        content: '<div class="bg-gray-50 p-6 rounded-lg my-6"><h3 class="text-lg font-semibold text-gray-900 mb-4">Care & Maintenance</h3><div class="space-y-3 text-sm text-gray-700"><div class="flex items-start gap-2"><svg class="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>Clean with a soft, dry cloth. Avoid using water or cleaning solutions.</span></div><div class="flex items-start gap-2"><svg class="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>Store in the included carrying case when not in use.</span></div><div class="flex items-start gap-2"><svg class="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>Avoid exposure to extreme temperatures and humidity.</span></div><div class="flex items-start gap-2"><svg class="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg><span>Charge regularly to maintain optimal battery health.</span></div></div></div>',
+        position: 'product_below',
+        is_active: true,
+        sort_order: 1
+      },
+      {
+        id: 4,
+        title: 'Shipping Information',
+        identifier: 'product-shipping-info',
+        content: '<div class="border border-blue-200 bg-blue-50 p-6 rounded-lg my-6"><h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>Fast & Free Shipping</h3><div class="grid md:grid-cols-2 gap-4 text-sm text-blue-900"><div><strong>Standard Shipping:</strong> Free on all orders • 3-5 business days</div><div><strong>Express Shipping:</strong> $9.99 • 1-2 business days</div><div><strong>International:</strong> Calculated at checkout • 7-14 business days</div><div><strong>Order Processing:</strong> Ships within 24 hours on business days</div></div></div>',
+        position: 'product_below',
+        is_active: true,
+        sort_order: 2
+      }
     ]
   };
 };
