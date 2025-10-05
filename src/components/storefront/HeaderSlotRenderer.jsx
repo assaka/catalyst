@@ -439,8 +439,21 @@ export function HeaderSlotRenderer({
     const searchVisibilitySlot = Object.values(slots).find(s => s?.id === 'search_visibility');
     const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
 
+    // Debug logging
+    if (slot.id === 'mobile_search_bar') {
+      console.log('[HeaderSlotRenderer] mobile_search_bar filter check:', {
+        slotId: slot.id,
+        mobileSearchOpen,
+        showPermanentMobile,
+        searchVisibilitySlot: searchVisibilitySlot,
+        willHide: !mobileSearchOpen && !showPermanentMobile,
+        willShow: mobileSearchOpen || showPermanentMobile
+      });
+    }
+
     // Hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
     if (slot.id === 'mobile_search_bar' && !mobileSearchOpen && !showPermanentMobile) {
+      console.log('[HeaderSlotRenderer] Hiding mobile_search_bar');
       return false;
     }
     // Hide mobile_menu unless mobileMenuOpen
