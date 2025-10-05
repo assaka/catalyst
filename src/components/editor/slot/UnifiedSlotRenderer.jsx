@@ -79,18 +79,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Check if slot has conditionalDisplay metadata
   const hasConditionalDisplay = slot.metadata?.conditionalDisplay;
 
-  // Debug logging for compare price
-  if (slot.id === 'product_card_compare_price' || slot.id?.includes('compare_price')) {
-    console.log('[TextSlot] Compare price debug:', {
-      slotId: slot.id,
-      processedContent,
-      textContent,
-      isConditional: conditionalSlots.includes(slot.id),
-      hasConditionalDisplay,
-      context
-    });
-  }
-
   if (context === 'editor' && !processedContent) {
     if (isPriceSlot && !conditionalSlots.includes(slot.id)) {
       // Show example price in editor for main price slots only (not compare prices)
@@ -385,14 +373,6 @@ export function UnifiedSlotRenderer({
         );
 
         const shouldShowPlaceholder = !processedContent && !hasConditionalDisplay && !isConditionalSlot;
-
-        console.log('[UnifiedSlotRenderer] Text slot placeholder check:', {
-          id,
-          processedContent,
-          hasConditionalDisplay,
-          isConditionalSlot,
-          shouldShowPlaceholder
-        });
 
         // Skip rendering entirely if empty and conditional
         if (!processedContent && (hasConditionalDisplay || isConditionalSlot)) {
