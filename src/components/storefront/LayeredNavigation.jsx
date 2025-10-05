@@ -329,8 +329,9 @@ export default function LayeredNavigation({
             <div className="sm:hidden mb-4">
                 <Button
                     variant="outline"
-                    onClick={() => setIsFilterVisible(!isFilterVisible)}
-                    className="w-full"
+                    onClick={isEditMode ? () => {} : () => setIsFilterVisible(!isFilterVisible)}
+                    disabled={isEditMode}
+                    className={`w-full ${isEditMode ? "pointer-events-none" : ""}`}
                 >
                     {isFilterVisible ? 'Hide Filters' : 'Show Filters'}
                 </Button>
@@ -358,7 +359,7 @@ export default function LayeredNavigation({
                                             >
                                                 {filterKey}: {value}
                                                 <button
-                                                    onClick={() => {
+                                                    onClick={isEditMode ? () => {} : () => {
                                                         const newValues = filterValues.filter(v => v !== value);
                                                         const newFilters = { ...selectedFilters };
                                                         if (newValues.length > 0) {
@@ -368,7 +369,8 @@ export default function LayeredNavigation({
                                                         }
                                                         setSelectedFilters(newFilters);
                                                     }}
-                                                    className="text-lg ml-2 hover:opacity-80 transition-opacity"
+                                                    disabled={isEditMode}
+                                                    className={`text-lg ml-2 hover:opacity-80 transition-opacity ${isEditMode ? "pointer-events-none" : ""}`}
                                                     style={{
                                                         color: activeFilterTextColor
                                                     }}
@@ -391,10 +393,11 @@ export default function LayeredNavigation({
                                     >
                                         Price: ${min} - ${max}
                                         <button
-                                            onClick={() => {
+                                            onClick={isEditMode ? () => {} : () => {
                                                 setPriceRange([minPrice, maxPrice]);
                                             }}
-                                            className="text-lg ml-2 text-green-600 hover:text-green-800"
+                                            disabled={isEditMode}
+                                            className={`text-lg ml-2 text-green-600 hover:text-green-800 ${isEditMode ? "pointer-events-none" : ""}`}
                                         >
                                             ×
                                         </button>
