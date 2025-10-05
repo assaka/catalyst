@@ -720,8 +720,12 @@ export function UnifiedSlotRenderer({
 
   // Filter mobile search and menu based on state (storefront behavior)
   const finalSlots = sortedSlots.filter((slot) => {
-    // In storefront context, hide mobile_search_bar unless mobileSearchOpen
-    if (context === 'storefront' && slot.id === 'mobile_search_bar' && !headerContext?.mobileSearchOpen) {
+    // Check if permanent mobile search is enabled
+    const searchVisibilitySlot = slots.find(s => s.id === 'search_visibility');
+    const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
+
+    // In storefront context, hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
+    if (context === 'storefront' && slot.id === 'mobile_search_bar' && !headerContext?.mobileSearchOpen && !showPermanentMobile) {
       return false;
     }
     // In storefront context, hide mobile_menu unless mobileMenuOpen
