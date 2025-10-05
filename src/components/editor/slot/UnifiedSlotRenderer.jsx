@@ -20,7 +20,6 @@ import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSl
 import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
-import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { ComponentRegistry } from './SlotComponentRegistry';
 
 // Import component registry to ensure all components are registered
@@ -558,19 +557,6 @@ export function UnifiedSlotRenderer({
     // Component Element
     if (type === 'component') {
       const componentName = slot.component || slot.metadata?.component;
-
-
-      // Special handling for CmsBlockRenderer
-      if (componentName === 'CmsBlockRenderer') {
-        const position = slot.metadata?.props?.position || 'default';
-
-
-        return (
-          <div className={processedClassName} style={processedStyles}>
-            <CmsBlockRenderer position={position} />
-          </div>
-        );
-      }
 
       if (componentName && ComponentRegistry.has(componentName)) {
         const component = ComponentRegistry.get(componentName);
