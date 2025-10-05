@@ -505,25 +505,49 @@ const LayeredNavigation = createSlotComponent({
         button.textContent = isShowingMore ? 'Show Less' : 'Show More';
       };
 
-      // Handle mobile filter toggle
+      // Handle mobile filter toggle (overlay)
       const handleMobileFilterToggle = (e) => {
         const button = e.target.closest('[data-action="toggle-mobile-filters"]');
         if (!button) return;
 
-        const filtersContainer = containerRef.current.querySelector('.filters-container');
-        const toggleText = button.querySelector('.filter-toggle-text');
+        const overlay = containerRef.current.querySelector('[data-filter-overlay]');
+        const drawer = containerRef.current.querySelector('[data-filter-drawer]');
 
-        if (!filtersContainer) return;
+        if (!overlay || !drawer) return;
 
-        const isHidden = filtersContainer.classList.contains('hidden');
+        // Show overlay
+        overlay.classList.remove('hidden');
 
-        if (isHidden) {
-          filtersContainer.classList.remove('hidden');
-          if (toggleText) toggleText.textContent = 'Hide Filters';
-        } else {
-          filtersContainer.classList.add('hidden');
-          if (toggleText) toggleText.textContent = 'Show Filters';
-        }
+        // Animate drawer in after a brief delay
+        setTimeout(() => {
+          drawer.classList.remove('-translate-x-full');
+        }, 10);
+
+        // Prevent body scroll when overlay is open
+        document.body.style.overflow = 'hidden';
+      };
+
+      // Handle mobile filter close
+      const handleMobileFilterClose = (e) => {
+        const closeButton = e.target.closest('[data-action="close-mobile-filters"]');
+        const overlayClick = e.target.closest('[data-filter-overlay]') === e.target;
+
+        if (!closeButton && !overlayClick) return;
+
+        const overlay = containerRef.current.querySelector('[data-filter-overlay]');
+        const drawer = containerRef.current.querySelector('[data-filter-drawer]');
+
+        if (!overlay || !drawer) return;
+
+        // Animate drawer out
+        drawer.classList.add('-translate-x-full');
+
+        // Hide overlay after animation
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          // Restore body scroll
+          document.body.style.overflow = '';
+        }, 300);
       };
 
       containerRef.current.addEventListener('change', handleChange);
@@ -531,6 +555,7 @@ const LayeredNavigation = createSlotComponent({
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
       containerRef.current.addEventListener('click', handleMobileFilterToggle);
+      containerRef.current.addEventListener('click', handleMobileFilterClose);
 
       return () => {
         if (containerRef.current) {
@@ -539,7 +564,10 @@ const LayeredNavigation = createSlotComponent({
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
           containerRef.current.removeEventListener('click', handleMobileFilterToggle);
+          containerRef.current.removeEventListener('click', handleMobileFilterClose);
         }
+        // Clean up body scroll on unmount
+        document.body.style.overflow = '';
       };
     }, [categoryContext, context]);
 

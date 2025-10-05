@@ -404,6 +404,27 @@ export function UnifiedSlotRenderer({
         );
         return wrapWithResize(textElement, slot, 20, 16);
       } else {
+        // Storefront mode - check if this is a product name that should link to product
+        const isProductCardName = id === 'product_card_name' || id === 'product_name';
+        const product = productData?.product || productData;
+        const store = categoryData?.store || productData?.store;
+
+        if (isProductCardName && product?.slug && store?.slug) {
+          const { createProductUrl } = require('@/utils/urlUtils');
+          const productUrl = createProductUrl(store.slug, product.slug);
+          const HtmlTag = metadata?.htmlTag || 'div';
+
+          return (
+            <Link to={productUrl} className="block">
+              <HtmlTag
+                className={processedClassName}
+                style={processedStyles}
+                dangerouslySetInnerHTML={{ __html: processedContent }}
+              />
+            </Link>
+          );
+        }
+
         return (
           <TextSlotWithScript
             slot={slot}
@@ -425,20 +446,67 @@ export function UnifiedSlotRenderer({
       const isHtmlContent = buttonContent.includes('<') && buttonContent.includes('>');
 
       if (context === 'storefront') {
+        // Import cart service at the top of component
+        const cartService = require('@/services/cartService').default;
+
         // Storefront: Full functionality
+        const handleButtonClick = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Handle different button actions based on slot id
+          if (id === 'product_card_add_to_cart' || id === 'add_to_cart_button' || id === 'product_add_to_cart') {
+            // Add to cart logic
+            const product = productData?.product || productData;
+            const store = categoryData?.store || productData?.store;
+
+            if (!product?.id || !store?.id) {
+              console.error('Missing product or store data for add to cart');
+              return;
+            }
+
+            try {
+              const result = await cartService.addItem(
+                product.id,
+                1,
+                product.price || 0,
+                [],
+                store.id
+              );
+
+              if (result.success !== false) {
+                // Track add to cart event
+                if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
+                  window.catalyst.trackAddToCart(product, 1);
+                }
+
+                // Show success message
+                window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                  detail: {
+                    type: 'success',
+                    message: `${product.name} added to cart successfully!`
+                  }
+                }));
+              }
+            } catch (error) {
+              console.error('Failed to add to cart:', error);
+              window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                detail: {
+                  type: 'error',
+                  message: `Failed to add to cart. Please try again.`
+                }
+              }));
+            }
+          } else if (id === 'wishlist_button') {
+            productData.handleWishlistToggle?.();
+          }
+        };
+
         return (
           <Button
             className={processedClassName}
             style={processedStyles}
-            onClick={() => {
-              // Handle different button actions based on slot id or configuration
-              if (id === 'add_to_cart_button') {
-                productData.handleAddToCart?.();
-              } else if (id === 'wishlist_button') {
-                productData.handleWishlistToggle?.();
-              }
-              // Add more button handlers as needed
-            }}
+            onClick={handleButtonClick}
             disabled={id === 'add_to_cart_button' && !productData.canAddToCart}
           >
             {isHtmlContent ? (
@@ -498,6 +566,27 @@ export function UnifiedSlotRenderer({
 
       // Remove width from styles for images - let them be full width
       const { width, ...stylesWithoutWidth } = processedStyles || {};
+
+      // Check if this is a product card image that should link to product
+      const isProductCardImage = id === 'product_card_image' || id === 'product_image';
+      const product = productData?.product || productData;
+      const store = categoryData?.store || productData?.store;
+
+      if (context === 'storefront' && isProductCardImage && product?.slug && store?.slug) {
+        const { createProductUrl } = require('@/utils/urlUtils');
+        const productUrl = createProductUrl(store.slug, product.slug);
+
+        return (
+          <Link to={productUrl} className="block">
+            <img
+              src={imageSrc}
+              alt={variableContext.product?.name || 'Image'}
+              className={processedClassName}
+              style={{ ...stylesWithoutWidth, width: '100%' }}
+            />
+          </Link>
+        );
+      }
 
       const imageElement = (
         <img
