@@ -24,6 +24,8 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
+        displayName: 'CMS Block - Product Above',
+        cmsPosition: 'product_above',
         props: {
           position: 'product_above'
         }
@@ -410,6 +412,8 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
+        displayName: 'CMS Block - Above Price',
+        cmsPosition: 'product_above_price',
         props: {
           position: 'product_above_price'
         }
@@ -898,6 +902,8 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
+        displayName: 'CMS Block - Product Below',
+        cmsPosition: 'product_below',
         props: {
           position: 'product_below'
         }
