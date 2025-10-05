@@ -433,6 +433,16 @@ export function HeaderSlotRenderer({
     const searchVisibilitySlot = Object.values(slots).find(s => s?.id === 'search_visibility');
     const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
 
+    // Debug logging for mobile search visibility
+    if (slot.id === 'mobile_search_bar') {
+      console.log('[HeaderSlotRenderer] Mobile search bar check:', {
+        mobileSearchOpen,
+        showPermanentMobile,
+        searchVisibilitySlot: searchVisibilitySlot?.styles,
+        willShow: mobileSearchOpen || showPermanentMobile
+      });
+    }
+
     // Hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
     if (slot.id === 'mobile_search_bar' && !mobileSearchOpen && !showPermanentMobile) {
       return false;
