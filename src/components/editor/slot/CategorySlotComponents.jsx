@@ -1048,10 +1048,15 @@ const ProductItemsGrid = createSlotComponent({
                 ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
             }
 
+            // Add stock label class dynamically for stock label slot
+            const dynamicClassName = slotConfig.id === 'product_card_stock_label'
+              ? `${finalClassName} ${product.stock_label_class}`.trim()
+              : finalClassName;
+
             productSlots[slotId] = {
               ...slotConfig,
               content: processedContent,
-              className: finalClassName,
+              className: dynamicClassName,
               styles: finalStyles,
               metadata: { ...(slotConfig.metadata || {}), ...(savedSlotConfig?.metadata || {}) }
             };
