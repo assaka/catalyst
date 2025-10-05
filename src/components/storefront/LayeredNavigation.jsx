@@ -336,6 +336,78 @@ export default function LayeredNavigation({
                 </Button>
             </div>
 
+            {/* Active Filters on Mobile - visible only on mobile screens below Filter button */}
+            {showActiveFilters && hasActiveFilters && (
+                <div className="sm:hidden mb-4">
+                    <div className="flex flex-wrap gap-2">
+                        {(() => {
+                            const activeFilterElements = [];
+
+                            // Add active attribute filters
+                            Object.entries(selectedFilters).forEach(([filterKey, filterValues]) => {
+                                if (filterKey !== 'priceRange' && Array.isArray(filterValues)) {
+                                    filterValues.forEach(value => {
+                                        activeFilterElements.push(
+                                            <span
+                                                key={`mobile-${filterKey}-${value}`}
+                                                className="inline-flex items-center px-3 py-1 rounded-full text-xs"
+                                                style={{
+                                                    backgroundColor: activeFilterBgColor,
+                                                    color: activeFilterTextColor
+                                                }}
+                                            >
+                                                {filterKey}: {value}
+                                                <button
+                                                    onClick={() => {
+                                                        const newValues = filterValues.filter(v => v !== value);
+                                                        const newFilters = { ...selectedFilters };
+                                                        if (newValues.length > 0) {
+                                                            newFilters[filterKey] = newValues;
+                                                        } else {
+                                                            delete newFilters[filterKey];
+                                                        }
+                                                        setSelectedFilters(newFilters);
+                                                    }}
+                                                    className="text-lg ml-2 hover:opacity-80 transition-opacity"
+                                                    style={{
+                                                        color: activeFilterTextColor
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        );
+                                    });
+                                }
+                            });
+
+                            // Add price range filter if active
+                            if (priceRange[0] !== minPrice || priceRange[1] !== maxPrice) {
+                                const [min, max] = priceRange;
+                                activeFilterElements.push(
+                                    <span
+                                        key="mobile-price-range"
+                                        className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                                    >
+                                        Price: ${min} - ${max}
+                                        <button
+                                            onClick={() => {
+                                                setPriceRange([minPrice, maxPrice]);
+                                            }}
+                                            className="text-lg ml-2 text-green-600 hover:text-green-800"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                );
+                            }
+
+                            return activeFilterElements;
+                        })()}
+                    </div>
+                </div>
+            )}
+
             {/* Layered Navigation - hidden on mobile unless toggled, always visible on sm+ */}
             <Card className={`w-full ${isFilterVisible ? 'block' : 'hidden'} sm:block`}>
                 <CardHeader>
