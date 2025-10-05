@@ -25,6 +25,7 @@ import { registerSlotComponent, createSlotComponent } from './SlotComponentRegis
 import ProductTabsComponent from '@/components/storefront/ProductTabs';
 import CustomOptionsComponent from '@/components/storefront/CustomOptions';
 import TotalPriceDisplayComponent from '@/components/storefront/TotalPriceDisplay';
+import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer';
 
 // Import category and header slot components to register them
 import './CategorySlotComponents.jsx';
@@ -2056,7 +2057,6 @@ const CmsBlockRenderer = createSlotComponent({
     }
 
     // In storefront mode, use the real CmsBlockRenderer component
-    const CmsBlockRendererComponent = require('@/components/storefront/CmsBlockRenderer').default;
     return (
       <div className={className || slot.className} style={styles || slot.styles}>
         <CmsBlockRendererComponent position={position} />
