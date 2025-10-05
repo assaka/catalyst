@@ -427,10 +427,27 @@ export function HeaderSlotRenderer({
     }
   };
 
+  // Filter mobile search and menu based on state
+  const finalSlots = sortedSlots.filter((slot) => {
+    // Check if permanent mobile search is enabled
+    const searchVisibilitySlot = Object.values(slots).find(s => s?.id === 'search_visibility');
+    const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
+
+    // Hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
+    if (slot.id === 'mobile_search_bar' && !mobileSearchOpen && !showPermanentMobile) {
+      return false;
+    }
+    // Hide mobile_menu unless mobileMenuOpen
+    if (slot.id === 'mobile_menu' && !mobileMenuOpen) {
+      return false;
+    }
+    return true;
+  });
+
   // Render all slots
   return (
     <>
-      {sortedSlots.map(slot => (
+      {finalSlots.map(slot => (
         <Fragment key={slot.id}>
           {renderSlotContent(slot)}
         </Fragment>
