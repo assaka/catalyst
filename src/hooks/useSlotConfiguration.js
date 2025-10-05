@@ -1450,8 +1450,22 @@ export function useSlotConfiguration({
 
     // Validate the updated configuration before applying
     if (!validateSlotConfiguration(updatedSlots)) {
+      console.error('❌ [handleSlotDrop] Validation failed after drop:', {
+        draggedSlotId: actualDraggedSlotId,
+        targetSlotId: actualTargetSlotId,
+        newParentId,
+        newPosition,
+        dropPosition
+      });
       return null;
     }
+
+    console.log('✅ [handleSlotDrop] Drop successful:', {
+      draggedSlotId: actualDraggedSlotId,
+      targetSlotId: actualTargetSlotId,
+      newParentId,
+      newPosition
+    });
 
     return updatedSlots;
   }, [validateSlotConfiguration]);
