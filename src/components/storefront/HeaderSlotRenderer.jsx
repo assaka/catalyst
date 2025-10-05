@@ -177,8 +177,14 @@ export function HeaderSlotRenderer({
         );
 
       case 'MobileSearchToggle':
+        // Check if permanent mobile search is enabled from slot configuration
+        const searchVisibilitySlot = Object.values(slots).find(s => s?.id === 'search_visibility');
+        const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
+
         if (settings?.hide_header_search) return null;
-        if (settings?.show_permanent_search) return null;
+        // Don't show toggle if search is permanently visible
+        if (showPermanentMobile) return null;
+
         return (
           <Button
             key={id}
@@ -433,23 +439,8 @@ export function HeaderSlotRenderer({
     const searchVisibilitySlot = Object.values(slots).find(s => s?.id === 'search_visibility');
     const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
 
-    // Debug logging for mobile search visibility
-    if (slot.id === 'mobile_search_bar') {
-      console.log('[HeaderSlotRenderer] Mobile search bar check:', {
-        viewMode,
-        slotViewMode: slot.viewMode,
-        mobileSearchOpen,
-        showPermanentMobile,
-        searchVisibilitySlot: searchVisibilitySlot?.styles,
-        willShow: mobileSearchOpen || showPermanentMobile,
-        sortedSlotsCount: sortedSlots.length,
-        sortedSlotsHasMobileSearch: sortedSlots.some(s => s.id === 'mobile_search_bar')
-      });
-    }
-
     // Hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
     if (slot.id === 'mobile_search_bar' && !mobileSearchOpen && !showPermanentMobile) {
-      console.log('[HeaderSlotRenderer] Hiding mobile search bar');
       return false;
     }
     // Hide mobile_menu unless mobileMenuOpen
