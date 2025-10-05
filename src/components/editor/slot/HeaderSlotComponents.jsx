@@ -24,15 +24,15 @@ const StoreLogo = createSlotComponent({
     const { store } = headerContext || {};
     const storeUrl = store ? createPublicUrl(store.slug, 'STOREFRONT') : '/';
 
-    // Use same rendering for both editor and storefront
+    // Use same rendering for both editor and storefront with responsive sizing
     const content = (
       <>
         {store?.logo_url ? (
-          <img src={store.logo_url} alt={store.name} className="h-8 w-8 object-contain" />
+          <img src={store.logo_url} alt={store.name} className="h-6 md:h-8 w-6 md:w-8 object-contain" />
         ) : (
-          <ShoppingBag className="h-8 w-8 text-blue-600" />
+          <ShoppingBag className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
         )}
-        <span className="text-xl font-bold text-gray-800" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
+        <span className="text-base md:text-xl font-bold text-gray-800 truncate" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
           {store?.name || 'Demo Store'}
         </span>
       </>
@@ -40,7 +40,7 @@ const StoreLogo = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <div className={className || "flex items-center space-x-2"} style={styles}>
+        <div className={className || "flex items-center space-x-1 md:space-x-2"} style={styles}>
           {content}
         </div>
       );
@@ -48,7 +48,7 @@ const StoreLogo = createSlotComponent({
 
     // Storefront rendering with link
     return (
-      <Link to={storeUrl} className={className || "flex items-center space-x-2"} style={styles}>
+      <Link to={storeUrl} className={className || "flex items-center space-x-1 md:space-x-2"} style={styles}>
         {content}
       </Link>
     );
@@ -111,9 +111,9 @@ const MiniCartSlot = createSlotComponent({
     if (context === 'editor') {
       return (
         <div className={className || "relative"} style={styles}>
-          <button className="relative p-2 text-gray-700 hover:text-gray-900">
-            <ShoppingBag className="w-6 h-6" />
-            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          <button className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+            <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
               0
             </span>
           </button>
@@ -141,8 +141,8 @@ const WishlistDropdownSlot = createSlotComponent({
     if (context === 'editor') {
       return (
         <div className={className} style={styles}>
-          <button className="relative p-2 text-gray-700 hover:text-gray-900">
-            <Heart className="w-6 h-6" />
+          <button className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <Heart className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
       );
@@ -173,10 +173,9 @@ const CategoryNavSlot = createSlotComponent({
     const linkFontWeight = styles?.fontWeight || '500';
 
     if (context === 'editor') {
-      // Render simplified static navigation in editor with hover dropdowns
+      // Render simplified static navigation in editor with hover dropdowns - matching storefront exactly
       return (
-        <div className={className || "flex items-center space-x-2"} style={styles}>
-          <a href="#" className="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">Home</a>
+        <nav className={className || "hidden md:flex items-center space-x-1"} style={styles}>
           {categories.map(cat => (
             <div key={cat.id} className="relative group">
               <a
@@ -205,7 +204,7 @@ const CategoryNavSlot = createSlotComponent({
               )}
             </div>
           ))}
-        </div>
+        </nav>
       );
     }
 
@@ -229,8 +228,8 @@ const UserMenuSlot = createSlotComponent({
     if (context === 'editor') {
       return (
         <div className={className} style={styles}>
-          <button className="p-2 text-gray-700 hover:text-gray-900">
-            <User className="w-6 h-6" />
+          <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <User className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
       );
@@ -240,7 +239,7 @@ const UserMenuSlot = createSlotComponent({
     if (userLoading) {
       return (
         <div className={className || "p-2"} style={styles}>
-          <User className="w-6 h-6 text-gray-400 animate-pulse" />
+          <User className="w-5 h-5 md:w-6 md:h-6 text-gray-400 animate-pulse" />
         </div>
       );
     }
@@ -248,8 +247,8 @@ const UserMenuSlot = createSlotComponent({
     if (user) {
       return (
         <div className={className || "relative group"} style={styles}>
-          <button className="flex items-center p-2 text-gray-700 hover:text-gray-900">
-            <User className="w-6 h-6" />
+          <button className="flex items-center p-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <User className="w-5 h-5 md:w-6 md:h-6" />
             <ChevronDown className="w-4 h-4 ml-1" />
           </button>
           <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
@@ -269,8 +268,8 @@ const UserMenuSlot = createSlotComponent({
     }
 
     return (
-      <Link to="/customer/login" className={className || "p-2 text-gray-700 hover:text-gray-900"} style={styles}>
-        <User className="w-6 h-6" />
+      <Link to="/customer/login" className={className || "p-2 text-gray-700 hover:text-gray-900 transition-colors"} style={styles}>
+        <User className="w-5 h-5 md:w-6 md:h-6" />
       </Link>
     );
   }
@@ -430,8 +429,8 @@ const MobileMenuButtonSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900">
-          <Menu className="w-6 h-6" />
+        <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden">
+          <Menu className="w-5 h-5" />
         </button>
       );
     }
@@ -440,9 +439,9 @@ const MobileMenuButtonSlot = createSlotComponent({
     return (
       <button
         onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
-        className="p-2 text-gray-700 hover:text-gray-900 md:hidden"
+        className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden"
       >
-        <Menu className="w-6 h-6" />
+        <Menu className="w-5 h-5" />
       </button>
     );
   }
@@ -458,8 +457,8 @@ const MobileSearchButtonSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900">
-          <Search className="w-6 h-6" />
+        <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden">
+          <Search className="w-5 h-5" />
         </button>
       );
     }
@@ -468,9 +467,9 @@ const MobileSearchButtonSlot = createSlotComponent({
     return (
       <button
         onClick={() => setMobileSearchOpen?.(!mobileSearchOpen)}
-        className="p-2 text-gray-700 hover:text-gray-900 md:hidden"
+        className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden"
       >
-        <Search className="w-6 h-6" />
+        <Search className="w-5 h-5" />
       </button>
     );
   }
@@ -488,8 +487,8 @@ const MobileUserMenuSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900">
-          <User className="w-6 h-6" />
+        <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden">
+          <User className="w-5 h-5" />
         </button>
       );
     }
@@ -500,6 +499,7 @@ const MobileUserMenuSlot = createSlotComponent({
         <Button
           variant="ghost"
           size="icon"
+          className="md:hidden"
           onClick={() => {
             if (user) {
               // Show dropdown or navigate to account
