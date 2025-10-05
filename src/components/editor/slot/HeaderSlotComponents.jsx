@@ -7,7 +7,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
 import { createPublicUrl } from '@/utils/urlUtils';
-import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, Heart } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, Heart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeaderSearch from '@/components/storefront/HeaderSearch';
 import MiniCart from '@/components/storefront/MiniCart';
@@ -111,12 +111,16 @@ const MiniCartSlot = createSlotComponent({
     if (context === 'editor') {
       return (
         <div className={className || "relative"} style={styles}>
-          <button className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
-            <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+          >
+            <ShoppingBag className="w-5 h-5" />
             <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
               0
             </span>
-          </button>
+          </Button>
         </div>
       );
     }
@@ -140,11 +144,14 @@ const WishlistDropdownSlot = createSlotComponent({
   render: ({ slot, context, headerContext, className, styles }) => {
     if (context === 'editor') {
       return (
-        <div className={className} style={styles}>
-          <button className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
-            <Heart className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={className}
+          style={styles}
+        >
+          <Heart className="w-5 h-5" />
+        </Button>
       );
     }
 
@@ -227,31 +234,40 @@ const UserMenuSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <div className={className} style={styles}>
-          <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors">
-            <User className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={className}
+          style={styles}
+        >
+          <User className="w-5 h-5" />
+        </Button>
       );
     }
 
     // Storefront rendering
     if (userLoading) {
       return (
-        <div className={className || "p-2"} style={styles}>
-          <User className="w-5 h-5 md:w-6 md:h-6 text-gray-400 animate-pulse" />
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled
+          className={className}
+          style={styles}
+        >
+          <User className="w-5 h-5 text-gray-400 animate-pulse" />
+        </Button>
       );
     }
 
     if (user) {
       return (
         <div className={className || "relative group"} style={styles}>
-          <button className="flex items-center p-2 text-gray-700 hover:text-gray-900 transition-colors">
-            <User className="w-5 h-5 md:w-6 md:h-6" />
+          <Button variant="ghost" size="icon" className="flex items-center">
+            <User className="w-5 h-5" />
             <ChevronDown className="w-4 h-4 ml-1" />
-          </button>
-          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+          </Button>
+          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
             <div className="p-2">
               <div className="px-3 py-2 text-sm text-gray-700">{user.email}</div>
               <hr className="my-2" />
@@ -268,8 +284,10 @@ const UserMenuSlot = createSlotComponent({
     }
 
     return (
-      <Link to="/customer/login" className={className || "p-2 text-gray-700 hover:text-gray-900 transition-colors"} style={styles}>
-        <User className="w-5 h-5 md:w-6 md:h-6" />
+      <Link to="/customer/login" className={className} style={styles}>
+        <Button variant="ghost" size="icon">
+          <User className="w-5 h-5" />
+        </Button>
       </Link>
     );
   }
@@ -395,26 +413,33 @@ const LanguageSelectorSlot = createSlotComponent({
  */
 const CountrySelectorSlot = createSlotComponent({
   name: 'CountrySelector',
-  render: ({ slot, context, headerContext }) => {
+  render: ({ slot, context, headerContext, className, styles }) => {
     const { settings = {}, selectedCountry, setSelectedCountry } = headerContext || {};
     const allowedCountries = settings.allowed_countries || ['US', 'CA', 'UK'];
 
     if (context === 'editor') {
       return (
-        <div className="text-sm text-gray-600">
-          <Globe className="w-4 h-4 inline mr-1" />
-          US
+        <div className={className || "flex items-center"} style={styles}>
+          <CountrySelect
+            value="US"
+            onValueChange={() => {}}
+            allowedCountries={allowedCountries}
+          />
         </div>
       );
     }
 
     // Storefront rendering
+    if (!allowedCountries || allowedCountries.length <= 1) return null;
+
     return (
-      <CountrySelect
-        value={selectedCountry}
-        onChange={setSelectedCountry}
-        allowedCountries={allowedCountries}
-      />
+      <div className={className} style={styles}>
+        <CountrySelect
+          value={selectedCountry}
+          onValueChange={setSelectedCountry}
+          allowedCountries={allowedCountries}
+        />
+      </div>
     );
   }
 });
@@ -429,20 +454,26 @@ const MobileMenuButtonSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+        >
           <Menu className="w-5 h-5" />
-        </button>
+        </Button>
       );
     }
 
     // Storefront rendering
     return (
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
-        className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden"
+        className="md:hidden"
       >
         <Menu className="w-5 h-5" />
-      </button>
+      </Button>
     );
   }
 });
@@ -457,20 +488,26 @@ const MobileSearchButtonSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+        >
           <Search className="w-5 h-5" />
-        </button>
+        </Button>
       );
     }
 
     // Storefront rendering
     return (
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={() => setMobileSearchOpen?.(!mobileSearchOpen)}
-        className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden"
+        className="md:hidden"
       >
         <Search className="w-5 h-5" />
-      </button>
+      </Button>
     );
   }
 });
@@ -487,33 +524,35 @@ const MobileUserMenuSlot = createSlotComponent({
 
     if (context === 'editor') {
       return (
-        <button className="p-2 text-gray-700 hover:text-gray-900 transition-colors md:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+        >
           <User className="w-5 h-5" />
-        </button>
+        </Button>
       );
     }
 
     // Storefront rendering
     return (
-      <div className={className} style={styles}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => {
-            if (user) {
-              // Show dropdown or navigate to account
-            } else {
-              localStorage.setItem('customer_auth_store_id', store?.id);
-              localStorage.setItem('customer_auth_store_code', store?.slug);
-              navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
-            }
-          }}
-          disabled={userLoading}
-        >
-          <User className="w-5 h-5" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={() => {
+          if (user) {
+            // Show dropdown or navigate to account
+          } else {
+            localStorage.setItem('customer_auth_store_id', store?.id);
+            localStorage.setItem('customer_auth_store_code', store?.slug);
+            navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
+          }
+        }}
+        disabled={userLoading}
+      >
+        <User className="w-5 h-5" />
+      </Button>
     );
   }
 });
