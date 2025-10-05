@@ -205,7 +205,7 @@ export const headerConfig = {
       styles: {
         hideOnCart: false,
         hideOnCheckout: false,
-        showPermanentMobile: false
+        showPermanentMobile: true
       },
       parentId: 'search_section',
       position: { col: 1, row: 2 },
