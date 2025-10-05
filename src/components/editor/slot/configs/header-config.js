@@ -244,7 +244,7 @@ export const headerConfig = {
       id: 'mobile_actions',
       type: 'container',
       content: '',
-      className: 'flex items-center space-x-1 md:hidden',
+      className: 'flex items-center space-x-1',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
@@ -253,7 +253,8 @@ export const headerConfig = {
       viewMode: ['mobile'],
       metadata: {
         hierarchical: true,
-        displayName: 'Mobile Actions Container'
+        displayName: 'Mobile Actions Container',
+        note: 'Visibility controlled by viewMode filter, not CSS media queries'
       }
     },
 
@@ -526,7 +527,7 @@ export const headerConfig = {
       type: 'component',
       component: 'MobileMenuToggle',
       content: `
-        <button class="p-2 hover:bg-gray-100 rounded-full md:hidden" data-action="toggle-mobile-menu">
+        <button class="p-2 hover:bg-gray-100 rounded-full" data-action="toggle-mobile-menu">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
           </svg>
@@ -542,7 +543,8 @@ export const headerConfig = {
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Menu Toggle',
-        component: 'MobileMenuToggle'
+        component: 'MobileMenuToggle',
+        note: 'Visibility controlled by viewMode filter, not CSS media queries'
       }
     },
 
