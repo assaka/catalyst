@@ -179,6 +179,12 @@ const CategoryNavSlot = createSlotComponent({
     const linkFontSize = styles?.fontSize || '0.875rem';
     const linkFontWeight = styles?.fontWeight || '500';
 
+    // Extract subcategory styles from metadata
+    const subcategoryLinkColor = metadata?.subcategoryLinkColor || '#6B7280';
+    const subcategoryLinkHoverColor = metadata?.subcategoryLinkHoverColor || '#2563EB';
+    const subcategoryBgColor = metadata?.subcategoryBgColor || '#ffffff';
+    const subcategoryBgHoverColor = metadata?.subcategoryBgHoverColor || '#F3F4F6';
+
     if (context === 'editor') {
       // Render simplified static navigation in editor with hover dropdowns - matching storefront exactly
       return (
@@ -187,22 +193,48 @@ const CategoryNavSlot = createSlotComponent({
             <div key={cat.id} className="relative group">
               <a
                 href="#"
-                className="text-sm font-medium text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md inline-flex items-center transition-colors"
+                className="text-sm font-medium px-3 py-2 rounded-md inline-flex items-center transition-colors"
                 style={{ color: linkColor, fontSize: linkFontSize, fontWeight: linkFontWeight }}
+                onMouseEnter={(e) => e.currentTarget.style.color = linkHoverColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
               >
                 {cat.name}
                 {cat.children && cat.children.length > 0 && <ChevronDown className="w-3 h-3 ml-1" />}
               </a>
               {cat.children && cat.children.length > 0 && (
-                <div className="absolute left-0 top-full w-48 bg-white border border-gray-200 rounded-md shadow-lg p-2 space-y-1 z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                  <a href="#" className="block px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded border-b border-gray-200 pb-2 mb-1">
+                <div
+                  className="absolute left-0 top-full w-48 border border-gray-200 rounded-md shadow-lg p-2 space-y-1 z-[9999] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200"
+                  style={{ backgroundColor: subcategoryBgColor }}
+                >
+                  <a
+                    href="#"
+                    className="block px-3 py-2 text-sm font-medium rounded border-b border-gray-200 pb-2 mb-1"
+                    style={{ color: linkColor }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                      e.currentTarget.style.color = linkHoverColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = linkColor;
+                    }}
+                  >
                     View All {cat.name}
                   </a>
                   {cat.children.map(child => (
                     <a
                       key={child.id}
                       href="#"
-                      className="block px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                      className="block px-3 py-2 text-sm rounded"
+                      style={{ color: subcategoryLinkColor }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = subcategoryBgHoverColor;
+                        e.currentTarget.style.color = subcategoryLinkHoverColor;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = subcategoryLinkColor;
+                      }}
                     >
                       {child.name}
                     </a>
