@@ -103,17 +103,132 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
-    // Mobile filter toggle button - only visible on mobile
+    // Mobile filter toggle button and overlay - only visible on mobile
     mobile_filter_toggle: {
       id: 'mobile_filter_toggle',
-      type: 'text',
+      type: 'component',
+      component: 'LayeredNavigation',
       content: `
+        <!-- Mobile Filter Toggle Button -->
         <button data-action="toggle-mobile-filters" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 mb-4">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
           </svg>
           <span class="filter-toggle-text font-medium">Filters</span>
         </button>
+
+        <!-- Mobile Filter Overlay -->
+        <div class="filters-overlay fixed inset-0 bg-black bg-opacity-50 z-50 hidden" data-filter-overlay>
+          <div class="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out" data-filter-drawer>
+            <!-- Overlay Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 class="text-lg font-semibold">Filters</h3>
+              <button data-action="close-mobile-filters" class="p-2 hover:bg-gray-100 rounded-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Overlay Content -->
+            <div class="p-4 overflow-y-auto h-[calc(100vh-120px)] space-y-3">
+              <!-- Price Filter Slider -->
+              {{#if filters.price.min}}
+                <div class="border-b border-gray-200 pb-2" data-filter-section="price">
+                  <button class="w-full flex items-center justify-between mb-3"
+                          data-action="toggle-filter-section"
+                          data-section="price">
+                    <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">Price</span>
+                    <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+                  <div class="filter-content px-2 {{#unless settings.collapse_filters}}block{{/unless}}"
+                       style="{{#if settings.collapse_filters}}display: none;{{/if}}">
+                    <div class="flex justify-between items-center mb-4 text-sm">
+                      <span style="color: {{filterOptionStyles.optionTextColor}}; font-weight: 500;">€<span id="selected-min-mobile">{{filters.price.min}}</span></span>
+                      <span class="text-gray-400">-</span>
+                      <span style="color: {{filterOptionStyles.optionTextColor}}; font-weight: 500;">€<span id="selected-max-mobile">{{filters.price.max}}</span></span>
+                    </div>
+                    <div class="relative h-2 mb-2">
+                      <div class="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
+                      <div id="price-range-track-mobile" class="absolute h-2 bg-blue-500 rounded-lg" style="left: 0%; width: 100%;"></div>
+                      <input type="range"
+                             id="price-slider-min-mobile"
+                             min="{{filters.price.min}}"
+                             max="{{filters.price.max}}"
+                             value="{{filters.price.min}}"
+                             class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
+                             style="z-index: 3;"
+                             data-action="price-slider"
+                             data-slider-type="min" />
+                      <input type="range"
+                             id="price-slider-max-mobile"
+                             min="{{filters.price.min}}"
+                             max="{{filters.price.max}}"
+                             value="{{filters.price.max}}"
+                             class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
+                             style="z-index: 4;"
+                             data-action="price-slider"
+                             data-slider-type="max" />
+                    </div>
+                  </div>
+                </div>
+              {{/if}}
+
+              <!-- Attribute Filters -->
+              {{#each filters.attributes}}
+                <div class="border-b border-gray-200 pb-2" data-filter-section="{{this.code}}">
+                  <button class="w-full flex items-center justify-between mb-3"
+                          data-action="toggle-filter-section"
+                          data-section="{{this.code}}">
+                    <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">{{this.label}}</span>
+                    <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+                  <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
+                       style="{{#if settings.collapse_filters}}display: none;{{/if}}"
+                       data-max-visible="{{settings.max_visible_attributes}}"
+                       data-attribute-code="{{this.code}}">
+                    {{#each this.options}}
+                      <label class="flex items-center gap-2 cursor-pointer filter-option"
+                             style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
+                             onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
+                             onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
+                             data-option-index="{{@index}}">
+                        <input type="checkbox"
+                               class="rounded border-gray-300"
+                               style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                               data-action="toggle-filter"
+                               data-filter-type="attribute"
+                               data-attribute-code="{{this.attributeCode}}"
+                               data-filter-value="{{this.value}}"
+                               {{#if this.active}}checked{{/if}} />
+                        <span>{{this.label}}</span>
+                        <span class="ml-auto" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
+                      </label>
+                    {{/each}}
+                    <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
+                            data-action="toggle-show-more"
+                            data-attribute-code="{{this.code}}">
+                      Show More
+                    </button>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+
+            <!-- Overlay Footer with Apply Button -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+              <button data-action="close-mobile-filters" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
       `,
       className: 'sm:hidden',
       parentClassName: '',
@@ -124,7 +239,8 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
-        displayName: 'Mobile Filter Toggle'
+        displayName: 'Mobile Filter Toggle',
+        component: 'LayeredNavigation'
       }
     },
 
@@ -815,142 +931,8 @@ export const categoryConfig = {
       type: 'component',
       component: 'LayeredNavigation',
       content: `
-        <!-- Mobile Filter Overlay - hidden by default, shown when toggled -->
-        <div class="filters-overlay fixed inset-0 bg-black bg-opacity-50 z-50 hidden sm:hidden" data-filter-overlay>
-          <div class="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out" data-filter-drawer>
-            <!-- Overlay Header -->
-            <div class="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 class="text-lg font-semibold">Filters</h3>
-              <button data-action="close-mobile-filters" class="p-2 hover:bg-gray-100 rounded-md">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Overlay Content -->
-            <div class="p-4 overflow-y-auto h-[calc(100vh-120px)] space-y-3">
-          <!-- Price Filter Slider -->
-          {{#if filters.price.min}}
-            <div class="border-b border-gray-200 pb-2" data-filter-section="price">
-              <button class="w-full flex items-center justify-between mb-3"
-                      data-action="toggle-filter-section"
-                      data-section="price">
-                <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">Price</span>
-                <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              <div class="filter-content px-2 {{#unless settings.collapse_filters}}block{{/unless}}"
-                   style="{{#if settings.collapse_filters}}display: none;{{/if}}">
-                <div class="flex justify-between items-center mb-4 text-sm">
-                  <span style="color: {{filterOptionStyles.optionTextColor}}; font-weight: 500;">€<span id="selected-min">{{filters.price.min}}</span></span>
-                  <span class="text-gray-400">-</span>
-                  <span style="color: {{filterOptionStyles.optionTextColor}}; font-weight: 500;">€<span id="selected-max">{{filters.price.max}}</span></span>
-                </div>
-                <div class="relative h-2 mb-2">
-                  <div class="absolute w-full h-2 bg-gray-200 rounded-lg"></div>
-                  <div id="price-range-track" class="absolute h-2 bg-blue-500 rounded-lg" style="left: 0%; width: 100%;"></div>
-                  <input type="range"
-                         id="price-slider-min"
-                         min="{{filters.price.min}}"
-                         max="{{filters.price.max}}"
-                         value="{{filters.price.min}}"
-                         class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
-                         style="z-index: 3;"
-                         data-action="price-slider"
-                         data-slider-type="min" />
-                  <input type="range"
-                         id="price-slider-max"
-                         min="{{filters.price.min}}"
-                         max="{{filters.price.max}}"
-                         value="{{filters.price.max}}"
-                         class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto cursor-pointer"
-                         style="z-index: 4;"
-                         data-action="price-slider"
-                         data-slider-type="max" />
-                </div>
-                <style>
-                  input[type="range"]::-webkit-slider-thumb {
-                    appearance: none;
-                    width: 18px;
-                    height: 18px;
-                    border-radius: 50%;
-                    background: #3b82f6;
-                    cursor: pointer;
-                    border: 2px solid white;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-                  }
-                  input[type="range"]::-moz-range-thumb {
-                    width: 18px;
-                    height: 18px;
-                    border-radius: 50%;
-                    background: #3b82f6;
-                    cursor: pointer;
-                    border: 2px solid white;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-                  }
-                </style>
-              </div>
-            </div>
-          {{/if}}
-
-          <!-- Attribute Filters (Brand, Color, Size, Material, etc.) -->
-          {{#each filters.attributes}}
-            <div class="border-b border-gray-200 pb-2" data-filter-section="{{this.code}}">
-              <button class="w-full flex items-center justify-between mb-3"
-                      data-action="toggle-filter-section"
-                      data-section="{{this.code}}">
-                <span style="color: {{attributeLabelStyles.color}}; font-size: {{attributeLabelStyles.fontSize}}; font-weight: {{attributeLabelStyles.fontWeight}};">{{this.label}}</span>
-                <svg class="w-5 h-5 transform transition-transform filter-chevron {{#unless settings.collapse_filters}}rotate-180{{/unless}}"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
-                   style="{{#if settings.collapse_filters}}display: none;{{/if}}"
-                   data-max-visible="{{settings.max_visible_attributes}}"
-                   data-attribute-code="{{this.code}}">
-                {{#each this.options}}
-                  <label class="flex items-center gap-2 cursor-pointer filter-option"
-                         style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
-                         onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
-                         onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
-                         data-option-index="{{@index}}">
-                    <input type="checkbox"
-                           class="rounded border-gray-300"
-                           style="accent-color: {{filterOptionStyles.checkboxColor}};"
-                           data-action="toggle-filter"
-                           data-filter-type="attribute"
-                           data-attribute-code="{{this.attributeCode}}"
-                           data-filter-value="{{this.value}}"
-                           {{#if this.active}}checked{{/if}} />
-                    <span>{{this.label}}</span>
-                    <span class="ml-auto" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
-                  </label>
-                {{/each}}
-                <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
-                        data-action="toggle-show-more"
-                        data-attribute-code="{{this.code}}">
-                  Show More
-                </button>
-              </div>
-            </div>
-          {{/each}}
-            </div>
-
-            <!-- Overlay Footer with Apply Button -->
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-              <button data-action="close-mobile-filters" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- Desktop Filters - visible on sm+ screens -->
-        <div class="hidden sm:block space-y-3">
+        <div class="space-y-3">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
