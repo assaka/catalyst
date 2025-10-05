@@ -377,8 +377,16 @@ export function UnifiedSlotRenderer({
 
         // Check if slot has conditional display and content is empty
         const hasConditionalDisplay = metadata?.conditionalDisplay;
-        const conditionalSlots = ['product_labels', 'product_card_compare_price'];
+        const conditionalSlots = ['product_labels', 'product_card_compare_price', 'compare_price'];
         const shouldShowPlaceholder = !processedContent && !hasConditionalDisplay && !conditionalSlots.includes(id);
+
+        console.log('[UnifiedSlotRenderer] Text slot placeholder check:', {
+          id,
+          processedContent,
+          hasConditionalDisplay,
+          isConditional: conditionalSlots.includes(id),
+          shouldShowPlaceholder
+        });
 
         // Skip rendering entirely if empty and conditional
         if (!processedContent && (hasConditionalDisplay || conditionalSlots.includes(id))) {
