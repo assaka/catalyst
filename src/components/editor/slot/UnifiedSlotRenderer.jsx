@@ -21,6 +21,8 @@ import { GridColumn } from '@/components/editor/slot/SlotComponents';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import { ComponentRegistry } from './SlotComponentRegistry';
+import { createProductUrl } from '@/utils/urlUtils';
+import cartService from '@/services/cartService';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
@@ -410,7 +412,6 @@ export function UnifiedSlotRenderer({
         const store = categoryData?.store || productData?.store;
 
         if (isProductCardName && product?.slug && store?.slug) {
-          const { createProductUrl } = require('@/utils/urlUtils');
           const productUrl = createProductUrl(store.slug, product.slug);
           const HtmlTag = metadata?.htmlTag || 'div';
 
@@ -446,9 +447,6 @@ export function UnifiedSlotRenderer({
       const isHtmlContent = buttonContent.includes('<') && buttonContent.includes('>');
 
       if (context === 'storefront') {
-        // Import cart service at the top of component
-        const cartService = require('@/services/cartService').default;
-
         // Storefront: Full functionality
         const handleButtonClick = async (e) => {
           e.preventDefault();
@@ -573,7 +571,6 @@ export function UnifiedSlotRenderer({
       const store = categoryData?.store || productData?.store;
 
       if (context === 'storefront' && isProductCardImage && product?.slug && store?.slug) {
-        const { createProductUrl } = require('@/utils/urlUtils');
         const productUrl = createProductUrl(store.slug, product.slug);
 
         return (
