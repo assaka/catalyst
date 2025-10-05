@@ -4,7 +4,7 @@ import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import { createPublicUrl } from '@/utils/urlUtils';
-import { ShoppingBag, Search, User, Menu, Globe, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeaderSearch from './HeaderSearch';
 import MiniCart from './MiniCart';
@@ -311,7 +311,7 @@ export function HeaderSlotRenderer({
             onClick={() => setMobileMenuOpen?.(!mobileMenuOpen)}
             data-slot-id={id}
           >
-            <Menu className="w-5 h-5" />
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
         );
 

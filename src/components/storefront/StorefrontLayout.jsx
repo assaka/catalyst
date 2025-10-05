@@ -531,7 +531,7 @@ export default function StorefrontLayout({ children }) {
                                         className="md:hidden"
                                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                                     >
-                                        <Menu className="w-5 h-5" />
+                                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                                     </Button>
                                 </div>
                             </div>
