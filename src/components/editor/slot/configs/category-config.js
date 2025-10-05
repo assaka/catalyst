@@ -790,7 +790,15 @@ export const categoryConfig = {
       type: 'component',
       component: 'LayeredNavigation',
       content: `
-        <div class="space-y-3">
+        <!-- Mobile Filter Toggle - visible only on screens smaller than sm -->
+        <div class="sm:hidden mb-4">
+          <button data-action="toggle-mobile-filters" class="w-full px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+            <span class="filter-toggle-text">Show Filters</span>
+          </button>
+        </div>
+
+        <!-- Filters Container - hidden on mobile unless toggled, always visible on sm+ -->
+        <div class="filters-container hidden sm:block space-y-3">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
@@ -899,6 +907,7 @@ export const categoryConfig = {
               </div>
             </div>
           {{/each}}
+        </div>
         </div>
       `,
       className: '',

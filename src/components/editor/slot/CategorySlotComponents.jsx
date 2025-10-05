@@ -505,10 +505,32 @@ const LayeredNavigation = createSlotComponent({
         button.textContent = isShowingMore ? 'Show Less' : 'Show More';
       };
 
+      // Handle mobile filter toggle
+      const handleMobileFilterToggle = (e) => {
+        const button = e.target.closest('[data-action="toggle-mobile-filters"]');
+        if (!button) return;
+
+        const filtersContainer = containerRef.current.querySelector('.filters-container');
+        const toggleText = button.querySelector('.filter-toggle-text');
+
+        if (!filtersContainer) return;
+
+        const isHidden = filtersContainer.classList.contains('hidden');
+
+        if (isHidden) {
+          filtersContainer.classList.remove('hidden');
+          if (toggleText) toggleText.textContent = 'Hide Filters';
+        } else {
+          filtersContainer.classList.add('hidden');
+          if (toggleText) toggleText.textContent = 'Show Filters';
+        }
+      };
+
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
+      containerRef.current.addEventListener('click', handleMobileFilterToggle);
 
       return () => {
         if (containerRef.current) {
@@ -516,6 +538,7 @@ const LayeredNavigation = createSlotComponent({
           containerRef.current.removeEventListener('input', handlePriceSlider);
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
+          containerRef.current.removeEventListener('click', handleMobileFilterToggle);
         }
       };
     }, [categoryContext, context]);
