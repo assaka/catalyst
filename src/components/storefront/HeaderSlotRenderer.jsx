@@ -436,15 +436,20 @@ export function HeaderSlotRenderer({
     // Debug logging for mobile search visibility
     if (slot.id === 'mobile_search_bar') {
       console.log('[HeaderSlotRenderer] Mobile search bar check:', {
+        viewMode,
+        slotViewMode: slot.viewMode,
         mobileSearchOpen,
         showPermanentMobile,
         searchVisibilitySlot: searchVisibilitySlot?.styles,
-        willShow: mobileSearchOpen || showPermanentMobile
+        willShow: mobileSearchOpen || showPermanentMobile,
+        sortedSlotsCount: sortedSlots.length,
+        sortedSlotsHasMobileSearch: sortedSlots.some(s => s.id === 'mobile_search_bar')
       });
     }
 
     // Hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
     if (slot.id === 'mobile_search_bar' && !mobileSearchOpen && !showPermanentMobile) {
+      console.log('[HeaderSlotRenderer] Hiding mobile search bar');
       return false;
     }
     // Hide mobile_menu unless mobileMenuOpen
