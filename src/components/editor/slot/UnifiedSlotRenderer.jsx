@@ -70,12 +70,6 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Don't show placeholder for intentionally empty content (like conditional price displays)
   let textContent = processedContent;
 
-  // Filter out old placeholder text patterns from database
-  if (textContent && typeof textContent === 'string') {
-    // Remove [Text placeholder] or [text placeholder] patterns
-    textContent = textContent.replace(/\[Text placeholder\]/gi, '').trim();
-  }
-
   // Special handling for price-related slots
   const isPriceSlot = ['product_price', 'product_card_price', 'original_price', 'compare_price'].includes(slot.id);
 
@@ -84,6 +78,18 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
 
   // Check if slot has conditionalDisplay metadata
   const hasConditionalDisplay = slot.metadata?.conditionalDisplay;
+
+  // Debug logging for compare price
+  if (slot.id === 'product_card_compare_price' || slot.id?.includes('compare_price')) {
+    console.log('[TextSlot] Compare price debug:', {
+      slotId: slot.id,
+      processedContent,
+      textContent,
+      isConditional: conditionalSlots.includes(slot.id),
+      hasConditionalDisplay,
+      context
+    });
+  }
 
   if (context === 'editor' && !processedContent) {
     if (isPriceSlot && !conditionalSlots.includes(slot.id)) {
