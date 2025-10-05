@@ -146,6 +146,7 @@ const MiniCartSlot = createSlotComponent({
 const WishlistDropdownSlot = createSlotComponent({
   name: 'WishlistDropdown',
   render: ({ slot, context, headerContext, className, styles }) => {
+    // Same rendering for both editor and storefront - showing just the icon button
     if (context === 'editor') {
       return (
         <Button
@@ -159,7 +160,7 @@ const WishlistDropdownSlot = createSlotComponent({
       );
     }
 
-    // Storefront rendering
+    // Storefront rendering with actual Wishlist component
     return (
       <div className={className} style={styles}>
         <WishlistDropdown />
