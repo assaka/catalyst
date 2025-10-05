@@ -446,6 +446,10 @@ export function HeaderSlotRenderer({
         mobileSearchOpen,
         showPermanentMobile,
         searchVisibilitySlot: searchVisibilitySlot,
+        'searchVisibilitySlot.styles': searchVisibilitySlot?.styles,
+        'searchVisibilitySlot.styles.showPermanentMobile': searchVisibilitySlot?.styles?.showPermanentMobile,
+        allSlotsCount: Object.keys(slots).length,
+        hasSearchVisibilitySlot: !!searchVisibilitySlot,
         willHide: !mobileSearchOpen && !showPermanentMobile,
         willShow: mobileSearchOpen || showPermanentMobile
       });
