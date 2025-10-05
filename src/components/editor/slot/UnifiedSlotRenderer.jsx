@@ -377,19 +377,25 @@ export function UnifiedSlotRenderer({
 
         // Check if slot has conditional display and content is empty
         const hasConditionalDisplay = metadata?.conditionalDisplay;
-        const conditionalSlots = ['product_labels', 'product_card_compare_price', 'compare_price'];
-        const shouldShowPlaceholder = !processedContent && !hasConditionalDisplay && !conditionalSlots.includes(id);
+
+        // Check if slot is conditional (exact match or starts with pattern for instances)
+        const conditionalSlotPatterns = ['product_labels', 'product_card_compare_price', 'compare_price'];
+        const isConditionalSlot = conditionalSlotPatterns.some(pattern =>
+          id === pattern || id.startsWith(pattern + '_')
+        );
+
+        const shouldShowPlaceholder = !processedContent && !hasConditionalDisplay && !isConditionalSlot;
 
         console.log('[UnifiedSlotRenderer] Text slot placeholder check:', {
           id,
           processedContent,
           hasConditionalDisplay,
-          isConditional: conditionalSlots.includes(id),
+          isConditionalSlot,
           shouldShowPlaceholder
         });
 
         // Skip rendering entirely if empty and conditional
-        if (!processedContent && (hasConditionalDisplay || conditionalSlots.includes(id))) {
+        if (!processedContent && (hasConditionalDisplay || isConditionalSlot)) {
           return null;
         }
 
