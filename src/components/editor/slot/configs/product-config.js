@@ -379,14 +379,14 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 6 },
+      position: { col: 1, row: 1 },
       colSpan: {
         default: 12
       },
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        htmlTag: 'h3',
+        htmlTag: 'h1',
         htmlAttributes: {
           'data-product-title': ''
         }
@@ -485,7 +485,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 3 },
       colSpan: {
         default: 12
       },
@@ -497,11 +497,11 @@ export const productConfig = {
       id: 'product_sku',
       type: 'text',
       content: '{{#if product.sku}}SKU: {{product.sku}}{{/if}}',
-      className: 'w-fit text-3xl text-gray-600 italic font-bold',
+      className: 'w-fit text-3xl text-gray-600',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 4 },
       colSpan: {
         default: 12
       },
@@ -519,11 +519,11 @@ export const productConfig = {
       id: 'product_short_description',
       type: 'text',
       content: '{{product.short_description}}',
-      className: 'w-fit text-gray-700 leading-relaxed bg-red-100',
+      className: 'w-fit text-gray-700 leading-relaxed',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 6 },
+      position: { col: 1, row: 5 },
       colSpan: {
         default: 12
       },
