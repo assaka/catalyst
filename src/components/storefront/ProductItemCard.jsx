@@ -322,6 +322,17 @@ const ProductItemCard = ({
 
           <div className="space-y-3 mt-4">
             {/* Stock label */}
+            {(() => {
+              console.log('🔍 Stock Label Debug:', {
+                show_stock_label: settings?.show_stock_label,
+                product_id: product.id,
+                product_name: product.name,
+                infinite_stock: product.infinite_stock,
+                stock_quantity: product.stock_quantity,
+                enable_inventory: settings?.enable_inventory
+              });
+              return null;
+            })()}
             {settings?.show_stock_label && (
               <div className="mb-2">
                 {(() => {
