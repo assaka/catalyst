@@ -571,6 +571,17 @@ export default function ThemeLayout() {
                                     />
                                 </div>
                             </div>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="show_stock_label">Show Stock Label</Label>
+                                    <p className="text-sm text-gray-500">Display stock status (In Stock/Out of Stock) above the Add to Cart button.</p>
+                                </div>
+                                <Switch
+                                    id="show_stock_label"
+                                    checked={!!store.settings.show_stock_label}
+                                    onCheckedChange={(c) => handleSettingsChange('show_stock_label', c)}
+                                />
+                            </div>
 
                             <Separator />
 
