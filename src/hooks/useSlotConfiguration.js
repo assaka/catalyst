@@ -1164,12 +1164,43 @@ export function useSlotConfiguration({
 
     // Prevent moving critical layout containers
     if (draggedSlotId === 'main_layout') {
+      console.warn('⚠️ Cannot move main_layout');
+      return null;
+    }
+
+    // Prevent circular references - a slot cannot be its own parent
+    if (draggedSlotId === targetSlotId) {
+      console.warn('⚠️ Cannot make a slot its own parent');
+      return null;
+    }
+
+    // Prevent moving a container into one of its own children
+    const isChildOf = (potentialChildId, potentialParentId, slots) => {
+      let currentId = potentialChildId;
+      const visited = new Set();
+
+      while (currentId && !visited.has(currentId)) {
+        if (currentId === potentialParentId) {
+          return true;
+        }
+        visited.add(currentId);
+        currentId = slots[currentId]?.parentId;
+      }
+      return false;
+    };
+
+    if (isChildOf(targetSlotId, draggedSlotId, slots)) {
+      console.warn('⚠️ Cannot move a container into its own child:', {
+        draggedSlotId,
+        targetSlotId
+      });
       return null;
     }
 
     // Also prevent moving other root containers into wrong places
     if (['header_container', 'content_area', 'sidebar_area'].includes(draggedSlotId) &&
         dropPosition !== 'after' && dropPosition !== 'before') {
+      console.warn('⚠️ Cannot move root container inside another slot');
       return null;
     }
 
