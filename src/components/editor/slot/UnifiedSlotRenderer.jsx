@@ -720,11 +720,8 @@ export function UnifiedSlotRenderer({
 
   // Filter mobile search and menu based on state (storefront behavior)
   const finalSlots = sortedSlots.filter((slot) => {
-    // Check if permanent mobile search is enabled
-    // slots can be either an array or an object with slot IDs as keys
-    const allSlots = Array.isArray(slots) ? slots : Object.values(slots);
-    const searchVisibilitySlot = allSlots.find(s => s?.id === 'search_visibility');
-    const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
+    // Check if permanent mobile search is enabled from store settings
+    const showPermanentMobile = headerContext?.settings?.show_permanent_search || false;
 
     // In storefront context, hide mobile_search_bar unless mobileSearchOpen OR showPermanentMobile
     if (context === 'storefront' && slot.id === 'mobile_search_bar' && !headerContext?.mobileSearchOpen && !showPermanentMobile) {

@@ -514,17 +514,9 @@ const MobileSearchButtonSlot = createSlotComponent({
   render: ({ slot, context, headerContext, allSlots }) => {
     const { mobileSearchOpen, setMobileSearchOpen, settings } = headerContext || {};
 
-    // In storefront, hide if permanent search is enabled
-    if (context === 'storefront') {
-      // Check if permanent mobile search is enabled from slot configuration
-      const slotsArray = allSlots ? Object.values(allSlots) : [];
-      const searchVisibilitySlot = slotsArray.find(s => s?.id === 'search_visibility');
-      const showPermanentMobile = searchVisibilitySlot?.styles?.showPermanentMobile || false;
-
-      // Don't show toggle button if search is permanently visible
-      if (showPermanentMobile) {
-        return null;
-      }
+    // In storefront, hide if permanent search is enabled (from store settings)
+    if (context === 'storefront' && settings?.show_permanent_search) {
+      return null;
     }
 
     return (
