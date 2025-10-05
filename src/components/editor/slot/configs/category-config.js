@@ -103,6 +103,31 @@ export const categoryConfig = {
       metadata: { hierarchical: true }
     },
 
+    // Mobile filter toggle button - only visible on mobile
+    mobile_filter_toggle: {
+      id: 'mobile_filter_toggle',
+      type: 'text',
+      content: `
+        <button data-action="toggle-mobile-filters" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 mb-4">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+          </svg>
+          <span class="filter-toggle-text font-medium">Filters</span>
+        </button>
+      `,
+      className: 'sm:hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'products_container',
+      position: { col: 1, row: 0 },
+      colSpan: { grid: 12, list: 12 },
+      viewMode: ['grid', 'list'],
+      metadata: {
+        hierarchical: false,
+        displayName: 'Mobile Filter Toggle'
+      }
+    },
+
     // Sorting controls and product count
     sorting_controls: {
       id: 'sorting_controls',
@@ -790,16 +815,6 @@ export const categoryConfig = {
       type: 'component',
       component: 'LayeredNavigation',
       content: `
-        <!-- Mobile Filter Toggle Button - visible only on screens smaller than sm -->
-        <div class="sm:hidden mb-4">
-          <button data-action="toggle-mobile-filters" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-            </svg>
-            <span class="filter-toggle-text font-medium">Filters</span>
-          </button>
-        </div>
-
         <!-- Mobile Filter Overlay - hidden by default, shown when toggled -->
         <div class="filters-overlay fixed inset-0 bg-black bg-opacity-50 z-50 hidden sm:hidden" data-filter-overlay>
           <div class="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out" data-filter-drawer>

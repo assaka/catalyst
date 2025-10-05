@@ -505,13 +505,14 @@ const LayeredNavigation = createSlotComponent({
         button.textContent = isShowingMore ? 'Show Less' : 'Show More';
       };
 
-      // Handle mobile filter toggle (overlay)
+      // Handle mobile filter toggle (overlay) - uses document-level search since button might be outside this component
       const handleMobileFilterToggle = (e) => {
         const button = e.target.closest('[data-action="toggle-mobile-filters"]');
         if (!button) return;
 
-        const overlay = containerRef.current.querySelector('[data-filter-overlay]');
-        const drawer = containerRef.current.querySelector('[data-filter-drawer]');
+        // Search entire document for overlay since button is in a different slot
+        const overlay = document.querySelector('[data-filter-overlay]');
+        const drawer = document.querySelector('[data-filter-drawer]');
 
         if (!overlay || !drawer) return;
 
@@ -554,8 +555,10 @@ const LayeredNavigation = createSlotComponent({
       containerRef.current.addEventListener('input', handlePriceSlider);
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
-      containerRef.current.addEventListener('click', handleMobileFilterToggle);
-      containerRef.current.addEventListener('click', handleMobileFilterClose);
+
+      // Attach mobile filter toggle to document since button is in a different slot
+      document.addEventListener('click', handleMobileFilterToggle);
+      document.addEventListener('click', handleMobileFilterClose);
 
       return () => {
         if (containerRef.current) {
@@ -563,9 +566,10 @@ const LayeredNavigation = createSlotComponent({
           containerRef.current.removeEventListener('input', handlePriceSlider);
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
-          containerRef.current.removeEventListener('click', handleMobileFilterToggle);
-          containerRef.current.removeEventListener('click', handleMobileFilterClose);
         }
+        // Clean up document-level listeners
+        document.removeEventListener('click', handleMobileFilterToggle);
+        document.removeEventListener('click', handleMobileFilterClose);
         // Clean up body scroll on unmount
         document.body.style.overflow = '';
       };
