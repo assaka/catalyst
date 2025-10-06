@@ -91,20 +91,21 @@ export default function ThemeLayout() {
                     rows: fullStore?.settings?.product_grid?.rows ?? 4
                 },
                 theme: {
-                    ...((fullStore?.settings || {}).theme || {}),
-                    // Defaults - only applied if not already set
-                    primary_button_color: (fullStore?.settings?.theme?.primary_button_color || '#007bff'),
-                    secondary_button_color: (fullStore?.settings?.theme?.secondary_button_color || '#6c757d'),
-                    add_to_cart_button_color: (fullStore?.settings?.theme?.add_to_cart_button_color || '#28a745'),
-                    view_cart_button_color: (fullStore?.settings?.theme?.view_cart_button_color || '#17a2b8'),
-                    checkout_button_color: (fullStore?.settings?.theme?.checkout_button_color || '#007bff'),
-                    place_order_button_color: (fullStore?.settings?.theme?.place_order_button_color || '#28a745'),
-                    font_family: (fullStore?.settings?.theme?.font_family || 'Inter'),
-                    // Product Tabs Styling - with defaults
-                    product_tabs_title_color: (fullStore?.settings?.theme?.product_tabs_title_color || '#DC2626'), // red-600
-                    product_tabs_title_size: (fullStore?.settings?.theme?.product_tabs_title_size || '1.875rem'), // text-3xl
-                    product_tabs_content_bg: (fullStore?.settings?.theme?.product_tabs_content_bg || '#EFF6FF'), // blue-50
-                    product_tabs_attribute_label_color: (fullStore?.settings?.theme?.product_tabs_attribute_label_color || '#16A34A'), // green-600
+                    // Default values
+                    primary_button_color: '#007bff',
+                    secondary_button_color: '#6c757d',
+                    add_to_cart_button_color: '#28a745',
+                    view_cart_button_color: '#17a2b8',
+                    checkout_button_color: '#007bff',
+                    place_order_button_color: '#28a745',
+                    font_family: 'Inter',
+                    // Product Tabs Styling defaults
+                    product_tabs_title_color: '#DC2626', // red-600
+                    product_tabs_title_size: '1.875rem', // text-3xl
+                    product_tabs_content_bg: '#EFF6FF', // blue-50
+                    product_tabs_attribute_label_color: '#16A34A', // green-600
+                    // Override with existing settings if they exist
+                    ...((fullStore?.settings || {}).theme || {})
                 },
             };
             
