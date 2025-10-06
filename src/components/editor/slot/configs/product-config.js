@@ -165,27 +165,27 @@ export const productConfig = {
             </div>
 
             <!-- THUMBNAILS BELOW -->
-            <div class="flex flex-row space-x-2 overflow-x-auto w-full">
+            <div class="flex flex-row space-x-2 overflow-x-auto w-full scrollbar-hide scroll-smooth snap-x snap-mandatory">
               {{#if product.images}}
                 {{#each product.images}}
                   {{#if @index < 10}}
-                    <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                    <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all snap-start">
                       <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
                     </button>
                   {{/if}}
                 {{/each}}
               {{else}}
                 <!-- Editor demo thumbnails -->
-                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                   <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
                 </button>
-                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                   <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
                 </button>
-                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                   <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
                 </button>
-                <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                   <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
                 </button>
               {{/if}}
@@ -202,27 +202,27 @@ export const productConfig = {
               <div class="flex flex-col sm:flex-row-reverse gap-4 w-full items-start">
             {{/if}}
               <!-- THUMBNAILS -->
-              <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible">
+              <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible scrollbar-hide scroll-smooth snap-x sm:snap-none snap-mandatory">
                 {{#if product.images}}
                   {{#each product.images}}
                     {{#if @index < 10}}
-                      <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                      <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all snap-start">
                         <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
                       </button>
                     {{/if}}
                   {{/each}}
                 {{else}}
                   <!-- Editor demo thumbnails -->
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
                   </button>
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
                   </button>
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
                   </button>
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
                   </button>
                 {{/if}}
@@ -275,27 +275,27 @@ export const productConfig = {
               <div class="flex flex-col sm:flex-row gap-4 w-full items-start">
             {{/if}}
               <!-- THUMBNAILS -->
-              <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible">
+              <div class="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 w-full sm:w-20 lg:w-24 flex-shrink-0 overflow-x-auto sm:overflow-x-visible scrollbar-hide scroll-smooth snap-x sm:snap-none snap-mandatory">
                 {{#if product.images}}
                   {{#each product.images}}
                     {{#if @index < 10}}
-                      <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                      <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all snap-start">
                         <img src="{{this}}" alt="Thumbnail {{@index}}" class="w-full h-full object-cover" />
                       </button>
                     {{/if}}
                   {{/each}}
                 {{else}}
                   <!-- Editor demo thumbnails -->
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=1" alt="Demo 1" class="w-full h-full object-cover" />
                   </button>
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=2" alt="Demo 2" class="w-full h-full object-cover" />
                   </button>
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=3" alt="Demo 3" class="w-full h-full object-cover" />
                   </button>
-                  <button class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
+                  <button class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all">
                     <img src="https://placehold.co/100x100?text=4" alt="Demo 4" class="w-full h-full object-cover" />
                   </button>
                 {{/if}}
