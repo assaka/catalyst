@@ -657,6 +657,7 @@ export function UnifiedSlotRenderer({
             slots={slots}
             parentId={id}
             viewMode={viewMode}
+            viewportMode={viewportMode}
             context={context}
             productData={productData}
             mode={mode}
