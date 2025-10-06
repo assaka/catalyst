@@ -37,7 +37,7 @@ export const productConfig = {
       id: 'main_layout',
       type: 'grid',
       content: '',
-      className: 'main-layout max-w-6xl mx-auto px-4 py-8',
+      className: 'main-layout max-w-6xl mx-auto sm:px-4 py-8',
       styles: {},
       parentId: null,
       layout: 'grid',
@@ -831,9 +831,9 @@ export const productConfig = {
                   class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
                   data-action="toggle-accordion"
                   data-accordion-index="{{@index}}">
-                  <span class="font-medium text-sm text-gray-900">{{this.title}}</span>
+                  <span class="font-medium text-3xl text-red-600">{{this.title}}</span>
                   <svg
-                    class="w-5 h-5 text-gray-500 transition-transform duration-200 accordion-chevron"
+                    class="w-5 h-5 text-red-600 transition-transform duration-200 accordion-chevron"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24">

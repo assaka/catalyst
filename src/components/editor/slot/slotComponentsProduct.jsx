@@ -317,7 +317,7 @@ export function ProductTabsSlot({ productContext, content }) {
 
                 {/* Accordion Content */}
                 {openAccordions.includes(index) && (
-                  <div className="p-4 pt-0 border-t border-gray-200">
+                  <div className="sm:p-4 pt-0 border-t border-gray-200">
                     {renderTabContent(tab)}
                   </div>
                 )}
