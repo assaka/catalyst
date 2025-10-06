@@ -43,6 +43,7 @@ const BreadcrumbsSlotComponent = createSlotComponent({
       activeItemColor: storeTheme.breadcrumb_active_item_color || slotMetadata.activeItemColor || '#111827',
       separatorColor: storeTheme.breadcrumb_separator_color || slotMetadata.separatorColor || '#9CA3AF',
       fontSize: storeTheme.breadcrumb_font_size || slotMetadata.fontSize || '0.875rem',
+      mobileFontSize: storeTheme.breadcrumb_mobile_font_size || slotMetadata.mobileFontSize || '0.75rem',
       fontWeight: storeTheme.breadcrumb_font_weight || slotMetadata.fontWeight || '400'
     };
 

@@ -111,6 +111,7 @@ export default function ThemeLayout() {
                     breadcrumb_active_item_color: '#111827', // gray-900
                     breadcrumb_separator_color: '#9CA3AF', // gray-400
                     breadcrumb_font_size: '0.875rem', // text-sm
+                    breadcrumb_mobile_font_size: '0.75rem', // text-xs
                     breadcrumb_font_weight: '400', // font-normal
                     // Override with existing settings if they exist
                     ...((fullStore?.settings || {}).theme || {})
@@ -650,9 +651,9 @@ export default function ThemeLayout() {
                             <div className="space-y-4">
                                 <Label className="text-base font-medium">Typography</Label>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <Label htmlFor="breadcrumb_font_size">Font Size</Label>
+                                        <Label htmlFor="breadcrumb_font_size">Font Size (Desktop)</Label>
                                         <Select
                                             value={store.settings.theme?.breadcrumb_font_size || '0.875rem'}
                                             onValueChange={(value) => handleThemeChange('breadcrumb_font_size', value)}
@@ -666,6 +667,24 @@ export default function ThemeLayout() {
                                                 <SelectItem value="1rem">Medium (16px)</SelectItem>
                                                 <SelectItem value="1.125rem">Large (18px)</SelectItem>
                                                 <SelectItem value="1.25rem">Extra Large (20px)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="breadcrumb_mobile_font_size">Font Size (Mobile)</Label>
+                                        <Select
+                                            value={store.settings.theme?.breadcrumb_mobile_font_size || '0.75rem'}
+                                            onValueChange={(value) => handleThemeChange('breadcrumb_mobile_font_size', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0.625rem">Extra Small (10px)</SelectItem>
+                                                <SelectItem value="0.75rem">Small (12px)</SelectItem>
+                                                <SelectItem value="0.875rem">Medium (14px)</SelectItem>
+                                                <SelectItem value="1rem">Large (16px)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
