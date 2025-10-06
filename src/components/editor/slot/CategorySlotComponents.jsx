@@ -19,6 +19,10 @@ const CategoryBreadcrumbs = createSlotComponent({
     const { slot, categoryContext } = props;
     const { category, store, categories = [], settings = {} } = categoryContext || {};
 
+    // Debug: Log what we're receiving
+    console.log('🍞 CategoryBreadcrumbs - slot metadata:', slot?.metadata);
+    console.log('🍞 CategoryBreadcrumbs - full slot:', slot);
+
     // Get colors from slot metadata (set in category-config.js)
     const itemTextColor = slot?.metadata?.itemTextColor || '#A855F7';
     const itemHoverColor = slot?.metadata?.itemHoverColor || '#9333EA';
@@ -26,6 +30,8 @@ const CategoryBreadcrumbs = createSlotComponent({
     const separatorColor = slot?.metadata?.separatorColor || '#9CA3AF';
     const fontSize = slot?.metadata?.fontSize || '0.875rem';
     const fontWeight = slot?.metadata?.fontWeight || '400';
+
+    console.log('🍞 CategoryBreadcrumbs - using colors:', { itemTextColor, itemHoverColor, activeItemColor });
 
     // Build breadcrumbs
     const breadcrumbItems = buildBreadcrumbs('category', category, store?.slug || store?.code, categories, settings);

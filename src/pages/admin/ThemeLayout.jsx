@@ -116,11 +116,6 @@ export default function ThemeLayout() {
                 settings
             };
 
-            console.log('🎨 ThemeLayout - Initial store state:', {
-                theme: finalStore.settings.theme,
-                product_tabs_title_color: finalStore.settings.theme?.product_tabs_title_color
-            });
-
             setStore(finalStore);
         } catch (error) {
             console.error("Failed to load store:", error);
@@ -339,11 +334,6 @@ export default function ThemeLayout() {
         setSaving(true);
 
         try {
-            console.log('💾 ThemeLayout - Saving settings:', {
-                theme: store.settings.theme,
-                product_tabs_title_color: store.settings.theme?.product_tabs_title_color
-            });
-
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
