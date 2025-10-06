@@ -398,14 +398,9 @@ const UnifiedSlotsEditor = ({
   return (
     <div className={`min-h-screen bg-gray-50 ${
       isSidebarVisible ? 'pr-80' : ''
-    } ${currentViewport !== 'desktop' ? 'overflow-x-hidden' : ''}`}>
+    }`}>
       {/* Main Editor Area */}
-      <div className="flex flex-col" style={{
-        maxWidth: currentViewport === 'mobile' ? '375px' :
-                  currentViewport === 'tablet' ? '768px' :
-                  '100%',
-        margin: currentViewport !== 'desktop' ? '0 auto' : undefined
-      }}>
+      <div className="flex flex-col">
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">
@@ -492,21 +487,18 @@ const UnifiedSlotsEditor = ({
           />
 
           {!showPreview && (
-            <div className={`${currentViewport === 'desktop' ? 'max-w-7xl mx-auto' : 'w-full'} px-4 sm:px-6 lg:px-8`}>
-              <EditorToolbar
-                showSlotBorders={showSlotBorders}
-                onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
-                onResetLayout={() => setShowResetModal(true)}
-                onShowCode={() => setShowCodeModal(true)}
-                onAddSlot={() => setShowAddSlotModal(true)}
-              />
-            </div>
+            <EditorToolbar
+              showSlotBorders={showSlotBorders}
+              onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
+              onResetLayout={() => setShowResetModal(true)}
+              onShowCode={() => setShowCodeModal(true)}
+              onAddSlot={() => setShowAddSlotModal(true)}
+            />
           )}
 
           {/* AI Enhancement Panel */}
           {aiEnhancementMode && screenshotAnalysis && (
-            <div className={`${currentViewport === 'desktop' ? 'max-w-7xl mx-auto' : 'w-full'} px-4 sm:px-6 lg:px-8 mb-4`}>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-blue-900">AI Enhancement Ready</h3>
                   <Button
@@ -529,14 +521,13 @@ const UnifiedSlotsEditor = ({
                   </label>
                 </div>
               </div>
-            </div>
           )}
 
           <ResponsiveContainer
             viewport={currentViewport}
             className="bg-white"
           >
-            <div className={`${currentViewport === 'desktop' ? 'max-w-7xl mx-auto' : 'w-full'} px-4 sm:px-6 lg:px-8 pb-12`}>
+            <div className="px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}
               <div id="flash-messages-area"></div>
 
