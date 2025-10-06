@@ -183,6 +183,16 @@ export default function ProductDetail() {
           setConfigLoaded(true);
 
         } else {
+          // Fallback to product-config.js
+          const fallbackConfig = {
+            slots: { ...productConfig.slots },
+            metadata: {
+              ...productConfig.metadata,
+              fallbackUsed: true,
+              fallbackReason: `No valid published configuration`
+            }
+          };
+
           setProductLayoutConfig(fallbackConfig);
           setConfigLoaded(true);
         }
