@@ -21,6 +21,12 @@ export function CategorySlotRenderer({
   viewMode = 'grid',
   categoryContext = {}
 }) {
+  // Debug: Log all slots being rendered
+  console.log('🎯 CategorySlotRenderer - all slots:', Object.keys(slots || {}));
+  console.log('🎯 CategorySlotRenderer - breadcrumbs_content exists?', !!slots?.breadcrumbs_content);
+  if (slots?.breadcrumbs_content) {
+    console.log('🎯 CategorySlotRenderer - breadcrumbs_content slot:', slots.breadcrumbs_content);
+  }
 
   // Helper function to generate dynamic grid classes
   const getDynamicGridClasses = (slot) => {
