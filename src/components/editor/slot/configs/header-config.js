@@ -243,17 +243,17 @@ export const headerConfig = {
       id: 'mobile_actions',
       type: 'container',
       content: '',
-      className: 'flex items-center space-x-1',
+      className: 'flex items-center space-x-1 md:hidden',
       parentClassName: '',
       styles: {},
       parentId: 'actions_section',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Actions Container',
-        note: 'Visibility controlled by viewMode filter, not CSS media queries'
+        note: 'Shows in editor for both views but only on mobile in storefront via md:hidden'
       }
     },
 
@@ -274,7 +274,7 @@ export const headerConfig = {
       parentId: 'mobile_actions',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 4 },
-      viewMode: ['mobile'],
+      viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Search Toggle Button',
@@ -299,7 +299,7 @@ export const headerConfig = {
       parentId: 'mobile_actions',
       position: { col: 2, row: 1 },
       colSpan: { mobile: 4 },
-      viewMode: ['mobile'],
+      viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile User Menu Button',
@@ -318,7 +318,7 @@ export const headerConfig = {
       parentId: 'mobile_actions',
       position: { col: 3, row: 1 },
       colSpan: { mobile: 4 },
-      viewMode: ['mobile'],
+      viewMode: ['mobile', 'desktop'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Wishlist',
