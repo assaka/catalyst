@@ -562,6 +562,14 @@ const CategorySlotsEditor = ({
   const storeSettings = storeContext?.settings || null;
   const filterableAttributes = storeContext?.filterableAttributes || [];
 
+  // Debug what we're getting from useStore
+  console.log('🔍 CategorySlotsEditor - storeSettings:', {
+    hasSettings: !!storeSettings,
+    hasTheme: !!storeSettings?.theme,
+    themeKeys: storeSettings?.theme ? Object.keys(storeSettings.theme) : [],
+    theme: storeSettings?.theme
+  });
+
   // Create editor config with real filterableAttributes and storeSettings from database (same as storefront)
   const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes, storeSettings);
 
