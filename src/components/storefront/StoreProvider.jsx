@@ -340,10 +340,19 @@ export const StoreProvider = ({ children }) => {
           place_order_button_color: '#28a745',
           font_family: 'Inter',
           // Product Tabs defaults
-          product_tabs_title_color: '#DC2626', // red-600
-          product_tabs_title_size: '1.875rem', // text-3xl
-          product_tabs_content_bg: '#EFF6FF', // blue-50
-          product_tabs_attribute_label_color: '#16A34A', // green-600
+          product_tabs_title_color: '#DC2626',
+          product_tabs_title_size: '1.875rem',
+          product_tabs_content_bg: '#EFF6FF',
+          product_tabs_attribute_label_color: '#16A34A',
+          // Breadcrumb defaults
+          breadcrumb_show_home_icon: true,
+          breadcrumb_item_text_color: '#6B7280',
+          breadcrumb_item_hover_color: '#374151',
+          breadcrumb_active_item_color: '#111827',
+          breadcrumb_separator_color: '#9CA3AF',
+          breadcrumb_font_size: '0.875rem',
+          breadcrumb_mobile_font_size: '0.75rem',
+          breadcrumb_font_weight: '400',
           // Merge with existing settings (existing values take precedence)
           ...(selectedStore.settings?.theme || {})
         },
