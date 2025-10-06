@@ -122,10 +122,10 @@ export const categoryConfig = {
           <div class="mb-4">
             <div class="flex flex-wrap gap-2">
               {{#each activeFilters}}
-                <div class="inline-flex items-center px-3 py-1 rounded-full text-xs"
-                     style="background-color: {{../filterOptionStyles.activeFilterBgColor}}; color: {{../filterOptionStyles.activeFilterTextColor}};">
-                  <span>{{this.label}}: {{this.value}}</span>
-                  <button class="text-lg ml-2 hover:opacity-80 transition-opacity"
+                <div class="inline-flex items-center px-3 py-1.5 rounded text-xs font-medium border"
+                     style="background-color: {{../filterOptionStyles.activeFilterBgColor}}; color: {{../filterOptionStyles.activeFilterTextColor}}; border-color: {{../filterOptionStyles.activeFilterTextColor}};">
+                  <span>{{this.value}}</span>
+                  <button class="text-base ml-1.5 hover:opacity-70 transition-opacity font-bold"
                           style="color: {{../filterOptionStyles.activeFilterTextColor}};"
                           data-action="remove-filter"
                           data-filter-type="{{this.type}}"
