@@ -41,6 +41,7 @@ const BreadcrumbsSlotComponent = createSlotComponent({
       hasSettings: !!settings,
       hasTheme: !!settings?.theme,
       themeKeys: settings?.theme ? Object.keys(settings.theme) : [],
+      fullTheme: settings?.theme,
       breadcrumbColors: {
         itemTextColor: storeTheme.breadcrumb_item_text_color,
         itemHoverColor: storeTheme.breadcrumb_item_hover_color,
