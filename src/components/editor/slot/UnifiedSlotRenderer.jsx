@@ -317,6 +317,16 @@ export function UnifiedSlotRenderer({
     // Handle viewport-aware responsive classes in editor mode
     // Convert Tailwind breakpoint classes (sm:, md:, lg:) to viewport-based visibility
     if (context === 'editor' && processedClassName) {
+      // Debug logging for mobile_filter_toggle
+      if (id === 'mobile_filter_toggle') {
+        console.log('🔍 mobile_filter_toggle rendering:', {
+          viewportMode,
+          originalClassName: className,
+          processedClassName,
+          context
+        });
+      }
+
       // sm:hidden means "hidden on small screens and up" (mobile should show, desktop should hide)
       // In editor with mobile viewport, we should show it; in desktop viewport, we should hide it
       if (processedClassName.includes('sm:hidden')) {
