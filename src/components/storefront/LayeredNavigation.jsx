@@ -166,17 +166,6 @@ export default function LayeredNavigation({
     const hasActiveFilters = Object.keys(selectedFilters).length > 0 ||
                            (priceRange[0] !== minPrice || priceRange[1] !== maxPrice);
 
-    // Debug logging
-    console.log('🔍 LayeredNavigation - Active Filters Debug:', {
-        hasActiveFilters,
-        selectedFilters,
-        priceRange,
-        minPrice,
-        maxPrice,
-        showActiveFilters,
-        isFilterVisible
-    });
-
 
     // FIXED: Extract ALL attribute values from products including all options
     const filterOptions = useMemo(() => {

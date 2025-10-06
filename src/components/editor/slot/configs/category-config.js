@@ -117,6 +117,28 @@ export const categoryConfig = {
           <span class="filter-toggle-text font-medium">Filters</span>
         </button>
 
+        <!-- Active Filters on Mobile - Below Filter Button -->
+        {{#if activeFilters.length}}
+          <div class="mb-4">
+            <div class="flex flex-wrap gap-2">
+              {{#each activeFilters}}
+                <div class="inline-flex items-center px-3 py-1 rounded-full text-xs"
+                     style="background-color: {{../filterOptionStyles.activeFilterBgColor}}; color: {{../filterOptionStyles.activeFilterTextColor}};">
+                  <span>{{this.label}}: {{this.value}}</span>
+                  <button class="text-lg ml-2 hover:opacity-80 transition-opacity"
+                          style="color: {{../filterOptionStyles.activeFilterTextColor}};"
+                          data-action="remove-filter"
+                          data-filter-type="{{this.type}}"
+                          data-attribute-code="{{this.attributeCode}}"
+                          data-filter-value="{{this.value}}">
+                    ×
+                  </button>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        {{/if}}
+
         <!-- Mobile Filter Overlay -->
         <div class="filters-overlay fixed inset-0 bg-black bg-opacity-50 z-50 hidden" data-filter-overlay>
           <div class="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out" data-filter-drawer>

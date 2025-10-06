@@ -551,10 +551,37 @@ const LayeredNavigation = createSlotComponent({
         }, 300);
       };
 
+      // Handle remove filter from mobile active filters
+      const handleRemoveFilter = (e) => {
+        const removeBtn = e.target.closest('[data-action="remove-filter"]');
+        if (!removeBtn || !categoryContext?.handleFilterChange) return;
+
+        const filterType = removeBtn.getAttribute('data-filter-type');
+        const filterValue = removeBtn.getAttribute('data-filter-value');
+        const attributeCode = removeBtn.getAttribute('data-attribute-code');
+
+        const currentFilters = categoryContext.selectedFilters || {};
+
+        if (filterType === 'attribute' && attributeCode) {
+          const currentValues = currentFilters[attributeCode] || [];
+          const newValues = currentValues.filter(v => v !== filterValue);
+
+          const newFilters = { ...currentFilters };
+          if (newValues.length > 0) {
+            newFilters[attributeCode] = newValues;
+          } else {
+            delete newFilters[attributeCode];
+          }
+
+          categoryContext.handleFilterChange(newFilters);
+        }
+      };
+
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
+      containerRef.current.addEventListener('click', handleRemoveFilter);
 
       // Attach mobile filter toggle to document since button is in a different slot
       document.addEventListener('click', handleMobileFilterToggle);
@@ -566,6 +593,7 @@ const LayeredNavigation = createSlotComponent({
           containerRef.current.removeEventListener('input', handlePriceSlider);
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
+          containerRef.current.removeEventListener('click', handleRemoveFilter);
         }
         // Clean up document-level listeners
         document.removeEventListener('click', handleMobileFilterToggle);
