@@ -13,7 +13,6 @@ import aiEnhancementService from '@/services/aiEnhancementService';
 import { useStore } from '@/components/storefront/StoreProvider';
 import {
   CategoryHeaderSlot,
-  CategoryBreadcrumbsSlot,
   CategoryActiveFiltersSlot,
   CategoryFiltersSlot,
   CategoryProductsSlot,
@@ -28,6 +27,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 // Import component registry to render components consistently with storefront
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import '@/components/editor/slot/CategorySlotComponents';
+import '@/components/editor/slot/BreadcrumbsSlotComponent';
 // Create default slots function for category layout
 const createDefaultSlots = async () => {
   try {
@@ -393,23 +393,8 @@ const categoryCustomSlotRenderer = (slot, context) => {
     );
   }
 
-  // Handle breadcrumbs content specifically
-  if (slot.id === 'breadcrumbs_content') {
-    return (
-      <CategoryBreadcrumbsSlot
-        categoryData={sampleCategoryContext}
-        categoryContext={sampleCategoryContext}
-        content={slot.content}
-        className={slot.className}
-        styles={slot.styles}
-        config={{ viewMode: context?.viewMode }}
-      />
-    );
-  }
-
   const componentMap = {
-    // Breadcrumbs and headers
-    'breadcrumbs_content': CategoryBreadcrumbsSlot,
+    // Headers
     'category_title': CategoryHeaderSlot,
     'category_header': CategoryHeaderSlot,
     'category_description': CategoryHeaderSlot,
@@ -477,7 +462,6 @@ const createCategoryEditorConfig = (filterableAttributes) => ({
   ],
   slotComponents: {
     CategoryHeaderSlot,
-    CategoryBreadcrumbsSlot,
     CategoryActiveFiltersSlot,
     CategoryFiltersSlot,
     CategoryProductsSlot,

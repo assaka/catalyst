@@ -69,7 +69,7 @@ export const productConfig = {
     breadcrumbs: {
       id: 'breadcrumbs',
       type: 'component',
-      component: 'ProductBreadcrumbs',
+      component: 'Breadcrumbs',
       content: '',
       className: '',
       parentClassName: '',
@@ -83,13 +83,14 @@ export const productConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Product Breadcrumb Navigation',
-        // All breadcrumb styling - edit these colors!
-        itemTextColor: '#22C55E',      // green for parent category links
-        itemHoverColor: '#16A34A',     // darker green on hover
-        activeItemColor: '#DC2626',    // red for current product
-        separatorColor: '#9CA3AF',     // gray for separators
+        // Breadcrumb configuration
+        showHomeIcon: true,
+        itemTextColor: '#22C55E',      // Link color
+        itemHoverColor: '#16A34A',     // Hover color
+        activeItemColor: '#DC2626',    // Current page color
+        separatorColor: '#9CA3AF',     // Separator color
         fontSize: '0.875rem',
-        fontWeight: '700'              // bold
+        fontWeight: '700'
       }
     },
 

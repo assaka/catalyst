@@ -30,6 +30,7 @@ import CmsBlockRendererComponent from '@/components/storefront/CmsBlockRenderer'
 // Import category and header slot components to register them
 import './CategorySlotComponents.jsx';
 import './HeaderSlotComponents.jsx';
+import './BreadcrumbsSlotComponent.jsx';
 
 /**
  * QuantitySelector - Unified quantity selector component

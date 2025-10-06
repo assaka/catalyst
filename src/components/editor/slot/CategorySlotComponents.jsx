@@ -9,146 +9,6 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
-import { Home } from 'lucide-react';
-import { buildBreadcrumbs } from '@/utils/breadcrumbUtils';
-
-// Simple Category Breadcrumbs Component - reads colors from category-config.js metadata
-const CategoryBreadcrumbs = createSlotComponent({
-  name: 'CategoryBreadcrumbs',
-  render: (props) => {
-    const { slot, categoryContext } = props;
-    const { category, store, categories = [], settings = {} } = categoryContext || {};
-
-    // Debug: Log what we're receiving
-    console.log('🍞 CategoryBreadcrumbs - slot metadata:', slot?.metadata);
-    console.log('🍞 CategoryBreadcrumbs - full slot:', slot);
-
-    // Get colors from slot metadata (set in category-config.js)
-    const itemTextColor = slot?.metadata?.itemTextColor || '#A855F7';
-    const itemHoverColor = slot?.metadata?.itemHoverColor || '#9333EA';
-    const activeItemColor = slot?.metadata?.activeItemColor || '#DC2626';
-    const separatorColor = slot?.metadata?.separatorColor || '#9CA3AF';
-    const fontSize = slot?.metadata?.fontSize || '0.875rem';
-    const fontWeight = slot?.metadata?.fontWeight || '400';
-
-    console.log('🍞 CategoryBreadcrumbs - using colors:', { itemTextColor, itemHoverColor, activeItemColor });
-
-    // Build breadcrumbs
-    const breadcrumbItems = buildBreadcrumbs('category', category, store?.slug || store?.code, categories, settings);
-
-    if (!breadcrumbItems || breadcrumbItems.length === 0) return null;
-
-    return (
-      <nav className="flex items-center space-x-2 text-sm mb-6">
-        {/* Home Link */}
-        <a
-          href="/"
-          style={{ color: itemTextColor, fontSize, fontWeight }}
-          className="flex items-center hover:underline"
-          onMouseEnter={(e) => e.target.style.color = itemHoverColor}
-          onMouseLeave={(e) => e.target.style.color = itemTextColor}
-        >
-          <Home className="w-4 h-4 mr-1" />
-          Home
-        </a>
-        <span style={{ color: separatorColor, fontSize, margin: '0 0.5rem' }}>/</span>
-
-        {/* Breadcrumb Items */}
-        {breadcrumbItems.map((item, index) => (
-          <Fragment key={index}>
-            {item.url ? (
-              <a
-                href={item.url}
-                style={{ color: itemTextColor, fontSize, fontWeight }}
-                className="hover:underline whitespace-nowrap"
-                onMouseEnter={(e) => e.target.style.color = itemHoverColor}
-                onMouseLeave={(e) => e.target.style.color = itemTextColor}
-              >
-                {item.name}
-              </a>
-            ) : (
-              <span
-                style={{ color: activeItemColor, fontSize, fontWeight: '500' }}
-                className="whitespace-nowrap"
-              >
-                {item.name}
-              </span>
-            )}
-            {index < breadcrumbItems.length - 1 && (
-              <span style={{ color: separatorColor, fontSize, margin: '0 0.5rem' }}>/</span>
-            )}
-          </Fragment>
-        ))}
-      </nav>
-    );
-  }
-});
-
-// Simple Product Breadcrumbs Component - reads colors from product-config.js metadata
-const ProductBreadcrumbs = createSlotComponent({
-  name: 'ProductBreadcrumbs',
-  render: (props) => {
-    const { slot, productContext } = props;
-    const { product, store, categories = [], settings = {} } = productContext || {};
-
-    // Get colors from slot metadata (set in product-config.js)
-    const itemTextColor = slot?.metadata?.itemTextColor || '#22C55E';
-    const itemHoverColor = slot?.metadata?.itemHoverColor || '#16A34A';
-    const activeItemColor = slot?.metadata?.activeItemColor || '#DC2626';
-    const separatorColor = slot?.metadata?.separatorColor || '#9CA3AF';
-    const fontSize = slot?.metadata?.fontSize || '0.875rem';
-    const fontWeight = slot?.metadata?.fontWeight || '700';
-
-    // Build breadcrumbs
-    const breadcrumbItems = buildBreadcrumbs('product', product, store?.slug || store?.code, categories, settings);
-
-    if (!breadcrumbItems || breadcrumbItems.length === 0) return null;
-
-    return (
-      <nav className="flex items-center space-x-2 text-sm mb-6">
-        {/* Home Link */}
-        <a
-          href="/"
-          style={{ color: itemTextColor, fontSize, fontWeight }}
-          className="flex items-center hover:underline"
-          onMouseEnter={(e) => e.target.style.color = itemHoverColor}
-          onMouseLeave={(e) => e.target.style.color = itemTextColor}
-        >
-          <Home className="w-4 h-4 mr-1" />
-          Home
-        </a>
-        <span style={{ color: separatorColor, fontSize, margin: '0 0.5rem' }}>/</span>
-
-        {/* Breadcrumb Items */}
-        {breadcrumbItems.map((item, index) => (
-          <Fragment key={index}>
-            {item.url ? (
-              <a
-                href={item.url}
-                style={{ color: itemTextColor, fontSize, fontWeight }}
-                className="hover:underline whitespace-nowrap"
-                onMouseEnter={(e) => e.target.style.color = itemHoverColor}
-                onMouseLeave={(e) => e.target.style.color = itemTextColor}
-              >
-                {item.name}
-              </a>
-            ) : (
-              <span
-                style={{ color: activeItemColor, fontSize, fontWeight: '500' }}
-                className="whitespace-nowrap"
-              >
-                {item.name}
-              </span>
-            )}
-            {index < breadcrumbItems.length - 1 && (
-              <span style={{ color: separatorColor, fontSize, margin: '0 0.5rem' }}>/</span>
-            )}
-          </Fragment>
-        ))}
-      </nav>
-    );
-  }
-});
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
@@ -1260,8 +1120,6 @@ const ViewModeToggle = createSlotComponent({
 });
 
 // Register components
-registerSlotComponent('CategoryBreadcrumbs', CategoryBreadcrumbs);
-registerSlotComponent('ProductBreadcrumbs', ProductBreadcrumbs);
 registerSlotComponent('ActiveFilters', ActiveFilters);
 registerSlotComponent('LayeredNavigation', LayeredNavigation);
 registerSlotComponent('SortSelector', SortSelector);
@@ -1272,8 +1130,6 @@ registerSlotComponent('CmsBlockRenderer', CmsBlockComponent);
 registerSlotComponent('ProductItemsGrid', ProductItemsGrid);
 
 export {
-  CategoryBreadcrumbs,
-  ProductBreadcrumbs,
   ActiveFilters,
   LayeredNavigation,
   SortSelector,

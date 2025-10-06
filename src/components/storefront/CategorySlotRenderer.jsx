@@ -9,6 +9,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import '@/components/editor/slot/CategorySlotComponents';
+import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
 
 /**
