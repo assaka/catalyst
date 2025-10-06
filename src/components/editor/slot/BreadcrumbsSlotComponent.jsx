@@ -36,6 +36,18 @@ const BreadcrumbsSlotComponent = createSlotComponent({
     const storeTheme = settings?.theme || {};
     const slotMetadata = slot?.metadata || {};
 
+    // Debug logging
+    console.log('🍞 Breadcrumbs Debug:', {
+      hasSettings: !!settings,
+      hasTheme: !!settings?.theme,
+      themeKeys: settings?.theme ? Object.keys(settings.theme) : [],
+      breadcrumbColors: {
+        itemTextColor: storeTheme.breadcrumb_item_text_color,
+        itemHoverColor: storeTheme.breadcrumb_item_hover_color,
+        activeItemColor: storeTheme.breadcrumb_active_item_color
+      }
+    });
+
     const config = {
       showHomeIcon: storeTheme.breadcrumb_show_home_icon ?? slotMetadata.showHomeIcon ?? true,
       itemTextColor: storeTheme.breadcrumb_item_text_color || slotMetadata.itemTextColor || '#6B7280',
