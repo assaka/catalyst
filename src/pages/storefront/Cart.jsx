@@ -1043,7 +1043,7 @@ export default function Cart() {
                 description="Review your shopping cart items before proceeding to checkout."
                 keywords="cart, shopping cart, checkout, e-commerce, online store"
             />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="max-w-7xl mx-auto sm:px-4 sm:px-6 lg:px-8 sm:py-12">
                 {/* FlashMessage Section */}
                 <div className="flashMessage-section mb-6">
                     <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
