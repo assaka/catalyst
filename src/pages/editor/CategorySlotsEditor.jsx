@@ -25,6 +25,9 @@ import {
 } from '@/components/editor/slot/slotComponentsCategory';
 import ProductItemCard from '@/components/storefront/ProductItemCard';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+// Import component registry to render components consistently with storefront
+import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
+import '@/components/editor/slot/CategorySlotComponents';
 // Create default slots function for category layout
 const createDefaultSlots = async () => {
   try {
@@ -111,18 +114,22 @@ const categoryCustomSlotRenderer = (slot, context) => {
   if (slot.type === 'component') {
     const componentName = slot.component;
 
-    // CategoryBreadcrumbs component
+    // CategoryBreadcrumbs component - use component registry for consistency with storefront
     if (componentName === 'CategoryBreadcrumbs') {
-      return (
-        <CategoryBreadcrumbsSlot
-          categoryData={sampleCategoryContext}
-          categoryContext={sampleCategoryContext}
-          content={slot.content}
-          className={slot.className}
-          styles={slot.styles}
-          config={{ viewMode: context?.viewMode }}
-        />
-      );
+      if (ComponentRegistry.has('CategoryBreadcrumbs')) {
+        const registeredComponent = ComponentRegistry.get('CategoryBreadcrumbs');
+        return registeredComponent.render({
+          slot,
+          categoryContext: sampleCategoryContext,
+          variableContext: {},
+          context: 'editor',
+          className: slot.className,
+          styles: slot.styles,
+          allSlots: context?.layoutConfig?.slots
+        });
+      }
+      // Fallback to old component if registry not available
+      return undefined;
     }
 
     // BreadcrumbRenderer (legacy)
