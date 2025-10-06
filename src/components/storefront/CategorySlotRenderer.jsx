@@ -179,11 +179,24 @@ export function CategorySlotRenderer({
       component: componentName
     } = slot || {};
 
+    // Debug breadcrumbs slot
+    if (id === 'breadcrumbs_content') {
+      console.log('🔍 CategorySlotRenderer - breadcrumbs_content slot:', {
+        id,
+        type,
+        component: componentName,
+        metadataComponent: metadata?.component,
+        hasMetadata: !!metadata,
+        metadata
+      });
+    }
+
     // Fallback: check metadata.component if component field is missing (for backward compatibility)
     const finalComponentName = componentName || metadata?.component;
 
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && finalComponentName && ComponentRegistry.has(finalComponentName)) {
+      console.log('🔧 CategorySlotRenderer - rendering component:', finalComponentName, 'for slot:', id);
       const registeredComponent = ComponentRegistry.get(finalComponentName);
 
       // Format products with all necessary fields for templates
