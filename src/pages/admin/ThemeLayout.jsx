@@ -334,10 +334,16 @@ export default function ThemeLayout() {
         setSaving(true);
 
         try {
+            console.log('💾 ThemeLayout - Saving settings:', {
+                theme: store.settings.theme,
+                product_tabs_title_color: store.settings.theme?.product_tabs_title_color
+            });
+
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
                 const apiResult = await Store.update(store.id, { settings: store.settings });
+                console.log('💾 ThemeLayout - Save result:', apiResult);
                 return apiResult;
             });
 
