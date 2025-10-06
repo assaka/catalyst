@@ -215,11 +215,53 @@ export function ProductOptionsSlot({ productContext, content }) {
 }
 
 // ProductTabsSlot Component - Product tabs (description, specs, reviews)
+// Displays as tabs on desktop, accordion on mobile
 export function ProductTabsSlot({ productContext, content }) {
   const { productTabs, product } = productContext;
   const [activeTab, setActiveTab] = React.useState(0);
+  const [openAccordions, setOpenAccordions] = React.useState([0]); // First item open by default on mobile
 
   if (!productTabs || productTabs.length === 0) return null;
+
+  const toggleAccordion = (index) => {
+    setOpenAccordions(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  const renderTabContent = (tab) => {
+    return (
+      <div className="prose max-w-none">
+        {/* Text content tab */}
+        {tab.tab_type === 'text' && tab.content && (
+          <div dangerouslySetInnerHTML={{ __html: tab.content }} />
+        )}
+
+        {/* Description tab */}
+        {tab.tab_type === 'description' && product?.description && (
+          <div dangerouslySetInnerHTML={{ __html: product.description }} />
+        )}
+
+        {/* Attributes tab */}
+        {tab.tab_type === 'attributes' && (
+          product?.attributes && Object.keys(product.attributes).length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(product.attributes).map(([key, value]) => (
+                <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                  <span>{String(value ?? '')}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">No specifications available for this product.</p>
+          )
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="product-tabs mt-12 border-t pt-8">
@@ -227,8 +269,8 @@ export function ProductTabsSlot({ productContext, content }) {
         <div dangerouslySetInnerHTML={{ __html: content }} />
       ) : (
         <>
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200">
+          {/* Desktop: Tab Navigation - Hidden on mobile */}
+          <div className="hidden md:block border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               {productTabs.map((tab, index) => (
                 <button
@@ -246,37 +288,41 @@ export function ProductTabsSlot({ productContext, content }) {
             </nav>
           </div>
 
-          {/* Tab Content */}
-          <div className="mt-6">
-            {productTabs[activeTab] && (
-              <div className="prose max-w-none">
-                {/* Text content tab */}
-                {productTabs[activeTab].tab_type === 'text' && productTabs[activeTab].content && (
-                  <div dangerouslySetInnerHTML={{ __html: productTabs[activeTab].content }} />
-                )}
+          {/* Desktop: Tab Content - Hidden on mobile */}
+          <div className="hidden md:block mt-6">
+            {productTabs[activeTab] && renderTabContent(productTabs[activeTab])}
+          </div>
 
-                {/* Description tab */}
-                {productTabs[activeTab].tab_type === 'description' && product?.description && (
-                  <div dangerouslySetInnerHTML={{ __html: product.description }} />
-                )}
+          {/* Mobile: Accordion - Hidden on desktop */}
+          <div className="md:hidden space-y-2">
+            {productTabs.map((tab, index) => (
+              <div key={tab.id} className="border border-gray-200 rounded-lg">
+                {/* Accordion Header */}
+                <button
+                  onClick={() => toggleAccordion(index)}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
+                >
+                  <span className="font-medium text-sm text-gray-900">{tab.name}</span>
+                  <svg
+                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                      openAccordions.includes(index) ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                {/* Attributes tab */}
-                {productTabs[activeTab].tab_type === 'attributes' && (
-                  product?.attributes && Object.keys(product.attributes).length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(product.attributes).map(([key, value]) => (
-                        <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="font-medium capitalize">{key.replace(/_/g, ' ')}</span>
-                          <span>{String(value ?? '')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No specifications available for this product.</p>
-                  )
+                {/* Accordion Content */}
+                {openAccordions.includes(index) && (
+                  <div className="p-4 pt-0 border-t border-gray-200">
+                    {renderTabContent(tab)}
+                  </div>
                 )}
               </div>
-            )}
+            ))}
           </div>
         </>
       )}
