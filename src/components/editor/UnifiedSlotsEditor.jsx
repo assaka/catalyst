@@ -398,9 +398,14 @@ const UnifiedSlotsEditor = ({
   return (
     <div className={`min-h-screen bg-gray-50 ${
       isSidebarVisible ? 'pr-80' : ''
-    }`}>
+    } ${currentViewport !== 'desktop' ? 'overflow-x-hidden' : ''}`}>
       {/* Main Editor Area */}
-      <div className="flex flex-col">
+      <div className="flex flex-col" style={{
+        maxWidth: currentViewport === 'mobile' ? '375px' :
+                  currentViewport === 'tablet' ? '768px' :
+                  '100%',
+        margin: currentViewport !== 'desktop' ? '0 auto' : undefined
+      }}>
         {/* Editor Header */}
         <div className="bg-white border-b px-6 py-4">
           <div className="flex items-center justify-between">

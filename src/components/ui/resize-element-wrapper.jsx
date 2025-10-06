@@ -291,9 +291,18 @@ const ResizeWrapper = ({
     const mainContainer = document.querySelector('.min-h-screen');
     const hasSidebarPadding = mainContainer?.classList.contains('pr-80');
     const sidebarWidth = hasSidebarPadding ? 320 : 0;
-    const effectiveViewportWidth = viewportWidth - sidebarWidth;
+
+    // Check if we're in a responsive container (mobile/tablet mode)
+    const responsiveContainer = document.querySelector('.responsive-container');
+    const responsiveContainerRect = responsiveContainer?.getBoundingClientRect();
+
+    // If responsive container exists and has a constrained width, use it as the viewport
+    const effectiveViewportWidth = responsiveContainerRect && responsiveContainerRect.width < (viewportWidth - sidebarWidth)
+      ? responsiveContainerRect.right - 20  // Use responsive container's right edge
+      : viewportWidth - sidebarWidth;
+
     const elementLeft = rect.left;
-    const maxAllowableRight = effectiveViewportWidth - 20;
+    const maxAllowableRight = effectiveViewportWidth;
 
     
     const startX = e.clientX;

@@ -472,8 +472,9 @@ export default function Layout({ children, currentPageName }) {
   const showSidebar = !isEditorPage && !isPluginPage;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <RoleSwitcher />
+    <StoreProvider>
+      <div className="min-h-screen bg-gray-50 flex">
+        <RoleSwitcher />
       <style>{`
         :root {
           --primary: 220 90% 56%;
