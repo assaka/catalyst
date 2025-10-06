@@ -2408,7 +2408,7 @@ export function ResponsiveContainer({
   if (viewport === 'desktop') {
     return (
       <div
-        className={`responsive-container ${className}`}
+        className={`responsive-container @container ${className}`}
         style={getViewportStyles()}
       >
         {children}
@@ -2420,7 +2420,7 @@ export function ResponsiveContainer({
   return (
     <div className="w-full bg-gray-50 py-4">
       <div
-        className={`responsive-container ${className}`}
+        className={`responsive-container @container ${className}`}
         style={getViewportStyles()}
       >
         {children}
