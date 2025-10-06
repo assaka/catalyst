@@ -32,8 +32,19 @@ const BreadcrumbsSlotComponent = createSlotComponent({
 
     if (!breadcrumbItems || breadcrumbItems.length === 0) return null;
 
-    // Get configuration from slot metadata
-    const config = slot?.metadata || {};
+    // Get configuration: priority is store theme settings > slot metadata > defaults
+    const storeTheme = settings?.theme || {};
+    const slotMetadata = slot?.metadata || {};
+
+    const config = {
+      showHomeIcon: storeTheme.breadcrumb_show_home_icon ?? slotMetadata.showHomeIcon ?? true,
+      itemTextColor: storeTheme.breadcrumb_item_text_color || slotMetadata.itemTextColor || '#6B7280',
+      itemHoverColor: storeTheme.breadcrumb_item_hover_color || slotMetadata.itemHoverColor || '#374151',
+      activeItemColor: storeTheme.breadcrumb_active_item_color || slotMetadata.activeItemColor || '#111827',
+      separatorColor: storeTheme.breadcrumb_separator_color || slotMetadata.separatorColor || '#9CA3AF',
+      fontSize: storeTheme.breadcrumb_font_size || slotMetadata.fontSize || '0.875rem',
+      fontWeight: storeTheme.breadcrumb_font_weight || slotMetadata.fontWeight || '400'
+    };
 
     return <Breadcrumbs items={breadcrumbItems} config={config} />;
   }

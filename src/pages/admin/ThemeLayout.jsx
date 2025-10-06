@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Palette, Eye, Navigation, ShoppingBag, Filter } from 'lucide-react';
+import { Save, Palette, Eye, Navigation, ShoppingBag, Filter, Home } from 'lucide-react';
 
 const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     for (let i = 0; i < maxRetries; i++) {
@@ -104,6 +104,14 @@ export default function ThemeLayout() {
                     product_tabs_title_size: '1.875rem', // text-3xl
                     product_tabs_content_bg: '#EFF6FF', // blue-50
                     product_tabs_attribute_label_color: '#16A34A', // green-600
+                    // Breadcrumb defaults
+                    breadcrumb_show_home_icon: true,
+                    breadcrumb_item_text_color: '#6B7280', // gray-500
+                    breadcrumb_item_hover_color: '#374151', // gray-700
+                    breadcrumb_active_item_color: '#111827', // gray-900
+                    breadcrumb_separator_color: '#9CA3AF', // gray-400
+                    breadcrumb_font_size: '0.875rem', // text-sm
+                    breadcrumb_font_weight: '400', // font-normal
                     // Override with existing settings if they exist
                     ...((fullStore?.settings || {}).theme || {})
                 },
@@ -531,6 +539,156 @@ export default function ThemeLayout() {
                                     <Label htmlFor="show_category_in_breadcrumb">Show Category in Breadcrumbs</Label>
                                 </div>
                                 <Switch id="show_category_in_breadcrumb" checked={!!store.settings.show_category_in_breadcrumb} onCheckedChange={(c) => handleSettingsChange('show_category_in_breadcrumb', c)} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Home className="w-5 h-5" /> Breadcrumbs</CardTitle>
+                            <CardDescription>Customize breadcrumb navigation appearance on category and product pages.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="breadcrumb_show_home_icon">Show Home Icon</Label>
+                                    <p className="text-sm text-gray-500">Display home icon in breadcrumbs.</p>
+                                </div>
+                                <Switch
+                                    id="breadcrumb_show_home_icon"
+                                    checked={!!store.settings.theme?.breadcrumb_show_home_icon}
+                                    onCheckedChange={(c) => handleThemeChange('breadcrumb_show_home_icon', c)}
+                                />
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-4">
+                                <Label className="text-base font-medium">Colors</Label>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="breadcrumb_item_text_color">Link Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="breadcrumb_item_text_color"
+                                                type="color"
+                                                value={store.settings.theme?.breadcrumb_item_text_color || '#6B7280'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_item_text_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.breadcrumb_item_text_color || '#6B7280'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_item_text_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="breadcrumb_item_hover_color">Hover Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="breadcrumb_item_hover_color"
+                                                type="color"
+                                                value={store.settings.theme?.breadcrumb_item_hover_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_item_hover_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.breadcrumb_item_hover_color || '#374151'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_item_hover_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="breadcrumb_active_item_color">Current Page Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="breadcrumb_active_item_color"
+                                                type="color"
+                                                value={store.settings.theme?.breadcrumb_active_item_color || '#111827'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_active_item_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.breadcrumb_active_item_color || '#111827'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_active_item_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="breadcrumb_separator_color">Separator Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="breadcrumb_separator_color"
+                                                type="color"
+                                                value={store.settings.theme?.breadcrumb_separator_color || '#9CA3AF'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_separator_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings.theme?.breadcrumb_separator_color || '#9CA3AF'}
+                                                onChange={(e) => handleThemeChange('breadcrumb_separator_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-4">
+                                <Label className="text-base font-medium">Typography</Label>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="breadcrumb_font_size">Font Size</Label>
+                                        <Select
+                                            value={store.settings.theme?.breadcrumb_font_size || '0.875rem'}
+                                            onValueChange={(value) => handleThemeChange('breadcrumb_font_size', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0.75rem">Extra Small (12px)</SelectItem>
+                                                <SelectItem value="0.875rem">Small (14px)</SelectItem>
+                                                <SelectItem value="1rem">Medium (16px)</SelectItem>
+                                                <SelectItem value="1.125rem">Large (18px)</SelectItem>
+                                                <SelectItem value="1.25rem">Extra Large (20px)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="breadcrumb_font_weight">Font Weight</Label>
+                                        <Select
+                                            value={store.settings.theme?.breadcrumb_font_weight || '400'}
+                                            onValueChange={(value) => handleThemeChange('breadcrumb_font_weight', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="300">Light (300)</SelectItem>
+                                                <SelectItem value="400">Normal (400)</SelectItem>
+                                                <SelectItem value="500">Medium (500)</SelectItem>
+                                                <SelectItem value="600">Semi Bold (600)</SelectItem>
+                                                <SelectItem value="700">Bold (700)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
