@@ -1,9 +1,9 @@
 /**
  * Mock category data generator for editor preview
- * Can optionally receive real filterableAttributes from StoreProvider to maintain uniform flow
+ * Can optionally receive real filterableAttributes and storeSettings from StoreProvider to maintain uniform flow
  */
 
-export const generateMockCategoryContext = (realFilterableAttributes = null) => {
+export const generateMockCategoryContext = (realFilterableAttributes = null, storeSettings = null) => {
   const brands = ['Apple', 'Samsung', 'Google', 'OnePlus', 'Sony', 'LG'];
   const colors = ['Black', 'White', 'Blue', 'Red', 'Silver', 'Gold'];
   const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL'];
@@ -158,7 +158,7 @@ export const generateMockCategoryContext = (realFilterableAttributes = null) => 
       { name: 'Sample Category', url: '/sample' }
     ],
     selectedFilters: {},
-    settings: { currency_symbol: '$' },
+    settings: storeSettings || { currency_symbol: '$' },
     store: { id: 1, name: 'Demo Store', code: 'demo' },
     productLabels: [
       {

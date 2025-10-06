@@ -1,5 +1,5 @@
 // Mock product data generator for ProductSlotsEditor
-export const generateMockProductContext = () => {
+export const generateMockProductContext = (storeSettings = null) => {
   return {
     product: {
       id: 1,
@@ -132,7 +132,7 @@ export const generateMockProductContext = () => {
       currency_code: 'USD',
       currency_symbol: '$'
     },
-    settings: {
+    settings: storeSettings || {
       currency_code: 'USD',
       currency_symbol: '$',
       hide_currency_product: false,

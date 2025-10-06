@@ -442,8 +442,8 @@ const categoryCustomSlotRenderer = (slot, context) => {
   return null;
 };
 
-// Category Editor Configuration Factory - creates config with real filterableAttributes
-const createCategoryEditorConfig = (filterableAttributes) => ({
+// Category Editor Configuration Factory - creates config with real filterableAttributes and storeSettings
+const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
   pageType: 'category',
   pageName: 'Category',
   slotType: 'category_layout',
@@ -471,7 +471,7 @@ const createCategoryEditorConfig = (filterableAttributes) => ({
     CategoryProductItemCardSlot,
     CategoryProductItemsSlot
   },
-  generateContext: () => generateMockCategoryContext(filterableAttributes),
+  generateContext: () => generateMockCategoryContext(filterableAttributes, storeSettings),
   createDefaultSlots,
   viewModeAdjustments: {
     filters_container: {
@@ -562,8 +562,8 @@ const CategorySlotsEditor = ({
   const storeSettings = storeContext?.settings || null;
   const filterableAttributes = storeContext?.filterableAttributes || [];
 
-  // Create editor config with real filterableAttributes from database (same as storefront)
-  const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes);
+  // Create editor config with real filterableAttributes and storeSettings from database (same as storefront)
+  const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes, storeSettings);
 
   // Create enhanced config with store settings
   const enhancedConfig = {
