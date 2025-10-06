@@ -116,6 +116,11 @@ export default function ThemeLayout() {
                 settings
             };
 
+            console.log('🎨 ThemeLayout - Initial store state:', {
+                theme: finalStore.settings.theme,
+                product_tabs_title_color: finalStore.settings.theme?.product_tabs_title_color
+            });
+
             setStore(finalStore);
         } catch (error) {
             console.error("Failed to load store:", error);

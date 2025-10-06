@@ -38,9 +38,9 @@ export const categoryConfig = {
         hierarchical: false,
         displayName: 'Breadcrumb Navigation',
         // All breadcrumb styling - edit these colors!
-        itemTextColor: '#22C55E',      // green for parent category links
+        itemTextColor: '#DC2626',      // green for parent category links
         itemHoverColor: '#16A34A',     // darker green on hover
-        activeItemColor: '#DC2626',    // red for current category
+        activeItemColor: '#22C55E',    // red for current category
         separatorColor: '#9CA3AF',     // gray for separators
         fontSize: '0.875rem',
         fontWeight: '700'              // bold

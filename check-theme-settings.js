@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jqqfjfoigtwdpnlicjmh.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxcWZqZm9pZ3R3ZHBubGljam1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxNzA4NDMsImV4cCI6MjA1MTc0Njg0M30.E-ls9JaKC8vF33C6tTFBkX3AjQZYSI0r_lLPTcILlRw';
