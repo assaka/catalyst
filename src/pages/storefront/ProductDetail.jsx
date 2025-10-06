@@ -81,7 +81,7 @@ const generateProductName = (product, basePrefix = '') => {
       nameComponents.push(value.trim());
     }
   });
-  
+
   // Add any other string attributes not yet included
   Object.entries(product.attributes).forEach(([code, value]) => {
     if (!priorityAttributes.includes(code) && 
@@ -172,16 +172,6 @@ export default function ProductDetail() {
       try {
         // Load published configuration using the new versioning API
         const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'product');
-
-        console.log('[ProductDetail] Published config response:', {
-          success: response.success,
-          hasData: !!response.data,
-          hasConfig: !!response.data?.configuration,
-          hasSlots: !!response.data?.configuration?.slots,
-          slotKeys: response.data?.configuration?.slots ? Object.keys(response.data.configuration.slots) : [],
-          breadcrumbSlot: response.data?.configuration?.slots?.breadcrumbs
-        });
-
         // Check for various "no published config" scenarios
         if (response.success && response.data &&
             response.data.configuration &&
@@ -189,24 +179,10 @@ export default function ProductDetail() {
             Object.keys(response.data.configuration.slots).length > 0) {
 
           const publishedConfig = response.data;
-          console.log('[ProductDetail] Using published config, total slots:', Object.keys(publishedConfig.configuration.slots).length);
-          console.log('[ProductDetail] Breadcrumb slot config:', publishedConfig.configuration.slots.breadcrumbs);
           setProductLayoutConfig(publishedConfig.configuration);
           setConfigLoaded(true);
 
         } else {
-          // Fallback to product-config.js
-          console.log('[ProductDetail] No published config found, using fallback product-config.js');
-          const fallbackConfig = {
-            slots: { ...productConfig.slots },
-            metadata: {
-              ...productConfig.metadata,
-              fallbackUsed: true,
-              fallbackReason: `No valid published configuration`
-            }
-          };
-
-          console.log('[ProductDetail] Fallback breadcrumb slot:', fallbackConfig.slots.breadcrumbs);
           setProductLayoutConfig(fallbackConfig);
           setConfigLoaded(true);
         }
@@ -245,14 +221,7 @@ export default function ProductDetail() {
     const applicableLabels = [];
 
     for (const label of labels) {
-      console.log(`🔍 Evaluating label "${label.text}":`, {
-        is_active: label.is_active,
-        conditions: label.conditions,
-        position: label.position
-      });
-
       if (!label.is_active) {
-        console.log(`❌ Label "${label.text}" skipped: not active`);
         continue;
       }
 
@@ -313,17 +282,12 @@ export default function ProductDetail() {
       }
 
       if (shouldApply) {
-        console.log(`✅ Label "${label.text}" accepted`);
         applicableLabels.push(label);
-      } else {
-        console.log(`❌ Label "${label.text}" rejected: conditions not met`);
       }
     }
 
     // Sort by priority if specified
     applicableLabels.sort((a, b) => (b.priority || 0) - (a.priority || 0));
-
-    console.log('🏷️ Final applicable labels:', applicableLabels.map(l => l.text));
     return applicableLabels;
   };
 
@@ -890,7 +854,13 @@ export default function ProductDetail() {
             variableContext={{
               product,
               store,
-              settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
+              settings: (() => {
+                console.log('🎨 ProductDetail - Settings passed to variableContext:', {
+                  theme: settings?.theme,
+                  product_tabs_title_color: settings?.theme?.product_tabs_title_color
+                });
+                return settings;
+              })(), // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
               productLabels: (() => {
                 const labels = product?.applicableLabels || productLabels;
                 console.log('🏷️ ProductDetail - Passing labels to template:', labels?.map(l => ({
