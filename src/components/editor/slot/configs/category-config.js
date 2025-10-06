@@ -247,7 +247,7 @@ export const categoryConfig = {
           </div>
         </div>
       `,
-      className: '@sm:hidden',
+      className: 'sm:hidden',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
@@ -266,7 +266,7 @@ export const categoryConfig = {
       id: 'sorting_controls',
       type: 'container',
       content: '',
-      className: 'hidden @sm:flex flex-col @sm:flex-row justify-between items-start @sm:items-center mb-6 gap-4',
+      className: 'hidden sm:flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
