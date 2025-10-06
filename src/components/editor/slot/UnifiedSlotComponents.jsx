@@ -798,45 +798,67 @@ const ProductTabs = createSlotComponent({
       });
     }, [tabsData, product, context]);
 
-    // Attach tab click handlers
+    // Attach tab click handlers (desktop) and accordion toggle (mobile)
     React.useEffect(() => {
       if (!containerRef.current || context === 'editor') return;
 
       const handleClick = (e) => {
+        // Handle desktop tab switching
         const tabButton = e.target.closest('[data-action="switch-tab"]');
-        if (!tabButton) return;
+        if (tabButton) {
+          const tabId = tabButton.getAttribute('data-tab-id');
+          const tabIndex = tabsData.findIndex(tab => tab.id === tabId);
 
-        const tabId = tabButton.getAttribute('data-tab-id');
-        const tabIndex = tabsData.findIndex(tab => tab.id === tabId);
+          if (tabIndex !== -1) {
+            if (setActiveTab) {
+              setActiveTab(tabIndex);
+            } else {
+              setActiveTabIndex(tabIndex);
+            }
 
-        if (tabIndex !== -1) {
-          if (setActiveTab) {
-            setActiveTab(tabIndex);
-          } else {
-            setActiveTabIndex(tabIndex);
+            // Update UI immediately
+            const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
+            const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
+
+            allTabs.forEach((btn, idx) => {
+              if (idx === tabIndex) {
+                btn.classList.add('border-red-600');
+                btn.classList.remove('border-transparent');
+              } else {
+                btn.classList.remove('border-red-600');
+                btn.classList.add('border-transparent');
+              }
+            });
+
+            allContents.forEach((content, idx) => {
+              if (idx === tabIndex) {
+                content.classList.remove('hidden');
+              } else {
+                content.classList.add('hidden');
+              }
+            });
           }
+          return;
+        }
 
-          // Update UI immediately
-          const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
-          const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
+        // Handle mobile accordion toggle
+        const accordionButton = e.target.closest('[data-action="toggle-accordion"]');
+        if (accordionButton) {
+          const accordionIndex = accordionButton.getAttribute('data-accordion-index');
+          const accordionContent = containerRef.current.querySelector(`[data-accordion-content="${accordionIndex}"]`);
+          const chevron = accordionButton.querySelector('.accordion-chevron');
 
-          allTabs.forEach((btn, idx) => {
-            if (idx === tabIndex) {
-              btn.classList.add('border-red-600');
-              btn.classList.remove('border-transparent');
+          if (accordionContent) {
+            const isHidden = accordionContent.classList.contains('hidden');
+
+            if (isHidden) {
+              accordionContent.classList.remove('hidden');
+              if (chevron) chevron.classList.add('rotate-180');
             } else {
-              btn.classList.remove('border-red-600');
-              btn.classList.add('border-transparent');
+              accordionContent.classList.add('hidden');
+              if (chevron) chevron.classList.remove('rotate-180');
             }
-          });
-
-          allContents.forEach((content, idx) => {
-            if (idx === tabIndex) {
-              content.classList.remove('hidden');
-            } else {
-              content.classList.add('hidden');
-            }
-          });
+          }
         }
       };
 

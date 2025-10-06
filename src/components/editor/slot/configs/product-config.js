@@ -785,7 +785,8 @@ export const productConfig = {
       component: 'ProductTabsSlot',
       content: `
         <div class="w-full">
-          <div class="border-b border-gray-200">
+          <!-- Desktop: Tab Navigation - Hidden on mobile -->
+          <div class="hidden md:block border-b border-gray-200">
             <nav class="-mb-px flex space-x-8">
               {{#each tabs}}
                 <button
@@ -798,7 +799,8 @@ export const productConfig = {
             </nav>
           </div>
 
-          <div class="mt-6">
+          <!-- Desktop: Tab Content - Hidden on mobile -->
+          <div class="hidden md:block mt-6">
             {{#each tabs}}
               <div
                 class="tab-panel {{#if this.isActive}}{{else}}hidden{{/if}}"
@@ -815,6 +817,45 @@ export const productConfig = {
                   </div>
                 '>
                   <!-- Content will be rendered by JavaScript based on data-tab-type -->
+                </div>
+              </div>
+            {{/each}}
+          </div>
+
+          <!-- Mobile: Accordion - Hidden on desktop -->
+          <div class="md:hidden space-y-2">
+            {{#each tabs}}
+              <div class="border border-gray-200 rounded-lg" data-accordion-item="{{@index}}">
+                <!-- Accordion Header -->
+                <button
+                  class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
+                  data-action="toggle-accordion"
+                  data-accordion-index="{{@index}}">
+                  <span class="font-medium text-sm text-gray-900">{{this.title}}</span>
+                  <svg
+                    class="w-5 h-5 text-gray-500 transition-transform duration-200 accordion-chevron"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <!-- Accordion Content -->
+                <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0 border-t border-gray-200"
+                     data-accordion-content="{{@index}}"
+                     data-tab-type="{{this.tab_type}}"
+                     data-tab-text-content="{{this.content}}">
+                  <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container bg-blue-50 p-6 rounded-lg" data-attributes-template='
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="font-bold capitalize text-green-600">__KEY__</span>
+                        <span>__VALUE__</span>
+                      </div>
+                    </div>
+                  '>
+                    <!-- Content will be rendered by JavaScript based on data-tab-type -->
+                  </div>
                 </div>
               </div>
             {{/each}}
