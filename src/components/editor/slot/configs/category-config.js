@@ -36,15 +36,9 @@ export const categoryConfig = {
       viewMode: ['grid', 'list'],
       metadata: {
         hierarchical: false,
-        displayName: 'Breadcrumb Navigation',
-        // Breadcrumb configuration
-        showHomeIcon: true,
-        itemTextColor: '#DC2626',      // Link color
-        itemHoverColor: '#16A34A',     // Hover color
-        activeItemColor: '#22C55E',    // Current page color
-        separatorColor: '#9CA3AF',     // Separator color
-        fontSize: '0.875rem',
-        fontWeight: '700'
+        displayName: 'Breadcrumb Navigation'
+        // Breadcrumb colors and settings are managed via Store -> Theme & Layout -> Breadcrumbs
+        // Pro users can override per-page settings here if needed
       }
     },
 

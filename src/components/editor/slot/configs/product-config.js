@@ -82,15 +82,9 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        displayName: 'Product Breadcrumb Navigation',
-        // Breadcrumb configuration
-        showHomeIcon: true,
-        itemTextColor: '#22C55E',      // Link color
-        itemHoverColor: '#16A34A',     // Hover color
-        activeItemColor: '#DC2626',    // Current page color
-        separatorColor: '#9CA3AF',     // Separator color
-        fontSize: '0.875rem',
-        fontWeight: '700'
+        displayName: 'Product Breadcrumb Navigation'
+        // Breadcrumb colors and settings are managed via Store -> Theme & Layout -> Breadcrumbs
+        // Pro users can override per-page settings here if needed
       }
     },
 
