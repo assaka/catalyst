@@ -217,11 +217,17 @@ export function ProductOptionsSlot({ productContext, content }) {
 // ProductTabsSlot Component - Product tabs (description, specs, reviews)
 // Displays as tabs on desktop, accordion on mobile
 export function ProductTabsSlot({ productContext, content }) {
-  const { productTabs, product } = productContext;
+  const { productTabs, product, settings } = productContext;
   const [activeTab, setActiveTab] = React.useState(0);
   const [openAccordions, setOpenAccordions] = React.useState([0]); // First item open by default on mobile
 
   if (!productTabs || productTabs.length === 0) return null;
+
+  // Get theme settings with defaults
+  const titleColor = settings?.theme?.product_tabs_title_color || '#DC2626';
+  const titleSize = settings?.theme?.product_tabs_title_size || '1.875rem';
+  const contentBg = settings?.theme?.product_tabs_content_bg || '#EFF6FF';
+  const attributeLabelColor = settings?.theme?.product_tabs_attribute_label_color || '#16A34A';
 
   const toggleAccordion = (index) => {
     setOpenAccordions(prev =>
@@ -233,7 +239,7 @@ export function ProductTabsSlot({ productContext, content }) {
 
   const renderTabContent = (tab) => {
     return (
-      <div className="prose max-w-none">
+      <div className="prose max-w-none" style={{ backgroundColor: contentBg, padding: '1.5rem', borderRadius: '0.5rem' }}>
         {/* Text content tab */}
         {tab.tab_type === 'text' && tab.content && (
           <div dangerouslySetInnerHTML={{ __html: tab.content }} />
@@ -250,7 +256,7 @@ export function ProductTabsSlot({ productContext, content }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(product.attributes).map(([key, value]) => (
                 <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                  <span className="font-medium capitalize">{key.replace(/_/g, ' ')}</span>
+                  <span className="font-medium capitalize" style={{ color: attributeLabelColor }}>{key.replace(/_/g, ' ')}</span>
                   <span>{String(value ?? '')}</span>
                 </div>
               ))}
@@ -276,11 +282,12 @@ export function ProductTabsSlot({ productContext, content }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(index)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === index
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  style={{
+                    fontSize: titleSize,
+                    color: activeTab === index ? titleColor : '#6B7280',
+                    borderColor: activeTab === index ? titleColor : 'transparent'
+                  }}
+                  className={`py-2 px-1 border-b-2 font-medium transition-colors duration-200`}
                 >
                   {tab.name}
                 </button>
@@ -300,13 +307,15 @@ export function ProductTabsSlot({ productContext, content }) {
                 {/* Accordion Header */}
                 <button
                   onClick={() => toggleAccordion(index)}
+                  style={{ fontSize: titleSize, color: titleColor }}
                   className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
                 >
-                  <span className="font-medium text-sm text-gray-900">{tab.name}</span>
+                  <span className="font-medium">{tab.name}</span>
                   <svg
-                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                    className={`w-5 h-5 transition-transform duration-200 ${
                       openAccordions.includes(index) ? 'rotate-180' : ''
                     }`}
+                    style={{ color: titleColor }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
