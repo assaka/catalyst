@@ -155,6 +155,7 @@ export function UnifiedSlotRenderer({
   headerContext = null
 }) {
   // Get child slots for current parent
+  console.log('Force push trigger');
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
   // Filter slots by view mode
