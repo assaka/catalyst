@@ -266,7 +266,7 @@ export const categoryConfig = {
       id: 'sorting_controls',
       type: 'container',
       content: '',
-      className: 'hidden sm:flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4',
+      className: 'flex max-sm:flex-col flex-row justify-between items-start sm:items-center mb-6 gap-4',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
