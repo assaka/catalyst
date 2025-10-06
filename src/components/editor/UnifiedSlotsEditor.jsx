@@ -492,7 +492,7 @@ const UnifiedSlotsEditor = ({
           />
 
           {!showPreview && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className={`${currentViewport === 'desktop' ? 'max-w-7xl mx-auto' : 'w-full'} px-4 sm:px-6 lg:px-8`}>
               <EditorToolbar
                 showSlotBorders={showSlotBorders}
                 onToggleBorders={() => setShowSlotBorders(!showSlotBorders)}
@@ -505,7 +505,7 @@ const UnifiedSlotsEditor = ({
 
           {/* AI Enhancement Panel */}
           {aiEnhancementMode && screenshotAnalysis && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+            <div className={`${currentViewport === 'desktop' ? 'max-w-7xl mx-auto' : 'w-full'} px-4 sm:px-6 lg:px-8 mb-4`}>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-blue-900">AI Enhancement Ready</h3>
@@ -536,7 +536,7 @@ const UnifiedSlotsEditor = ({
             viewport={currentViewport}
             className="bg-white"
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <div className={`${currentViewport === 'desktop' ? 'max-w-7xl mx-auto' : 'w-full'} px-4 sm:px-6 lg:px-8 pb-12`}>
               {/* Flash Messages Area */}
               <div id="flash-messages-area"></div>
 
