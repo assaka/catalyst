@@ -132,14 +132,15 @@ export const generateMockProductContext = (storeSettings = null) => {
       currency_code: 'USD',
       currency_symbol: '$'
     },
-    settings: storeSettings || {
+    settings: {
+      // Mock defaults
       currency_code: 'USD',
       currency_symbol: '$',
       hide_currency_product: false,
       track_stock: true,
       hide_quantity_selector: false,
-      product_gallery_layout: 'horizontal', // Default to horizontal layout
-      vertical_gallery_position: 'left', // Default thumbnails to left side in vertical layout
+      product_gallery_layout: 'horizontal',
+      vertical_gallery_position: 'left',
       stock_settings: {
         show_stock_label: true,
         in_stock_label: 'In Stock ({quantity} available)',
@@ -148,7 +149,9 @@ export const generateMockProductContext = (storeSettings = null) => {
       },
       theme: {
         add_to_cart_button_color: '#16a34a'
-      }
+      },
+      // Merge with real store settings (overrides defaults)
+      ...(storeSettings || {})
     },
     productLabels: [
       {

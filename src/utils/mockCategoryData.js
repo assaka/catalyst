@@ -158,7 +158,10 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
       { name: 'Sample Category', url: '/sample' }
     ],
     selectedFilters: {},
-    settings: storeSettings || { currency_symbol: '$' },
+    settings: {
+      currency_symbol: '$',
+      ...(storeSettings || {})
+    },
     store: { id: 1, name: 'Demo Store', code: 'demo' },
     productLabels: [
       {
