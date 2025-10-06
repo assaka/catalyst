@@ -98,6 +98,11 @@ export default function ThemeLayout() {
                     checkout_button_color: '#007bff',
                     place_order_button_color: '#28a745',
                     font_family: 'Inter',
+                    // Product Tabs Styling
+                    product_tabs_title_color: '#DC2626', // red-600
+                    product_tabs_title_size: '1.875rem', // text-3xl
+                    product_tabs_content_bg: '#EFF6FF', // blue-50
+                    product_tabs_attribute_label_color: '#16A34A', // green-600
                     ...((fullStore?.settings || {}).theme || {})
                 },
             };
@@ -924,6 +929,68 @@ export default function ThemeLayout() {
                                                 <SelectItem value="below">Below (Thumbnails below main image)</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-3 border rounded-lg">
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="font-medium mb-2">Product Tabs Styling</h4>
+                                        <p className="text-sm text-gray-500">Customize the appearance of product tabs on product detail pages.</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="product_tabs_title_color">Tab Title Color</Label>
+                                            <Input
+                                                id="product_tabs_title_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_title_color}
+                                                onChange={(e) => handleThemeChange('product_tabs_title_color', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_title_size">Tab Title Size</Label>
+                                            <Select
+                                                value={store.settings.theme.product_tabs_title_size}
+                                                onValueChange={(value) => handleThemeChange('product_tabs_title_size', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="0.875rem">Small (14px)</SelectItem>
+                                                    <SelectItem value="1rem">Medium (16px)</SelectItem>
+                                                    <SelectItem value="1.125rem">Large (18px)</SelectItem>
+                                                    <SelectItem value="1.25rem">X-Large (20px)</SelectItem>
+                                                    <SelectItem value="1.5rem">2X-Large (24px)</SelectItem>
+                                                    <SelectItem value="1.875rem">3X-Large (30px)</SelectItem>
+                                                    <SelectItem value="2.25rem">4X-Large (36px)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_content_bg">Tab Content Background</Label>
+                                            <Input
+                                                id="product_tabs_content_bg"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_content_bg}
+                                                onChange={(e) => handleThemeChange('product_tabs_content_bg', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="product_tabs_attribute_label_color">Attribute Label Color</Label>
+                                            <Input
+                                                id="product_tabs_attribute_label_color"
+                                                type="color"
+                                                value={store.settings.theme.product_tabs_attribute_label_color}
+                                                onChange={(e) => handleThemeChange('product_tabs_attribute_label_color', e.target.value)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

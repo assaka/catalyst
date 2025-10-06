@@ -790,7 +790,8 @@ export const productConfig = {
             <nav class="-mb-px flex space-x-8">
               {{#each tabs}}
                 <button
-                  class="py-2 px-1 border-b-2 font-medium text-3xl text-red-600 transition-colors duration-200 {{#if this.isActive}}border-red-600{{else}}border-transparent hover:underline{{/if}}"
+                  class="py-2 px-1 border-b-2 font-medium transition-colors duration-200 {{#if this.isActive}}{{else}}border-transparent hover:underline{{/if}}"
+                  style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}}; {{#if this.isActive}}border-color: {{settings.theme.product_tabs_title_color}};{{/if}}"
                   data-action="switch-tab"
                   data-tab-id="{{this.id}}">
                   {{this.title}}
@@ -808,10 +809,12 @@ export const productConfig = {
                 data-tab-index="{{@index}}"
                 data-tab-type="{{this.tab_type}}"
                 data-tab-text-content="{{this.content}}">
-                <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container bg-blue-50 p-6 rounded-lg" data-attributes-template='
+                <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 rounded-lg"
+                     style="background-color: {{settings.theme.product_tabs_content_bg}};"
+                     data-attributes-template='
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex justify-between py-2 border-b border-gray-100">
-                      <span class="font-bold capitalize text-green-600">__KEY__</span>
+                      <span class="font-bold capitalize" style="color: {{settings.theme.product_tabs_attribute_label_color}};">__KEY__</span>
                       <span>__VALUE__</span>
                     </div>
                   </div>
@@ -831,9 +834,10 @@ export const productConfig = {
                   class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
                   data-action="toggle-accordion"
                   data-accordion-index="{{@index}}">
-                  <span class="font-medium text-3xl text-red-600">{{this.title}}</span>
+                  <span class="font-medium" style="font-size: {{settings.theme.product_tabs_title_size}}; color: {{settings.theme.product_tabs_title_color}};">{{this.title}}</span>
                   <svg
-                    class="w-5 h-5 text-red-600 transition-transform duration-200 accordion-chevron"
+                    class="w-5 h-5 transition-transform duration-200 accordion-chevron"
+                    style="color: {{settings.theme.product_tabs_title_color}};"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24">
@@ -846,10 +850,12 @@ export const productConfig = {
                      data-accordion-content="{{@index}}"
                      data-tab-type="{{this.tab_type}}"
                      data-tab-text-content="{{this.content}}">
-                  <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container bg-blue-50 p-6 rounded-lg" data-attributes-template='
+                  <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 rounded-lg"
+                       style="background-color: {{settings.theme.product_tabs_content_bg}};"
+                       data-attributes-template='
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="font-bold capitalize text-green-600">__KEY__</span>
+                        <span class="font-bold capitalize" style="color: {{settings.theme.product_tabs_attribute_label_color}};">__KEY__</span>
                         <span>__VALUE__</span>
                       </div>
                     </div>
