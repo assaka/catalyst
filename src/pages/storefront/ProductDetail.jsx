@@ -854,13 +854,7 @@ export default function ProductDetail() {
             variableContext={{
               product,
               store,
-              settings: (() => {
-                console.log('🎨 ProductDetail - Settings passed to variableContext:', {
-                  theme: settings?.theme,
-                  product_tabs_title_color: settings?.theme?.product_tabs_title_color
-                });
-                return settings;
-              })(), // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
+              settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
               productLabels: (() => {
                 const labels = product?.applicableLabels || productLabels;
                 console.log('🏷️ ProductDetail - Passing labels to template:', labels?.map(l => ({

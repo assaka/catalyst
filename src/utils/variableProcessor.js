@@ -371,15 +371,6 @@ function getNestedValue(path, context, pageData) {
   // Merge data: pageData should override context (pageData has loop item context)
   const fullData = { ...context, ...pageData };
 
-  // Debug logging for settings.theme paths
-  if (path.startsWith('settings.theme')) {
-    console.log('🔍 getNestedValue - Looking for:', path, {
-      hasSettings: !!fullData.settings,
-      hasTheme: !!fullData.settings?.theme,
-      value: path.split('.').reduce((obj, key) => obj && obj[key] !== undefined ? obj[key] : null, fullData)
-    });
-  }
-
   // Handle 'this' keyword - inside {{#each}} loops, 'this' refers to current item
   if (path.startsWith('this.')) {
     const propertyPath = path.substring(5); // Remove 'this.'
