@@ -312,7 +312,37 @@ export function UnifiedSlotRenderer({
 
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
-    const processedClassName = processVariables(className, variableContext);
+    let processedClassName = processVariables(className, variableContext);
+
+    // Handle viewport-aware responsive classes in editor mode
+    // Convert Tailwind breakpoint classes (sm:, md:, lg:) to viewport-based visibility
+    if (context === 'editor' && processedClassName) {
+      // sm:hidden means "hidden on small screens and up" (mobile should show, desktop should hide)
+      // In editor with mobile viewport, we should show it; in desktop viewport, we should hide it
+      if (processedClassName.includes('sm:hidden')) {
+        if (viewportMode === 'mobile') {
+          // Remove sm:hidden and make visible in mobile viewport
+          processedClassName = processedClassName.replace(/\bsm:hidden\b/g, '').trim();
+        } else {
+          // In tablet/desktop viewport, convert sm:hidden to actual hidden
+          processedClassName = processedClassName.replace(/\bsm:hidden\b/g, 'hidden').trim();
+        }
+      }
+
+      // hidden sm:flex means "hidden on mobile, flex on small screens and up"
+      if (processedClassName.includes('hidden') && processedClassName.includes('sm:flex')) {
+        if (viewportMode === 'mobile') {
+          // Keep hidden in mobile viewport
+          processedClassName = processedClassName.replace(/\bsm:flex\b/g, '').trim();
+        } else {
+          // In tablet/desktop viewport, remove hidden and apply flex
+          processedClassName = processedClassName.replace(/\bhidden\b/g, '').replace(/\bsm:flex\b/g, 'flex').trim();
+        }
+      }
+
+      // Clean up multiple spaces
+      processedClassName = processedClassName.replace(/\s+/g, ' ').trim();
+    }
 
     // Process variables in styles (e.g., {{settings.theme.add_to_cart_button_color}})
     const processedStyles = {};
