@@ -887,6 +887,11 @@ export function UnifiedSlotRenderer({
         // Render slot content
         const slotContent = renderBasicSlot(slot);
 
+        // Skip rendering if slot content is null or undefined (empty slots)
+        if (slotContent === null || slotContent === undefined) {
+          return null;
+        }
+
         // Wrap with appropriate container
         return wrapSlotForEditor(slot, slotContent, colSpanClass, gridColumn);
       })}
