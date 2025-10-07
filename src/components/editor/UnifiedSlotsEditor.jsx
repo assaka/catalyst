@@ -3,14 +3,12 @@
  *
  * Features:
  * - Common editor functionality for Product, Cart, and Category pages
- * - AI enhancement ready with screenshot analysis support
  * - Consistent UI patterns and behavior
  * - Extensible through configuration objects
  *
  * Design Philosophy:
  * - Single source of truth for editor logic
  * - Page-specific behavior through configuration
- * - AI-ready architecture for customization assistance
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -69,14 +67,9 @@ import slotConfigurationService from '@/services/slotConfigurationService';
  * @param {Object} config.viewModeAdjustments - View mode specific adjustments
  * @param {Function} config.customSlotRenderer - Custom slot rendering logic
  * @param {Array} config.cmsBlockPositions - CMS block positions for the page
- * @param {Object} aiConfig - AI enhancement configuration
- * @param {boolean} aiConfig.enabled - Whether AI enhancement is enabled
- * @param {Function} aiConfig.onScreenshotAnalysis - Handler for screenshot analysis
- * @param {Function} aiConfig.onStyleGeneration - Handler for AI style generation
  */
 const UnifiedSlotsEditor = ({
   config,
-  aiConfig = { enabled: false },
   mode = 'edit',
   onSave,
   viewMode: propViewMode
@@ -130,11 +123,6 @@ const UnifiedSlotsEditor = ({
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-
-  // AI Enhancement State
-  const [aiEnhancementMode, setAiEnhancementMode] = useState(false);
-  const [screenshotAnalysis, setScreenshotAnalysis] = useState(null);
-  const [aiGeneratedStyles, setAiGeneratedStyles] = useState(null);
 
   // Page context state
   const [pageContext, setPageContext] = useState(null);
@@ -320,47 +308,6 @@ const UnifiedSlotsEditor = ({
     setIsSidebarVisible(false);
   }, []);
 
-  // AI Enhancement Functions
-  const handleScreenshotUpload = useCallback(async (file) => {
-    if (!aiConfig.enabled || !aiConfig.onScreenshotAnalysis) return;
-
-    try {
-      const analysis = await aiConfig.onScreenshotAnalysis(file, layoutConfig, pageContext);
-      setScreenshotAnalysis(analysis);
-      setAiEnhancementMode(true);
-    } catch (error) {
-      console.error('Screenshot analysis failed:', error);
-    }
-  }, [aiConfig, layoutConfig, pageContext]);
-
-  const handleApplyAiStyles = useCallback(async () => {
-    if (!aiConfig.enabled || !aiConfig.onStyleGeneration || !screenshotAnalysis) return;
-
-    try {
-      const generatedStyles = await aiConfig.onStyleGeneration(screenshotAnalysis, layoutConfig);
-      setAiGeneratedStyles(generatedStyles);
-
-      // Apply generated styles to layout configuration
-      const updatedConfig = {
-        ...layoutConfig,
-        slots: {
-          ...layoutConfig.slots,
-          ...generatedStyles.slots
-        }
-      };
-
-      setLayoutConfig(updatedConfig);
-      setHasUnsavedChanges(true);
-      await saveConfiguration(updatedConfig);
-
-      setAiEnhancementMode(false);
-      setScreenshotAnalysis(null);
-      setAiGeneratedStyles(null);
-    } catch (error) {
-      console.error('AI style generation failed:', error);
-    }
-  }, [aiConfig, screenshotAnalysis, layoutConfig, saveConfiguration, setHasUnsavedChanges]);
-
   // Render view mode tabs
   const renderViewModeTabs = () => {
     if (!viewModes || viewModes.length <= 1) return null;
@@ -419,32 +366,6 @@ const UnifiedSlotsEditor = ({
                   hasChanges={hasUnsavedChanges}
                 />
               )}
-
-              {/* AI Enhancement Toggle */}
-              {aiConfig.enabled && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => setAiEnhancementMode(!aiEnhancementMode)}
-                    variant={aiEnhancementMode ? "default" : "outline"}
-                    size="sm"
-                    className="flex items-center gap-1.5"
-                  >
-                    🤖 AI Enhance
-                  </Button>
-                  {aiEnhancementMode && (
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) handleScreenshotUpload(file);
-                      }}
-                      className="hidden"
-                      id="screenshot-upload"
-                    />
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Preview and Publish Buttons - Far Right */}
@@ -495,33 +416,6 @@ const UnifiedSlotsEditor = ({
               onShowCode={() => setShowCodeModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
             />
-          )}
-
-          {/* AI Enhancement Panel */}
-          {aiEnhancementMode && screenshotAnalysis && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-blue-900">AI Enhancement Ready</h3>
-                  <Button
-                    onClick={() => setAiEnhancementMode(false)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    ✕
-                  </Button>
-                </div>
-                <p className="text-sm text-blue-700 mb-3">{screenshotAnalysis.summary}</p>
-                <div className="flex gap-2">
-                  <Button onClick={handleApplyAiStyles} size="sm">
-                    Apply AI Styles
-                  </Button>
-                  <label htmlFor="screenshot-upload">
-                    <Button variant="outline" size="sm" asChild>
-                      <span>Upload New Screenshot</span>
-                    </Button>
-                  </label>
-                </div>
-              </div>
           )}
 
           <ResponsiveIframe

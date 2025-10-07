@@ -496,60 +496,6 @@ const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
   cmsBlockPositions: ['category_above_products', 'category_below_products']
 });
 
-// AI Enhancement Configuration for Category
-const categoryAiConfig = {
-  enabled: true,
-  onScreenshotAnalysis: async (file, layoutConfig, context) => {
-    try {
-      return await aiEnhancementService.analyzeScreenshot(file, layoutConfig, 'category', context);
-    } catch (error) {
-      console.error('AI analysis failed, using fallback:', error);
-      return {
-        summary: "AI analysis temporarily unavailable. Using fallback analysis for category page layout.",
-        suggestions: [
-          "Update product grid layout to match reference design",
-          "Adjust filter sidebar positioning and styling",
-          "Modify product card design and spacing",
-          "Enhance category header and breadcrumb styling",
-          "Update pagination and sorting controls"
-        ],
-        confidence: 0.6
-      };
-    }
-  },
-  onStyleGeneration: async (analysis, layoutConfig) => {
-    try {
-      return await aiEnhancementService.generateStyles(analysis, layoutConfig, 'category');
-    } catch (error) {
-      console.error('AI style generation failed, using fallback:', error);
-      const updatedSlots = { ...layoutConfig.slots };
-
-      // Apply basic style improvements
-      if (updatedSlots.products_container) {
-        updatedSlots.products_container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6";
-      }
-
-      if (updatedSlots.filters_container) {
-        updatedSlots.filters_container.className = "bg-white rounded-lg shadow-sm p-6 sticky top-4";
-      }
-
-      if (updatedSlots.category_header) {
-        updatedSlots.category_header.className = "text-3xl font-bold text-gray-900 mb-6";
-      }
-
-      return {
-        slots: updatedSlots,
-        metadata: {
-          aiGenerated: false,
-          fallback: true,
-          analysisId: Date.now(),
-          confidence: analysis.confidence || 0.5
-        }
-      };
-    }
-  }
-};
-
 const CategorySlotsEditor = ({
   mode = 'edit',
   onSave,
@@ -581,7 +527,6 @@ const CategorySlotsEditor = ({
   return (
     <UnifiedSlotsEditor
       config={enhancedConfig}
-      aiConfig={categoryAiConfig}
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}

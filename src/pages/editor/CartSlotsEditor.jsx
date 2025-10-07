@@ -75,55 +75,6 @@ const cartEditorConfig = {
   cmsBlockPositions: cartConfig.cmsBlocks
 };
 
-// AI Enhancement Configuration for Cart
-const cartAiConfig = {
-  enabled: true,
-  onScreenshotAnalysis: async (file, layoutConfig, context) => {
-    try {
-      return await aiEnhancementService.analyzeScreenshot(file, layoutConfig, 'cart', context);
-    } catch (error) {
-      console.error('AI analysis failed, using fallback:', error);
-      return {
-        summary: "AI analysis temporarily unavailable. Using fallback analysis for shopping cart layout.",
-        suggestions: [
-          "Update cart item layout to match reference design",
-          "Adjust order summary positioning and styling",
-          "Modify checkout button styling and placement",
-          "Enhance empty cart state design"
-        ],
-        confidence: 0.6
-      };
-    }
-  },
-  onStyleGeneration: async (analysis, layoutConfig) => {
-    try {
-      return await aiEnhancementService.generateStyles(analysis, layoutConfig, 'cart');
-    } catch (error) {
-      console.error('AI style generation failed, using fallback:', error);
-      const updatedSlots = { ...layoutConfig.slots };
-
-      // Apply basic style improvements
-      if (updatedSlots.cart_items) {
-        updatedSlots.cart_items.className = "bg-white rounded-lg shadow-sm border p-4 space-y-4";
-      }
-
-      if (updatedSlots.order_summary_container) {
-        updatedSlots.order_summary_container.className = "bg-gray-50 rounded-lg p-6";
-      }
-
-      return {
-        slots: updatedSlots,
-        metadata: {
-          aiGenerated: false,
-          fallback: true,
-          analysisId: Date.now(),
-          confidence: analysis.confidence || 0.5
-        }
-      };
-    }
-  }
-};
-
 const CartSlotsEditor = ({
   mode = 'edit',
   onSave,
@@ -132,7 +83,6 @@ const CartSlotsEditor = ({
   return (
     <UnifiedSlotsEditor
       config={cartEditorConfig}
-      aiConfig={cartAiConfig}
       mode={mode}
       onSave={onSave}
       viewMode={viewMode}

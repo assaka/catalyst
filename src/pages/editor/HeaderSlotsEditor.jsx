@@ -161,41 +161,9 @@ export default function HeaderSlotsEditor() {
     cmsBlockPositions: headerConfig.cmsBlocks
   }), [generateHeaderContext]);
 
-  // AI Enhancement Configuration for Header
-  const headerAiConfig = {
-    enabled: true,
-    onScreenshotAnalysis: async (file, layoutConfig, context) => {
-      try {
-        return await aiEnhancementService.analyzeScreenshot(file, layoutConfig, 'header', context);
-      } catch (error) {
-        console.error('AI analysis failed, using fallback:', error);
-        return {
-          summary: "AI analysis temporarily unavailable. Using fallback analysis for header layout.",
-          suggestions: [
-            "Update logo size and positioning",
-            "Adjust navigation menu styling",
-            "Modify search bar appearance",
-            "Enhance user menu button design",
-            "Update mobile menu layout"
-          ],
-          confidence: 0.6
-        };
-      }
-    },
-    onStyleGeneration: async (analysis, layoutConfig) => {
-      try {
-        return await aiEnhancementService.generateStyles(analysis, layoutConfig, 'header');
-      } catch (error) {
-        console.error('Style generation failed:', error);
-        return { slots: layoutConfig.slots };
-      }
-    }
-  };
-
   return (
     <UnifiedSlotsEditor
       config={headerEditorConfig}
-      aiConfig={headerAiConfig}
     />
   );
 }
