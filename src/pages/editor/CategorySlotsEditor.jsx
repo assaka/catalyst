@@ -451,12 +451,12 @@ const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
   viewModes: [
     {
       key: 'grid',
-      label: 'Grid View',
+      label: 'Grid',
       icon: Grid
     },
     {
       key: 'list',
-      label: 'List View',
+      label: 'List',
       icon: List
     }
   ],
