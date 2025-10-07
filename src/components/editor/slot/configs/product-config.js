@@ -93,7 +93,7 @@ export const productConfig = {
       id: 'content_area',
       type: 'grid',
       content: '',
-      className: 'content-area flex flex-col md:grid md:grid-cols-12 md:gap-8',
+      className: 'content-area grid md:grid-cols-12 md:gap-8',
       styles: { gridRow: '2' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
@@ -107,6 +107,29 @@ export const productConfig = {
     },
 
     // Product Gallery Section - Pure Handlebars/HTML No-Code Approach
+
+    // PRODUCT TITLE - Mobile only (appears above gallery)
+    product_title_mobile: {
+      id: 'product_title_mobile',
+      type: 'text',
+      content: '{{product.name}}',
+      className: 'w-full text-2xl font-bold text-gray-900 mb-4 md:hidden',
+      parentClassName: '',
+      styles: {},
+      parentId: 'content_area',
+      position: { col: 1, row: 0 },
+      colSpan: {
+        default: 12
+      },
+      viewMode: ['default'],
+      metadata: {
+        hierarchical: true,
+        htmlTag: 'h1',
+        htmlAttributes: {
+          'data-product-title-mobile': ''
+        }
+      }
+    },
 
     // PRODUCT GALLERY - Simplified dynamic layout
     product_gallery_container: {
@@ -336,7 +359,7 @@ export const productConfig = {
             </div>
           {{/if}}
         {{/if}}`,
-      className: 'w-full order-2 md:order-1',
+      className: 'w-full',
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
@@ -356,7 +379,7 @@ export const productConfig = {
       id: 'info_container',
       type: 'grid',
       content: '',
-      className: 'info-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 space-y-6 order-1 md:order-2',
+      className: 'info-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 space-y-6',
       styles: {},
       parentId: 'content_area',
       position: { col: 7, row: 1 },
@@ -372,7 +395,7 @@ export const productConfig = {
       id: 'product_title',
       type: 'text',
       content: '{{product.name}}',
-      className: 'w-fit text-3xl font-bold text-gray-900 mb-2',
+      className: 'w-fit text-3xl font-bold text-gray-900 mb-2 hidden md:block',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
