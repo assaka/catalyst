@@ -274,6 +274,8 @@ export const StoreProvider = ({ children }) => {
         settingsType: typeof selectedStore.settings,
         hasSettings: !!selectedStore.settings,
         hasTheme: !!selectedStore.settings?.theme,
+        fullTheme: selectedStore.settings?.theme,
+        allThemeKeys: selectedStore.settings?.theme ? Object.keys(selectedStore.settings.theme) : [],
         themeBreadcrumbColors: selectedStore.settings?.theme ? {
           itemTextColor: selectedStore.settings.theme.breadcrumb_item_text_color,
           itemHoverColor: selectedStore.settings.theme.breadcrumb_item_hover_color,
