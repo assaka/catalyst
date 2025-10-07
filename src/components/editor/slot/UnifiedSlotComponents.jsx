@@ -2054,16 +2054,9 @@ const CmsBlockRenderer = createSlotComponent({
       // Sort by sort_order
       matchingBlocks.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
+      // Skip rendering if no blocks assigned
       if (matchingBlocks.length === 0) {
-        return (
-          <div className={`${className || slot.className || ''} border-2 border-dashed border-gray-300 rounded-lg p-6 text-center`}
-               style={styles || slot.styles}>
-            <div className="text-gray-500 text-sm">
-              <div className="font-semibold mb-1">CMS Block Area: {position}</div>
-              <div className="text-xs">No CMS blocks assigned to this position</div>
-            </div>
-          </div>
-        );
+        return null;
       }
 
       return (
