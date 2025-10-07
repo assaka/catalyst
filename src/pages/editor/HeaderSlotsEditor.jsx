@@ -5,12 +5,13 @@
  * - Mobile and desktop views
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, Search } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import aiEnhancementService from '@/services/aiEnhancementService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { Store } from '@/api/entities';
 
 /**
  * HeaderSlotsEditor Component
@@ -20,26 +21,43 @@ export default function HeaderSlotsEditor() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-  // Get actual store data and settings
-  const { store, settings } = useStore();
+  // Get selected store from admin context
+  const { selectedStore } = useStoreSelection();
+  const [storeData, setStoreData] = useState(null);
+
+  // Load full store data including settings
+  useEffect(() => {
+    const loadStoreData = async () => {
+      if (selectedStore?.id) {
+        try {
+          const fullStore = await Store.findById(selectedStore.id);
+          const store = Array.isArray(fullStore) ? fullStore[0] : fullStore;
+          setStoreData(store);
+        } catch (error) {
+          console.error('Failed to load store data:', error);
+        }
+      }
+    };
+    loadStoreData();
+  }, [selectedStore]);
 
   // Generate header context with interactive state
   const generateHeaderContext = (viewMode) => ({
     isEditor: true,
     responsiveMode: viewMode,
-    store: store || {
+    store: storeData || {
       id: 1,
       name: 'Demo Store',
       slug: 'demo-store',
       logo_url: null
     },
     settings: {
-      hide_header_search: settings?.hide_header_search || false,
-      hide_header_cart: settings?.hide_header_cart || false,
-      show_permanent_search: settings?.show_permanent_search || false,
-      show_language_selector: settings?.show_language_selector || false,
-      allowed_countries: settings?.allowed_countries || ['US', 'CA', 'UK'],
-      theme: settings?.theme || {
+      hide_header_search: storeData?.settings?.hide_header_search || false,
+      hide_header_cart: storeData?.settings?.hide_header_cart || false,
+      show_permanent_search: storeData?.settings?.show_permanent_search || false,
+      show_language_selector: storeData?.settings?.show_language_selector || false,
+      allowed_countries: storeData?.settings?.allowed_countries || ['US', 'CA', 'UK'],
+      theme: storeData?.settings?.theme || {
         primary_button_color: '#2563EB',
         add_to_cart_button_color: '#10B981'
       }
