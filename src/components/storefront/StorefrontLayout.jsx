@@ -546,102 +546,11 @@ export default function StorefrontLayout({ children }) {
                             </div>
                         )}
 
-                        {mobileMenuOpen && (
+                        {/* Old mobile menu removed - now using slot-based HeaderSlotRenderer mobile menu */}
+                        {mobileMenuOpen && false && (
                             <div className="md:hidden border-t border-gray-200 bg-white">
                                 <div className="px-4 py-3 space-y-2">
-                                    {Array.isArray(categories) && store && (() => {
-                                        // Build hierarchical tree for mobile menu
-                                        const buildMobileCategoryTree = (categories) => {
-                                            const categoryMap = new Map();
-                                            const rootCategories = [];
-                                            let visibleCategories = categories.filter(c => !c.hide_in_menu);
-
-                                            // If store has a root category, filter to only show that category tree
-                                            if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
-                                                const filterCategoryTree = (categoryId, allCategories) => {
-                                                    const children = allCategories.filter(c => c.parent_id === categoryId);
-                                                    let result = children.slice();
-                                                    children.forEach(child => {
-                                                        result = result.concat(filterCategoryTree(child.id, allCategories));
-                                                    });
-                                                    return result;
-                                                };
-                                                
-                                                const rootCategory = visibleCategories.find(c => c.id === store.settings.rootCategoryId);
-                                                if (rootCategory) {
-                                                    const descendants = filterCategoryTree(store.settings.rootCategoryId, visibleCategories);
-                                                    
-                                                    // Check if we should exclude root category from menu
-                                                    if (store.settings.excludeRootFromMenu) {
-                                                        visibleCategories = descendants; // Only show descendants, not the root
-                                                    } else {
-                                                        visibleCategories = [rootCategory, ...descendants]; // Include root and descendants
-                                                    }
-                                                } else {
-                                                    visibleCategories = [];
-                                                }
-                                            }
-
-                                            visibleCategories.forEach(category => {
-                                                categoryMap.set(category.id, { ...category, children: [] });
-                                            });
-
-                                            visibleCategories.forEach(category => {
-                                                const categoryNode = categoryMap.get(category.id);
-                                                if (category.parent_id && categoryMap.has(category.parent_id)) {
-                                                    const parent = categoryMap.get(category.parent_id);
-                                                    parent.children.push(categoryNode);
-                                                } else {
-                                                    rootCategories.push(categoryNode);
-                                                }
-                                            });
-
-                                            return rootCategories;
-                                        };
-
-                                        const renderMobileCategory = (category, depth = 0) => {
-                                            const hasChildren = category.children && category.children.length > 0;
-                                            const isExpanded = expandedMobileCategories.has(category.id);
-                                            const shouldShowAllSubcategories = store?.settings?.expandAllMenuItems;
-                                            
-                                            return (
-                                                <div key={category.id}>
-                                                    <div className="flex items-center">
-                                                        {hasChildren && !shouldShowAllSubcategories && (
-                                                            <button
-                                                                onClick={() => toggleMobileCategory(category.id)}
-                                                                className="p-1 mr-1 hover:bg-gray-200 rounded touch-manipulation"
-                                                                style={{ marginLeft: `${12 + depth * 16}px` }}
-                                                            >
-                                                                {isExpanded ? '▼' : '▶'}
-                                                            </button>
-                                                        )}
-                                                        <Link
-                                                            to={createCategoryUrl(store.slug, category.slug)}
-                                                            onClick={() => setMobileMenuOpen(false)}
-                                                            className="flex-1 block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md touch-manipulation"
-                                                            style={{ 
-                                                                paddingLeft: hasChildren && !shouldShowAllSubcategories 
-                                                                    ? '8px' 
-                                                                    : `${12 + depth * 16}px` 
-                                                            }}
-                                                        >
-                                                            {category.name}
-                                                        </Link>
-                                                    </div>
-                                                    {hasChildren && (shouldShowAllSubcategories || isExpanded) && 
-                                                        category.children.map(child => renderMobileCategory(child, depth + 1))
-                                                    }
-                                                </div>
-                                            );
-                                        };
-
-                                        // Always show categories in hamburger menu - this is the mobile navigation
-                                        return buildMobileCategoryTree(categories).map(category => renderMobileCategory(category));
-                                    })()}
-
-                                    {Array.isArray(languages) && languages.length > 1 && (
-                                        <div className="pt-3 mt-3 border-t border-gray-200">
+                                    {/* Fallback mobile menu disabled - using slot-based system */}
                                             <Select value={currentLanguage} onValueChange={setCurrentLanguage}>
                                                 <SelectTrigger className="w-full">
                                                     <Globe className="w-4 h-4 mr-2" />
