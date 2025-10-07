@@ -108,6 +108,22 @@ const MiniCartSlot = createSlotComponent({
   name: 'MiniCart',
   render: ({ slot, context, headerContext, className, styles }) => {
     const { settings = {} } = headerContext || {};
+    const iconVariant = slot?.metadata?.iconVariant || 'outline';
+
+    // Choose icon based on variant
+    const getCartIcon = () => {
+      switch (iconVariant) {
+        case 'filled':
+          return <ShoppingCart className="w-5 h-5 fill-current" />;
+        case 'bag':
+          return <ShoppingBag className="w-5 h-5" />;
+        case 'bag-filled':
+          return <ShoppingBag className="w-5 h-5 fill-current" />;
+        case 'outline':
+        default:
+          return <ShoppingCart className="w-5 h-5" />;
+      }
+    };
 
     if (context === 'editor') {
       return (
@@ -117,7 +133,7 @@ const MiniCartSlot = createSlotComponent({
             size="icon"
             className="relative"
           >
-            <ShoppingCart className="w-5 h-5" />
+            {getCartIcon()}
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
@@ -134,7 +150,7 @@ const MiniCartSlot = createSlotComponent({
 
     return (
       <div className={className} style={styles}>
-        <MiniCart />
+        <MiniCart iconVariant={iconVariant} />
       </div>
     );
   }
@@ -146,6 +162,19 @@ const MiniCartSlot = createSlotComponent({
 const WishlistDropdownSlot = createSlotComponent({
   name: 'WishlistDropdown',
   render: ({ slot, context, headerContext, className, styles }) => {
+    const iconVariant = slot?.metadata?.iconVariant || 'outline';
+
+    // Choose icon based on variant
+    const getWishlistIcon = () => {
+      switch (iconVariant) {
+        case 'filled':
+          return <Heart className="w-5 h-5 fill-current" />;
+        case 'outline':
+        default:
+          return <Heart className="w-5 h-5" />;
+      }
+    };
+
     // Same rendering for both editor and storefront - showing just the icon button
     if (context === 'editor') {
       return (
@@ -155,7 +184,7 @@ const WishlistDropdownSlot = createSlotComponent({
           className={className}
           style={styles}
         >
-          <Heart className="w-5 h-5" />
+          {getWishlistIcon()}
         </Button>
       );
     }
@@ -163,7 +192,7 @@ const WishlistDropdownSlot = createSlotComponent({
     // Storefront rendering with actual Wishlist component
     return (
       <div className={className} style={styles}>
-        <WishlistDropdown />
+        <WishlistDropdown iconVariant={iconVariant} />
       </div>
     );
   }
@@ -337,6 +366,7 @@ const UserAccountMenuSlot = createSlotComponent({
   name: 'UserAccountMenu',
   render: ({ slot, context, headerContext, className, styles }) => {
     const { user, userLoading, handleCustomerLogout, store, navigate } = headerContext || {};
+    const iconVariant = slot?.metadata?.iconVariant || 'outline';
 
     const buttonStyles = {
       backgroundColor: styles?.backgroundColor || '#2563EB',
@@ -347,6 +377,23 @@ const UserAccountMenuSlot = createSlotComponent({
 
     const hoverBg = styles?.hoverBackgroundColor || '#1D4ED8';
 
+    // Choose icon based on variant
+    const getUserIcon = () => {
+      switch (iconVariant) {
+        case 'filled':
+          return <User className="w-4 h-4 fill-current" />;
+        case 'circle':
+          return (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </svg>
+          );
+        case 'outline':
+        default:
+          return <User className="w-4 h-4" />;
+      }
+    };
+
     if (context === 'editor') {
       return (
         <div className={className} style={styles}>
@@ -355,7 +402,7 @@ const UserAccountMenuSlot = createSlotComponent({
             className="px-4 py-2 flex items-center space-x-2"
             style={buttonStyles}
           >
-            <User className="w-4 h-4" />
+            {getUserIcon()}
             <span>Sign In</span>
           </Button>
         </div>
@@ -373,7 +420,7 @@ const UserAccountMenuSlot = createSlotComponent({
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
           >
-            <User className="w-4 h-4" />
+            {getUserIcon()}
             <span>{user.first_name || user.name || user.email}</span>
             <ChevronDown className="w-4 h-4" />
           </Button>
@@ -395,7 +442,7 @@ const UserAccountMenuSlot = createSlotComponent({
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
         >
-          <User className="w-5 h-5 mr-2" />
+          {getUserIcon()}
           <span>Sign In</span>
         </Button>
       </div>

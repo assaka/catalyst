@@ -83,7 +83,12 @@ const HeaderEditorSidebar = ({
     mobileMenuLinkColor: '#374151',
     mobileMenuLinkHoverColor: '#111827',
     mobileMenuIconColor: '#374151',
-    hamburgerSize: '1.5rem'
+    hamburgerSize: '1.5rem',
+
+    // Icon Variants
+    wishlistIconVariant: 'outline', // outline, filled
+    userIconVariant: 'outline', // outline, filled
+    cartIconVariant: 'outline' // outline, filled
   });
 
   // Load existing styles from slots
@@ -170,6 +175,16 @@ const HeaderEditorSidebar = ({
       if (mobileNavigation.styles.hoverColor) updates.mobileMenuLinkHoverColor = mobileNavigation.styles.hoverColor;
     }
 
+    // Icon Variants
+    const cartIcon = allSlots['cart_icon'];
+    if (cartIcon?.metadata?.iconVariant) updates.cartIconVariant = cartIcon.metadata.iconVariant;
+
+    const desktopWishlist = allSlots['desktop_wishlist'];
+    if (desktopWishlist?.metadata?.iconVariant) updates.wishlistIconVariant = desktopWishlist.metadata.iconVariant;
+
+    const userAccountMenu = allSlots['user_account_menu'];
+    if (userAccountMenu?.metadata?.iconVariant) updates.userIconVariant = userAccountMenu.metadata.iconVariant;
+
     if (Object.keys(updates).length > 0) {
       setHeaderStyles(prev => ({ ...prev, ...updates }));
     }
@@ -236,7 +251,12 @@ const HeaderEditorSidebar = ({
         mobileMenuBg: { slot: 'mobile_menu', type: 'style', prop: 'backgroundColor' },
         mobileMenuLinkColor: { slot: 'mobile_navigation', type: 'style', prop: 'color' },
         mobileMenuLinkHoverColor: { slot: 'mobile_navigation', type: 'style', prop: 'hoverColor' },
-        mobileMenuIconColor: { slot: 'mobile_menu_toggle', type: 'style', prop: 'color' }
+        mobileMenuIconColor: { slot: 'mobile_menu_toggle', type: 'style', prop: 'color' },
+
+        // Icon Variants
+        wishlistIconVariant: { slot: 'desktop_wishlist', type: 'metadata', prop: 'iconVariant' },
+        userIconVariant: { slot: 'user_account_menu', type: 'metadata', prop: 'iconVariant' },
+        cartIconVariant: { slot: 'cart_icon', type: 'metadata', prop: 'iconVariant' }
       };
 
       const mapping = styleMap[property];
@@ -778,6 +798,60 @@ const HeaderEditorSidebar = ({
                 className="h-8 text-xs mt-1"
                 placeholder="0.5rem"
               />
+            </div>
+          </div>
+        </SectionHeader>
+
+        {/* Icon Styles */}
+        <SectionHeader
+          title="Icon Styles"
+          section="iconStyles"
+          expanded={expandedSections.iconStyles}
+          onToggle={toggleSection}
+        >
+          <div className="space-y-3 p-3">
+            <p className="text-xs text-gray-600 mb-3">Choose icon variants for cart, wishlist, and user icons</p>
+
+            <div>
+              <Label className="text-xs font-semibold">Cart Icon</Label>
+              <select
+                value={headerStyles.cartIconVariant}
+                onChange={(e) => handleStyleChange('cartIconVariant', e.target.value, 'cart_icon')}
+                className="w-full h-8 text-xs border rounded px-2 mt-1"
+              >
+                <option value="outline">Outline (Default)</option>
+                <option value="filled">Filled</option>
+                <option value="bag">Shopping Bag</option>
+                <option value="bag-filled">Shopping Bag (Filled)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Icon style for mini cart button</p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Wishlist Icon</Label>
+              <select
+                value={headerStyles.wishlistIconVariant}
+                onChange={(e) => handleStyleChange('wishlistIconVariant', e.target.value, 'desktop_wishlist')}
+                className="w-full h-8 text-xs border rounded px-2 mt-1"
+              >
+                <option value="outline">Heart Outline (Default)</option>
+                <option value="filled">Heart Filled</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Icon style for wishlist dropdown</p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">User Icon</Label>
+              <select
+                value={headerStyles.userIconVariant}
+                onChange={(e) => handleStyleChange('userIconVariant', e.target.value, 'user_account_menu')}
+                className="w-full h-8 text-xs border rounded px-2 mt-1"
+              >
+                <option value="outline">User Outline (Default)</option>
+                <option value="filled">User Filled</option>
+                <option value="circle">User Circle</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Icon style for user account button</p>
             </div>
           </div>
         </SectionHeader>
