@@ -311,6 +311,18 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
 
+    // Log all slots being rendered
+    if (context === 'editor') {
+      console.log('🎯 Rendering slot:', {
+        id,
+        type,
+        hasContent: !!content,
+        className,
+        viewportMode,
+        parentId: slot.parentId
+      });
+    }
+
     // Process variables in content and className
     const processedContent = processVariables(content, variableContext);
     let processedClassName = processVariables(className, variableContext);
@@ -322,6 +334,12 @@ export function UnifiedSlotRenderer({
       // sm:hidden means "hidden on small screens and up" (mobile should show, desktop should hide)
       // In editor with mobile viewport, we should show it; in desktop viewport, skip it entirely
       if (processedClassName.includes('sm:hidden')) {
+        console.log('🔍 Slot with sm:hidden:', {
+          slotId: id,
+          viewportMode,
+          className: processedClassName,
+          willSkip: viewportMode !== 'mobile'
+        });
         if (viewportMode === 'mobile') {
           // Remove sm:hidden and make visible in mobile viewport
           processedClassName = processedClassName.replace(/\bsm:hidden\b/g, '').trim();
@@ -333,6 +351,12 @@ export function UnifiedSlotRenderer({
 
       // hidden sm:flex means "hidden on mobile, flex on small screens and up"
       if (processedClassName.includes('hidden') && processedClassName.includes('sm:flex')) {
+        console.log('🔍 Slot with hidden sm:flex:', {
+          slotId: id,
+          viewportMode,
+          className: processedClassName,
+          willSkip: viewportMode === 'mobile'
+        });
         if (viewportMode === 'mobile') {
           // Skip rendering in mobile viewport
           shouldSkipDueToViewport = true;
@@ -348,6 +372,7 @@ export function UnifiedSlotRenderer({
 
     // Skip rendering if viewport doesn't match responsive classes
     if (shouldSkipDueToViewport) {
+      console.log('✅ Skipping slot due to viewport:', { slotId: id, viewportMode });
       return null;
     }
 
