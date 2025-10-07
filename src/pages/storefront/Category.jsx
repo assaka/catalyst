@@ -736,14 +736,6 @@ export default function Category() {
             {sortedProducts.length > 0 || loading ? (
               <>
                 <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                  {console.log('🔍 Category.jsx - Rendering CategorySlotRenderer with:', {
-                    productsLength: paginatedProducts.length,
-                    sortedProductsLength: sortedProducts.length,
-                    allProductsLength: products.length,
-                    hasCategorySlots: !!categorySlots,
-                    categorySlotKeys: categorySlots ? Object.keys(categorySlots).slice(0, 20) : [],
-                    viewMode
-                  })}
                   <CategorySlotRenderer
                     slots={categorySlots}
                     parentId={null}

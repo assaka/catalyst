@@ -22,12 +22,6 @@ export function CategorySlotRenderer({
   viewMode = 'grid',
   categoryContext = {}
 }) {
-  // Debug: Log all slots being rendered
-  console.log('🎯 CategorySlotRenderer - all slots:', Object.keys(slots || {}));
-  console.log('🎯 CategorySlotRenderer - breadcrumbs_content exists?', !!slots?.breadcrumbs_content);
-  if (slots?.breadcrumbs_content) {
-    console.log('🎯 CategorySlotRenderer - breadcrumbs_content slot:', slots.breadcrumbs_content);
-  }
 
   // Helper function to generate dynamic grid classes
   const getDynamicGridClasses = (slot) => {
@@ -186,24 +180,11 @@ export function CategorySlotRenderer({
       component: componentName
     } = slot || {};
 
-    // Debug breadcrumbs slot
-    if (id === 'breadcrumbs_content') {
-      console.log('🔍 CategorySlotRenderer - breadcrumbs_content slot:', {
-        id,
-        type,
-        component: componentName,
-        metadataComponent: metadata?.component,
-        hasMetadata: !!metadata,
-        metadata
-      });
-    }
-
     // Fallback: check metadata.component if component field is missing (for backward compatibility)
     const finalComponentName = componentName || metadata?.component;
 
     // Check if this is a registered component type - use ComponentRegistry
     if (type === 'component' && finalComponentName && ComponentRegistry.has(finalComponentName)) {
-      console.log('🔧 CategorySlotRenderer - rendering component:', finalComponentName, 'for slot:', id);
       const registeredComponent = ComponentRegistry.get(finalComponentName);
 
       // Format products with all necessary fields for templates
