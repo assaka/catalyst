@@ -266,7 +266,7 @@ export const categoryConfig = {
       id: 'sorting_controls',
       type: 'container',
       content: '',
-      className: 'flex max-sm:flex-col flex-row justify-between items-start sm:items-center mb-6 gap-4',
+      className: 'flex justify-between items-center mb-6 gap-4',
       parentClassName: '',
       styles: {},
       parentId: 'products_container',
@@ -306,7 +306,7 @@ export const categoryConfig = {
       component: 'ProductCountInfo',
       content: `
         <div class="text-sm text-blue-600 font-bold">
-          Hamid {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
+          {{pagination.start}}-{{pagination.end}} of {{pagination.total}} products
         </div>
       `,
       className: '',
@@ -354,14 +354,14 @@ export const categoryConfig = {
       component: 'SortSelector',
       content: `
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-700 font-medium">Sort by:</label>
+          <label class="hidden sm:block text-sm text-gray-700 font-medium">Sort by:</label>
           <select class="border border-gray-300 rounded px-3 py-1.5 text-sm"
                   data-action="change-sort">
             <option value="position" {{#if (eq sorting.current "position")}}selected{{/if}}>Position</option>
             <option value="name_asc" {{#if (eq sorting.current "name_asc")}}selected{{/if}}>Name (A-Z)</option>
             <option value="name_desc" {{#if (eq sorting.current "name_desc")}}selected{{/if}}>Name (Z-A)</option>
-            <option value="price_asc" {{#if (eq sorting.current "price_asc")}}selected{{/if}}>Price (Low to High)</option>
-            <option value="price_desc" {{#if (eq sorting.current "price_desc")}}selected{{/if}}>Price (High to Low)</option>
+            <option value="price_asc" {{#if (eq sorting.current "price_asc")}}selected{{/if}}>Price (&ShortDownArrow;)</option>
+            <option value="price_desc" {{#if (eq sorting.current "price_desc")}}selected{{/if}}>Price (&ShortUpArrow;)</option>
             <option value="created_desc" {{#if (eq sorting.current "created_desc")}}selected{{/if}}>Newest First</option>
           </select>
         </div>
@@ -1337,8 +1337,8 @@ export const categoryConfig = {
 
   // View configuration
   views: [
-    { id: 'grid', label: 'Grid View', icon: Grid },
-    { id: 'list', label: 'List View', icon: List }
+    { id: 'grid', label: 'Grid', icon: Grid },
+    { id: 'list', label: 'List', icon: List }
   ],
 
   // CMS blocks for additional content areas

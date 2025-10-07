@@ -1049,8 +1049,8 @@ const ViewModeToggle = createSlotComponent({
     if (context === 'editor') {
       return (
         <div className={className || slot.className} style={styles || slot.styles}>
-          <div className="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
-            <button className="px-3 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm border border-gray-200 flex items-center gap-2">
+          <div className="inline-flex sm:bg-gray-100 sm:rounded-lg sm:p-1 space-x-1">
+            <button className="sm:px-3 sm:py-2 rounded-md text-sm font-medium sm:bg-white text-gray-900 sm:shadow-sm sm:border border-gray-200 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="7" height="7" />
                 <rect x="14" y="3" width="7" height="7" />
@@ -1079,14 +1079,14 @@ const ViewModeToggle = createSlotComponent({
       }
     };
 
-    return (
+      return (
       <div ref={containerRef} className={className || slot.className} style={styles || slot.styles}>
-        <div className="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
+        <div className="inline-flex sm:bg-gray-100 sm:rounded-lg sm:p-1 space-x-1">
           <button
             onClick={() => handleViewModeChange('grid')}
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+            className={`sm:px-3 sm:py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
               currentViewMode === 'grid'
-                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                ? 'bg-white text-gray-900 sm:shadow-sm sm:border border-gray-200'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
             }`}
           >
