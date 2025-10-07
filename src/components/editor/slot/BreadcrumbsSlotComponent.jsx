@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
-import Breadcrumbs from '@/components/shared/Breadcrumbs';
+import Breadcrumbs from '@/components/shared/Breadcrumbs.jsx';
 import { buildBreadcrumbs } from '@/utils/breadcrumbUtils';
 
 const BreadcrumbsSlotComponent = createSlotComponent({
