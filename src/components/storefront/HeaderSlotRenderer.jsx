@@ -107,6 +107,15 @@ export function HeaderSlotRenderer({
           return null;
         }
 
+        // In editor, check if this is a mobile-only slot and if we're in desktop responsive mode
+        if (headerContext?.isEditor && className?.includes('md:hidden')) {
+          // This is a mobile-only slot
+          const responsiveMode = headerContext?.responsiveMode;
+          if (responsiveMode === 'desktop') {
+            return null; // Hide mobile slots in desktop mode
+          }
+        }
+
         // Render container with children
         return (
           <div

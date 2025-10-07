@@ -21,6 +21,8 @@ export default function HeaderSlotsEditor() {
 
   // Generate header context with interactive state
   const generateHeaderContext = (viewMode) => ({
+    isEditor: true,
+    responsiveMode: viewMode,
     store: {
       id: 1,
       name: 'Demo Store',
