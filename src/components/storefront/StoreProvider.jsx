@@ -268,7 +268,19 @@ export const StoreProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      
+
+      // Debug: Check what settings we're getting from the database
+      console.log('🔍 StoreProvider - Raw selectedStore.settings:', {
+        settingsType: typeof selectedStore.settings,
+        hasSettings: !!selectedStore.settings,
+        hasTheme: !!selectedStore.settings?.theme,
+        themeBreadcrumbColors: selectedStore.settings?.theme ? {
+          itemTextColor: selectedStore.settings.theme.breadcrumb_item_text_color,
+          itemHoverColor: selectedStore.settings.theme.breadcrumb_item_hover_color,
+          activeItemColor: selectedStore.settings.theme.breadcrumb_active_item_color
+        } : 'no theme'
+      });
+
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
       const mergedSettings = {
