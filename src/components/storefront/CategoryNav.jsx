@@ -73,7 +73,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
             return newSet;
         });
     };
-
+//
     // Build hierarchical tree from flat category list
     const buildCategoryTree = (categories) => {
         const categoryMap = new Map();

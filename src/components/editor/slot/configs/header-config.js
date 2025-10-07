@@ -709,7 +709,7 @@ export const headerConfig = {
       id: 'navigation_bar',
       type: 'container',
       content: '',
-      className: 'bg-gray-50 border-b border-gray-200',
+      className: 'hidden md:block bg-gray-50 border-b border-gray-200',
       parentClassName: '',
       styles: {
         backgroundColor: '#F9FAFB',
@@ -722,7 +722,7 @@ export const headerConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Navigation Bar (Desktop)',
-        description: 'Main navigation menu below header',
+        description: 'Main navigation menu below header (hidden on mobile)',
         editorSidebar: 'HeaderEditorSidebar'
       }
     },

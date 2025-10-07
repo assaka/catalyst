@@ -361,145 +361,16 @@ export function HeaderSlotRenderer({
         );
 
       case 'MobileNavigation':
-        // Render mobile navigation with collapsible children
-        const { expandedMobileCategories, setExpandedMobileCategories } = headerContext || {};
-
-        const toggleMobileCategory = (categoryId) => {
-          if (!setExpandedMobileCategories) return;
-          setExpandedMobileCategories(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(categoryId)) {
-              newSet.delete(categoryId);
-            } else {
-              newSet.add(categoryId);
-            }
-            return newSet;
-          });
-        };
-
-        // Build hierarchical tree from flat categories array
-        const buildCategoryTree = (categories) => {
-          if (!Array.isArray(categories)) return [];
-
-          const categoryMap = new Map();
-          const rootCategories = [];
-          let visibleCategories = categories.filter(c => !c.hide_in_menu);
-
-          // If store has a root category, filter to only show that category tree
-          if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
-            const filterCategoryTree = (categoryId, allCategories) => {
-              const children = allCategories.filter(c => c.parent_id === categoryId);
-              let result = children.slice();
-              children.forEach(child => {
-                result = result.concat(filterCategoryTree(child.id, allCategories));
-              });
-              return result;
-            };
-
-            const rootCategory = visibleCategories.find(c => c.id === store.settings.rootCategoryId);
-            if (rootCategory) {
-              const descendants = filterCategoryTree(store.settings.rootCategoryId, visibleCategories);
-
-              // Check if we should exclude root category from menu
-              if (store.settings.excludeRootFromMenu) {
-                visibleCategories = descendants; // Only show descendants, not the root
-              } else {
-                visibleCategories = [rootCategory, ...descendants]; // Include root and descendants
-              }
-            } else {
-              visibleCategories = [];
-            }
-          }
-
-          visibleCategories.forEach(category => {
-            categoryMap.set(category.id, { ...category, children: [] });
-          });
-
-          visibleCategories.forEach(category => {
-            const categoryNode = categoryMap.get(category.id);
-            if (category.parent_id && categoryMap.has(category.parent_id)) {
-              const parent = categoryMap.get(category.parent_id);
-              parent.children.push(categoryNode);
-            } else {
-              rootCategories.push(categoryNode);
-            }
-          });
-
-          return rootCategories;
-        };
-
-        const hierarchicalCategories = buildCategoryTree(categories);
-
-        // Get custom colors from styles
-        const linkColor = styles?.color || '#374151';
-        const hoverColor = styles?.hoverColor || '#111827';
-        const hoverBgColor = styles?.hoverBackgroundColor || '#f3f4f6';
-
+        // Use CategoryNav component for mobile menu (same as desktop but styled for mobile)
         return (
           <div key={id} className={className} data-slot-id={id}>
-            {hierarchicalCategories?.map(cat => {
-              const hasChildren = cat.children && cat.children.length > 0;
-              const isExpanded = expandedMobileCategories?.has(cat.id);
-
-              return (
-                <div key={cat.id} className="mobile-nav-item">
-                  <div className="flex items-center">
-                    {hasChildren && (
-                      <button
-                        onClick={() => toggleMobileCategory(cat.id)}
-                        className="p-2 rounded touch-manipulation transition-colors"
-                        style={{ color: linkColor }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBgColor}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        {isExpanded ? '▼' : '▶'}
-                      </button>
-                    )}
-                    <Link
-                      to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
-                      className="flex-1 block py-2 px-3 rounded-md font-medium transition-colors"
-                      style={{ color: linkColor }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = hoverColor;
-                        e.currentTarget.style.backgroundColor = hoverBgColor;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = linkColor;
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                      onClick={() => setMobileMenuOpen?.(false)}
-                    >
-                      {cat.name}
-                    </Link>
-                  </div>
-                  {hasChildren && isExpanded && (
-                    <div className="pl-4 space-y-1">
-                      {cat.children.map(child => (
-                        <Link
-                          key={child.id}
-                          to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
-                          className="block py-2 px-3 rounded-md text-sm transition-colors"
-                          style={{ color: linkColor, opacity: 0.8 }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = hoverColor;
-                            e.currentTarget.style.opacity = '1';
-                            e.currentTarget.style.backgroundColor = hoverBgColor;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = linkColor;
-                            e.currentTarget.style.opacity = '0.8';
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          onClick={() => setMobileMenuOpen?.(false)}
-                        >
-                          {child.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <CategoryNav
+              categories={categories}
+              styles={styles}
+              metadata={metadata}
+              isMobile={true}
+              onLinkClick={() => setMobileMenuOpen?.(false)}
+            />
           </div>
         );
 
