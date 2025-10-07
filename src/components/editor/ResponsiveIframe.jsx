@@ -12,12 +12,12 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
   const getViewportStyles = () => {
     switch (viewport) {
       case 'mobile':
-        return { width: '375px', minHeight: '667px' };
+        return { width: '375px', height: '100%' };
       case 'tablet':
-        return { width: '768px', minHeight: '1024px' };
+        return { width: '768px', height: '100%' };
       case 'desktop':
       default:
-        return { width: '100%', minHeight: 'auto' };
+        return { width: '100%', height: '100%' };
     }
   };
 
@@ -82,11 +82,11 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
 
   const viewportStyles = getViewportStyles();
   const wrapperClass = viewport === 'desktop'
-    ? className
-    : `${className} mx-auto bg-gray-50 py-4`;
+    ? `${className} h-full`
+    : `${className} mx-auto bg-gray-50 py-4 h-full`;
 
   return (
-    <div className={wrapperClass}>
+    <div className={wrapperClass} style={{ minHeight: '100vh' }}>
       <iframe
         ref={iframeRef}
         style={{
@@ -95,7 +95,8 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
           borderRadius: viewport === 'desktop' ? '0' : '8px',
           boxShadow: viewport === 'desktop' ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           display: 'block',
-          margin: viewport === 'desktop' ? '0' : '0 auto'
+          margin: viewport === 'desktop' ? '0' : '0 auto',
+          minHeight: viewport === 'desktop' ? '100vh' : '667px'
         }}
         title="Responsive Preview"
       />
