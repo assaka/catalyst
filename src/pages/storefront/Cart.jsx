@@ -7,31 +7,21 @@ import { useStore } from '@/components/storefront/StoreProvider';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { Coupon } from '@/api/entities';
 import { Tax } from '@/api/entities';
-import { User } from '@/api/entities';
 import cartService from '@/services/cartService';
 import couponService from '@/services/couponService';
 import taxService from '@/services/taxService';
-import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
-import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
 // Import new hook system
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
-import { ResizeWrapper as ResizeElementWrapper } from '@/components/ui/resize-element-wrapper';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { cartConfig } from '@/components/editor/slot/configs/cart-config';
-
-
 
 const getSessionId = () => {
   let sid = localStorage.getItem('guest_session_id');
