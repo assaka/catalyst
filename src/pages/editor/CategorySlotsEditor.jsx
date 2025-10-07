@@ -106,8 +106,9 @@ const getGridClasses = (storeSettings) => {
 
 // Custom slot renderer for category-specific components
 const categoryCustomSlotRenderer = (slot, context) => {
-  const sampleCategoryContext = context || generateMockCategoryContext();
   const storeSettings = context?.storeSettings || {};
+  const filterableAttributes = context?.filterableAttributes || [];
+  const sampleCategoryContext = context || generateMockCategoryContext(filterableAttributes, storeSettings);
 
   // Handle component slots (new pattern from category-config.js)
   if (slot.type === 'component') {
@@ -518,10 +519,11 @@ const CategorySlotsEditor = ({
   // Create editor config with real filterableAttributes and storeSettings from database (same as storefront)
   const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes, storeSettings);
 
-  // Create enhanced config with store settings
+  // Create enhanced config with store settings and filterable attributes
   const enhancedConfig = {
     ...categoryEditorConfig,
-    storeSettings
+    storeSettings,
+    filterableAttributes
   };
 
   return (
