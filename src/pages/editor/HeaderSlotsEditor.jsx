@@ -71,7 +71,7 @@ export default function HeaderSlotsEditor() {
         hide_header_search: storeData?.settings?.hide_header_search || false,
         hide_header_cart: storeData?.settings?.hide_header_cart || false,
         show_permanent_search: storeData?.settings?.show_permanent_search || false,
-        show_language_selector: storeData?.settings?.show_language_selector || false,
+        show_language_selector: storeData?.settings?.show_language_selector === true,
         allowed_countries: storeData?.settings?.allowed_countries || ['US', 'CA', 'UK'],
         theme: storeData?.settings?.theme || {
           primary_button_color: '#2563EB',
@@ -136,7 +136,9 @@ export default function HeaderSlotsEditor() {
       viewMode,
       show_language_selector: context.settings.show_language_selector,
       storeDataExists: !!storeData,
-      rawValue: storeData?.settings?.show_language_selector
+      rawValue: storeData?.settings?.show_language_selector,
+      rawValueType: typeof storeData?.settings?.show_language_selector,
+      calculation: `${storeData?.settings?.show_language_selector} === true = ${storeData?.settings?.show_language_selector === true}`
     });
 
     return context;
