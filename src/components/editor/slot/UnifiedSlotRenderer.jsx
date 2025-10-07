@@ -642,6 +642,15 @@ export function UnifiedSlotRenderer({
 
     // Container, Grid, Flex Elements
     if (type === 'container' || type === 'grid' || type === 'flex') {
+      // Check if this container has any children
+      const childSlots = SlotManager.getChildSlots(slots, id);
+      const filteredChildren = filterSlotsByViewMode(childSlots, viewMode);
+
+      // Skip rendering empty containers in editor mode
+      if (context === 'editor' && filteredChildren.length === 0) {
+        return null;
+      }
+
       // Use custom className from config if provided, otherwise use default
       let containerClass = '';
 
