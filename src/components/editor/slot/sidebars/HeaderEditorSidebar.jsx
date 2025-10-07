@@ -82,6 +82,7 @@ const HeaderEditorSidebar = ({
     mobileMenuBg: '#ffffff',
     mobileMenuLinkColor: '#374151',
     mobileMenuLinkHoverColor: '#111827',
+    mobileMenuItemHoverBg: '#f3f4f6',
     mobileMenuIconColor: '#374151',
     hamburgerSize: '1.5rem',
 
@@ -174,6 +175,7 @@ const HeaderEditorSidebar = ({
     if (mobileNavigation?.styles) {
       if (mobileNavigation.styles.color) updates.mobileMenuLinkColor = mobileNavigation.styles.color;
       if (mobileNavigation.styles.hoverColor) updates.mobileMenuLinkHoverColor = mobileNavigation.styles.hoverColor;
+      if (mobileNavigation.styles.hoverBackgroundColor) updates.mobileMenuItemHoverBg = mobileNavigation.styles.hoverBackgroundColor;
     }
 
     // Icon Variants
@@ -183,6 +185,13 @@ const HeaderEditorSidebar = ({
     const desktopWishlist = allSlots['desktop_wishlist'];
     if (desktopWishlist?.metadata?.iconVariant) updates.wishlistIconVariant = desktopWishlist.metadata.iconVariant;
 
+    // Mobile icon variants (should match desktop)
+    const mobileWishlist = allSlots['mobile_wishlist'];
+    if (mobileWishlist?.metadata?.iconVariant) updates.wishlistIconVariant = mobileWishlist.metadata.iconVariant;
+
+    const mobileUserMenu = allSlots['mobile_user_menu'];
+    if (mobileUserMenu?.metadata?.iconVariant) updates.userIconVariant = mobileUserMenu.metadata.iconVariant;
+
     if (Object.keys(updates).length > 0) {
       setHeaderStyles(prev => ({ ...prev, ...updates }));
     }
@@ -190,6 +199,31 @@ const HeaderEditorSidebar = ({
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Special handler for icon variants - updates both desktop and mobile versions
+  const handleIconVariantChange = (property, value) => {
+    // Update local state
+    setHeaderStyles(prev => ({ ...prev, [property]: value }));
+
+    // Map icon variant properties to their slot IDs (both desktop and mobile)
+    const iconVariantSlotMap = {
+      wishlistIconVariant: ['desktop_wishlist', 'mobile_wishlist'],
+      userIconVariant: ['user_account_menu', 'mobile_user_menu'],
+      cartIconVariant: ['cart_icon']
+    };
+
+    const targetSlots = iconVariantSlotMap[property];
+    if (targetSlots && onClassChange) {
+      targetSlots.forEach(slotId => {
+        const targetSlot = allSlots[slotId];
+        if (targetSlot) {
+          const metadata = { ...(targetSlot.metadata || {}), iconVariant: value };
+          // Update metadata without touching styles
+          onClassChange(slotId, targetSlot.className || '', targetSlot.styles || {}, metadata);
+        }
+      });
+    }
   };
 
   // Handle style changes with automatic slot targeting
@@ -249,6 +283,7 @@ const HeaderEditorSidebar = ({
         mobileMenuBg: { slot: 'mobile_menu', type: 'style', prop: 'backgroundColor' },
         mobileMenuLinkColor: { slot: 'mobile_navigation', type: 'style', prop: 'color' },
         mobileMenuLinkHoverColor: { slot: 'mobile_navigation', type: 'style', prop: 'hoverColor' },
+        mobileMenuItemHoverBg: { slot: 'mobile_navigation', type: 'style', prop: 'hoverBackgroundColor' },
         mobileMenuIconColor: { slot: 'mobile_menu_toggle', type: 'style', prop: 'color' },
 
         // Icon Variants
@@ -808,13 +843,13 @@ const HeaderEditorSidebar = ({
           onToggle={toggleSection}
         >
           <div className="space-y-3 p-3">
-            <p className="text-xs text-gray-600 mb-3">Choose icon variants for cart, wishlist, and user icons</p>
+            <p className="text-xs text-gray-600 mb-3">Choose icon variants for cart, wishlist, and user icons (applies to both desktop and mobile)</p>
 
             <div>
               <Label className="text-xs font-semibold">Cart Icon</Label>
               <select
                 value={headerStyles.cartIconVariant}
-                onChange={(e) => handleStyleChange('cartIconVariant', e.target.value, 'cart_icon')}
+                onChange={(e) => handleIconVariantChange('cartIconVariant', e.target.value)}
                 className="w-full h-8 text-xs border rounded px-2 mt-1"
               >
                 <option value="outline">Outline (Default)</option>
@@ -829,27 +864,27 @@ const HeaderEditorSidebar = ({
               <Label className="text-xs font-semibold">Wishlist Icon</Label>
               <select
                 value={headerStyles.wishlistIconVariant}
-                onChange={(e) => handleStyleChange('wishlistIconVariant', e.target.value, 'desktop_wishlist')}
+                onChange={(e) => handleIconVariantChange('wishlistIconVariant', e.target.value)}
                 className="w-full h-8 text-xs border rounded px-2 mt-1"
               >
                 <option value="outline">Heart Outline (Default)</option>
                 <option value="filled">Heart Filled</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">Icon style for wishlist dropdown</p>
+              <p className="text-xs text-gray-500 mt-1">Icon style for wishlist (desktop and mobile)</p>
             </div>
 
             <div>
               <Label className="text-xs font-semibold">User Icon</Label>
               <select
                 value={headerStyles.userIconVariant}
-                onChange={(e) => handleStyleChange('userIconVariant', e.target.value, 'user_account_menu')}
+                onChange={(e) => handleIconVariantChange('userIconVariant', e.target.value)}
                 className="w-full h-8 text-xs border rounded px-2 mt-1"
               >
                 <option value="outline">User Outline (Default)</option>
                 <option value="filled">User Filled</option>
                 <option value="circle">User Circle</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">Icon style for user account button</p>
+              <p className="text-xs text-gray-500 mt-1">Icon style for user account (desktop and mobile)</p>
             </div>
           </div>
         </SectionHeader>
@@ -915,6 +950,25 @@ const HeaderEditorSidebar = ({
                   onChange={(e) => handleStyleChange('mobileMenuLinkHoverColor', e.target.value, 'mobile_navigation')}
                   className="flex-1 h-8 text-xs"
                   placeholder="#111827"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Item Hover Background</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.mobileMenuItemHoverBg}
+                  onChange={(e) => handleStyleChange('mobileMenuItemHoverBg', e.target.value, 'mobile_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.mobileMenuItemHoverBg}
+                  onChange={(e) => handleStyleChange('mobileMenuItemHoverBg', e.target.value, 'mobile_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#f3f4f6"
                 />
               </div>
             </div>

@@ -651,7 +651,8 @@ export const headerConfig = {
       parentClassName: '',
       styles: {
         color: '#374151',
-        hoverColor: '#111827'
+        hoverColor: '#111827',
+        hoverBackgroundColor: '#f3f4f6'
       },
       parentId: 'mobile_menu_inner',
       position: { col: 1, row: 1 },

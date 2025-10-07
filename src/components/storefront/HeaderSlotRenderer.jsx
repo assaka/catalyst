@@ -340,6 +340,7 @@ export function HeaderSlotRenderer({
         // Get custom colors from styles
         const linkColor = styles?.color || '#374151';
         const hoverColor = styles?.hoverColor || '#111827';
+        const hoverBgColor = styles?.hoverBackgroundColor || '#f3f4f6';
 
         return (
           <div key={id} className={className} data-slot-id={id}>
@@ -353,18 +354,26 @@ export function HeaderSlotRenderer({
                     {hasChildren && (
                       <button
                         onClick={() => toggleMobileCategory(cat.id)}
-                        className="p-2 hover:bg-gray-200 rounded touch-manipulation"
+                        className="p-2 rounded touch-manipulation transition-colors"
                         style={{ color: linkColor }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBgColor}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
                         {isExpanded ? '▼' : '▶'}
                       </button>
                     )}
                     <Link
                       to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
-                      className="flex-1 block py-2 px-3 hover:bg-gray-100 rounded-md font-medium transition-colors"
+                      className="flex-1 block py-2 px-3 rounded-md font-medium transition-colors"
                       style={{ color: linkColor }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
-                      onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = hoverColor;
+                        e.currentTarget.style.backgroundColor = hoverBgColor;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = linkColor;
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                       onClick={() => setMobileMenuOpen?.(false)}
                     >
                       {cat.name}
@@ -376,15 +385,17 @@ export function HeaderSlotRenderer({
                         <Link
                           key={child.id}
                           to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
-                          className="block py-2 px-3 hover:bg-gray-100 rounded-md text-sm transition-colors"
+                          className="block py-2 px-3 rounded-md text-sm transition-colors"
                           style={{ color: linkColor, opacity: 0.8 }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.color = hoverColor;
                             e.currentTarget.style.opacity = '1';
+                            e.currentTarget.style.backgroundColor = hoverBgColor;
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.color = linkColor;
                             e.currentTarget.style.opacity = '0.8';
+                            e.currentTarget.style.backgroundColor = 'transparent';
                           }}
                           onClick={() => setMobileMenuOpen?.(false)}
                         >

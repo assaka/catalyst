@@ -588,6 +588,24 @@ const MobileUserMenuSlot = createSlotComponent({
   name: 'MobileUserMenu',
   render: ({ slot, context, headerContext, className, styles }) => {
     const { user, userLoading, store, navigate } = headerContext || {};
+    const iconVariant = slot?.metadata?.iconVariant || 'outline';
+
+    // Choose icon based on variant
+    const getUserIcon = () => {
+      switch (iconVariant) {
+        case 'filled':
+          return <User className="w-5 h-5 fill-current" />;
+        case 'circle':
+          return (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </svg>
+          );
+        case 'outline':
+        default:
+          return <User className="w-5 h-5" />;
+      }
+    };
 
     if (context === 'editor') {
       return (
@@ -595,7 +613,7 @@ const MobileUserMenuSlot = createSlotComponent({
           variant="ghost"
           size="icon"
         >
-          <User className="w-5 h-5" />
+          {getUserIcon()}
         </Button>
       );
     }
@@ -617,7 +635,7 @@ const MobileUserMenuSlot = createSlotComponent({
         }}
         disabled={userLoading}
       >
-        <User className="w-5 h-5" />
+        {getUserIcon()}
       </Button>
     );
   }
@@ -645,6 +663,7 @@ const MobileNavigationSlot = createSlotComponent({
     // Get custom colors from styles
     const linkColor = styles?.color || '#374151';
     const hoverColor = styles?.hoverColor || '#111827';
+    const hoverBgColor = styles?.hoverBackgroundColor || '#f3f4f6';
 
     if (context === 'editor') {
       return (
@@ -653,10 +672,16 @@ const MobileNavigationSlot = createSlotComponent({
             <div key={cat.id} className="mobile-nav-item">
               <a
                 href="#"
-                className="block py-2 px-3 hover:bg-gray-100 rounded-md font-medium transition-colors"
+                className="block py-2 px-3 rounded-md font-medium transition-colors"
                 style={{ color: linkColor }}
-                onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
-                onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = hoverColor;
+                  e.currentTarget.style.backgroundColor = hoverBgColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = linkColor;
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 {cat.name}
               </a>
@@ -666,15 +691,17 @@ const MobileNavigationSlot = createSlotComponent({
                     <a
                       key={child.id}
                       href="#"
-                      className="block py-2 px-3 hover:bg-gray-100 rounded-md text-sm transition-colors"
+                      className="block py-2 px-3 rounded-md text-sm transition-colors"
                       style={{ color: linkColor, opacity: 0.8 }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.color = hoverColor;
                         e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.backgroundColor = hoverBgColor;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.color = linkColor;
                         e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.backgroundColor = 'transparent';
                       }}
                     >
                       {child.name}
