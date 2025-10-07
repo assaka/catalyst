@@ -101,7 +101,7 @@ export function CartSlotRenderer({
       id: `dynamic_cart_item_${index + 1}`,
       type: 'container',
       content: '',
-      className: 'cart-item bg-white p-4 border-b border-gray-200',
+      className: 'cart-item p-4',
       styles: {},
       parentId: 'cart_items_container',
       layout: 'flex',

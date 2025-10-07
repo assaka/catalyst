@@ -181,7 +181,7 @@ export const cartConfig = {
       content: `
         <div class="space-y-4">
           {{#each cartItems}}
-            <div class="bg-white p-4 rounded-lg shadow cart-item"
+            <div class="p-4 cart-item"
                  data-item-id="{{this.id}}"
                  data-product-name="{{this.product.name}}"
                  data-price="{{this.price}}"
@@ -256,7 +256,7 @@ export const cartConfig = {
       type: 'component',
       component: 'CartCouponSlot',
       content: `
-        <div class="bg-white rounded-lg shadow p-4">
+        <div class="p-4">
           <h3 class="text-lg font-semibold mb-4">Apply Coupon</h3>
           <div class="flex space-x-2">
             <input
@@ -289,7 +289,7 @@ export const cartConfig = {
       type: 'component',
       component: 'CartOrderSummarySlot',
       content: `
-        <div class="bg-white rounded-lg shadow p-4 mt-4">
+        <div class="p-4 mt-4">
           <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
           <div class="space-y-2">
             <div class="flex justify-between">
