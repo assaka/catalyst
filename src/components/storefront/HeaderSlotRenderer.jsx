@@ -337,6 +337,10 @@ export function HeaderSlotRenderer({
           });
         };
 
+        // Get custom colors from styles
+        const linkColor = styles?.color || '#374151';
+        const hoverColor = styles?.hoverColor || '#111827';
+
         return (
           <div key={id} className={className} data-slot-id={id}>
             {categories?.map(cat => {
@@ -350,13 +354,17 @@ export function HeaderSlotRenderer({
                       <button
                         onClick={() => toggleMobileCategory(cat.id)}
                         className="p-2 hover:bg-gray-200 rounded touch-manipulation"
+                        style={{ color: linkColor }}
                       >
                         {isExpanded ? '▼' : '▶'}
                       </button>
                     )}
                     <Link
                       to={createPublicUrl(store?.slug, 'CATEGORY', cat.slug)}
-                      className="flex-1 block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium"
+                      className="flex-1 block py-2 px-3 hover:bg-gray-100 rounded-md font-medium transition-colors"
+                      style={{ color: linkColor }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
+                      onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
                       onClick={() => setMobileMenuOpen?.(false)}
                     >
                       {cat.name}
@@ -368,7 +376,16 @@ export function HeaderSlotRenderer({
                         <Link
                           key={child.id}
                           to={createPublicUrl(store?.slug, 'CATEGORY', child.slug)}
-                          className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                          className="block py-2 px-3 hover:bg-gray-100 rounded-md text-sm transition-colors"
+                          style={{ color: linkColor, opacity: 0.8 }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = hoverColor;
+                            e.currentTarget.style.opacity = '1';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = linkColor;
+                            e.currentTarget.style.opacity = '0.8';
+                          }}
                           onClick={() => setMobileMenuOpen?.(false)}
                         >
                           {child.name}

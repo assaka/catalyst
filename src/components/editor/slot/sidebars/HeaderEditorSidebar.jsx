@@ -23,6 +23,7 @@ const HeaderEditorSidebar = ({
     searchBar: true,
     navigation: true,
     userActions: true,
+    iconStyles: true,
     mobile: true
   });
 

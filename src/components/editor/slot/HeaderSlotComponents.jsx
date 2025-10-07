@@ -595,12 +595,22 @@ const MobileNavigationSlot = createSlotComponent({
       });
     };
 
+    // Get custom colors from styles
+    const linkColor = styles?.color || '#374151';
+    const hoverColor = styles?.hoverColor || '#111827';
+
     if (context === 'editor') {
       return (
         <div className={className || "space-y-2"} style={styles}>
           {categories.map(cat => (
             <div key={cat.id} className="mobile-nav-item">
-              <a href="#" className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md font-medium">
+              <a
+                href="#"
+                className="block py-2 px-3 hover:bg-gray-100 rounded-md font-medium transition-colors"
+                style={{ color: linkColor }}
+                onMouseEnter={(e) => e.currentTarget.style.color = hoverColor}
+                onMouseLeave={(e) => e.currentTarget.style.color = linkColor}
+              >
                 {cat.name}
               </a>
               {cat.children && cat.children.length > 0 && (
@@ -609,7 +619,16 @@ const MobileNavigationSlot = createSlotComponent({
                     <a
                       key={child.id}
                       href="#"
-                      className="block py-2 px-3 text-gray-600 hover:bg-gray-100 rounded-md text-sm"
+                      className="block py-2 px-3 hover:bg-gray-100 rounded-md text-sm transition-colors"
+                      style={{ color: linkColor, opacity: 0.8 }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = hoverColor;
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = linkColor;
+                        e.currentTarget.style.opacity = '0.8';
+                      }}
                     >
                       {child.name}
                     </a>
