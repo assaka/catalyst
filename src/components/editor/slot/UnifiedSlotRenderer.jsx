@@ -23,7 +23,6 @@ import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import { ComponentRegistry } from './SlotComponentRegistry';
 import { createProductUrl } from '@/utils/urlUtils';
 import cartService from '@/services/cartService';
-import { transformResponsiveClasses, transformColSpan } from '@/utils/classTransformer';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
@@ -316,8 +315,45 @@ export function UnifiedSlotRenderer({
     const processedContent = processVariables(content, variableContext);
     let processedClassName = processVariables(className, variableContext);
 
-    // Transform responsive classes based on viewport mode (editor only)
-    processedClassName = transformResponsiveClasses(processedClassName, viewportMode, context);
+    // Handle viewport-aware responsive classes in editor mode
+    // Convert Tailwind breakpoint classes (sm:, md:, lg:) to viewport-based visibility
+    if (context === 'editor' && processedClassName) {
+      // Debug logging for mobile_filter_toggle
+      if (id === 'mobile_filter_toggle') {
+        console.log('🔍 mobile_filter_toggle rendering:', {
+          viewportMode,
+          originalClassName: className,
+          processedClassName,
+          context
+        });
+      }
+
+      // sm:hidden means "hidden on small screens and up" (mobile should show, desktop should hide)
+      // In editor with mobile viewport, we should show it; in desktop viewport, we should hide it
+      if (processedClassName.includes('sm:hidden')) {
+        if (viewportMode === 'mobile') {
+          // Remove sm:hidden and make visible in mobile viewport
+          processedClassName = processedClassName.replace(/\bsm:hidden\b/g, '').trim();
+        } else {
+          // In tablet/desktop viewport, convert sm:hidden to actual hidden
+          processedClassName = processedClassName.replace(/\bsm:hidden\b/g, 'hidden').trim();
+        }
+      }
+
+      // hidden sm:flex means "hidden on mobile, flex on small screens and up"
+      if (processedClassName.includes('hidden') && processedClassName.includes('sm:flex')) {
+        if (viewportMode === 'mobile') {
+          // Keep hidden in mobile viewport
+          processedClassName = processedClassName.replace(/\bsm:flex\b/g, '').trim();
+        } else {
+          // In tablet/desktop viewport, remove hidden and apply flex
+          processedClassName = processedClassName.replace(/\bhidden\b/g, '').replace(/\bsm:flex\b/g, 'flex').trim();
+        }
+      }
+
+      // Clean up multiple spaces
+      processedClassName = processedClassName.replace(/\s+/g, ' ').trim();
+    }
 
     // Process variables in styles (e.g., {{settings.theme.add_to_cart_button_color}})
     const processedStyles = {};
@@ -847,9 +883,6 @@ export function UnifiedSlotRenderer({
             gridColumn = null;
           }
         }
-
-        // Transform colSpan responsive classes based on viewport mode (editor only)
-        colSpanClass = transformResponsiveClasses(colSpanClass, viewportMode, context);
 
         // Render slot content
         const slotContent = renderBasicSlot(slot);
