@@ -40,19 +40,11 @@ const publicPaymentMethodRoutes = require('./routes/publicPaymentMethods');
 const orderRoutes = require('./routes/orders');
 const couponRoutes = require('./routes/coupons');
 const attributeRoutes = require('./routes/attributes');
-const populateAttributesRoutes = require('./routes/populate-attributes');
 const cmsRoutes = require('./routes/cms');
 const cmsBlockRoutes = require('./routes/cms-blocks');
-const cmsBlocksPublicOnlyRoutes = require('./routes/cms-blocks-public-only');
 const shippingRoutes = require('./routes/shipping');
 const taxRoutes = require('./routes/tax');
 const deliveryRoutes = require('./routes/delivery');
-const oauthTestRoutes = require('./routes/oauth-test');
-const dbTestRoutes = require('./routes/db-test');
-const dbInitRoutes = require('./routes/db-init');
-const dbSetupRoutes = require('./routes/db-setup');
-const migrateRoutes = require('./routes/migrate');
-const migrateSupabaseRoutes = require('./routes/migrate-supabase');
 const customerRoutes = require('./routes/customers');
 const cartRoutes = require('./routes/cart');
 const wishlistRoutes = require('./routes/wishlist');
@@ -62,7 +54,6 @@ const storePluginRoutes = require('./routes/store-plugins');
 const seoSettingsRoutes = require('./routes/seo-settings');
 const seoTemplateRoutes = require('./routes/seo-templates');
 const redirectRoutes = require('./routes/redirects');
-const runSeoMigrationRoutes = require('./routes/run-seo-migration');
 const attributeSetRoutes = require('./routes/attribute-sets');
 const productLabelRoutes = require('./routes/product-labels');
 const productTabRoutes = require('./routes/product-tabs');
@@ -71,16 +62,8 @@ const paymentMethodRoutes = require('./routes/payment-methods');
 const cookieConsentRoutes = require('./routes/cookie-consent-settings');
 const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
-const addCustomOptionRulesTableRoutes = require('./routes/add-custom-option-rules-table');
 const addressRoutes = require('./routes/addresses');
-const createCmsBlocksTableRoutes = require('./routes/create-cms-blocks-table');
-const checkCmsBlocksSchemaRoutes = require('./routes/check-cms-blocks-schema');
-const addCmsBlocksColumnsRoutes = require('./routes/add-cms-blocks-columns');
-const testCmsBlocksRoutes = require('./routes/test-cms-blocks');
-const simpleCmsTestRoutes = require('./routes/simple-cms-test');
 const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
-const updateUspsBlockPlacementRoutes = require('./routes/update-usps-block-placement');
-const updateTestBlockPlacementRoutes = require('./routes/update-test-block-placement');
 const storeTeamRoutes = require('./routes/store-teams');
 const robotsRoutes = require('./routes/robots');
 const integrationRoutes = require('./routes/integrations');
@@ -109,7 +92,6 @@ const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
 const extensionsRoutes = require('./routes/extensions');
-const debugStoreRoutes = require('./routes/debug-store');
 const previewRoutes = require('./routes/preview');
 const slotConfigurationRoutes = require('./routes/slotConfigurations');
 const dynamicPluginRoutes = require('./routes/dynamic-plugins');
@@ -1545,18 +1527,11 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
 app.use('/api/orders', authMiddleware, orderRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/attributes', authMiddleware, attributeRoutes);
-app.use('/api/populate-attributes', populateAttributesRoutes);
 app.use('/api/cms', authMiddleware, cmsRoutes);
 app.use('/api/cms-blocks', authMiddleware, cmsBlockRoutes);
 app.use('/api/shipping', authMiddleware, shippingRoutes);
 app.use('/api/tax', authMiddleware, taxRoutes);
 app.use('/api/delivery', authMiddleware, deliveryRoutes);
-app.use('/api/oauth-test', oauthTestRoutes);
-app.use('/api/db-test', dbTestRoutes);
-app.use('/api/db-init', dbInitRoutes);
-app.use('/api/db-setup', dbSetupRoutes);
-app.use('/api/migrate', migrateRoutes);
-app.use('/api/migrate-supabase', migrateSupabaseRoutes);
 
 // New endpoint routes
 app.use('/api/customers', customerRoutes);
@@ -1568,7 +1543,6 @@ app.use('/api/stores/:store_id/plugins', storePluginRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
 app.use('/api/seo-templates', seoTemplateRoutes);
 app.use('/api/redirects', redirectRoutes);
-app.use('/api/run-seo-migration', runSeoMigrationRoutes);
 app.use('/api/attribute-sets', attributeSetRoutes);
 app.use('/api/product-labels', productLabelRoutes);
 app.use('/api/product-tabs', productTabRoutes);
@@ -1578,15 +1552,7 @@ app.use('/api/cookie-consent-settings', authMiddleware, cookieConsentRoutes);
 app.use('/api/consent-logs', authMiddleware, consentLogRoutes);
 app.use('/api/custom-option-rules', authMiddleware, customOptionRuleRoutes);
 app.use('/api/addresses', addressRoutes);
-app.use('/api/debug', addCustomOptionRulesTableRoutes);
-app.use('/api/create-cms-blocks-table', createCmsBlocksTableRoutes);
-app.use('/api/check-cms-blocks-schema', checkCmsBlocksSchemaRoutes);
-app.use('/api/add-cms-blocks-columns', addCmsBlocksColumnsRoutes);
-app.use('/api/test-cms-blocks', testCmsBlocksRoutes);
-app.use('/api/simple-cms-test', simpleCmsTestRoutes);
 app.use('/api/public-cms-blocks', publicCmsBlocksRoutes);
-app.use('/api/update-usps-block-placement', updateUspsBlockPlacementRoutes);
-app.use('/api/update-test-block-placement', updateTestBlockPlacementRoutes);
 app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
 app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/supabase', supabaseRoutes);
@@ -1613,7 +1579,6 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
-app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting store resolution
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 // Conditional auth middleware that excludes preview routes

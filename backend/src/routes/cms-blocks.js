@@ -10,25 +10,19 @@ const router = express.Router();
 // @access  Public
 router.get('/public', async (req, res) => {
   try {
-    console.log('🔀 CMS Blocks API: Redirecting to working endpoint...');
     
     // Redirect to the working clean endpoint
     const { store_id } = req.query;
     const queryString = new URLSearchParams(req.query).toString();
     const redirectUrl = `/api/public-cms-blocks?${queryString}`;
     
-    console.log('🔀 Redirecting to:', redirectUrl);
-    
     // Internal redirect - make a request to our own working endpoint
     const axios = require('axios');
     const baseUrl = req.protocol + '://' + req.get('host');
     const fullUrl = `${baseUrl}${redirectUrl}`;
     
-    console.log('🔀 Making internal request to:', fullUrl);
-    
     const response = await axios.get(fullUrl);
-    
-    console.log('🔀 Internal request successful');
+
     res.json(response.data);
     
   } catch (error) {
@@ -44,8 +38,6 @@ router.get('/public', async (req, res) => {
           message: 'Store ID is required'
         });
       }
-
-      console.log('🔍 Fallback: Using direct query...');
       
       const blocks = await sequelize.query(`
         SELECT 
@@ -64,8 +56,6 @@ router.get('/public', async (req, res) => {
         bind: [store_id],
         type: QueryTypes.SELECT
       });
-
-      console.log('🔍 Fallback query successful, found blocks:', blocks.length);
       
       res.json({
         success: true,
@@ -223,7 +213,6 @@ router.post('/', [
 
     // Process placement field - ensure it's an array
     const blockData = { ...req.body };
-    console.log('🔍 Raw placement data received (CREATE):', typeof blockData.placement, blockData.placement);
     
     if (blockData.placement) {
       // Handle over-serialized JSON strings
@@ -350,7 +339,6 @@ router.put('/:id', [
 
     // Process placement field - ensure it's an array
     const updateData = { ...req.body };
-    console.log('🔍 Raw placement data received:', typeof updateData.placement, updateData.placement);
     
     if (updateData.placement) {
       // Handle over-serialized JSON strings

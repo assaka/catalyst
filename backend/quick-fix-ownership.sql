@@ -1,4 +1,0 @@
--- Quick fix: Transfer Hamid store ownership and set playamin as editor-only
-UPDATE stores SET user_id = (SELECT id FROM users WHERE email = 'info@itomoti.com') WHERE name = 'Hamid';
-DELETE FROM store_teams WHERE store_id = (SELECT id FROM stores WHERE name = 'Hamid') AND user_id = (SELECT id FROM users WHERE email = 'playamin998@gmail.com');
-INSERT INTO store_teams (store_id, user_id, role, status, permissions) SELECT s.id, u.id, 'editor', 'active', '{"canManageProducts": true, "canManageOrders": true, "canManageCategories": true, "canViewReports": true, "canManageContent": true, "canManageTeam": false}'::jsonb FROM stores s, users u WHERE s.name = 'Hamid' AND u.email = 'playamin998@gmail.com';
