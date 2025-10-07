@@ -32,6 +32,11 @@ export default function HeaderSlotsEditor() {
         try {
           const fullStore = await Store.findById(selectedStore.id);
           const store = Array.isArray(fullStore) ? fullStore[0] : fullStore;
+          console.log('📊 HeaderSlotsEditor - Store loaded:', {
+            storeName: store?.name,
+            show_language_selector: store?.settings?.show_language_selector,
+            allSettings: store?.settings
+          });
           setStoreData(store);
         } catch (error) {
           console.error('Failed to load store data:', error);
@@ -42,26 +47,27 @@ export default function HeaderSlotsEditor() {
   }, [selectedStore]);
 
   // Generate header context with interactive state - memoized with storeData dependency
-  const generateHeaderContext = useCallback((viewMode) => ({
-    isEditor: true,
-    responsiveMode: viewMode,
-    store: storeData || {
-      id: 1,
-      name: 'Demo Store',
-      slug: 'demo-store',
-      logo_url: null
-    },
-    settings: {
-      hide_header_search: storeData?.settings?.hide_header_search || false,
-      hide_header_cart: storeData?.settings?.hide_header_cart || false,
-      show_permanent_search: storeData?.settings?.show_permanent_search || false,
-      show_language_selector: storeData?.settings?.show_language_selector || false,
-      allowed_countries: storeData?.settings?.allowed_countries || ['US', 'CA', 'UK'],
-      theme: storeData?.settings?.theme || {
-        primary_button_color: '#2563EB',
-        add_to_cart_button_color: '#10B981'
-      }
-    },
+  const generateHeaderContext = useCallback((viewMode) => {
+    const context = {
+      isEditor: true,
+      responsiveMode: viewMode,
+      store: storeData || {
+        id: 1,
+        name: 'Demo Store',
+        slug: 'demo-store',
+        logo_url: null
+      },
+      settings: {
+        hide_header_search: storeData?.settings?.hide_header_search || false,
+        hide_header_cart: storeData?.settings?.hide_header_cart || false,
+        show_permanent_search: storeData?.settings?.show_permanent_search || false,
+        show_language_selector: storeData?.settings?.show_language_selector || false,
+        allowed_countries: storeData?.settings?.allowed_countries || ['US', 'CA', 'UK'],
+        theme: storeData?.settings?.theme || {
+          primary_button_color: '#2563EB',
+          add_to_cart_button_color: '#10B981'
+        }
+      },
     user: null,
     userLoading: false,
     categories: [
@@ -114,7 +120,17 @@ export default function HeaderSlotsEditor() {
     handleCustomerLogout: () => {},
     navigate: () => {},
     location: { pathname: '/' }
-  }), [storeData, mobileMenuOpen, mobileSearchOpen]);
+  };
+
+    console.log('🎯 HeaderSlotsEditor - generateHeaderContext called:', {
+      viewMode,
+      show_language_selector: context.settings.show_language_selector,
+      storeDataExists: !!storeData,
+      rawValue: storeData?.settings?.show_language_selector
+    });
+
+    return context;
+  }, [storeData, mobileMenuOpen, mobileSearchOpen]);
 
   // Header Editor Configuration - memoized with generateHeaderContext dependency
   const headerEditorConfig = useMemo(() => ({
