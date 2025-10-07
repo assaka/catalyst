@@ -250,7 +250,7 @@ export const headerConfig = {
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
       viewMode: ['default'],
-      metadata: {i thi
+      metadata: {
         hierarchical: true,
         displayName: 'Mobile Actions Container',
         note: 'Shows in editor for both views but only on mobile in storefront via md:hidden'

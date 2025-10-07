@@ -54,11 +54,21 @@ export function HeaderSlotRenderer({
   const conditionFilteredSlots = filteredSlots.filter(slot => {
     // Check if this slot has a renderCondition in the config
     const configSlot = headerConfig?.slots?.[slot.id];
+
+    console.log(`🔍 Slot filter check for ${slot.id}:`, {
+      hasConfigSlot: !!configSlot,
+      hasRenderCondition: !!configSlot?.renderCondition,
+      renderConditionType: typeof configSlot?.renderCondition,
+      slotComponent: slot.component
+    });
+
     if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
       const shouldRender = configSlot.renderCondition(headerContext);
-      console.log(`🎯 Checking renderCondition for ${slot.id}:`, {
+      console.log(`🎯 RenderCondition result for ${slot.id}:`, {
         shouldRender,
-        show_language_selector: headerContext?.settings?.show_language_selector
+        show_language_selector: headerContext?.settings?.show_language_selector,
+        contextExists: !!headerContext,
+        settingsExists: !!headerContext?.settings
       });
       return shouldRender;
     }
