@@ -842,7 +842,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     return (
         <>
             {/* Mobile view - always collapsible with vertical layout */}
-            <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <nav className="block md:hidden space-y-1 p-4">
                 <Link
 
                     to={createPublicUrl(store.slug, 'STOREFRONT')} 

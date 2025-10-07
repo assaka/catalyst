@@ -611,7 +611,7 @@ export const headerConfig = {
       id: 'mobile_menu_inner',
       type: 'container',
       content: '',
-      className: 'px-2 py-3 space-y-2',
+      className: 'py-3 space-y-2',
       parentClassName: '',
       styles: {},
       parentId: 'mobile_menu',
