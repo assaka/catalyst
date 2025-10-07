@@ -590,9 +590,11 @@ export const headerConfig = {
       id: 'mobile_menu',
       type: 'container',
       content: '',
-      className: 'md:hidden border-t border-gray-200 bg-white',
+      className: 'md:hidden border-t border-gray-200',
       parentClassName: '',
-      styles: {},
+      styles: {
+        backgroundColor: '#ffffff'
+      },
       parentId: 'header_inner',
       position: { col: 1, row: 3 },
       colSpan: { mobile: 12 },

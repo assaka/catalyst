@@ -154,6 +154,12 @@ const HeaderEditorSidebar = ({
       if (userAccountMenu.styles.borderRadius) updates.userMenuBorderRadius = userAccountMenu.styles.borderRadius;
     }
 
+    // Mobile Menu
+    const mobileMenu = allSlots['mobile_menu'];
+    if (mobileMenu?.styles) {
+      if (mobileMenu.styles.backgroundColor) updates.mobileMenuBg = mobileMenu.styles.backgroundColor;
+    }
+
     if (Object.keys(updates).length > 0) {
       setHeaderStyles(prev => ({ ...prev, ...updates }));
     }
@@ -214,7 +220,11 @@ const HeaderEditorSidebar = ({
         userMenuBg: { slot: 'user_account_menu', type: 'style', prop: 'backgroundColor' },
         userMenuHoverBg: { slot: 'user_account_menu', type: 'style', prop: 'hoverBackgroundColor' },
         userMenuTextColor: { slot: 'user_account_menu', type: 'style', prop: 'color' },
-        userMenuBorderRadius: { slot: 'user_account_menu', type: 'style', prop: 'borderRadius' }
+        userMenuBorderRadius: { slot: 'user_account_menu', type: 'style', prop: 'borderRadius' },
+
+        // Mobile Menu
+        mobileMenuBg: { slot: 'mobile_menu', type: 'style', prop: 'backgroundColor' },
+        mobileMenuIconColor: { slot: 'mobile_menu_toggle', type: 'style', prop: 'color' }
       };
 
       const mapping = styleMap[property];
