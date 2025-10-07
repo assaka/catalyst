@@ -18,7 +18,6 @@ import { Label } from '@/components/ui/label';
 import { styleManager } from './SimpleStyleManager';
 import { saveManager, CHANGE_TYPES } from './SaveManager';
 import { parseEditorHtml, validateEditorHtml, SECURITY_LEVELS } from '@/utils/secureHtmlParser';
-import FeatureIntegration from '../features/FeatureIntegration';
 import GridLayoutControl from './GridLayoutControl';
 import categoryConfig from './configs/category-config';
 
@@ -90,7 +89,6 @@ const EditorSidebar = ({
     layout: true,
     appearance: true,
     advanced: false,
-    features: false,
     size: true
   });
 
@@ -2072,21 +2070,6 @@ const EditorSidebar = ({
                   )}
                 </div>
               </div>
-            </SectionHeader>
-
-            {/* Interactive Features Section */}
-            <SectionHeader title="Interactive Features" section="features">
-              <FeatureIntegration
-                slotId={slotId}
-                elementId={selectedElement?.id || selectedElement?.getAttribute?.('data-slot-id')}
-                userId="current-user" // TODO: Get from auth context
-                storeId="current-store" // TODO: Get from store context
-                slotConfig={slotConfig}
-                onFeatureExecuted={(elementId, action, data) => {
-                  console.log('Feature executed:', { elementId, action, data });
-                  // TODO: Handle feature execution results
-                }}
-              />
             </SectionHeader>
 
             {/* Layout Section */}
