@@ -12,6 +12,7 @@ import WishlistDropdown from './WishlistDropdown';
 import CategoryNav from './CategoryNav';
 import { CountrySelect } from '@/components/ui/country-select';
 import CmsBlockRenderer from './CmsBlockRenderer';
+import { headerConfig } from '@/components/editor/slot/configs/header-config';
 
 /**
  * HeaderSlotRenderer - Renders header slots with full customization
@@ -49,8 +50,24 @@ export function HeaderSlotRenderer({
   // Filter by viewMode if applicable
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
+  // Apply renderCondition filtering from header-config
+  const conditionFilteredSlots = filteredSlots.filter(slot => {
+    // Check if this slot has a renderCondition in the config
+    const configSlot = headerConfig?.slots?.[slot.id];
+    if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
+      const shouldRender = configSlot.renderCondition(headerContext);
+      console.log(`🎯 Checking renderCondition for ${slot.id}:`, {
+        shouldRender,
+        show_language_selector: headerContext?.settings?.show_language_selector
+      });
+      return shouldRender;
+    }
+    // No renderCondition = always render
+    return true;
+  });
+
   // Sort slots using grid coordinates for precise positioning
-  const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
+  const sortedSlots = sortSlotsByGridCoordinates(conditionFilteredSlots);
 
   // Process template variables
   const processVariables = (template, context) => {
