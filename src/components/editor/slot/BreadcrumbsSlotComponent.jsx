@@ -28,6 +28,17 @@ const BreadcrumbsSlotComponent = createSlotComponent({
 
     const { category, product, store, categories = [], settings = {} } = context;
 
+    console.log('🎨 Using context:', {
+      whichContext: category ? 'category' : (product ? 'product' : 'unknown'),
+      hasSettings: !!settings,
+      hasTheme: !!settings?.theme,
+      themeColors: {
+        itemTextColor: settings?.theme?.breadcrumb_item_text_color,
+        itemHoverColor: settings?.theme?.breadcrumb_item_hover_color,
+        activeItemColor: settings?.theme?.breadcrumb_active_item_color
+      }
+    });
+
     // Build breadcrumb items based on context
     const pageType = category ? 'category' : 'product';
     const contextData = category || product;
@@ -45,6 +56,15 @@ const BreadcrumbsSlotComponent = createSlotComponent({
     const storeTheme = settings?.theme || {};
     const slotMetadata = slot?.metadata || {};
 
+    console.log('🔧 Building config from:', {
+      storeThemeColors: {
+        itemTextColor: storeTheme.breadcrumb_item_text_color,
+        itemHoverColor: storeTheme.breadcrumb_item_hover_color,
+        activeItemColor: storeTheme.breadcrumb_active_item_color
+      },
+      slotMetadata: slotMetadata
+    });
+
     const config = {
       showHomeIcon: storeTheme.breadcrumb_show_home_icon ?? slotMetadata.showHomeIcon ?? true,
       itemTextColor: storeTheme.breadcrumb_item_text_color || slotMetadata.itemTextColor || '#6B7280',
@@ -55,6 +75,8 @@ const BreadcrumbsSlotComponent = createSlotComponent({
       mobileFontSize: storeTheme.breadcrumb_mobile_font_size || slotMetadata.mobileFontSize || '0.75rem',
       fontWeight: storeTheme.breadcrumb_font_weight || slotMetadata.fontWeight || '400'
     };
+
+    console.log('✅ Final config:', config);
 
     return <Breadcrumbs items={breadcrumbItems} config={config} />;
   }

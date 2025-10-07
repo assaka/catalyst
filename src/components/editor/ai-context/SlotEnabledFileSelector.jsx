@@ -279,7 +279,7 @@ const SlotEnabledFileSelector = ({
 
       <div className="flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800 px-4 py-1 h-10">
         <h3 className="text-md font-semibold text-gray-900 dark:text-gray-100">
-          Select to customize
+          Select a page
         </h3>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
