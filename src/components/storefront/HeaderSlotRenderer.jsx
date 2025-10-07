@@ -372,6 +372,59 @@ export function HeaderSlotRenderer({
           });
         };
 
+        // Build hierarchical tree from flat categories array
+        const buildCategoryTree = (categories) => {
+          if (!Array.isArray(categories)) return [];
+
+          const categoryMap = new Map();
+          const rootCategories = [];
+          let visibleCategories = categories.filter(c => !c.hide_in_menu);
+
+          // If store has a root category, filter to only show that category tree
+          if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
+            const filterCategoryTree = (categoryId, allCategories) => {
+              const children = allCategories.filter(c => c.parent_id === categoryId);
+              let result = children.slice();
+              children.forEach(child => {
+                result = result.concat(filterCategoryTree(child.id, allCategories));
+              });
+              return result;
+            };
+
+            const rootCategory = visibleCategories.find(c => c.id === store.settings.rootCategoryId);
+            if (rootCategory) {
+              const descendants = filterCategoryTree(store.settings.rootCategoryId, visibleCategories);
+
+              // Check if we should exclude root category from menu
+              if (store.settings.excludeRootFromMenu) {
+                visibleCategories = descendants; // Only show descendants, not the root
+              } else {
+                visibleCategories = [rootCategory, ...descendants]; // Include root and descendants
+              }
+            } else {
+              visibleCategories = [];
+            }
+          }
+
+          visibleCategories.forEach(category => {
+            categoryMap.set(category.id, { ...category, children: [] });
+          });
+
+          visibleCategories.forEach(category => {
+            const categoryNode = categoryMap.get(category.id);
+            if (category.parent_id && categoryMap.has(category.parent_id)) {
+              const parent = categoryMap.get(category.parent_id);
+              parent.children.push(categoryNode);
+            } else {
+              rootCategories.push(categoryNode);
+            }
+          });
+
+          return rootCategories;
+        };
+
+        const hierarchicalCategories = buildCategoryTree(categories);
+
         // Get custom colors from styles
         const linkColor = styles?.color || '#374151';
         const hoverColor = styles?.hoverColor || '#111827';
@@ -379,7 +432,7 @@ export function HeaderSlotRenderer({
 
         return (
           <div key={id} className={className} data-slot-id={id}>
-            {categories?.map(cat => {
+            {hierarchicalCategories?.map(cat => {
               const hasChildren = cat.children && cat.children.length > 0;
               const isExpanded = expandedMobileCategories?.has(cat.id);
 
