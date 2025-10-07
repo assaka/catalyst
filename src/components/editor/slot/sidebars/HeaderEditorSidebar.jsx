@@ -79,6 +79,8 @@ const HeaderEditorSidebar = ({
 
     // Mobile Menu
     mobileMenuBg: '#ffffff',
+    mobileMenuLinkColor: '#374151',
+    mobileMenuLinkHoverColor: '#111827',
     mobileMenuIconColor: '#374151',
     hamburgerSize: '1.5rem'
   });
@@ -160,6 +162,13 @@ const HeaderEditorSidebar = ({
       if (mobileMenu.styles.backgroundColor) updates.mobileMenuBg = mobileMenu.styles.backgroundColor;
     }
 
+    // Mobile Navigation Links
+    const mobileNavigation = allSlots['mobile_navigation'];
+    if (mobileNavigation?.styles) {
+      if (mobileNavigation.styles.color) updates.mobileMenuLinkColor = mobileNavigation.styles.color;
+      if (mobileNavigation.styles.hoverColor) updates.mobileMenuLinkHoverColor = mobileNavigation.styles.hoverColor;
+    }
+
     if (Object.keys(updates).length > 0) {
       setHeaderStyles(prev => ({ ...prev, ...updates }));
     }
@@ -224,6 +233,8 @@ const HeaderEditorSidebar = ({
 
         // Mobile Menu
         mobileMenuBg: { slot: 'mobile_menu', type: 'style', prop: 'backgroundColor' },
+        mobileMenuLinkColor: { slot: 'mobile_navigation', type: 'style', prop: 'color' },
+        mobileMenuLinkHoverColor: { slot: 'mobile_navigation', type: 'style', prop: 'hoverColor' },
         mobileMenuIconColor: { slot: 'mobile_menu_toggle', type: 'style', prop: 'color' }
       };
 
@@ -793,6 +804,44 @@ const HeaderEditorSidebar = ({
                   onChange={(e) => handleStyleChange('mobileMenuBg', e.target.value, 'mobile_menu')}
                   className="flex-1 h-8 text-xs"
                   placeholder="#ffffff"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Link Color</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.mobileMenuLinkColor}
+                  onChange={(e) => handleStyleChange('mobileMenuLinkColor', e.target.value, 'mobile_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.mobileMenuLinkColor}
+                  onChange={(e) => handleStyleChange('mobileMenuLinkColor', e.target.value, 'mobile_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#374151"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Link Hover Color</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="color"
+                  value={headerStyles.mobileMenuLinkHoverColor}
+                  onChange={(e) => handleStyleChange('mobileMenuLinkHoverColor', e.target.value, 'mobile_navigation')}
+                  className="w-12 h-8 p-1"
+                />
+                <Input
+                  type="text"
+                  value={headerStyles.mobileMenuLinkHoverColor}
+                  onChange={(e) => handleStyleChange('mobileMenuLinkHoverColor', e.target.value, 'mobile_navigation')}
+                  className="flex-1 h-8 text-xs"
+                  placeholder="#111827"
                 />
               </div>
             </div>

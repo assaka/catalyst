@@ -649,7 +649,10 @@ export const headerConfig = {
       `,
       className: '',
       parentClassName: '',
-      styles: {},
+      styles: {
+        color: '#374151',
+        hoverColor: '#111827'
+      },
       parentId: 'mobile_menu_inner',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
