@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 export function ResponsiveIframe({ viewport = 'desktop', children, className = '' }) {
   const iframeRef = useRef(null);
   const [iframeDocument, setIframeDocument] = useState(null);
+  const isInitialized = useRef(false);
 
   const getViewportStyles = () => {
     switch (viewport) {
@@ -24,6 +25,10 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
+
+    // Only initialize once
+    if (isInitialized.current) return;
+    isInitialized.current = true;
 
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!iframeDoc) return;
@@ -78,7 +83,7 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
     });
 
     setIframeDocument(iframeDoc);
-  }, [viewport]);
+  }, []);
 
   const viewportStyles = getViewportStyles();
   const wrapperClass = viewport === 'desktop'
