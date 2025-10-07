@@ -49,6 +49,7 @@ import {
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
+import { ResponsiveIframe } from '@/components/editor/ResponsiveIframe';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -523,7 +524,7 @@ const UnifiedSlotsEditor = ({
               </div>
           )}
 
-          <ResponsiveContainer
+          <ResponsiveIframe
             viewport={currentViewport}
             className="bg-white"
           >
@@ -583,7 +584,7 @@ const UnifiedSlotsEditor = ({
                 )
               )}
             </div>
-          </ResponsiveContainer>
+          </ResponsiveIframe>
         </div>
       </div>
 
