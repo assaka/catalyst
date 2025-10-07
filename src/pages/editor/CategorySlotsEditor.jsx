@@ -471,7 +471,12 @@ const createCategoryEditorConfig = (filterableAttributes, storeSettings) => ({
     CategoryProductItemCardSlot,
     CategoryProductItemsSlot
   },
-  generateContext: () => generateMockCategoryContext(filterableAttributes, storeSettings),
+  generateContext: (viewMode, selectedStore) => {
+    // Use selectedStore from StoreSelectionContext (admin's selected store)
+    // This ensures we use the correct store's settings, not a fallback
+    const storeSettings = selectedStore?.settings || null;
+    return generateMockCategoryContext(filterableAttributes, storeSettings);
+  },
   createDefaultSlots,
   viewModeAdjustments: {
     filters_container: {

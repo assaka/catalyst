@@ -227,10 +227,11 @@ export const StoreProvider = ({ children }) => {
       const oldStoreSlugMatch = path.match(/\/storefront\/([^\/]+)/);
       const oldStoreSlug = oldStoreSlugMatch ? oldStoreSlugMatch[1] : null;
       
-      // Use public URL pattern first, then legacy patterns, then default to first store
+      // Use public URL pattern first, then legacy patterns, then admin selected store, then default to first store
       let storeCacheKey = 'first-store';
       let storeIdentifier = null;
-      
+      let storeId = null;
+
       if (publicStoreSlug) {
         storeCacheKey = `store-slug-${publicStoreSlug}`;
         storeIdentifier = publicStoreSlug;
@@ -240,8 +241,15 @@ export const StoreProvider = ({ children }) => {
       } else if (oldStoreSlug) {
         storeCacheKey = `store-slug-${oldStoreSlug}`;
         storeIdentifier = oldStoreSlug;
+      } else {
+        // No URL slug found - check if we're in admin/editor context with a selected store
+        const selectedStoreId = localStorage.getItem('selectedStoreId');
+        if (selectedStoreId) {
+          storeCacheKey = `store-id-${selectedStoreId}`;
+          storeId = selectedStoreId;
+        }
       }
-      
+
       let stores;
       if (storeIdentifier) {
         try {
@@ -249,6 +257,14 @@ export const StoreProvider = ({ children }) => {
           stores = Array.isArray(result) ? result : [];
         } catch (error) {
           console.error(`StoreProvider: StorefrontStore.filter failed for slug:`, error);
+          stores = [];
+        }
+      } else if (storeId) {
+        try {
+          const result = await StorefrontStore.filter({ id: storeId });
+          stores = Array.isArray(result) ? result : [];
+        } catch (error) {
+          console.error(`StoreProvider: StorefrontStore.filter failed for id:`, error);
           stores = [];
         }
       } else {
