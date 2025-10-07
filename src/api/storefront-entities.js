@@ -73,15 +73,10 @@ class CustomerBaseEntity {
         url = `${this.endpoint}?${queryString}`;
       }
 
-      console.log(`🔍 CustomerBaseEntity(${this.endpoint}).findAll() calling:`, url);
-      console.log(`🔍 Customer token available:`, !!this.client.getCustomerToken());
-      
       const response = await this.client.getCustomer(url);
-      console.log(`🔍 CustomerBaseEntity(${this.endpoint}).findAll() response:`, response);
       
       // Handle wrapped response format {success: true, data: [...]}
       if (response && response.success && Array.isArray(response.data)) {
-        console.log(`🔍 CustomerBaseEntity(${this.endpoint}) extracted data:`, response.data);
         return response.data;
       }
       
@@ -386,12 +381,6 @@ export const CustomerWishlist = new StorefrontWishlistService();
 export const CustomerOrder = new CustomerBaseEntity('orders/customer-orders');
 export const CustomerAddress = new CustomerBaseEntity('addresses');
 export const CustomerProfile = new CustomerBaseEntity('customers');
-
-// For backward compatibility and customer operations
-export const customerLogin = (email, password) => CustomerAuth.login(email, password);
-export const customerLogout = () => CustomerAuth.logout();
-export const customerRegister = (userData) => CustomerAuth.register(userData);
-export const getCurrentCustomer = () => CustomerAuth.me();
 
 // Export API client for advanced usage
 export { storefrontApiClient };

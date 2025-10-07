@@ -88,9 +88,7 @@ export default function CustomerActivityPage() {
         // The API should support searching across multiple fields
         filters.search = searchQuery.trim();
       }
-      
-      console.log('🔍 Loading customer activities with filters:', filters);
-      
+
       // Use findPaginated for proper pagination support
       const paginatedResult = await CustomerActivity.findPaginated(
         page,

@@ -33,7 +33,6 @@ const [labels, setLabels] = useState([]);
     setLoading(true);
     try {
       const storeId = getSelectedStoreId();
-      console.log('Admin ProductLabels - Loading data for store:', storeId);
       if (!storeId) {
         console.warn("No store selected");
         setLoading(false);
@@ -41,14 +40,10 @@ const [labels, setLabels] = useState([]);
       }
 
       // Load attributes and labels for the selected store
-      console.log('Admin ProductLabels - Fetching labels and attributes...');
       const [attributesData, labelsData] = await Promise.all([
         Attribute.filter({ store_id: storeId }),
         ProductLabel.filter({ store_id: storeId })
       ]);
-
-      console.log('Admin ProductLabels - Raw API response:', { attributesData, labelsData });
-      console.log('Admin ProductLabels - Labels count:', labelsData?.length || 0);
 
       setAttributes(attributesData || []);
       setLabels(labelsData || []);

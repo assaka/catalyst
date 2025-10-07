@@ -20,24 +20,11 @@ const getPositionClasses = (position) => {
 export default function ProductLabel({ label, style = {} }) {
   if (!label || !label.text) return null;
 
-  // Debug logging
-  console.log('🏷️ ProductLabel rendering:', {
-    name: label.name,
-    text: label.text,
-    position: label.position,
-    color: label.color,
-    text_color: label.text_color,
-    background_color: label.background_color
-  });
-
   const labelStyle = {
     backgroundColor: label.background_color || '#FF0000',
     color: label.color || label.text_color || '#FFFFFF', // Handle both field names
     ...style
   };
-
-  console.log('🎨 Computed labelStyle:', labelStyle);
-  console.log('📍 Position classes:', getPositionClasses(label.position));
 
   return (
     <div

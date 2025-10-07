@@ -15,16 +15,13 @@ const loadSeoSettingsWithSimpleCache = async (storeId) => {
     return seoSettingsCache.get(cacheKey);
   }
 
-  console.log('Loading SEO settings for store:', storeId);
   try {
     const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
     const result = await StorefrontSeoSetting.filter({ store_id: storeId });
-    console.log('SEO settings API response:', result);
     
     let seoSettings = null;
     if (result && result.length > 0) {
       const rawSettings = result[0];
-      console.log('Raw SEO settings from API:', rawSettings);
       
       seoSettings = {
         ...rawSettings,
@@ -88,7 +85,6 @@ export const SeoSettingsProvider = ({ children }) => {
 
   // Clear cache function - simple like CMS blocks
   const clearSeoCache = () => {
-    console.log('Clearing SEO settings cache (simple approach)');
     seoSettingsCache.clear();
     if (store?.id) {
       // Reload immediately

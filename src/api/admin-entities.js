@@ -12,8 +12,6 @@ class AdminBaseEntity {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
-      
-      console.log(`🔐 Admin API: ${this.endpoint}.findAll()`);
       const response = await this.client.get(url);
       
       return Array.isArray(response) ? response : [];

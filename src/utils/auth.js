@@ -197,8 +197,6 @@ export const clearRoleBasedAuthData = (role) => {
  * Set role-based authentication data - independent dual sessions
  */
 export const setRoleBasedAuthData = (user, token) => {
-  console.log('🔧 Setting auth data for:', user.role);
-  
   // Store role-specific data separately to maintain both sessions
   if (user.role === 'customer') {
     localStorage.setItem('customer_auth_token', token);
@@ -229,7 +227,6 @@ const generateSessionId = () => {
  * Switch active session to specific role (maintaining both sessions)
  */
 export const switchToRole = (targetRole) => {
-  console.log('🔄 Switching active session to role:', targetRole);
   
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
@@ -237,7 +234,6 @@ export const switchToRole = (targetRole) => {
     if (customerToken) {
       // Update API client
       apiClient.setToken(customerToken);
-      console.log('✅ Switched to customer session');
       return true;
     }
   } else if (targetRole === 'store_owner' || targetRole === 'admin') {
@@ -246,12 +242,9 @@ export const switchToRole = (targetRole) => {
     if (storeOwnerToken) {
       // Update API client
       apiClient.setToken(storeOwnerToken);
-      console.log('✅ Switched to store owner/admin session');
       return true;
     }
   }
-  
-  console.log('❌ Failed to switch to role:', targetRole);
   return false;
 };
 
@@ -306,8 +299,6 @@ export const activateRoleSession = (targetRole) => {
     
     if (customerToken) {
       apiClient.setToken(customerToken);
-      console.log('✅ Customer session activated');
-      
       // Trigger a custom event and return true
       window.dispatchEvent(new CustomEvent('roleSessionChanged', { detail: { role: 'customer' } }));
       return true;
@@ -320,8 +311,6 @@ export const activateRoleSession = (targetRole) => {
       try {
         const userData = JSON.parse(storeOwnerUserData);
         apiClient.setToken(storeOwnerToken);
-        console.log('✅ Store owner session activated');
-        
         // Trigger a page refresh or navigation to update UI
         window.dispatchEvent(new CustomEvent('roleSessionChanged', { detail: { role: userData.role } }));
         return true;
@@ -330,8 +319,7 @@ export const activateRoleSession = (targetRole) => {
       }
     }
   }
-  
-  console.log('❌ Failed to activate role session:', targetRole);
+
   return false;
 };
 
@@ -339,14 +327,12 @@ export const activateRoleSession = (targetRole) => {
  * Force set a role as the active session (used for explicit switching)
  */
 export const forceActivateRole = (targetRole) => {
-  console.log('🔄 Force activating role:', targetRole);
   
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
     
     if (customerToken) {
       apiClient.setToken(customerToken);
-      console.log('✅ Forced customer session active');
       return true;
     }
   } else if (targetRole === 'store_owner' || targetRole === 'admin') {
@@ -354,12 +340,9 @@ export const forceActivateRole = (targetRole) => {
     
     if (storeOwnerToken) {
       apiClient.setToken(storeOwnerToken);
-      console.log('✅ Forced store owner session active');
       return true;
     }
   }
-  
-  console.log('❌ Failed to force activate role:', targetRole);
   return false;
 };
 

@@ -20,18 +20,15 @@ class StoreResolver {
     try {
       // Check cache first
       if (this.cachedStoreId && this.cacheExpiry && Date.now() < this.cacheExpiry) {
-        console.log('🏪 StoreResolver: Using cached store ID:', this.cachedStoreId);
         return this.cachedStoreId;
       }
 
       // Try to get from API using backend storeResolver middleware
       try {
-        console.log('🏪 StoreResolver: Fetching store ID from API...');
         const response = await apiClient.get('stores/current');
         
         if (response.success && response.data?.id) {
           const storeId = response.data.id;
-          console.log('✅ StoreResolver: Got store ID from API:', storeId);
           
           // Cache the result
           this.cachedStoreId = storeId;
@@ -55,7 +52,6 @@ class StoreResolver {
       // Fallback 2: localStorage storeId
       const storeId = localStorage.getItem('storeId');
       if (storeId) {
-        console.log('🏪 StoreResolver: Using storeId from localStorage:', storeId);
         this.cachedStoreId = storeId;
         this.cacheExpiry = Date.now() + this.cacheTimeout;
         return storeId;
@@ -68,8 +64,6 @@ class StoreResolver {
         
         if (storesResponse.success && storesResponse.data?.length > 0) {
           const firstStore = storesResponse.data[0];
-          console.log('🏪 StoreResolver: Using first available store:', firstStore.id);
-          
           // Cache and also save to localStorage
           this.cachedStoreId = firstStore.id;
           this.cacheExpiry = Date.now() + this.cacheTimeout;
@@ -104,7 +98,6 @@ class StoreResolver {
    * @param {string} storeId - Store ID to set
    */
   setStoreId(storeId) {
-    console.log('🏪 StoreResolver: Manually setting store ID:', storeId);
     this.cachedStoreId = storeId;
     this.cacheExpiry = Date.now() + this.cacheTimeout;
     localStorage.setItem('selectedStoreId', storeId);

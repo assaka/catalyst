@@ -65,11 +65,6 @@ export const createStripeCheckout = async (checkoutData) => {
       session_id: sessionId, // Include session_id for guest checkout
     };
 
-    console.log('🔍 Final request payload:', {
-      ...requestPayload,
-      items: requestPayload.items?.length || 0 + ' items' // Don't log full items array
-    });
-
     // Use storefront API client instead of admin API client for guest/customer checkout
     const response = await storefrontApiClient.postCustomer('payments/create-checkout', requestPayload);
 

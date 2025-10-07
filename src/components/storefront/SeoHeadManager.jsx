@@ -115,23 +115,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     
                     const pageCategories = pageData?.category_ids || pageData?.categories || [];
                     
-                    // Debug category matching
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log('🔍 Category matching for template:', template.name, {
-                            templateCategories: template.conditions.categories,
-                            pageCategories: pageCategories,
-                            templateCategoriesTypes: template.conditions.categories.map(c => typeof c),
-                            pageCategoriesTypes: pageCategories.map(c => typeof c)
-                        });
-                    }
-                    
                     const hasMatchingCategory = template.conditions.categories.some(conditionCat => 
                         pageCategories.includes(conditionCat)
                     );
-                    
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log('🔍 Category match result:', hasMatchingCategory);
-                    }
                     
                     if (!hasMatchingCategory) {
                         matches = false;
@@ -168,38 +154,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                                pageType === 'category' ? 'category' : null;
         
         const matchingTemplate = currentPageType ? findMatchingSeoTemplate(currentPageType) : null;
-        
-        // Debug logging for SEO template matching
-        if (process.env.NODE_ENV === 'development' && currentPageType) {
-            console.log('🔍 SeoHeadManager: SEO Template Debug', {
-                pageType: currentPageType,
-                availableTemplates: seoTemplates?.length || 0,
-                allTemplates: seoTemplates?.map(t => ({
-                    id: t.id,
-                    name: t.name,
-                    type: t.type,
-                    is_active: t.is_active,
-                    conditions: t.conditions
-                })),
-                matchingTemplate: matchingTemplate ? {
-                    id: matchingTemplate.id,
-                    name: matchingTemplate.name,
-                    type: matchingTemplate.type,
-                    conditions: matchingTemplate.conditions,
-                    hasMetaTitle: !!matchingTemplate.meta_title,
-                    hasMetaDescription: !!matchingTemplate.meta_description,
-                    hasOgTitle: !!matchingTemplate.og_title,
-                    hasOgDescription: !!matchingTemplate.og_description
-                } : null,
-                pageData: pageData ? {
-                    category_ids: pageData.category_ids,
-                    categories: pageData.categories,
-                    attribute_set_id: pageData.attribute_set_id,
-                    hasCategories: !!(pageData.category_ids || pageData.categories),
-                    hasAttributeSet: !!pageData.attribute_set_id
-                } : null
-            });
-        }
 
         // Apply templates to get processed template values
         const templateTitle = matchingTemplate?.meta_title ? 
@@ -235,32 +189,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                         templateKeywords ||
                         processedDefaultKeywords || 
                         `${store?.name}, products, quality, shopping`;
-
-        // Debug logging for final SEO values
-        if (process.env.NODE_ENV === 'development' && currentPageType) {
-            console.log('🎯 SeoHeadManager: Final SEO Values', {
-                title: {
-                    final: title,
-                    sources: {
-                        pageData: pageData?.meta_title,
-                        pageSeo: pageData?.seo?.meta_title,
-                        template: templateTitle,
-                        seoDefault: processedDefaultTitle,
-                        basicDefault: basicDefaultTitle
-                    }
-                },
-                description: {
-                    final: description,
-                    sources: {
-                        pageData: pageData?.meta_description,
-                        pageSeo: pageData?.seo?.meta_description,
-                        template: templateDescription,
-                        seoDefault: processedDefaultDescription,
-                        basicDefault: basicDefaultDescription
-                    }
-                }
-            });
-        }
 
         // Default description for structured data
         const defaultDescription = description || store?.description || 'Quality products and services';

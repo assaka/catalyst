@@ -119,10 +119,7 @@ export default function AnalyticsSettings() {
         let intervalId;
         
         if (autoRefresh && selectedStore) {
-            console.log(`🔄 Auto-refresh enabled: refreshing every ${refreshInterval} seconds`);
-            
             intervalId = setInterval(() => {
-                console.log('🔄 Auto-refreshing analytics events...');
                 loadDataLayerEvents();
                 setLastRefresh(new Date());
             }, refreshInterval * 1000);
@@ -197,9 +194,6 @@ export default function AnalyticsSettings() {
     
     // Advanced analytics functions
     const loadDataLayerEvents = async () => {
-        console.log('🔄 Loading analytics data from both browser and database...');
-        console.log('🏪 Selected store:', selectedStore?.id, selectedStore?.name);
-        
         // Get recent dataLayer events from window.dataLayer
         const browserEvents = [];
         if (typeof window !== 'undefined' && window.dataLayer) {
@@ -209,8 +203,6 @@ export default function AnalyticsSettings() {
                 source: 'browser',
                 timestamp: event.timestamp || event['gtm.start'] || new Date().toISOString()
             })));
-            console.log('📊 Browser dataLayer events:', recentEvents.length);
-            
             // Debug browser event timestamps
             if (recentEvents.length > 0) {
                 const sampledEvents = recentEvents.slice(-3).map(e => ({
@@ -228,32 +220,26 @@ export default function AnalyticsSettings() {
                         }
                     })()
                 }));
-                console.log('🕐 Sample browser event timestamps:', sampledEvents);
             }
         } else {
-            console.log('📊 No window.dataLayer found');
+            console.warn('📊 No window.dataLayer found');
         }
         
         // Get customer activities from database
         try {
             if (selectedStore?.id) {
                 const apiUrl = `/api/customer-activity?store_id=${selectedStore.id}&limit=50`;
-                console.log('🌐 Fetching customer activities from:', apiUrl);
                 
                 const response = await fetch(apiUrl);
-                console.log('📡 API Response status:', response.status, response.statusText);
                 
                 if (response.ok) {
                     const responseData = await response.json();
-                    console.log('📄 API Response data:', responseData);
                     
                     // Handle the API response structure
                     const databaseEvents = responseData.success && responseData.data?.activities 
                         ? responseData.data.activities 
                         : (Array.isArray(responseData) ? responseData : []);
-                    
-                    console.log('🔍 Parsed database events:', databaseEvents.length, databaseEvents);
-                    
+
                     const formattedDbEvents = databaseEvents.map(activity => ({
                         event: activity.activity_type,
                         source: 'database',
@@ -271,30 +257,13 @@ export default function AnalyticsSettings() {
                         _raw: activity
                     }));
                     browserEvents.push(...formattedDbEvents);
-                    console.log('📊 Database customer activities:', databaseEvents.length);
-                    
-                    // Debug timestamp formats
-                    if (formattedDbEvents.length > 0) {
-                        console.log('🕐 Sample database event timestamps:', formattedDbEvents.slice(0, 3).map(e => ({
-                            event: e.event,
-                            timestamp: e.timestamp,
-                            formatted: (() => {
-                                if (!e.timestamp) return 'No timestamp';
-                                try {
-                                    const date = new Date(e.timestamp);
-                                    return isNaN(date.getTime()) ? 'Invalid timestamp' : date.toLocaleString();
-                                } catch (error) {
-                                    return 'Invalid timestamp';
-                                }
-                            })()
-                        })));
-                    }
+
                 } else {
                     const errorText = await response.text();
                     console.warn('Failed to fetch customer activities:', response.status, response.statusText, errorText);
                 }
             } else {
-                console.log('🚫 No selected store ID available');
+                console.warn('🚫 No selected store ID available');
             }
         } catch (error) {
             console.warn('Could not load customer activities:', error);
@@ -317,7 +286,6 @@ export default function AnalyticsSettings() {
             const newCount = browserEvents.length - previousEventCount;
             if (newCount > 0) {
                 setNewEventsCount(prev => prev + newCount);
-                console.log(`🆕 ${newCount} new events detected!`);
                 
                 // Clear the new events counter after 3 seconds
                 setTimeout(() => {
@@ -328,7 +296,6 @@ export default function AnalyticsSettings() {
         
         setPreviousEventCount(browserEvents.length);
         setDataLayerEvents(browserEvents);
-        console.log('📊 Total combined events:', browserEvents.length);
     };
 
     const loadGTMScript = () => {

@@ -99,7 +99,6 @@ class DiffToSlotTranslator {
    * @returns {Object} Slot configuration
    */
   translateDiff(unifiedDiff, filePath = '') {
-    console.log(`🔄 Translating diff for file: ${filePath}`);
     
     try {
       // Parse the unified diff
@@ -113,9 +112,7 @@ class DiffToSlotTranslator {
       
       // Build final configuration
       const slotConfig = this.buildSlotConfiguration(slotChanges);
-      
-      console.log(`✅ Translation complete. Generated ${Object.keys(slotConfig.slots || {}).length} slot overrides`);
-      
+
       return {
         success: true,
         config: slotConfig,

@@ -867,13 +867,6 @@ export default function ProductDetail() {
               settings, // 🔧 CRITICAL FIX: Pass fresh settings to variableContext for HTML template processing
               productLabels: (() => {
                 const labels = product?.applicableLabels || productLabels;
-                console.log('🏷️ ProductDetail - Passing labels to template:', labels?.map(l => ({
-                  name: l.name,
-                  text: l.text,
-                  color: l.color,
-                  background_color: l.background_color,
-                  position: l.position
-                })));
                 return labels;
               })()
             }}

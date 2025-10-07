@@ -32,7 +32,6 @@ const EditableSlotElement = ({ slotKey, slot, onElementClick, children, classNam
       }}
       onClick={(e) => {
         e.stopPropagation();
-        console.log('🎯 EditableSlotElement clicked:', slotKey, 'calling onElementClick with slotKey and currentTarget');
         // Pass slotKey and element as expected by createElementClickHandler(slotId, element)
         onElementClick(slotKey, e.currentTarget);
       }}

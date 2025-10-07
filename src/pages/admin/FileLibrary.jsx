@@ -45,10 +45,7 @@ const FileLibrary = () => {
   const checkStorageProvider = async () => {
     try {
       // Use the same endpoint as FilePickerModal for consistency
-      console.log('🔍 FileLibrary: Checking storage connection...');
       const response = await apiClient.get('/supabase/storage/stats');
-
-      console.log('🔍 FileLibrary: Storage stats response:', response);
 
       if (response.success) {
         // Since we're using Supabase storage, set it directly
@@ -73,15 +70,9 @@ const FileLibrary = () => {
   const loadFiles = async () => {
     try {
       setLoading(true);
-      
-      console.log('🔍 FileLibrary: Loading files for store:', selectedStore?.id);
-      console.log('🔐 FileLibrary: Auth token present:', !!apiClient.getToken());
-      console.log('🔐 FileLibrary: User role:', apiClient.getCurrentUserRole());
-      
+
       // Use the same API as FilePickerModal for consistency
       const response = await apiClient.get('/supabase/storage/list/suprshop-assets');
-      
-      console.log('📡 FileLibrary: API response:', response);
       
       // Check if we have valid storage data (same format as FilePickerModal)
       if (response.success && response.files) {
@@ -90,7 +81,6 @@ const FileLibrary = () => {
 
         // Transform response to FileLibrary format (same as FilePickerModal)
         const rawFiles = response.files || [];
-        console.log('📋 FileLibrary: Raw files from API:', rawFiles);
 
         const transformedFiles = rawFiles.map(file => {
           const imageUrl = file.url || file.publicUrl || file.name;
@@ -103,8 +93,6 @@ const FileLibrary = () => {
             uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
           };
         });
-
-        console.log('✨ FileLibrary: Transformed files:', transformedFiles);
 
         setFiles(transformedFiles);
       } else {
@@ -121,7 +109,6 @@ const FileLibrary = () => {
       
       // Fallback behavior for different error types
       if (error.message?.includes('404') || error.message?.includes('not found')) {
-        console.log('Storage API not available, showing empty state');
         setFiles([]);
       } else {
         toast.error('Failed to load files: ' + error.message);
@@ -191,7 +178,6 @@ const FileLibrary = () => {
         const response = await apiClient.uploadFile('/supabase/storage/upload', file, additionalData);
 
         if (response.success) {
-          console.log('✅ FileLibrary: Upload successful for', file.name, ':', response);
 
           uploadedFiles.push({
             id: response.id || `uploaded-${Date.now()}-${uploadedFiles.length}`,
@@ -208,7 +194,6 @@ const FileLibrary = () => {
 
       if (uploadedFiles.length > 0) {
         toast.success(`Successfully uploaded ${uploadedFiles.length} file(s)!`);
-        console.log('📤 FileLibrary: All uploads successful, refreshing file list...');
       }
 
       // Reload files to show the new uploads

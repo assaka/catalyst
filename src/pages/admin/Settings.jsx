@@ -92,16 +92,7 @@ export default function Settings() {
       
       const user = await retryApiCall(() => User.me());
       
-      // Get fresh store data from API instead of using cached selectedStore
-      console.log('🔍 Using selectedStore data (cached):', {
-        selectedStoreId: selectedStore?.id,
-        selectedStoreKeys: selectedStore ? Object.keys(selectedStore) : [],
-        selectedStoreSettings: selectedStore?.settings,
-        selectedStoreRootCategory: selectedStore?.root_category_id
-      });
-      
-      // Fetch fresh store data to ensure we have the latest settings
-      console.log('🔄 Fetching fresh store data from API...', selectedStore.id);
+     // Fetch fresh store data to ensure we have the latest settings
       let freshStoreData = null;
       try {
         const storeResponse = await retryApiCall(() => Store.findById(selectedStore.id));
@@ -118,26 +109,10 @@ export default function Settings() {
           console.warn('⚠️ Unexpected store response format:', storeResponse);
           freshStoreData = selectedStore;
         }
-        console.log('✅ Fresh store data received:', {
-          rawResponse: storeResponse,
-          extractedStore: freshStoreData,
-          storeId: freshStoreData?.id
-        });
       } catch (error) {
-        console.error('❌ Failed to fetch fresh store data:', error);
-        console.log('📋 Falling back to selectedStore data');
         freshStoreData = selectedStore;
       }
-      
-      console.log('🔍 Fresh store data from API:', {
-        freshStoreId: freshStoreData?.id,
-        freshStoreKeys: freshStoreData ? Object.keys(freshStoreData) : [],
-        freshStoreSettings: freshStoreData?.settings,
-        freshStoreRootCategory: freshStoreData?.root_category_id,
-        settingsType: typeof freshStoreData?.settings,
-        settingsIsNull: freshStoreData?.settings === null
-      });
-      
+
       const storeData = freshStoreData || selectedStore;
       
       const settings = storeData.settings || {};
@@ -235,7 +210,7 @@ export default function Settings() {
           expandAllMenuItems: settings.expandAllMenuItems === true,
         }
       });
-      
+
       // Debug the loaded settings values
       console.log('🔍 Store settings loaded:', {
         rawStoreData: storeData,
@@ -297,48 +272,6 @@ export default function Settings() {
         ...prev.settings,
         [key]: value,
       },
-    }));
-  };
-
-  // Handler for SEO settings
-  const handleSeoChange = (field, value) => {
-    setStore(prev => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        seo_settings: {
-          ...prev.settings.seo_settings,
-          [field]: value
-        }
-      }
-    }));
-  };
-
-  // Handler for Theme settings
-  const handleThemeChange = (field, value) => {
-    setStore(prev => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        theme: {
-          ...prev.settings.theme,
-          [field]: value
-        }
-      }
-    }));
-  };
-
-  // Handler for Cookie Consent settings
-  const handleCookieConsentChange = (field, value) => {
-    setStore(prev => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        cookie_consent: {
-          ...prev.settings.cookie_consent,
-          [field]: value
-        }
-      }
     }));
   };
 
@@ -453,16 +386,7 @@ export default function Settings() {
       
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
-      
-      // Debug what came back from the save
-      console.log('💾 Save response:', {
-        result,
-        resultSettings: result?.settings,
-        savedRootCategory: result?.settings?.rootCategoryId,
-        savedExcludeRoot: result?.settings?.excludeRootFromMenu,
-        savedExpandAll: result?.settings?.expandAllMenuItems
-      });
-      
+
       // Update our local store state with the response data
       if (result && result.settings) {
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });

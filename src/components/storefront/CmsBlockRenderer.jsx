@@ -119,7 +119,6 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
     const loadBlocks = async () => {
       try {
         if (!storeIdToUse) {
-          console.log('❌ No store selected, cannot load CMS blocks');
           setBlocks([]);
           setLoading(false);
           return;

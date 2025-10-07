@@ -495,33 +495,20 @@ class ProductService extends BaseEntity {
       
       const queryString = new URLSearchParams(params).toString();
       const url = `${this.endpoint}?${queryString}`;
-      
-      console.log('🔧 ProductService.findPaginated: Checking authentication status');
-      
+
       // Check if we have a token
       const token = apiClient.getToken();
       let response;
       
       if (token) {
-        console.log('🔐 Using authenticated API for product fetching');
         // Use authenticated endpoint if token is available
         response = await apiClient.get(url);
       } else {
-        console.log('🌐 Using public API for product fetching (no auth token)');
         // Fall back to public endpoint if no token with proper query params
         const publicUrl = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
         response = await apiClient.publicRequest('GET', publicUrl, null);
       }
-      
-      // Log the response structure for debugging
-      console.log('🔍 ProductService response structure:', {
-        isArray: Array.isArray(response),
-        hasSuccess: response?.success,
-        hasData: !!response?.data,
-        dataKeys: response?.data ? Object.keys(response.data) : [],
-        directLength: Array.isArray(response) ? response.length : 'N/A'
-      });
-      
+
       // Check if response has pagination structure
       if (response && response.success && response.data) {
         // Handle different entity key formats (products, etc.)
@@ -530,7 +517,6 @@ class ProductService extends BaseEntity {
         ) || 'products';
         
         if (entityKey && response.data[entityKey]) {
-          console.log(`✅ Found products under key '${entityKey}':`, response.data[entityKey].length);
           return {
             data: response.data[entityKey],
             pagination: response.data.pagination || {
@@ -544,7 +530,6 @@ class ProductService extends BaseEntity {
         
         // If data structure is different, try to extract products directly
         if (response.data.products !== undefined) {
-          console.log('✅ Found products in data.products:', response.data.products.length);
           return {
             data: response.data.products || [],
             pagination: response.data.pagination || {
@@ -559,7 +544,6 @@ class ProductService extends BaseEntity {
       
       // Handle array response (typically from public API)
       const data = Array.isArray(response) ? response : [];
-      console.log('📦 Treating response as array:', data.length, 'items');
       return {
         data: data,
         pagination: {
@@ -574,7 +558,6 @@ class ProductService extends BaseEntity {
       
       // Try public API as fallback if authenticated fails
       if (error.status === 401) {
-        console.log('🔄 Auth failed, retrying with public API');
         try {
           const params = {
             page: page,
@@ -788,8 +771,6 @@ export const DeliverySettings = new BaseEntity('delivery');
 
 // Additional entities (you can implement these as needed)
 export const Cart = new BaseEntity('cart');
-export const Wishlist = new BaseEntity('wishlist');
-export const Address = new BaseEntity('addresses');
 export const CmsBlock = new BaseEntity('cms-blocks');
 export const ProductLabel = new BaseEntity('product-labels');
 // Admin ProductTab entity - forces authenticated API usage for admin operations
@@ -804,22 +785,16 @@ class AdminProductTabEntity extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
 
-      console.log('🔧 AdminProductTab: Making authenticated request to:', url);
-
       // Always use authenticated API for admin operations
       const response = await apiClient.get(url);
-
-      console.log('🔧 AdminProductTab: Response received:', response);
 
       if (response && response.data) {
         // Backend returns {success: true, data: [...]}
         const result = Array.isArray(response.data) ? response.data : [];
-        console.log('🔧 AdminProductTab: Extracted data array:', result);
         return result;
       } else {
         // Direct array response
         const result = Array.isArray(response) ? response : [];
-        console.log('🔧 AdminProductTab: Direct array response:', result);
         return result;
       }
     } catch (error) {

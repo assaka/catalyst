@@ -171,24 +171,10 @@ export function UnifiedSlotRenderer({
     // Check if this is a header slot by looking at the imported headerConfig
     const configSlot = headerConfig?.slots?.[slot.id];
 
-    console.log(`🔍 [UnifiedSlotRenderer] Checking slot ${slot.id}:`, {
-      hasConfigSlot: !!configSlot,
-      hasRenderCondition: !!configSlot?.renderCondition,
-      renderConditionType: typeof configSlot?.renderCondition,
-      component: slot.component
-    });
-
     if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
       // Use headerContext for header slots
       const contextToUse = headerContext || categoryData || cartData || {};
       const shouldRender = configSlot.renderCondition(contextToUse);
-
-      console.log(`🎯 [UnifiedSlotRenderer] RenderCondition result for ${slot.id}:`, {
-        shouldRender,
-        show_language_selector: contextToUse?.settings?.show_language_selector,
-        contextType: headerContext ? 'header' : categoryData ? 'category' : cartData ? 'cart' : 'unknown'
-      });
-
       return shouldRender;
     }
 
@@ -461,15 +447,8 @@ export function UnifiedSlotRenderer({
         // Remove width from styles for text elements - let them be fit-content
         const { width, ...stylesWithoutWidth } = processedStyles || {};
 
-        // Check if slot has conditional display and content is empty
-        const hasConditionalDisplay = metadata?.conditionalDisplay;
-
         // Check if slot is conditional (exact match or starts with pattern for instances)
         const conditionalSlotPatterns = ['product_labels', 'product_card_compare_price', 'compare_price'];
-        const isConditionalSlot = conditionalSlotPatterns.some(pattern =>
-          id === pattern || id.startsWith(pattern + '_')
-        );
-
         // Skip rendering entirely if empty (no content at all)
         if (!processedContent) {
           return null;

@@ -111,12 +111,7 @@ export default function Categories() {
       if (response.ok) {
         const data = await response.json();
         const settings = data.settings || {};
-        
-        // Debug log to see what we're receiving
-        console.log('Loading store settings:', settings);
-        console.log('excludeRootFromMenu:', settings.excludeRootFromMenu);
-        console.log('expandAllMenuItems:', settings.expandAllMenuItems);
-        
+
         // Ensure boolean values are properly set
         const updatedSettings = {
           ...settings,
@@ -227,8 +222,6 @@ export default function Categories() {
           }
         }
       }
-      
-      console.log(`📦 Total categories loaded: ${allCategories.length}`);
       return allCategories;
     } catch (error) {
       console.error("Error loading all categories:", error);
@@ -252,7 +245,6 @@ export default function Categories() {
       
       // Extract root categories for the selector (categories with no parent)
       const roots = allCategories.filter(cat => !cat.parent_id || cat.parent_id === null);
-      console.log('🌱 Found root categories:', roots.map(cat => ({ id: cat.id, name: cat.name, parent_id: cat.parent_id })));
       setRootCategories(roots);
       
       // Apply root category filter if selected
@@ -308,9 +300,7 @@ export default function Categories() {
           cat.description?.toLowerCase().includes(searchTerm)
         );
       }
-      
-      console.log(`🔍 Filtered categories: ${filteredCategories.length} (from ${allCategories.length} total)`);
-      
+
       if (viewMode === 'hierarchical') {
         // For hierarchical view, show all filtered categories
         setCategories(filteredCategories);

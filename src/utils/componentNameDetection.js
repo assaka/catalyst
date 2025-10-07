@@ -235,13 +235,7 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
     const token = localStorage.getItem('store_owner_auth_token') || 
                   localStorage.getItem('token') || 
                   localStorage.getItem('customer_auth_token');
-    console.log('🔐 Token for route resolution:', token ? `${token.substring(0, 20)}...` : 'No token found');
-    console.log('🔍 Token sources checked:', {
-      store_owner_auth_token: !!localStorage.getItem('store_owner_auth_token'),
-      token: !!localStorage.getItem('token'),
-      customer_auth_token: !!localStorage.getItem('customer_auth_token')
-    });
-    
+
     // Build headers with authentication
     const headers = {
       'Content-Type': 'application/json',
@@ -251,7 +245,6 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
     // Add authentication if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('🔑 Added Authorization header to route resolution request');
     } else {
       console.warn('⚠️ No token available for authentication - API call will be unauthenticated');
     }
@@ -263,8 +256,6 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
     });
     
     let data = await response.json();
-    console.log('📡 Route resolution API response (authenticated):', response.status, data);
-    
     if (response.ok && data.success) {
       return {
         found: true,
@@ -275,8 +266,6 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
       };
     } else if (response.status === 401) {
       // Authentication failed, try public endpoint as fallback
-      console.log('🔄 Authentication failed, trying public endpoint as fallback...');
-      
       try {
         // Get store ID for public endpoint (required parameter)
         const storeId = apiConfig.storeId || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store ID
@@ -290,7 +279,6 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
         });
         
         const publicData = await publicResponse.json();
-        console.log('📡 Public route resolution API response:', publicResponse.status, publicData);
         
         if (publicResponse.ok && publicData.success) {
           return {

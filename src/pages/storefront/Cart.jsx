@@ -103,18 +103,7 @@ export default function Cart() {
             }
 
             try {
-                // Load published configuration using the new versioning API
-                console.log('🔍 CART: Requesting config for store ID:', store.id);
-                console.log('🔍 CART: Expected store ID from DB:', '157d4590-49bf-4b0b-bd77-abe131909528');
-                console.log('🔍 CART: Store ID match:', store.id === '157d4590-49bf-4b0b-bd77-abe131909528');
-                console.log('🔍 CART: API URL will be:', `/api/slot-configurations/published/${store.id}/cart`);
-                console.log('🔍 CART: Auth state check:', {
-                    userLoggedOut: localStorage.getItem('user_logged_out'),
-                    storeOwnerToken: !!localStorage.getItem('store_owner_auth_token'),
-                    customerToken: !!localStorage.getItem('customer_auth_token')
-                });
                 const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
-                console.log('🔍 CART: API Response:', response);
 
                 // Check for various "no published config" scenarios
                 if (response.success && response.data &&
@@ -123,16 +112,11 @@ export default function Cart() {
                     Object.keys(response.data.configuration.slots).length > 0) {
 
                     const publishedConfig = response.data;
-                    console.log('✅ CART: Published config loaded successfully');
-                    console.log('✅ CART: header_title content:', publishedConfig.configuration.slots.header_title?.content);
-                    console.log('✅ CART: header_title styles:', publishedConfig.configuration.slots.header_title?.styles);
                     setCartLayoutConfig(publishedConfig.configuration);
                     setConfigLoaded(true);
 
                 } else {
                     // Fallback to cart-config.js
-                    console.log('⚠️ CART: Using fallback config - no published config found');
-                    console.log('⚠️ CART: Response:', response);
                     const fallbackConfig = {
                         slots: { ...cartConfig.slots },
                         metadata: {
@@ -147,12 +131,6 @@ export default function Cart() {
                 }
             } catch (error) {
                 console.error('❌ CART: Error loading published slot configuration:', error);
-                console.log('❌ CART: Error details:', {
-                    message: error.message,
-                    status: error.status,
-                    stack: error.stack
-                });
-                console.log('❌ CART: Using error fallback configuration');
 
                 // Fallback to cart-config.js
                 const fallbackConfig = {
