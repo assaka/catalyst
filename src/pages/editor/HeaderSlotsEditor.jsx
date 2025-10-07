@@ -30,12 +30,22 @@ export default function HeaderSlotsEditor() {
     const loadStoreData = async () => {
       if (selectedStore?.id) {
         try {
-          const fullStore = await Store.findById(selectedStore.id);
-          const store = Array.isArray(fullStore) ? fullStore[0] : fullStore;
+          const fullStoreResponse = await Store.findById(selectedStore.id);
+
+          // Store.findById returns an array, so we need to get the first item
+          const fullStoreResponse_normalized = Array.isArray(fullStoreResponse)
+            ? fullStoreResponse[0]
+            : fullStoreResponse;
+
+          // Handle nested data structure - store data might be in data.settings, not settings
+          const store = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
+
           console.log('📊 HeaderSlotsEditor - Store loaded:', {
             storeName: store?.name,
             show_language_selector: store?.settings?.show_language_selector,
-            allSettings: store?.settings
+            allSettings: store?.settings,
+            rawResponse: fullStoreResponse,
+            normalizedResponse: fullStoreResponse_normalized
           });
           setStoreData(store);
         } catch (error) {
