@@ -60,7 +60,6 @@ export { default as Onboarding } from './admin/Onboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
 
 // Editor Pages
-export { default as AIContextWindow } from './editor/AIContextWindow';
 export { default as HeaderSlotsEditor } from './editor/HeaderSlotsEditor';
 export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CategorySlotsEditor } from './editor/CategorySlotsEditor';

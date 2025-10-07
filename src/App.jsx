@@ -265,7 +265,6 @@ function App() {
           <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />
           <Route path="/admin/onboarding" element={<PageWrapper Component={Pages.Onboarding} pageName="Onboarding" />} />
-          <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
           
           {/* Unified Plugins Section - Independent from Admin */}
@@ -273,8 +272,7 @@ function App() {
           <Route path="/plugins/*" element={<PageWrapper Component={Pages.UnifiedPluginManager} pageName="Plugins" />} />
           
           {/* Editor routes */}
-          <Route path="/editor" element={<Navigate to="/editor/ai-context-window" replace />} />
-          <Route path="/editor/ai-context" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
+          <Route path="/editor" element={<Navigate to="/editor/header" replace />} />
           <Route path="/editor/header" element={<PageWrapper Component={Pages.HeaderSlotsEditor} pageName="HeaderSlotsEditor" />} />
           <Route path="/editor/product" element={<PageWrapper Component={Pages.ProductSlotsEditor} pageName="ProductSlotsEditor" />} />
           <Route path="/editor/category" element={<PageWrapper Component={Pages.CategorySlotsEditor} pageName="CategorySlotsEditor" />} />
