@@ -98,7 +98,7 @@ export default function HeaderSlotsEditor() {
     pageType: 'header',
     pageName: 'Header',
     slotType: 'header_layout',
-    defaultViewMode: 'desktop',
+    defaultViewMode: 'default',
     viewModes: headerConfig.views.map(view => ({
       key: view.id,
       label: view.label,

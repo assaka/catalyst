@@ -298,7 +298,7 @@ export default function StorefrontLayout({ children }) {
                     <HeaderSlotRenderer
                         slots={headerSlots}
                         parentId={null}
-                        viewMode={window.innerWidth < 768 ? 'mobile' : 'desktop'}
+                        viewMode="default"
                         headerContext={{
                             store,
                             settings,

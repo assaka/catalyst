@@ -24,7 +24,7 @@ export const headerConfig = {
       parentId: null,
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Main Header Container',
@@ -44,7 +44,7 @@ export const headerConfig = {
       parentId: 'header_main',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Header Inner Container',
@@ -68,7 +68,7 @@ export const headerConfig = {
       parentId: 'header_inner',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Header Top Row',
@@ -87,7 +87,7 @@ export const headerConfig = {
       parentId: 'header_top_row',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 6, desktop: 3 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Logo Section',
@@ -117,7 +117,7 @@ export const headerConfig = {
       parentId: 'logo_section',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Store Logo & Name',
@@ -146,7 +146,7 @@ export const headerConfig = {
       parentId: 'store_logo',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -167,7 +167,7 @@ export const headerConfig = {
       parentId: 'header_top_row',
       position: { col: 4, row: 1 },
       colSpan: { desktop: 6 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Search Section (Desktop)',
@@ -181,13 +181,13 @@ export const headerConfig = {
       type: 'component',
       component: 'HeaderSearch',
       content: '',
-      className: 'w-full max-w-lg',
+      className: 'w-full',
       parentClassName: '',
       styles: {},
       parentId: 'search_section',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 12 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Search Bar Component',
@@ -209,7 +209,7 @@ export const headerConfig = {
       parentId: 'search_section',
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -230,7 +230,7 @@ export const headerConfig = {
       parentId: 'header_top_row',
       position: { col: 10, row: 1 },
       colSpan: { mobile: 6, desktop: 3 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Actions Section (Cart, User, Menu)',
@@ -249,7 +249,7 @@ export const headerConfig = {
       parentId: 'actions_section',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Actions Container',
@@ -274,7 +274,7 @@ export const headerConfig = {
       parentId: 'mobile_actions',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 4 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Search Toggle Button',
@@ -299,7 +299,7 @@ export const headerConfig = {
       parentId: 'mobile_actions',
       position: { col: 2, row: 1 },
       colSpan: { mobile: 4 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile User Menu Button',
@@ -318,7 +318,7 @@ export const headerConfig = {
       parentId: 'mobile_actions',
       position: { col: 3, row: 1 },
       colSpan: { mobile: 4 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Wishlist',
@@ -337,7 +337,7 @@ export const headerConfig = {
       parentId: 'actions_section',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 12 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Desktop Actions Container'
@@ -365,7 +365,7 @@ export const headerConfig = {
       parentId: 'desktop_actions',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 3 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Language Selector',
@@ -384,7 +384,7 @@ export const headerConfig = {
       parentId: 'desktop_actions',
       position: { col: 2, row: 1 },
       colSpan: { desktop: 3 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Country Selector',
@@ -422,7 +422,7 @@ export const headerConfig = {
       parentId: 'desktop_actions',
       position: { col: 3, row: 1 },
       colSpan: { desktop: 3 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'User Account Menu',
@@ -447,7 +447,7 @@ export const headerConfig = {
       parentId: 'user_account_menu',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -468,7 +468,7 @@ export const headerConfig = {
       parentId: 'desktop_actions',
       position: { col: 4, row: 1 },
       colSpan: { desktop: 3 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Desktop Wishlist',
@@ -488,7 +488,7 @@ export const headerConfig = {
       parentId: 'actions_section',
       position: { col: 2, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Shopping Cart Icon',
@@ -510,7 +510,7 @@ export const headerConfig = {
       parentId: 'cart_icon',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -538,7 +538,7 @@ export const headerConfig = {
       parentId: 'actions_section',
       position: { col: 3, row: 1 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Menu Toggle',
@@ -558,7 +558,7 @@ export const headerConfig = {
       parentId: 'header_inner',
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Search Bar (Collapsible)',
@@ -577,7 +577,7 @@ export const headerConfig = {
       parentId: 'mobile_search_bar',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Search Component',
@@ -596,7 +596,7 @@ export const headerConfig = {
       parentId: 'header_inner',
       position: { col: 1, row: 3 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Menu (Collapsible)',
@@ -615,7 +615,7 @@ export const headerConfig = {
       parentId: 'mobile_menu',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Mobile Menu Inner Container',
@@ -651,7 +651,7 @@ export const headerConfig = {
       parentId: 'mobile_menu_inner',
       position: { col: 1, row: 1 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Navigation Menu',
@@ -671,7 +671,7 @@ export const headerConfig = {
       parentId: 'mobile_menu_inner',
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Menu Language Selector',
@@ -690,7 +690,7 @@ export const headerConfig = {
       parentId: 'mobile_menu_inner',
       position: { col: 1, row: 3 },
       colSpan: { mobile: 12 },
-      viewMode: ['mobile'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Menu Country Selector',
@@ -712,7 +712,7 @@ export const headerConfig = {
       parentId: null,
       position: { col: 1, row: 2 },
       colSpan: { desktop: 12 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Navigation Bar (Desktop)',
@@ -731,7 +731,7 @@ export const headerConfig = {
       parentId: 'navigation_bar',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 12 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Navigation Inner Container',
@@ -749,7 +749,7 @@ export const headerConfig = {
       parentId: 'navigation_inner',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 12 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: true,
         displayName: 'Navigation Content Wrapper',
@@ -768,7 +768,7 @@ export const headerConfig = {
       parentId: 'navigation_content',
       position: { col: 1, row: 1 },
       colSpan: { desktop: 12 },
-      viewMode: ['desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         displayName: 'Category Navigation',
@@ -797,7 +797,7 @@ export const headerConfig = {
       parentId: 'navigation_bar',
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -822,7 +822,7 @@ export const headerConfig = {
       parentId: 'navigation_bar',
       position: { col: 1, row: 3 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         microslot: true,
@@ -844,7 +844,7 @@ export const headerConfig = {
       parentId: 'header_main',
       position: { col: 1, row: 0 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         cmsPosition: 'header_top',
@@ -867,7 +867,7 @@ export const headerConfig = {
       parentId: 'navigation_bar',
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12, desktop: 12 },
-      viewMode: ['mobile', 'desktop'],
+      viewMode: ['default'],
       metadata: {
         hierarchical: false,
         cmsPosition: 'header_bottom',
@@ -882,8 +882,7 @@ export const headerConfig = {
 
   // View configuration
   views: [
-    { id: 'mobile', label: 'Mobile View', icon: Menu },
-    { id: 'desktop', label: 'Desktop View', icon: Search }
+    { id: 'default', label: 'Header Layout', icon: Menu }
   ],
 
   // CMS blocks for additional content areas
