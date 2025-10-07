@@ -93,7 +93,7 @@ export const productConfig = {
       id: 'content_area',
       type: 'grid',
       content: '',
-      className: 'content-area grid md:grid-cols-12 md:gap-8',
+      className: 'content-area flex flex-col md:grid md:grid-cols-12 md:gap-8',
       styles: { gridRow: '2' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
@@ -336,7 +336,7 @@ export const productConfig = {
             </div>
           {{/if}}
         {{/if}}`,
-      className: 'w-full',
+      className: 'w-full order-2 md:order-1',
       parentClassName: '',
       styles: {},
       parentId: 'content_area',
@@ -356,7 +356,7 @@ export const productConfig = {
       id: 'info_container',
       type: 'grid',
       content: '',
-      className: 'info-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 space-y-6',
+      className: 'info-container col-span-12 lg:col-span-6 grid grid-cols-12 gap-2 space-y-6 order-1 md:order-2',
       styles: {},
       parentId: 'content_area',
       position: { col: 7, row: 1 },
