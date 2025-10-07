@@ -28,6 +28,9 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!iframeDoc) return;
 
+    // Get all stylesheets from parent document
+    const parentStylesheets = Array.from(document.styleSheets);
+
     // Set up iframe document
     iframeDoc.open();
     iframeDoc.write(`
@@ -36,7 +39,6 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <link rel="stylesheet" href="/src/index.css">
           <style>
             body {
               margin: 0;
@@ -52,18 +54,30 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
     `);
     iframeDoc.close();
 
-    // Wait for styles to load
-    const checkStylesLoaded = setInterval(() => {
-      const rootDiv = iframeDoc.getElementById('root');
-      if (rootDiv) {
-        clearInterval(checkStylesLoaded);
-        setIframeDocument(iframeDoc);
+    // Copy all stylesheets to iframe
+    parentStylesheets.forEach((stylesheet) => {
+      try {
+        if (stylesheet.href) {
+          // External stylesheet
+          const link = iframeDoc.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = stylesheet.href;
+          iframeDoc.head.appendChild(link);
+        } else if (stylesheet.cssRules) {
+          // Inline stylesheet
+          const style = iframeDoc.createElement('style');
+          Array.from(stylesheet.cssRules).forEach((rule) => {
+            style.appendChild(iframeDoc.createTextNode(rule.cssText));
+          });
+          iframeDoc.head.appendChild(style);
+        }
+      } catch (e) {
+        // Handle CORS errors for external stylesheets
+        console.warn('Could not copy stylesheet:', e);
       }
-    }, 100);
+    });
 
-    return () => {
-      clearInterval(checkStylesLoaded);
-    };
+    setIframeDocument(iframeDoc);
   }, [viewport]);
 
   const viewportStyles = getViewportStyles();
