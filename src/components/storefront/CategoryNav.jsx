@@ -12,12 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
-export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null, isEditor = false }) {
+export default function CategoryNav({ categories, styles = {}, metadata = {}, store: storeProp = null, isEditor = false, isMobile: isMobileProp = null, onLinkClick = null }) {
     const storeContext = useStore();
     const store = storeProp || storeContext?.store;
 
     const [expandedCategories, setExpandedCategories] = useState(new Set());
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(isMobileProp !== null ? isMobileProp : false);
     const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
 
     // Extract styles from slot configuration
@@ -28,6 +28,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     };
 
     const hoverColor = styles?.hoverColor || '#2563EB';
+    const hoverBgColor = styles?.hoverBackgroundColor || '#f3f4f6';
 
     // Subcategory styles from metadata
     const subcategoryLinkColor = metadata?.subcategoryLinkColor || '#6B7280';
@@ -246,14 +247,26 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
     const renderExpandedCategory = (category, depth = 0) => {
         const hasChildren = category.children && category.children.length > 0;
         const isExpanded = expandedCategories.has(category.id);
-        
+
         return (
             <div key={category.id} className="block">
                 <div className="flex items-center justify-between">
-                    <Link 
+                    <Link
                         to={createCategoryUrl(store.slug, buildCategoryPath(category, categories).join('/'))}
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-2 rounded-md flex-1 touch-manipulation"
-                        style={{ marginLeft: `${depth * 16}px` }}
+                        className="text-sm font-medium transition-colors px-2 py-2 rounded-md flex-1 touch-manipulation"
+                        style={{
+                            marginLeft: `${depth * 16}px`,
+                            color: linkStyles.color
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = hoverColor;
+                            e.currentTarget.style.backgroundColor = hoverBgColor;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = linkStyles.color;
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onClick={() => onLinkClick?.()}
                     >
                         {category.name}
                     </Link>
@@ -266,7 +279,14 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                                 e.preventDefault();
                                 toggleCategory(category.id);
                             }}
-                            className="p-1 h-auto hover:bg-gray-100 touch-manipulation float-right"
+                            className="p-1 h-auto touch-manipulation float-right transition-colors"
+                            style={{ color: linkStyles.color }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = hoverBgColor;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                             aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
                         >
                             {isExpanded ? (
