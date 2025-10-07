@@ -342,7 +342,7 @@ export default function StorefrontLayout({ children }) {
                                 {/* FIXED: Apply hide search setting */}
                                 {!settings?.hide_header_search && (
                                     <div className="hidden md:flex flex-1 justify-center px-8">
-                                        <div className="w-full max-w-lg">
+                                        <div className="w-full ">
                                             <HeaderSearch />
                                         </div>
                                     </div>
