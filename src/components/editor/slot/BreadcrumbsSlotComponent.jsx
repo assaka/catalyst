@@ -15,6 +15,15 @@ const BreadcrumbsSlotComponent = createSlotComponent({
 
     // Determine context (category or product)
     const context = categoryContext || productContext;
+
+    console.log('🍞 BreadcrumbsSlotComponent - Full Props:', {
+      hasCategoryContext: !!categoryContext,
+      hasProductContext: !!productContext,
+      categoryContextKeys: categoryContext ? Object.keys(categoryContext) : [],
+      settingsInContext: categoryContext?.settings,
+      themeInSettings: categoryContext?.settings?.theme
+    });
+
     if (!context) return null;
 
     const { category, product, store, categories = [], settings = {} } = context;
