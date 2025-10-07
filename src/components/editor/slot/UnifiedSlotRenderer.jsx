@@ -482,7 +482,7 @@ export function UnifiedSlotRenderer({
             style: {
               ...stylesWithoutWidth, // Use styles without width
               cursor: 'pointer',
-              display: 'inline-block',
+              display: 'inline-block-hamid1',
               width: 'fit-content' // Always fit-content for text
             },
             onClick: (e) => {

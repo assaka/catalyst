@@ -424,7 +424,7 @@ const ResizeWrapper = ({
     // Remove maxWidth constraint for text elements to allow free resizing beyond parent
     // Only apply maxWidth constraint for non-button and non-text elements
     ...(isButton || isTextElement ? { maxWidth: 'none', overflow: 'visible' } : { maxWidth: '100%' }),
-    display: (isButton || isTextElement || isImageElement) ? 'block' : 'inline-block',
+    display: (isButton || isTextElement || isImageElement) ? 'block' : 'inline-block-hamid3',
     position: 'relative'
   };
 
@@ -462,7 +462,7 @@ const ResizeWrapper = ({
           transition: 'border-color 0.2s ease-in-out',
           position: 'relative',
           // Ensure button displays properly during resize
-          display: children.props.style?.display || 'inline-block'
+          display: children.props.style?.display || 'inline-block-hamid2'
         };
       })(),
       onMouseEnter: (e) => {
@@ -547,7 +547,7 @@ const ResizeWrapper = ({
   return (
     <div
       ref={wrapperRef}
-      className={cn("relative group", isTextElement ? "w-full" : "inline-block", className)}
+      className={cn("relative group", isTextElement ? "w-full" : "inline-block-hamid4", className)}
       onMouseEnter={() => !disabled && setIsHovered(true)}
       onMouseLeave={(e) => {
         if (!disabled) {
@@ -590,7 +590,7 @@ const ResizeWrapper = ({
               height: isSvgElement(children) ? `${size.height}${size.heightUnit || 'px'}` : undefined
             }),
             boxSizing: 'border-box',
-            display: children.props.style?.display || 'inline-block',
+            display: children.props.style?.display || 'inline-block-hamid5',
             border: hideBorder ? 'none' : (isHovered || isResizing ? '1px dashed rgba(59, 130, 246, 0.3)' : '1px dashed transparent'),
             borderRadius: '4px',
             transition: 'border-color 0.2s ease-in-out',

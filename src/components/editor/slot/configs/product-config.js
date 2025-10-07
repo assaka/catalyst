@@ -519,7 +519,7 @@ export const productConfig = {
       id: 'product_sku',
       type: 'text',
       content: '{{#if product.sku}}SKU: {{product.sku}}{{/if}}',
-      className: 'w-fit text-3xl text-gray-600',
+      className: 'w-fit text-base text-gray-900',
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
@@ -578,7 +578,7 @@ export const productConfig = {
       component: 'CustomOptions',
       content: `
         <div class="space-y-4">
-          <h3 class="text-lg font-semibold text-yellow-600">{{displayLabel}}</h3>
+          <h3 class="text-lg font-semibold text-gray-900">{{displayLabel}}</h3>
           <div class="space-y-3">
             {{#if customOptions}}
               {{#each customOptions}}
@@ -693,7 +693,7 @@ export const productConfig = {
       component: 'QuantitySelector',
       content: `
         <div class="flex items-center space-x-2">
-          <label for="quantity-input" class="font-bold text-sm text-red-600">Amount</label>
+          <label for="quantity-input" class="font-bold text-sm text-gray-900">Qty</label>
           <div class="flex items-center border rounded-lg overflow-hidden">
             <button class="p-2 hover:bg-gray-100 transition-colors" data-action="decrease">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
