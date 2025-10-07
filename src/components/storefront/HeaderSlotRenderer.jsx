@@ -102,6 +102,11 @@ export function HeaderSlotRenderer({
       case 'container':
       case 'grid':
       case 'flex':
+        // Special handling for mobile_menu - only show when mobileMenuOpen is true
+        if (id === 'mobile_menu' && !mobileMenuOpen) {
+          return null;
+        }
+
         // Render container with children
         return (
           <div
