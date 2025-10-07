@@ -152,18 +152,54 @@ export function UnifiedSlotRenderer({
   // Additional contexts for different page types
   categoryData = null,
   cartData = null,
-  headerContext = null
+  headerContext = null,
+
+  // Config for renderCondition support
+  slotConfig = null
 }) {
   // Get child slots for current parent
-  console.log('Force push trigger');
+  console.log('Force push trigger 15');
   let childSlots = SlotManager.getChildSlots(slots, parentId);
 
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
+  // Apply renderCondition filtering if config is provided (for header)
+  const conditionFilteredSlots = filteredSlots.filter(slot => {
+    // Only apply renderCondition if we have a config (for header pages)
+    if (!slotConfig?.slots) {
+      return true; // No config = no filtering
+    }
+
+    const configSlot = slotConfig.slots[slot.id];
+
+    console.log(`🔍 [UnifiedSlotRenderer] Checking slot ${slot.id}:`, {
+      hasConfigSlot: !!configSlot,
+      hasRenderCondition: !!configSlot?.renderCondition,
+      renderConditionType: typeof configSlot?.renderCondition,
+      component: slot.component
+    });
+
+    if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
+      // Use headerContext for header slots
+      const contextToUse = headerContext || categoryData || cartData || {};
+      const shouldRender = configSlot.renderCondition(contextToUse);
+
+      console.log(`🎯 [UnifiedSlotRenderer] RenderCondition result for ${slot.id}:`, {
+        shouldRender,
+        show_language_selector: contextToUse?.settings?.show_language_selector,
+        contextType: headerContext ? 'header' : categoryData ? 'category' : cartData ? 'cart' : 'unknown'
+      });
+
+      return shouldRender;
+    }
+
+    // No renderCondition = always render
+    return true;
+  });
 
   // Sort slots by grid coordinates for proper rendering order
-  const sortedSlots = sortSlotsByGridCoordinates(filteredSlots);
+  const sortedSlots = sortSlotsByGridCoordinates(conditionFilteredSlots);
 
   // SIMPLIFIED: Use same data structure for both editor and storefront
   // Get filter option styles from slots for both editor and storefront

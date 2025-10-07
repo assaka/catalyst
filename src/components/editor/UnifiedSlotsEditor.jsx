@@ -552,6 +552,7 @@ const UnifiedSlotsEditor = ({
                     categoryData={pageType === 'category' ? pageContext : null}
                     cartData={pageType === 'cart' ? pageContext : null}
                     headerContext={pageType === 'header' ? pageContext : null}
+                    slotConfig={config}
                     mode={showPreview ? 'view' : mode}
                     showBorders={showPreview ? false : showSlotBorders}
                     currentDragInfo={currentDragInfo}
