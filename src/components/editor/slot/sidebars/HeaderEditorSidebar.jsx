@@ -161,6 +161,7 @@ const HeaderEditorSidebar = ({
       if (userAccountMenu.styles.color) updates.userMenuTextColor = userAccountMenu.styles.color;
       if (userAccountMenu.styles.borderRadius) updates.userMenuBorderRadius = userAccountMenu.styles.borderRadius;
     }
+    if (userAccountMenu?.metadata?.iconVariant) updates.userIconVariant = userAccountMenu.metadata.iconVariant;
 
     // Mobile Menu
     const mobileMenu = allSlots['mobile_menu'];
@@ -181,9 +182,6 @@ const HeaderEditorSidebar = ({
 
     const desktopWishlist = allSlots['desktop_wishlist'];
     if (desktopWishlist?.metadata?.iconVariant) updates.wishlistIconVariant = desktopWishlist.metadata.iconVariant;
-
-    const userAccountMenu = allSlots['user_account_menu'];
-    if (userAccountMenu?.metadata?.iconVariant) updates.userIconVariant = userAccountMenu.metadata.iconVariant;
 
     if (Object.keys(updates).length > 0) {
       setHeaderStyles(prev => ({ ...prev, ...updates }));
