@@ -58,7 +58,7 @@ export const headerConfig = {
       type: 'container',
       content: '',
       className: 'flex items-center justify-between h-16',
-      parentClassName: '',
+      parentClassName: 'w-full',
       styles: {
         display: 'flex',
         alignItems: 'center',
