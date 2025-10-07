@@ -646,8 +646,8 @@ export function UnifiedSlotRenderer({
       const childSlots = SlotManager.getChildSlots(slots, id);
       const filteredChildren = filterSlotsByViewMode(childSlots, viewMode);
 
-      // Skip rendering empty containers in editor mode
-      if (context === 'editor' && filteredChildren.length === 0) {
+      // Skip rendering empty containers (no children)
+      if (filteredChildren.length === 0) {
         return null;
       }
 
@@ -765,6 +765,11 @@ export function UnifiedSlotRenderer({
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
     // If slot content is null or undefined (e.g., empty slots, style_config slots), don't render anything
     if (slotContent === null || slotContent === undefined) {
+      return null;
+    }
+
+    // Check if slotContent is an empty React element (false or empty string)
+    if (slotContent === false || slotContent === '') {
       return null;
     }
 
