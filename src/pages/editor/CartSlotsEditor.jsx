@@ -7,7 +7,6 @@
 
 import { ShoppingCart, Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import aiEnhancementService from '@/services/aiEnhancementService';
 import { cartConfig } from '@/components/editor/slot/configs/cart-config';
 import { getSlotComponent } from '@/components/editor/slot/SlotComponentRegistry';
 

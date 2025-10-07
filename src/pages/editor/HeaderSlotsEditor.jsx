@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Menu, Search } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-import aiEnhancementService from '@/services/aiEnhancementService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Store } from '@/api/entities';

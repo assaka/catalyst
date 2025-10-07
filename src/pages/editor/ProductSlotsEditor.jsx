@@ -8,7 +8,6 @@
 import { Package } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockProductContext } from '@/utils/mockProductData';
-import aiEnhancementService from '@/services/aiEnhancementService';
 // Unified components are now handled by UnifiedSlotRenderer automatically
 
 // Create default slots function for product layout
