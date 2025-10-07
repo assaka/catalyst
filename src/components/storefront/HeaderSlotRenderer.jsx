@@ -194,6 +194,23 @@ export function HeaderSlotRenderer({
         );
 
       case 'MobileUserMenu':
+        const mobileIconVariant = metadata?.iconVariant || 'outline';
+        const getMobileUserIcon = () => {
+          switch (mobileIconVariant) {
+            case 'filled':
+              return <User className="w-5 h-5 fill-current" />;
+            case 'circle':
+              return (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                </svg>
+              );
+            case 'outline':
+            default:
+              return <User className="w-5 h-5" />;
+          }
+        };
+
         return (
           <Button
             key={id}
@@ -211,14 +228,14 @@ export function HeaderSlotRenderer({
             disabled={userLoading}
             data-slot-id={id}
           >
-            <User className="w-5 h-5" />
+            {getMobileUserIcon()}
           </Button>
         );
 
       case 'WishlistDropdown':
         return (
           <div key={id} data-slot-id={id}>
-            <WishlistDropdown />
+            <WishlistDropdown iconVariant={metadata?.iconVariant} />
           </div>
         );
 
@@ -263,6 +280,24 @@ export function HeaderSlotRenderer({
         };
 
         const hoverBg = styles?.hoverBackgroundColor || '#1D4ED8';
+        const iconVariant = metadata?.iconVariant || 'outline';
+
+        // Choose icon based on variant
+        const getUserIcon = (size = 'w-4 h-4') => {
+          switch (iconVariant) {
+            case 'filled':
+              return <User className={`${size} fill-current`} />;
+            case 'circle':
+              return (
+                <svg className={size} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                </svg>
+              );
+            case 'outline':
+            default:
+              return <User className={size} />;
+          }
+        };
 
         return (
           <div key={id} className={className} data-slot-id={id}>
@@ -274,7 +309,7 @@ export function HeaderSlotRenderer({
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
-                <User className="w-4 h-4" />
+                {getUserIcon('w-4 h-4')}
                 <span>{user.first_name || user.name || user.email}</span>
                 <ChevronDown className="w-4 h-4" />
               </Button>
@@ -291,7 +326,7 @@ export function HeaderSlotRenderer({
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
               >
-                <User className="w-5 h-5 mr-2" />
+                {getUserIcon('w-5 h-5 mr-2')}
                 <span>Sign In</span>
               </Button>
             )}
@@ -302,7 +337,7 @@ export function HeaderSlotRenderer({
         if (settings?.hide_header_cart) return null;
         return (
           <div key={id} data-slot-id={id}>
-            <MiniCart />
+            <MiniCart iconVariant={metadata?.iconVariant} />
           </div>
         );
 

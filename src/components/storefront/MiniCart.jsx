@@ -6,7 +6,7 @@ import { createPublicUrl } from '@/utils/urlUtils';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import cartService from '@/services/cartService';
-import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -17,8 +17,23 @@ import {
 import { formatPrice, safeToFixed, calculateDisplayPrice, formatDisplayPrice } from '@/utils/priceUtils';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
-export default function MiniCart() {
+export default function MiniCart({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore();
+
+  // Choose icon based on variant
+  const getCartIcon = () => {
+    switch (iconVariant) {
+      case 'filled':
+        return <ShoppingCart className="w-5 h-5 fill-current" />;
+      case 'bag':
+        return <ShoppingBag className="w-5 h-5" />;
+      case 'bag-filled':
+        return <ShoppingBag className="w-5 h-5 fill-current" />;
+      case 'outline':
+      default:
+        return <ShoppingCart className="w-5 h-5" />;
+    }
+  };
   
   
   // Get currency symbol from settings
@@ -343,10 +358,10 @@ export default function MiniCart() {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <ShoppingCart className="w-5 h-5" />
+          {getCartIcon()}
           {totalItems > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
             >
               {totalItems}

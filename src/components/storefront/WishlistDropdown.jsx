@@ -36,12 +36,23 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
 // Session handling removed - now using proper customer authentication
 
-export default function WishlistDropdown() {
+export default function WishlistDropdown({ iconVariant = 'outline' }) {
   const { store, settings, taxes, selectedCountry } = useStore(); // Added store context
   const currencySymbol = settings?.currency_symbol || '$';
   const [wishlistItems, setWishlistItems] = useState([]);
   const [user, setUser] = useState(null); // Preserve user state
   const [loading, setLoading] = useState(false); // Changed initial loading state to false
+
+  // Choose icon based on variant
+  const getWishlistIcon = () => {
+    switch (iconVariant) {
+      case 'filled':
+        return <Heart className="w-5 h-5 fill-current" />;
+      case 'outline':
+      default:
+        return <Heart className="w-5 h-5" />;
+    }
+  };
 
   // Renamed from loadWishlist to loadWishlistItems
   const loadWishlistItems = async () => {
@@ -137,7 +148,7 @@ export default function WishlistDropdown() {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Heart className="w-5 h-5" />
+          {getWishlistIcon()}
           {wishlistItems.length > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
               {wishlistItems.length}
