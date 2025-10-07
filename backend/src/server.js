@@ -1381,7 +1381,7 @@ app.use('/api/public/seo-templates', seoTemplateRoutes);
 app.use('/api/public/seo-settings', seoSettingsRoutes);
 app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
 // Use dedicated working route for public CMS blocks
-app.use('/api/public/cms-blocks', cmsBlocksPublicOnlyRoutes);
+app.use('/api/public/cms-blocks', publicCmsBlocksRoutes);
 app.use('/api/public/product-tabs', productTabRoutes);
 app.use('/api/public/custom-option-rules', customOptionRuleRoutes);
 app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
