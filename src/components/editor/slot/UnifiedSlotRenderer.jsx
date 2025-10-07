@@ -763,8 +763,8 @@ export function UnifiedSlotRenderer({
    * Wrap slot content with editor functionality if needed
    */
   const wrapSlotForEditor = (slot, slotContent, colSpanClass, gridColumn) => {
-    // If slot content is null (e.g., style_config slots), don't render anything
-    if (slotContent === null) {
+    // If slot content is null or undefined (e.g., empty slots, style_config slots), don't render anything
+    if (slotContent === null || slotContent === undefined) {
       return null;
     }
 

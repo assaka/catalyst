@@ -366,6 +366,7 @@ export const headerConfig = {
       position: { col: 1, row: 1 },
       colSpan: { desktop: 3 },
       viewMode: ['default'],
+      renderCondition: (context) => context?.settings?.show_language_selector === true,
       metadata: {
         hierarchical: false,
         displayName: 'Language Selector',
@@ -678,6 +679,7 @@ export const headerConfig = {
       position: { col: 1, row: 2 },
       colSpan: { mobile: 12 },
       viewMode: ['default'],
+      renderCondition: (context) => context?.settings?.show_language_selector === true,
       metadata: {
         hierarchical: false,
         displayName: 'Mobile Menu Language Selector',
