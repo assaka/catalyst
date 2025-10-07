@@ -23,6 +23,7 @@ import { executeScript, executeHandler } from '@/utils/scriptHandler';
 import { ComponentRegistry } from './SlotComponentRegistry';
 import { createProductUrl } from '@/utils/urlUtils';
 import cartService from '@/services/cartService';
+import { headerConfig } from '@/components/editor/slot/configs/header-config';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
@@ -164,14 +165,11 @@ export function UnifiedSlotRenderer({
   // Filter slots by view mode
   const filteredSlots = filterSlotsByViewMode(childSlots, viewMode);
 
-  // Apply renderCondition filtering if config is provided (for header)
+  // Apply renderCondition filtering from the static config (not runtime config)
+  // This is necessary because functions can't be serialized to JSON
   const conditionFilteredSlots = filteredSlots.filter(slot => {
-    // Only apply renderCondition if we have a config (for header pages)
-    if (!slotConfig?.slots) {
-      return true; // No config = no filtering
-    }
-
-    const configSlot = slotConfig.slots[slot.id];
+    // Check if this is a header slot by looking at the imported headerConfig
+    const configSlot = headerConfig?.slots?.[slot.id];
 
     console.log(`🔍 [UnifiedSlotRenderer] Checking slot ${slot.id}:`, {
       hasConfigSlot: !!configSlot,
