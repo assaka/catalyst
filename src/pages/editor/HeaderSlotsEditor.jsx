@@ -31,6 +31,7 @@ export default function HeaderSlotsEditor() {
       hide_header_search: false,
       hide_header_cart: false,
       show_permanent_search: false,
+      show_language_selector: false,
       allowed_countries: ['US', 'CA', 'UK'],
       theme: {
         primary_button_color: '#2563EB',

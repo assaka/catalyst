@@ -224,7 +224,8 @@ export function HeaderSlotRenderer({
 
       case 'LanguageSelector':
         // Hide if setting is disabled (default: false/hidden)
-        if (settings?.show_language_selector === false) return null;
+        // Only show if explicitly enabled
+        if (settings?.show_language_selector !== true) return null;
         if (!languages || languages.length <= 1) return null;
         return (
           <div key={id} className={className} data-slot-id={id}>

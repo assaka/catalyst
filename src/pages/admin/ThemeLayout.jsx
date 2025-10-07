@@ -73,6 +73,8 @@ export default function ThemeLayout() {
                 show_stock_label: fullStore?.settings?.show_stock_label ?? false,
                 enable_view_mode_toggle: fullStore?.settings?.enable_view_mode_toggle ?? true,
                 default_view_mode: fullStore?.settings?.default_view_mode || 'grid',
+                // Header defaults
+                show_language_selector: fullStore?.settings?.show_language_selector ?? false,
                 // Product gallery defaults
                 product_gallery_layout: fullStore?.settings?.product_gallery_layout || 'horizontal',
                 vertical_gallery_position: fullStore?.settings?.vertical_gallery_position || 'left',
