@@ -519,7 +519,6 @@ const CategorySlotsEditor = ({
       const channel = new BroadcastChannel('store_settings_update');
       channel.onmessage = (event) => {
         if (event.data.type === 'clear_cache') {
-          console.log('📢 Settings updated from admin, refreshing page...');
           // Clear localStorage and reload
           localStorage.removeItem('storeProviderCache');
           setTimeout(() => window.location.reload(), 500);
@@ -530,14 +529,6 @@ const CategorySlotsEditor = ({
       console.warn('BroadcastChannel not supported:', e);
     }
   }, []);
-
-  // Debug what we're getting from useStore
-  console.log('🔍 CategorySlotsEditor - storeSettings:', {
-    hasSettings: !!storeSettings,
-    hasTheme: !!storeSettings?.theme,
-    themeKeys: storeSettings?.theme ? Object.keys(storeSettings.theme) : [],
-    theme: storeSettings?.theme
-  });
 
   // Create editor config with real filterableAttributes and storeSettings from database (same as storefront)
   const categoryEditorConfig = createCategoryEditorConfig(filterableAttributes, storeSettings);
