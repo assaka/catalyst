@@ -5,7 +5,7 @@
  * - Mobile and desktop views
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Menu, Search } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import aiEnhancementService from '@/services/aiEnhancementService';
@@ -41,8 +41,8 @@ export default function HeaderSlotsEditor() {
     loadStoreData();
   }, [selectedStore]);
 
-  // Generate header context with interactive state
-  const generateHeaderContext = (viewMode) => ({
+  // Generate header context with interactive state - memoized with storeData dependency
+  const generateHeaderContext = useCallback((viewMode) => ({
     isEditor: true,
     responsiveMode: viewMode,
     store: storeData || {
@@ -114,10 +114,10 @@ export default function HeaderSlotsEditor() {
     handleCustomerLogout: () => {},
     navigate: () => {},
     location: { pathname: '/' }
-  });
+  }), [storeData, mobileMenuOpen, mobileSearchOpen]);
 
-  // Header Editor Configuration
-  const headerEditorConfig = {
+  // Header Editor Configuration - memoized with generateHeaderContext dependency
+  const headerEditorConfig = useMemo(() => ({
     ...headerConfig,
     pageType: 'header',
     pageName: 'Header',
@@ -132,7 +132,7 @@ export default function HeaderSlotsEditor() {
     generateContext: generateHeaderContext,
     viewModeAdjustments: {},
     cmsBlockPositions: headerConfig.cmsBlocks
-  };
+  }), [generateHeaderContext]);
 
   // AI Enhancement Configuration for Header
   const headerAiConfig = {
