@@ -5,7 +5,7 @@
  * - Maintainable structure
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Grid, List } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { generateMockCategoryContext } from '@/utils/mockCategoryData';
@@ -507,6 +507,24 @@ const CategorySlotsEditor = ({
   const storeContext = useStore();
   const storeSettings = storeContext?.settings || null;
   const filterableAttributes = storeContext?.filterableAttributes || [];
+
+  // Listen for settings updates from admin panel
+  useEffect(() => {
+    try {
+      const channel = new BroadcastChannel('store_settings_update');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'clear_cache') {
+          console.log('📢 Settings updated from admin, refreshing page...');
+          // Clear localStorage and reload
+          localStorage.removeItem('storeProviderCache');
+          setTimeout(() => window.location.reload(), 500);
+        }
+      };
+      return () => channel.close();
+    } catch (e) {
+      console.warn('BroadcastChannel not supported:', e);
+    }
+  }, []);
 
   // Debug what we're getting from useStore
   console.log('🔍 CategorySlotsEditor - storeSettings:', {
