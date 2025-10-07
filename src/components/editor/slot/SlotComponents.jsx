@@ -1801,7 +1801,7 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 // EditorToolbar Component
 export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
   return (
-    <div className="flex mb-3 justify-between">
+    <div className="flex mx-6 mb-3 justify-between">
       <BorderToggleButton
         showSlotBorders={showSlotBorders}
         onToggle={onToggleBorders}
