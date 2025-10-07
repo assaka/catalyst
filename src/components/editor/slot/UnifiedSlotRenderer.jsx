@@ -370,11 +370,16 @@ export function UnifiedSlotRenderer({
 
     // HTML Element (raw HTML content)
     if (type === 'html') {
+      // Skip rendering entirely if empty
+      if (!processedContent) {
+        return null;
+      }
+
       const htmlElement = (
         <div
           className={processedClassName}
           style={processedStyles}
-          dangerouslySetInnerHTML={{ __html: processedContent || '[HTML placeholder]' }}
+          dangerouslySetInnerHTML={{ __html: processedContent }}
         />
       );
       // Don't wrap absolute positioned elements with ResizeWrapper as it interferes with positioning
@@ -414,10 +419,8 @@ export function UnifiedSlotRenderer({
           id === pattern || id.startsWith(pattern + '_')
         );
 
-        const shouldShowPlaceholder = !processedContent && !hasConditionalDisplay && !isConditionalSlot;
-
-        // Skip rendering entirely if empty and conditional
-        if (!processedContent && (hasConditionalDisplay || isConditionalSlot)) {
+        // Skip rendering entirely if empty (no content at all)
+        if (!processedContent) {
           return null;
         }
 
@@ -440,7 +443,7 @@ export function UnifiedSlotRenderer({
             'data-slot-id': id,
             'data-editable': 'true',
             dangerouslySetInnerHTML: {
-              __html: processedContent || (shouldShowPlaceholder ? '[Text placeholder]' : '')
+              __html: processedContent
             },
             ...otherHtmlAttributes
           }
