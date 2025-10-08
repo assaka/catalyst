@@ -586,6 +586,36 @@ const EditorSidebar = ({
               }
             }
 
+            // CRITICAL FIX: Also read border properties from stored styles if not in element styles
+            // This ensures borderWidth and borderColor persist across re-renders
+            const borderProps = ['borderWidth', 'borderStyle', 'borderRadius'];
+            borderProps.forEach(prop => {
+              if (!elementStyles[prop] && storedStyles?.[prop]) {
+                elementStyles[prop] = storedStyles[prop];
+                console.log(`[EditorSidebar] Restored ${prop} from stored styles:`, storedStyles[prop]);
+              }
+            });
+
+            // Special handling for borderColor to ensure it's a valid hex color
+            if (!elementStyles.borderColor && storedStyles?.borderColor) {
+              const storedBorderColor = storedStyles.borderColor;
+              // Convert to hex if needed
+              if (storedBorderColor.startsWith('#')) {
+                elementStyles.borderColor = storedBorderColor;
+              } else if (storedBorderColor.startsWith('rgb')) {
+                const rgbMatch = storedBorderColor.match(/\d+/g);
+                if (rgbMatch && rgbMatch.length >= 3) {
+                  const hex = '#' + rgbMatch.slice(0, 3)
+                    .map(x => parseInt(x).toString(16).padStart(2, '0'))
+                    .join('');
+                  elementStyles.borderColor = hex;
+                }
+              } else {
+                elementStyles.borderColor = storedBorderColor;
+              }
+              console.log(`[EditorSidebar] Restored borderColor from stored styles:`, elementStyles.borderColor);
+            }
+
             // Extract color from Tailwind classes if no inline color is set
             // Primary source: content element (styledElement) which has actual styling classes
             const contentClassName = styledElement.className || '';
@@ -1338,12 +1368,15 @@ const EditorSidebar = ({
           // Cursor styles from wrapper
           if (['cursor'].includes(styleProp)) return true;
 
-          // ResizeWrapper styles (border, transition, etc.)
-          if (styleProp.startsWith('border') && !styleProp.includes('Radius')) return true;
+          // Transition styles from wrapper
           if (styleProp.startsWith('transition')) return true;
 
-          // Positioning from wrapper
-          if (['position', 'display', 'boxSizing', 'box-sizing'].includes(styleProp)) return true;
+          // REMOVED: Border styles are USER-SET, not wrapper styles!
+          // Don't filter out borderWidth, borderStyle, borderColor, borderRadius
+          // These are legitimate user styling that should be saved
+
+          // Positioning from wrapper (but allow display:flex which users might set)
+          if (['position', 'boxSizing', 'box-sizing'].includes(styleProp)) return true;
 
           return false;
         };
