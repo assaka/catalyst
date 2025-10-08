@@ -51,6 +51,7 @@ export const loginConfig = {
       styles: { padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
+      colSpan: 6,
       metadata: { hierarchical: true }
     },
 
@@ -106,6 +107,7 @@ export const loginConfig = {
       styles: { padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'main_layout',
       position: { col: 2, row: 2 },
+      colSpan: 6,
       metadata: { hierarchical: true }
     },
 
