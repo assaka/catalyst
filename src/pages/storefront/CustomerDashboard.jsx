@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { CountrySelect } from '@/components/ui/country-select';
 import { formatDisplayPrice } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
+import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 
 // --- Utilities ---
 let globalRequestQueue = Promise.resolve();
@@ -1176,14 +1177,17 @@ export default function CustomerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <StorefrontLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </StorefrontLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <StorefrontLayout>
+      <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         
@@ -1422,5 +1426,6 @@ export default function CustomerDashboard() {
       </div>
       <AlertComponent />
     </div>
+    </StorefrontLayout>
   );
 }
