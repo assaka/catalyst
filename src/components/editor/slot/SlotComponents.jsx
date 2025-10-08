@@ -1068,6 +1068,11 @@ export function HierarchicalSlotRenderer({
       // Old format: direct number
       colSpan = slot.colSpan;
       colSpanClass = `col-span-${slot.colSpan}`;
+    } else if (typeof slot.colSpan === 'string') {
+      // Direct Tailwind responsive class format: 'col-span-12 md:col-span-6'
+      colSpanClass = slot.colSpan;
+      useTailwindClass = true;
+      colSpan = 12; // fallback for calculations
     } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
       // New format: object with viewMode keys
       const viewModeValue = slot.colSpan[viewMode];
