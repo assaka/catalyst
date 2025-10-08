@@ -770,6 +770,18 @@ export const productConfig = {
           Add to Cart
         </button>
       `,
+      script: `
+        const button = element.querySelector('[data-add-to-cart]');
+        if (button && productData?.handleAddToCart) {
+          console.log('🔧 Binding add to cart handler', { button, hasHandler: !!productData.handleAddToCart });
+          const handleClick = () => {
+            console.log('🛒 Add to cart button clicked via script binding');
+            productData.handleAddToCart();
+          };
+          button.addEventListener('click', handleClick);
+          return () => button.removeEventListener('click', handleClick);
+        }
+      `,
       className: 'add-to-cart-container',
       parentClassName: '',
       styles: {},
