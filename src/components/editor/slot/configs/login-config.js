@@ -5,6 +5,14 @@ export const loginConfig = {
   page_name: 'Login',
   slot_type: 'login_layout',
 
+  // Slot layout definition
+  slotLayout: {
+    page_header: { name: 'Page Header', colSpan: 12, order: 0 },
+    login_column: { name: 'Login Column', colSpan: 6, order: 1 },
+    register_column: { name: 'Register Column', colSpan: 6, order: 2 },
+    login_footer: { name: 'Login Footer', colSpan: 12, order: 3 }
+  },
+
   // Slot configuration with simple 2-column layout
   slots: {
     // Page header/banner

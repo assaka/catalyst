@@ -5,6 +5,14 @@ export const accountConfig = {
   page_name: 'Account',
   slot_type: 'account_layout',
 
+  // Slot layout definition
+  slotLayout: {
+    account_header: { name: 'Account Header', colSpan: 12, order: 0 },
+    account_sidebar: { name: 'Account Sidebar', colSpan: 3, order: 1 },
+    account_content: { name: 'Account Content', colSpan: 9, order: 2 },
+    account_footer: { name: 'Account Footer', colSpan: 12, order: 3 }
+  },
+
   // Slot configuration with sidebar layout
   slots: {
     // Page header
