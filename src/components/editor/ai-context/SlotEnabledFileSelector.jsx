@@ -40,15 +40,6 @@ const SlotEnabledFileSelector = ({
       color: 'text-indigo-500'
     },
     {
-      id: 'store',
-      name: 'Store',
-      path: 'src/pages/editor/StoreSlotsEditor.jsx',
-      pageType: 'store',
-      icon: ShoppingCart,
-      description: 'Store landing page customization',
-      color: 'text-cyan-500'
-    },
-    {
       id: 'cart',
       name: 'Cart',
       path: 'src/pages/editor/CartSlotsEditor.jsx',
