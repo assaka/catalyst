@@ -930,8 +930,9 @@ export function UnifiedSlotRenderer({
         let gridColumn = 'span 12 / span 12';
 
         if (slot.colSpan === undefined || slot.colSpan === null) {
-          // No colSpan defined - let parent grid control layout
-          colSpanClass = '';
+          // No colSpan defined - let parent grid control layout with auto-placement
+          // Add w-full to ensure slot fills its grid cell
+          colSpanClass = 'w-full';
           gridColumn = null;
         } else if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
