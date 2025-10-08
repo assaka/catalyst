@@ -411,6 +411,20 @@ export function UnifiedSlotRenderer({
         return null;
       }
 
+      // If context is storefront and slot has a script, use the script-enabled version
+      if (context === 'storefront' && slot.script) {
+        return (
+          <TextSlotWithScript
+            slot={slot}
+            processedContent={processedContent}
+            processedClassName={processedClassName}
+            context={context}
+            productData={productData}
+            variableContext={variableContext}
+          />
+        );
+      }
+
       const htmlElement = (
         <div
           className={processedClassName}
