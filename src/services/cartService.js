@@ -151,8 +151,9 @@ class CartService {
         session_id: sessionId
       };
 
-      // Add user_id if authenticated
-      if (user?.id) {
+      // Add user_id only if authenticated as admin user (not customer)
+      // Customers use session_id only to avoid foreign key constraint issues
+      if (user?.id && user?.role !== 'customer') {
         cartData.user_id = user.id;
       }
 
@@ -219,8 +220,9 @@ class CartService {
         session_id: sessionId
       };
 
-      // Add user_id if authenticated to link cart to user
-      if (user?.id) {
+      // Add user_id only if authenticated as admin user (not customer)
+      // Customers use session_id only to avoid foreign key constraint issues
+      if (user?.id && user?.role !== 'customer') {
         cartData.user_id = user.id;
       }
 
@@ -295,8 +297,9 @@ class CartService {
         session_id: sessionId
       };
 
-      // Add user_id if authenticated
-      if (user?.id) {
+      // Add user_id only if authenticated as admin user (not customer)
+      // Customers use session_id only to avoid foreign key constraint issues
+      if (user?.id && user?.role !== 'customer') {
         cartData.user_id = user.id;
       }
 
