@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
 import apiClient from "@/api/client";
 import { createPublicUrl } from "@/utils/urlUtils";
+import { useStore } from "@/components/storefront/StoreProvider";
+import slotConfigurationService from '@/services/slotConfigurationService';
+import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
+import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
+import { loginConfig } from '@/components/editor/slot/configs/login-config';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,11 +16,72 @@ export default function Login() {
   const [success, setSuccess] = useState("");
   const { storeCode } = useParams();
   const navigate = useNavigate();
+  const { store } = useStore();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false
   });
+
+  // Slot configuration state
+  const [loginLayoutConfig, setLoginLayoutConfig] = useState(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Load login layout configuration
+  useEffect(() => {
+    const loadLoginLayoutConfig = async () => {
+      if (!store?.id) {
+        return;
+      }
+
+      try {
+        const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'login');
+
+        // Check for valid published config
+        if (response.success && response.data &&
+            response.data.configuration &&
+            response.data.configuration.slots &&
+            Object.keys(response.data.configuration.slots).length > 0) {
+
+          const publishedConfig = response.data;
+          setLoginLayoutConfig(publishedConfig.configuration);
+          setConfigLoaded(true);
+
+        } else {
+          // Fallback to login-config.js
+          const fallbackConfig = {
+            slots: { ...loginConfig.slots },
+            metadata: {
+              ...loginConfig.metadata,
+              fallbackUsed: true,
+              fallbackReason: 'No valid published configuration'
+            }
+          };
+
+          setLoginLayoutConfig(fallbackConfig);
+          setConfigLoaded(true);
+        }
+      } catch (error) {
+        console.error('❌ LOGIN: Error loading published slot configuration:', error);
+
+        // Fallback to login-config.js
+        const fallbackConfig = {
+          slots: { ...loginConfig.slots },
+          metadata: {
+            ...loginConfig.metadata,
+            fallbackUsed: true,
+            fallbackReason: `Error loading configuration: ${error.message}`
+          }
+        };
+
+        setLoginLayoutConfig(fallbackConfig);
+        setConfigLoaded(true);
+      }
+    };
+
+    loadLoginLayoutConfig();
+  }, [store]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -88,103 +147,50 @@ export default function Login() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {success && (
-                <Alert className="border-green-200 bg-green-50">
-                  <AlertDescription className="text-green-800">{success}</AlertDescription>
-                </Alert>
-              )}
-
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Enter your password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <EyeIcon className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="rememberMe"
-                  name="rememberMe"
-                  checked={formData.rememberMe}
-                  onCheckedChange={(checked) =>
-                    setFormData(prev => ({ ...prev, rememberMe: checked }))
-                  }
-                />
-                <Label htmlFor="rememberMe" className="text-sm">
-                  Remember me
-                </Label>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5"
-                disabled={loading}
-              >
-                {loading ? 'Signing In...' : 'Sign In'}
-              </Button>
-
-              <div className="text-center text-sm text-gray-600">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => navigate(createPublicUrl(storeCode || 'default', 'CUSTOMER_AUTH'))}
-                  className="text-blue-600 hover:underline"
-                >
-                  Create one here
-                </button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+  // Show loading state until config is loaded
+  if (!configLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
       </div>
+    );
+  }
+
+  const hasConfig = loginLayoutConfig && loginLayoutConfig.slots;
+  const hasSlots = hasConfig && Object.keys(loginLayoutConfig.slots).length > 0;
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      {hasConfig && hasSlots ? (
+        <UnifiedSlotRenderer
+          slots={loginLayoutConfig.slots}
+          parentId={null}
+          viewMode="login"
+          context="storefront"
+          loginData={{
+            formData,
+            loading,
+            error,
+            success,
+            showPassword,
+            handleInputChange,
+            handleSubmit,
+            setShowPassword,
+            navigate,
+            storeCode,
+            createPublicUrl
+          }}
+        />
+      ) : (
+        <div className="max-w-md w-full mx-auto">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold text-center mb-4">Sign In</h2>
+            <p className="text-gray-600 text-center">
+              Login configuration not available. Please contact support.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

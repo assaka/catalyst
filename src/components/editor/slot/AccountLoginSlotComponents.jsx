@@ -251,6 +251,101 @@ const RegisterFormSlot = createSlotComponent({
   }
 });
 
+/**
+ * AccountIntroHeroSlot - Hero section for intro view (not logged in)
+ */
+const AccountIntroHeroSlot = createSlotComponent({
+  name: 'AccountIntroHeroSlot',
+  render: ({ slot, context }) => {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg p-12 mb-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <svg className="w-20 h-20 mx-auto mb-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            <h2 className="text-4xl font-bold mb-4">Welcome to Your Account</h2>
+            <p className="text-xl mb-8 opacity-90">Sign in to access your orders, track shipments, and manage your preferences</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * AccountBenefitsSlot - Benefits grid for intro view (not logged in)
+ */
+const AccountBenefitsSlot = createSlotComponent({
+  name: 'AccountBenefitsSlot',
+  render: ({ slot, context }) => {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6 text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Order History</h3>
+            <p className="text-gray-600">View and track all your orders in one place</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Fast Checkout</h3>
+            <p className="text-gray-600">Save addresses and payment methods for quick checkout</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 text-center">
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Wishlist</h3>
+            <p className="text-gray-600">Save your favorite items for later</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * AccountCTASlot - Call-to-action for intro view (not logged in)
+ */
+const AccountCTASlot = createSlotComponent({
+  name: 'AccountCTASlot',
+  render: ({ slot, context }) => {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <h3 className="text-2xl font-semibold mb-4">Ready to Get Started?</h3>
+          <p className="text-gray-600 mb-6">Create an account or sign in to access all features</p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => window.location.href = '/customer/login'}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => window.location.href = '/customer/login'}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-medium"
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+});
+
 // Register all components
 registerSlotComponent('UserProfileSlot', UserProfileSlot);
 registerSlotComponent('NavigationMenuSlot', NavigationMenuSlot);
@@ -259,6 +354,9 @@ registerSlotComponent('RecentOrdersSlot', RecentOrdersSlot);
 registerSlotComponent('ProfileFormSlot', ProfileFormSlot);
 registerSlotComponent('LoginFormSlot', LoginFormSlot);
 registerSlotComponent('RegisterFormSlot', RegisterFormSlot);
+registerSlotComponent('AccountIntroHeroSlot', AccountIntroHeroSlot);
+registerSlotComponent('AccountBenefitsSlot', AccountBenefitsSlot);
+registerSlotComponent('AccountCTASlot', AccountCTASlot);
 
 export {
   UserProfileSlot,
@@ -267,5 +365,8 @@ export {
   RecentOrdersSlot,
   ProfileFormSlot,
   LoginFormSlot,
-  RegisterFormSlot
+  RegisterFormSlot,
+  AccountIntroHeroSlot,
+  AccountBenefitsSlot,
+  AccountCTASlot
 };
