@@ -715,7 +715,7 @@ const SprShopContent = () => (
 );
 
 // Guest Welcome Component
-const GuestWelcome = ({ onLogin }) => (
+const GuestWelcome = ({ onLogin, store }) => (
   <div className="space-y-6">
     <Card>
       <CardContent className="p-8 text-center">
@@ -1204,7 +1204,7 @@ export default function CustomerDashboard() {
         </div>
 
         {isGuest ? (
-          <GuestWelcome onLogin={handleLogin} />
+          <GuestWelcome onLogin={handleLogin} store={store} />
         ) : (
           <div className="grid lg:grid-cols-4 gap-8">
             {/* Sidebar */}
