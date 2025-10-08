@@ -135,6 +135,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
 
   // Production-ready event handling with race condition prevention
   useEffect(() => {
+    console.log('🛒 MiniCart: Setting up event listeners');
     let refreshTimeout = null;
     let pendingRefresh = false;
 
@@ -168,29 +169,50 @@ export default function MiniCart({ iconVariant = 'outline' }) {
     };
 
     const handleCartUpdate = (event) => {
+      console.log('🛒 MiniCart: cartUpdated event received:', {
+        hasFreshCartData: !!event.detail?.freshCartData,
+        hasItems: !!event.detail?.freshCartData?.items,
+        itemsLength: event.detail?.freshCartData?.items?.length,
+        itemsIsArray: Array.isArray(event.detail?.freshCartData?.items),
+        action: event.detail?.action,
+        source: event.detail?.source,
+        fullDetail: event.detail
+      });
+
       // Simplified: only handle fresh cart data from backend
-      if (event.detail?.freshCartData && event.detail.freshCartData.items) {
-        // We have fresh data from backend - use it directly
-        setCartItems(event.detail.freshCartData.items);
-        saveCartToLocalStorage(event.detail.freshCartData.items);
+      if (event.detail?.freshCartData) {
+        const items = event.detail.freshCartData.items;
 
-        // Product details will be loaded by the cartItems useEffect
+        // Handle both undefined and array cases (empty array is valid)
+        if (items !== undefined && Array.isArray(items)) {
+          console.log('🛒 MiniCart: Updating cart with fresh data:', items);
+          setCartItems(items);
+          saveCartToLocalStorage(items);
 
-        return; // Fresh data received - no need for additional API calls
+          // Product details will be loaded by the cartItems useEffect
+
+          return; // Fresh data received - no need for additional API calls
+        } else {
+          console.warn('🛒 MiniCart: freshCartData.items is not an array:', items);
+        }
       }
 
       // Don't refresh at all since CartService should always provide fresh data
       // Only allow explicit refresh events via 'refreshMiniCart' event
+      console.log('🛒 MiniCart: No valid fresh cart data in event, skipping update');
     };
 
     const handleDirectRefresh = (event) => {
+      console.log('🛒 MiniCart: refreshMiniCart event received');
       debouncedRefresh(true); // Always immediate for direct refresh
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
     window.addEventListener('refreshMiniCart', handleDirectRefresh);
+    console.log('🛒 MiniCart: Event listeners attached');
 
     return () => {
+      console.log('🛒 MiniCart: Removing event listeners');
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('refreshMiniCart', handleDirectRefresh);
       if (refreshTimeout) {

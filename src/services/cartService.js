@@ -172,11 +172,16 @@ class CartService {
       const result = await response.json();
 
       if (result.success) {
-
         // Extract fresh cart data from the response
         const freshCartData = result.data;
         const cartItems = Array.isArray(freshCartData?.items) ? freshCartData.items :
                          Array.isArray(freshCartData?.dataValues?.items) ? freshCartData.dataValues.items : [];
+
+        console.log('🛒 CartService.addItem: Dispatching cartUpdated event with fresh data:', {
+          itemsLength: cartItems.length,
+          items: cartItems,
+          freshCartData: freshCartData
+        });
 
         // Dispatch cart update event with the fresh cart data
         window.dispatchEvent(new CustomEvent('cartUpdated', {
