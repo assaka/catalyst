@@ -8,7 +8,7 @@
  * - Single source of truth for both editor and storefront
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +24,75 @@ import { ComponentRegistry } from './SlotComponentRegistry';
 import { createProductUrl } from '@/utils/urlUtils';
 import cartService from '@/services/cartService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
+import { CmsBlock } from '@/api/entities';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 // Import component registry to ensure all components are registered
 import '@/components/editor/slot/UnifiedSlotComponents';
 
 // Re-export registry functions for backward compatibility
 export { createSlotComponent, ComponentRegistry, registerSlotComponent } from './SlotComponentRegistry';
+
+// CMS Block Slot Component
+const CmsBlockSlot = ({ slot, context, className, styles }) => {
+  const [cmsContent, setCmsContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { store } = useStore();
+
+  useEffect(() => {
+    const loadCmsBlock = async () => {
+      if (!slot.cmsBlockPosition || !store?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch CMS blocks for this store and placement
+        const blocks = await CmsBlock.filter({
+          store_id: store.id,
+          placement: slot.cmsBlockPosition,
+          is_active: true
+        });
+
+        if (blocks && blocks.length > 0) {
+          // Use the first active block for this position
+          setCmsContent(blocks[0].content || '');
+        }
+      } catch (error) {
+        console.error('Error loading CMS block:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCmsBlock();
+  }, [slot.cmsBlockPosition, store?.id]);
+
+  if (loading) {
+    return context === 'editor' ? (
+      <div className={`${className} p-4 border-2 border-dashed border-gray-300 rounded`} style={styles}>
+        <p className="text-gray-500 text-sm">Loading CMS block...</p>
+      </div>
+    ) : null;
+  }
+
+  if (!cmsContent) {
+    return context === 'editor' ? (
+      <div className={`${className} p-4 border-2 border-dashed border-gray-300 rounded`} style={styles}>
+        <p className="text-gray-500 text-sm">CMS Block: {slot.cmsBlockPosition}</p>
+        <p className="text-gray-400 text-xs mt-1">No content assigned</p>
+      </div>
+    ) : null;
+  }
+
+  return (
+    <div
+      className={className}
+      style={styles}
+      dangerouslySetInnerHTML={{ __html: cmsContent }}
+    />
+  );
+};
 
 // Text Slot with Script Support Component
 const TextSlotWithScript = ({ slot, processedContent, processedClassName, context, productData, variableContext }) => {
@@ -681,6 +744,11 @@ export function UnifiedSlotRenderer({
         />
       );
       return wrapWithResize(imageElement, slot, 50, 50);
+    }
+
+    // CMS Block Element
+    if (type === 'cms') {
+      return <CmsBlockSlot slot={slot} context={context} className={processedClassName} styles={processedStyles} />;
     }
 
     // Container, Grid, Flex Elements

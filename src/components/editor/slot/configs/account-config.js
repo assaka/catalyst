@@ -8,9 +8,11 @@ export const accountConfig = {
   // Slot layout definition
   slotLayout: {
     account_header: { name: 'Account Header', colSpan: 12, order: 0 },
-    account_sidebar: { name: 'Account Sidebar', colSpan: 3, order: 1 },
-    account_content: { name: 'Account Content', colSpan: 9, order: 2 },
-    account_footer: { name: 'Account Footer', colSpan: 12, order: 3 }
+    account_cms_above: { name: 'CMS Above Content', colSpan: 12, order: 1 },
+    account_sidebar: { name: 'Account Sidebar', colSpan: 3, order: 2 },
+    account_content: { name: 'Account Content', colSpan: 9, order: 3 },
+    account_cms_below: { name: 'CMS Below Content', colSpan: 12, order: 4 },
+    account_footer: { name: 'Account Footer', colSpan: 12, order: 5 }
   },
 
   // Slot configuration with sidebar layout
@@ -41,6 +43,17 @@ export const accountConfig = {
       className: 'text-gray-600 mt-1',
       styles: {},
       viewMode: ['overview', 'profile']
+    },
+
+    // CMS Block Above Content
+    account_cms_above: {
+      id: 'account_cms_above',
+      type: 'cms',
+      content: '',
+      className: 'mb-6',
+      styles: {},
+      viewMode: ['overview', 'profile', 'intro'],
+      cmsBlockPosition: 'account_cms_above'
     },
 
     // Sidebar navigation (left column - 25% width)
@@ -208,6 +221,17 @@ export const accountConfig = {
       className: '',
       styles: {},
       viewMode: ['profile']
+    },
+
+    // CMS Block Below Content
+    account_cms_below: {
+      id: 'account_cms_below',
+      type: 'cms',
+      content: '',
+      className: 'mt-6',
+      styles: {},
+      viewMode: ['overview', 'profile', 'intro'],
+      cmsBlockPosition: 'account_cms_below'
     },
 
     account_footer: {
