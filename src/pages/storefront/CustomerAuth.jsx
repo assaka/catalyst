@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import CustomerDashboard from "./CustomerDashboard";
 import { User } from "@/api/entities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -263,7 +262,10 @@ export default function CustomerAuth() {
       if (customerToken) {
         const userData = await User.me();
         if (userData && userData.role === 'customer') {
-          setUser(userData);
+          // User is already authenticated, redirect to dashboard
+          const accountUrl = await getCustomerAccountUrl();
+          navigate(accountUrl);
+          return;
         }
       }
     } catch (error) {
@@ -394,12 +396,7 @@ export default function CustomerAuth() {
     );
   }
 
-  // If user is authenticated, show dashboard
-  if (user) {
-    return <CustomerDashboard />;
-  }
-
-  // If not authenticated, show 2-column login/register layout
+  // Show 2-column login/register layout
   return (
     <StorefrontLayout>
       <div className="max-w-6xl mx-auto px-4 py-8">
