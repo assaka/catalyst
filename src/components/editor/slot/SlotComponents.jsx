@@ -85,6 +85,34 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
   const mouseUpHandlerRef = useRef(null);
   const handleElementRef = useRef(null);
 
+  // Helper to parse responsive colSpan strings like 'col-span-12 md:col-span-6'
+  const parseResponsiveColSpan = (value) => {
+    if (typeof value === 'number') {
+      return { base: value, responsive: null };
+    }
+    if (typeof value === 'string') {
+      // Extract base value (e.g., 'col-span-12' -> 12)
+      const baseMatch = value.match(/(?:^|\s)col-span-(\d+)/);
+      // Extract responsive value (e.g., 'md:col-span-6' -> 6)
+      const responsiveMatch = value.match(/(sm|md|lg|xl):col-span-(\d+)/);
+      const breakpoint = responsiveMatch ? responsiveMatch[1] : 'md';
+      return {
+        base: baseMatch ? parseInt(baseMatch[1]) : 12,
+        responsive: responsiveMatch ? parseInt(responsiveMatch[2]) : null,
+        breakpoint
+      };
+    }
+    return { base: 12, responsive: null };
+  };
+
+  // Helper to build responsive colSpan string
+  const buildResponsiveColSpan = (baseValue, responsiveValue, breakpoint = 'md') => {
+    if (!responsiveValue) {
+      return baseValue;
+    }
+    return `col-span-${baseValue} ${breakpoint}:col-span-${responsiveValue}`;
+  };
+
   useEffect(() => {
     onResizeRef.current = onResize;
     onResizeStartRef.current = onResizeStart;
@@ -124,7 +152,24 @@ export function GridResizeHandle({ onResize, currentValue, maxValue = 12, minVal
         const deltaX = e.clientX - startX;
         const sensitivity = 20; // Reduced sensitivity - more responsive resizing
         const colSpanDelta = Math.round(deltaX / sensitivity);
-        const newColSpan = Math.max(minValue, Math.min(maxValue, startValue + colSpanDelta));
+
+        // Parse the current value (could be number or string)
+        const parsed = parseResponsiveColSpan(startValue);
+        const currentNumericValue = parsed.responsive || parsed.base;
+        const newNumericValue = Math.max(minValue, Math.min(maxValue, currentNumericValue + colSpanDelta));
+
+        // Build the new colSpan value
+        let newColSpan;
+        if (parsed.responsive) {
+          // Keep responsive structure, update the responsive value
+          newColSpan = buildResponsiveColSpan(parsed.base, newNumericValue, parsed.breakpoint);
+        } else if (typeof startValue === 'string') {
+          // Was a string without responsive, keep as string
+          newColSpan = buildResponsiveColSpan(newNumericValue, null);
+        } else {
+          // Was a number, keep as number
+          newColSpan = newNumericValue;
+        }
 
         // Only call onResize if the value actually changed
         if (newColSpan !== lastValueRef.current) {
