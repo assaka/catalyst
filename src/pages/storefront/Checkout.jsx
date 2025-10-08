@@ -41,6 +41,7 @@ import { Tag, CalendarIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
+import StepIndicator from "@/components/storefront/StepIndicator";
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
@@ -106,6 +107,9 @@ export default function Checkout() {
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
   const [deliveryComments, setDeliveryComments] = useState('');
   const [deliverySettings, setDeliverySettings] = useState(null);
+
+  // Multi-step checkout state
+  const [currentStep, setCurrentStep] = useState(0);
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -885,16 +889,93 @@ export default function Checkout() {
   const checkoutSectionBgColor = settings?.checkout_section_bg_color || '#FFFFFF';
   const checkoutSectionBorderColor = settings?.checkout_section_border_color || '#E5E7EB';
 
+  // Get step settings
+  const stepsCount = settings?.checkout_steps_count || 3;
+  const stepIndicatorStyle = settings?.checkout_step_indicator_style || 'circles';
+  const stepActiveColor = settings?.checkout_step_indicator_active_color || '#007bff';
+  const stepInactiveColor = settings?.checkout_step_indicator_inactive_color || '#D1D5DB';
+  const stepCompletedColor = settings?.checkout_step_indicator_completed_color || '#10B981';
+
+  // Define step configurations based on step count
+  const getStepConfig = () => {
+    if (stepsCount === 1) {
+      return {
+        steps: ['Checkout'],
+        sections: [['account', 'shipping', 'delivery', 'billing', 'payment', 'review']]
+      };
+    } else if (stepsCount === 2) {
+      return {
+        steps: ['Information', 'Payment'],
+        sections: [
+          ['account', 'shipping', 'delivery', 'billing'],
+          ['payment', 'review']
+        ]
+      };
+    } else {
+      return {
+        steps: ['Information', 'Shipping', 'Payment'],
+        sections: [
+          ['account', 'shipping', 'billing'],
+          ['delivery'],
+          ['payment', 'review']
+        ]
+      };
+    }
+  };
+
+  const stepConfig = getStepConfig();
+
+  // Check if a section should be visible in current step
+  const isSectionVisible = (sectionName) => {
+    if (stepsCount === 1) return true;
+    return stepConfig.sections[currentStep]?.includes(sectionName);
+  };
+
+  // Navigation handlers
+  const canGoNext = () => {
+    return currentStep < stepConfig.steps.length - 1;
+  };
+
+  const canGoPrev = () => {
+    return currentStep > 0;
+  };
+
+  const goToNextStep = () => {
+    if (canGoNext()) {
+      setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const goToPrevStep = () => {
+    if (canGoPrev()) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
       <CmsBlockRenderer position="checkout_above_form" />
 
+      {/* Step Indicator */}
+      {stepsCount > 1 && (
+        <StepIndicator
+          steps={stepConfig.steps}
+          currentStep={currentStep}
+          style={stepIndicatorStyle}
+          activeColor={stepActiveColor}
+          inactiveColor={stepInactiveColor}
+          completedColor={stepCompletedColor}
+        />
+      )}
+
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Order Summary - Right Side */}
         <div className="lg:order-2 space-y-6">
           {/* Payment Methods */}
-          {eligiblePaymentMethods.length > 0 && (
+          {isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Payment Method</CardTitle>
@@ -944,6 +1025,7 @@ export default function Checkout() {
           )}
 
           {/* Coupon Section */}
+          {isSectionVisible('review') && (
           <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Apply Coupon</CardTitle>
@@ -993,7 +1075,9 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
+          )}
 
+          {isSectionVisible('review') && (
           <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Order Summary</CardTitle>
@@ -1105,7 +1189,10 @@ export default function Checkout() {
               </div>
             </CardContent>
           </Card>
+          )}
+
           {/* Place Order Button */}
+          {isSectionVisible('review') && (
           <Button
             onClick={handleCheckout}
             disabled={isProcessing || cartItems.length === 0}
@@ -1117,13 +1204,38 @@ export default function Checkout() {
           >
             {isProcessing ? 'Processing...' : `Place Order - ${currencySymbol}${formatPrice(getTotalAmount())}`}
           </Button>
+          )}
+
+          {/* Step Navigation Buttons */}
+          {stepsCount > 1 && (
+            <div className="flex gap-4">
+              {canGoPrev() && (
+                <Button
+                  onClick={goToPrevStep}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  ← Previous
+                </Button>
+              )}
+              {canGoNext() && (
+                <Button
+                  onClick={goToNextStep}
+                  className="flex-1"
+                  style={{ backgroundColor: stepActiveColor }}
+                >
+                  Next →
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Checkout Forms - Left Side */}
         <div className="lg:order-1 space-y-6">
-          
+
           {/* Login Section */}
-          {!user && (
+          {isSectionVisible('account') && !user && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Account</CardTitle>
@@ -1220,6 +1332,7 @@ export default function Checkout() {
           )}
 
           {/* Shipping Address */}
+          {isSectionVisible('shipping') && (
           <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Address</CardTitle>
@@ -1344,9 +1457,10 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Shipping Methods */}
-          {eligibleShippingMethods.length > 0 && (
+          {isSectionVisible('shipping') && eligibleShippingMethods.length > 0 && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Method</CardTitle>
@@ -1381,7 +1495,7 @@ export default function Checkout() {
           )}
 
           {/* Delivery Settings */}
-          {deliverySettings && deliverySettings.enable_delivery_date && (
+          {isSectionVisible('delivery') && deliverySettings && deliverySettings.enable_delivery_date && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Options</CardTitle>
@@ -1443,7 +1557,7 @@ export default function Checkout() {
           )}
 
           {/* Delivery Comments */}
-          {deliverySettings && deliverySettings.enable_comments && (
+          {isSectionVisible('delivery') && deliverySettings && deliverySettings.enable_comments && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Instructions</CardTitle>
@@ -1465,6 +1579,7 @@ export default function Checkout() {
           )}
 
           {/* Billing Address */}
+          {isSectionVisible('billing') && (
           <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Billing Address</CardTitle>
@@ -1600,6 +1715,7 @@ export default function Checkout() {
               </div>
             </CardContent>
           </Card>
+          )}
         </div>
       </div>
       <CmsBlockRenderer position="checkout_below_form" />
