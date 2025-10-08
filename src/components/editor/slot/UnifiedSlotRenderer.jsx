@@ -929,11 +929,6 @@ export function UnifiedSlotRenderer({
         let colSpanClass = 'col-span-12';
         let gridColumn = 'span 12 / span 12';
 
-        // Check if parent is a responsive grid (hierarchical with responsive classes)
-        const parentSlot = slot.parentId ? slots[slot.parentId] : null;
-        const isResponsiveGrid = parentSlot?.metadata?.hierarchical &&
-                                 parentSlot?.className?.match(/grid-cols-\d+\s+(sm|md|lg|xl):grid-cols-\d+/);
-
         if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
@@ -947,11 +942,6 @@ export function UnifiedSlotRenderer({
             colSpanClass = viewModeValue;
             gridColumn = null;
           }
-        } else if (isResponsiveGrid) {
-          // For responsive grids, don't use inline grid-column styles
-          // Let CSS Grid auto-placement handle it based on parent's grid-cols-* classes
-          colSpanClass = '';
-          gridColumn = null;
         }
 
         // Render slot content
