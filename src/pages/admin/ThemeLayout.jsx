@@ -141,6 +141,13 @@ export default function ThemeLayout() {
                 mobile_gallery_layout: fullStore?.settings?.mobile_gallery_layout || 'below',
                 // Checkout Page defaults
                 checkout_steps_count: fullStore?.settings?.checkout_steps_count ?? 3,
+                // Step names for 2-step checkout
+                checkout_2step_step1_name: fullStore?.settings?.checkout_2step_step1_name || 'Information',
+                checkout_2step_step2_name: fullStore?.settings?.checkout_2step_step2_name || 'Payment',
+                // Step names for 3-step checkout
+                checkout_3step_step1_name: fullStore?.settings?.checkout_3step_step1_name || 'Information',
+                checkout_3step_step2_name: fullStore?.settings?.checkout_3step_step2_name || 'Shipping',
+                checkout_3step_step3_name: fullStore?.settings?.checkout_3step_step3_name || 'Payment',
                 checkout_step_indicator_active_color: fullStore?.settings?.checkout_step_indicator_active_color || '#007bff',
                 checkout_step_indicator_inactive_color: fullStore?.settings?.checkout_step_indicator_inactive_color || '#D1D5DB',
                 checkout_step_indicator_completed_color: fullStore?.settings?.checkout_step_indicator_completed_color || '#10B981',
@@ -1311,6 +1318,74 @@ export default function ThemeLayout() {
                                         <SelectItem value="3">3 Steps</SelectItem>
                                     </SelectContent>
                                 </Select>
+
+                                {/* Step Names Configuration */}
+                                {store.settings?.checkout_steps_count > 1 && (
+                                    <div className="mt-4 space-y-3">
+                                        <Label className="text-sm font-medium">Step Names</Label>
+                                        <p className="text-xs text-gray-500">Customize the names displayed for each step in the checkout process.</p>
+
+                                        {store.settings?.checkout_steps_count === 2 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div>
+                                                    <Label htmlFor="checkout_2step_step1_name" className="text-xs">Step 1 Name</Label>
+                                                    <Input
+                                                        id="checkout_2step_step1_name"
+                                                        value={store.settings?.checkout_2step_step1_name || 'Information'}
+                                                        onChange={(e) => handleSettingsChange('checkout_2step_step1_name', e.target.value)}
+                                                        placeholder="Information"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="checkout_2step_step2_name" className="text-xs">Step 2 Name</Label>
+                                                    <Input
+                                                        id="checkout_2step_step2_name"
+                                                        value={store.settings?.checkout_2step_step2_name || 'Payment'}
+                                                        onChange={(e) => handleSettingsChange('checkout_2step_step2_name', e.target.value)}
+                                                        placeholder="Payment"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {store.settings?.checkout_steps_count === 3 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div>
+                                                    <Label htmlFor="checkout_3step_step1_name" className="text-xs">Step 1 Name</Label>
+                                                    <Input
+                                                        id="checkout_3step_step1_name"
+                                                        value={store.settings?.checkout_3step_step1_name || 'Information'}
+                                                        onChange={(e) => handleSettingsChange('checkout_3step_step1_name', e.target.value)}
+                                                        placeholder="Information"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="checkout_3step_step2_name" className="text-xs">Step 2 Name</Label>
+                                                    <Input
+                                                        id="checkout_3step_step2_name"
+                                                        value={store.settings?.checkout_3step_step2_name || 'Shipping'}
+                                                        onChange={(e) => handleSettingsChange('checkout_3step_step2_name', e.target.value)}
+                                                        placeholder="Shipping"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="checkout_3step_step3_name" className="text-xs">Step 3 Name</Label>
+                                                    <Input
+                                                        id="checkout_3step_step3_name"
+                                                        value={store.settings?.checkout_3step_step3_name || 'Payment'}
+                                                        onChange={(e) => handleSettingsChange('checkout_3step_step3_name', e.target.value)}
+                                                        placeholder="Payment"
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />
@@ -1493,12 +1568,13 @@ export default function ThemeLayout() {
                         <CardContent className="space-y-6">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-sm text-blue-800">
-                                    <strong>How it works:</strong> For each step count (1, 2, or 3 steps), you can define how many columns to display and which sections appear in each column.
+                                    <strong>How it works:</strong> Based on your selected step count above ({store.settings?.checkout_steps_count || 3} step{(store.settings?.checkout_steps_count || 3) > 1 ? 's' : ''}), configure the layout below.
                                     Available sections: Account, Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
                                 </p>
                             </div>
 
                             {/* 1-Step Layout */}
+                            {store.settings?.checkout_steps_count === 1 && (
                             <div className="p-4 border rounded-lg space-y-4">
                                 <div>
                                     <Label className="text-base font-medium">1-Step Checkout Layout</Label>
@@ -1523,7 +1599,7 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Drag and Drop Section Ordering */}
-                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                <div className={`grid gap-4 mt-4 ${store.settings?.checkout_1step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_1step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                     {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
                                         const sectionLayout = store.settings?.checkout_1step_layout || defaultSectionLayout['1step'];
                                         const columnSections = sectionLayout[columnKey] || [];
@@ -1552,10 +1628,12 @@ export default function ThemeLayout() {
                                     })}
                                 </div>
                             </div>
+                            )}
 
-                            <Separator />
+                            {store.settings?.checkout_steps_count === 2 && <Separator />}
 
                             {/* 2-Step Layout */}
+                            {store.settings?.checkout_steps_count === 2 && (
                             <div className="p-4 border rounded-lg space-y-4">
                                 <div>
                                     <Label className="text-base font-medium">2-Step Checkout Layout</Label>
@@ -1580,7 +1658,7 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Drag and Drop Section Ordering */}
-                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                <div className={`grid gap-4 mt-4 ${store.settings?.checkout_2step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_2step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                     {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_2step_columns || 2).map((columnKey, idx) => {
                                         const sectionLayout = store.settings?.checkout_2step_layout || defaultSectionLayout['2step'];
                                         const columnSections = sectionLayout[columnKey] || [];
@@ -1609,10 +1687,12 @@ export default function ThemeLayout() {
                                     })}
                                 </div>
                             </div>
+                            )}
 
-                            <Separator />
+                            {store.settings?.checkout_steps_count === 3 && <Separator />}
 
                             {/* 3-Step Layout */}
+                            {store.settings?.checkout_steps_count === 3 && (
                             <div className="p-4 border rounded-lg space-y-4">
                                 <div>
                                     <Label className="text-base font-medium">3-Step Checkout Layout</Label>
@@ -1637,7 +1717,7 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Drag and Drop Section Ordering */}
-                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                <div className={`grid gap-4 mt-4 ${store.settings?.checkout_3step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_3step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                     {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_3step_columns || 2).map((columnKey, idx) => {
                                         const sectionLayout = store.settings?.checkout_3step_layout || defaultSectionLayout['3step'];
                                         const columnSections = sectionLayout[columnKey] || [];
@@ -1666,6 +1746,7 @@ export default function ThemeLayout() {
                                     })}
                                 </div>
                             </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

@@ -394,6 +394,13 @@ export const StoreProvider = ({ children }) => {
 
         // Checkout page settings - preserve saved values with defaults
         checkout_steps_count: selectedStore.settings?.checkout_steps_count ?? 3,
+        // Step names for 2-step checkout
+        checkout_2step_step1_name: selectedStore.settings?.checkout_2step_step1_name || 'Information',
+        checkout_2step_step2_name: selectedStore.settings?.checkout_2step_step2_name || 'Payment',
+        // Step names for 3-step checkout
+        checkout_3step_step1_name: selectedStore.settings?.checkout_3step_step1_name || 'Information',
+        checkout_3step_step2_name: selectedStore.settings?.checkout_3step_step2_name || 'Shipping',
+        checkout_3step_step3_name: selectedStore.settings?.checkout_3step_step3_name || 'Payment',
         checkout_step_indicator_active_color: selectedStore.settings?.checkout_step_indicator_active_color || '#007bff',
         checkout_step_indicator_inactive_color: selectedStore.settings?.checkout_step_indicator_inactive_color || '#D1D5DB',
         checkout_step_indicator_completed_color: selectedStore.settings?.checkout_step_indicator_completed_color || '#10B981',
@@ -406,6 +413,20 @@ export const StoreProvider = ({ children }) => {
         checkout_1step_columns: selectedStore.settings?.checkout_1step_columns ?? 3,
         checkout_2step_columns: selectedStore.settings?.checkout_2step_columns ?? 2,
         checkout_3step_columns: selectedStore.settings?.checkout_3step_columns ?? 2,
+        checkout_1step_layout: selectedStore.settings?.checkout_1step_layout || {
+          column1: ['Account', 'Shipping Address', 'Shipping Method', 'Billing Address'],
+          column2: ['Delivery Options', 'Payment Method'],
+          column3: ['Coupon', 'Order Summary']
+        },
+        checkout_2step_layout: selectedStore.settings?.checkout_2step_layout || {
+          column1: ['Account', 'Shipping Address', 'Shipping Method', 'Billing Address'],
+          column2: ['Delivery Options', 'Coupon', 'Order Summary', 'Payment Method']
+        },
+        checkout_3step_layout: selectedStore.settings?.checkout_3step_layout || {
+          column1: ['Account', 'Shipping Address', 'Billing Address'],
+          column2: ['Delivery Options', 'Payment Method'],
+          column3: ['Coupon', 'Order Summary']
+        },
 
         // Product gallery layout settings - preserve saved values with defaults
         product_gallery_layout: selectedStore.settings?.product_gallery_layout !== undefined

@@ -905,6 +905,19 @@ export default function Checkout() {
 
   const columnCount = getColumnCount();
 
+  // Get layout configuration based on step count
+  const getLayout = () => {
+    if (stepsCount === 1) return settings?.checkout_1step_layout;
+    if (stepsCount === 2) return settings?.checkout_2step_layout;
+    return settings?.checkout_3step_layout;
+  };
+
+  const layout = getLayout() || {
+    column1: [],
+    column2: [],
+    column3: []
+  };
+
   // Define step configurations based on step count
   const getStepConfig = () => {
     if (stepsCount === 1) {
@@ -914,7 +927,10 @@ export default function Checkout() {
       };
     } else if (stepsCount === 2) {
       return {
-        steps: ['Information', 'Payment'],
+        steps: [
+          settings?.checkout_2step_step1_name || 'Information',
+          settings?.checkout_2step_step2_name || 'Payment'
+        ],
         sections: [
           ['account', 'shipping', 'delivery', 'billing'],
           ['payment', 'review']
@@ -922,7 +938,11 @@ export default function Checkout() {
       };
     } else {
       return {
-        steps: ['Information', 'Shipping', 'Payment'],
+        steps: [
+          settings?.checkout_3step_step1_name || 'Information',
+          settings?.checkout_3step_step2_name || 'Shipping',
+          settings?.checkout_3step_step3_name || 'Payment'
+        ],
         sections: [
           ['account', 'shipping', 'billing'],
           ['delivery'],
@@ -960,6 +980,717 @@ export default function Checkout() {
     if (canGoPrev()) {
       setCurrentStep(currentStep - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Map section names to their JSX components
+  const renderSection = (sectionName) => {
+    switch (sectionName) {
+      case 'Account':
+        return isSectionVisible('account') && !user && (
+          <Card key="account" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Account</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span>Continue as guest or login to your account</span>
+                <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">Already have an account?</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Login to Your Account</DialogTitle>
+                      <DialogDescription>
+                        Sign in to access your saved addresses and order history.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                      {loginError && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                          {loginError}
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="checkout-login-email">Email Address</Label>
+                        <Input
+                          id="checkout-login-email"
+                          name="email"
+                          type="email"
+                          required
+                          value={loginFormData.email}
+                          onChange={handleLoginInputChange}
+                          placeholder="Enter your email"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="checkout-login-password">Password</Label>
+                        <div className="relative mt-1">
+                          <Input
+                            id="checkout-login-password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            value={loginFormData.password}
+                            onChange={handleLoginInputChange}
+                            placeholder="Enter your password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOffIcon className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <EyeIcon className="h-4 w-4 text-gray-400" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="checkout-rememberMe"
+                          name="rememberMe"
+                          checked={loginFormData.rememberMe}
+                          onChange={handleLoginInputChange}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <Label htmlFor="checkout-rememberMe" className="text-sm">
+                          Remember me
+                        </Label>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loginLoading}
+                      >
+                        {loginLoading ? 'Signing In...' : 'Sign In'}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'Shipping Address':
+        return isSectionVisible('shipping') && (
+          <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Address</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {user && userAddresses.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {userAddresses.map((address) => (
+                      <div key={address.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                        <div className="flex items-start space-x-3">
+                          <input
+                            type="radio"
+                            id={`shipping-${address.id}`}
+                            name="shippingAddress"
+                            value={address.id}
+                            checked={selectedShippingAddress === address.id}
+                            onChange={(e) => setSelectedShippingAddress(e.target.value)}
+                            className="text-blue-600 mt-1"
+                          />
+                          <label htmlFor={`shipping-${address.id}`} className="flex-1 cursor-pointer">
+                            <div className="text-sm">
+                              <p className="font-medium text-gray-900">{address.full_name}</p>
+                              <p className="text-gray-600">{address.street}</p>
+                              <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
+                              <p className="text-gray-600">{address.country}</p>
+                              {address.phone && <p className="text-gray-500 text-xs mt-1">Phone: {address.phone}</p>}
+                              {address.is_default && (
+                                <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border rounded-lg p-3 border-dashed border-gray-300">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="new-shipping-address"
+                        name="shippingAddress"
+                        value="new"
+                        checked={selectedShippingAddress === 'new'}
+                        onChange={(e) => setSelectedShippingAddress(e.target.value)}
+                        className="text-blue-600"
+                      />
+                      <label htmlFor="new-shipping-address" className="cursor-pointer text-blue-600 font-medium">
+                        + Add a new shipping address
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                user ? (
+                  <p className="text-sm text-gray-600 mb-4">You don't have any saved addresses. Add one below.</p>
+                ) : (
+                  <p className="text-sm text-gray-600 mb-4">Enter your shipping address</p>
+                )
+              )}
+
+              {(!user || userAddresses.length === 0 || selectedShippingAddress === 'new') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Input
+                    placeholder="Email"
+                    type="email"
+                    className="md:col-span-2"
+                    value={shippingAddress.email}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Full Name"
+                    className="md:col-span-2"
+                    value={shippingAddress.full_name}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, full_name: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Street Address"
+                    className="md:col-span-2"
+                    value={shippingAddress.street}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="City"
+                    value={shippingAddress.city}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="State/Province"
+                    value={shippingAddress.state}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Postal Code"
+                    value={shippingAddress.postal_code}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, postal_code: e.target.value }))}
+                  />
+                  <CountrySelect
+                    value={shippingAddress.country}
+                    onChange={(country) => setShippingAddress(prev => ({ ...prev, country }))}
+                    placeholder="Select country..."
+                    allowedCountries={settings?.allowed_countries}
+                  />
+
+                  {user && selectedShippingAddress === 'new' && (
+                    <div className="md:col-span-2 flex items-center space-x-2 mt-3">
+                      <input
+                        type="checkbox"
+                        id="save-shipping-address"
+                        checked={saveShippingAddress}
+                        onChange={(e) => setSaveShippingAddress(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="save-shipping-address" className="text-sm text-gray-700">
+                        Save this address to my account for future orders
+                      </Label>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'Shipping Method':
+        return isSectionVisible('shipping') && eligibleShippingMethods.length > 0 && (
+          <Card key="shipping-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {eligibleShippingMethods.map((method) => (
+                  <div key={method.id} className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id={`shipping-method-${method.id}`}
+                      name="shippingMethod"
+                      value={method.name}
+                      checked={selectedShippingMethod === method.name}
+                      onChange={(e) => handleShippingMethodChange(e.target.value)}
+                      className="text-blue-600"
+                    />
+                    <label htmlFor={`shipping-method-${method.id}`} className="flex-1 cursor-pointer flex justify-between">
+                      <span>{method.name}</span>
+                      <span className="font-medium">
+                        {method.type === 'free_shipping' && calculateSubtotal() >= (method.free_shipping_min_order || 0)
+                          ? 'Free'
+                          : `${currencySymbol}${formatPrice(method.flat_rate_cost || 0)}`
+                        }
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'Billing Address':
+        return isSectionVisible('billing') && (
+          <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Billing Address</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="use-shipping-for-billing"
+                    checked={useShippingForBilling}
+                    onChange={(e) => setUseShippingForBilling(e.target.checked)}
+                    className="text-blue-600"
+                  />
+                  <label htmlFor="use-shipping-for-billing" className="cursor-pointer">
+                    Same as shipping address
+                  </label>
+                </div>
+
+                {!useShippingForBilling && (
+                  <>
+                    {user && userAddresses.length > 0 ? (
+                      <div className="space-y-3">
+                        {userAddresses.map((address) => (
+                          <div key={address.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                            <div className="flex items-start space-x-3">
+                              <input
+                                type="radio"
+                                id={`billing-${address.id}`}
+                                name="billingAddress"
+                                value={address.id}
+                                checked={selectedBillingAddress === address.id}
+                                onChange={(e) => setSelectedBillingAddress(e.target.value)}
+                                className="text-blue-600 mt-1"
+                              />
+                              <label htmlFor={`billing-${address.id}`} className="flex-1 cursor-pointer">
+                                <div className="text-sm">
+                                  <p className="font-medium text-gray-900">{address.full_name}</p>
+                                  <p className="text-gray-600">{address.street}</p>
+                                  <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
+                                  <p className="text-gray-600">{address.country}</p>
+                                  {address.phone && <p className="text-gray-500 text-xs mt-1">Phone: {address.phone}</p>}
+                                  {address.is_default && (
+                                    <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="border rounded-lg p-3 border-dashed border-gray-300">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="new-billing-address"
+                              name="billingAddress"
+                              value="new"
+                              checked={selectedBillingAddress === 'new'}
+                              onChange={(e) => setSelectedBillingAddress(e.target.value)}
+                              className="text-blue-600"
+                            />
+                            <label htmlFor="new-billing-address" className="cursor-pointer text-blue-600 font-medium">
+                              + Add a new billing address
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {(!user || userAddresses.length === 0 || selectedBillingAddress === 'new') && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                          placeholder="Email"
+                          type="email"
+                          className="md:col-span-2"
+                          value={billingAddress.email}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, email: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Full Name"
+                          className="md:col-span-2"
+                          value={billingAddress.full_name}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, full_name: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Street Address"
+                          className="md:col-span-2"
+                          value={billingAddress.street}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, street: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="City"
+                          value={billingAddress.city}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, city: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="State/Province"
+                          value={billingAddress.state}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, state: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Postal Code"
+                          value={billingAddress.postal_code}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, postal_code: e.target.value }))}
+                        />
+                        <CountrySelect
+                          value={billingAddress.country}
+                          onChange={(country) => setBillingAddress(prev => ({ ...prev, country }))}
+                          placeholder="Select country..."
+                          allowedCountries={settings?.allowed_countries}
+                        />
+
+                        {user && selectedBillingAddress === 'new' && (
+                          <div className="md:col-span-2 flex items-center space-x-2 mt-3">
+                            <input
+                              type="checkbox"
+                              id="save-billing-address"
+                              checked={saveBillingAddress}
+                              onChange={(e) => setSaveBillingAddress(e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <Label htmlFor="save-billing-address" className="text-sm text-gray-700">
+                              Save this billing address to my account for future orders
+                            </Label>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'Delivery Options':
+        return isSectionVisible('delivery') && deliverySettings && deliverySettings.enable_delivery_date && (
+          <Card key="delivery-options" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Options</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label>Preferred Delivery Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal mt-1"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {deliveryDate ? deliveryDate.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) : "Select a delivery date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={deliveryDate}
+                        onSelect={setDeliveryDate}
+                        disabled={isDateDisabled}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {getAvailableTimeSlots().length > 0 && (
+                  <div>
+                    <Label htmlFor="delivery-time">Preferred Time Slot</Label>
+                    <select
+                      id="delivery-time"
+                      value={deliveryTimeSlot}
+                      onChange={(e) => setDeliveryTimeSlot(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a time slot</option>
+                      {getAvailableTimeSlots().map((slot, index) => (
+                        <option key={index} value={`${slot.start_time}-${slot.end_time}`}>
+                          {slot.start_time} - {slot.end_time}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {deliverySettings.enable_comments && (
+                  <div>
+                    <Label htmlFor="delivery-comments">Special delivery instructions (optional)</Label>
+                    <textarea
+                      id="delivery-comments"
+                      value={deliveryComments}
+                      onChange={(e) => setDeliveryComments(e.target.value)}
+                      placeholder="Any special instructions for delivery..."
+                      rows={3}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'Payment Method':
+        return isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
+          <Card key="payment-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Payment Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CmsBlockRenderer position="checkout_above_payment" />
+              <div className="space-y-3">
+                {eligiblePaymentMethods.map((method) => (
+                  <div key={method.id} className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id={`payment-method-${method.id}`}
+                      name="paymentMethod"
+                      value={method.code}
+                      checked={selectedPaymentMethod === method.code}
+                      onChange={(e) => {
+                        setSelectedPaymentMethod(e.target.value);
+                        calculatePaymentFee(e.target.value);
+                      }}
+                      className="text-blue-600"
+                    />
+                    <label htmlFor={`payment-method-${method.id}`} className="flex-1 cursor-pointer flex items-center space-x-3">
+                      {method.icon_url && (
+                        <img src={method.icon_url} alt={method.name} className="w-8 h-8 object-contain" />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{method.name}</p>
+                        {method.description && (
+                          <p className="text-sm text-gray-500">{method.description}</p>
+                        )}
+                        {method.fee_type !== 'none' && method.fee_amount > 0 && (
+                          <p className="text-sm text-gray-600">
+                            Fee: {method.fee_type === 'fixed'
+                              ? `${currencySymbol}${formatPrice(method.fee_amount)}`
+                              : `${formatPrice(method.fee_amount)}%`
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <CmsBlockRenderer position="checkout_below_payment" />
+            </CardContent>
+          </Card>
+        );
+
+      case 'Coupon':
+        return (
+          <Card key="coupon" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Apply Coupon</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!appliedCoupon ? (
+                <div className="space-y-3">
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      onKeyPress={handleCouponKeyPress}
+                    />
+                    <Button
+                      onClick={handleApplyCoupon}
+                      disabled={!couponCode.trim()}
+                    >
+                      <Tag className="w-4 h-4 mr-2" />
+                      Apply
+                    </Button>
+                  </div>
+                  {couponError && (
+                    <p className="text-sm text-red-600">{couponError}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
+                    <p className="text-xs text-green-600">
+                      {appliedCoupon.discount_type === 'fixed'
+                        ? `${currencySymbol}${formatPrice(appliedCoupon.discount_value)} off`
+                        : `${formatPrice(appliedCoupon.discount_value)}% off`
+                      }
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveCoupon}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'Order Summary':
+        return (
+          <Card key="order-summary" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Order Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="item-1">
+                    <AccordionTrigger>
+                      <h3 className="font-medium text-gray-900">Items in Cart ({cartItems.length})</h3>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {cartItems.map((item) => {
+                        const product = cartProducts[item.product_id];
+                        if (!product) return null;
+
+                        let basePrice = parseFloat(item.price || 0);
+                        if (!item.price || isNaN(basePrice)) {
+                          basePrice = parseFloat(product.price || 0);
+                          if (isNaN(basePrice)) basePrice = 0;
+                          if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
+                            basePrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+                            if (isNaN(basePrice)) basePrice = 0;
+                          }
+                        }
+
+                        const itemPrice = calculateItemPrice(item, product);
+                        const itemTotal = itemPrice * item.quantity;
+
+                        return (
+                          <div key={item.id} className="flex items-center space-x-3 py-3 border-b border-gray-100">
+                            <img
+                              src={product.images?.[0] || 'https://placehold.co/60x60?text=No+Image'}
+                              alt={product.name}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{product.name}</h4>
+                              <p className="text-sm text-gray-500">{currencySymbol}{formatPrice(basePrice)} each</p>
+
+                              {item.selected_options && item.selected_options.length > 0 && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {item.selected_options.map((option, idx) => (
+                                    <div key={idx}>+ {option.name} (+{currencySymbol}{formatPrice(option.price)})</div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <p className="text-sm text-gray-600 mt-1">Qty: {item.quantity}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">{currencySymbol}{formatPrice(itemTotal)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{currencySymbol}{formatPrice(calculateSubtotal())}</span>
+                </div>
+
+                {calculateOptionsTotal() > 0 && (
+                  <div className="flex justify-between">
+                    <span>Custom Options</span>
+                    <span>{currencySymbol}{formatPrice(calculateOptionsTotal())}</span>
+                  </div>
+                )}
+
+                {appliedCoupon && calculateDiscount() > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({appliedCoupon.name})</span>
+                    <span>-{currencySymbol}{formatPrice(calculateDiscount())}</span>
+                  </div>
+                )}
+
+                {selectedShippingMethod && (
+                  <div className="flex justify-between">
+                    <span>Shipping</span>
+                    <span>{shippingCost > 0 ? `${currencySymbol}${formatPrice(shippingCost)}` : 'Free'}</span>
+                  </div>
+                )}
+
+                {paymentFee > 0 && (
+                  <div className="flex justify-between">
+                    <span>Payment Fee</span>
+                    <span>{currencySymbol}{formatPrice(paymentFee)}</span>
+                  </div>
+                )}
+
+                {calculateTax() > 0 && (
+                  <div className="flex justify-between">
+                    <span>Tax</span>
+                    <span>{currencySymbol}{formatPrice(calculateTax())}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-xl font-bold border-t pt-2">
+                  <span>Total</span>
+                  <span>{currencySymbol}{formatPrice(getTotalAmount())}</span>
+                </div>
+              </div>
+
+              {isSectionVisible('review') && (
+                <Button
+                  onClick={handleCheckout}
+                  disabled={isProcessing || cartItems.length === 0}
+                  className="w-full h-12 text-lg"
+                  style={{
+                    backgroundColor: settings?.theme?.place_order_button_color || '#28a745',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {isProcessing ? 'Processing...' : `Place Order - ${currencySymbol}${formatPrice(getTotalAmount())}`}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      default:
+        return null;
     }
   };
 
