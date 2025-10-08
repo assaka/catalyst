@@ -53,7 +53,7 @@ const accountEditorConfig = {
   slotComponents: {},
   generateContext: generateAccountContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: accountConfig.cmsBlocks,
+  cmsBlockPositions: accountConfig.cmsBlocks.map(block => block.position),
   // Include the config data for reference
   slots: accountConfig.slots,
   metadata: accountConfig.metadata,
