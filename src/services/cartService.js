@@ -19,6 +19,16 @@ class CartService {
   // Get current user
   async getCurrentUser() {
     try {
+      // Try customer auth first (for storefront)
+      const { CustomerAuth } = await import('@/api/storefront-entities');
+      if (CustomerAuth.isAuthenticated()) {
+        const user = await CustomerAuth.me();
+        if (user && user.role === 'customer') {
+          return user;
+        }
+      }
+
+      // Fallback to regular user auth (for admin)
       const { User } = await import('@/api/entities');
       const user = await User.me();
       return user;
