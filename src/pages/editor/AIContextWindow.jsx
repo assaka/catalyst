@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Maximize2, Minimize2, ShoppingCart, Package, CreditCard, CheckCircle, Grid3X3, Menu } from 'lucide-react';
+import { Maximize2, Minimize2, ShoppingCart, Package, CreditCard, CheckCircle, Grid3X3, Menu, User, LogIn } from 'lucide-react';
 import SlotEnabledFileSelector from '@/components/editor/ai-context/SlotEnabledFileSelector';
 import HeaderSlotsEditor from '@/pages/editor/HeaderSlotsEditor';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';
 import ProductSlotsEditor from '@/pages/editor/ProductSlotsEditor';
+import AccountSlotsEditor from '@/pages/editor/AccountSlotsEditor';
+import LoginSlotsEditor from '@/pages/editor/LoginSlotsEditor';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -51,6 +53,24 @@ const slotEnabledFiles = [
     icon: Package,
     description: 'Product detail page with customizable slots',
     color: 'text-purple-500'
+  },
+  {
+    id: 'account',
+    name: 'Account',
+    path: 'src/pages/editor/AccountSlotsEditor.jsx',
+    pageType: 'account',
+    icon: User,
+    description: 'Customer account page customization',
+    color: 'text-pink-500'
+  },
+  {
+    id: 'login',
+    name: 'Login',
+    path: 'src/pages/editor/LoginSlotsEditor.jsx',
+    pageType: 'login',
+    icon: LogIn,
+    description: 'Login and registration page customization',
+    color: 'text-teal-500'
   },
   {
     id: 'checkout',
@@ -192,6 +212,22 @@ const AIContextWindowPage = () => {
                               onSave={handleSave}
                             />
                           );
+                        case 'account':
+                          return (
+                            <AccountSlotsEditor
+                              mode="edit"
+                              viewMode="overview"
+                              onSave={handleSave}
+                            />
+                          );
+                        case 'login':
+                          return (
+                            <LoginSlotsEditor
+                              mode="edit"
+                              viewMode="login"
+                              onSave={handleSave}
+                            />
+                          );
                         default:
                           // For other slot types, use CartSlotsEditor for now
                           return (
@@ -318,6 +354,22 @@ const AIContextWindowPage = () => {
                               <ProductSlotsEditor
                                 mode="edit"
                                 viewMode="default"
+                                onSave={handleSave}
+                              />
+                            );
+                          case 'account':
+                            return (
+                              <AccountSlotsEditor
+                                mode="edit"
+                                viewMode="overview"
+                                onSave={handleSave}
+                              />
+                            );
+                          case 'login':
+                            return (
+                              <LoginSlotsEditor
+                                mode="edit"
+                                viewMode="login"
                                 onSave={handleSave}
                               />
                             );
