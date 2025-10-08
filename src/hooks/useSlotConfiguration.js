@@ -1677,6 +1677,15 @@ export function useSlotConfiguration({
 
     const updatedSlots = { ...slots };
 
+    // Debug logging for login page slots
+    if (slotId === 'login_column' || slotId === 'login_title') {
+      console.log(`🔧 handleClassChange for ${slotId}:`, {
+        className,
+        existingClassName: updatedSlots[slotId]?.className,
+        styles
+      });
+    }
+
     // CRITICAL: Create slot if it doesn't exist (for template slots not yet in config)
     if (!updatedSlots[slotId]) {
 
