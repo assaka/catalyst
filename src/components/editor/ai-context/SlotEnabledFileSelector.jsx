@@ -91,8 +91,7 @@ const SlotEnabledFileSelector = ({
       pageType: 'checkout',
       icon: CreditCard,
       description: 'Checkout flow with payment integration',
-      color: 'text-orange-500',
-      comingSoon: false
+      color: 'text-orange-500'
     },
     {
       id: 'success',
@@ -101,8 +100,7 @@ const SlotEnabledFileSelector = ({
       pageType: 'success',
       icon: CheckCircle,
       description: 'Order confirmation and success page',
-      color: 'text-emerald-500',
-      comingSoon: false
+      color: 'text-emerald-500'
     }
   ];
 
