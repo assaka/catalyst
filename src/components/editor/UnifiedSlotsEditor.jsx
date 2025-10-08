@@ -52,6 +52,7 @@ import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRendere
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import '@/components/editor/slot/CheckoutSlotComponents'; // Register checkout components
+import '@/components/editor/slot/SuccessSlotComponents'; // Register success/order confirmation components
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 /**
