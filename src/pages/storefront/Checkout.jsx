@@ -954,6 +954,94 @@ export default function Checkout() {
     }
   };
 
+  // Get summary of completed steps
+  const getCompletedStepsSummary = () => {
+    const summaries = [];
+
+    // Step 0 summary (Account + Shipping)
+    if (currentStep > 0) {
+      const items = [];
+
+      if (user) {
+        items.push({ label: 'Account', value: user.email });
+      }
+
+      // Shipping address
+      if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
+        const address = userAddresses.find(a => a.id === selectedShippingAddress);
+        if (address) {
+          items.push({
+            label: 'Shipping Address',
+            value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
+          });
+        }
+      } else if (shippingAddress.full_name) {
+        items.push({
+          label: 'Shipping Address',
+          value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
+        });
+      }
+
+      // Billing address (if different from shipping)
+      if (!useShippingForBilling && billingAddress.full_name) {
+        items.push({
+          label: 'Billing Address',
+          value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
+        });
+      }
+
+      if (items.length > 0) {
+        summaries.push({ step: stepConfig.steps[0], items });
+      }
+    }
+
+    // Step 1 summary (Shipping Method + Delivery for 3-step)
+    if (stepsCount === 3 && currentStep > 1) {
+      const items = [];
+
+      if (selectedShippingMethod) {
+        items.push({ label: 'Shipping Method', value: selectedShippingMethod });
+      }
+
+      if (deliveryDate) {
+        items.push({
+          label: 'Delivery Date',
+          value: deliveryDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        });
+      }
+
+      if (deliveryTimeSlot) {
+        items.push({ label: 'Delivery Time', value: deliveryTimeSlot });
+      }
+
+      if (items.length > 0) {
+        summaries.push({ step: stepConfig.steps[1], items });
+      }
+    }
+
+    // Step 1 summary for 2-step (includes shipping and delivery)
+    if (stepsCount === 2 && currentStep > 0) {
+      const items = [];
+
+      if (selectedShippingMethod) {
+        items.push({ label: 'Shipping Method', value: selectedShippingMethod });
+      }
+
+      if (deliveryDate) {
+        items.push({
+          label: 'Delivery Date',
+          value: deliveryDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        });
+      }
+
+      if (items.length > 0) {
+        summaries.push({ step: stepConfig.steps[0], items });
+      }
+    }
+
+    return summaries;
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
@@ -1205,34 +1293,43 @@ export default function Checkout() {
             {isProcessing ? 'Processing...' : `Place Order - ${currencySymbol}${formatPrice(getTotalAmount())}`}
           </Button>
           )}
-
-          {/* Step Navigation Buttons */}
-          {stepsCount > 1 && (
-            <div className="flex gap-4">
-              {canGoPrev() && (
-                <Button
-                  onClick={goToPrevStep}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  ← Previous
-                </Button>
-              )}
-              {canGoNext() && (
-                <Button
-                  onClick={goToNextStep}
-                  className="flex-1"
-                  style={{ backgroundColor: stepActiveColor }}
-                >
-                  Next →
-                </Button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Checkout Forms - Left Side */}
         <div className="lg:order-1 space-y-6">
+
+          {/* Summary of Previous Steps */}
+          {stepsCount > 1 && currentStep > 0 && (
+            <Card style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
+              <CardHeader>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>
+                  Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {getCompletedStepsSummary().map((summary, idx) => (
+                  <div key={idx} className={idx > 0 ? 'mt-4 pt-4 border-t' : ''}>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-2">{summary.step}</h4>
+                    <div className="space-y-2">
+                      {summary.items.map((item, itemIdx) => (
+                        <div key={itemIdx} className="text-sm">
+                          <span className="text-gray-600">{item.label}:</span>{' '}
+                          <span className="text-gray-900">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  onClick={() => setCurrentStep(0)}
+                  variant="link"
+                  className="mt-3 p-0 h-auto text-blue-600 hover:text-blue-800"
+                >
+                  Edit
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Login Section */}
           {isSectionVisible('account') && !user && (
@@ -1715,6 +1812,30 @@ export default function Checkout() {
               </div>
             </CardContent>
           </Card>
+          )}
+
+          {/* Step Navigation Buttons */}
+          {stepsCount > 1 && (
+            <div className="flex gap-4 mt-6">
+              {canGoPrev() && (
+                <Button
+                  onClick={goToPrevStep}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  ← Previous
+                </Button>
+              )}
+              {canGoNext() && (
+                <Button
+                  onClick={goToNextStep}
+                  className="flex-1"
+                  style={{ backgroundColor: stepActiveColor, color: '#FFFFFF' }}
+                >
+                  Continue →
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
