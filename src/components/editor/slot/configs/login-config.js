@@ -170,7 +170,7 @@ export const loginConfig = {
       type: 'text',
       content: 'By signing in, you agree to our Terms of Service and Privacy Policy',
       className: 'text-center text-sm text-gray-600',
-      parentClassName: 'flex justify-center',
+      parentClassName: 'text-center',
       styles: { paddingTop: '20px', paddingBottom: '20px', gridColumn: '1 / -1' },
       parentId: 'main_layout',
       position: { col: 1, row: 3 },
