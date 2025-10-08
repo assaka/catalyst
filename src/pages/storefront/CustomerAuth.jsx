@@ -11,7 +11,6 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
 import apiClient from "@/api/client";
 import { createPublicUrl, getStoreSlugFromPublicUrl } from "@/utils/urlUtils";
-import StorefrontLayout from "@/components/storefront/StorefrontLayout";
 
 // Login form component
 function CustomerLoginForm({ loading, error, success, onAuth }) {
@@ -388,50 +387,46 @@ export default function CustomerAuth() {
 
   if (loading) {
     return (
-      <StorefrontLayout>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </StorefrontLayout>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
   // Show 2-column login/register layout
   return (
-    <StorefrontLayout>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Login Column */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">Already Registered? Login!</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CustomerLoginForm
-                loading={authLoading}
-                error={error}
-                success={success}
-                onAuth={handleAuth}
-              />
-            </CardContent>
-          </Card>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Login Column */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Already Registered? Login!</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomerLoginForm
+              loading={authLoading}
+              error={error}
+              success={success}
+              onAuth={handleAuth}
+            />
+          </CardContent>
+        </Card>
 
-          {/* Register Column */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CustomerRegisterForm
-                loading={authLoading}
-                error={error}
-                success={success}
-                onAuth={handleAuth}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Register Column */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomerRegisterForm
+              loading={authLoading}
+              error={error}
+              success={success}
+              onAuth={handleAuth}
+            />
+          </CardContent>
+        </Card>
       </div>
-    </StorefrontLayout>
+    </div>
   );
 }
