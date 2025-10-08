@@ -18,7 +18,6 @@ const generateLoginContext = (viewMode) => ({
 
 // Login Editor Configuration
 const loginEditorConfig = {
-  ...loginConfig,
   pageType: 'login',
   pageName: 'Login/Register',
   slotType: 'login_layout',
@@ -31,7 +30,12 @@ const loginEditorConfig = {
   slotComponents: {},
   generateContext: generateLoginContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: loginConfig.cmsBlocks
+  cmsBlockPositions: loginConfig.cmsBlocks,
+  // Include the config data for reference
+  slots: loginConfig.slots,
+  metadata: loginConfig.metadata,
+  views: loginConfig.views,
+  cmsBlocks: loginConfig.cmsBlocks
 };
 
 const LoginSlotsEditor = ({

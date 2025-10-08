@@ -7,6 +7,9 @@ import { categoryConfig } from '@/components/editor/slot/configs/category-config
 import { homepageConfig } from '@/components/editor/slot/configs/homepage-config';
 import { productConfig } from '@/components/editor/slot/configs/product-config';
 import { checkoutConfig } from '@/components/editor/slot/configs/checkout-config';
+import { accountConfig } from '@/components/editor/slot/configs/account-config';
+import { loginConfig } from '@/components/editor/slot/configs/login-config';
+import { successConfig } from '@/components/editor/slot/configs/success-config';
 
 /**
  * Creates default slots for a given page type
@@ -17,6 +20,9 @@ export const createDefaultSlotsForPageType = (pageType) => {
     homepage: homepageConfig,
     product: productConfig,
     checkout: checkoutConfig,
+    account: accountConfig,
+    login: loginConfig,
+    success: successConfig,
     // Cart intentionally has no default slots - users build from scratch
     cart: null
   };

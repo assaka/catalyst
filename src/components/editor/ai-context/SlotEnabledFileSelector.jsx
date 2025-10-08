@@ -92,7 +92,7 @@ const SlotEnabledFileSelector = ({
       icon: CreditCard,
       description: 'Checkout flow with payment integration',
       color: 'text-orange-500',
-      comingSoon: true
+      comingSoon: false
     },
     {
       id: 'success',
@@ -102,7 +102,7 @@ const SlotEnabledFileSelector = ({
       icon: CheckCircle,
       description: 'Order confirmation and success page',
       color: 'text-emerald-500',
-      comingSoon: true
+      comingSoon: false
     }
   ];
 

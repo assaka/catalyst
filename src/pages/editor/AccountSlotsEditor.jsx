@@ -25,7 +25,6 @@ const generateAccountContext = (viewMode) => ({
 
 // Account Editor Configuration
 const accountEditorConfig = {
-  ...accountConfig,
   pageType: 'account',
   pageName: 'Customer Account',
   slotType: 'account_layout',
@@ -38,7 +37,12 @@ const accountEditorConfig = {
   slotComponents: {},
   generateContext: generateAccountContext,
   viewModeAdjustments: {},
-  cmsBlockPositions: accountConfig.cmsBlocks
+  cmsBlockPositions: accountConfig.cmsBlocks,
+  // Include the config data for reference
+  slots: accountConfig.slots,
+  metadata: accountConfig.metadata,
+  views: accountConfig.views,
+  cmsBlocks: accountConfig.cmsBlocks
 };
 
 const AccountSlotsEditor = ({

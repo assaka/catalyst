@@ -3,6 +3,8 @@
  * Defines the layout structure for the order success/confirmation page
  */
 
+import { CheckCircle, Package } from 'lucide-react';
+
 export const successConfig = {
   page_name: "Success",
   slot_type: "success_layout",
@@ -310,5 +312,20 @@ export const successConfig = {
     version: "1.0",
     pageType: "success"
   },
-  cmsBlocks: []
+
+  // View configuration
+  views: [
+    { id: 'empty', label: 'Empty State', icon: CheckCircle },
+    { id: 'withOrder', label: 'With Order Details', icon: Package }
+  ],
+
+  // CMS blocks for additional content areas
+  cmsBlocks: [
+    'success_header',
+    'success_banner',
+    'success_footer',
+    'success_upsell'
+  ]
 };
+
+export default successConfig;

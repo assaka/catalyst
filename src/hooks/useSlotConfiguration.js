@@ -684,6 +684,16 @@ async function loadPageConfig(pageType) {
       config = productConfig;
       break;
     }
+    case 'account': {
+      const { accountConfig } = await import('@/components/editor/slot/configs/account-config');
+      config = accountConfig;
+      break;
+    }
+    case 'login': {
+      const { loginConfig } = await import('@/components/editor/slot/configs/login-config');
+      config = loginConfig;
+      break;
+    }
     case 'checkout': {
       const { checkoutConfig } = await import('@/components/editor/slot/configs/checkout-config');
       config = checkoutConfig;

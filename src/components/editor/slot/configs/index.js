@@ -5,6 +5,9 @@ import { productConfig } from './product-config';
 import { homepageConfig } from './homepage-config';
 import { checkoutConfig } from './checkout-config';
 import { headerConfig } from './header-config';
+import { accountConfig } from './account-config';
+import { loginConfig } from './login-config';
+import { successConfig } from './success-config';
 
 export const PAGE_CONFIGS = {
   cart: cartConfig,
@@ -12,7 +15,10 @@ export const PAGE_CONFIGS = {
   product: productConfig,
   homepage: homepageConfig,
   checkout: checkoutConfig,
-  header: headerConfig
+  header: headerConfig,
+  account: accountConfig,
+  login: loginConfig,
+  success: successConfig
 };
 
 // Helper function to get page configuration
@@ -64,5 +70,8 @@ export {
   productConfig,
   homepageConfig,
   checkoutConfig,
-  headerConfig
+  headerConfig,
+  accountConfig,
+  loginConfig,
+  successConfig
 };
