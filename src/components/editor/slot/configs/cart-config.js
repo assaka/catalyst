@@ -181,7 +181,7 @@ export const cartConfig = {
       content: `
         <div class="space-y-4">
           {{#each cartItems}}
-            <div class="p-4 cart-item"
+            <div class="cart-item"
                  data-item-id="{{this.id}}"
                  data-product-name="{{this.product.name}}"
                  data-price="{{this.price}}"
@@ -238,8 +238,8 @@ export const cartConfig = {
           {{/each}}
         </div>
       `,
-      className: 'cart-items-container',
-      styles: {},
+      className: 'cart-items-container bg-white',
+      styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'content_area',
       position: { col: 1, row: 1 },
       layout: 'grid',
@@ -256,7 +256,6 @@ export const cartConfig = {
       type: 'component',
       component: 'CartCouponSlot',
       content: `
-        <div class="p-4">
           <h3 class="text-lg font-semibold mb-4">Apply Coupon</h3>
           <div class="flex space-x-2">
             <input
@@ -269,10 +268,9 @@ export const cartConfig = {
               Apply
             </button>
           </div>
-        </div>
       `,
-      className: '',
-      styles: {},
+      className: 'bg-white',
+      styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'sidebar_area',
       position: { col: 1, row: 1 },
       layout: 'grid',
@@ -289,7 +287,7 @@ export const cartConfig = {
       type: 'component',
       component: 'CartOrderSummarySlot',
       content: `
-        <div class="p-4 mt-4">
+        <div class="mt-4">
           <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
           <div class="space-y-2">
             <div class="flex justify-between">
@@ -318,8 +316,8 @@ export const cartConfig = {
           </button>
         </div>
       `,
-      className: '',
-      styles: {},
+      className: 'bg-white',
+      styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'sidebar_area',
       position: { col: 1, row: 2 },
       layout: 'grid',
