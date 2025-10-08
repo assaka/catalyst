@@ -10,18 +10,34 @@ import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
 import { accountConfig } from '@/components/editor/slot/configs/account-config';
 
 // Generate account context based on view mode
-const generateAccountContext = (viewMode) => ({
-  user: {
-    id: 1,
-    full_name: 'John Doe',
-    email: 'john@example.com',
-    role: 'customer'
-  },
-  activeTab: viewMode === 'profile' ? 'profile' : 'overview',
-  orders: [],
-  addresses: [],
-  wishlistItems: []
-});
+const generateAccountContext = (viewMode) => {
+  // Intro view - no user logged in
+  if (viewMode === 'intro') {
+    return {
+      user: null,
+      isLoggedIn: false,
+      activeTab: null,
+      orders: [],
+      addresses: [],
+      wishlistItems: []
+    };
+  }
+
+  // Logged in views
+  return {
+    user: {
+      id: 1,
+      full_name: 'John Doe',
+      email: 'john@example.com',
+      role: 'customer'
+    },
+    isLoggedIn: true,
+    activeTab: viewMode === 'profile' ? 'profile' : 'overview',
+    orders: [],
+    addresses: [],
+    wishlistItems: []
+  };
+};
 
 // Account Editor Configuration
 const accountEditorConfig = {

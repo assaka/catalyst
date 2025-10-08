@@ -1,4 +1,4 @@
-import { User, UserCircle } from 'lucide-react';
+import { User, UserCircle, LogIn } from 'lucide-react';
 
 // Account Page Configuration - Sidebar Layout
 export const accountConfig = {
@@ -31,7 +31,7 @@ export const accountConfig = {
       content: 'My Account',
       className: 'text-3xl font-bold text-gray-900',
       styles: {},
-      viewMode: ['overview', 'profile']
+      viewMode: ['overview', 'profile', 'intro']
     },
 
     header_subtitle: {
@@ -216,7 +216,91 @@ export const accountConfig = {
       content: 'Need help? Contact our <a href="#" class="text-blue-600 hover:underline">customer support</a>',
       className: 'text-center text-sm text-gray-600 py-8',
       styles: {},
-      viewMode: ['overview', 'profile']
+      viewMode: ['overview', 'profile', 'intro']
+    },
+
+    // Account Intro (Not Logged In) - Full width content
+    intro_hero: {
+      id: 'intro_hero',
+      type: 'component',
+      component: 'AccountIntroHeroSlot',
+      content: `
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg p-12 mb-8">
+          <div class="max-w-3xl mx-auto text-center">
+            <svg class="w-20 h-20 mx-auto mb-6 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            <h2 class="text-4xl font-bold mb-4">Welcome to Your Account</h2>
+            <p class="text-xl mb-8 opacity-90">Sign in to access your orders, track shipments, and manage your preferences</p>
+          </div>
+        </div>
+      `,
+      className: '',
+      styles: {},
+      viewMode: ['intro']
+    },
+
+    intro_benefits: {
+      id: 'intro_benefits',
+      type: 'component',
+      component: 'AccountBenefitsSlot',
+      content: `
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white rounded-lg shadow p-6 text-center">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Order History</h3>
+            <p class="text-gray-600">View and track all your orders in one place</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6 text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Fast Checkout</h3>
+            <p class="text-gray-600">Save addresses and payment methods for quick checkout</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6 text-center">
+            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Wishlist</h3>
+            <p class="text-gray-600">Save your favorite items for later</p>
+          </div>
+        </div>
+      `,
+      className: '',
+      styles: {},
+      viewMode: ['intro']
+    },
+
+    intro_cta: {
+      id: 'intro_cta',
+      type: 'component',
+      component: 'AccountCTASlot',
+      content: `
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+          <h3 class="text-2xl font-semibold mb-4">Ready to Get Started?</h3>
+          <p class="text-gray-600 mb-6">Create an account or sign in to access all features</p>
+          <div class="flex justify-center gap-4">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium">
+              Sign In
+            </button>
+            <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-medium">
+              Create Account
+            </button>
+          </div>
+        </div>
+      `,
+      className: '',
+      styles: {},
+      viewMode: ['intro']
     }
   },
 
@@ -231,7 +315,8 @@ export const accountConfig = {
   // View configuration
   views: [
     { id: 'overview', label: 'Account Overview', icon: User },
-    { id: 'profile', label: 'Profile View', icon: UserCircle }
+    { id: 'profile', label: 'Profile View', icon: UserCircle },
+    { id: 'intro', label: 'Account Intro (Not Logged In)', icon: LogIn }
   ],
 
   // CMS blocks for additional content areas
