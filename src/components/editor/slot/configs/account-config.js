@@ -322,74 +322,18 @@ export const accountConfig = {
   // CMS blocks for additional content areas
   cmsBlocks: [
     {
-      id: 'account_header',
-      name: 'Account Header Banner',
-      description: 'Banner area in the account header section',
+      id: 'account_cms_above',
+      name: 'Above Content',
+      description: 'Full-width content area above the main account content',
       defaultContent: '',
-      position: 'account_header'
+      position: 'account_cms_above'
     },
     {
-      id: 'account_sidebar_top',
-      name: 'Sidebar Top',
-      description: 'Content area at the top of the account sidebar',
+      id: 'account_cms_below',
+      name: 'Below Content',
+      description: 'Full-width content area below the main account content',
       defaultContent: '',
-      position: 'account_sidebar_top'
-    },
-    {
-      id: 'account_sidebar_bottom',
-      name: 'Sidebar Bottom',
-      description: 'Content area at the bottom of the account sidebar',
-      defaultContent: '',
-      position: 'account_sidebar_bottom'
-    },
-    {
-      id: 'account_footer',
-      name: 'Account Footer',
-      description: 'Footer area for help links and information',
-      defaultContent: '',
-      position: 'account_footer'
-    },
-    {
-      id: 'account_banner',
-      name: 'Account Banner',
-      description: 'Promotional banner for account-specific offers',
-      defaultContent: '',
-      position: 'account_banner'
-    },
-    {
-      id: 'account_promotions',
-      name: 'Account Promotions',
-      description: 'Special promotions and loyalty program information',
-      defaultContent: '',
-      position: 'account_promotions'
-    },
-    {
-      id: 'account_help',
-      name: 'Help & Support',
-      description: 'Help documentation and support resources',
-      defaultContent: '',
-      position: 'account_help'
-    },
-    {
-      id: 'account_benefits',
-      name: 'Member Benefits',
-      description: 'Display member benefits and rewards information',
-      defaultContent: '',
-      position: 'account_benefits'
-    },
-    {
-      id: 'account_security',
-      name: 'Security Tips',
-      description: 'Security tips and account protection information',
-      defaultContent: '',
-      position: 'account_security'
-    },
-    {
-      id: 'account_loyalty',
-      name: 'Loyalty Program',
-      description: 'Loyalty program status and rewards',
-      defaultContent: '',
-      position: 'account_loyalty'
+      position: 'account_cms_below'
     }
   ]
 };
