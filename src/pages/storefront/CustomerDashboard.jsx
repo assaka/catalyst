@@ -1171,13 +1171,11 @@ export default function CustomerDashboard() {
   };
 
   // New handleLogin function for guest view
-  const handleLogin = async () => {
-    try {
-      await User.login();
-    } catch (error) {
-      console.error('Login failed:', error);
-      setFlashMessage({ type: 'error', message: 'Login failed. Please try again.' });
-    }
+  const handleLogin = () => {
+    // Save store info for redirect after login
+    localStorage.setItem('customer_auth_store_id', store?.id);
+    localStorage.setItem('customer_auth_store_code', store?.slug);
+    navigate(createPublicUrl(store?.slug, 'CUSTOMER_AUTH'));
   };
 
   if (loading) {
