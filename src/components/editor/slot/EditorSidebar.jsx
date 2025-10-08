@@ -493,10 +493,6 @@ const EditorSidebar = ({
 
             colorProperties.forEach(prop => {
               const computedValue = computedStyle[prop];
-              console.log(`[EditorSidebar] Processing ${prop}:`, {
-                computedValue,
-                isTransparent: computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent'
-              });
 
               // For color property, prioritize inline styles over Tailwind classes
               if (prop === 'color') {
@@ -516,11 +512,9 @@ const EditorSidebar = ({
                           .map(x => parseInt(x).toString(16).padStart(2, '0'))
                           .join('');
                         elementStyles[prop] = hex;
-                        console.log(`[EditorSidebar] ${prop} from inline/computed (RGB to hex):`, hex);
                       }
                     } else if (computedValue.startsWith('#')) {
                       elementStyles[prop] = computedValue;
-                      console.log(`[EditorSidebar] ${prop} from inline/computed (already hex):`, computedValue);
                     }
                   }
                 } else {
@@ -529,7 +523,6 @@ const EditorSidebar = ({
                     const tailwindColorHex = getTailwindColorHex(storedClassName);
                     if (tailwindColorHex) {
                       elementStyles[prop] = tailwindColorHex;
-                      console.log(`[EditorSidebar] ${prop} from Tailwind:`, tailwindColorHex);
                       return;
                     }
                   }
@@ -551,14 +544,12 @@ const EditorSidebar = ({
                         .map(x => parseInt(x).toString(16).padStart(2, '0'))
                         .join('');
                       elementStyles[prop] = hex;
-                      console.log(`[EditorSidebar] ${prop} converted RGB to hex:`, hex);
                     }
                   } else if (computedValue.startsWith('#')) {
                     elementStyles[prop] = computedValue;
-                    console.log(`[EditorSidebar] ${prop} already hex:`, computedValue);
                   }
                 } else {
-                  console.log(`[EditorSidebar] ${prop} skipped (transparent or invalid)`);
+                  console.warn(`[EditorSidebar] ${prop} skipped (transparent or invalid)`);
                 }
               }
             });
@@ -592,7 +583,6 @@ const EditorSidebar = ({
             borderProps.forEach(prop => {
               if (!elementStyles[prop] && storedStyles?.[prop]) {
                 elementStyles[prop] = storedStyles[prop];
-                console.log(`[EditorSidebar] Restored ${prop} from stored styles:`, storedStyles[prop]);
               }
             });
 
@@ -613,7 +603,6 @@ const EditorSidebar = ({
               } else {
                 elementStyles.borderColor = storedBorderColor;
               }
-              console.log(`[EditorSidebar] Restored borderColor from stored styles:`, elementStyles.borderColor);
             }
 
             // Extract color from Tailwind classes if no inline color is set
@@ -679,15 +668,6 @@ const EditorSidebar = ({
 
             const finalStyles = { ...storedStyles, ...elementStyles };
 
-            console.log('[EditorSidebar] Setting elementProperties.styles:', {
-              slotId,
-              storedStyles,
-              elementStyles,
-              finalStyles,
-              backgroundColor: finalStyles.backgroundColor,
-              color: finalStyles.color
-            });
-
             return finalStyles;
           } catch (error) {
             console.warn('Error merging styles:', error);
@@ -713,16 +693,8 @@ const EditorSidebar = ({
 
   // HTML content change handler for real-time editing
   const handleHtmlContentInput = useCallback((e) => {
-    console.log('🔤 HTML Content Input Event:', {
-      eventType: e.type,
-      value: e.target.value,
-      valueLength: e.target.value.length,
-      timestamp: new Date().toISOString()
-    });
-
     // DON'T update validation state during typing to prevent re-renders
     // Only validate on blur to avoid resetting textarea value
-    console.log('⚡ Skipping validation during typing to prevent re-renders');
   }, []);
 
 
@@ -737,12 +709,6 @@ const EditorSidebar = ({
 
   // Save HTML content when user stops typing (onBlur) with XSS prevention
   const handleHtmlContentSave = useCallback(() => {
-    console.log('💾 HTML Content Save triggered:', {
-      slotId,
-      isInitializing,
-      hasRef: !!htmlContentRef.current,
-      currentValue: htmlContentRef.current?.value || 'NO REF'
-    });
 
     if (slotId && !isInitializing && htmlContentRef.current) {
       const currentHtml = htmlContentRef.current.value;
@@ -765,7 +731,6 @@ const EditorSidebar = ({
 
       // Parse and sanitize HTML securely
       const parsed = parseEditorHtml(currentHtml);
-      console.log('🔍 HTML Validation on Save:', parsed);
 
       if (parsed.sanitizedHtml) {
         try {
@@ -838,15 +803,6 @@ const EditorSidebar = ({
 
             // Update local HTML content display
             setLocalHtmlContent(parsed.sanitizedHtml);
-
-            console.log('🎨 HTML Content parsed and saved:', {
-              textContent,
-              elementClasses,
-              elementStyles,
-              attributes,
-              sanitizedHtml: parsed.sanitizedHtml
-            });
-
           } else {
             // No element found, treat as plain text
             if (onTextChange) {
@@ -1277,7 +1233,6 @@ const EditorSidebar = ({
         const staticSlot = categoryConfig.slots?.[baseTemplateId];
         if (staticSlot?.className) {
           databaseClassName = staticSlot.className;
-          console.log(`[EditorSidebar] Database className empty, using static config for ${baseTemplateId}:`, databaseClassName);
         }
       }
 

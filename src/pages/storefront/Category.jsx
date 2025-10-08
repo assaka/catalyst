@@ -195,17 +195,6 @@ export default function Category() {
   // Extract slots from the loaded configuration
   const categorySlots = categoryLayoutConfig?.slots || null;
 
-  // Debug: Check if view_mode_toggle is in the slots
-  useEffect(() => {
-    if (categorySlots) {
-      console.log('🔍 Category.jsx - categorySlots loaded:', {
-        hasViewModeToggle: !!categorySlots.view_mode_toggle,
-        viewModeToggleSlot: categorySlots.view_mode_toggle,
-        sortingSlotsKeys: Object.keys(categorySlots).filter(k => k.includes('sort') || k.includes('view'))
-      });
-    }
-  }, [categorySlots]);
-
   // Generate grid classes from store settings
   const getGridClasses = () => {
     const gridConfig = settings?.product_grid;

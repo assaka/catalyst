@@ -39,13 +39,6 @@ export default function HeaderSlotsEditor() {
           // Handle nested data structure - store data might be in data.settings, not settings
           const store = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
 
-          console.log('📊 HeaderSlotsEditor - Store loaded:', {
-            storeName: store?.name,
-            show_language_selector: store?.settings?.show_language_selector,
-            allSettings: store?.settings,
-            rawResponse: fullStoreResponse,
-            normalizedResponse: fullStoreResponse_normalized
-          });
           setStoreData(store);
         } catch (error) {
           console.error('Failed to load store data:', error);
@@ -130,15 +123,6 @@ export default function HeaderSlotsEditor() {
     navigate: () => {},
     location: { pathname: '/' }
   };
-
-    console.log('🎯 HeaderSlotsEditor - generateHeaderContext called:', {
-      viewMode,
-      show_language_selector: context.settings.show_language_selector,
-      storeDataExists: !!storeData,
-      rawValue: storeData?.settings?.show_language_selector,
-      rawValueType: typeof storeData?.settings?.show_language_selector,
-      calculation: `${storeData?.settings?.show_language_selector} === true = ${storeData?.settings?.show_language_selector === true}`
-    });
 
     return context;
   }, [storeData, mobileMenuOpen, mobileSearchOpen]);

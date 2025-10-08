@@ -55,21 +55,8 @@ export function HeaderSlotRenderer({
     // Check if this slot has a renderCondition in the config
     const configSlot = headerConfig?.slots?.[slot.id];
 
-    console.log(`🔍 Slot filter check for ${slot.id}:`, {
-      hasConfigSlot: !!configSlot,
-      hasRenderCondition: !!configSlot?.renderCondition,
-      renderConditionType: typeof configSlot?.renderCondition,
-      slotComponent: slot.component
-    });
-
     if (configSlot?.renderCondition && typeof configSlot.renderCondition === 'function') {
       const shouldRender = configSlot.renderCondition(headerContext);
-      console.log(`🎯 RenderCondition result for ${slot.id}:`, {
-        shouldRender,
-        show_language_selector: headerContext?.settings?.show_language_selector,
-        contextExists: !!headerContext,
-        settingsExists: !!headerContext?.settings
-      });
       return shouldRender;
     }
     // No renderCondition = always render
@@ -283,12 +270,6 @@ export function HeaderSlotRenderer({
       case 'LanguageSelector':
         // Hide if setting is disabled (default: false/hidden)
         // Only show if explicitly enabled
-        console.log('🌐 LanguageSelector component check:', {
-          show_language_selector: settings?.show_language_selector,
-          shouldShow: settings?.show_language_selector === true,
-          languagesCount: languages?.length,
-          allSettings: settings
-        });
         if (settings?.show_language_selector !== true) return null;
         if (!languages || languages.length <= 1) return null;
         return (
