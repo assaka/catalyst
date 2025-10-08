@@ -905,18 +905,26 @@ export default function Checkout() {
 
   const columnCount = getColumnCount();
 
-  // Get layout configuration based on step count
+  // Get layout configuration based on step count and current step
   const getLayout = () => {
-    if (stepsCount === 1) return settings?.checkout_1step_layout;
-    if (stepsCount === 2) return settings?.checkout_2step_layout;
-    return settings?.checkout_3step_layout;
+    const stepKey = `step${currentStep + 1}`;
+
+    if (stepsCount === 1) {
+      const fullLayout = settings?.checkout_1step_layout;
+      return fullLayout?.step1 || { column1: [], column2: [], column3: [] };
+    }
+
+    if (stepsCount === 2) {
+      const fullLayout = settings?.checkout_2step_layout;
+      return fullLayout?.[stepKey] || { column1: [], column2: [], column3: [] };
+    }
+
+    // stepsCount === 3
+    const fullLayout = settings?.checkout_3step_layout;
+    return fullLayout?.[stepKey] || { column1: [], column2: [], column3: [] };
   };
 
-  const layout = getLayout() || {
-    column1: [],
-    column2: [],
-    column3: []
-  };
+  const layout = getLayout();
 
   // Define step configurations based on step count
   const getStepConfig = () => {
