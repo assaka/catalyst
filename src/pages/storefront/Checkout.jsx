@@ -1043,8 +1043,8 @@ export default function Checkout() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+    <div className="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+      <h1 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8">Checkout</h1>
       <CmsBlockRenderer position="checkout_above_form" />
 
       {/* Step Indicator */}
@@ -1059,9 +1059,9 @@ export default function Checkout() {
         />
       )}
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Order Summary - Right Side */}
-        <div className="lg:order-2 space-y-6">
+        <div className="order-2 lg:order-2 space-y-4 lg:space-y-6">
           {/* Payment Methods */}
           {isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
@@ -1296,7 +1296,7 @@ export default function Checkout() {
         </div>
 
         {/* Checkout Forms - Left Side */}
-        <div className="lg:order-1 space-y-6">
+        <div className="order-1 lg:order-1 space-y-4 lg:space-y-6">
 
           {/* Summary of Previous Steps */}
           {stepsCount > 1 && currentStep > 0 && (
