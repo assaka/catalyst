@@ -38,7 +38,6 @@ import { Input } from "@/components/ui/input";
 import { CountrySelect } from '@/components/ui/country-select';
 import { formatDisplayPrice } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
-import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 
 // --- Utilities ---
 let globalRequestQueue = Promise.resolve();
@@ -1082,22 +1081,28 @@ export default function CustomerDashboard() {
     const checkAuthStatus = async () => {
       setLoading(true);
       try {
-        const userData = await retryApiCall(() => User.me());
-        if (!userData || !userData.id) {
+        // Check if customer token exists
+        if (!CustomerAuth.isAuthenticated()) {
           throw new Error("Not authenticated");
         }
-        
+
+        const userData = await retryApiCall(() => CustomerAuth.me());
+        if (!userData || !userData.id || userData.role !== 'customer') {
+          throw new Error("Not a customer or not authenticated");
+        }
+
         setUser(userData);
         setIsGuest(false);
-        
+
         // Load data in parallel for authenticated user
         await Promise.all([
           loadOrders(userData.id),
           loadAddresses(userData.id),
           loadWishlist(userData.id)
         ]);
-        
+
       } catch (error) {
+        console.log('Customer not authenticated:', error.message);
         setUser(null);
         setIsGuest(true);
         // Clear any user-specific data from previous sessions if error occurs
@@ -1108,7 +1113,7 @@ export default function CustomerDashboard() {
         setLoading(false);
       }
     };
-    
+
     checkAuthStatus();
   }, []);
 
@@ -1177,17 +1182,14 @@ export default function CustomerDashboard() {
 
   if (loading) {
     return (
-      <StorefrontLayout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </StorefrontLayout>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
 
   return (
-    <StorefrontLayout>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         
@@ -1426,6 +1428,5 @@ export default function CustomerDashboard() {
       </div>
       <AlertComponent />
     </div>
-    </StorefrontLayout>
   );
 }
