@@ -181,16 +181,7 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
 
   const variableContext = { tabs: tabsData, product };
 
-  console.log('ProductTabs Debug:', {
-    tabsData,
-    productDescription: product?.description,
-    template: template.substring(0, 200),
-    slotConfig: slotConfig ? 'present' : 'missing'
-  });
-
   const html = processVariables(template, variableContext);
-
-  console.log('Processed HTML:', html.substring(0, 500));
 
   return (
     <div ref={containerRef} className={`product-tabs ${className}`}

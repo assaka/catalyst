@@ -978,21 +978,6 @@ export function HierarchicalSlotRenderer({
 
   const filteredSlots = childSlots.filter(slot => {
     const shouldShow = !slot.viewMode || !Array.isArray(slot.viewMode) || slot.viewMode.length === 0 || slot.viewMode.includes(viewMode);
-
-    // Debug logging for missing slots
-    if (slot.id && (slot.id.includes('breadcrumb') || slot.id.includes('active_filter') || slot.id.includes('pagination') || slot.id.includes('cms') || slot.id.includes('layered') || slot.id.includes('sort_selector'))) {
-      console.log(`🔍 SLOT FILTER DEBUG - ${slot.id}:`, {
-        slotId: slot.id,
-        parentId: slot.parentId,
-        viewMode: slot.viewMode,
-        currentViewMode: viewMode,
-        shouldShow: shouldShow,
-        hasViewMode: !!slot.viewMode,
-        isArray: Array.isArray(slot.viewMode),
-        includes: slot.viewMode ? slot.viewMode.includes(viewMode) : 'N/A'
-      });
-    }
-
     return shouldShow;
   });
 
@@ -1028,9 +1013,7 @@ export function HierarchicalSlotRenderer({
 
 
   return sortedSlots.map(slot => {
-    // Debug: Log every slot being processed in map
-    if (slot.id === 'product_items' || slot.id === 'products_container' || parentId === 'products_container') {
-    }
+
     // Handle number, object with viewMode, and Tailwind responsive classes
     let colSpan = 12; // default value for non-Tailwind calculations
     let colSpanClass = 'col-span-12'; // default Tailwind class
@@ -1686,22 +1669,10 @@ export function HierarchicalSlotRenderer({
                     });
                   }}
                 >
-                  {/* DEBUG: Force check for product_items */}
-                  {slot.id === 'product_items' && (() => {
-                    return null; // Continue normal rendering
-                  })()}
 
                   {/* First try custom renderer for ALL slot types */}
                   {(() => {
-                    // Debug: Check if we reach this point for product_items
-                    if (slot.id === 'product_items' || slot.id === 'products_container') {
-                    }
-
                     if (customSlotRenderer) {
-                      // Debug: Log when customSlotRenderer is about to be called
-                      if (slot.id === 'product_items' || slot.id === 'products_container') {
-                      }
-
                       // Pass context to custom slot renderer
                       const customContent = customSlotRenderer(slot, {
                         layoutConfig: { slots },
@@ -1711,15 +1682,10 @@ export function HierarchicalSlotRenderer({
                         onElementClick
                       });
 
-                      if (slot.id === 'product_items' || slot.id === 'products_container') {
-                      }
-
                       if (customContent) {
                         return customContent;
                       }
                     } else {
-                      if (slot.id === 'product_items' || slot.id === 'products_container') {
-                      }
                     }
                     return null;
                   })()}
@@ -1732,23 +1698,6 @@ export function HierarchicalSlotRenderer({
                     }
 
                     return null;
-                  })()}
-
-                  {/* DIRECT OVERRIDE FOR PRODUCT_ITEMS */}
-                  {slot.id === 'product_items' && (() => {
-
-                    // Just return a simple test div to see if this works
-                    return (
-                      <div style={{ background: 'yellow', padding: '20px', margin: '10px' }}>
-                        <strong>PRODUCT_ITEMS DIRECT OVERRIDE WORKING!</strong>
-                        <br />
-                        This proves product_items is being processed here.
-                        <div>TEST PRODUCT 1</div>
-                        <div>TEST PRODUCT 2</div>
-                        <div>TEST PRODUCT 3</div>
-                        <div>TEST PRODUCT 4</div>
-                      </div>
-                    );
                   })()}
 
                   {/* Render child slots */}

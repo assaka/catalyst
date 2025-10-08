@@ -64,7 +64,6 @@ import { useStoreSlug } from '@/hooks/useStoreSlug';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import apiClient from '@/api/client';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { debugEnvironment } from '@/utils/env-debug';
 
 // Error Boundary to catch component crashes
 class AkeneoErrorBoundary extends React.Component {
@@ -151,13 +150,7 @@ class AkeneoErrorBoundary extends React.Component {
 const AkeneoIntegration = () => {
   try {
     console.log('🚀 AkeneoIntegration component starting...');
-    
-    // Debug environment on component mount
-    if (import.meta.env.PROD) {
-      console.log('🔍 Production environment debug:');
-      debugEnvironment();
-    }
-    
+
     let storeSlugData;
     console.log('📞 Calling useStoreSlug hook...');
     try {

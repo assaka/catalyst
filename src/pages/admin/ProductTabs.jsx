@@ -190,15 +190,6 @@ export default function ProductTabs() {
     (tab.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Debug logging for filtering
-  console.log('🔍 Admin ProductTabs: Current state:', {
-    tabs: tabs,
-    tabsLength: tabs?.length || 0,
-    searchQuery,
-    filteredTabs: filteredTabs,
-    filteredTabsLength: filteredTabs?.length || 0
-  });
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

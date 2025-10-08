@@ -287,22 +287,6 @@ const DiffPreviewSystem = ({
           </div>
         </Card>
       )}
-
-      {/* Debug Information (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <Card className="p-4 bg-gray-50">
-          <details className="space-y-2">
-            <summary className="cursor-pointer text-sm font-medium">Debug Information</summary>
-            <div className="text-xs text-muted-foreground space-y-1 mt-2">
-              <div>Hooks Registered: {Object.keys(hookSystem.getStats()).length}</div>
-              <div>Events Registered: {Object.keys(eventSystem.getStats().listeners || {}).length}</div>
-              <div>Store ID: {selectedStore?.id || 'None'}</div>
-              <div>Changes: {renderProps.changes.length}</div>
-              <div>Preview Mode: {renderProps.previewMode ? 'Active' : 'Inactive'}</div>
-            </div>
-          </details>
-        </Card>
-      )}
     </div>
   );
 };
