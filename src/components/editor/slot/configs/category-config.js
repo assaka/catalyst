@@ -676,13 +676,77 @@ export const categoryConfig = {
     // Add to Cart Button
     product_card_add_to_cart: {
       id: 'product_card_add_to_cart',
-      type: 'button',
-      content: 'Add to Cart',
-      className: 'w-full text-white border-0 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2',
+      type: 'html',
+      content: `
+        <button class="w-full text-white border-0 transition-colors duration-200 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2" data-add-to-cart>
+          <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+          Add to Cart
+        </button>
+      `,
+      script: `
+        const button = element.querySelector('[data-add-to-cart]');
+        if (button && productData?.product && productData?.store) {
+          const product = productData.product;
+          const store = productData.store;
+
+          // Apply theme color from settings
+          if (variableContext?.settings?.theme?.add_to_cart_button_color) {
+            button.style.backgroundColor = variableContext.settings.theme.add_to_cart_button_color;
+          }
+
+          const handleClick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!product?.id || !store?.id) {
+              console.error('Missing product or store data');
+              return;
+            }
+
+            try {
+              const { default: cartService } = await import('/src/services/cartService.js');
+              const result = await cartService.addItem(
+                product.id,
+                1,
+                product.price || 0,
+                [],
+                store.id
+              );
+
+              if (result.success !== false) {
+                // Track add to cart event
+                if (window.catalyst?.trackAddToCart) {
+                  window.catalyst.trackAddToCart(product, 1);
+                }
+
+                // Show success message
+                window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                  detail: {
+                    type: 'success',
+                    message: product.name + ' added to cart successfully!'
+                  }
+                }));
+              }
+            } catch (error) {
+              console.error('Failed to add to cart:', error);
+              window.dispatchEvent(new CustomEvent('showFlashMessage', {
+                detail: {
+                  type: 'error',
+                  message: 'Failed to add to cart. Please try again.'
+                }
+              }));
+            }
+          };
+
+          button.addEventListener('click', handleClick);
+          return () => button.removeEventListener('click', handleClick);
+        }
+      `,
+      className: '',
       parentClassName: '',
-      styles: {
-        backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
-      },
+      styles: {},
       parentId: 'product_card_content',
       position: { col: 1, row: 4 },
       colSpan: { grid: 12, list: 12 },

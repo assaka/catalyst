@@ -773,9 +773,9 @@ export const productConfig = {
       script: `
         const button = element.querySelector('[data-add-to-cart]');
         if (button && productData?.handleAddToCart) {
-          console.log('🔧 Binding add to cart handler', { button, hasHandler: !!productData.handleAddToCart });
-          const handleClick = () => {
-            console.log('🛒 Add to cart button clicked via script binding');
+          const handleClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             productData.handleAddToCart();
           };
           button.addEventListener('click', handleClick);

@@ -662,6 +662,7 @@ export const sortSlotsByGridCoordinates = (filteredSlots) => {
 
 // Helper function to dynamically load page-specific config
 async function loadPageConfig(pageType) {
+  console.log('🔍 loadPageConfig called with pageType:', pageType);
   let config;
   switch (pageType) {
     case 'header': {
@@ -705,10 +706,12 @@ async function loadPageConfig(pageType) {
       break;
     }
     default: {
+      console.warn('⚠️ Unknown pageType, falling back to cart:', pageType);
       const { cartConfig: fallbackConfig } = await import('@/components/editor/slot/configs/cart-config');
       config = fallbackConfig;
     }
   }
+  console.log('✅ loadPageConfig returning config for:', pageType, config?.page_name);
   return config;
 }
 
