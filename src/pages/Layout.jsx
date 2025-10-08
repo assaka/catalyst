@@ -257,8 +257,8 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const publicPages = ['Landing', 'Auth', 'CustomerAuth', 'Pricing', 'Onboarding'];
-  const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
+  const publicPages = ['Landing', 'Auth', 'Pricing', 'Onboarding'];
+  const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerAuth', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
   const isPublicPage = publicPages.includes(currentPageName);
