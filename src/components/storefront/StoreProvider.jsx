@@ -392,6 +392,17 @@ export const StoreProvider = ({ children }) => {
           rows: selectedStore.settings?.product_grid?.rows ?? 4
         },
 
+        // Checkout page settings - preserve saved values with defaults
+        checkout_steps_count: selectedStore.settings?.checkout_steps_count ?? 3,
+        checkout_step_indicator_active_color: selectedStore.settings?.checkout_step_indicator_active_color || '#007bff',
+        checkout_step_indicator_inactive_color: selectedStore.settings?.checkout_step_indicator_inactive_color || '#D1D5DB',
+        checkout_step_indicator_completed_color: selectedStore.settings?.checkout_step_indicator_completed_color || '#10B981',
+        checkout_step_indicator_style: selectedStore.settings?.checkout_step_indicator_style || 'circles',
+        checkout_section_title_color: selectedStore.settings?.checkout_section_title_color || '#111827',
+        checkout_section_title_size: selectedStore.settings?.checkout_section_title_size || '1.25rem',
+        checkout_section_bg_color: selectedStore.settings?.checkout_section_bg_color || '#FFFFFF',
+        checkout_section_border_color: selectedStore.settings?.checkout_section_border_color || '#E5E7EB',
+
         // Product gallery layout settings - preserve saved values with defaults
         product_gallery_layout: selectedStore.settings?.product_gallery_layout !== undefined
           ? selectedStore.settings.product_gallery_layout
