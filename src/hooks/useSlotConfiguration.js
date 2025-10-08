@@ -1736,12 +1736,19 @@ export function useSlotConfiguration({
 
     } else {
       // For style changes (backgroundColor, color, etc.), preserve existing className
-      // Only update className if it's actually different
+      // CRITICAL: Only update className if incoming className is non-empty and different
       const existingClassName = updatedSlots[slotId].className || '';
+      const incomingClassName = className?.trim() || '';
+
+      // If incoming className is empty or same as existing, keep existing
+      // This prevents className from being wiped out during style-only changes
+      const finalClassName = incomingClassName && incomingClassName !== existingClassName
+        ? incomingClassName
+        : existingClassName;
 
       updatedSlots[slotId] = {
         ...updatedSlots[slotId],
-        className: className || existingClassName, // Use incoming className, fallback to existing
+        className: finalClassName,
         styles: mergedStyles,
         metadata: {
           ...updatedSlots[slotId].metadata,
