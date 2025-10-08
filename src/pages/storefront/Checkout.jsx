@@ -216,7 +216,7 @@ export default function Checkout() {
 
   const loadCartItems = async () => {
     try {
-      let sessionId = localStorage.getItem('cart_session_id');
+      let sessionId = localStorage.getItem('guest_session_id');
       if (!sessionId) return;
 
       // Use simplified cart service (session-based approach)
@@ -817,7 +817,7 @@ export default function Checkout() {
         deliveryComments,
         email: user?.email || shippingAddress.email,
         userId: user?.id,
-        sessionId: localStorage.getItem('cart_session_id')
+        sessionId: localStorage.getItem('guest_session_id')
       };
 
       const response = await createStripeCheckout(checkoutData);
