@@ -706,16 +706,40 @@ export const categoryConfig = {
             }
 
             try {
-              const { default: cartService } = await import('/src/services/cartService.js');
-              const result = await cartService.addItem(
-                product.id,
-                1,
-                product.price || 0,
-                [],
-                store.id
-              );
+              // Use fetch API to call cart endpoint directly (avoids import issues)
+              const baseURL = window.location.origin.includes('localhost')
+                ? 'http://localhost:10000'
+                : 'https://catalyst-backend-fzhu.onrender.com';
 
-              if (result.success !== false) {
+              const sessionId = localStorage.getItem('guest_session_id') ||
+                'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+              localStorage.setItem('guest_session_id', sessionId);
+
+              const response = await fetch(baseURL + '/api/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  store_id: store.id,
+                  product_id: product.id,
+                  quantity: 1,
+                  price: parseFloat(product.price || 0),
+                  selected_options: [],
+                  session_id: sessionId
+                })
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                // Dispatch cart update event
+                window.dispatchEvent(new CustomEvent('cartUpdated', {
+                  detail: {
+                    action: 'add_from_category',
+                    timestamp: Date.now(),
+                    source: 'category.addToCart'
+                  }
+                }));
+
                 // Track add to cart event
                 if (window.catalyst?.trackAddToCart) {
                   window.catalyst.trackAddToCart(product, 1);
@@ -728,6 +752,8 @@ export const categoryConfig = {
                     message: product.name + ' added to cart successfully!'
                   }
                 }));
+              } else {
+                throw new Error(result.error || 'Failed to add to cart');
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);

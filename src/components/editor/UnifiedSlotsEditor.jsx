@@ -50,6 +50,8 @@ import {
 import { ResponsiveIframe } from '@/components/editor/ResponsiveIframe';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
+import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
+import '@/components/editor/slot/CheckoutSlotComponents'; // Register checkout components
 import slotConfigurationService from '@/services/slotConfigurationService';
 
 /**

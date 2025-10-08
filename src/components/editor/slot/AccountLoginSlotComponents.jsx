@@ -1,0 +1,271 @@
+/**
+ * Account and Login Slot Components
+ * Unified components for account and login pages
+ */
+
+import React from 'react';
+import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
+
+/**
+ * UserProfileSlot - User profile display with avatar and info
+ */
+const UserProfileSlot = createSlotComponent({
+  name: 'UserProfileSlot',
+  render: ({ slot, context, variableContext }) => {
+    const user = variableContext?.user || { full_name: 'John Doe', email: 'john@example.com' };
+
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+          </div>
+          <h3 className="font-semibold text-gray-900">{user.full_name}</h3>
+          <p className="text-sm text-gray-500">{user.email}</p>
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * NavigationMenuSlot - Account navigation menu
+ */
+const NavigationMenuSlot = createSlotComponent({
+  name: 'NavigationMenuSlot',
+  render: ({ slot, context, variableContext }) => {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <nav className="space-y-2">
+          <button className="w-full text-left px-3 py-2 rounded-lg bg-blue-100 text-blue-700">Overview</button>
+          <button className="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">Orders</button>
+          <button className="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">Addresses</button>
+          <button className="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">Wishlist</button>
+        </nav>
+      </div>
+    );
+  }
+});
+
+/**
+ * AccountStatsSlot - Account statistics display
+ */
+const AccountStatsSlot = createSlotComponent({
+  name: 'AccountStatsSlot',
+  render: ({ slot, context, variableContext }) => {
+    const orders = variableContext?.orders || [];
+    const addresses = variableContext?.addresses || [];
+    const wishlistItems = variableContext?.wishlistItems || [];
+
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="grid md:grid-cols-3 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-600">Total Orders</h3>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+            </div>
+            <div className="text-2xl font-bold">{orders.length}</div>
+            <p className="text-xs text-gray-500">All time</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-600">Saved Addresses</h3>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              </svg>
+            </div>
+            <div className="text-2xl font-bold">{addresses.length}</div>
+            <p className="text-xs text-gray-500">Delivery locations</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-600">Wishlist Items</h3>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+            <div className="text-2xl font-bold">{wishlistItems.length}</div>
+            <p className="text-xs text-gray-500">Saved for later</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * RecentOrdersSlot - Recent orders display
+ */
+const RecentOrdersSlot = createSlotComponent({
+  name: 'RecentOrdersSlot',
+  render: ({ slot, context, variableContext }) => {
+    const orders = variableContext?.orders || [];
+
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
+          {orders.length === 0 ? (
+            <div className="text-center py-8">
+              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+              <p className="text-lg font-medium text-gray-900 mb-2">No orders yet</p>
+              <p className="text-gray-600">Your order history will appear here once you make a purchase.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <div key={order.id} className="border rounded p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">Order #{order.id}</p>
+                      <p className="text-sm text-gray-600">{order.date}</p>
+                    </div>
+                    <span className="text-sm font-medium text-green-600">{order.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * ProfileFormSlot - Profile edit form
+ */
+const ProfileFormSlot = createSlotComponent({
+  name: 'ProfileFormSlot',
+  render: ({ slot, context, variableContext }) => {
+    const user = variableContext?.user || { full_name: 'John Doe', email: 'john@example.com' };
+    const [firstName, lastName] = user.full_name.split(' ');
+
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
+          <form className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input type="text" defaultValue={firstName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input type="text" defaultValue={lastName} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" defaultValue={user.email} className="w-full border border-gray-300 rounded-md px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input type="tel" className="w-full border border-gray-300 rounded-md px-3 py-2" />
+            </div>
+            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+              Save Changes
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+});
+
+/**
+ * LoginFormSlot - Login form
+ */
+const LoginFormSlot = createSlotComponent({
+  name: 'LoginFormSlot',
+  render: ({ slot, context }) => {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <form className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your email" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your password" />
+          </div>
+          <div className="flex items-center">
+            <input type="checkbox" className="rounded" />
+            <label className="ml-2 text-sm">Remember me</label>
+          </div>
+          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md">
+            Sign In
+          </button>
+        </form>
+      </div>
+    );
+  }
+});
+
+/**
+ * RegisterFormSlot - Registration form
+ */
+const RegisterFormSlot = createSlotComponent({
+  name: 'RegisterFormSlot',
+  render: ({ slot, context }) => {
+    return (
+      <div className={slot.className} style={slot.styles}>
+        <form className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="First name" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input type="text" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Last name" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your email" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your password" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+            <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Confirm password" />
+          </div>
+          <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md">
+            Create My Account
+          </button>
+        </form>
+      </div>
+    );
+  }
+});
+
+// Register all components
+registerSlotComponent('UserProfileSlot', UserProfileSlot);
+registerSlotComponent('NavigationMenuSlot', NavigationMenuSlot);
+registerSlotComponent('AccountStatsSlot', AccountStatsSlot);
+registerSlotComponent('RecentOrdersSlot', RecentOrdersSlot);
+registerSlotComponent('ProfileFormSlot', ProfileFormSlot);
+registerSlotComponent('LoginFormSlot', LoginFormSlot);
+registerSlotComponent('RegisterFormSlot', RegisterFormSlot);
+
+export {
+  UserProfileSlot,
+  NavigationMenuSlot,
+  AccountStatsSlot,
+  RecentOrdersSlot,
+  ProfileFormSlot,
+  LoginFormSlot,
+  RegisterFormSlot
+};
