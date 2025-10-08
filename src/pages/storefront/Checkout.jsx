@@ -879,6 +879,12 @@ export default function Checkout() {
   const eligibleShippingMethods = getEligibleShippingMethods();
   const eligiblePaymentMethods = getEligiblePaymentMethods();
 
+  // Get checkout styling from settings
+  const checkoutSectionTitleColor = settings?.checkout_section_title_color || '#111827';
+  const checkoutSectionTitleSize = settings?.checkout_section_title_size || '1.25rem';
+  const checkoutSectionBgColor = settings?.checkout_section_bg_color || '#FFFFFF';
+  const checkoutSectionBorderColor = settings?.checkout_section_border_color || '#E5E7EB';
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
@@ -889,9 +895,9 @@ export default function Checkout() {
         <div className="lg:order-2 space-y-6">
           {/* Payment Methods */}
           {eligiblePaymentMethods.length > 0 && (
-            <Card>
+            <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Payment Method</CardTitle>
               </CardHeader>
               <CardContent>
                 <CmsBlockRenderer position="checkout_above_payment" />
@@ -938,9 +944,9 @@ export default function Checkout() {
           )}
 
           {/* Coupon Section */}
-          <Card>
+          <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle>Apply Coupon</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Apply Coupon</CardTitle>
             </CardHeader>
             <CardContent>
               {!appliedCoupon ? (
@@ -988,9 +994,9 @@ export default function Checkout() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Cart Items */}
@@ -1118,9 +1124,9 @@ export default function Checkout() {
           
           {/* Login Section */}
           {!user && (
-            <Card>
+            <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
-                <CardTitle>Account</CardTitle>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Account</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
@@ -1214,9 +1220,9 @@ export default function Checkout() {
           )}
 
           {/* Shipping Address */}
-          <Card>
+          <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle>Shipping Address</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Address</CardTitle>
             </CardHeader>
             <CardContent>
               {user && userAddresses.length > 0 ? (
@@ -1341,9 +1347,9 @@ export default function Checkout() {
 
           {/* Shipping Methods */}
           {eligibleShippingMethods.length > 0 && (
-            <Card>
+            <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
-                <CardTitle>Shipping Method</CardTitle>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Shipping Method</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -1376,9 +1382,9 @@ export default function Checkout() {
 
           {/* Delivery Settings */}
           {deliverySettings && deliverySettings.enable_delivery_date && (
-            <Card>
+            <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
-                <CardTitle>Delivery Options</CardTitle>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Options</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -1438,9 +1444,9 @@ export default function Checkout() {
 
           {/* Delivery Comments */}
           {deliverySettings && deliverySettings.enable_comments && (
-            <Card>
+            <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
-                <CardTitle>Delivery Instructions</CardTitle>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Delivery Instructions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div>
@@ -1459,9 +1465,9 @@ export default function Checkout() {
           )}
 
           {/* Billing Address */}
-          <Card>
+          <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
-              <CardTitle>Billing Address</CardTitle>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Billing Address</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
