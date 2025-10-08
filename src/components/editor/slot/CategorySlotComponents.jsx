@@ -1024,7 +1024,11 @@ const ProductItemsGrid = createSlotComponent({
                 parentId="product_card_template"
                 context="storefront"
                 categoryData={{ ...categoryContext, product }}
-                productData={product}
+                productData={{
+                  product,
+                  store: categoryContext?.store,
+                  settings: variableContext?.settings
+                }}
                 variableContext={{ ...variableContext, product }}
                 viewMode={viewMode}
               />

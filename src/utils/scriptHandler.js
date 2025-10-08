@@ -20,7 +20,9 @@ export function executeScript(scriptCode, context) {
     const scriptFunction = new Function(
       'element',
       'slotData',
+      'productData',
       'productContext',
+      'variableContext',
       'utils',
       'stateManager',
       scriptCode
@@ -69,7 +71,9 @@ export function executeScript(scriptCode, context) {
     return scriptFunction(
       context.element,
       context.slotData,
-      context.productContext,
+      context.productData,
+      context.productContext || context.productData, // fallback for backward compatibility
+      context.variableContext,
       utils,
       context.stateManager
     );
