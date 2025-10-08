@@ -1,153 +1,106 @@
 import { User, UserCircle } from 'lucide-react';
 
-// Account Page Configuration with hierarchical support
+// Account Page Configuration - Sidebar Layout
 export const accountConfig = {
   page_name: 'Account',
   slot_type: 'account_layout',
 
-  // Slot configuration with content, styling and metadata
+  // Slot configuration with sidebar layout
   slots: {
-    // Main layout container
-    main_layout: {
-      id: 'main_layout',
-      type: 'grid',
-      content: '',
-      className: 'min-h-screen bg-gray-50 p-8 grid grid-cols-1 lg:grid-cols-12 gap-8',
-      styles: {},
-      parentId: null,
-      layout: 'grid',
-      gridCols: 12,
-      colSpan: {
-        overview: 12,
-        profile: 12
-      },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
-    },
-
-    // Header section
+    // Page header
     account_header: {
       id: 'account_header',
       type: 'container',
       content: '',
-      className: 'col-span-12 mb-8',
+      className: 'mb-8',
       styles: {},
-      parentId: 'main_layout',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        overview: 12,
-        profile: 12
-      },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     },
 
-    // Header title
     header_title: {
       id: 'header_title',
       type: 'text',
       content: 'My Account',
       className: 'text-3xl font-bold text-gray-900',
       styles: {},
-      parentId: 'account_header',
-      position: { col: 1, row: 1 },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     },
 
-    // Header subtitle
     header_subtitle: {
       id: 'header_subtitle',
       type: 'text',
       content: 'Manage your account, orders, and preferences',
       className: 'text-gray-600 mt-1',
       styles: {},
-      parentId: 'account_header',
-      position: { col: 1, row: 2 },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     },
 
-    // Sidebar navigation
-    account_navigation: {
-      id: 'account_navigation',
+    // Sidebar navigation (left column - 25% width)
+    account_sidebar: {
+      id: 'account_sidebar',
       type: 'container',
       content: '',
-      className: 'col-span-12 lg:col-span-3',
+      className: 'bg-white rounded-lg shadow p-6',
       styles: {},
-      parentId: 'main_layout',
-      position: { col: 1, row: 2 },
-      colSpan: {
-        overview: 3,
-        profile: 3
-      },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     },
 
-    // Navigation menu
-    navigation_menu: {
-      id: 'navigation_menu',
+    user_profile: {
+      id: 'user_profile',
       type: 'component',
-      component: 'AccountNavigationSlot',
+      component: 'UserProfileSlot',
       content: `
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-center mb-6">
-            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
-            </div>
-            <h3 class="font-semibold text-gray-900">John Doe</h3>
-            <p class="text-sm text-gray-500">john@example.com</p>
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
           </div>
-          <nav class="space-y-2">
-            <button class="w-full text-left px-3 py-2 rounded-lg bg-blue-100 text-blue-700">
-              Overview
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-              Orders
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-              Addresses
-            </button>
-            <button class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-              Wishlist
-            </button>
-          </nav>
-          <div class="mt-6 pt-6 border-t">
-            <button class="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">
-              Sign Out
-            </button>
-          </div>
+          <h3 class="font-semibold text-gray-900">John Doe</h3>
+          <p class="text-sm text-gray-500">john@example.com</p>
         </div>
       `,
       className: '',
       styles: {},
-      parentId: 'account_navigation',
-      position: { col: 1, row: 1 },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     },
 
-    // Main content area
+    navigation_menu: {
+      id: 'navigation_menu',
+      type: 'component',
+      component: 'NavigationMenuSlot',
+      content: `
+        <nav class="space-y-2">
+          <button class="w-full text-left px-3 py-2 rounded-lg bg-blue-100 text-blue-700">Overview</button>
+          <button class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">Orders</button>
+          <button class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">Addresses</button>
+          <button class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">Wishlist</button>
+        </nav>
+      `,
+      className: '',
+      styles: {},
+      viewMode: ['overview', 'profile']
+    },
+
+    logout_button: {
+      id: 'logout_button',
+      type: 'button',
+      content: 'Sign Out',
+      className: 'w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg mt-6 pt-6 border-t',
+      styles: {},
+      viewMode: ['overview', 'profile']
+    },
+
+    // Main content area (right column - 75% width)
     account_content: {
       id: 'account_content',
       type: 'container',
       content: '',
-      className: 'col-span-12 lg:col-span-9',
+      className: '',
       styles: {},
-      parentId: 'main_layout',
-      position: { col: 4, row: 2 },
-      colSpan: {
-        overview: 9,
-        profile: 9
-      },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     },
 
-    // Overview stats
     overview_stats: {
       id: 'overview_stats',
       type: 'component',
@@ -188,16 +141,9 @@ export const accountConfig = {
       `,
       className: '',
       styles: {},
-      parentId: 'account_content',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        overview: 12
-      },
-      viewMode: ['overview'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview']
     },
 
-    // Recent orders section
     recent_orders: {
       id: 'recent_orders',
       type: 'component',
@@ -216,20 +162,13 @@ export const accountConfig = {
       `,
       className: '',
       styles: {},
-      parentId: 'account_content',
-      position: { col: 1, row: 2 },
-      colSpan: {
-        overview: 12
-      },
-      viewMode: ['overview'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview']
     },
 
-    // Profile section
     profile_section: {
       id: 'profile_section',
       type: 'component',
-      component: 'ProfileSlot',
+      component: 'ProfileFormSlot',
       content: `
         <div class="bg-white rounded-lg shadow p-6">
           <h3 class="text-lg font-semibold mb-4">Profile Information</h3>
@@ -260,34 +199,16 @@ export const accountConfig = {
       `,
       className: '',
       styles: {},
-      parentId: 'account_content',
-      position: { col: 1, row: 1 },
-      colSpan: {
-        profile: 12
-      },
-      viewMode: ['profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['profile']
     },
 
-    // Account footer
     account_footer: {
       id: 'account_footer',
-      type: 'container',
-      content: `
-        <div class="mt-8 text-center text-sm text-gray-600">
-          <p>Need help? Contact our <a href="#" class="text-blue-600 hover:underline">customer support</a></p>
-        </div>
-      `,
-      className: 'col-span-12',
+      type: 'text',
+      content: 'Need help? Contact our <a href="#" class="text-blue-600 hover:underline">customer support</a>',
+      className: 'text-center text-sm text-gray-600 py-8',
       styles: {},
-      parentId: 'main_layout',
-      position: { col: 1, row: 3 },
-      colSpan: {
-        overview: 12,
-        profile: 12
-      },
-      viewMode: ['overview', 'profile'],
-      metadata: { hierarchical: true }
+      viewMode: ['overview', 'profile']
     }
   },
 
