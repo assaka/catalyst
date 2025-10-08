@@ -627,16 +627,17 @@ export default function Checkout() {
       
       if (isSuccess) {
         const token = actualResponse.data?.token || actualResponse.token;
-        
+
         if (token) {
           // Clear logged out flag before setting token
           localStorage.removeItem('user_logged_out');
-          
+
           // Store token
           localStorage.setItem('customer_auth_token', token);
           apiClient.setToken(token);
-          
+
           // Reload checkout data with authenticated user
+          // The cart service will automatically merge guest cart with user cart
           setShowLoginModal(false);
           await loadCheckoutData();
         }

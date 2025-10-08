@@ -31,9 +31,15 @@ class CartService {
   async getCart(bustCache = false) {
     try {
       const sessionId = this.getSessionId();
+      const user = await this.getCurrentUser();
 
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
+
+      // Add user_id if authenticated to enable cart merging
+      if (user?.id) {
+        params.append('user_id', user.id);
+      }
 
       // Add cache busting for fresh data requests
       if (bustCache) {
@@ -124,6 +130,7 @@ class CartService {
       }
 
       const sessionId = this.getSessionId();
+      const user = await this.getCurrentUser();
 
       const cartData = {
         store_id: storeId,
@@ -131,8 +138,13 @@ class CartService {
         quantity: parseInt(quantity),
         price: parseFloat(price),
         selected_options: selectedOptions,
-        session_id: sessionId // Always use session_id for simplicity
+        session_id: sessionId
       };
+
+      // Add user_id if authenticated
+      if (user?.id) {
+        cartData.user_id = user.id;
+      }
 
       const response = await fetch(this.endpoint, {
         method: 'POST',
@@ -184,6 +196,7 @@ class CartService {
   async updateCart(items, storeId) {
     try {
       const sessionId = this.getSessionId();
+      const user = await this.getCurrentUser();
 
       if (!storeId) {
         throw new Error('Store ID is required');
@@ -193,8 +206,13 @@ class CartService {
       const cartData = {
         store_id: storeId,
         items: items,
-        session_id: sessionId // Always use session_id for simplicity
+        session_id: sessionId
       };
+
+      // Add user_id if authenticated to link cart to user
+      if (user?.id) {
+        cartData.user_id = user.id;
+      }
 
       const response = await fetch(this.endpoint, {
         method: 'POST',
@@ -255,6 +273,7 @@ class CartService {
   async updateCartExplicit(items, storeId) {
     try {
       const sessionId = this.getSessionId();
+      const user = await this.getCurrentUser();
 
       if (!storeId) {
         throw new Error('Store ID is required');
@@ -265,6 +284,11 @@ class CartService {
         items: items,
         session_id: sessionId
       };
+
+      // Add user_id if authenticated
+      if (user?.id) {
+        cartData.user_id = user.id;
+      }
 
       const response = await fetch(this.endpoint, {
         method: 'POST',
