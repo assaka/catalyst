@@ -7,32 +7,7 @@
 
 import { User, UserCircle } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-
-// Account page configuration
-const accountConfig = {
-  slotLayout: {
-    account_header: { name: 'Account Header', colSpan: 12, order: 0 },
-    account_navigation: { name: 'Account Navigation', colSpan: 3, order: 1 },
-    account_content: { name: 'Account Content', colSpan: 9, order: 2 },
-    account_sidebar: { name: 'Account Sidebar', colSpan: 12, order: 3 },
-    account_footer: { name: 'Account Footer', colSpan: 12, order: 4 }
-  },
-  views: [
-    {
-      id: 'overview',
-      label: 'Account Overview',
-      icon: User,
-      description: 'Customer account dashboard'
-    },
-    {
-      id: 'profile',
-      label: 'Profile View',
-      icon: UserCircle,
-      description: 'Customer profile page'
-    }
-  ],
-  cmsBlocks: ['account_header', 'account_sidebar', 'account_footer']
-};
+import { accountConfig } from '@/components/editor/slot/configs/account-config';
 
 // Generate account context based on view mode
 const generateAccountContext = (viewMode) => ({

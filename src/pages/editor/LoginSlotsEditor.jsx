@@ -7,32 +7,7 @@
 
 import { LogIn, UserPlus } from "lucide-react";
 import UnifiedSlotsEditor from "@/components/editor/UnifiedSlotsEditor";
-
-// Login page configuration
-const loginConfig = {
-  slotLayout: {
-    login_header: { name: 'Login Header', colSpan: 12, order: 0 },
-    login_form: { name: 'Login Form', colSpan: 6, order: 1 },
-    register_form: { name: 'Register Form', colSpan: 6, order: 2 },
-    login_footer: { name: 'Login Footer', colSpan: 12, order: 3 },
-    social_login: { name: 'Social Login', colSpan: 12, order: 4 }
-  },
-  views: [
-    {
-      id: 'login',
-      label: 'Login View',
-      icon: LogIn,
-      description: 'Customer login page'
-    },
-    {
-      id: 'register',
-      label: 'Register View',
-      icon: UserPlus,
-      description: 'Customer registration page'
-    }
-  ],
-  cmsBlocks: ['login_header', 'login_footer', 'social_login']
-};
+import { loginConfig } from '@/components/editor/slot/configs/login-config';
 
 // Generate login context based on view mode
 const generateLoginContext = (viewMode) => ({
