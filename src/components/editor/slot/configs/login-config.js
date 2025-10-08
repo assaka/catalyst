@@ -26,7 +26,6 @@ export const loginConfig = {
       layout: 'grid',
       gridCols: 2,
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -40,7 +39,6 @@ export const loginConfig = {
       parentId: 'main_layout',
       position: { col: 1, row: 1 },
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -50,11 +48,10 @@ export const loginConfig = {
       type: 'container',
       content: '',
       className: 'bg-white',
-      styles: { padding: '10px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
+      styles: { padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
       colSpan: 'col-span-12 md:col-span-6',
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -63,11 +60,10 @@ export const loginConfig = {
       type: 'text',
       content: 'Already Registered? Login!',
       className: 'text-2xl font-bold text-gray-900',
-      styles: { marginBottom: '1.5rem' },
+      styles: { marginBottom: '10px' },
       parentId: 'login_column',
       position: { col: 1, row: 1 },
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -99,7 +95,6 @@ export const loginConfig = {
       parentId: 'login_column',
       position: { col: 1, row: 2 },
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -109,11 +104,10 @@ export const loginConfig = {
       type: 'container',
       content: '',
       className: 'bg-white',
-      styles: { padding: '2rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
+      styles: { padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'main_layout',
       position: { col: 2, row: 2 },
       colSpan: 'col-span-12 md:col-span-6',
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -122,11 +116,10 @@ export const loginConfig = {
       type: 'text',
       content: 'Create Account',
       className: 'text-2xl font-bold text-gray-900',
-      styles: { marginBottom: '1.5rem' },
+      styles: { marginBottom: '20px' },
       parentId: 'register_column',
       position: { col: 1, row: 1 },
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -168,7 +161,6 @@ export const loginConfig = {
       parentId: 'register_column',
       position: { col: 1, row: 2 },
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     },
 
@@ -178,11 +170,10 @@ export const loginConfig = {
       type: 'text',
       content: 'By signing in, you agree to our Terms of Service and Privacy Policy',
       className: 'text-center text-sm text-gray-600',
-      styles: { paddingTop: '2rem', paddingBottom: '2rem', gridColumn: '1 / -1' },
+      styles: { paddingTop: '20px', paddingBottom: '20px', gridColumn: '1 / -1' },
       parentId: 'main_layout',
       position: { col: 1, row: 3 },
       colSpan: 12,
-      viewMode: ['login', 'register'],
       metadata: { hierarchical: true }
     }
   },
