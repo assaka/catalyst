@@ -157,10 +157,19 @@ const AddToCartButton = createSlotComponent({
     // Storefront version - full functionality
     const { handleAddToCart, canAddToCart, product } = productContext;
 
+    const handleClick = (e) => {
+      console.log('🛒 AddToCartButton clicked', { handleAddToCart, canAddToCart, product });
+      if (handleAddToCart) {
+        handleAddToCart(e);
+      } else {
+        console.error('❌ handleAddToCart is not defined in productContext');
+      }
+    };
+
     return (
       <div className={className} style={styles}>
         <Button
-          onClick={handleAddToCart}
+          onClick={handleClick}
           disabled={!canAddToCart}
           className="flex-1 h-12 text-lg bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
