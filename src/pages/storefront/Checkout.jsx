@@ -1113,7 +1113,6 @@ export default function Checkout() {
           )}
 
           {/* Coupon Section */}
-          {isSectionVisible('review') && (
           <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Apply Coupon</CardTitle>
@@ -1163,9 +1162,7 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
-          )}
 
-          {isSectionVisible('review') && (
           <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Order Summary</CardTitle>
@@ -1277,7 +1274,6 @@ export default function Checkout() {
               </div>
             </CardContent>
           </Card>
-          )}
 
           {/* Place Order Button */}
           {isSectionVisible('review') && (
