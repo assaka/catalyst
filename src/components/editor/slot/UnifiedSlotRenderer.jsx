@@ -858,6 +858,10 @@ export function UnifiedSlotRenderer({
 
       if (typeof slot.colSpan === 'number') {
         colSpanValue = slot.colSpan;
+      } else if (typeof slot.colSpan === 'string') {
+        // Direct string colSpan like 'col-span-12 md:col-span-6'
+        useTailwindClass = true;
+        colSpanValue = 12;
       } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
         const viewModeValue = slot.colSpan[viewMode];
         if (typeof viewModeValue === 'number') {

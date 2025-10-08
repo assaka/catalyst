@@ -717,10 +717,6 @@ export function GridColumn({
     setDropZone(null);
   }, [slotId, onSlotDrop, mode, isDragging, dropZone]);
 
-  if (slotId === 'login_column' || slotId === 'register_column') {
-    console.log(`GridColumn ${slotId}: useTailwindClass=${useTailwindClass}, colSpan=${colSpan}, colSpanClass="${colSpanClass}"`);
-  }
-
   const gridStyles = {
     ...(useTailwindClass ? {} : { gridColumn: `span ${colSpan}` }),
     gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
@@ -1077,7 +1073,6 @@ export function HierarchicalSlotRenderer({
       colSpanClass = slot.colSpan;
       useTailwindClass = true;
       colSpan = 12; // fallback for calculations
-      console.log(`EditorGridItem: slot ${slot.id} has string colSpan="${slot.colSpan}", useTailwindClass=${useTailwindClass}`);
     } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
       // New format: object with viewMode keys
       const viewModeValue = slot.colSpan[viewMode];
