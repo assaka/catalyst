@@ -915,8 +915,8 @@ export default function Checkout() {
       return {
         steps: ['Information', 'Shipping', 'Payment'],
         sections: [
-          ['account', 'shipping', 'billing'],
-          ['delivery'],
+          ['account', 'billing'],
+          ['shipping', 'delivery'],
           ['payment', 'review']
         ]
       };
@@ -958,13 +958,48 @@ export default function Checkout() {
   const getCompletedStepsSummary = () => {
     const summaries = [];
 
-    // Step 0 summary (Account + Shipping)
+    // Step 0 summary (Account + Billing for 3-step, Account + Shipping + Billing for 2-step)
     if (currentStep > 0) {
       const items = [];
 
       if (user) {
         items.push({ label: 'Account', value: user.email });
       }
+
+      // For 2-step mode, show shipping address in step 0 summary
+      if (stepsCount === 2) {
+        if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
+          const address = userAddresses.find(a => a.id === selectedShippingAddress);
+          if (address) {
+            items.push({
+              label: 'Shipping Address',
+              value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
+            });
+          }
+        } else if (shippingAddress.full_name) {
+          items.push({
+            label: 'Shipping Address',
+            value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
+          });
+        }
+      }
+
+      // Billing address (if different from shipping)
+      if (!useShippingForBilling && billingAddress.full_name) {
+        items.push({
+          label: 'Billing Address',
+          value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
+        });
+      }
+
+      if (items.length > 0) {
+        summaries.push({ step: stepConfig.steps[0], items });
+      }
+    }
+
+    // Step 1 summary for 3-step mode (Shipping Address + Method + Delivery)
+    if (stepsCount === 3 && currentStep > 1) {
+      const items = [];
 
       // Shipping address
       if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
@@ -981,23 +1016,6 @@ export default function Checkout() {
           value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
         });
       }
-
-      // Billing address (if different from shipping)
-      if (!useShippingForBilling && billingAddress.full_name) {
-        items.push({
-          label: 'Billing Address',
-          value: `${billingAddress.full_name}, ${billingAddress.street}, ${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}, ${billingAddress.country}`
-        });
-      }
-
-      if (items.length > 0) {
-        summaries.push({ step: stepConfig.steps[0], items });
-      }
-    }
-
-    // Step 1 summary (Shipping Method + Delivery for 3-step)
-    if (stepsCount === 3 && currentStep > 1) {
-      const items = [];
 
       if (selectedShippingMethod) {
         items.push({ label: 'Shipping Method', value: selectedShippingMethod });
