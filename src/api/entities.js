@@ -431,22 +431,35 @@ class StoreService extends BaseEntity {
   async findAll(params = {}) {
     try {
       const hasToken = apiClient.getToken();
-      
+
       if (hasToken) {
-        // Authenticated users get dropdown with Editor+ permissions only
-        return this.getUserStores();
-      } else {
-        // Public users get all active stores
-        const queryString = new URLSearchParams(params).toString();
-        const url = queryString ? `stores?${queryString}` : 'stores';
-        
-        const response = await apiClient.publicRequest('GET', url);
-        
-        // Ensure response is always an array
-        const result = Array.isArray(response) ? response : [];
-        
-        return result;
+        // Check user role from token
+        try {
+          const token = apiClient.getToken();
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const userRole = payload.role;
+
+          // Only admin/store_owner should use dropdown endpoint
+          if (userRole === 'admin' || userRole === 'store_owner') {
+            return this.getUserStores();
+          }
+          // Customers fall through to public endpoint
+        } catch (roleCheckError) {
+          console.error('Error checking user role:', roleCheckError);
+          // Fall through to public endpoint on error
+        }
       }
+
+      // Public users and customers get all active stores
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `stores?${queryString}` : 'stores';
+
+      const response = await apiClient.publicRequest('GET', url);
+
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+
+      return result;
     } catch (error) {
       console.error(`StoreService.findAll() error:`, error.message);
       return [];
