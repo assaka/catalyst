@@ -20,11 +20,11 @@ export const loginConfig = {
       id: 'main_layout',
       type: 'grid',
       content: '',
-      className: 'grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto px-4 py-8',
+      className: 'grid grid-cols-12 gap-8 max-w-7xl mx-auto px-4 py-8',
       styles: {},
       parentId: null,
       layout: 'grid',
-      gridCols: 2,
+      gridCols: 12,
       colSpan: 12,
       metadata: { hierarchical: true }
     },
@@ -51,7 +51,7 @@ export const loginConfig = {
       styles: { padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'main_layout',
       position: { col: 1, row: 2 },
-      colSpan: 6,
+      colSpan: 'col-span-12 md:col-span-6',
       metadata: { hierarchical: true }
     },
 
@@ -107,7 +107,7 @@ export const loginConfig = {
       styles: { padding: '20px', borderRadius: '10px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'main_layout',
       position: { col: 2, row: 2 },
-      colSpan: 6,
+      colSpan: 'col-span-12 md:col-span-6',
       metadata: { hierarchical: true }
     },
 
