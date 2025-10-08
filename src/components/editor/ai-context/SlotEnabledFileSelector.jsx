@@ -40,6 +40,15 @@ const SlotEnabledFileSelector = ({
       color: 'text-indigo-500'
     },
     {
+      id: 'store',
+      name: 'Store',
+      path: 'src/pages/editor/StoreSlotsEditor.jsx',
+      pageType: 'store',
+      icon: ShoppingCart,
+      description: 'Store landing page customization',
+      color: 'text-cyan-500'
+    },
+    {
       id: 'cart',
       name: 'Cart',
       path: 'src/pages/editor/CartSlotsEditor.jsx',
@@ -65,6 +74,24 @@ const SlotEnabledFileSelector = ({
       icon: Package,
       description: 'Product detail page with customizable slots',
       color: 'text-purple-500'
+    },
+    {
+      id: 'account',
+      name: 'Account',
+      path: 'src/pages/editor/AccountSlotsEditor.jsx',
+      pageType: 'account',
+      icon: Package,
+      description: 'Customer account page customization',
+      color: 'text-pink-500'
+    },
+    {
+      id: 'login',
+      name: 'Login',
+      path: 'src/pages/editor/LoginSlotsEditor.jsx',
+      pageType: 'login',
+      icon: Package,
+      description: 'Login and registration page customization',
+      color: 'text-teal-500'
     },
     {
       id: 'checkout',
