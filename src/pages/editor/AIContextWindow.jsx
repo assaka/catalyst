@@ -8,6 +8,8 @@ import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';
 import ProductSlotsEditor from '@/pages/editor/ProductSlotsEditor';
 import AccountSlotsEditor from '@/pages/editor/AccountSlotsEditor';
 import LoginSlotsEditor from '@/pages/editor/LoginSlotsEditor';
+import CheckoutSlotsEditor from '@/pages/editor/CheckoutSlotsEditor';
+import SuccessSlotsEditor from '@/pages/editor/SuccessSlotsEditor';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
@@ -148,6 +150,22 @@ const AIContextWindowPage = () => {
                             <LoginSlotsEditor
                               mode="edit"
                               viewMode="login"
+                              onSave={handleSave}
+                            />
+                          );
+                        case 'checkout':
+                          return (
+                            <CheckoutSlotsEditor
+                              mode="edit"
+                              viewMode="default"
+                              onSave={handleSave}
+                            />
+                          );
+                        case 'success':
+                          return (
+                            <SuccessSlotsEditor
+                              mode="edit"
+                              viewMode="empty"
                               onSave={handleSave}
                             />
                           );
@@ -293,6 +311,22 @@ const AIContextWindowPage = () => {
                               <LoginSlotsEditor
                                 mode="edit"
                                 viewMode="login"
+                                onSave={handleSave}
+                              />
+                            );
+                          case 'checkout':
+                            return (
+                              <CheckoutSlotsEditor
+                                mode="edit"
+                                viewMode="default"
+                                onSave={handleSave}
+                              />
+                            );
+                          case 'success':
+                            return (
+                              <SuccessSlotsEditor
+                                mode="edit"
+                                viewMode="empty"
                                 onSave={handleSave}
                               />
                             );
