@@ -896,6 +896,15 @@ export default function Checkout() {
   const stepInactiveColor = settings?.checkout_step_indicator_inactive_color || '#D1D5DB';
   const stepCompletedColor = settings?.checkout_step_indicator_completed_color || '#10B981';
 
+  // Get column configuration based on step count
+  const getColumnCount = () => {
+    if (stepsCount === 1) return settings?.checkout_1step_columns ?? 3;
+    if (stepsCount === 2) return settings?.checkout_2step_columns ?? 2;
+    return settings?.checkout_3step_columns ?? 2;
+  };
+
+  const columnCount = getColumnCount();
+
   // Define step configurations based on step count
   const getStepConfig = () => {
     if (stepsCount === 1) {
@@ -1059,11 +1068,46 @@ export default function Checkout() {
         />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        {/* Order Summary - Right Side */}
-        <div className="order-2 lg:order-2 space-y-4 lg:space-y-6">
-          {/* Payment Methods */}
-          {isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
+      <div className={`grid grid-cols-1 lg:grid-cols-${columnCount} gap-6 lg:gap-8`}>
+
+        {/* Column 1: Information Forms */}
+        <div className="order-1 space-y-4 lg:space-y-6">
+
+          {/* Summary of Previous Steps */}
+          {stepsCount > 1 && currentStep > 0 && (
+            <Card style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
+              <CardHeader>
+                <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>
+                  Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {getCompletedStepsSummary().map((summary, idx) => (
+                  <div key={idx} className={idx > 0 ? 'mt-4 pt-4 border-t' : ''}>
+                    <h4 className="font-semibold text-sm text-gray-700 mb-2">{summary.step}</h4>
+                    <div className="space-y-2">
+                      {summary.items.map((item, itemIdx) => (
+                        <div key={itemIdx} className="text-sm">
+                          <span className="text-gray-600">{item.label}:</span>{' '}
+                          <span className="text-gray-900">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  onClick={() => setCurrentStep(0)}
+                  variant="link"
+                  className="mt-3 p-0 h-auto text-blue-600 hover:text-blue-800"
+                >
+                  Edit
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Login Section */}
+          {isSectionVisible('account') && !user && (
             <Card style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>Payment Method</CardTitle>

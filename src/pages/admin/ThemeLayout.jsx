@@ -89,6 +89,10 @@ export default function ThemeLayout() {
                 checkout_section_title_size: fullStore?.settings?.checkout_section_title_size || '1.25rem',
                 checkout_section_bg_color: fullStore?.settings?.checkout_section_bg_color || '#FFFFFF',
                 checkout_section_border_color: fullStore?.settings?.checkout_section_border_color || '#E5E7EB',
+                // Checkout Layout Configuration
+                checkout_1step_columns: fullStore?.settings?.checkout_1step_columns ?? 3,
+                checkout_2step_columns: fullStore?.settings?.checkout_2step_columns ?? 2,
+                checkout_3step_columns: fullStore?.settings?.checkout_3step_columns ?? 2,
                 // Product grid - merge breakpoints properly
                 product_grid: {
                     breakpoints: {
@@ -1390,6 +1394,120 @@ export default function ThemeLayout() {
                                             />
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" /> Checkout Layout Configuration</CardTitle>
+                            <CardDescription>Define the column layout and section order for each checkout step configuration.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-800">
+                                    <strong>How it works:</strong> For each step count (1, 2, or 3 steps), you can define how many columns to display and which sections appear in each column.
+                                    Available sections: Account, Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
+                                </p>
+                            </div>
+
+                            {/* 1-Step Layout */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">1-Step Checkout Layout</Label>
+                                    <p className="text-sm text-gray-500">All sections on one page</p>
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="checkout_1step_columns">Number of Columns</Label>
+                                    <Select
+                                        value={String(store.settings?.checkout_1step_columns || 3)}
+                                        onValueChange={(value) => handleSettingsChange('checkout_1step_columns', parseInt(value))}
+                                    >
+                                        <SelectTrigger className="w-48 mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1">1 Column</SelectItem>
+                                            <SelectItem value="2">2 Columns</SelectItem>
+                                            <SelectItem value="3">3 Columns</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="text-sm text-gray-600">
+                                    <p><strong>Default Layout:</strong></p>
+                                    <p>Column 1: Account, Shipping Address, Shipping Method, Billing</p>
+                                    <p>Column 2: Delivery Options, Payment Method</p>
+                                    <p>Column 3: Coupon, Order Summary, Place Order</p>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* 2-Step Layout */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">2-Step Checkout Layout</Label>
+                                    <p className="text-sm text-gray-500">Information → Payment</p>
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="checkout_2step_columns">Number of Columns</Label>
+                                    <Select
+                                        value={String(store.settings?.checkout_2step_columns || 2)}
+                                        onValueChange={(value) => handleSettingsChange('checkout_2step_columns', parseInt(value))}
+                                    >
+                                        <SelectTrigger className="w-48 mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1">1 Column</SelectItem>
+                                            <SelectItem value="2">2 Columns</SelectItem>
+                                            <SelectItem value="3">3 Columns</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="text-sm text-gray-600">
+                                    <p><strong>Default Layout:</strong></p>
+                                    <p>Column 1: Account, Shipping Address, Shipping Method, Billing</p>
+                                    <p>Column 2: Delivery Options, Coupon, Order Summary, Payment Method, Place Order</p>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* 3-Step Layout */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">3-Step Checkout Layout</Label>
+                                    <p className="text-sm text-gray-500">Information → Shipping → Payment</p>
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="checkout_3step_columns">Number of Columns</Label>
+                                    <Select
+                                        value={String(store.settings?.checkout_3step_columns || 2)}
+                                        onValueChange={(value) => handleSettingsChange('checkout_3step_columns', parseInt(value))}
+                                    >
+                                        <SelectTrigger className="w-48 mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1">1 Column</SelectItem>
+                                            <SelectItem value="2">2 Columns</SelectItem>
+                                            <SelectItem value="3">3 Columns</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="text-sm text-gray-600">
+                                    <p><strong>Default Layout:</strong></p>
+                                    <p>Column 1: Account, Shipping Address, Billing</p>
+                                    <p>Column 2: Delivery Options, Payment Method</p>
+                                    <p>Column 3: Coupon, Order Summary, Place Order</p>
                                 </div>
                             </div>
                         </CardContent>

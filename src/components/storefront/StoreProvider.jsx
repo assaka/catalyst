@@ -402,6 +402,10 @@ export const StoreProvider = ({ children }) => {
         checkout_section_title_size: selectedStore.settings?.checkout_section_title_size || '1.25rem',
         checkout_section_bg_color: selectedStore.settings?.checkout_section_bg_color || '#FFFFFF',
         checkout_section_border_color: selectedStore.settings?.checkout_section_border_color || '#E5E7EB',
+        // Checkout Layout Configuration
+        checkout_1step_columns: selectedStore.settings?.checkout_1step_columns ?? 3,
+        checkout_2step_columns: selectedStore.settings?.checkout_2step_columns ?? 2,
+        checkout_3step_columns: selectedStore.settings?.checkout_3step_columns ?? 2,
 
         // Product gallery layout settings - preserve saved values with defaults
         product_gallery_layout: selectedStore.settings?.product_gallery_layout !== undefined
