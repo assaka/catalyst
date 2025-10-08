@@ -139,15 +139,22 @@ export default function StorefrontLayout({ children }) {
                 
                 try {
                     await delay(200 + Math.random() * 300);
-                    const userData = await retryApiCall(async () => {
-                        return await CustomerAuth.me();
-                    }, 5, 3000, null);
-                    
-                    // Only show user as logged in if they are a customer in storefront context
-                    if (userData && userData.role === 'customer') {
-                        setUser(userData);
+
+                    // Only attempt to fetch user data if authenticated with a token
+                    if (CustomerAuth.isAuthenticated()) {
+                        const userData = await retryApiCall(async () => {
+                            return await CustomerAuth.me();
+                        }, 5, 3000, null);
+
+                        // Only show user as logged in if they are a customer in storefront context
+                        if (userData && userData.role === 'customer') {
+                            setUser(userData);
+                        } else {
+                            // Store owners/admins should not appear as logged in on storefront
+                            setUser(null);
+                        }
                     } else {
-                        // Store owners/admins should not appear as logged in on storefront
+                        // No token, user is a guest
                         setUser(null);
                     }
                 } catch (e) {

@@ -46,8 +46,13 @@ export default function CookieConsentBanner() {
 
   const loadUser = async () => {
     try {
-      const userData = await CustomerAuth.me().catch(() => null);
-      setUser(userData);
+      // Only attempt to fetch user data if authenticated with a token
+      if (CustomerAuth.isAuthenticated()) {
+        const userData = await CustomerAuth.me().catch(() => null);
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
     } catch (error) {
       setUser(null);
     }
