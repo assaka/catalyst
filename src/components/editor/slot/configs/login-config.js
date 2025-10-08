@@ -13,16 +13,35 @@ export const loginConfig = {
     login_footer: { name: 'Login Footer', colSpan: 12, order: 3 }
   },
 
-  // Slot configuration with simple 2-column layout
+  // Slot configuration with hierarchical 2-column layout
   slots: {
+    // Main container
+    main_layout: {
+      id: 'main_layout',
+      type: 'grid',
+      content: '',
+      className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4 py-8',
+      styles: {},
+      parentId: null,
+      layout: 'grid',
+      gridCols: 2,
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
+    },
+
     // Page header/banner
     page_header: {
       id: 'page_header',
       type: 'text',
       content: 'Welcome Back',
-      className: 'text-3xl font-bold text-center text-gray-900 py-8',
+      className: 'text-3xl font-bold text-center text-gray-900 py-8 col-span-2',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'main_layout',
+      position: { col: 1, row: 1 },
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     // Login column - left side
@@ -32,7 +51,11 @@ export const loginConfig = {
       content: '',
       className: 'bg-white p-8 rounded-lg shadow-md',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'main_layout',
+      position: { col: 1, row: 2 },
+      colSpan: 6,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     login_title: {
@@ -41,7 +64,11 @@ export const loginConfig = {
       content: 'Already Registered? Login!',
       className: 'text-2xl font-bold text-gray-900 mb-6',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'login_column',
+      position: { col: 1, row: 1 },
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     login_form: {
@@ -69,7 +96,11 @@ export const loginConfig = {
       `,
       className: '',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'login_column',
+      position: { col: 1, row: 2 },
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     // Register column - right side
@@ -79,7 +110,11 @@ export const loginConfig = {
       content: '',
       className: 'bg-white p-8 rounded-lg shadow-md',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'main_layout',
+      position: { col: 2, row: 2 },
+      colSpan: 6,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     register_title: {
@@ -88,7 +123,11 @@ export const loginConfig = {
       content: 'Create Account',
       className: 'text-2xl font-bold text-gray-900 mb-6',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'register_column',
+      position: { col: 1, row: 1 },
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     register_form: {
@@ -126,7 +165,11 @@ export const loginConfig = {
       `,
       className: '',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'register_column',
+      position: { col: 1, row: 2 },
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     },
 
     // Footer section
@@ -134,9 +177,13 @@ export const loginConfig = {
       id: 'login_footer',
       type: 'text',
       content: 'By signing in, you agree to our Terms of Service and Privacy Policy',
-      className: 'text-center text-sm text-gray-600 py-8',
+      className: 'text-center text-sm text-gray-600 py-8 col-span-2',
       styles: {},
-      viewMode: ['login', 'register']
+      parentId: 'main_layout',
+      position: { col: 1, row: 3 },
+      colSpan: 12,
+      viewMode: ['login', 'register'],
+      metadata: { hierarchical: true }
     }
   },
 
