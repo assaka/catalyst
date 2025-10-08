@@ -932,6 +932,10 @@ export function UnifiedSlotRenderer({
         if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
+        } else if (typeof slot.colSpan === 'string') {
+          // Handle responsive colSpan strings like 'col-span-12 md:col-span-6'
+          colSpanClass = slot.colSpan;
+          gridColumn = null;
         } else if (typeof slot.colSpan === 'object' && slot.colSpan !== null) {
           const viewModeValue = slot.colSpan[viewMode];
 
