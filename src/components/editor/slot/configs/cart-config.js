@@ -179,9 +179,9 @@ export const cartConfig = {
       type: 'component',
       component: 'CartItemsSlot',
       content: `
-        <div class="space-y-4">
+        <div class="space-y-4 divide-y">
           {{#each cartItems}}
-            <div class="cart-item"
+            <div class="cart-item py-4"
                  data-item-id="{{this.id}}"
                  data-product-name="{{this.product.name}}"
                  data-price="{{this.price}}"
