@@ -929,7 +929,11 @@ export function UnifiedSlotRenderer({
         let colSpanClass = 'col-span-12';
         let gridColumn = 'span 12 / span 12';
 
-        if (typeof slot.colSpan === 'number') {
+        if (slot.colSpan === undefined || slot.colSpan === null) {
+          // No colSpan defined - let parent grid control layout
+          colSpanClass = '';
+          gridColumn = null;
+        } else if (typeof slot.colSpan === 'number') {
           colSpanClass = `col-span-${slot.colSpan}`;
           gridColumn = `span ${slot.colSpan} / span ${slot.colSpan}`;
         } else if (typeof slot.colSpan === 'string') {
