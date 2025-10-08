@@ -1677,6 +1677,13 @@ export function useSlotConfiguration({
 
     const updatedSlots = { ...slots };
 
+    console.log('🔧 handleClassChange called:', {
+      slotId,
+      className,
+      styles,
+      existingClassName: updatedSlots[slotId]?.className
+    });
+
     // CRITICAL: Create slot if it doesn't exist (for template slots not yet in config)
     if (!updatedSlots[slotId]) {
 
