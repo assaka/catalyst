@@ -1,9 +1,10 @@
 -- Insert CMS blocks for Account page
 -- Run this query in Supabase SQL Editor
 
-INSERT INTO cms_blocks (identifier, name, description, position, content, is_active, created_at, updated_at)
+INSERT INTO cms_blocks (store_id, identifier, name, description, placement, content, is_active, created_at, updated_at)
 VALUES
   (
+   '157d4590-49bf-4b0b-bd77-abe131909528',
     'account_cms_above',
     'Above Content',
     'Full-width content area above the main account content',
@@ -19,6 +20,7 @@ VALUES
     NOW()
   ),
   (
+      '157d4590-49bf-4b0b-bd77-abe131909528',
     'account_cms_below',
     'Below Content',
     'Full-width content area below the main account content',

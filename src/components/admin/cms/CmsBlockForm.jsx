@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Simple collapsible components if not available in UI library
-import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout, ImagePlus } from 'lucide-react';
+import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout, ImagePlus, User } from 'lucide-react';
 import MediaBrowser from './MediaBrowser';
 
 import { useAlertTypes } from '@/hooks/useAlert';
@@ -28,7 +28,8 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     homepage: false,
     product: false,
     category: false,
-    cart: false
+    cart: false,
+    account: false
   });
 
   useEffect(() => {
@@ -154,6 +155,15 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
         { value: 'checkout_below_form', label: 'Checkout: Below Form', description: 'After checkout form' },
         { value: 'checkout_above_payment', label: 'Checkout: Above Payment', description: 'Before payment section' },
         { value: 'checkout_below_payment', label: 'Checkout: Below Payment', description: 'After payment section' }
+      ]
+    },
+    account: {
+      title: 'Account Pages',
+      icon: User,
+      description: 'Customer account page locations',
+      options: [
+        { value: 'account_cms_above', label: 'Above Content', description: 'Full-width area above account content' },
+        { value: 'account_cms_below', label: 'Below Content', description: 'Full-width area below account content' }
       ]
     }
   };
