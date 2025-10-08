@@ -712,6 +712,17 @@ export default function ProductDetail() {
   const isInStock = trackStock ? (product?.infinite_stock || product?.stock_quantity > 0) : true;
   const canAddToCart = !loading && isInStock && quantity > 0 && (!trackStock || product?.infinite_stock || product?.stock_quantity >= quantity);
 
+  // Debug logging for add to cart state
+  console.log('🔍 ProductDetail canAddToCart state:', {
+    canAddToCart,
+    loading,
+    isInStock,
+    quantity,
+    trackStock,
+    infinite_stock: product?.infinite_stock,
+    stock_quantity: product?.stock_quantity
+  });
+
   const currencySymbol = settings?.currency_symbol || '$';
 
   // Helper function to get stock label based on settings and quantity
@@ -850,7 +861,7 @@ export default function ProductDetail() {
               activeTab,
               isInWishlist,
               currencySymbol: store?.currency_symbol || '$',
-              canAddToCart: isInStock && quantity > 0,
+              canAddToCart: canAddToCart,
               setQuantity,
               setSelectedOptions,
               setActiveImageIndex: setActiveImage,
