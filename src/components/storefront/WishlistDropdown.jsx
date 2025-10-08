@@ -58,9 +58,12 @@ export default function WishlistDropdown({ iconVariant = 'outline' }) {
   const loadWishlistItems = async () => {
     try {
       setLoading(true);
-      
-      // Try to get current user (if authenticated)
-      const currentUser = await CustomerAuth.me().catch(() => null);
+
+      // Try to get current user (only if authenticated with a token)
+      let currentUser = null;
+      if (CustomerAuth.isAuthenticated()) {
+        currentUser = await CustomerAuth.me().catch(() => null);
+      }
       setUser(currentUser);
 
       // Load wishlist items - this should work for both authenticated and guest users
