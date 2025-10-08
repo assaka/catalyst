@@ -9,7 +9,59 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard } from 'lucide-react';
+import { Save, Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Default section layouts
+const defaultSectionLayout = {
+    '1step': {
+        column1: ['Account', 'Shipping Address', 'Shipping Method', 'Billing Address'],
+        column2: ['Delivery Options', 'Payment Method'],
+        column3: ['Coupon', 'Order Summary']
+    },
+    '2step': {
+        column1: ['Account', 'Shipping Address', 'Shipping Method', 'Billing Address'],
+        column2: ['Delivery Options', 'Coupon', 'Order Summary', 'Payment Method']
+    },
+    '3step': {
+        column1: ['Account', 'Shipping Address', 'Billing Address'],
+        column2: ['Delivery Options', 'Payment Method'],
+        column3: ['Coupon', 'Order Summary']
+    }
+};
+
+// Sortable Item Component for drag and drop
+function SortableSection({ id, section }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="flex items-center gap-2 p-3 bg-white border rounded-lg hover:bg-gray-50"
+        >
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-4 h-4 text-gray-400" />
+            </div>
+            <span className="flex-1">{section}</span>
+        </div>
+    );
+}
 
 const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     for (let i = 0; i < maxRetries; i++) {
@@ -28,6 +80,14 @@ export default function ThemeLayout() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
+
+    // Drag and drop sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         if (selectedStore) {
@@ -93,6 +153,9 @@ export default function ThemeLayout() {
                 checkout_1step_columns: fullStore?.settings?.checkout_1step_columns ?? 3,
                 checkout_2step_columns: fullStore?.settings?.checkout_2step_columns ?? 2,
                 checkout_3step_columns: fullStore?.settings?.checkout_3step_columns ?? 2,
+                checkout_1step_layout: fullStore?.settings?.checkout_1step_layout || defaultSectionLayout['1step'],
+                checkout_2step_layout: fullStore?.settings?.checkout_2step_layout || defaultSectionLayout['2step'],
+                checkout_3step_layout: fullStore?.settings?.checkout_3step_layout || defaultSectionLayout['3step'],
                 // Product grid - merge breakpoints properly
                 product_grid: {
                     breakpoints: {
@@ -352,6 +415,29 @@ export default function ThemeLayout() {
                 theme: { ...prev.settings.theme, [key]: value }
             }
         }));
+    };
+
+    // Handler for drag end event
+    const handleDragEnd = (event, stepType, columnKey) => {
+        const { active, over } = event;
+
+        if (active.id !== over.id) {
+            const sectionLayout = store.settings?.[`checkout_${stepType}_layout`] || defaultSectionLayout[stepType];
+            const column = sectionLayout[columnKey] || [];
+
+            const oldIndex = column.indexOf(active.id);
+            const newIndex = column.indexOf(over.id);
+
+            const newColumn = arrayMove(column, oldIndex, newIndex);
+
+            // Update the layout
+            const newLayout = {
+                ...sectionLayout,
+                [columnKey]: newColumn
+            };
+
+            handleSettingsChange(`checkout_${stepType}_layout`, newLayout);
+        }
     };
 
     const handleSave = async () => {
@@ -1436,11 +1522,34 @@ export default function ThemeLayout() {
                                     </Select>
                                 </div>
 
-                                <div className="text-sm text-gray-600">
-                                    <p><strong>Default Layout:</strong></p>
-                                    <p>Column 1: Account, Shipping Address, Shipping Method, Billing</p>
-                                    <p>Column 2: Delivery Options, Payment Method</p>
-                                    <p>Column 3: Coupon, Order Summary, Place Order</p>
+                                {/* Drag and Drop Section Ordering */}
+                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                    {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
+                                        const sectionLayout = store.settings?.checkout_1step_layout || defaultSectionLayout['1step'];
+                                        const columnSections = sectionLayout[columnKey] || [];
+
+                                        return (
+                                            <div key={columnKey} className="space-y-2">
+                                                <Label className="text-sm font-semibold">Column {idx + 1}</Label>
+                                                <DndContext
+                                                    sensors={sensors}
+                                                    collisionDetection={closestCenter}
+                                                    onDragEnd={(event) => handleDragEnd(event, '1step', columnKey)}
+                                                >
+                                                    <SortableContext
+                                                        items={columnSections}
+                                                        strategy={verticalListSortingStrategy}
+                                                    >
+                                                        <div className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed">
+                                                            {columnSections.map((section) => (
+                                                                <SortableSection key={section} id={section} section={section} />
+                                                            ))}
+                                                        </div>
+                                                    </SortableContext>
+                                                </DndContext>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -1470,10 +1579,34 @@ export default function ThemeLayout() {
                                     </Select>
                                 </div>
 
-                                <div className="text-sm text-gray-600">
-                                    <p><strong>Default Layout:</strong></p>
-                                    <p>Column 1: Account, Shipping Address, Shipping Method, Billing</p>
-                                    <p>Column 2: Delivery Options, Coupon, Order Summary, Payment Method, Place Order</p>
+                                {/* Drag and Drop Section Ordering */}
+                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                    {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_2step_columns || 2).map((columnKey, idx) => {
+                                        const sectionLayout = store.settings?.checkout_2step_layout || defaultSectionLayout['2step'];
+                                        const columnSections = sectionLayout[columnKey] || [];
+
+                                        return (
+                                            <div key={columnKey} className="space-y-2">
+                                                <Label className="text-sm font-semibold">Column {idx + 1}</Label>
+                                                <DndContext
+                                                    sensors={sensors}
+                                                    collisionDetection={closestCenter}
+                                                    onDragEnd={(event) => handleDragEnd(event, '2step', columnKey)}
+                                                >
+                                                    <SortableContext
+                                                        items={columnSections}
+                                                        strategy={verticalListSortingStrategy}
+                                                    >
+                                                        <div className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed">
+                                                            {columnSections.map((section) => (
+                                                                <SortableSection key={section} id={section} section={section} />
+                                                            ))}
+                                                        </div>
+                                                    </SortableContext>
+                                                </DndContext>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -1503,11 +1636,34 @@ export default function ThemeLayout() {
                                     </Select>
                                 </div>
 
-                                <div className="text-sm text-gray-600">
-                                    <p><strong>Default Layout:</strong></p>
-                                    <p>Column 1: Account, Shipping Address, Billing</p>
-                                    <p>Column 2: Delivery Options, Payment Method</p>
-                                    <p>Column 3: Coupon, Order Summary, Place Order</p>
+                                {/* Drag and Drop Section Ordering */}
+                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                    {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_3step_columns || 2).map((columnKey, idx) => {
+                                        const sectionLayout = store.settings?.checkout_3step_layout || defaultSectionLayout['3step'];
+                                        const columnSections = sectionLayout[columnKey] || [];
+
+                                        return (
+                                            <div key={columnKey} className="space-y-2">
+                                                <Label className="text-sm font-semibold">Column {idx + 1}</Label>
+                                                <DndContext
+                                                    sensors={sensors}
+                                                    collisionDetection={closestCenter}
+                                                    onDragEnd={(event) => handleDragEnd(event, '3step', columnKey)}
+                                                >
+                                                    <SortableContext
+                                                        items={columnSections}
+                                                        strategy={verticalListSortingStrategy}
+                                                    >
+                                                        <div className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed">
+                                                            {columnSections.map((section) => (
+                                                                <SortableSection key={section} id={section} section={section} />
+                                                            ))}
+                                                        </div>
+                                                    </SortableContext>
+                                                </DndContext>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </CardContent>
