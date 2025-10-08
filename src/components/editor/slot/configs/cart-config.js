@@ -238,7 +238,7 @@ export const cartConfig = {
           {{/each}}
         </div>
       `,
-      className: 'cart-items-container bg-white',
+      className: 'cart-items-container bg-white divide-y divide-gray-400',
       styles: { padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' },
       parentId: 'content_area',
       position: { col: 1, row: 1 },
