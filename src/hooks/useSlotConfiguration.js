@@ -1735,11 +1735,13 @@ export function useSlotConfiguration({
       };
 
     } else {
-      // For text styling (bold, italic, colors), keep existing parentClassName
-      // and only update className for the text element
+      // For style changes (backgroundColor, color, etc.), preserve existing className
+      // Only update className if it's actually different
+      const existingClassName = updatedSlots[slotId].className || '';
+
       updatedSlots[slotId] = {
         ...updatedSlots[slotId],
-        className: className,
+        className: className || existingClassName, // Use incoming className, fallback to existing
         styles: mergedStyles,
         metadata: {
           ...updatedSlots[slotId].metadata,
