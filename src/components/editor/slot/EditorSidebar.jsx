@@ -1051,6 +1051,22 @@ const EditorSidebar = ({
     // Find the actual content element (button, text, etc.) - not wrappers
     // CRITICAL: Must find the actual semantic element, not ResizeWrapper or other wrappers
     const findContentElement = (element) => {
+      // CRITICAL: For container slots, return the immediate child div (the container itself),
+      // NOT a child element inside it. Containers don't have data-editable attribute.
+      const elementSlotConfig = elementSlotId === slotId ? slotConfig : allSlots[elementSlotId];
+      const slotType = elementSlotConfig?.type;
+
+      if (slotType === 'container' || slotType === 'grid' || slotType === 'flex') {
+        // For containers, return the first child div (the container wrapper with styles)
+        for (const child of element.children) {
+          if (child.tagName?.toLowerCase() === 'div') {
+            return child;
+          }
+        }
+        // Fallback to element itself if no child div found
+        return element;
+      }
+
       // If element has data-slot-id AND data-editable, it's the actual content element
       if (element.hasAttribute('data-slot-id') && element.hasAttribute('data-editable')) {
         return element;
