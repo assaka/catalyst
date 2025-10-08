@@ -4,8 +4,9 @@ import { SlotManager } from '@/utils/slotUtils';
 import { filterSlotsByViewMode, sortSlotsByGridCoordinates } from '@/hooks/useSlotConfiguration';
 import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistry';
 import { createPublicUrl } from '@/utils/urlUtils';
-import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, X } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, Globe, ChevronDown, X, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import HeaderSearch from './HeaderSearch';
 import MiniCart from './MiniCart';
 import WishlistDropdown from './WishlistDropdown';
@@ -330,17 +331,39 @@ export function HeaderSlotRenderer({
         return (
           <div key={id} className={className} data-slot-id={id}>
             {user ? (
-              <Button
-                size="sm"
-                className="px-4 py-2 flex items-center space-x-1"
-                style={buttonStyles}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
-              >
-                {getUserIcon('w-4 h-4')}
-                <span>{user.first_name || user.name || user.email}</span>
-                <ChevronDown className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="px-4 py-2 flex items-center space-x-1"
+                    style={buttonStyles}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = buttonStyles.backgroundColor}
+                  >
+                    {getUserIcon('w-4 h-4')}
+                    <span>{user.first_name || user.name || user.email}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuLabel>
+                    {user.first_name || user.name || user.email} ({user.role})
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    navigate?.(createPublicUrl(store?.slug, 'CUSTOMER_DASHBOARD'));
+                  }}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>My Account</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    handleCustomerLogout?.();
+                  }}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Button
                 onClick={() => {
