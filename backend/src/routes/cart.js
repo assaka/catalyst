@@ -231,15 +231,39 @@ router.post('/', async (req, res) => {
       await cart.reload();
       console.log('Cart POST - After reload, cart items:', JSON.stringify(cart.items));
     } else {
-      // Create new cart
+      // Create new cart with upsert to handle race conditions
       console.log('Cart POST - Creating new cart with items:', JSON.stringify(cartItems));
-      cart = await Cart.create({
-        session_id,
-        store_id,
-        user_id,
-        items: cartItems
-      });
-      console.log('Cart POST - After create, cart items:', JSON.stringify(cart.items));
+      try {
+        cart = await Cart.create({
+          session_id,
+          store_id,
+          user_id,
+          items: cartItems
+        });
+        console.log('Cart POST - After create, cart items:', JSON.stringify(cart.items));
+      } catch (createError) {
+        // Handle duplicate session_id error by fetching the existing cart
+        if (createError.name === 'SequelizeUniqueConstraintError' && createError.fields?.session_id) {
+          console.log('Cart POST - Duplicate session_id detected, fetching existing cart');
+          cart = await Cart.findOne({ where: { session_id } });
+          if (cart) {
+            // Update the existing cart
+            cart.items = cartItems;
+            cart.user_id = user_id || cart.user_id;
+            cart.store_id = store_id || cart.store_id;
+            cart.changed('items', true);
+            await cart.save();
+            await cart.reload();
+            console.log('Cart POST - Updated cart after duplicate error, items:', JSON.stringify(cart.items));
+          } else {
+            // If still not found, re-throw the error
+            throw createError;
+          }
+        } else {
+          // Re-throw other errors
+          throw createError;
+        }
+      }
     }
 
     // Additional logging to debug data persistence
