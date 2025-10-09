@@ -807,6 +807,13 @@ export default function ThemeLayout() {
                                 </div>
                                 <Switch id="show_category_in_breadcrumb" checked={!!store.settings.show_category_in_breadcrumb} onCheckedChange={(c) => handleSettingsChange('show_category_in_breadcrumb', c)} />
                             </div>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="expand_all_menu_items">Always Show All Subcategories</Label>
+                                    <p className="text-sm text-gray-500">Display all subcategories in navigation without requiring hover or click to expand</p>
+                                </div>
+                                <Switch id="expand_all_menu_items" checked={!!store.settings.expandAllMenuItems} onCheckedChange={(c) => handleSettingsChange('expandAllMenuItems', c)} />
+                            </div>
                         </CardContent>
                     </Card>
 

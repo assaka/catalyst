@@ -872,24 +872,6 @@ export default function Categories() {
                         }}
                       />
                     </div>
-                    
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="expand_all_menu_items" className="font-medium">
-                          Always Show All Subcategories
-                        </Label>
-                        <p className="text-sm text-gray-500">
-                          Display all subcategories without requiring hover or click to expand
-                        </p>
-                      </div>
-                      <Switch
-                        id="expand_all_menu_items"
-                        checked={storeSettings.expandAllMenuItems || false}
-                        onCheckedChange={(checked) => {
-                          saveStoreSettings({ ...storeSettings, expandAllMenuItems: checked });
-                        }}
-                      />
-                    </div>
                   </div>
                 )}
               </div>
