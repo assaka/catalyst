@@ -233,8 +233,12 @@ export default function OrderSuccess() {
         // Save the shipping address from the order to the customer's addresses
         if (order.shipping_address && result.data?.customer?.id) {
           try {
+            console.log('📍 Attempting to save shipping address for customer:', result.data.customer.id);
+            console.log('📍 Shipping address data:', order.shipping_address);
+
             const { CustomerAddress } = await import('@/api/storefront-entities');
-            await CustomerAddress.create({
+
+            const addressData = {
               customer_id: result.data.customer.id,
               full_name: order.shipping_address.name || order.shipping_address.full_name,
               email: order.customer_email,
@@ -246,12 +250,23 @@ export default function OrderSuccess() {
               phone: order.shipping_address.phone || order.customer_phone,
               is_default_shipping: true,
               is_default_billing: false
-            });
-            console.log('✅ Saved order shipping address to customer account');
+            };
+
+            console.log('📍 Address data to save:', addressData);
+
+            const savedAddress = await CustomerAddress.create(addressData);
+            console.log('✅ Saved order shipping address to customer account:', savedAddress);
           } catch (addressError) {
-            console.error('Failed to save address:', addressError);
+            console.error('❌ Failed to save address:', addressError);
+            console.error('❌ Address error details:', addressError.response?.data || addressError.message);
             // Don't show error to user as account was created successfully
           }
+        } else {
+          console.log('⚠️ Shipping address not saved - missing data:', {
+            hasShippingAddress: !!order.shipping_address,
+            hasCustomerId: !!result.data?.customer?.id,
+            customerId: result.data?.customer?.id
+          });
         }
       }
 
