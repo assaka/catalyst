@@ -1084,10 +1084,66 @@ export default function Checkout() {
     return currentStep > 0;
   };
 
+  // Validate current step before proceeding
+  const validateCurrentStep = () => {
+    const errors = [];
+
+    // Step 0 validation for both 2-step and 3-step
+    if (currentStep === 0) {
+      // Validate shipping address
+      if (!user || selectedShippingAddress === 'new' || userAddresses.length === 0) {
+        // Email validation
+        if (!shippingAddress.email) {
+          errors.push('Email is required');
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email)) {
+          errors.push('Please enter a valid email address');
+        }
+
+        // Required field validation
+        if (!shippingAddress.full_name) errors.push('Full name is required');
+        if (!shippingAddress.phone) errors.push('Phone number is required');
+        if (!shippingAddress.street) errors.push('Street address is required');
+        if (!shippingAddress.city) errors.push('City is required');
+        if (!shippingAddress.state) errors.push('State/Province is required');
+        if (!shippingAddress.postal_code) errors.push('Postal code is required');
+        if (!shippingAddress.country) errors.push('Country is required');
+      }
+
+      // Validate billing address if different from shipping
+      if (!useShippingForBilling) {
+        if (!user || selectedBillingAddress === 'new' || userAddresses.length === 0) {
+          // Email validation for billing
+          if (!billingAddress.email) {
+            errors.push('Billing email is required');
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email)) {
+            errors.push('Please enter a valid billing email address');
+          }
+
+          if (!billingAddress.full_name) errors.push('Billing full name is required');
+          if (!billingAddress.phone) errors.push('Billing phone number is required');
+          if (!billingAddress.street) errors.push('Billing street address is required');
+          if (!billingAddress.city) errors.push('Billing city is required');
+          if (!billingAddress.state) errors.push('Billing state/province is required');
+          if (!billingAddress.postal_code) errors.push('Billing postal code is required');
+          if (!billingAddress.country) errors.push('Billing country is required');
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      showError(errors.join('. '));
+      return false;
+    }
+
+    return true;
+  };
+
   const goToNextStep = () => {
     if (canGoNext()) {
-      setCurrentStep(currentStep + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (validateCurrentStep()) {
+        setCurrentStep(currentStep + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -1168,45 +1224,65 @@ export default function Checkout() {
 
               {(!user || userAddresses.length === 0 || selectedShippingAddress === 'new') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="md:col-span-2">
+                    <Input
+                      placeholder="Email *"
+                      type="email"
+                      required
+                      value={shippingAddress.email}
+                      onChange={(e) => setShippingAddress(prev => ({ ...prev, email: e.target.value }))}
+                      className={shippingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email) ? 'border-red-500' : ''}
+                    />
+                    {shippingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email) && (
+                      <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
+                    )}
+                  </div>
                   <Input
-                    placeholder="Email"
-                    type="email"
+                    placeholder="Full Name *"
                     className="md:col-span-2"
-                    value={shippingAddress.email}
-                    onChange={(e) => setShippingAddress(prev => ({ ...prev, email: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Full Name"
-                    className="md:col-span-2"
+                    required
                     value={shippingAddress.full_name}
                     onChange={(e) => setShippingAddress(prev => ({ ...prev, full_name: e.target.value }))}
                   />
                   <Input
-                    placeholder="Street Address"
+                    placeholder="Phone Number *"
+                    type="tel"
                     className="md:col-span-2"
+                    required
+                    value={shippingAddress.phone}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Street Address *"
+                    className="md:col-span-2"
+                    required
                     value={shippingAddress.street}
                     onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
                   />
                   <Input
-                    placeholder="City"
+                    placeholder="City *"
+                    required
                     value={shippingAddress.city}
                     onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
                   />
                   <Input
-                    placeholder="State/Province"
+                    placeholder="State/Province *"
+                    required
                     value={shippingAddress.state}
                     onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value }))}
                   />
                   <Input
-                    placeholder="Postal Code"
+                    placeholder="Postal Code *"
+                    required
                     value={shippingAddress.postal_code}
                     onChange={(e) => setShippingAddress(prev => ({ ...prev, postal_code: e.target.value }))}
                   />
                   <CountrySelect
                     value={shippingAddress.country}
                     onChange={(country) => setShippingAddress(prev => ({ ...prev, country }))}
-                    placeholder="Select country..."
+                    placeholder="Select country... *"
                     allowedCountries={settings?.allowed_countries}
+                    required
                   />
 
                   {user && selectedShippingAddress === 'new' && (
@@ -1339,45 +1415,65 @@ export default function Checkout() {
 
                     {(!user || userAddresses.length === 0 || selectedBillingAddress === 'new') && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <Input
+                            placeholder="Email *"
+                            type="email"
+                            required
+                            value={billingAddress.email}
+                            onChange={(e) => setBillingAddress(prev => ({ ...prev, email: e.target.value }))}
+                            className={billingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email) ? 'border-red-500' : ''}
+                          />
+                          {billingAddress.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingAddress.email) && (
+                            <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
+                          )}
+                        </div>
                         <Input
-                          placeholder="Email"
-                          type="email"
+                          placeholder="Full Name *"
                           className="md:col-span-2"
-                          value={billingAddress.email}
-                          onChange={(e) => setBillingAddress(prev => ({ ...prev, email: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Full Name"
-                          className="md:col-span-2"
+                          required
                           value={billingAddress.full_name}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, full_name: e.target.value }))}
                         />
                         <Input
-                          placeholder="Street Address"
+                          placeholder="Phone Number *"
+                          type="tel"
                           className="md:col-span-2"
+                          required
+                          value={billingAddress.phone}
+                          onChange={(e) => setBillingAddress(prev => ({ ...prev, phone: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Street Address *"
+                          className="md:col-span-2"
+                          required
                           value={billingAddress.street}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, street: e.target.value }))}
                         />
                         <Input
-                          placeholder="City"
+                          placeholder="City *"
+                          required
                           value={billingAddress.city}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, city: e.target.value }))}
                         />
                         <Input
-                          placeholder="State/Province"
+                          placeholder="State/Province *"
+                          required
                           value={billingAddress.state}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, state: e.target.value }))}
                         />
                         <Input
-                          placeholder="Postal Code"
+                          placeholder="Postal Code *"
+                          required
                           value={billingAddress.postal_code}
                           onChange={(e) => setBillingAddress(prev => ({ ...prev, postal_code: e.target.value }))}
                         />
                         <CountrySelect
                           value={billingAddress.country}
                           onChange={(country) => setBillingAddress(prev => ({ ...prev, country }))}
-                          placeholder="Select country..."
+                          placeholder="Select country... *"
                           allowedCountries={settings?.allowed_countries}
+                          required
                         />
 
                         {user && selectedBillingAddress === 'new' && (
