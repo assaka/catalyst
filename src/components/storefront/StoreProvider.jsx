@@ -451,7 +451,7 @@ export const StoreProvider = ({ children }) => {
             column2: ['Shipping Method', 'Delivery Settings']
           },
           step2: {
-            column1: ['Payment Method'],
+            column1: ['Summary', 'Payment Method'],
             column2: ['Coupon', 'Order Summary']
           }
         },
@@ -465,7 +465,7 @@ export const StoreProvider = ({ children }) => {
             column2: []
           },
           step3: {
-            column1: ['Payment Method'],
+            column1: ['Summary', 'Payment Method'],
             column2: ['Coupon', 'Order Summary']
           }
         },

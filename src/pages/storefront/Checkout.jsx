@@ -1600,6 +1600,39 @@ export default function Checkout() {
           </Card>
         );
 
+      case 'Summary':
+        return stepsCount > 1 && currentStep > 0 && (
+          <Card key="summary" style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
+            <CardHeader>
+              <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>
+                Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {getCompletedStepsSummary().map((summary, idx) => (
+                <div key={idx} className={idx > 0 ? 'mt-4 pt-4 border-t' : ''}>
+                  <h4 className="font-semibold text-sm text-gray-700 mb-2">{summary.step}</h4>
+                  <div className="space-y-2">
+                    {summary.items.map((item, itemIdx) => (
+                      <div key={itemIdx} className="text-sm">
+                        <span className="text-gray-600">{item.label}:</span>{' '}
+                        <span className="text-gray-900">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <Button
+                onClick={() => setCurrentStep(0)}
+                variant="link"
+                className="mt-3 p-0 h-auto text-blue-600 hover:text-blue-800"
+              >
+                Edit
+              </Button>
+            </CardContent>
+          </Card>
+        );
+
       default:
         return null;
     }
