@@ -1632,6 +1632,13 @@ export default function ThemeLayout() {
                             <CardDescription>Define the column layout and section order for each checkout step configuration.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-800">
+                                    <strong>How it works:</strong> Based on your selected step count below ({store.settings?.checkout_steps_count || 3} step{(store.settings?.checkout_steps_count || 3) > 1 ? 's' : ''}), configure the layout further down.
+                                    Available sections: Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
+                                </p>
+                            </div>
+
                             {/* Step Count Configuration */}
                             <div className="p-4 border rounded-lg space-y-4">
                                 <div>
@@ -1719,13 +1726,6 @@ export default function ThemeLayout() {
                                         )}
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm text-blue-800">
-                                    <strong>How it works:</strong> Based on your selected step count above ({store.settings?.checkout_steps_count || 3} step{(store.settings?.checkout_steps_count || 3) > 1 ? 's' : ''}), configure the layout below.
-                                    Available sections: Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
-                                </p>
                             </div>
 
                             {/* 1-Step Layout */}
