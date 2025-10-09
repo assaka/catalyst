@@ -6,15 +6,33 @@ const router = express.Router();
 
 // Custom middleware that applies auth but doesn't fail for guests
 const optionalAuth = (req, res, next) => {
-  // Try to apply auth middleware
+  // Check if there's a token at all
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+
+  // If no token but has session_id, continue as guest
+  if (!token && req.query.session_id) {
+    req.user = null; // Explicitly set user to null for guests
+    console.log('🔍 Guest user with session_id, skipping auth');
+    return next();
+  }
+
+  // If no token and no session_id, return error
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication or session_id required'
+    });
+  }
+
+  // If we have a token, try to authenticate
   authMiddleware(req, res, (err) => {
-    // If auth fails but we have a session_id, continue as guest
-    if (err && req.query.session_id) {
-      req.user = null; // Ensure req.user is null for guests
-      return next();
-    }
-    // If auth fails and no session_id, pass the error
     if (err) {
+      // If auth fails but we have a session_id, continue as guest
+      if (req.query.session_id) {
+        req.user = null;
+        return next();
+      }
+      // Otherwise pass the error
       return next(err);
     }
     // Auth succeeded, continue
