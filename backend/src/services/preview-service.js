@@ -571,8 +571,8 @@ class PreviewService {
             name: '${storeData.store?.name || 'hamid2'}', 
             slug: 'hamid2'
           },
-          settings: { 
-            currency_symbol: '$',
+          settings: {
+            currency_symbol: '🔴16',
             currency: 'USD'
           },
           taxes: [],

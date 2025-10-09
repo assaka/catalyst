@@ -130,12 +130,12 @@ export const generateMockProductContext = (storeSettings = null) => {
       name: 'AudioTech Store',
       slug: 'audiotech-store',
       currency_code: 'USD',
-      currency_symbol: '$'
+      currency_symbol: '🔴17'
     },
     settings: {
       // Mock defaults
       currency_code: 'USD',
-      currency_symbol: '$',
+      currency_symbol: '🔴18',
       hide_currency_product: false,
       track_stock: true,
       hide_quantity_selector: false,

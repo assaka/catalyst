@@ -159,7 +159,7 @@ export const generateMockCategoryContext = (realFilterableAttributes = null, sto
     ],
     selectedFilters: {},
     settings: {
-      currency_symbol: '$',
+      currency_symbol: '🔴19',
       ...(storeSettings || {}),
       // Ensure theme is explicitly preserved if it exists in storeSettings
       theme: storeSettings?.theme || {}
