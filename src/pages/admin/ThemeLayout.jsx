@@ -10,7 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Save, Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -76,6 +76,20 @@ function SortableSection({ id, section }) {
                 <GripVertical className="w-4 h-4 text-gray-400" />
             </div>
             <span className="flex-1">{section}</span>
+        </div>
+    );
+}
+
+// Droppable Column Component - allows dropping items from other columns
+function DroppableColumn({ id, children, className }) {
+    const { setNodeRef, isOver } = useDroppable({ id });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`${className} ${isOver ? 'ring-2 ring-blue-400' : ''}`}
+        >
+            {children}
         </div>
     );
 }
@@ -441,34 +455,72 @@ export default function ThemeLayout() {
         }));
     };
 
-    // Handler for drag end event - now supports step-specific layouts
-    const handleDragEnd = (event, stepType, stepNumber, columnKey) => {
+    // Unified drag handler - supports cross-column and cross-step dragging
+    const handleUnifiedDragEnd = (event, stepType) => {
         const { active, over } = event;
 
-        if (active.id !== over.id) {
-            const fullLayout = store.settings?.[`checkout_${stepType}_layout`] || defaultSectionLayout[stepType];
-            const stepLayout = fullLayout[stepNumber] || {};
-            const column = stepLayout[columnKey] || [];
+        if (!over) return;
 
-            const oldIndex = column.indexOf(active.id);
-            const newIndex = column.indexOf(over.id);
+        // Parse the droppable IDs: format is "stepKey-columnKey" (e.g., "step1-column1")
+        const activeId = active.id; // Section name (e.g., "Account")
+        const overId = over.id; // Either section name or droppable zone ID
 
-            const newColumn = arrayMove(column, oldIndex, newIndex);
+        // Get the current layout
+        const fullLayout = store.settings?.[`checkout_${stepType}_layout`] || defaultSectionLayout[stepType];
+        const updatedLayout = JSON.parse(JSON.stringify(fullLayout)); // Deep clone
 
-            // Update the step's layout
-            const newStepLayout = {
-                ...stepLayout,
-                [columnKey]: newColumn
-            };
+        // Find where the active item currently is
+        let sourceStepKey = null;
+        let sourceColumnKey = null;
+        let sourceIndex = -1;
 
-            // Update the full layout
-            const newFullLayout = {
-                ...fullLayout,
-                [stepNumber]: newStepLayout
-            };
+        // Search through all steps and columns to find the active item
+        Object.keys(updatedLayout).forEach(stepKey => {
+            Object.keys(updatedLayout[stepKey]).forEach(columnKey => {
+                const index = updatedLayout[stepKey][columnKey].indexOf(activeId);
+                if (index !== -1) {
+                    sourceStepKey = stepKey;
+                    sourceColumnKey = columnKey;
+                    sourceIndex = index;
+                }
+            });
+        });
 
-            handleSettingsChange(`checkout_${stepType}_layout`, newFullLayout);
+        if (!sourceStepKey || !sourceColumnKey) return;
+
+        // Determine target location
+        let targetStepKey = sourceStepKey;
+        let targetColumnKey = sourceColumnKey;
+        let targetIndex = sourceIndex;
+
+        // Check if over is a droppable zone (format: "step1-column1")
+        if (overId.includes('-')) {
+            const [stepPart, columnPart] = overId.split('-');
+            targetStepKey = stepPart;
+            targetColumnKey = columnPart;
+            targetIndex = updatedLayout[targetStepKey][targetColumnKey].length; // Add to end
+        } else {
+            // Over is another section - find where it is
+            Object.keys(updatedLayout).forEach(stepKey => {
+                Object.keys(updatedLayout[stepKey]).forEach(columnKey => {
+                    const index = updatedLayout[stepKey][columnKey].indexOf(overId);
+                    if (index !== -1) {
+                        targetStepKey = stepKey;
+                        targetColumnKey = columnKey;
+                        targetIndex = index;
+                    }
+                });
+            });
         }
+
+        // Remove from source
+        updatedLayout[sourceStepKey][sourceColumnKey].splice(sourceIndex, 1);
+
+        // Insert at target
+        updatedLayout[targetStepKey][targetColumnKey].splice(targetIndex, 0, activeId);
+
+        // Update the settings
+        handleSettingsChange(`checkout_${stepType}_layout`, updatedLayout);
     };
 
     // Handler for column count change - merges sections when reducing columns
@@ -1667,36 +1719,43 @@ export default function ThemeLayout() {
                                     </Select>
                                 </div>
 
-                                {/* Drag and Drop Section Ordering */}
-                                <div className={`grid gap-4 mt-4 ${store.settings?.checkout_1step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_1step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                    {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
-                                        const fullLayout = store.settings?.checkout_1step_layout || defaultSectionLayout['1step'];
-                                        const stepLayout = fullLayout.step1 || {};
-                                        const columnSections = stepLayout[columnKey] || [];
+                                {/* Drag and Drop Section Ordering - Unified DndContext */}
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={(event) => handleUnifiedDragEnd(event, '1step')}
+                                >
+                                    <div className={`grid gap-4 mt-4 ${store.settings?.checkout_1step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_1step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                        {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
+                                            const fullLayout = store.settings?.checkout_1step_layout || defaultSectionLayout['1step'];
+                                            const stepLayout = fullLayout.step1 || {};
+                                            const columnSections = stepLayout[columnKey] || [];
+                                            const allSections = [...(stepLayout.column1 || []), ...(stepLayout.column2 || []), ...(stepLayout.column3 || [])];
 
-                                        return (
-                                            <div key={columnKey} className="space-y-2">
-                                                <Label className="text-sm font-semibold">Column {idx + 1}</Label>
-                                                <DndContext
-                                                    sensors={sensors}
-                                                    collisionDetection={closestCenter}
-                                                    onDragEnd={(event) => handleDragEnd(event, '1step', 'step1', columnKey)}
-                                                >
+                                            return (
+                                                <div key={columnKey} className="space-y-2">
+                                                    <Label className="text-sm font-semibold">Column {idx + 1}</Label>
                                                     <SortableContext
-                                                        items={columnSections}
+                                                        items={allSections}
                                                         strategy={verticalListSortingStrategy}
                                                     >
-                                                        <div className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed">
+                                                        <DroppableColumn
+                                                            id={`step1-${columnKey}`}
+                                                            className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed"
+                                                        >
                                                             {columnSections.map((section) => (
                                                                 <SortableSection key={section} id={section} section={section} />
                                                             ))}
-                                                        </div>
+                                                            {columnSections.length === 0 && (
+                                                                <p className="text-sm text-gray-400 text-center py-4">Drop sections here</p>
+                                                            )}
+                                                        </DroppableColumn>
                                                     </SortableContext>
-                                                </DndContext>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </DndContext>
                             </div>
                             )}
 
