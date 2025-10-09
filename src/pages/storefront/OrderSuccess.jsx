@@ -12,16 +12,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  CheckCircle, 
-  Package, 
-  MapPin, 
-  CreditCard, 
-  UserPlus, 
+import {
+  CheckCircle,
+  Package,
+  MapPin,
+  CreditCard,
+  UserPlus,
   Truck,
   ShoppingBag,
   Info
 } from 'lucide-react';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
@@ -292,7 +293,10 @@ export default function OrderSuccess() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
+        {/* CMS Block - Above Content */}
+        <CmsBlockRenderer position="success_above_content" storeId={order?.store_id} />
+
         {/* Success Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
@@ -799,6 +803,9 @@ export default function OrderSuccess() {
             </div>
           </CardContent>
         </Card>
+
+        {/* CMS Block - Below Content */}
+        <CmsBlockRenderer position="success_below_content" storeId={order?.store_id} />
       </div>
     </div>
   );
