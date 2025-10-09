@@ -465,6 +465,8 @@ export default function ThemeLayout() {
         const activeId = active.id; // Section name (e.g., "Account")
         const overId = over.id; // Either section name or droppable zone ID
 
+        console.log('Drag end:', { activeId, overId, stepType });
+
         // Get the current layout
         const fullLayout = store.settings?.[`checkout_${stepType}_layout`] || defaultSectionLayout[stepType];
         const updatedLayout = JSON.parse(JSON.stringify(fullLayout)); // Deep clone
