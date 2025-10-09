@@ -61,6 +61,7 @@ export default function OrderSuccess() {
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [accountCreationError, setAccountCreationError] = useState('');
   const [accountCreationSuccess, setAccountCreationSuccess] = useState(false);
+  const [customerHasAccount, setCustomerHasAccount] = useState(false); // Track if customer already registered
 
   // Currency formatting helper
   const formatCurrency = (amount, currency) => {
@@ -95,7 +96,7 @@ export default function OrderSuccess() {
       }
     };
     checkAuth();
-  }, []);
+  }, [accountCreationSuccess]); // Re-check auth when account is created
 
   // Load order data
   useEffect(() => {
@@ -113,6 +114,22 @@ export default function OrderSuccess() {
         if (response.ok && result.success && result.data) {
           const orderData = result.data;
           setOrder(orderData);
+
+          // Check if customer already has a registered account (has password)
+          if (orderData.customer_email && orderData.store_id) {
+            try {
+              const statusResponse = await fetch(
+                `${apiUrl}/api/auth/check-customer-status/${encodeURIComponent(orderData.customer_email)}/${orderData.store_id}`
+              );
+              const statusResult = await statusResponse.json();
+
+              if (statusResult.success && statusResult.data) {
+                setCustomerHasAccount(statusResult.data.hasPassword);
+              }
+            } catch (error) {
+              console.error('Error checking customer status:', error);
+            }
+          }
 
           // Track purchase event
           if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
@@ -599,8 +616,8 @@ export default function OrderSuccess() {
               </Card>
             )}
 
-            {/* Create Account - Only show for guest users */}
-            {!isAuthenticated && (
+            {/* Create Account - Only show for guest users who don't have a registered account */}
+            {!isAuthenticated && !customerHasAccount && (
               <>
                 {accountCreationSuccess ? (
                   // Success message - replaces the Create Account card

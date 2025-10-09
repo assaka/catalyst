@@ -296,7 +296,11 @@ router.post('/upgrade-guest', [
       email_verified: false // They'll need to verify their email
     });
 
+    // Reload customer to get the fresh data with hashed password
+    await guestCustomer.reload();
+
     console.log('✅ Guest customer upgraded successfully');
+    console.log('✅ Password hash exists:', !!guestCustomer.password);
 
     // Generate token for auto-login
     const token = generateToken(guestCustomer);
@@ -326,6 +330,44 @@ router.post('/upgrade-guest', [
       success: false,
       message: 'Server error',
       error: error.message
+    });
+  }
+});
+
+// @route   GET /api/auth/check-customer-status/:email/:store_id
+// @desc    Check if a customer has already registered (has password)
+// @access  Public
+router.get('/check-customer-status/:email/:store_id', async (req, res) => {
+  try {
+    const { email, store_id } = req.params;
+
+    const customer = await Customer.findOne({
+      where: { email, store_id },
+      attributes: ['id', 'email', 'password']
+    });
+
+    if (!customer) {
+      return res.json({
+        success: true,
+        data: {
+          exists: false,
+          hasPassword: false
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        exists: true,
+        hasPassword: customer.password !== null && customer.password !== undefined
+      }
+    });
+  } catch (error) {
+    console.error('Check customer status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });
