@@ -137,16 +137,16 @@ export default function OrderSuccess() {
             }
           }
 
-          // Track purchase event
-          if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
-            window.catalyst.trackPurchase(orderData);
-          }
-
           // Try different possible keys for order items
           let items = orderData.OrderItems || orderData.items || orderData.orderItems || [];
 
           if (items && Array.isArray(items) && items.length > 0) {
             setOrderItems(items);
+
+            // Track purchase event with items
+            if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
+              window.catalyst.trackPurchase(orderData);
+            }
           } else {
             // If no items found, try to reload the data after a short delay
             // This handles the case where order items might still be being created
@@ -162,6 +162,11 @@ export default function OrderSuccess() {
                   if (retryItems && Array.isArray(retryItems) && retryItems.length > 0) {
                     setOrderItems(retryItems);
                     setOrder(retryOrderData);
+
+                    // Track purchase event after retry with items
+                    if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
+                      window.catalyst.trackPurchase(retryOrderData);
+                    }
                   } else {
                     setOrderItems([]);
                   }

@@ -201,23 +201,29 @@ export const trackRemoveFromCart = (product, quantity = 1) => {
 };
 
 export const trackPurchase = (order) => {
+  // Support multiple order formats from different contexts
+  const orderId = order.id || order.order_id;
+  const orderTotal = order.total_amount || order.total;
+  const orderCurrency = order.currency || 'USD';
+  const orderItems = order.OrderItems || order.items || order.orderItems || [];
+
   trackEvent('purchase', {
-    transaction_id: order.id,
-    value: order.total,
-    currency: 'USD',
-    items: order.items?.map(item => ({
-      item_id: item.product_id,
-      item_name: item.product_name,
-      item_category: item.category_name,
-      quantity: item.quantity,
-      price: item.price
-    })) || []
+    transaction_id: orderId,
+    value: orderTotal,
+    currency: orderCurrency,
+    items: orderItems.map(item => ({
+      item_id: item.product_id || item.id,
+      item_name: item.product_name || item.name,
+      item_category: item.category_name || item.category,
+      quantity: item.quantity || 1,
+      price: item.unit_price || item.price || 0
+    }))
   });
-  
+
   trackActivity('order_completed', {
-    order_id: order.id,
-    order_total: order.total,
-    order_items_count: order.items?.length || 0
+    order_id: orderId,
+    order_total: orderTotal,
+    order_items_count: orderItems.length
   });
 };
 
