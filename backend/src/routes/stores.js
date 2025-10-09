@@ -940,8 +940,16 @@ router.get('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
 // @access  Private
 router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
+    console.log('🐛 PUT /api/stores/:id/settings DEBUG:', {
+      storeId: req.params.id,
+      body: req.body,
+      hasSettings: !!req.body.settings,
+      settingsKeys: req.body.settings ? Object.keys(req.body.settings) : [],
+      user: req.user?.email
+    });
+
     const store = await Store.findByPk(req.params.id);
-    
+
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -953,7 +961,7 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -962,25 +970,48 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
       }
     }
 
+    console.log('📝 Current store settings before update:', JSON.stringify(store.settings));
+    console.log('📝 Incoming request body settings:', JSON.stringify(req.body.settings));
+
     // Merge with existing settings
     const currentSettings = store.settings || {};
+    const incomingSettings = req.body.settings || {};
     const mergedSettings = {
       ...currentSettings,
-      ...req.body.settings
+      ...incomingSettings
     };
-    
+
+    console.log('🔄 Merged settings to save:', JSON.stringify(mergedSettings));
+
+    // Update store with merged settings
     await store.update({ settings: mergedSettings });
+
+    // Also update other fields if provided (like name, description, contact info, etc.)
+    const otherFields = { ...req.body };
+    delete otherFields.settings;
+
+    if (Object.keys(otherFields).length > 0) {
+      console.log('🔧 Updating other fields:', Object.keys(otherFields));
+      await store.update(otherFields);
+    }
+
+    // Reload to verify
+    await store.reload();
+    console.log('✅ Store settings saved successfully:', JSON.stringify(store.settings));
 
     res.json({
       success: true,
       message: 'Store settings updated successfully',
-      settings: mergedSettings
+      data: store,
+      settings: store.settings
     });
   } catch (error) {
     console.error('Update store settings error:', error);
+    console.error('Error details:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
