@@ -302,6 +302,25 @@ router.post('/upgrade-guest', [
     console.log('✅ Guest customer upgraded successfully');
     console.log('✅ Password hash exists:', !!guestCustomer.password);
 
+    // Link all guest orders to this customer account
+    try {
+      const { Order } = require('../models');
+      const updatedOrders = await Order.update(
+        { customer_id: guestCustomer.id },
+        {
+          where: {
+            customer_email: email,
+            store_id: store_id,
+            customer_id: null // Only update orders that don't have a customer_id
+          }
+        }
+      );
+      console.log(`✅ Linked ${updatedOrders[0]} guest orders to customer account`);
+    } catch (orderLinkError) {
+      console.error('Failed to link orders to customer:', orderLinkError);
+      // Don't fail the account upgrade if order linking fails
+    }
+
     // Generate token for auto-login
     const token = generateToken(guestCustomer);
 
@@ -319,6 +338,7 @@ router.post('/upgrade-guest', [
       message: 'Account upgraded successfully',
       data: {
         user: guestCustomer,
+        customer: guestCustomer, // Include customer key for consistency with OrderSuccess.jsx
         token,
         sessionRole: 'customer',
         sessionContext: 'storefront'
