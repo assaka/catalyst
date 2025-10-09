@@ -408,23 +408,6 @@ export default function OrderSuccess() {
                       </div>
                     </div>
                     
-                    <p className="text-xs text-gray-400 mt-3">Debug: OrderItems={JSON.stringify(order?.OrderItems?.length || 'undefined')}</p>
-                    
-                    {order && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={() => {
-                          console.log('Attempting to reload order items...');
-                          console.log('Current order data:', order);
-                          // Try to reload order data
-                          window.location.reload();
-                        }}
-                      >
-                        🔄 Reload Order Items
-                      </Button>
-                    )}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
