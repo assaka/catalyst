@@ -912,8 +912,20 @@ export default function Checkout() {
       
       const discount = calculateDiscount();
       
+      // Enrich cart items with product details for order creation
+      const enrichedCartItems = cartItems.map(item => {
+        const product = cartProducts[item.product_id];
+        return {
+          ...item,
+          product_name: product?.title || item.product_name || item.name || 'Product',
+          name: product?.title || item.product_name || item.name || 'Product',
+          sku: product?.sku || item.sku || '',
+          price: item.price || product?.price || 0
+        };
+      });
+
       const checkoutData = {
-        cartItems,
+        cartItems: enrichedCartItems,
         shippingAddress: getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress),
         billingAddress: useShippingForBilling ? (getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress)) : (getBillingCountry() === billingAddress.country ? billingAddress : userAddresses.find(a => a.id === selectedBillingAddress)),
         store,
