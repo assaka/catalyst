@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { createSlotComponent, registerSlotComponent } from './SlotComponentRegistry';
-import { useLoginData } from '@/contexts/LoginContext';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -194,14 +193,12 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     rememberMe: false
   });
 
-  // PRIORITY 1: Get loginData from React Context (bypasses variableContext chain)
-  const contextLoginData = useLoginData();
-  // PRIORITY 2: Fallback to variableContext if context is null
-  const loginData = contextLoginData || variableContext?.loginData || {};
+  // Get loginData from variableContext
+  const loginData = variableContext?.loginData || {};
 
-  console.log('🔍 LoginFormSlot: contextLoginData from useLoginData():', contextLoginData);
   console.log('🔍 LoginFormSlot: variableContext:', variableContext);
-  console.log('🔍 LoginFormSlot: final loginData:', loginData);
+  console.log('🔍 LoginFormSlot: loginData from variableContext:', loginData);
+  console.log('🔍 LoginFormSlot: loginData keys:', loginData ? Object.keys(loginData) : 'none');
 
   const {
     formData = localFormData,
