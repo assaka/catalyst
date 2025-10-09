@@ -803,6 +803,7 @@ export function UnifiedSlotRenderer({
             categoryData={categoryData}
             cartData={cartData}
             headerContext={headerContext}
+            loginData={loginData}
           />
         </div>
       );
