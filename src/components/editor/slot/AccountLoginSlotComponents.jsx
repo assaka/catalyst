@@ -189,16 +189,23 @@ const LoginFormSlot = createSlotComponent({
   render: ({ slot, context, variableContext }) => {
     // Get loginData from variableContext (passed from Login.jsx)
     const loginData = variableContext?.loginData || {};
+
+    console.log('🔍 LoginFormSlot: variableContext:', variableContext);
+    console.log('🔍 LoginFormSlot: loginData:', loginData);
+
     const {
       formData = { email: '', password: '', rememberMe: false },
       loading = false,
       error = '',
       success = '',
       showPassword = false,
-      handleInputChange = () => {},
-      handleSubmit = (e) => e.preventDefault(),
-      setShowPassword = () => {}
+      handleInputChange = () => { console.log('⚠️ Using default handleInputChange'); },
+      handleSubmit = (e) => { e.preventDefault(); console.log('⚠️ Using default handleSubmit'); },
+      setShowPassword = () => { console.log('⚠️ Using default setShowPassword'); }
     } = loginData;
+
+    console.log('🔍 LoginFormSlot: formData:', formData);
+    console.log('🔍 LoginFormSlot: handleInputChange:', typeof handleInputChange);
 
     return (
       <div className={slot.className} style={slot.styles}>
