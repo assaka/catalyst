@@ -81,14 +81,15 @@ export default function OrderSuccess() {
     });
   };
 
-  // Check authentication status
+  // Check authentication status - only consider CUSTOMER authentication for storefront
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const userData = await User.me();
-        const isAuth = !!userData?.id;
-        console.log('🔐 Auth check:', { userData, isAuth });
-        setIsAuthenticated(isAuth);
+        // Only consider authenticated if user is a customer (not store_owner/admin)
+        const isCustomerAuth = !!userData?.id && userData?.role === 'customer';
+        console.log('🔐 Auth check:', { userData, role: userData?.role, isCustomerAuth });
+        setIsAuthenticated(isCustomerAuth);
       } catch (error) {
         console.log('🔐 Auth check failed (guest user):', error.message);
         setIsAuthenticated(false);
