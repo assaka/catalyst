@@ -1808,9 +1808,77 @@ export default function Checkout() {
       )}
 
       <div className={`grid grid-cols-1 lg:grid-cols-${columnCount} gap-6 lg:gap-8`}>
+        {/* Dynamically render columns based on layout configuration */}
+        {['column1', 'column2', 'column3'].slice(0, columnCount).map((columnKey, columnIndex) => {
+          const columnSections = layout[columnKey] || [];
 
-        {/* Column 1: Information Forms */}
-        <div className="order-1 space-y-4 lg:space-y-6">
+          return (
+            <div key={columnKey} className="space-y-4 lg:space-y-6">
+              {/* Summary of Previous Steps (always shows first in column 1) */}
+              {columnIndex === 0 && stepsCount > 1 && currentStep > 0 && (
+                <Card style={{ backgroundColor: '#F3F4F6', borderColor: checkoutSectionBorderColor }}>
+                  <CardHeader>
+                    <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>
+                      Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {getCompletedStepsSummary().map((summary, idx) => (
+                      <div key={idx} className={idx > 0 ? 'mt-4 pt-4 border-t' : ''}>
+                        <h4 className="font-semibold text-sm text-gray-700 mb-2">{summary.step}</h4>
+                        <div className="space-y-2">
+                          {summary.items.map((item, itemIdx) => (
+                            <div key={itemIdx} className="text-sm">
+                              <span className="text-gray-600">{item.label}:</span>{' '}
+                              <span className="text-gray-900">{item.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      onClick={() => setCurrentStep(0)}
+                      variant="link"
+                      className="mt-3 p-0 h-auto text-blue-600 hover:text-blue-800"
+                    >
+                      Edit
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Render sections dynamically for this column */}
+              {columnSections.map(sectionName => renderSection(sectionName))}
+
+              {/* Navigation Buttons (always at bottom of last column) */}
+              {columnIndex === columnCount - 1 && stepsCount > 1 && (
+                <div className="flex gap-3">
+                  {canGoPrev() && (
+                    <Button
+                      onClick={goToPrevStep}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      ← Previous
+                    </Button>
+                  )}
+                  {canGoNext() && (
+                    <Button
+                      onClick={goToNextStep}
+                      className="flex-1"
+                      style={{ backgroundColor: stepActiveColor, color: '#FFFFFF' }}
+                    >
+                      Continue →
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Old hardcoded layout - REMOVE THIS ENTIRE SECTION */}
+        <div className="order-1 space-y-4 lg:space-y-6" style={{display: 'none'}}>
 
           {/* Summary of Previous Steps */}
           {stepsCount > 1 && currentStep > 0 && (
@@ -2617,6 +2685,8 @@ export default function Checkout() {
             </div>
           )}
         </div>
+        {/* END OF OLD HARDCODED LAYOUT - TO BE REMOVED */}
+
       </div>
       <CmsBlockRenderer position="checkout_below_form" />
       <AlertComponent />
