@@ -25,7 +25,7 @@ const Customer = sequelize.define('Customer', {
   },
   password: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true // Allow null for guest customers created from orders
   },
   first_name: {
     type: DataTypes.STRING,

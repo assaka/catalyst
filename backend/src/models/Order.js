@@ -194,10 +194,12 @@ const Order = sequelize.define('Order', {
           });
           
           if (!existingCustomer) {
-            // Create new customer record
+            // Create new customer record with placeholder password for guest customers
+            // Guest customers can set a real password later if they create an account
             const newCustomer = await Customer.create({
               store_id: order.store_id,
               email: order.customer_email,
+              password: null, // Will be set when/if they create an account
               first_name: firstName,
               last_name: lastName,
               phone: order.customer_phone,
