@@ -415,14 +415,14 @@ export const StoreProvider = ({ children }) => {
         checkout_3step_columns: selectedStore.settings?.checkout_3step_columns ?? 2,
         checkout_1step_layout: selectedStore.settings?.checkout_1step_layout || {
           step1: {
-            column1: ['Account', 'Shipping Address', 'Shipping Method', 'Billing Address'],
+            column1: ['Shipping Address', 'Shipping Method', 'Billing Address'],
             column2: ['Delivery Options', 'Payment Method'],
             column3: ['Coupon', 'Order Summary']
           }
         },
         checkout_2step_layout: selectedStore.settings?.checkout_2step_layout || {
           step1: {
-            column1: ['Account', 'Shipping Address', 'Billing Address'],
+            column1: ['Shipping Address', 'Billing Address'],
             column2: ['Shipping Method', 'Delivery Options']
           },
           step2: {
@@ -432,8 +432,8 @@ export const StoreProvider = ({ children }) => {
         },
         checkout_3step_layout: selectedStore.settings?.checkout_3step_layout || {
           step1: {
-            column1: ['Account', 'Shipping Address'],
-            column2: ['Billing Address']
+            column1: ['Shipping Address', 'Billing Address'],
+            column2: []
           },
           step2: {
             column1: ['Shipping Method', 'Delivery Options'],

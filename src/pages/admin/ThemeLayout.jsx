@@ -18,14 +18,14 @@ import { CSS } from '@dnd-kit/utilities';
 const defaultSectionLayout = {
     '1step': {
         step1: {
-            column1: ['Account', 'Shipping Address', 'Shipping Method', 'Billing Address'],
+            column1: ['Shipping Address', 'Shipping Method', 'Billing Address'],
             column2: ['Delivery Options', 'Payment Method'],
             column3: ['Coupon', 'Order Summary']
         }
     },
     '2step': {
         step1: {
-            column1: ['Account', 'Shipping Address', 'Billing Address'],
+            column1: ['Shipping Address', 'Billing Address'],
             column2: ['Shipping Method', 'Delivery Options']
         },
         step2: {
@@ -35,8 +35,8 @@ const defaultSectionLayout = {
     },
     '3step': {
         step1: {
-            column1: ['Account', 'Shipping Address'],
-            column2: ['Billing Address']
+            column1: ['Shipping Address', 'Billing Address'],
+            column2: []
         },
         step2: {
             column1: ['Shipping Method', 'Delivery Options'],
@@ -1690,7 +1690,7 @@ export default function ThemeLayout() {
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-sm text-blue-800">
                                     <strong>How it works:</strong> Based on your selected step count above ({store.settings?.checkout_steps_count || 3} step{(store.settings?.checkout_steps_count || 3) > 1 ? 's' : ''}), configure the layout below.
-                                    Available sections: Account, Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
+                                    Available sections: Shipping Address, Shipping Method, Billing Address, Delivery Options, Payment Method, Coupon, Order Summary.
                                 </p>
                             </div>
 
@@ -1720,42 +1720,47 @@ export default function ThemeLayout() {
                                 </div>
 
                                 {/* Drag and Drop Section Ordering - Unified DndContext */}
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={(event) => handleUnifiedDragEnd(event, '1step')}
-                                >
-                                    <div className={`grid gap-4 mt-4 ${store.settings?.checkout_1step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_1step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                        {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
-                                            const fullLayout = store.settings?.checkout_1step_layout || defaultSectionLayout['1step'];
-                                            const stepLayout = fullLayout.step1 || {};
-                                            const columnSections = stepLayout[columnKey] || [];
-                                            const allSections = [...(stepLayout.column1 || []), ...(stepLayout.column2 || []), ...(stepLayout.column3 || [])];
+                                {(() => {
+                                    const fullLayout = store.settings?.checkout_1step_layout || defaultSectionLayout['1step'];
+                                    const stepLayout = fullLayout.step1 || {};
+                                    const allSections = [...(stepLayout.column1 || []), ...(stepLayout.column2 || []), ...(stepLayout.column3 || [])];
 
-                                            return (
-                                                <div key={columnKey} className="space-y-2">
-                                                    <Label className="text-sm font-semibold">Column {idx + 1}</Label>
-                                                    <SortableContext
-                                                        items={allSections}
-                                                        strategy={verticalListSortingStrategy}
-                                                    >
-                                                        <DroppableColumn
-                                                            id={`step1-${columnKey}`}
-                                                            className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed"
-                                                        >
-                                                            {columnSections.map((section) => (
-                                                                <SortableSection key={section} id={section} section={section} />
-                                                            ))}
-                                                            {columnSections.length === 0 && (
-                                                                <p className="text-sm text-gray-400 text-center py-4">Drop sections here</p>
-                                                            )}
-                                                        </DroppableColumn>
-                                                    </SortableContext>
+                                    return (
+                                        <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={(event) => handleUnifiedDragEnd(event, '1step')}
+                                        >
+                                            <SortableContext
+                                                items={allSections}
+                                                strategy={verticalListSortingStrategy}
+                                            >
+                                                <div className={`grid gap-4 mt-4 ${store.settings?.checkout_1step_columns === 1 ? 'grid-cols-1' : store.settings?.checkout_1step_columns === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                                    {['column1', 'column2', 'column3'].slice(0, store.settings?.checkout_1step_columns || 3).map((columnKey, idx) => {
+                                                        const columnSections = stepLayout[columnKey] || [];
+
+                                                        return (
+                                                            <div key={columnKey} className="space-y-2">
+                                                                <Label className="text-sm font-semibold">Column {idx + 1}</Label>
+                                                                <DroppableColumn
+                                                                    id={`step1-${columnKey}`}
+                                                                    className="space-y-2 min-h-[100px] p-2 bg-gray-50 rounded border-2 border-dashed"
+                                                                >
+                                                                    {columnSections.map((section) => (
+                                                                        <SortableSection key={section} id={section} section={section} />
+                                                                    ))}
+                                                                    {columnSections.length === 0 && (
+                                                                        <p className="text-sm text-gray-400 text-center py-4">Drop sections here</p>
+                                                                    )}
+                                                                </DroppableColumn>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </DndContext>
+                                            </SortableContext>
+                                        </DndContext>
+                                    );
+                                })()}
                             </div>
                             )}
 
