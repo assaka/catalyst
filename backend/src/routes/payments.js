@@ -1070,33 +1070,62 @@ router.post('/debug-session', async (req, res) => {
 
 // Helper function to create preliminary order immediately after checkout session creation
 async function createPreliminaryOrder(session, orderData) {
+  const {
+    items,
+    store_id,
+    customer_email,
+    customer_id,
+    shipping_address,
+    billing_address,
+    shipping_method,
+    selected_shipping_method,
+    shipping_cost,
+    tax_amount,
+    payment_fee,
+    selected_payment_method,
+    selected_payment_method_name,
+    discount_amount,
+    applied_coupon,
+    delivery_date,
+    delivery_time_slot,
+    delivery_instructions,
+    store
+  } = orderData;
+
+  console.log('💾 Creating preliminary order with session ID:', session.id);
+  console.log('🔍 Received customer_id:', customer_id);
+
+  // Validate customer_id BEFORE starting transaction - ensure it exists in the database
+  let validatedCustomerId = null;
+  if (customer_id) {
+    try {
+      const { User } = require('../models');
+      console.log('🔍 Looking up customer_id in database:', customer_id);
+      const customerExists = await User.findByPk(customer_id);
+      console.log('🔍 Customer lookup result:', customerExists ? 'Found' : 'Not found');
+
+      if (customerExists) {
+        validatedCustomerId = customer_id;
+        console.log('✅ Validated customer_id:', customer_id);
+      } else {
+        console.log('⚠️ Customer ID provided but not found in database, treating as guest checkout:', customer_id);
+        validatedCustomerId = null; // Explicitly set to null
+      }
+    } catch (error) {
+      console.log('⚠️ Error validating customer_id, treating as guest checkout:', error.message);
+      console.log('⚠️ Error stack:', error.stack);
+      validatedCustomerId = null; // Explicitly set to null on error
+    }
+  } else {
+    console.log('ℹ️ No customer_id provided, creating guest order');
+  }
+
+  console.log('🔍 Final validatedCustomerId to be used:', validatedCustomerId);
+
   const { sequelize } = require('../database/connection');
   const transaction = await sequelize.transaction();
-  
-  try {
-    const {
-      items,
-      store_id,
-      customer_email,
-      customer_id,
-      shipping_address,
-      billing_address,
-      shipping_method,
-      selected_shipping_method,
-      shipping_cost,
-      tax_amount,
-      payment_fee,
-      selected_payment_method,
-      selected_payment_method_name,
-      discount_amount,
-      applied_coupon,
-      delivery_date,
-      delivery_time_slot,
-      delivery_instructions,
-      store
-    } = orderData;
 
-    console.log('💾 Creating preliminary order with session ID:', session.id);
+  try {
 
     // Calculate totals
     const subtotal = items.reduce((sum, item) => {
@@ -1117,23 +1146,6 @@ async function createPreliminaryOrder(session, orderData) {
     const order_number = `ORD-${timestamp}-${randomStr}`;
 
     console.log('💾 Generated order_number:', order_number);
-
-    // Validate customer_id if provided - ensure it exists in the database
-    let validatedCustomerId = null;
-    if (customer_id) {
-      try {
-        const { User } = require('../models');
-        const customerExists = await User.findByPk(customer_id);
-        if (customerExists) {
-          validatedCustomerId = customer_id;
-          console.log('✅ Validated customer_id:', customer_id);
-        } else {
-          console.log('⚠️ Customer ID provided but not found in database, treating as guest checkout:', customer_id);
-        }
-      } catch (error) {
-        console.log('⚠️ Error validating customer_id, treating as guest checkout:', error.message);
-      }
-    }
 
     // Create the preliminary order
     const order = await Order.create({
