@@ -187,6 +187,13 @@ const ProfileFormSlot = createSlotComponent({
  * Wrapper component to use React hooks
  */
 const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
+  // Use local state for testing if handlers aren't coming through
+  const [localFormData, setLocalFormData] = React.useState({
+    email: '',
+    password: '',
+    rememberMe: false
+  });
+
   // PRIORITY 1: Get loginData from React Context (bypasses variableContext chain)
   const contextLoginData = useLoginData();
   // PRIORITY 2: Fallback to variableContext if context is null
@@ -196,19 +203,29 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
   console.log('🔍 LoginFormSlot: variableContext:', variableContext);
   console.log('🔍 LoginFormSlot: final loginData:', loginData);
 
-    const {
-      formData = { email: '', password: '', rememberMe: false },
-      loading = false,
-      error = '',
-      success = '',
-      showPassword = false,
-      handleInputChange = () => { console.log('⚠️ Using default handleInputChange'); },
-      handleSubmit = (e) => { e.preventDefault(); console.log('⚠️ Using default handleSubmit'); },
-      setShowPassword = () => { console.log('⚠️ Using default setShowPassword'); }
-    } = loginData;
+  const {
+    formData = localFormData,
+    loading = false,
+    error = '',
+    success = '',
+    showPassword = false,
+    handleInputChange = (e) => {
+      console.log('⚠️ Using LOCAL handleInputChange');
+      const { name, value, type, checked } = e.target;
+      setLocalFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    },
+    handleSubmit = (e) => {
+      e.preventDefault();
+      console.log('⚠️ Using default handleSubmit - form data:', localFormData);
+    },
+    setShowPassword = () => { console.log('⚠️ Using default setShowPassword'); }
+  } = loginData;
 
-    console.log('🔍 LoginFormSlot: formData:', formData);
-    console.log('🔍 LoginFormSlot: handleInputChange type:', typeof handleInputChange);
+  console.log('🔍 LoginFormSlot: formData:', formData);
+  console.log('🔍 LoginFormSlot: handleInputChange type:', typeof handleInputChange);
 
     return (
       <div className={slot.className} style={slot.styles}>
