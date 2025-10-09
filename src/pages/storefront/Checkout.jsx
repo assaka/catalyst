@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/accordion";
 import { Tag, CalendarIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
+import { CustomerAuth } from "@/api/storefront-entities";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 import StepIndicator from "@/components/storefront/StepIndicator";
@@ -269,20 +270,26 @@ export default function Checkout() {
     try {
       setLoading(true);
       
-      // Load user
+      // Load user - use CustomerAuth for customer checkout
       try {
-        const userData = await User.me();
-        setUser(userData);
-        
-        // Load user addresses if logged in
-        if (userData?.id) {
-          try {
-            const addresses = await CustomerAddress.findAll();
-            setUserAddresses(addresses || []);
-          } catch (error) {
-            console.warn('Addresses API not available:', error);
-            setUserAddresses([]);
+        // Check if customer is logged in
+        if (CustomerAuth.isAuthenticated()) {
+          const userData = await CustomerAuth.me();
+          setUser(userData);
+
+          // Load user addresses if logged in
+          if (userData?.id) {
+            try {
+              const addresses = await CustomerAddress.findAll();
+              setUserAddresses(addresses || []);
+            } catch (error) {
+              console.warn('Addresses API not available:', error);
+              setUserAddresses([]);
+            }
           }
+        } else {
+          setUser(null);
+          setUserAddresses([]);
         }
       } catch (error) {
         setUser(null);

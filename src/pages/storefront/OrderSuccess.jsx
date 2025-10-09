@@ -222,7 +222,31 @@ export default function OrderSuccess() {
 
       // Auto-login the user by storing the token
       if (result.data?.token) {
-        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('customer_auth_token', result.data.token);
+
+        // Save the shipping address from the order to the customer's addresses
+        if (order.shipping_address && result.data?.customer?.id) {
+          try {
+            const { CustomerAddress } = await import('@/api/storefront-entities');
+            await CustomerAddress.create({
+              customer_id: result.data.customer.id,
+              full_name: order.shipping_address.name || order.shipping_address.full_name,
+              email: order.customer_email,
+              street: order.shipping_address.line1 || order.shipping_address.street,
+              city: order.shipping_address.city,
+              state: order.shipping_address.state || order.shipping_address.province,
+              postal_code: order.shipping_address.postal_code || order.shipping_address.zip,
+              country: order.shipping_address.country,
+              phone: order.shipping_address.phone || order.customer_phone,
+              is_default_shipping: true,
+              is_default_billing: false
+            });
+            console.log('✅ Saved order shipping address to customer account');
+          } catch (addressError) {
+            console.error('Failed to save address:', addressError);
+            // Don't show error to user as account was created successfully
+          }
+        }
       }
 
     } catch (error) {
