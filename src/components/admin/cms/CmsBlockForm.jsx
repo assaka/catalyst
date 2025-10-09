@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Simple collapsible components if not available in UI library
-import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout, ImagePlus, User } from 'lucide-react';
+import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout, ImagePlus, User, CheckCircle } from 'lucide-react';
 import MediaBrowser from './MediaBrowser';
 
 import { useAlertTypes } from '@/hooks/useAlert';
@@ -29,7 +29,8 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     product: false,
     category: false,
     cart: false,
-    account: false
+    account: false,
+    success: false
   });
 
   useEffect(() => {
@@ -164,6 +165,15 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
       options: [
         { value: 'account_cms_above', label: 'Above Content', description: 'Full-width area above account content' },
         { value: 'account_cms_below', label: 'Below Content', description: 'Full-width area below account content' }
+      ]
+    },
+    success: {
+      title: 'Success Page',
+      icon: CheckCircle,
+      description: 'Order success/confirmation page',
+      options: [
+        { value: 'success_above_content', label: 'Above Content', description: 'Above order confirmation details' },
+        { value: 'success_below_content', label: 'Below Content', description: 'Below order confirmation details' }
       ]
     }
   };
