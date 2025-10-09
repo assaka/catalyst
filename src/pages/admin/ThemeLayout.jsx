@@ -1456,6 +1456,48 @@ export default function ThemeLayout() {
                             <CardDescription>Customize the appearance and flow of your checkout page.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {/* Checkout Settings */}
+                            <div className="space-y-4">
+                                <Label className="text-base font-medium">Checkout Settings</Label>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <Label htmlFor="allow_guest_checkout" className="font-medium">Allow Guest Checkout</Label>
+                                            <p className="text-sm text-gray-500">Allow customers to checkout without creating an account</p>
+                                        </div>
+                                        <Switch
+                                            id="allow_guest_checkout"
+                                            checked={store?.settings?.allow_guest_checkout !== undefined ? store.settings.allow_guest_checkout : true}
+                                            onCheckedChange={(checked) => handleSettingsChange('allow_guest_checkout', checked)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <Label htmlFor="require_shipping_address" className="font-medium">Require Shipping Address</Label>
+                                            <p className="text-sm text-gray-500">Always require a shipping address during checkout</p>
+                                        </div>
+                                        <Switch
+                                            id="require_shipping_address"
+                                            checked={store?.settings?.require_shipping_address !== undefined ? store.settings.require_shipping_address : true}
+                                            onCheckedChange={(checked) => handleSettingsChange('require_shipping_address', checked)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <Label htmlFor="collect_phone_number_at_checkout" className="font-medium">Collect Phone Number at Checkout</Label>
+                                            <p className="text-sm text-gray-500">Require customers to provide a phone number during checkout</p>
+                                        </div>
+                                        <Switch
+                                            id="collect_phone_number_at_checkout"
+                                            checked={store?.settings?.collect_phone_number_at_checkout !== undefined ? store.settings.collect_phone_number_at_checkout : false}
+                                            onCheckedChange={(checked) => handleSettingsChange('collect_phone_number_at_checkout', checked)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator />
+
                             {/* Step Indicator Styling */}
                             <div className="space-y-4">
                                 <Label className="text-base font-medium">Step Indicator Styling</Label>
