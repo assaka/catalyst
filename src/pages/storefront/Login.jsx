@@ -189,7 +189,7 @@ export default function Login() {
     createPublicUrl
   };
 
-  console.log('🔐 LOGIN.JSX: Creating loginData object:', {
+  console.log('🔐 LOGIN.JSX: RENDER - Creating loginData object:', {
     formData,
     loading,
     error,
@@ -197,7 +197,8 @@ export default function Login() {
     showPassword,
     handleInputChangeType: typeof handleInputChange,
     handleSubmitType: typeof handleSubmit,
-    setShowPasswordType: typeof setShowPassword
+    setShowPasswordType: typeof setShowPassword,
+    timestamp: new Date().toISOString()
   });
 
   return (

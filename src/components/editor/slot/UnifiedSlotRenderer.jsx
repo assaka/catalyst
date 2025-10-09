@@ -325,10 +325,8 @@ export function UnifiedSlotRenderer({
     loginData: loginData
   };
 
-  // Debug logging for login data flow
-  if (loginData && Object.keys(loginData).length > 0) {
-    console.log('🔍 UnifiedSlotRenderer: parentId =', parentId, 'loginData exists:', !!loginData, 'keys:', Object.keys(loginData));
-  }
+  // Debug logging for login data flow - ALWAYS log to catch null/undefined cases
+  console.log('🔍 UnifiedSlotRenderer: parentId =', parentId, 'loginData:', loginData, 'type:', typeof loginData, 'isNull:', loginData === null, 'keys:', loginData ? Object.keys(loginData) : 'N/A');
 
 
   /**
