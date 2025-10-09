@@ -86,8 +86,11 @@ export default function OrderSuccess() {
     const checkAuth = async () => {
       try {
         const userData = await User.me();
-        setIsAuthenticated(!!userData?.id);
+        const isAuth = !!userData?.id;
+        console.log('🔐 Auth check:', { userData, isAuth });
+        setIsAuthenticated(isAuth);
       } catch (error) {
+        console.log('🔐 Auth check failed (guest user):', error.message);
         setIsAuthenticated(false);
       }
     };
@@ -650,7 +653,10 @@ export default function OrderSuccess() {
             )}
 
             {/* Create Account - Only show for guest users */}
-            {!isAuthenticated && (
+            {(() => {
+              console.log('🎯 Create Account card condition check:', { isAuthenticated, shouldShow: !isAuthenticated });
+              return !isAuthenticated;
+            })() && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
