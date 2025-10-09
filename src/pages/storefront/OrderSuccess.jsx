@@ -297,44 +297,6 @@ export default function OrderSuccess() {
           </Button>
         </div>
 
-        {/* Account Creation Success Alert */}
-        {accountCreationSuccess && (
-          <Alert className="mb-6 border-green-500 bg-green-50 shadow-lg">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-green-900 mb-2">
-                  🎉 Your Account is Now Created!
-                </h3>
-                <AlertDescription className="text-green-800 space-y-2">
-                  <p className="font-medium">
-                    Welcome! Your account has been successfully created with email: <strong>{order.customer_email}</strong>
-                  </p>
-                  <div className="text-sm space-y-1 mt-3">
-                    <p>✅ You've been automatically logged in</p>
-                    <p>✅ A welcome email has been sent to your inbox</p>
-                    <p>✅ Your shipping and billing addresses have been saved</p>
-                    <p>✅ You can now track your orders and manage your profile</p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-green-200">
-                    <Button
-                      onClick={() => navigate('/account/orders')}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                      size="sm"
-                    >
-                      View My Orders
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </div>
-            </div>
-          </Alert>
-        )}
-
         <div className="grid lg:grid-cols-2 gap-8">
           
           {/* Left Column */}
@@ -639,90 +601,133 @@ export default function OrderSuccess() {
 
             {/* Create Account - Only show for guest users */}
             {!isAuthenticated && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
-                    Create Account
-                  </CardTitle>
-                </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
-                  Create an account using your email <strong>{order.customer_email}</strong> to track your orders and save your details for faster checkout. We'll send you a welcome email to get started.
-                </p>
-                
-                {!showCreateAccount ? (
-                  <Button 
-                    onClick={() => setShowCreateAccount(true)}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Create Account
-                  </Button>
+              <>
+                {accountCreationSuccess ? (
+                  // Success message - replaces the Create Account card
+                  <Card className="border-green-500 bg-green-50 shadow-lg">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle className="h-6 w-6 text-green-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-green-900 mb-2">
+                            🎉 Your Account is Now Created!
+                          </h3>
+                          <div className="text-green-800 space-y-2">
+                            <p className="font-medium">
+                              Welcome! Your account has been successfully created with email: <strong>{order.customer_email}</strong>
+                            </p>
+                            <div className="text-sm space-y-1 mt-3">
+                              <p>✅ You've been automatically logged in</p>
+                              <p>✅ A welcome email has been sent to your inbox</p>
+                              <p>✅ Your shipping and billing addresses have been saved</p>
+                              <p>✅ You can now track your orders and manage your profile</p>
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-green-200">
+                              <Button
+                                onClick={() => navigate('/account/orders')}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                size="sm"
+                              >
+                                View My Orders
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                        Password
-                      </Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={accountFormData.password}
-                        onChange={(e) => setAccountFormData(prev => ({ ...prev, password: e.target.value }))}
-                        className="mt-1"
-                        placeholder="Create a password"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                        Confirm Password
-                      </Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={accountFormData.confirmPassword}
-                        onChange={(e) => setAccountFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className="mt-1"
-                        placeholder="Confirm password"
-                      />
-                    </div>
-                    
-                    {accountCreationError && (
-                      <Alert className="border-red-200 bg-red-50">
-                        <AlertDescription className="text-red-600 text-sm">
-                          {accountCreationError}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={handleCreateAccount}
-                        disabled={creatingAccount}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
-                      >
-                        {creatingAccount ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Creating...
-                          </>
-                        ) : (
-                          'Create Account'
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => setShowCreateAccount(false)}
-                        variant="outline"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
+                  // Create Account card - shown before account creation
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
+                        Create Account
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Create an account using your email <strong>{order.customer_email}</strong> to track your orders and save your details for faster checkout. We'll send you a welcome email to get started.
+                      </p>
+
+                      {!showCreateAccount ? (
+                        <Button
+                          onClick={() => setShowCreateAccount(true)}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Create Account
+                        </Button>
+                      ) : (
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                              Password
+                            </Label>
+                            <Input
+                              id="password"
+                              type="password"
+                              value={accountFormData.password}
+                              onChange={(e) => setAccountFormData(prev => ({ ...prev, password: e.target.value }))}
+                              className="mt-1"
+                              placeholder="Create a password"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                              Confirm Password
+                            </Label>
+                            <Input
+                              id="confirmPassword"
+                              type="password"
+                              value={accountFormData.confirmPassword}
+                              onChange={(e) => setAccountFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                              className="mt-1"
+                              placeholder="Confirm password"
+                            />
+                          </div>
+
+                          {accountCreationError && (
+                            <Alert className="border-red-200 bg-red-50">
+                              <AlertDescription className="text-red-600 text-sm">
+                                {accountCreationError}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={handleCreateAccount}
+                              disabled={creatingAccount}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            >
+                              {creatingAccount ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Creating...
+                                </>
+                              ) : (
+                                'Create Account'
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => setShowCreateAccount(false)}
+                              variant="outline"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-              </Card>
+              </>
             )}
           </div>
         </div>
