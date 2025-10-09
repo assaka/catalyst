@@ -211,7 +211,7 @@ export const categoryConfig = {
                        data-max-visible="{{settings.max_visible_attributes}}"
                        data-attribute-code="{{this.code}}">
                     {{#each this.options}}
-                      <label class="flex items-center gap-2 cursor-pointer filter-option"
+                      <label class="flex items-center mr-2 gap-2 cursor-pointer filter-option"
                              style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
                              onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                              onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
@@ -980,6 +980,7 @@ export const categoryConfig = {
       styles: {
         backgroundColor: 'transparent',
         padding: '1rem',
+        paddingRight: 0,
         borderRadius: '0.5rem'
       },
       parentId: null,
@@ -1123,7 +1124,7 @@ export const categoryConfig = {
                    data-max-visible="{{settings.max_visible_attributes}}"
                    data-attribute-code="{{this.code}}">
                 {{#each this.options}}
-                  <label class="flex items-center gap-2 cursor-pointer filter-option"
+                  <label class="flex items-center mr-2 gap-2 cursor-pointer filter-option"
                          style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
                          onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                          onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
