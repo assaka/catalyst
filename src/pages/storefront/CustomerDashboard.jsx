@@ -1150,17 +1150,26 @@ export default function CustomerDashboard() {
   const handleLogout = async () => {
     try {
       await CustomerAuth.logout();
-      
+
       // Clear any remaining customer session data
       localStorage.removeItem('customer_auth_token');
       localStorage.removeItem('customer_auth_store_code');
       localStorage.removeItem('customer_user_data');
-      
+
       // Set a flag to prevent auto-login
       localStorage.setItem('user_logged_out', 'true');
-      
+
+      // Get store code/slug from the current URL or localStorage
+      const currentPath = window.location.pathname;
+      const storeCodeMatch = currentPath.match(/\/public\/([^\/]+)/);
+      const storeSlug = storeCodeMatch?.[1] || store?.slug || store?.code || localStorage.getItem('customer_auth_store_code') || 'default';
+
+      console.log('🔍 Logout redirect - store slug:', storeSlug);
+      console.log('🔍 Store object:', store);
+
       // Redirect to the current store's storefront using the new URL structure
-      const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
+      const storefrontUrl = createPublicUrl(storeSlug, 'STOREFRONT');
+      console.log('🔍 Redirecting to:', storefrontUrl);
       navigate(storefrontUrl);
     } catch (error) {
       console.error('❌ Customer logout error:', error);
@@ -1169,9 +1178,17 @@ export default function CustomerDashboard() {
       localStorage.removeItem('customer_auth_store_code');
       localStorage.removeItem('customer_user_data');
       localStorage.setItem('user_logged_out', 'true');
-      
+
+      // Get store code/slug from the current URL or localStorage
+      const currentPath = window.location.pathname;
+      const storeCodeMatch = currentPath.match(/\/public\/([^\/]+)/);
+      const storeSlug = storeCodeMatch?.[1] || store?.slug || store?.code || localStorage.getItem('customer_auth_store_code') || 'default';
+
+      console.log('🔍 Logout redirect (error) - store slug:', storeSlug);
+
       // Redirect to the current store's storefront using the new URL structure
-      const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
+      const storefrontUrl = createPublicUrl(storeSlug, 'STOREFRONT');
+      console.log('🔍 Redirecting to (error):', storefrontUrl);
       navigate(storefrontUrl);
     }
   };
