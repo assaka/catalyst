@@ -42,15 +42,6 @@ export const slotEnabledFiles = [
     color: 'text-purple-500'
   },
   {
-    id: 'account',
-    name: 'Account',
-    path: 'src/pages/editor/AccountSlotsEditor.jsx',
-    pageType: 'account',
-    icon: User,
-    description: 'Customer account page customization',
-    color: 'text-pink-500'
-  },
-  {
     id: 'login',
     name: 'Login',
     path: 'src/pages/editor/LoginSlotsEditor.jsx',
@@ -60,6 +51,16 @@ export const slotEnabledFiles = [
     color: 'text-teal-500'
   },
   {
+    id: 'account',
+    name: 'Account',
+    path: 'src/pages/editor/AccountSlotsEditor.jsx',
+    pageType: 'account',
+    icon: User,
+    description: 'Customer account page customization',
+    color: 'text-pink-500',
+    comingSoon: true
+  },
+  {
     id: 'checkout',
     name: 'Checkout',
     path: 'src/pages/editor/CheckoutSlotsEditor.jsx',
@@ -67,7 +68,7 @@ export const slotEnabledFiles = [
     icon: CreditCard,
     description: 'Checkout flow with payment integration',
     color: 'text-orange-500',
-    comingSoon: false
+    comingSoon: true
   },
   {
     id: 'success',
@@ -77,6 +78,6 @@ export const slotEnabledFiles = [
     icon: CheckCircle,
     description: 'Order confirmation and success page',
     color: 'text-emerald-500',
-    comingSoon: false
+    comingSoon: true
   }
 ];
