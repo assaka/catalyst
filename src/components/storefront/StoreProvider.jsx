@@ -310,6 +310,15 @@ export const StoreProvider = ({ children }) => {
         return;
       }
 
+      console.log('🏪 StoreProvider: Raw store data from API:', {
+        id: selectedStore.id,
+        name: selectedStore.name,
+        currency: selectedStore.currency,
+        hasCurrency: !!selectedStore.currency,
+        settingsCurrencyCode: selectedStore.settings?.currency_code,
+        allKeys: Object.keys(selectedStore)
+      });
+
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
       const mergedSettings = {
