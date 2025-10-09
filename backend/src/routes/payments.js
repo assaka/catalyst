@@ -1118,6 +1118,23 @@ async function createPreliminaryOrder(session, orderData) {
 
     console.log('💾 Generated order_number:', order_number);
 
+    // Validate customer_id if provided - ensure it exists in the database
+    let validatedCustomerId = null;
+    if (customer_id) {
+      try {
+        const { User } = require('../models');
+        const customerExists = await User.findByPk(customer_id);
+        if (customerExists) {
+          validatedCustomerId = customer_id;
+          console.log('✅ Validated customer_id:', customer_id);
+        } else {
+          console.log('⚠️ Customer ID provided but not found in database, treating as guest checkout:', customer_id);
+        }
+      } catch (error) {
+        console.log('⚠️ Error validating customer_id, treating as guest checkout:', error.message);
+      }
+    }
+
     // Create the preliminary order
     const order = await Order.create({
       order_number: order_number,
@@ -1125,7 +1142,7 @@ async function createPreliminaryOrder(session, orderData) {
       payment_status: 'pending', // Will be updated to 'paid' in webhook
       fulfillment_status: 'pending',
       customer_email,
-      customer_id: customer_id || null, // Set customer_id if available
+      customer_id: validatedCustomerId, // Only set if customer exists in database
       billing_address: billing_address || shipping_address,
       shipping_address,
       subtotal: subtotal.toFixed(2),
@@ -1295,13 +1312,31 @@ async function createOrderFromCheckoutSession(session) {
     const order_number = `ORD-${timestamp}-${randomStr}`;
     
     console.log('Generated order_number:', order_number);
-    
+
+    // Validate customer_id from metadata if provided
+    let validatedCustomerId = null;
+    const metadataCustomerId = session.metadata?.customer_id;
+    if (metadataCustomerId) {
+      try {
+        const { User } = require('../models');
+        const customerExists = await User.findByPk(metadataCustomerId);
+        if (customerExists) {
+          validatedCustomerId = metadataCustomerId;
+          console.log('✅ Validated customer_id from metadata:', metadataCustomerId);
+        } else {
+          console.log('⚠️ Customer ID in metadata not found in database, treating as guest checkout:', metadataCustomerId);
+        }
+      } catch (error) {
+        console.log('⚠️ Error validating customer_id from metadata, treating as guest checkout:', error.message);
+      }
+    }
+
     // Create the order within transaction
     const order = await Order.create({
       order_number: order_number,
       store_id: store_id, // Keep as UUID string
       customer_email: session.customer_email || session.customer_details?.email,
-      customer_id: session.metadata?.customer_id || null, // Get customer_id from metadata
+      customer_id: validatedCustomerId, // Only set if customer exists in database
       customer_phone: session.customer_details?.phone,
       billing_address: session.customer_details?.address || {},
       shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
