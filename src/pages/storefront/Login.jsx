@@ -174,6 +174,32 @@ export default function Login() {
   const hasConfig = loginLayoutConfig && loginLayoutConfig.slots;
   const hasSlots = hasConfig && Object.keys(loginLayoutConfig.slots).length > 0;
 
+  // Debug: Log loginData object before passing to renderer
+  const loginDataObj = {
+    formData,
+    loading,
+    error,
+    success,
+    showPassword,
+    handleInputChange,
+    handleSubmit,
+    setShowPassword,
+    navigate,
+    storeCode,
+    createPublicUrl
+  };
+
+  console.log('🔐 LOGIN.JSX: Creating loginData object:', {
+    formData,
+    loading,
+    error,
+    success,
+    showPassword,
+    handleInputChangeType: typeof handleInputChange,
+    handleSubmitType: typeof handleSubmit,
+    setShowPasswordType: typeof setShowPassword
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       {hasConfig && hasSlots ? (
@@ -182,19 +208,7 @@ export default function Login() {
           parentId={null}
           viewMode="login"
           context="storefront"
-          loginData={{
-            formData,
-            loading,
-            error,
-            success,
-            showPassword,
-            handleInputChange,
-            handleSubmit,
-            setShowPassword,
-            navigate,
-            storeCode,
-            createPublicUrl
-          }}
+          loginData={loginDataObj}
         />
       ) : (
         <div className="max-w-md w-full mx-auto">
