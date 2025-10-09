@@ -105,10 +105,6 @@ export default function Account() {
 
   const handleLogout = async () => {
     try {
-      console.log('🔴 LOGOUT: Starting logout process');
-      console.log('🔴 LOGOUT: Current store:', store);
-      console.log('🔴 LOGOUT: Store slug:', store?.slug);
-
       await CustomerAuth.logout();
       // CustomerAuth.logout() already removes customer tokens, but we ensure they're removed
       localStorage.removeItem('customer_auth_token');
@@ -120,16 +116,13 @@ export default function Account() {
       if (store?.slug) {
         // Use just /public/{storeCode} without /storefront to match route structure
         const storefrontUrl = `/public/${store.slug}`;
-        console.log('🔴 LOGOUT: Generated storefront URL:', storefrontUrl);
-        console.log('🔴 LOGOUT: Navigating to:', storefrontUrl);
         navigate(storefrontUrl);
       } else {
-        console.log('🔴 LOGOUT: No store slug, reloading page');
         // Fallback: reload the page if no store slug is available
         window.location.reload();
       }
     } catch (error) {
-      console.error('🔴 LOGOUT: Error during logout:', error);
+      console.error('Logout error:', error);
       // On error, reload the page to ensure clean state
       window.location.reload();
     }

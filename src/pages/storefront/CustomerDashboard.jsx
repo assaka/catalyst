@@ -1159,12 +1159,8 @@ export default function CustomerDashboard() {
       const storeCodeMatch = currentPath.match(/\/public\/([^\/]+)/);
       const storeSlug = storeCodeMatch?.[1] || store?.slug || store?.code || localStorage.getItem('customer_auth_store_code') || 'default';
 
-      console.log('🔍 Logout redirect - store slug:', storeSlug);
-      console.log('🔍 Store object:', store);
-
       // Redirect to the current store's storefront - use /public/{storeCode} without /storefront
       const storefrontUrl = `/public/${storeSlug}`;
-      console.log('🔍 Redirecting to:', storefrontUrl);
       navigate(storefrontUrl);
     } catch (error) {
       console.error('❌ Customer logout error:', error);
@@ -1179,11 +1175,8 @@ export default function CustomerDashboard() {
       const storeCodeMatch = currentPath.match(/\/public\/([^\/]+)/);
       const storeSlug = storeCodeMatch?.[1] || store?.slug || store?.code || localStorage.getItem('customer_auth_store_code') || 'default';
 
-      console.log('🔍 Logout redirect (error) - store slug:', storeSlug);
-
       // Redirect to the current store's storefront - use /public/{storeCode} without /storefront
       const storefrontUrl = `/public/${storeSlug}`;
-      console.log('🔍 Redirecting to (error):', storefrontUrl);
       navigate(storefrontUrl);
     }
   };
