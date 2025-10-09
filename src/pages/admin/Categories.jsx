@@ -892,25 +892,6 @@ export default function Categories() {
                     </div>
                   </div>
                 )}
-                
-                {/* Product Filters Setting - Always visible */}
-                <div className="flex items-center justify-between p-3 border rounded-lg mt-3">
-                  <div>
-                    <Label htmlFor="enable_product_filters" className="font-medium">
-                      Enable Product Filters
-                    </Label>
-                    <p className="text-sm text-gray-500">
-                      Show layered navigation filters on category pages to help customers narrow down products
-                    </p>
-                  </div>
-                  <Switch
-                    id="enable_product_filters"
-                    checked={storeSettings.enable_product_filters !== false}
-                    onCheckedChange={(checked) => {
-                      saveStoreSettings({ ...storeSettings, enable_product_filters: checked });
-                    }}
-                  />
-                </div>
               </div>
             </div>
           </CardContent>
