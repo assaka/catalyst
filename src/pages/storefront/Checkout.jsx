@@ -929,7 +929,8 @@ export default function Checkout() {
         deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
         deliveryTimeSlot,
         deliveryComments,
-        email: user?.email || shippingAddress.email,
+        // Use shipping address email first (what user just entered), fallback to user email for logged-in users
+        email: shippingAddress.email || user?.email,
         userId: user?.id,
         sessionId: localStorage.getItem('guest_session_id')
       };
