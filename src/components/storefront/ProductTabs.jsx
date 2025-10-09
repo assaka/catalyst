@@ -43,7 +43,6 @@ export default function ProductTabs({ productTabs = [], product = null, classNam
       tab_type: tab.tab_type || 'text'
     }));
 
-    console.log('Mapped tabs:', mappedTabs);
     return mappedTabs;
   }, [productTabs, product, activeTabIndex]);
 

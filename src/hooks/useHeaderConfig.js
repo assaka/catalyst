@@ -23,12 +23,10 @@ export function useHeaderConfig(store) {
       const slots = layoutConfig.slots || headerConfig.slots;
       setHeaderSlots(slots);
       setHeaderConfigLoaded(true);
-      console.log('✅ Header config loaded with', Object.keys(slots).length, 'slots');
     } else if (configLoaded && !layoutConfig) {
       // Use default header config if no published config
       setHeaderSlots(headerConfig.slots);
       setHeaderConfigLoaded(true);
-      console.log('✅ Using default header config with', Object.keys(headerConfig.slots).length, 'slots');
     }
   }, [configLoaded, layoutConfig]);
 

@@ -134,7 +134,6 @@ export default function Checkout() {
         const persistedData = localStorage.getItem('checkout_form_data');
         if (persistedData) {
           const data = JSON.parse(persistedData);
-          console.log('Restoring checkout form data:', data);
 
           // Restore shipping address
           if (data.shippingAddress) {
@@ -209,7 +208,6 @@ export default function Checkout() {
         };
 
         localStorage.setItem('checkout_form_data', JSON.stringify(dataToSave));
-        console.log('Saved checkout form data to localStorage:', dataToSave);
       } catch (error) {
         console.error('Failed to persist checkout data:', error);
       }

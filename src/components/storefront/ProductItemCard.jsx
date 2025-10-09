@@ -64,26 +64,12 @@ const ProductItemCard = ({
 
   // Product label logic - unified across all components
   const renderProductLabels = () => {
-    console.log('🔍 renderProductLabels - All labels:', productLabels?.map(l => ({
-      name: l.name,
-      position: l.position,
-      color: l.color,
-      background_color: l.background_color,
-      conditions: l.conditions
-    })));
-
     // Filter labels that match the product conditions
     const matchingLabels = productLabels?.filter((label) => {
-      console.log(`🔍 Evaluating label "${label.name}":`, {
-        is_active: label.is_active,
-        conditions: label.conditions,
-        position: label.position
-      });
 
       let shouldShow = true; // Assume true, prove false (AND logic)
 
       if (label.conditions && Object.keys(label.conditions).length > 0) {
-        console.log(`  📋 Label "${label.name}" has conditions:`, label.conditions);
         // Check product_ids condition
         if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
           if (!label.conditions.product_ids.includes(product.id)) {
@@ -120,36 +106,24 @@ const ProductItemCard = ({
 
         // Check attribute conditions
         if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
-          console.log(`  🏷️ Label "${label.name}" checking attribute conditions:`, label.conditions.attribute_conditions);
-          console.log(`  📦 Product attributes:`, product.attributes);
-
           const attributeMatch = label.conditions.attribute_conditions.every(cond => {
             if (product.attributes && product.attributes[cond.attribute_code]) {
               const productAttributeValue = String(product.attributes[cond.attribute_code]).toLowerCase();
               const conditionValue = String(cond.attribute_value).toLowerCase();
               const matches = productAttributeValue === conditionValue;
-              console.log(`    ✓ Checking ${cond.attribute_code}: ${productAttributeValue} === ${conditionValue} = ${matches}`);
               return matches;
             }
-            console.log(`    ✗ Attribute ${cond.attribute_code} not found on product`);
             return false;
           });
           if (!attributeMatch) {
-            console.log(`  ❌ Label "${label.name}" failed attribute match`);
             shouldShow = false;
           } else {
-            console.log(`  ✅ Label "${label.name}" passed attribute match`);
           }
         }
       } else {
-        console.log(`  ✅ Label "${label.name}" has no conditions - showing on all products`);
       }
-
-      console.log(`  🎯 Final decision for "${label.name}": ${shouldShow ? 'SHOW' : 'HIDE'}`);
       return shouldShow;
     }) || [];
-
-    console.log('✅ Matching labels after filter:', matchingLabels.map(l => l.name));
 
     // Group labels by position and show one label per position
     const labelsByPosition = matchingLabels.reduce((acc, label) => {
@@ -160,11 +134,6 @@ const ProductItemCard = ({
       acc[position].push(label);
       return acc;
     }, {});
-
-    console.log('📊 Labels grouped by position:', Object.entries(labelsByPosition).map(([pos, labels]) => ({
-      position: pos,
-      labels: labels.map(l => l.name)
-    })));
 
     // For each position, sort by sort_order (ASC) then by priority (DESC) and take the first one
     const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
@@ -180,13 +149,6 @@ const ProductItemCard = ({
       });
       return sortedLabels[0]; // Return highest priority label for this position
     }).filter(Boolean);
-
-    console.log('🎨 Final labels to show:', labelsToShow.map(l => ({
-      name: l.name,
-      position: l.position,
-      color: l.color,
-      background_color: l.background_color
-    })));
 
     // Show all labels (one per position)
     return labelsToShow.map(label => (

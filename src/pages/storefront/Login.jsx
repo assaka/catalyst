@@ -109,12 +109,16 @@ export default function Login() {
     setSuccess("");
 
     try {
+      console.log('🔐 LOGIN: Starting login for:', formData.email);
+
       const response = await AuthService.login(
         formData.email,
         formData.password,
         formData.rememberMe,
         'customer'
       );
+
+      console.log('🔐 LOGIN: Response received:', response);
 
       let actualResponse = response;
       if (Array.isArray(response)) {
@@ -126,21 +130,32 @@ export default function Login() {
                        actualResponse?.token ||
                        (actualResponse && Object.keys(actualResponse).length > 0);
 
+      console.log('🔐 LOGIN: Success check:', isSuccess);
+      console.log('🔐 LOGIN: Token:', actualResponse.data?.token || actualResponse.token);
+
       if (isSuccess) {
         const token = actualResponse.data?.token || actualResponse.token;
 
         if (token) {
+          console.log('✅ LOGIN: Token found, setting up session');
           localStorage.removeItem('user_logged_out');
           localStorage.setItem('customer_auth_token', token);
           apiClient.setToken(token);
 
           const accountUrl = await getCustomerAccountUrl();
+          console.log('✅ LOGIN: Navigating to:', accountUrl);
           navigate(accountUrl);
           return;
+        } else {
+          console.error('❌ LOGIN: No token in response');
+          setError('Login failed: No authentication token received');
         }
+      } else {
+        console.error('❌ LOGIN: Response not successful');
+        setError('Login failed: Invalid response from server');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ LOGIN: Error:', error);
       setError(error.message || 'Login failed');
     } finally {
       setLoading(false);
