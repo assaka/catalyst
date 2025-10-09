@@ -205,83 +205,53 @@ export default function OrderSuccess() {
   // Handle account creation
   const handleCreateAccount = async () => {
     setAccountCreationError('');
-    
+
     // Validate form
     if (accountFormData.password.length < 6) {
       setAccountCreationError('Password must be at least 6 characters long.');
       return;
     }
-    
+
     if (accountFormData.password !== accountFormData.confirmPassword) {
       setAccountCreationError('Passwords do not match.');
       return;
     }
 
     setCreatingAccount(true);
-    
-    try {
-      // Extract comprehensive details from order data
-      const shippingAddr = order.shipping_address || {};
-      const billingAddr = order.billing_address || {};
-      
-      // Extract name - try multiple sources
-      let customerName = '';
-      if (shippingAddr.name || shippingAddr.full_name) {
-        customerName = shippingAddr.name || shippingAddr.full_name;
-      } else if (billingAddr.name || billingAddr.full_name) {
-        customerName = billingAddr.name || billingAddr.full_name;
-      } else if (order.customer_name) {
-        customerName = order.customer_name;
-      }
-      
-      const nameParts = customerName.trim().split(' ');
-      let firstName = nameParts[0] || '';
-      let lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-      
-      // Only use defaults if we truly have no name data
-      if (!firstName) firstName = 'Customer';
-      if (!lastName) lastName = 'User';
-      
-      // Extract phone number
-      const phone = order.customer_phone || shippingAddr.phone || billingAddr.phone || '';
-      
-      // Create registration payload with address details
-      const registrationData = {
-        first_name: firstName,
-        last_name: lastName,
-        email: order.customer_email,
-        password: accountFormData.password,
-        phone: phone,
-        role: 'customer',
-        send_welcome_email: true,
-        // Add address information for profile
-        address_data: {
-          shipping_address: {
-            street: shippingAddr.line1 || shippingAddr.street || '',
-            street2: shippingAddr.line2 || '',
-            city: shippingAddr.city || '',
-            state: shippingAddr.state || shippingAddr.province || '',
-            postal_code: shippingAddr.postal_code || shippingAddr.zip || '',
-            country: shippingAddr.country || ''
-          },
-          billing_address: {
-            street: billingAddr.line1 || billingAddr.street || '',
-            street2: billingAddr.line2 || '',
-            city: billingAddr.city || '',
-            state: billingAddr.state || billingAddr.province || '',
-            postal_code: billingAddr.postal_code || billingAddr.zip || '',
-            country: billingAddr.country || ''
-          }
-        }
-      };
 
-      const response = await Auth.register(registrationData);
-      
+    try {
+      // Use the new upgrade-guest endpoint instead of register
+      // This updates the existing guest customer record instead of creating a new one
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+      const response = await fetch(`${apiUrl}/api/auth/upgrade-guest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: order.customer_email,
+          password: accountFormData.password,
+          store_id: order.store_id
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to create account');
+      }
+
+      console.log('✅ Guest account upgraded successfully');
+
       setAccountCreationSuccess(true);
       setShowCreateAccount(false);
-      
-      // Don't redirect to auth - just show success message
-      
+
+      // Optionally auto-login the user by storing the token
+      if (result.data?.token) {
+        localStorage.setItem('token', result.data.token);
+        console.log('🔐 User auto-logged in after account creation');
+      }
+
     } catch (error) {
       console.error('Account creation error:', error);
       setAccountCreationError(error.message || 'Failed to create account. Please try again.');

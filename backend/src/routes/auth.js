@@ -253,6 +253,83 @@ router.post('/register', [
   }
 });
 
+// @route   POST /api/auth/upgrade-guest
+// @desc    Upgrade guest customer to registered account (for post-order account creation)
+// @access  Public
+router.post('/upgrade-guest', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  body('store_id').notEmpty().withMessage('Store ID is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email, password, store_id } = req.body;
+
+    // Find existing guest customer (password is null)
+    const guestCustomer = await Customer.findOne({
+      where: {
+        email,
+        store_id,
+        password: null // Only upgrade true guest customers
+      }
+    });
+
+    if (!guestCustomer) {
+      return res.status(404).json({
+        success: false,
+        message: 'No guest account found with this email, or account is already registered'
+      });
+    }
+
+    console.log('🔄 Upgrading guest customer to registered:', email);
+
+    // Update the guest customer with password (this will be hashed by the beforeUpdate hook)
+    await guestCustomer.update({
+      password: password,
+      email_verified: false // They'll need to verify their email
+    });
+
+    console.log('✅ Guest customer upgraded successfully');
+
+    // Generate token for auto-login
+    const token = generateToken(guestCustomer);
+
+    // Send welcome email
+    try {
+      console.log(`Welcome email should be sent to: ${email}`);
+      console.log(`Welcome message: Hello ${guestCustomer.first_name}, your account has been created! You can now log in to track your orders.`);
+      // TODO: Implement actual email service
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Account upgraded successfully',
+      data: {
+        user: guestCustomer,
+        token,
+        sessionRole: 'customer',
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Guest upgrade error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/auth/check-email
 // @desc    Check what roles are available for an email
 // @access  Public
