@@ -341,6 +341,62 @@ export function CategorySlotRenderer({
         clearAllColor: '#DC2626'
       };
 
+      // Build pages array for pagination template
+      const buildPagesArray = () => {
+        const pages = [];
+        const maxPagesToShow = 7; // Show max 7 page numbers
+
+        if (totalPages <= maxPagesToShow) {
+          // Show all pages if total is small
+          for (let i = 1; i <= totalPages; i++) {
+            pages.push({
+              number: i,
+              isCurrent: i === currentPage,
+              isEllipsis: false
+            });
+          }
+        } else {
+          // Show first page
+          pages.push({
+            number: 1,
+            isCurrent: 1 === currentPage,
+            isEllipsis: false
+          });
+
+          // Calculate range around current page
+          let startPage = Math.max(2, currentPage - 2);
+          let endPage = Math.min(totalPages - 1, currentPage + 2);
+
+          // Add ellipsis after first page if needed
+          if (startPage > 2) {
+            pages.push({ isEllipsis: true });
+          }
+
+          // Add middle pages
+          for (let i = startPage; i <= endPage; i++) {
+            pages.push({
+              number: i,
+              isCurrent: i === currentPage,
+              isEllipsis: false
+            });
+          }
+
+          // Add ellipsis before last page if needed
+          if (endPage < totalPages - 1) {
+            pages.push({ isEllipsis: true });
+          }
+
+          // Show last page
+          pages.push({
+            number: totalPages,
+            isCurrent: totalPages === currentPage,
+            isEllipsis: false
+          });
+        }
+
+        return pages;
+      };
+
       const variableContext = {
         category,
         products: formattedProducts,
@@ -355,7 +411,8 @@ export function CategorySlotRenderer({
           hasPrev: currentPage > 1,
           hasNext: currentPage < totalPages,
           prevPage: currentPage - 1,
-          nextPage: currentPage + 1
+          nextPage: currentPage + 1,
+          pages: buildPagesArray() // Add pages array for template
         },
         sorting: {
           current: sortOption
