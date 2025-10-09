@@ -1111,8 +1111,16 @@ async function createPreliminaryOrder(session, orderData) {
     const discountAmountNum = parseFloat(discount_amount) || 0;
     const totalAmount = subtotal + taxAmountNum + shippingCostNum + paymentFeeNum - discountAmountNum;
 
+    // Generate order number
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const order_number = `ORD-${timestamp}-${randomStr}`;
+
+    console.log('💾 Generated order_number:', order_number);
+
     // Create the preliminary order
     const order = await Order.create({
+      order_number: order_number,
       status: 'pending', // Will be updated to 'processing' in webhook
       payment_status: 'pending', // Will be updated to 'paid' in webhook
       fulfillment_status: 'pending',
