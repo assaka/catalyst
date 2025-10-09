@@ -34,7 +34,7 @@ const generateCartContext = (viewMode) => ({
   discount: 10.00,
   tax: 8.00,
   total: 107.97,
-  currencySymbol: '$',
+  currencySymbol: '🔴20',
   appliedCoupon: null,
   couponCode: '',
   setCouponCode: () => {},

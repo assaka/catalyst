@@ -78,13 +78,13 @@ export default function CustomOptions({
                 {option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price) ? (
                   <div>
                     <span className="font-semibold text-red-600">
-                      {settings?.hide_currency_product ? '' : '$'}{(() => {
+                      {settings?.hide_currency_product ? '' : '🔴21'}{(() => {
                         const minPrice = Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0));
                         return isNaN(minPrice) ? '0.00' : minPrice.toFixed(2);
                       })()}
                     </span>
                     <div className="text-sm text-gray-500 line-through">
-                      {settings?.hide_currency_product ? '' : '$'}{(() => {
+                      {settings?.hide_currency_product ? '' : '🔴22'}{(() => {
                         const maxPrice = Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0));
                         return isNaN(maxPrice) ? '0.00' : maxPrice.toFixed(2);
                       })()}
@@ -92,7 +92,7 @@ export default function CustomOptions({
                   </div>
                 ) : (
                   <span className="font-semibold">
-                    {settings?.hide_currency_product ? '' : '$'}{(() => {
+                    {settings?.hide_currency_product ? '' : '🔴23'}{(() => {
                       const price = parseFloat(option.price || 0);
                       return isNaN(price) ? '0.00' : price.toFixed(2);
                     })()}
@@ -111,7 +111,7 @@ export default function CustomOptions({
                 <div key={option.id} className="flex justify-between text-sm">
                   <span>{option.name}</span>
                   <span>
-                    {settings?.hide_currency_product ? '' : '$'}{(() => {
+                    {settings?.hide_currency_product ? '' : '🔴24'}{(() => {
                       const price = parseFloat(option.price || 0);
                       return isNaN(price) ? '0.00' : price.toFixed(2);
                     })()}
@@ -123,7 +123,7 @@ export default function CustomOptions({
               <div className="flex justify-between font-medium">
                 <span>Total Custom Options:</span>
                 <span>
-                  {settings?.hide_currency_product ? '' : '$'}{getTotalPrice().toFixed(2)}
+                  {settings?.hide_currency_product ? '' : '🔴25'}{getTotalPrice().toFixed(2)}
                 </span>
               </div>
             </div>
