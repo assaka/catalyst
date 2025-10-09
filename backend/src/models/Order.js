@@ -167,23 +167,26 @@ const Order = sequelize.define('Order', {
         try {
           const Customer = require('./Customer');
           
-          // Parse name from billing address
+          // Parse name from billing/shipping address - try multiple field name variations
           let firstName = 'Guest';
           let lastName = 'Customer';
-          
-          if (order.billing_address?.full_name) {
-            const nameParts = order.billing_address.full_name.trim().split(' ');
-            if (nameParts.length > 0) {
-              firstName = nameParts[0];
-              lastName = nameParts.slice(1).join(' ') || 'Customer';
-            }
-          } else if (order.shipping_address?.full_name) {
-            const nameParts = order.shipping_address.full_name.trim().split(' ');
+
+          // Try to get full name from various field names
+          const fullName = order.billing_address?.full_name ||
+                          order.billing_address?.name ||
+                          order.shipping_address?.full_name ||
+                          order.shipping_address?.name ||
+                          '';
+
+          if (fullName && fullName.trim()) {
+            const nameParts = fullName.trim().split(' ');
             if (nameParts.length > 0) {
               firstName = nameParts[0];
               lastName = nameParts.slice(1).join(' ') || 'Customer';
             }
           }
+
+          console.log('📝 Creating/updating customer with name:', firstName, lastName, 'from full_name:', fullName);
           
           // Check if customer already exists
           const existingCustomer = await Customer.findOne({
