@@ -218,6 +218,7 @@ export function UnifiedSlotRenderer({
   cartData = null,
   headerContext = null,
   loginData = null,
+  accountData = null, // For account page (handleLogout, user, etc.)
 
   // Config for renderCondition support
   slotConfig = null
@@ -653,6 +654,9 @@ export function UnifiedSlotRenderer({
             }
           } else if (id === 'wishlist_button') {
             productData.handleWishlistToggle?.();
+          } else if (id === 'logout_button') {
+            // Handle account logout
+            accountData?.handleLogout?.();
           }
         };
 
@@ -807,6 +811,7 @@ export function UnifiedSlotRenderer({
             cartData={cartData}
             headerContext={headerContext}
             loginData={loginData}
+            accountData={accountData}
           />
         </div>
       );
