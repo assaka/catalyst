@@ -186,24 +186,86 @@ const ProfileFormSlot = createSlotComponent({
  */
 const LoginFormSlot = createSlotComponent({
   name: 'LoginFormSlot',
-  render: ({ slot, context }) => {
+  render: ({ slot, context, variableContext }) => {
+    // Get loginData from variableContext (passed from Login.jsx)
+    const loginData = variableContext?.loginData || {};
+    const {
+      formData = { email: '', password: '', rememberMe: false },
+      loading = false,
+      error = '',
+      success = '',
+      showPassword = false,
+      handleInputChange = () => {},
+      handleSubmit = (e) => e.preventDefault(),
+      setShowPassword = () => {}
+    } = loginData;
+
     return (
       <div className={slot.className} style={slot.styles}>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+              {success}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input type="email" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your email" />
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              placeholder="Enter your email"
+              disabled={loading}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" required className="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Enter your password" />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10"
+                placeholder="Enter your password"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                disabled={loading}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
           </div>
           <div className="flex items-center">
-            <input type="checkbox" className="rounded" />
+            <input
+              type="checkbox"
+              name="rememberMe"
+              checked={formData.rememberMe}
+              onChange={handleInputChange}
+              className="rounded"
+              disabled={loading}
+            />
             <label className="ml-2 text-sm">Remember me</label>
           </div>
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md">
-            Sign In
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       </div>

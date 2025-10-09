@@ -217,6 +217,7 @@ export function UnifiedSlotRenderer({
   categoryData = null,
   cartData = null,
   headerContext = null,
+  loginData = null,
 
   // Config for renderCondition support
   slotConfig = null
@@ -319,7 +320,9 @@ export function UnifiedSlotRenderer({
     activeFilters: context === 'editor' ? [
       { label: 'Brand', value: 'Nike', type: 'attribute', attributeCode: 'brand' },
       { label: 'Color', value: 'Blue', type: 'attribute', attributeCode: 'color' }
-    ] : (categoryData?.activeFilters || [])
+    ] : (categoryData?.activeFilters || []),
+    // Login data for login page
+    loginData: loginData
   };
 
 
