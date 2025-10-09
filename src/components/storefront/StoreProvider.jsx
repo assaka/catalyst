@@ -16,6 +16,28 @@ import {
 const StoreContext = createContext(null);
 export const useStore = () => useContext(StoreContext);
 
+// Helper function to clean checkout layouts
+const cleanCheckoutLayout = (layout) => {
+  if (!layout) return layout;
+
+  const cleanedLayout = {};
+  Object.keys(layout).forEach(stepKey => {
+    cleanedLayout[stepKey] = {};
+    Object.keys(layout[stepKey]).forEach(columnKey => {
+      let sections = layout[stepKey][columnKey] || [];
+
+      // Replace old "Delivery Options" with "Delivery Settings"
+      sections = sections.map(section =>
+        section === 'Delivery Options' ? 'Delivery Settings' : section
+      );
+
+      // Remove duplicates while preserving order
+      cleanedLayout[stepKey][columnKey] = [...new Set(sections)];
+    });
+  });
+  return cleanedLayout;
+};
+
 // Balanced caching strategy
 const CACHE_DURATION_LONG = 3600000; // 1 hour - for data that rarely changes (stores, cookie consent)
 const CACHE_DURATION_MEDIUM = 300000; // 5 minutes - for semi-static data (categories, attributes)
@@ -413,14 +435,14 @@ export const StoreProvider = ({ children }) => {
         checkout_1step_columns: selectedStore.settings?.checkout_1step_columns ?? 3,
         checkout_2step_columns: selectedStore.settings?.checkout_2step_columns ?? 2,
         checkout_3step_columns: selectedStore.settings?.checkout_3step_columns ?? 2,
-        checkout_1step_layout: selectedStore.settings?.checkout_1step_layout || {
+        checkout_1step_layout: cleanCheckoutLayout(selectedStore.settings?.checkout_1step_layout) || {
           step1: {
             column1: ['Shipping Address', 'Shipping Method', 'Billing Address'],
             column2: ['Delivery Settings', 'Payment Method'],
             column3: ['Coupon', 'Order Summary']
           }
         },
-        checkout_2step_layout: selectedStore.settings?.checkout_2step_layout || {
+        checkout_2step_layout: cleanCheckoutLayout(selectedStore.settings?.checkout_2step_layout) || {
           step1: {
             column1: ['Shipping Address', 'Billing Address'],
             column2: ['Shipping Method', 'Delivery Settings']
@@ -430,7 +452,7 @@ export const StoreProvider = ({ children }) => {
             column2: ['Coupon', 'Order Summary']
           }
         },
-        checkout_3step_layout: selectedStore.settings?.checkout_3step_layout || {
+        checkout_3step_layout: cleanCheckoutLayout(selectedStore.settings?.checkout_3step_layout) || {
           step1: {
             column1: ['Shipping Address', 'Billing Address'],
             column2: []
